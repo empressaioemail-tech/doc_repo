@@ -1,0 +1,40 @@
+{
+  "lane": "CTX-WALKRULE",
+  "checkpoint": "CP2 (pilot / mid-work)",
+  "planRow": ["P-124"],
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-walkrule",
+  "branch": "fix/ctx-walkrule-retired-grading",
+  "status": "implementation complete, local commit made, about to push/PR/merge",
+
+  "the422_diagnosis_done": {
+    "method": "curl https://smart-site-factory.vercel.app/site/api/spine/cortex/api/brokerage/v1/place/node/48055:1/facets against the real staging endpoint (the same URL shape verify-walk.mjs's own walkParcel constructs), read-only GET, no auth needed for this public route.",
+    "result": "HTTP 422, body {\"error\":\"SITUS_PUNCTUATION_ONLY\",\"errorClass\":\"serve_refused\",\"message\":\"situs is punctuation only\"}",
+    "mechanism": "B, but the SPECIFIC code differs from the dispatch's own historical guess. Read LDT's brokerageNodeFacets.ts (pinned SHA 3885efad, artifacts/api-server/src/routes/): loadBakedNodeFacetSnapshot calls refusePayloadAtServe (lib/serveGuards.ts), which calls assertSitusNotPunctuationOnly on base.situsAddress when present; that throw happens inside the route handler's Promise.all try/catch, which 422s on ACCESS_NOT_DEFAULTED or SITUS_PUNCTUATION_ONLY before `snapshot` (and therefore any body containing recordRetirement) is ever produced. The mechanism REJECTED (A: retirement served but ungraded) is ruled out because gradeParcelResponse's very first branch after the broken-parcel check is `if (!res.ok) return {verdict:'fail', grade:'BP-MEANING-01', reason: HTTP ${status}}` -- a non-ok response never reaches the body-dependent retirement check, confirmed by reading the existing code before making any change.",
+    "consequence": "Rule 2 cannot and does not clear 48055:1. Verified in code (a dedicated unit test asserts the non-ok short-circuit runs with the predicate injected-but-never-called) and by the live probe above."
+  },
+
+  "the48055Parcel_disposition": "Not a well-formed CAD account. CTX-RETIRE's own finding stands (203 txgio_parcel features share prop_id='1' in Caldwell, almost certainly a stratmap25-landparcels sentinel/bucket id), and the live serve independently corroborates it from a different angle: its baked situsAddress is punctuation-only, which is consistent with a degenerate, non-CAD-sourced identity rather than a real parcel with a real address. Disposition: this is a sampler-level question (should a sentinel id ever enter the jurisdiction-stratified cohort at all), explicitly out of this lane's scope -- the dispatch forbids touching the sampler, and inventing a new grading class to silently exclude it would be exactly the kind of unnamed exclusion the dispatch also forbids. Reported as a named open finding for the operator/next lane, not coded around.",
+
+  "importMechanism_done": {
+    "bundling": "Added a fifth esbuild entry, \"tier1-conformant-lib\", to scripts/build-publish-bake-clis.mjs's existing entries map, pointing at lib/nodeFacetBakeTier1Conformant.ts itself rather than a CLI wrapper. Verified it bundles cleanly against the real pinned SHA (a scratch clone of legacy-design-tools at 3885efadb789942a479b475d34d1518807756e0a, pnpm-installed scoped to --filter @workspace/api-server --filter @workspace/cad-ingest only, ~18s): esbuild's own error output first showed 4 unresolved workspace/npm specifiers before the scoped pnpm install, zero after.",
+    "twoBugsFoundAndFixedBeforeTrusting": [
+      "DATABASE_URL: the bundle's transitive graph (a co-bundled lib module, not isEarnedRecordRetirement itself) imports LDT's shared lib/db package, which throws 'DATABASE_URL must be set' at MODULE-EVAL time if absent. factory-verify-walk's own Cloud Run env (cloudbuild.publish.yaml) never sets DATABASE_URL, only FACTORY_DATABASE_URL -- an in-process import would have crashed the walk's very first call in production. Fixed in src/lib/record-retirement.mjs: a syntactically-valid placeholder DATABASE_URL is set for the duration of the one import call and restored/deleted immediately after (node-postgres Pool construction is lazy, no real connection is ever made). Same reason bastrop-publish.mjs's bakeEnvForTarget already sets DATABASE_URL for the bake SUBPROCESS env -- this is the in-process equivalent of an already-established accommodation, not a new pattern.",
+      "node --test / esbuild CJS-interop: the bundle's graph pulls in yauzl (a CJS zip-reading library, for some transitive LDT lib) which lazily requires('fs'). Under plain `node`, importing the bundle worked; under `node --test`, the identical bundle threw 'Dynamic require of \"fs\" is not supported' from esbuild's own generated __require2 shim -- reproduced deterministically both ways, isolated to a minimal 4-line repro file before concluding it was real rather than flaky. Fixed by adding the SAME banner scripts/build-publish-bake-clis.mjs already uses for its four existing entries (globalThis.require = createRequire(import.meta.url)) to record-retirement.mjs's own on-demand esbuild call, which the original patch had omitted. Confirmed fixed under node --test after the banner was added."
+    ],
+    "bothLoadPathsVerifiedLiveAgainstThePinnedSHA": "BAKE_CLI_ROOT path (mirrors the Cloud image): ran scripts/build-publish-bake-clis.mjs for real against the scratch LDT clone, pointed BAKE_CLI_ROOT at the output placed INSIDE the hauska-factory project tree (so the bundle's external pg import resolves against this repo's own node_modules/pg, exactly as /app/bakes resolves against /app/node_modules/pg in the real image), imported, exercised both a well-formed and a malformed marker: correct both directions. On-demand local-bundle path: same two fixtures, correct both directions, also under node --test."
+  },
+
+  "verificationRunsSoFar": {
+    "fullSuiteBeforeAnyChange": "npm test in the fresh worktree (after npm install): 1138 tests, 1136 pass, 0 fail, 2 skipped -- established as the baseline before any edit.",
+    "fullSuiteAfterChange": "npm test: 1146 tests, 1143 pass, 0 fail, 3 skipped -- the 8 new tests all pass except the real-predicate 'verify by violating' test, which correctly skips (named reason: no LDT_ROOT / pinned checkout in this default environment) rather than silently passing or failing for the wrong reason.",
+    "verifyByViolating_withLDT_ROOT_set": "Same suite re-run with LDT_ROOT pointed at the pinned-SHA scratch clone: the real-predicate test now RUNS (not skipped) and passes both RUN 1 (red, a bare-truthy stand-in wrongly accepts the malformed marker) and RUN 2 (green, the real isEarnedRecordRetirement correctly rejects it), plus recognizes a genuinely well-formed marker and rejects a lastSeenTaxYear type violation.",
+    "incidentalPreExistingFinding_notFixed": "With LDT_ROOT set, one UNRELATED pre-existing test also fails: 'walk facet path list matches LDT REQUIRED_TIER1_FACET_PATHS' -- the pinned SHA's real list carries 8 more paths (baseFacts.cadRoll.*, baseFacts.yearBuilt/legalDescription/exemptionCodes) than this repo's own mirror. This divergence predates this lane (untouched by this diff, REQUIRED_TIER1_FACET_PATHS was not edited) and was invisible locally only because the test's own default candidate roots never resolved to a real LDT checkout before now. Reported in the close as an incidental out-of-scope finding, not fixed here -- fixing it would mean widening REQUIRED_TIER1_FACET_PATHS, which this dispatch explicitly forbids touching beyond the six rules."
+  },
+
+  "remainingBeforeClose": [
+    "push, open PR, wait for CI conclusion strings (literal 'success', not gh pr checks summary), self-merge -- confirmed with the operator this is in scope before doing it, since the dispatch's own wording ('write code and commit') was ambiguous against its own later reference to 'your merged main'",
+    "write the final close artifact with the merge commit SHA and full six-rule disposition"
+  ]
+}

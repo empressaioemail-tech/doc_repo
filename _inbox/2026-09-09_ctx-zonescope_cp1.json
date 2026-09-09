@@ -1,0 +1,58 @@
+{
+  "lane": "ctx-zonescope",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T16:00:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-zonescope",
+  "branch": "fix/ctx-zonescope-multilayer-city",
+  "headAtOpen": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7",
+
+  "confirmedBeforeAnyEdit": {
+    "seat": "property, matches seat_register.json entry (grepped, quoted verbatim in this lane's context)",
+    "worktree": "created via git worktree add -b fix/ctx-zonescope-multilayer-city from origin/main (fetched fresh: 8bcfbb2c), directory did not exist before this lane",
+    "branch": "fix/ctx-zonescope-multilayer-city, did not exist locally or on origin before this lane (git branch --list and git ls-remote --heads both empty)",
+    "commit": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7, equals origin/main at fetch time",
+    "workingTree": "clean at creation (git status confirmed)",
+    "readFirst": [
+      "_inbox/2026-09-09_ctx-refusal_close.json in full, including mechanismResolved and proposedFixes_notApplied, per dispatch instruction",
+      "90_runbooks/AGENT_CONTRACT.md, 90_runbooks/DEV_PROCESS.md, 90_runbooks/fleet_memory_practice.md, per dispatch preamble",
+      "src/jobs/parcel-r5-zoning.mjs and src/config/zoning-layer-completeness.mjs in full",
+      "test/parcel-r5-zoning.test.mjs in full (756 lines, the existing falsifier suite this fix must not silently weaken)",
+      "npm ci run in the fresh worktree (node_modules did not exist); baseline npm test: 1138 tests, 1136 pass, 0 fail, 2 skipped"
+    ]
+  },
+
+  "designDecision": {
+    "fixTaken": "(b) -- collapse a multi-layer city (one place_fips, multiple staged city_key base layers) to ONE processCity pass against the UNION of its layers' zone polygons. Taking the dispatch's recommended shape; no reason found not to.",
+    "whyNotA": "(a) intersecting each city_key row's population by its own layer's county coverage would require hardcoding or deriving a city_key-to-county mapping that does not exist as data anywhere in this schema (tx_zoning_district_staging carries bbox columns per polygon, not a declared county per city_key row) -- (b) needs no new mapping at all, reuses the existing per-polygon bbox/geometry the join already has, and the dispatch's own reasoning (sourceUrl already travels per matched polygon) generalizes to a stronger claim: NO per-match field needs a group-level city fallback if the match itself carries its own city_key. Also removes the ORDER BY tie hazard structurally (one row per place_fips now, never two racing to throw).",
+
+    "correctnessGapFoundBeyondTheDispatchsExplicitAsk": "The dispatch's own text only asks to confirm sourceUrl survives a union pass. Reading buildZoningCells and its caller shows a SECOND rail cell, zoningJurisdictionKey, is currently written from city.cityKey -- the single, row-level city_key of a single-layer city. A naive union implementation that keeps writing one group-level city_key for every matched parcel would silently write the WRONG jurisdiction key for any parcel matched against the OTHER layer in the union (e.g. a Travis parcel matched via elgin-tx-travis's polygon would get zoningJurisdictionKey='elgin-tx' if the group's representative key were used). This is exactly the class of silent-fallback defect DEV_PROCESS section 2 exists to catch, and it would not be caught by the dispatch's own prescribed check (reading sourceUrl only). Decision: HOIST_ZONES_SQL and CHUNK_ZONE_MATCH_SQL both gain a city_key column carried per-polygon-row (already implicitly true per-row in tx_zoning_district_staging, just not selected today because a single-city_key WHERE made it constant), and buildZoningCells is called with the MATCHED row's own city_key, never the group's. sourceUrl was already correct by the same mechanism (per-matched-row, not group-level) and is unaffected; this generalizes that same correctness property to the sibling field the dispatch did not name.",
+
+    "implementationPlan": [
+      "IN_SCOPE_CITIES_SQL: GROUP BY place_fips/city_name/in_city_parcels, array_agg(DISTINCT city_key) AS city_keys -- one row per place_fips, not one per (place_fips, city_key). Exclusion filter (NOT city_key = ANY(excluded)) applies before the aggregation, same semantics as today.",
+      "loadInScopeCities: city.cityKey (singular) -> city.cityKeys (array). This is a breaking shape change to the function's return type, done deliberately rather than papered over with a fake singular representative, because a fake singular would be the same silent-fallback class named above one level up the call stack.",
+      "--city flag matching: a city is selected if ANY of its cityKeys is in the override list (was: single-key equality).",
+      "HOIST_ZONES_SQL: WHERE city_key = $1 -> WHERE city_key = ANY($1::text[]); adds city_key to both the decoded CTE and the final SELECT (r5_zones_ok gains a city_key column).",
+      "CHUNK_ZONE_MATCH_SQL: r5_zones_ok's city_key threaded through hits/kept/ranked/final SELECT, so each match names which specific staged layer row it came from.",
+      "processCity: buildZoningCells({ ..., cityKey: m.city_key, ... }) per match, not city.cityKey. HOIST_ZONES_SQL invoked with city.cityKeys (array). Result object's cityKey field -> cityKeys (array), mirroring the input shape.",
+      "Logging / run-scope bookkeeping (console.error lines, startRun's scope.cities, the NO_IN_SCOPE_CITIES available list): updated to the array shape, cosmetic only, no test currently pins exact string format for these."
+    ],
+
+    "testUpdatesNeeded": [
+      "SQL-shape assertions on HOIST_ZONES_SQL's exact WHERE clause and IN_SCOPE_CITIES_SQL's row shape must change to match the new SQL text -- this is the mechanism legitimately changing, not the test being loosened.",
+      "loadInScopeCities tests: mocked query rows must return city_keys (array) not city_key (scalar), matching what the real GROUP BY/array_agg query now returns; assertions on output shape move from .cityKey to .cityKeys.",
+      "processCity tests: makeCity() helper and the two hand-built elgin/undeclared city fixtures move to cityKeys: [...] array. Every mocked CHUNK_ZONE_MATCH_SQL response row must gain a city_key field so the fix's own read path (m.city_key -> buildZoningCells) is actually exercised, not silently fed undefined.",
+      "NEW test required (not merely updated): a two-layer-city fixture (cityKeys: ['elgin-tx','elgin-tx-travis']) where CHUNK_ZONE_MATCH_SQL returns matches carrying DIFFERENT city_key values for different parcels, asserting the written zoningJurisdictionKey cell for each parcel equals THAT parcel's own matched city_key, not the group's first/either key -- this is the test that would have caught the correctness gap above and is the direct falsifier for it.",
+      "NEW test required: CITY_ALL_PARCELS_SQL is queried exactly ONCE for a multi-layer city group (was implicitly twice before the fix, once per city_key row) -- the mechanical guard for 'no more double-processing / no more ordering hazard'."
+    ]
+  },
+
+  "openQuestionsCarriedToCP2": [
+    "Whether the real production tx_zoning_district_staging schema actually has a city_key column selectable alongside geometry in the shape HOIST_ZONES_SQL/CHUNK_ZONE_MATCH_SQL will assume -- confirmed by reading the existing HOIST_ZONES_SQL/CHUNK_ZONE_MATCH_SQL source, which already scopes by city_key today, so the column exists; not yet confirmed against a live schema query, will do before the live dry run.",
+    "The exact live re-derived residue numbers per county after the fix lands (dispatch step 1) -- pending.",
+    "Delta-parcel control validation (dispatch step 2, 27 Bastrop / 50 Travis) -- pending live probing; CTX-ELGIN's close names the exact 9 confirmed-no-match Bastrop prop_ids (115146, 115734, 11958, 12043, 15249, 15534, 15540, 15657, 61258), which lets the Bastrop delta be computed by explicit set difference against the fix's own live residue rather than assumed. No equivalent persisted list of the 457 Travis prop_ids was found in doc_repo _inbox after searching CTX-ELGIN's two closes and CTX-STAGE2's close/probe artifacts -- Travis validation will need either a fresh full re-probe of the current residue set (more rigorous, more live traffic) or locating that list if it exists elsewhere. Leaning toward a fresh independent-predicate probe of the full current Travis residue against the freshly-restaged (2026-09-08/09) tx_zoning_district_staging geometry, since that is same-day-fresh and lets Bastrop and Travis both be validated by one consistent method rather than trusting an untraceable historical count for one county and a fresh probe for the other.",
+    "The 10 S-P parcels (12948, 111348, 14457, 124619, 12830, 8712013, 60891, 11364, 85259, 14535, per CTX-ELGIN's 2026-09-09 close) do not overlap the original validated 9 Bastrop (checked by direct list comparison, no common IDs) -- still need to check them against whatever ceiling this lane proposes, per the dispatch's explicit requirement."
+  ]
+}

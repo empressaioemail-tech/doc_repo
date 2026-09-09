@@ -1,0 +1,34 @@
+{
+  "lane": "CTX-WALKRULE",
+  "checkpoint": "CP1 (design / pre-build)",
+  "planRow": ["P-124"],
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-walkrule",
+  "branch": "fix/ctx-walkrule-retired-grading",
+  "confirmedBefore_any_edit": {
+    "seat": "property",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-walkrule (created fresh via git worktree add -b fix/ctx-walkrule-retired-grading origin/main; did not exist before this lane -- confirmed absent from the seat's worktree listing before creation)",
+    "branch": "fix/ctx-walkrule-retired-grading (created by the worktree add above; did not exist before)",
+    "commit": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7, read from origin/main via a fresh git fetch immediately before worktree creation -- the CTX-ORPHANS merge commit (PR #119)"
+  },
+  "missionPremise": "CTX-RETIRE closed 2026-09-09 having built recordRetirement into the LDT bake and handed this lane a six-rule walk-grading implementation under key walkGradingRuleProposal in its own close (_inbox/2026-09-09_ctx-retire_close.json), read in full per the dispatch's instruction rather than working from the dispatch's own summary. The integration seat rebuilt and pinned the publish image (_LDT_SHA=3885efad) so the bake writes recordRetirement, but never implemented the walk side, so Caldwell staging walk 716c7ad0 sits at pass=85 fail=1 on the survivor 48055:1 (HTTP 422). Source: _dispatches/2026-09-09_ctx-walkrule_dispatch.md.",
+  "planBeforeBuild": {
+    "sixRules": "Implement exactly the six rules verbatim from walkGradingRuleProposal: (1) read payload.recordRetirement, apply the REAL isEarnedRecordRetirement, never a bare truthy check; (2) an earned retirement grades its own class RETIRED, never BP-CONTENT-01, counted as retiredCount alongside servedCount; (3) BP-CONFORMANT-01 unchanged; (4) BP-CONTENT-01 unchanged at the leaf level; (5) any coverage/completeness metric excludes retired rows from its denominator; (6) prove the recognition check can REJECT a malformed marker before trusting it. Rules 3/4 are read as instructions NOT to widen either check -- plan is to insert the retirement branch strictly BETWEEN the existing BP-CONFORMANT-01 check and the existing BP-CONTENT-01 call in gradeParcelResponse (src/jobs/verify-walk.mjs), touching neither function's own internals.",
+    "importNotReimplement": "The dispatch is explicit: isEarnedRecordRetirement lives in LDT and must be IMPORTED, not reimplemented, unlike the existing REQUIRED_TIER1_FACET_PATHS mirror-plus-divergence-test pattern this file already uses for a static list. A predicate is riskier to hand-mirror than a list (DEV_PROCESS 2.4, the CTRL-1 shape: one rule, two implementations, free to disagree). Plan: add a new esbuild entry to the EXISTING scripts/build-publish-bake-clis.mjs (which already bundles four LDT CLI entrypoints into the Cloud publish image) that bundles lib/nodeFacetBakeTier1Conformant.ts itself, and a new src/lib/record-retirement.mjs that imports it at runtime -- from the Cloud image's BAKE_CLI_ROOT when set, or by bundling the LDT source on demand for local/dev/test. Risk flagged before building: this file's own import graph may pull in workspace packages or module-level side effects (a shared DB client, for instance) that behave differently at import time versus at the CLI entrypoints' own more complete bootstrapping -- to be verified against the real pinned SHA before trusting the mechanism, not assumed.",
+    "the422": "Diagnose before implementing, per the dispatch. Two candidate mechanisms: (A) the retirement is served and the walk simply has no rule for it (rule 2 fixes it) or (B) something else refuses the parcel entirely before any body is produced (rule 2 cannot fix it). Plan: read gradeParcelResponse's control flow first (does a non-ok HTTP response already short-circuit before any body-dependent check?), then verify live against the real staging endpoint rather than assume the dispatch's own historical guess (ACCESS_NOT_DEFAULTED) is still the cause.",
+    "the48055Parcel": "CTX-RETIRE found 48055:1 is likely a sentinel/bucket id (203 txgio_parcel features sharing prop_id='1'), not a real CAD account. Plan: answer the disposition question in the close (is it a real account, should it be graded at all) but do NOT touch the sampler (explicitly forbidden) and do NOT invent a new grading class outside the six rules to silently exclude it -- if evidence points to exclusion being correct, name it as an out-of-scope, operator-facing finding (DEV_PROCESS 5.4: propose, do not unilaterally remediate) rather than coding around it.",
+    "verifyByViolating": "Rule 6 requires proving the real predicate rejects a malformed marker. Plan: a test that loads the REAL isEarnedRecordRetirement from the pinned LDT source (skips with a named reason when the local environment lacks a pinned LDT checkout, matching the existing REQUIRED_TIER1_FACET_PATHS divergence test's own skip convention), pastes both a RUN 1 (a bare-truthy stand-in wrongly accepting the malformed marker) and RUN 2 (the real predicate correctly rejecting it) literally in the test body as assertions, not narrated."
+  },
+  "openQuestionsGoingIntoBuild": [
+    "Whether nodeFacetBakeTier1Conformant.ts's own transitive import graph can be esbuild-bundled standalone (outside the four existing CLI entrypoints that already import it) without unresolved specifiers -- unverified until tried against the real pinned SHA.",
+    "Whether the 422 is really mechanism A or B for 48055:1 -- unverified until a live probe of the actual staging endpoint runs.",
+    "Whether the existing BP-VALUE-01/S-family post-checks in walkParcel (which run on any 'pass' verdict, including my planned RETIRED verdict) should be shielded from a retired row's stale last-known claim -- the six rules only name BP-CONTENT-01, so the plan is to leave this interaction as-is and name it as an explicit out-of-scope observation rather than silently widening the fix's surface beyond what was asked."
+  ],
+  "FLEET_MEMORY_SCRATCH": {
+    "OPEN": [
+      "OPEN going into build: whether the local dev environment has any LDT checkout pinned to or ahead of 3885efad (P:/legacy-design-tools is confirmed on a different, unrelated branch and lacks the file entirely) -- if not, the on-demand-bundle test path will need a scratch clone at the pinned SHA for real verification, not just a code-path skip."
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "lane": "ctx-zonescope",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T18:30:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-zonescope",
+  "branch": "fix/ctx-zonescope-multilayer-city",
+  "headAtOpen": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7",
+
+  "fix1Landed": {
+    "shapeTaken": "(b), as CP1 committed to. IN_SCOPE_CITIES_SQL now GROUP BYs place_fips/city_name/in_city_parcels with array_agg(DISTINCT city_key) AS city_keys, so Elgin (elgin-tx + elgin-tx-travis) is ONE row, not two. HOIST_ZONES_SQL takes city_key = ANY($1::text[]) and selects city_key per polygon row into r5_zones_ok. CHUNK_ZONE_MATCH_SQL threads z.city_key through hits/kept/ranked to the final output. processCity hoists city.cityKeys (array) once and calls buildZoningCells with the MATCHED row's own city_key (m.city_key) per parcel, never a group-level fallback -- this is the correctness gap CP1 found beyond the dispatch's own explicit ask (which only named sourceUrl).",
+    "testResults": "Full suite: 1140/1142 pass, 0 fail, 2 skipped (baseline before any edit: 1136/1138 pass, 0 fail, 2 skipped -- 4 new tests, 0 regressions, 0 loosened assertions). New tests: (1) IN_SCOPE_CITIES_SQL text asserts array_agg+GROUP BY, (2) CHUNK_ZONE_MATCH_SQL text asserts z.city_key survives to final SELECT, (3) loadInScopeCities maps a two-city_key row into cityKeys correctly, (4) a full processCity fixture with two distinct city_keys in one group, asserting the WRITTEN zoningJurisdictionKey and zoningProvenance cells for each matched parcel equal THAT parcel's own matched layer, not the group's first key -- the direct falsifier for the correctness gap.",
+    "sourceUrlProvenanceConfirmed": "Live, 2026-09-09: a real matched Bastrop parcel (103412) carries source_url ending /FeatureServer/0; a real matched Travis parcel would carry .../FeatureServer/1 (confirmed via the live dry run below, sample rows printed and inspected directly, not assumed from the mechanism description)."
+  },
+
+  "liveDryRunAfterFix1": {
+    "invocation": "Reused the rail's own exported SQL/logic (loadInScopeCities, HOIST_ZONES_SQL, CHUNK_ZONE_MATCH_SQL, CITY_ALL_PARCELS_SQL, chunkParcelIds) directly against PRODUCTION_NEONDB_URL, apply never true, no FACTORY_DATABASE_URL write client ever opened. Bypassed assertResidueWithinDeclaration's throw deliberately (it would only surface whichever county's guard fires first, per the ORDER BY tie hazard Fix 1 also removes) so both counties' numbers could be captured in one pass. Secret fetched via gcloud secrets versions access into a shell env var for the single invocation only -- never echoed, never written to a persisted file. Announced before running (target: Elgin, ~5,455 parcels, bbox-prefiltered); completed in seconds.",
+    "elginGroupPostFix": "loadInScopeCities now returns ONE row for place_fips=23044: cityKeys=[elgin-tx, elgin-tx-travis], inCityParcels=5455. Hoisted zone polygon count (union of both layers): 3708.",
+    "bastrop_48021": { "total": 3749, "matched": 3713, "residue": 36, "declaredCeiling": 9 },
+    "travis_48453": { "total": 1706, "matched": 1200, "residue": 506, "declaredCeiling": 457 },
+    "note_vs_ctxRefusal": "Bastrop's 36 matches CTX-REFUSAL's own isolated-single-layer diagnostic exactly. Travis is 506, not CTX-REFUSAL's 507 -- see reconciliation in the CLOSE; not rounded off."
+  },
+
+  "openIntoClose": [
+    "Delta-parcel control validation (dispatch step 2) -- in progress, will be reported in full in the CLOSE.",
+    "S-P class check against Travis and the cross-repo audit of whether the codeDomainMap-exclusion mechanism exists for cities beyond Elgin/Smithville -- in progress.",
+    "Whether ANY ceiling number is safe to propose given what's been found about parcel_record_cell's current state for the delta parcels -- in progress, likely to be a significant finding."
+  ]
+}

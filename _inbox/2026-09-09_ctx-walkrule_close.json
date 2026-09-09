@@ -1,0 +1,152 @@
+{
+  "lane": "CTX-WALKRULE",
+  "planRow": ["P-124"],
+  "closeType": "lane close",
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-walkrule",
+  "branch": "fix/ctx-walkrule-retired-grading",
+  "baseCommit": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7",
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-walkrule_cp1.json",
+    "_inbox/2026-09-09_ctx-walkrule_cp2.json"
+  ],
+
+  "missionPremise": "CTX-RETIRE closed 2026-09-09 having built recordRetirement into the LDT bake and handed this lane a six-rule walk-grading implementation under key walkGradingRuleProposal in its own close (_inbox/2026-09-09_ctx-retire_close.json, read in full before implementing, per the dispatch). The integration seat rebuilt and pinned the publish image (_LDT_SHA=3885efad) so the bake writes recordRetirement, but never implemented the walk side -- a mechanism built, correct, and unreached. Caldwell staging walk 716c7ad0 sat at pass=85 fail=1, survivor 48055:1 returning HTTP 422. Source: _dispatches/2026-09-09_ctx-walkrule_dispatch.md.",
+  "completionPredicate": "All six rules from walkGradingRuleProposal implemented in verify-walk.mjs's gradeParcelResponse/runVerifyWalk, importing (not reimplementing) the real isEarnedRecordRetirement from the pinned LDT SHA; BP-CONFORMANT-01 and BP-CONTENT-01 provably untouched; retiredCount/servedCount reported with inline counting rules; the malformed-marker rejection (rule 6) verified by violating against the REAL predicate, both runs pasted literally with exit codes read from the process; a row without recordRetirement proven to grade unchanged; the 422 diagnosed with live evidence before any implementation began; the disposition of 48055:1 answered; code committed, pushed, PR'd, CI green (literal 'success' conclusion strings), merged; nothing deployed, no Cloud Build submitted, no Cloud Run job run.",
+  "completionPredicateMet": true,
+  "scopeBasis": "Exactly the six rules plus the dispatch's own diagnostic and disposition requirements, all inside hauska-factory. Deliberately excluded: any change to legacy-design-tools (read-only, via a throwaway scratch clone at the pinned SHA plus the GitHub API -- never checked out, never edited, never the live sibling-seat worktree at legacy-design-tools-ctx-retire, which this lane never touched); any change to cloudbuild.publish.yaml's _LDT_SHA pin; any change to the sampler (selectSweepParcels / selectJurisdictionCohort, both untouched); any widening of BP-CONFORMANT-01 or BP-CONTENT-01's own code (responseCarriesConformantV1, gradeTier1Content, classifyRequiredLeaf, REQUIRED_TIER1_FACET_PATHS -- none edited); any deploy, Cloud Build submission, or Cloud Run job execution (the integration seat rebuilds the image from this merge and re-runs Caldwell). Push/PR/merge WAS taken, after confirming with the operator that the dispatch's own later reference to 'your merged main' meant this lane should self-merge (this fleet's established norm, e.g. today's sibling CTX-ORPHANS lane, PR #119) rather than stop at a local commit; a GitHub Actions PR merge is not a deploy, Cloud Build submission, or Cloud Run job run.",
+
+  "pullRequests": [
+    {
+      "number": 120,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/120",
+      "title": "fix(P-124/CTX-WALKRULE): grade earned record retirement as its own class, RETIRED",
+      "branchCommit": "880f80f2f62d817b1f0ded47a289ddb64c7f42ba fix(P-124/CTX-WALKRULE): grade earned record retirement as its own class, RETIRED",
+      "ciConclusionStrings": [
+        {"name": "gate8", "status": "completed", "conclusion": "success"},
+        {"name": "test", "status": "completed", "conclusion": "success"},
+        {"name": "gate8", "status": "completed", "conclusion": "success"},
+        {"name": "test", "status": "completed", "conclusion": "success"}
+      ],
+      "ciNote": "four check-runs (push + pull_request events, two names each), read as the literal conclusion string 'success' via `gh api repos/.../commits/<sha>/check-runs`, never from `gh pr checks`'s 'pass' summary, per AGENT_CONTRACT section 5.",
+      "mergeMethod": "squash",
+      "MERGE_COMMIT": "ce19c3b7fa83d40301c683fd14a5cd455c23bb58"
+    }
+  ],
+  "MERGE_COMMIT_FOR_THE_INTEGRATION_SEAT": "ce19c3b7fa83d40301c683fd14a5cd455c23bb58",
+
+  "the422Diagnosis": {
+    "mechanismChosen": "B -- a serve-guard refusal, never reaching a body with recordRetirement, so rule 2 cannot and does not clear this parcel.",
+    "mechanismRejected": "A -- the retirement is served but the walk grades it wrong. Ruled out because gradeParcelResponse's control flow (unchanged by this diff) returns BP-MEANING-01 on any non-ok HTTP response BEFORE the retirement-aware branch is ever reached; a 422 never produces a JSON body the retirement check could act on in the first place.",
+    "evidence": [
+      "Live probe, 2026-09-09: `curl -sS -w '\\nHTTP_STATUS:%{http_code}\\n' https://smart-site-factory.vercel.app/site/api/spine/cortex/api/brokerage/v1/place/node/48055:1/facets` returned `{\"error\":\"SITUS_PUNCTUATION_ONLY\",\"errorClass\":\"serve_refused\",\"message\":\"situs is punctuation only\"}` / `HTTP_STATUS:422`.",
+      "Code read (LDT pinned SHA 3885efad, artifacts/api-server/src/routes/brokerageNodeFacets.ts): the node/:parcelNodeId/facets handler's Promise.all is wrapped in try/catch; on err.code === 'ACCESS_NOT_DEFAULTED' || 'SITUS_PUNCTUATION_ONLY' it responds 422 and returns BEFORE `snapshot` (and therefore any recordRetirement-bearing body) is produced. The throw originates in lib/serveGuards.ts's refusePayloadAtServe -> assertSitusNotPunctuationOnly, called from loadBakedNodeFacetSnapshot.",
+      "Correction to the dispatch's own prior assumption: it named ACCESS_NOT_DEFAULTED as the historical 422 cause for this program. The live cause for 48055:1 specifically is SITUS_PUNCTUATION_ONLY -- a different code, but the same mechanism SHAPE (a pre-body serve-guard throw). Recording this because DEV_PROCESS 3.2a requires a correction to carry the same evidentiary standard as the claim it corrects: this is quoted from the live response, not inferred from the dispatch's guess.",
+      "test/publish.test.mjs: 'CTX-WALKRULE gradeParcelResponse: a non-ok HTTP response short-circuits to BP-MEANING-01 before recordRetirement is ever read' -- injects an isEarnedRecordRetirement that flips a `called` flag if invoked; asserts grade.grade === 'BP-MEANING-01', grade.reason === 'HTTP 422', and called === false, against exactly the live 422 body captured above."
+    ]
+  },
+
+  "the48055ParcelDisposition": {
+    "isItAWellFormedAccount": "No, most likely not. CTX-RETIRE's own finding (203 txgio_parcel features share prop_id='1' in Caldwell, 227 share '0', almost certainly stratmap25-landparcels sentinel/bucket ids) is corroborated from an independent angle by this lane's live probe: its baked situsAddress is punctuation-only, consistent with a degenerate identity rather than a real parcel with a real CAD address.",
+    "shouldItBeGradedAtAll": "That is a sampler-scoped question and this lane did not answer it by changing code. The dispatch is explicit that the sampler (selectSweepParcels / selectJurisdictionCohort) must not change, on the grounds that adjusting a sampler to avoid a failure it correctly found is sampling around the problem -- that judgement stands and this lane did not revisit it. Excluding this specific parcel would require either a sampler change (forbidden) or a new grading class outside the six rules (scope creep this dispatch's own 'rules 3/4 forbid widening anything' spirit argues against inventing unasked). Disposition: named as an open finding for the operator/next lane below, not coded around, and specifically NOT made to pass silently.",
+    "didThisFixChangeItsOutcome": "No. It fails today (HTTP 422, BP-MEANING-01) and will continue to fail after the integration seat rebuilds and re-runs, for the reason diagnosed above, which this fix neither causes nor cures."
+  },
+
+  "rule6_bothRuns": {
+    "test": "'CTX-WALKRULE verify by violating (rule 6): the REAL isEarnedRecordRetirement rejects a malformed marker a bare-truthy check would have wrongly accepted' -- test/publish.test.mjs. Loads the REAL predicate via src/lib/record-retirement.mjs's loadIsEarnedRecordRetirement against a throwaway scratch clone of legacy-design-tools pinned to 3885efadb789942a479b475d34d1518807756e0a (git fetch --depth 1 origin <sha>, the exact command cloudbuild.publish.yaml's own LDT-fetch step uses), pnpm-installed scoped to --filter @workspace/api-server --filter @workspace/cad-ingest only.",
+    "malformedMarker": "{ status: \"retired\" } -- rule 6's own example: every other required field (verdict, authority, scopeSearched, asOf, basis) missing.",
+    "run1_red": "A bare-truthy stand-in `(v) => !!v` -- the exact tolerance rule 1 forbids, and what this walk did NOT ship -- applied to the malformed marker: `bareTruthyStandIn(RETIRED_MALFORMED)` === true. Demonstrated in the test as the WRONG behavior this rule exists to prevent, not asserted as correct.",
+    "run2_green": "The real predicate applied to the same malformed marker: `isEarnedRecordRetirement(RETIRED_MALFORMED)` === false. Also verified: a genuinely well-formed retirement recognized (true), null rejected (false), and a lastSeenTaxYear type violation rejected (false). Wired end to end through gradeParcelResponse itself: the malformed marker grades something other than RECORD_RETIRED ('RETIRED'); a well-formed one grades RECORD_RETIRED.",
+    "exitCodes": "node --test test/publish.test.mjs with LDT_ROOT set to the scratch clone: exit 0, this specific test passing (verified in isolation via --test-name-pattern and read directly from the process, not a pipe). Without LDT_ROOT set (the default local/CI environment, no pinned LDT checkout present), the same test SKIPS with an explicit named reason ('isEarnedRecordRetirement UNMEASURED here: ...') rather than silently passing -- this is the DEV_PROCESS-required distinction between an absence and an untested claim.",
+    "twoRealBugsFoundByThisVerification": [
+      "DATABASE_URL: the bundle's transitive graph (a co-bundled LDT lib module, unrelated to isEarnedRecordRetirement itself) throws 'DATABASE_URL must be set' at module-eval time, and factory-verify-walk's Cloud Run env (cloudbuild.publish.yaml) never sets that variable -- only FACTORY_DATABASE_URL. Without this verification pass this would have crashed the real deployed walk on its very first call. Fixed in src/lib/record-retirement.mjs with a placeholder set only for the duration of the one import (node-postgres Pool construction is lazy, no real connection occurs).",
+      "esbuild CJS-interop under node's test runner: the bundle's graph pulls in yauzl (lazily requires 'fs'); under plain `node` the bundle imported fine, under `node --test` it threw 'Dynamic require of \"fs\" is not supported' from esbuild's own generated shim -- reproduced deterministically both ways in a minimal isolated repro before concluding it was real. Fixed by adding the same require-shim banner scripts/build-publish-bake-clis.mjs's four existing bundle entries already carry, which the first draft of this new entry had omitted."
+    ]
+  },
+
+  "proofNonRetiredRowsGradeUnchanged": {
+    "regressionSuite": "npm test in the fresh worktree before any edit: 1138 tests, 1136 pass, 0 fail, 2 skipped. After the full CTX-WALKRULE diff: 1146 tests, 1143 pass, 0 fail, 3 skipped (exactly the 8 new tests added, 7 passing unconditionally + 1 that correctly skips without a pinned LDT checkout). Every one of the original 1136 passing tests still passes, unmodified, unchanged assertions -- proving nothing about existing grading behavior moved.",
+    "dedicatedTest": "'CTX-WALKRULE gradeParcelResponse: a row WITHOUT recordRetirement grades exactly as it did before this rule existed, and the predicate is never even called' -- injects an isEarnedRecordRetirement that would flip a `called` flag and return true if invoked; asserts grade.verdict==='pass', grade.grade==='BP-MEANING-01' (identical to the pre-existing gold-parcel-passes test), and called===false."
+  },
+
+  "retiredCountServedCount": {
+    "retiredCount": "count of walked rows whose grade.grade === RECORD_RETIRED (the exported constant, string value \"RETIRED\") -- i.e. isEarnedRecordRetirement(payload.recordRetirement) returned true for that row (rule 2).",
+    "servedCount": "count of walked rows that are NOT the single BP-VERIFY-01 broken fixture AND NOT graded RECORD_RETIRED -- i.e. every row graded against the live four-state BP-CONTENT-01 contract, whether it passed or failed that contract.",
+    "reconciliationIdentity": "parcelCount === retiredCount + servedCount + 1 always holds (the +1 is the one synthetic broken-parcel fixture every walk appends). Asserted directly in 'CTX-WALKRULE runVerifyWalk: retiredCount and servedCount are disjoint measured classes...' rather than left to travel unchecked (DEV_PROCESS 1.4).",
+    "denominatorExclusion_rule5": "verify-walk.mjs computes no separate percent-coverage/completeness metric over a county beyond retiredCount/servedCount themselves (confirmed by reading the whole file before implementing: sweep/jurisdictionCohort/valueGrade/sFamilies all report absolute counts, never a percentage) -- so rule 5's 'exclude retired rows from any coverage denominator, or report the split explicitly' is satisfied by retiredCount/servedCount being reported as the explicit split itself, with no pre-existing percentage metric left to pollute."
+  },
+
+  "verificationRunsSoFar": {
+    "fullSuiteBeforeAnyChange": "npm test (fresh worktree, npm install first): 1138 tests, 1136 pass, 0 fail, 2 skipped, exit 0.",
+    "fullSuiteAfterChange_defaultEnv": "npm test: 1146 tests, 1143 pass, 0 fail, 3 skipped, exit 0.",
+    "fullSuiteAfterChange_withLDT_ROOT": "same suite with LDT_ROOT pointed at the pinned-SHA scratch clone: 112 of the 112 tests in test/publish.test.mjs run (none skip); 111 pass, 1 fails -- an UNRELATED, PRE-EXISTING test ('walk facet path list matches LDT REQUIRED_TIER1_FACET_PATHS'), not touched by this diff. See incidentalFinding below.",
+    "exitCodesReadHow": "every run above read directly from the process (`node --test ...; echo $?` / the test runner's own summary line), never through a pipe."
+  },
+
+  "incidentalFinding_notFixed_outOfScope": {
+    "what": "test/publish.test.mjs's 'walk facet path list matches LDT REQUIRED_TIER1_FACET_PATHS' test, which reads the LDT source as text and compares it to this repo's own REQUIRED_TIER1_FACET_PATHS mirror, fails when actually run against the pinned SHA (it normally SKIPS locally because no LDT checkout at or after that SHA has been present in this dev environment before now). The pinned SHA's real list carries 8 more required paths (baseFacts.cadRoll.marketValue/assessedValue/landValue/improvementValue/livingAreaSqft, baseFacts.yearBuilt/legalDescription/exemptionCodes) than this repo's own mirror.",
+    "whyNotFixedHere": "REQUIRED_TIER1_FACET_PATHS is exactly the kind of thing rules 3/4 forbid widening without a named ruling, and this divergence is unrelated to record retirement -- it predates this lane (this diff does not touch REQUIRED_TIER1_FACET_PATHS) and was only ever hidden by the test's own skip-when-LDT-absent behavior, never by this diff. Fixing it is a separate, real card (likely 'dollar fields' / P-82-lite-adjacent, matching the cadRoll.* field names) for the operator to scope and assign.",
+    "recommendation": "file as a durable backlog item (DEV_PROCESS 5.3): the walk's BP-CONTENT-01 required-path list is stale relative to the currently-pinned LDT bake, and every county's walk may be passing on a weaker content bar than the bake now actually satisfies."
+  },
+
+  "constraintsHonored": [
+    "no Cloud Run job executed",
+    "no Cloud Build submitted",
+    "no deploy, bake, publish, or walk run against any live target",
+    "cloudbuild.publish.yaml's _LDT_SHA pin untouched",
+    "the sampler (selectSweepParcels, selectJurisdictionCohort) untouched -- zero lines changed in either function",
+    "BP-CONFORMANT-01 unchanged: responseCarriesConformantV1 not edited, still runs before the retirement check, proven by a dedicated test where the retirement predicate throws if called and the test still passes on the schema-version failure alone",
+    "BP-CONTENT-01 unchanged: gradeTier1Content, classifyRequiredLeaf, REQUIRED_TIER1_FACET_PATHS, SERVE_STRIPPED_LEAVES not edited -- an earned-retired row now skips the CALL to gradeTier1Content entirely rather than being exempted from a failure inside it",
+    "legacy-design-tools: read-only. A throwaway scratch clone at the pinned SHA (never the live sibling-seat worktree legacy-design-tools-ctx-retire, never checked out or written to) plus the GitHub commits API. No checkout, branch, fetch, or write against any tracked legacy-design-tools worktree.",
+    "hauska-engine, hauska-map: not touched",
+    "isEarnedRecordRetirement imported at runtime from the pinned LDT source, never reimplemented in hauska-factory",
+    "worktree created from origin/main with git worktree add before any edit; seat/worktree/branch/commit confirmed in this lane's first tool outputs before any file was touched",
+    "doc_repo edits (this close plus its two checkpoints) left UNCOMMITTED per AGENT_CONTRACT section 6 and listed below"
+  ],
+
+  "docRepoEditsLeftUncommitted": [
+    "_inbox/2026-09-09_ctx-walkrule_cp1.json (new)",
+    "_inbox/2026-09-09_ctx-walkrule_cp2.json (new)",
+    "_inbox/2026-09-09_ctx-walkrule_close.json (new, this file)"
+  ],
+
+  "leave_behind": {
+    "openInteraction_bpValueAndSFamilies_notShielded": "walkParcel runs BP-VALUE-01 and the P5 S-family checks on ANY 'pass' verdict, including the new RECORD_RETIRED verdict this lane introduced (RECORD_RETIRED is graded verdict:'pass' so it does not flip the walk's overall result). A retired row whose stale last-known zoning claim happens to claim unincorporated, or that trips an S-rule, could therefore still be re-graded to a BP-VALUE-01 or S-rule failure downstream of RECORD_RETIRED. The six rules in walkGradingRuleProposal only name BP-CONTENT-01, so this lane deliberately left that interaction as-is rather than widening the fix's surface to systems the six rules never mention. Named here as an open question for the operator: should RECORD_RETIRED also shield a row from BP-VALUE-01/S-family re-grading on its necessarily-stale last-known claim, or is re-grading a retired row's stale facts against those checks intentional and out of this lane's remit to decide.",
+    "sentinelParcelSamplerQuestion": "48055:1 (and likely other txgio_parcel sentinel/bucket ids sharing degenerate prop_ids like '0'/'1') will keep surfacing in the jurisdiction-stratified cohort and keep failing on a serve-guard 422 unrelated to content or retirement. This lane did not touch the sampler (forbidden) or invent an exclusion class (out of the six rules' scope). Recommend a future card: define whether a punctuation-only-situs / sentinel-id parcel is a real account at all, and if not, a NAMED class with its own counting rule for the sampler to exclude it by -- not this lane's call to make unilaterally (DEV_PROCESS 5.4).",
+    "incidentalFinding": "see incidentalFinding_notFixed_outOfScope above -- REQUIRED_TIER1_FACET_PATHS is stale relative to the pinned LDT bake by 8 paths, discovered only because this lane's own verification ran with a real pinned-SHA LDT checkout available for the first time locally.",
+    "scratchArtifactsUsedForVerification": "a throwaway git clone of legacy-design-tools pinned to 3885efadb789942a479b475d34d1518807756e0a lives under this session's scratchpad directory (outside any tracked worktree, never committed anywhere) -- used only to exercise the real isEarnedRecordRetirement during this lane's own verification. Not needed by the integration seat: the production path (BAKE_CLI_ROOT) is independently verified against a real build of the same pinned SHA via scripts/build-publish-bake-clis.mjs's own output, placed inside the hauska-factory project tree to prove the external pg import resolves the same way /app/bakes resolves against /app/node_modules in the real Cloud image."
+  },
+
+  "FLEET_MEMORY_SCRATCH": {
+    "LESSON": [
+      "A predicate this dispatch says to IMPORT rather than reimplement can be imported at runtime by adding a new esbuild entry (bundling the library file itself, not a CLI wrapper) to an EXISTING bake-CLI-bundle build script, then dynamically importing the bundle. Two non-obvious runtime hazards this exposed and their fixes: (1) a transitively-bundled shared DB-client module can throw at MODULE-EVAL time if its expected env var (here, DATABASE_URL, distinct from this program's own FACTORY_DATABASE_URL) is absent -- fixable with a placeholder set only for the duration of the one import, since a `pg` Pool's construction is lazy and never actually connects; (2) esbuild's generated CJS-interop shim for a lazily-`require`d Node builtin deep in the bundle graph can throw 'Dynamic require of X is not supported' specifically under node's OWN test-runner module loader while working fine under plain `node` -- fixed by the SAME `globalThis.require = createRequire(import.meta.url)` banner an existing sibling bundle script already carries for its own entries; a new entry added to a build script with multiple existing entries needs to inherit ALL of that script's existing accommodations, not just its entry-point list.",
+      "Diagnosing a specific parcel's HTTP 422 by reading serve-side code alone can name the right MECHANISM SHAPE (a pre-body serve-guard throw) while getting the specific CODE wrong (SITUS_PUNCTUATION_ONLY, not the historically-assumed ACCESS_NOT_DEFAULTED) -- a live curl against the real staging endpoint settled it in one request and is cheap enough to always do before trusting a historical assumption, even one repeated in a dispatch's own text."
+    ],
+    "GROUND_TRUTH": [
+      "GROUND-TRUTH (2026-09-09, live curl against staging): Caldwell 48055:1's facets endpoint returns HTTP 422 {\"error\":\"SITUS_PUNCTUATION_ONLY\",\"errorClass\":\"serve_refused\",\"message\":\"situs is punctuation only\"}.",
+      "GROUND-TRUTH (2026-09-09, gh api commits/<sha>): legacy-design-tools commit 3885efadb789942a479b475d34d1518807756e0a is 'fix(P-124/CTX-retire): declared record retirement for an account absent from the current CAD roll (#647)', confirmed as the exact pin cloudbuild.publish.yaml's _LDT_SHA carries.",
+      "GROUND-TRUTH (2026-09-09, this lane's own bundling test): lib/nodeFacetBakeTier1Conformant.ts at the pinned SHA has zero unresolved specifiers once @workspace/api-server and @workspace/cad-ingest are pnpm-installed -- its own direct imports are 100% relative/in-repo, and its full transitive closure needs exactly those two workspace packages plus the Node builtins already externalized by the existing bundle config."
+    ],
+    "DEAD_END": [
+      "Assuming NODE_PATH would make an in-process ESM `import()` of a bundle placed outside the consuming project's own directory tree resolve that project's `pg` dependency -- NODE_PATH is documented as CJS-require-only and is not consulted by the ESM loader at all; the bundle must live somewhere under the consuming project's own root so ordinary ancestor-directory node_modules resolution finds it (which is also, independently, exactly why /app/bakes/*.mjs resolves 'pg' against /app/node_modules/pg in the real Cloud image -- not because of the Dockerfile's NODE_PATH env var, which only matters for CJS)."
+    ],
+    "OPEN": [
+      "OPEN: whether RECORD_RETIRED should also shield a row from the existing BP-VALUE-01/S-family post-checks in walkParcel -- named above, not resolved.",
+      "OPEN: whether 48055:1-shaped sentinel parcels should be excluded from the jurisdiction-stratified cohort by a named class -- a sampler-level decision explicitly out of this lane's authority.",
+      "OPEN: whether REQUIRED_TIER1_FACET_PATHS should be widened to match the pinned LDT bake's real 8-additional-path list -- a separate card, not this one."
+    ],
+    "promotionNote": "Not self-promoted to durable memory. The planner gates promotion."
+  },
+
+  "whatRemainsOpen": [
+    "the integration seat rebuilds the publish image from merge commit ce19c3b7fa83d40301c683fd14a5cd455c23bb58 and re-runs the Caldwell walk",
+    "48055:1 will still fail (HTTP 422, BP-MEANING-01) after the rebuild -- this is expected and diagnosed, not a regression to chase",
+    "the operator rules on whether BP-VALUE-01/S-family checks should shield a RECORD_RETIRED row",
+    "the operator rules on whether/how to exclude sentinel-id parcels like 48055:1 from the sampler, with a named class and counting rule if so",
+    "a separate card widens REQUIRED_TIER1_FACET_PATHS to match the pinned LDT bake's real list (8 additional cadRoll/yearBuilt/legalDescription/exemptionCodes paths), discovered incidentally by this lane and explicitly not fixed here",
+    "doc_repo checkpoint and close artifacts are uncommitted, awaiting the planner"
+  ],
+  "honestPartialCloseNote": "All six rules are implemented, imported (not reimplemented) from the real pinned LDT source, verified by violating against that real source with both runs pasted literally, and merged to main with green CI. What is deliberately incomplete is everything the dispatch put out of scope: the sampler, BP-CONFORMANT-01/BP-CONTENT-01's own internals, and any deploy/build/job run. What is honestly still open is named above rather than folded into a narrated full close: an unresolved interaction between the new RECORD_RETIRED class and the pre-existing BP-VALUE-01/S-family checks, the sentinel-parcel sampler question, and an incidental unrelated REQUIRED_TIER1_FACET_PATHS staleness finding."
+}
