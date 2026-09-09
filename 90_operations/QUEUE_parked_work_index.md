@@ -2,7 +2,7 @@
 id: QUEUE_parked_work_index
 title: Queued and parked work index (single lookup for everything deferred)
 status: active
-last_updated: 2026-08-05
+last_updated: 2026-09-09
 applies_to: portfolio
 related: [00_current_state, onboarding_defect_class_backlog, 76j_smartsite_launch_readiness_program, OPS-10_parcel_flag_spec, 76i_smartsite_contribution_economy_roadmap]
 owner: nick
@@ -186,6 +186,13 @@ Four PRs from older programs closed after review (`_inbox/2026-08-08_STALE_PR_di
 |---|---|---|
 | The 2026-08-02 zombie ledger's GATE has now CLEARED (corrected Phase C landed; block13-cert-grade generalized; block13 7/7 held through the whole envelope saga). The deliberate cleanup pass it defers to is now RUNNABLE | `_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md` | trigger condition met — schedule the one-deliberate-PR-per-repo pass |
 | Vercel project `command-center` (jade) still exists parallel to the live `cmdcenter` (blush) — operator decision owed: delete or explicitly label as not-live | zombie ledger section C | operator call; pairs with the CC manifest rebuild |
+
+## Process and scaling
+
+| Item | Detail home | Trigger |
+|---|---|---|
+| **CTX scalability retrospective and the six-runbook consolidation.** Six onboarding runbooks exist, none stopped the six-county arc; the deliverable is ONE consolidated artifact that supersedes them by status flip, never a seventh. Also carries the SC-3 human-hours finding (kill trigger armed on the cheap half), the county-profile-record proposal, the preflight that refuses, and an open fork | `_inbox/2026-09-09_ctx_scalability_retrospective_PICKUP.md` | **Instrument-readable:** six of six CTX counties with a passed production verify walk on the post-`BP-CONTENT-01` grader. Not before, and not on judgment |
+| ~~DISCUSSION (post-verdict): HOLISTIC PROCESS REVIEW, 2026-08-05~~ | ABSORBED 2026-09-09 into the retrospective pickup above | its "after the verdict review" trigger was soft and the row drifted 35 days; kept visible as the worked example of why the new trigger is instrument-readable |
 
 ## Engineering hygiene / small items
 
