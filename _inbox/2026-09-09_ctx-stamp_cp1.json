@@ -1,0 +1,45 @@
+{
+  "lane": "ctx-stamp",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T00:00:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/legacy-design-tools",
+    "worktree": "P:/tmp/legacy-design-tools-ctx-stamp",
+    "branch": "fix/ctx-stamp-elgin-both-layers",
+    "head": "69de8fe6bc3c059ce89ccc988b8df72f312eee94",
+    "worktreeNote": "STANDALONE CLONE from origin/main (post #646 ctx-mirror), path equals worktree. The primary legacy-design-tools worktree (P:/seat-worktrees/property/legacy-design-tools) is dirty on feat/p85-portal-ruling-2026-09-01, unrelated, never opened. Registered in _catalog/seat_register.json as legacy-design-tools-ctx-stamp before any git write."
+  },
+
+  "step1_liveMeasurement_txZoningDistrictStaging": {
+    "queryStore": "neondb (Neon project cortex-prod, fancy-fire-06136146), connection CORTEX_DATABASE_URL, read-only session (SET default_transaction_read_only = on)",
+    "queryForElgin": "SELECT layer_role, parent_county_fips, source_layer_id, count(*) FROM tx_zoning_district_staging WHERE city_key = 'elgin-tx' GROUP BY 1,2,3;",
+    "result": [
+      { "layer_role": "base", "parent_county_fips": "48021", "source_layer_id": "0", "n": 3220 }
+    ],
+    "travisCheck": "SELECT city_key, layer_role, parent_county_fips, source_layer_id, count(*) FROM tx_zoning_district_staging WHERE parent_county_fips = '48453' GROUP BY 1,2,3,4;",
+    "travisResult": [
+      { "city_key": "austin-tx", "layer_role": "base", "parent_county_fips": "48453", "source_layer_id": "0", "n": 21953 },
+      { "city_key": "lakeway-tx", "layer_role": "base", "parent_county_fips": "48453", "source_layer_id": "0", "n": 749 },
+      { "city_key": "pflugerville-tx", "layer_role": "base", "parent_county_fips": "48453", "source_layer_id": "0", "n": 725 }
+    ],
+    "reading": "Layer 0 (Bastrop-side, 3,220 rows) is staged. Layer 1 (Travis-side) is staged NOWHERE: zero rows for city_key='elgin-tx' under any layer_role, and county 48453 has exactly three staged cities (Austin, Lakeway, Pflugerville) -- Elgin is not among them under any city_key. This CONFIRMS the dispatch's diagnosis at face value: Elgin's Travis-side polygons were never staged into tx_zoning_district_staging."
+  },
+
+  "decisiveFinding_missionMisscoped": {
+    "headline": "Step 1's diagnosis is correct, but the dispatch's named FIX MECHANISM for step 2 is factually impossible: stampCountyZoning() cannot write to tx_zoning_district_staging under any invocation, dry-run or live. This is not a scope judgment call -- it is verified structurally, four independent ways.",
+    "evidence": [
+      "1) stampCountyZoning() (lib/cad-ingest/src/txgio/zoning-stamp-db.ts:156-272) issues exactly one write: a raw SQL UPDATE against table `txgio_parcel` (zoning-stamp-db.ts:138-145), setting columns zoning_district/zoning_jurisdiction, keyed on (county_fips, feature_index). It contains no reference to tx_zoning_district_staging anywhere in the file.",
+      "2) grep across the entire legacy-design-tools checkout for tx_zoning_district_staging / txZoningDistrictStaging / ZONING_STAGING returns exactly 2 hits, both comments in artifacts/api-server/src/lib/structuralFactToFacetsWire.ts referring to the table conceptually (from CTX-MIRROR, 2026-09-09) -- zero schema definitions, zero write paths.",
+      "3) the DB connection differs: zoning-stamp-db.ts's CLI (zoning-cli.ts:156) reads from process.env.DATABASE_URL (legacy-design-tools' own store, where txgio_parcel lives); tx_zoning_district_staging lives in neondb under CORTEX_DATABASE_URL, a different store entirely (confirmed live, this session).",
+      "4) tx_zoning_district_staging's real writer is hauska-engine's packages/engine-core/scripts/stage-tx-zoning-district.mjs, which fetches live ArcGIS FeatureServer polygons per hauska-engine's OWN registry (packages/engine-core/src/zoning-staging/registry.ts), REPLACE-by-city_key, gated behind ZONING_STAGING_PATH=1 and --apply, writing to CORTEX_DATABASE_URL. This is a different repo, a different registry, and a different write mechanism than anything CTX-ELGIN touched or that this dispatch scoped me into."
+    ],
+    "additionalGap": "Even setting the repo mismatch aside, hauska-engine's own ZONING_STAGING_REGISTRY (packages/engine-core/src/zoning-staging/registry.ts:51-116) has exactly two entries total -- 'elgin-tx' (pointing only at FeatureServer/0, layer 0) and 'smithville-tx'. There is no second entry for Elgin's Travis-side layer 1, and the registry's own resolver keys strictly one entry per cityKey (registry.ts:118-132) -- so even a hauska-engine-scoped agent could not stage layer 1 today without FIRST adding a new registry entry there (the same kind of change CTX-ELGIN made in legacy-design-tools' own zoning-layers.ts, but never mirrored into this second, independent registry)."
+  },
+
+  "whatThisMeansForStep2Through4": "Step 2 as literally specified ('stage Elgin's zoning polygons for BOTH layers via the existing stamp path... use stampCountyZoning()') cannot be executed from this dispatch's scope: legacy-design-tools has no code path that reaches tx_zoning_district_staging, so no invocation of stampCountyZoning() -- dry-run or live -- moves that table by one row. Any diff I produced here would necessarily update txgio_parcel only, which CTX-ELGIN already did and reported (PR #643, live, verified) -- and which this dispatch itself opens by stating did NOT reach the rail. Producing a second no-op diff against the same wrong table would not be a fix; it would be exactly the kind of false-positive close DEV_PROCESS 3.2 and this dispatch's own closing paragraph warn against. Steps 3 and 4 (re-measure residue, compare to 9/457) are gated on step 2 actually landing rows in tx_zoning_district_staging, which is not possible from here.",
+
+  "recommendation": "This is a genuine mission-misscoping, not a refusal: the real fix is a small, well-precedented change (one new ZONING_STAGING_REGISTRY entry for Elgin's Travis-side layer 1, mirroring what CTX-ELGIN already did in legacy-design-tools' own registry) plus one gated ETL run (ZONING_STAGING_PATH=1, --apply, against CORTEX_DATABASE_URL) -- but both live in hauska-engine, a different repo than the one worktree this dispatch registered me into, and the ETL run is a live production write this dispatch never authorized. Recommend either (a) re-dispatching this same finding to a hauska-engine-scoped lane with an explicit worktree + write authorization, or (b) the operator authorizing this lane to open a hauska-engine worktree and proceed, before any further code is written.",
+
+  "stopping": "Per the dispatch's own step 1 instruction ('if it is present, STOP and report, because then the problem is elsewhere and this mission is misscoped') and DEV_PROCESS 3.2 ('the brief's numbers [and file pointers] are the planner's, and the planner is often wrong -- say so'), stopping here rather than proceeding on a premise proven false. Filing CP2 as not-applicable (no build phase entered) and closing as an honest partial."
+}

@@ -1,0 +1,73 @@
+{
+  "lane": "ctx-stamp",
+  "planRow": "P-124",
+  "checkpoint": "CLOSE",
+  "filedAt": "2026-09-09T00:00:00Z",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/legacy-design-tools-ctx-stamp (standalone clone, registered as legacy-design-tools-ctx-stamp in _catalog/seat_register.json)",
+  "branch": "fix/ctx-stamp-elgin-both-layers",
+  "headAtOpen": "69de8fe6bc3c059ce89ccc988b8df72f312eee94",
+
+  "pr": "not applicable: no code changed in legacy-design-tools. See decisiveFinding below for why.",
+
+  "closedGreenOrHonestPartial": "HONEST PARTIAL -- STOPPED, NOT GREEN. Step 1's measurement is done and conclusive. Steps 2-4 could not be executed from this dispatch's scope because the named fix mechanism (stampCountyZoning(), legacy-design-tools) cannot write to the table the rail reads (tx_zoning_district_staging, neondb) under any invocation. This is reported plainly per the dispatch's own instruction, not smoothed over.",
+
+  "missionPremise": "P-124 CTX-STAMP dispatch (_dispatches/2026-09-09_ctx-stamp_dispatch.md): CTX-ELGIN (PR #643) wired Elgin's Travis-side zoning layer and verified against txgio_parcel, but the parcel-r5-zoning rail (hauska-factory) reads a different table, tx_zoning_district_staging WHERE layer_role='base', which Elgin's polygons were never staged into with layer 1 wired -- confirmed live by the integration seat running the rail against Bastrop 2026-09-09 (LAYER_GAP_RESIDUE_EXCEEDED). Dispatch named stampCountyZoning() (lib/cad-ingest/src/txgio/zoning-stamp-db.ts) as 'the existing stamp path' to re-stage both layers and asked for a re-measured residue.",
+
+  "completionPredicate": "Would have been satisfied by: (1) live measurement of tx_zoning_district_staging's current Elgin state [DONE, CP1], (2) staging both layers via stampCountyZoning() [BLOCKED -- see decisiveFinding], (3) re-measured per-county residue with denominators [NOT DONE -- gated on 2], (4) a stated agreement/disagreement against CTX-ELGIN's probed 9/457 [NOT DONE -- gated on 2].",
+
+  "scopeBasis": "Dispatch scoped this lane to legacy-design-tools only ('You are the property seat. legacy-design-tools is yours'), one registered worktree, no sub-agents, do not edit hauska-factory, do not deploy. The decisive finding (below) discovered that the actual fix requires a hauska-engine code change plus a live write against CORTEX_DATABASE_URL -- both outside this scope and this dispatch's authorization. Stopped rather than silently expanding scope into a different repo and a live production write on my own initiative.",
+
+  "step1_measurement": {
+    "countingRule": "SELECT layer_role, parent_county_fips, source_layer_id, count(*) FROM tx_zoning_district_staging WHERE city_key='elgin-tx' (and, separately, WHERE parent_county_fips='48453' with no city_key filter, to rule out a different-key staging), read-only session against neondb via CORTEX_DATABASE_URL.",
+    "result": "Layer 0 (Bastrop, 48021, source_layer_id=0): 3,220 rows, layer_role='base'. Layer 1 (Travis, 48453): ZERO rows under city_key='elgin-tx' at any layer_role; and county 48453 has exactly three staged cities total (austin-tx 21,953; lakeway-tx 749; pflugerville-tx 725) -- Elgin is absent from Travis-side staging under any key.",
+    "diagnosisVerdict": "CONFIRMED. Layer 1 is genuinely absent from tx_zoning_district_staging, exactly as the dispatch's diagnosis stated."
+  },
+
+  "decisiveFinding": {
+    "headline": "The dispatch's named fix mechanism is factually impossible, independent of the diagnosis being correct. stampCountyZoning() (legacy-design-tools) writes ONLY to txgio_parcel (zoning-stamp-db.ts:138-145, a raw UPDATE keyed on county_fips+feature_index) and never references tx_zoning_district_staging anywhere in the file or anywhere else in the repo (whole-repo grep: 2 hits, both comments, zero code paths). It also runs against a different database connection (DATABASE_URL, legacy-design-tools' own store) than tx_zoning_district_staging's real store (CORTEX_DATABASE_URL / neondb).",
+    "realWritePath": "tx_zoning_district_staging is populated exclusively by hauska-engine's packages/engine-core/scripts/stage-tx-zoning-district.mjs, which fetches live ArcGIS FeatureServer polygons per hauska-engine's OWN city registry (packages/engine-core/src/zoning-staging/registry.ts) with REPLACE-by-city_key semantics, gated behind ZONING_STAGING_PATH=1 and --apply, against CORTEX_DATABASE_URL. This is a different repo, a different registry, and a different mechanism than anything this dispatch scoped.",
+    "compoundingGap": "hauska-engine's ZONING_STAGING_REGISTRY currently has exactly 2 entries (elgin-tx, layer 0 only; smithville-tx). There is no Travis-side layer-1 entry there at all, and the registry keys one entry per cityKey -- so staging layer 1 requires a NEW hauska-engine registry entry (mirroring CTX-ELGIN's own legacy-design-tools zoning-layers.ts addition) before any staging run could even target it.",
+    "dueDiligence": "Checked for a bridge before concluding: grepped legacy-design-tools fully (2 comment-only hits), checked open/merged PRs on both legacy-design-tools and hauska-engine for anything touching zoning staging + Elgin (none found; #636 on legacy-design-tools is an unrelated open Band-1 stamp-gap lane), and confirmed hauska-engine's registry.ts has no second Elgin entry by reading the full 136-line file."
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-stamp_cp1.json",
+    "_inbox/2026-09-09_ctx-stamp_cp2.json (not-applicable: no build phase entered)"
+  ],
+
+  "diff": "None in legacy-design-tools. No file was edited, no stamp was run (dry-run or live) against any table, because CP1's finding made step 2 impossible from this scope before any write was attempted.",
+
+  "docRepoEdits": {
+    "note": "Doc_repo commits are planner-owned per AGENT_CONTRACT section 6; left uncommitted, listed here.",
+    "files": [
+      "_catalog/seat_register.json -- added legacy-design-tools-ctx-stamp worktree entry (property seat, before first git write, pulled immediately before editing, file already carried other seats' unrelated uncommitted edits which were left untouched)",
+      "_inbox/2026-09-09_ctx-stamp_cp1.json (new)",
+      "_inbox/2026-09-09_ctx-stamp_cp2.json (new)",
+      "_inbox/2026-09-09_ctx-stamp_close.json (new)"
+    ]
+  },
+
+  "constraintsHonored": [
+    "Did not fabricate polygons or widen a layerWhere clause",
+    "Did not declare Elgin complete",
+    "Did not edit hauska-factory",
+    "Did not run parcel-r5-zoning or any bake",
+    "Did not deploy anything",
+    "Did not edit hauska-engine or run its staging ETL against CORTEX_DATABASE_URL without authorization, despite tracing the real write path there -- reading a different repo to diagnose is not the same as writing to it, and no live write was made outside legacy-design-tools' own read-only investigative session",
+    "Cut the feature branch before any file edit; registered the worktree in seat_register.json before the first git write; pulled doc_repo immediately before editing the shared register file; used explicit pathspec (never git add -A) -- no commits were made in doc_repo per the planner-owned-commits rule",
+    "Live ArcGIS traffic: none used this session (the falsifier was answered entirely from the already-staged Postgres table, no need to hit Elgin's FeatureServer again)",
+    "Every production database credential was fetched via gcloud secrets (never hardcoded, never echoed to a file) and used strictly read-only (SET default_transaction_read_only = on as the first statement)"
+  ],
+
+  "leave_behind": [
+    { "kind": "LESSON", "text": "In this pipeline, a dispatch's phrase 'the existing stamp path' can name a real, working function that nonetheless writes to the wrong table for the stated goal -- stampCountyZoning() genuinely works (CTX-ELGIN proved it, PR #643) but only ever touches txgio_parcel, never tx_zoning_district_staging. A file pointer being real and functional is not evidence it reaches the table a later mission needs; check the actual write target (grep for the destination table's literal name across the whole repo, not just near the named function) before treating a 'staging writer' claim as ground truth." },
+    { "kind": "LESSON", "text": "This pipeline has TWO independent, non-syncing zoning-district signals for the same city: legacy-design-tools' txgio_parcel.zoning_district (stamped in-memory via lib/cad-ingest/src/txgio/zoning-layers.ts) and hauska-engine's tx_zoning_district_staging (ETL'd from live ArcGIS via packages/engine-core/src/zoning-staging/registry.ts). They have separate registries, separate DB connections, and separate repos -- a fix landed in one's registry (as CTX-ELGIN did) has zero effect on the other's coverage. Any future 'wire this GIS layer' mission should state explicitly which of the two registries it means, since both currently exist for Elgin (one complete for layer 1, one not)." },
+    { "kind": "GROUND-TRUTH", "text": "As of 2026-09-09 (this session, live read-only query): tx_zoning_district_staging holds 3,220 rows for city_key='elgin-tx' (layer_role='base', county 48021, source_layer_id=0) and ZERO rows for Elgin under county 48453 (Travis) at any city_key or layer_role. Travis county's only staged cities today: austin-tx (21,953), lakeway-tx (749), pflugerville-tx (725)." },
+    { "kind": "GROUND-TRUTH", "text": "As of 2026-09-09: hauska-engine's packages/engine-core/src/zoning-staging/registry.ts ZONING_STAGING_REGISTRY has exactly 2 entries total (elgin-tx -> FeatureServer/0 only; smithville-tx), keyed strictly one entry per cityKey (registry.ts:118-132, resolveZoningStagingCity throws if a key is missing). No Travis-side Elgin entry exists." },
+    { "kind": "OPEN", "text": "The actual fix: add a new hauska-engine ZONING_STAGING_REGISTRY entry for Elgin's Travis-side FeatureServer/1 (mirroring legacy-design-tools' own elgin-tx-travis entry in zoning-layers.ts: same layerUrl, same codeDomainMap, layerWhere CITY_LIMIT='ELGIN', county 48453, presumably cityKey 'elgin-tx' to match layer 0's row so parcel-r5-zoning's per-city logic treats them as one city, though this needs confirming against how parcel-r5-zoning keys city_key vs county for its residue accounting), then run stage-tx-zoning-district.mjs with ZONING_STAGING_PATH=1 --apply against CORTEX_DATABASE_URL. Requires a hauska-engine worktree and explicit write authorization, neither of which this dispatch granted." },
+    { "kind": "OPEN", "text": "Bastrop (48021) and Travis (48453) remain held on parcel-r5-zoning's LAYER_GAP_RESIDUE_EXCEEDED refusal. This close does not move that number. Two counties are still waiting; recommend the operator either re-dispatch to a hauska-engine-scoped lane or explicitly authorize this lane to open one." },
+    { "kind": "OPEN", "text": "Once layer 1 is genuinely staged (whichever lane does it), re-measuring the residue per this dispatch's steps 3-4 and comparing to CTX-ELGIN's probed 9 (48021) / 457 (48453) is still the correct next step -- that part of the dispatch's design was sound; only the file pointer for step 2 was wrong." }
+  ]
+}
