@@ -1,0 +1,58 @@
+{
+  "lane": "ctx-parcelgate",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T21:00:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-parcelgate",
+  "branch": "fix/ctx-parcelgate-per-parcel-write",
+  "baseCommit": "b55d76e9e7190eff1d9962a86581dbfa322cff3b",
+  "baseConfirmed": "git merge-base --is-ancestor b55d76e9 HEAD, run against a fresh git worktree add -b ... origin/main -- base IS b55d76e9 (CTX-ZONESCOPE/PR #121), confirmed before any file was opened for edit.",
+
+  "designSummary": {
+    "target": "src/jobs/parcel-r5-zoning.mjs's processCity / buildLayerGapCells / assertResidueWithinDeclaration, plus a revisit flag in src/config/zoning-layer-completeness.mjs.",
+    "theDefect": "buildLayerGapCells writes {kind:'refused'} unconditionally for every residual parcel of a DECLARED_LAYER_GAP city (currently only Elgin). assertResidueWithinDeclaration separately guards the per-county RAW residue count against a declared ceiling. Both are per-CITY: nothing today distinguishes a genuinely-uncovered parcel from a staleness-class parcel (a real value sitting in txgio_parcel, pending only a Factory re-bake) within the write itself.",
+    "theFix_perParcelGate": "A residual parcel earns a refused layer-gap cell only if, at write time: (1) it matched no polygon in the union of the city's staged base layers -- already true structurally, since buildLayerGapCells is only ever reached for a parcel processCity's spatial match did not return -- AND (2) it does not already carry a real (non-null, non-blank) zoning_district value in txgio_parcel. Condition 2 is a new batched, per-chunk, EXISTS-based read-only query (txgio_parcel carries multiple geometry rows per prop_id -- traps section -- so this must be EXISTS, never a flat join), scoped to residual rows of a declared-layer-gap city only. buildLayerGapCells gains an alreadyHasRealZoning parameter and returns [] when true.",
+    "theGuard_unchanged": "assertResidueWithinDeclaration keeps its exact current signature, call site (after the chunk loop, unconditional on apply), and input: the RAW per-county residue count, tallied from every residual parcel of a declared-layer-gap city regardless of the new per-parcel eligibility check. The ceiling numbers (9 Bastrop / 457 Travis in DECLARED_LAYER_GAP.expectedResidue) are NOT changed. Since CTX-ZONESCOPE measured raw residue at 36 Bastrop / 506 Travis -- both above the declared ceiling -- the guard will still throw LAYER_GAP_RESIDUE_EXCEEDED for Elgin under today's config, exactly as it does before this change. This lane's fix is therefore dormant against production today; it changes what happens to the WRITE only once/if a future, separate lane raises the ceiling or the staleness class clears. That is deliberate: 'this lane must not make the gate stop firing.'",
+    "revisitFlag": "PER_COUNTY_CEILING_INSTRUMENT_DEFERRED, a frozen object exported from src/config/zoning-layer-completeness.mjs, naming what is deferred (the per-county RAW-residue ceiling as the gating instrument), why (operator ruling 2026-09-09, unblock the bake now), and what would trigger a revisit (a second DECLARED_LAYER_GAP city; the Factory re-bake clearing the staleness class; hauska-engine's S-P registry fix landing). Pinned by a test that fails if the constant is removed or narrows without a replacement.",
+    "theSPHardCase": "The three unresolved S-P parcels (of CTX-ELGIN's 10) that carry NO real zoning_district value anywhere satisfy BOTH conditions of the per-parcel gate as written -- they matched no staged polygon (condition 1, true: the S-P registry entry does not exist in hauska-engine, out of this repo's scope) and they carry no real value elsewhere (condition 2, true). The gate as specified by the dispatch has no third condition to catch them, and the dispatch explicitly prohibits inventing an exception list. Expected finding, to be confirmed by live read-only probe at CP2: these 3 parcels will be gate-ELIGIBLE for a refused write once/if the ceiling is ever raised, which is a real, load-bearing miscategorization (the land IS zoned S-P, just unmapped) that only an engine-side registry fix can correct. This will be reported plainly in the close, not papered over."
+  },
+
+  "plannedChanges": {
+    "src/jobs/parcel-r5-zoning.mjs": [
+      "add RESIDUE_HAS_REAL_ZONING_SQL (EXISTS-based, unnest-batched, mirrors CHUNK_ZONE_MATCH_SQL's shape) and loadResidueWithRealZoning(cortex, rows)",
+      "buildLayerGapCells gains alreadyHasRealZoning param, returns [] when true",
+      "processCity: compute residualRows once per chunk (replacing the inline matchedSet.has+continue), batch-query loadResidueWithRealZoning for it only when isDeclaredLayerGap(city.cityName), track a NEW rawLayerGapResidueByCounty map (raw count, guard input, unconditional) separately from layerGapCells (write-eligible count, reporting only), add layerGapStaleExcluded to the returned result shape",
+      "assertResidueWithinDeclaration call site unchanged except reading from rawLayerGapResidueByCounty instead of layerGapByCounty"
+    ],
+    "src/config/zoning-layer-completeness.mjs": [
+      "add PER_COUNTY_CEILING_INSTRUMENT_DEFERRED (frozen), no changes to DECLARED_LAYER_GAP.expectedResidue or any other number"
+    ],
+    "test/parcel-r5-zoning.test.mjs": [
+      "update the two existing declared-gap processCity tests' cortex mocks to handle the new SQL",
+      "add: buildLayerGapCells returns [] when alreadyHasRealZoning=true",
+      "add: processCity VIOLATION -- in one run, a staleness-class parcel (real id) gets no refused cell and a genuinely-uncovered parcel (real id) does",
+      "add: the guard still throws LAYER_GAP_RESIDUE_EXCEEDED on raw residue > ceiling even when every excess parcel is per-parcel-ineligible (proves the guard counts raw, not eligible)",
+      "add: PER_COUNTY_CEILING_INSTRUMENT_DEFERRED shape/pinning test",
+      "add: RESIDUE_HAS_REAL_ZONING_SQL uses EXISTS, never a flat join (falsifier against the multiple-geometry-rows-per-prop_id trap)"
+    ]
+  },
+
+  "realParcelIdsOnHandForCP2Violation": {
+    "source": "_inbox/2026-09-08_ctx-elgin_close.json (pointInPolygonResultFor26Bastrop) and _inbox/2026-09-09_ctx-elgin_close.json (theTenParcelFinding), both county 48021",
+    "confirmedGenuinelyUncovered_9": ["115146", "115734", "11958", "12043", "15249", "15534", "15540", "15657", "61258"],
+    "staleness_17_withRealDistrict": {"108218": "R-1", "117364": "I", "11779": "C-3", "12965": "C-3", "13058": "R-3", "13151": "R-1", "133717": "R-1", "14560": "R-1", "57003": "R-1", "64562": "R-1", "72637": "R-1", "77689": "R-1", "84565": "R-1", "84566": "R-1", "8715709": "R-1", "88089": "R-1", "99528": "C-3"},
+    "sP_10_geometricallyUnmappedDistrict": ["12948", "111348", "14457", "124619", "12830", "8712013", "60891", "11364", "85259", "14535"],
+    "note": "CTX-ZONESCOPE's close reports 7 of the 10 S-P parcels already carry a real value and 3 do not, but does not name which 3. CP2 will re-verify all 27 (9+17, unless already stale from a re-bake) plus the 10 S-P ids live, read-only, against production txgio_parcel.zoning_district, and name the 3."
+  },
+
+  "hardProhibitionsAcknowledged": [
+    "no ceiling number changes anywhere (9, 36, 456, 506 all untouched)",
+    "no not-applicable writes on any parcel",
+    "no --apply passed anywhere, ever",
+    "no deploy, no Cloud Build, no bake/publish/walk",
+    "no exception list for the 3 unresolved S-P parcels",
+    "no write to hauska-engine, legacy-design-tools, or hauska-map"
+  ]
+}

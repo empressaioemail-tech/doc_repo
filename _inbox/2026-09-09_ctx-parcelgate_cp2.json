@@ -1,0 +1,49 @@
+{
+  "lane": "ctx-parcelgate",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T22:00:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-parcelgate",
+  "branch": "fix/ctx-parcelgate-per-parcel-write",
+
+  "implementationDone": {
+    "src/jobs/parcel-r5-zoning.mjs": "RESIDUE_HAS_REAL_ZONING_SQL (EXISTS-based, batched per chunk) + loadResidueWithRealZoning; buildLayerGapCells gains alreadyHasRealZoning (default false, backward compatible) and returns [] when true; processCity computes residualRows once, batch-queries eligibility only for isDeclaredLayerGap cities, tracks rawLayerGapResidueByCounty (unconditional raw tally, guard input) separately from layerGapCells/layerGapStaleExcluded (write-eligible counts, reporting only). assertResidueWithinDeclaration's call site, signature, and behavior are byte-for-byte unchanged except reading from the renamed raw-tally map.",
+    "src/config/zoning-layer-completeness.mjs": "PER_COUNTY_CEILING_INSTRUMENT_DEFERRED added (frozen). DECLARED_LAYER_GAP.expectedResidue untouched: still {48021: 9, 48453: 457}.",
+    "diffStat": "3 files changed, 359 insertions(+), 12 deletions(-) (git diff --stat)",
+    "noCeilingNumberChanged": "grep-confirmed: the only occurrences of 9, 36, 456, 506 as ceiling/residue figures in the diff are in new comments describing the finding, never in an expectedResidue value or any other config number."
+  },
+
+  "testSuite": {
+    "targetedFile": "node --test test/parcel-r5-zoning.test.mjs: 62/62 pass, 0 fail (52 pre-existing + 10 new)",
+    "fullRepoSuite": {
+      "beforeAnyEdit_stashed": "npm test on bare b55d76e9: 861 tests, 846 pass, 13 fail, 2 skipped (13 pre-existing failures, confirmed by grep to touch none of this lane's files: ctx-replay-determinism, p1-controls, p5-scrub, publish, reconcile-promote-write, resolve, secret-rotation, staging-reset)",
+      "afterThisLanesEdit": "npm test: 871 tests, 856 pass, 13 fail, 2 skipped -- the SAME 13 pre-existing failures, +10 new tests all passing, 0 regressions"
+    }
+  },
+
+  "verifyByViolating": {
+    "unitLevel": "processCity VERIFY BY VIOLATING test (real Bastrop ids from _inbox/2026-09-08_ctx-elgin_close.json): in ONE processCity run, parcel 11779 (staleness class, carries C-3 in txgio_parcel) gets ZERO cells written and stays unaccounted; parcel 115146 (CTX-ELGIN's confirmedNoMatch_9, genuinely uncovered) gets all three rails written as refused. Both from the same chunk, same call.",
+    "guardStillFires": "New test: 12 residual parcels, ALL 12 individually per-parcel-INELIGIBLE (every one carries a real value, so layerGapCells would be 0 and nothing would write) -- assertResidueWithinDeclaration still throws LAYER_GAP_RESIDUE_EXCEEDED with actualResidue=12 against Elgin's declared ceiling of 9. Proves the guard reads the raw tally, never the eligible one -- 'this lane must not make the gate stop firing' is satisfied by construction, not just by inspection.",
+    "liveReadOnlyProbe": {
+      "method": "Read-only SELECT against PRODUCTION_NEONDB_URL/txgio_parcel.zoning_district for 28 real Bastrop (48021) prop_ids (the 9 confirmed-genuine-gap + 17 staleness ids from CTX-ELGIN's 2026-09-08 close, plus CTX-ELGIN's 2026-09-09 10 S-P ids), county-restricted, statement_timeout=20000ms, credential fetched via gcloud into a shell env var for one invocation, never persisted, script deleted immediately after (git status confirmed clean of anything but the 3 tracked-file edits). SELECT only, no --apply anywhere, no write client ever opened.",
+      "confirmedLive_2026-09-09": {
+        "genuineGap9": "all 9 confirmed NO real value in txgio_parcel, live, today -- matches CTX-ELGIN's confirmedNoMatch_9 exactly",
+        "staleness17": "all 17 confirmed HAS a real value in txgio_parcel, live, today -- matches CTX-ELGIN's matched_17_with_district exactly",
+        "sP10": "7 of 10 HAS a real value (12948=R-2, 111348=R-2, 124619=R-2, 8712013=R-3, 11364=R-2, 85259=R-1, 14535=R-2); 3 of 10 have NO real value: 14457, 12830, 60891 -- this is the exact 7/3 split CTX-ZONESCOPE's close reported by count without naming, now named by id"
+      }
+    }
+  },
+
+  "theSPFindingConfirmedLive": {
+    "whatHappensToThe3UnresolvedIds_14457_12830_60891": "Under the per-parcel gate exactly as specified (two conditions, no exception list): condition 1 is satisfied structurally -- Elgin's S-P zoning code was never staged into tx_zoning_district_staging at all (hauska-engine's codeDomainMap for elgin-tx excludes S-P; CTX-ELGIN 2026-09-08/09), so these 3 parcels cannot match any polygon in HOIST_ZONES_SQL's union by construction. Condition 2 is satisfied live, confirmed today: none of the 3 carries a real zoning_district value in txgio_parcel through any other mechanism. Both conditions pass, so this gate, as specified, makes these 3 parcels GATE-ELIGIBLE for a refused write -- indistinguishable, by this repo's own in-store data, from the 9 genuinely-uncovered parcels.",
+    "isThisWrong": "Arguably yes, and it is named as an open finding, not silently accepted: the land under these 3 parcels IS zoned (S-P, a real Elgin district), just geometrically covered by a polygon this repo never staged. A refused write on them says 'we looked and our source has no answer' when the more precise truth is 'our source has an answer we failed to ingest.' The dispatch's two conditions cannot express that distinction because the information that would (the S-P registry) lives in hauska-engine, explicitly out of this repo's write scope. Inventing a third, S-P-specific condition or an exception list was explicitly prohibited by the dispatch on the grounds that an exception mechanism is reusable on parcels nobody measured -- so this is reported plainly rather than engineered around.",
+    "practicalConsequenceTodayVsFuture": "Today: moot in production, because the guard (unchanged) still refuses the whole Elgin/Bastrop county pass outright -- raw residue is 36 (CTX-ZONESCOPE, same-day measurement) against a declared ceiling of 9, so assertResidueWithinDeclaration throws before any consequence of the per-parcel gate is ever realized in a live --apply run. If and when a future, separate lane raises the ceiling (out of this lane's scope and explicitly prohibited here), these 3 parcels would be swept to refused under the gate as specified, unless that same future lane also lands the S-P registry fix in hauska-engine first."
+  },
+
+  "openQuestionsForClose": [
+    "Whether Bastrop can publish after this change: NO, unchanged from before this lane -- the guard still refuses Elgin/Bastrop (36 > 9) regardless of the per-parcel write becoming more precise, and this lane was explicitly told not to change that.",
+    "Whether the S-P disposition should be named as a residual defect in the close's own right, separate from the per-county-ceiling revisit flag: yes, both -- the ceiling flag covers the INSTRUMENT question, the S-P finding covers a specific, already-identified DATA gap (hauska-engine's registry) that this gate cannot paper over by design."
+  ]
+}
