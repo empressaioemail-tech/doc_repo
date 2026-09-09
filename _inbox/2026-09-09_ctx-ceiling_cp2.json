@@ -1,0 +1,57 @@
+{
+  "lane": "ctx-ceiling",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T20:20:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-ceiling",
+  "branch": "fix/ctx-ceiling-bastrop-declaration",
+
+  "measurement": {
+    "method": "Called runParcelR5Zoning directly (--city=elgin-tx, apply=false) against PRODUCTION_NEONDB_URL direct host, with the declaration UNEDITED (ceiling still 9). Did not go through cli.mjs, whose top-level catch (console.error(err.code || err.message)) discards err.actualResidue/err.declaredCeiling.",
+    "result": "Threw as expected: code=LAYER_GAP_RESIDUE_EXCEEDED, actualResidue=26, declaredCeiling=9.",
+    "agreement": "26 matches CTX-STAMPFALL's expected figure exactly. Independently re-measured with the rail's own predicate (best-overlap ST_Covers / ST_Intersects+1e-8-floor / bbox-centre fallback, CHUNK_ZONE_MATCH_SQL), never CTX-STAGE2's point-in-polygon rule and never imported from any prior close. Agreement, not assumption -- reported per the dispatch's explicit instruction that a number other than 26 would have been the finding and this lane would have stopped rather than write it."
+  },
+
+  "decompositionVerification": {
+    "method": "Live read-only pass using the job's own exported primitives directly against PRODUCTION_NEONDB_URL: CITY_ALL_PARCELS_SQL for Bastrop's 3,749 in-city parcels, CHUNK_ZONE_MATCH_SQL (chunked, 500/page) to find the 26 residual (unmatched) parcels, RESIDUE_HAS_REAL_ZONING_SQL to classify each residual parcel as staleness (real zoning_district elsewhere) or genuinely-uncovered (no real value anywhere).",
+    "result": { "residualCount": 26, "stalenessCount": 17, "genuinelyUncoveredCount": 9 },
+    "genuinelyUncoveredIdsReproduced": "[\"115146\",\"115734\",\"11958\",\"12043\",\"15249\",\"15534\",\"15540\",\"15657\",\"61258\"] -- exactly, in the same order, as CTX-ELGIN's originally named nine. Independent reproduction, not copied from the prior close.",
+    "stalenessSample": "108218 (R-1, jurisdiction elgin-tx, ingested_at 2026-09-03T04:38:06.918Z), 117364 (I, same jurisdiction/timestamp), 11779 (C-3, same jurisdiction/timestamp) -- all three share the exact per-county wholesale-ingest floor timestamp CTX-STAMPFALL documented for Bastrop (2026-09-03T04:38:06.918Z), corroborating the staleness classification's own mechanism."
+  },
+
+  "codeChange": {
+    "file": "src/config/zoning-layer-completeness.mjs",
+    "change": "DECLARED_LAYER_GAP.Elgin.expectedResidue['48021'] raised 9 -> 26. residueDecomposition.48021 rewritten to the re-derived shape (ceilingMeaning 'raw residue', activeCeiling 26, rawResidueToday 26, decomposition {genuinelyUncovered:9, staleness:17, sP:0}, agreementCheck noting independent re-measurement). bastropCeilingPending.status changed PENDING -> CLEARED, preconditionCheckedLive updated, both candidate numbers kept for the audit trail. Header prose (BASTROP section) rewritten to document the re-derivation, the wrong-instrument history, and the direct-call method. Travis's block (48453) untouched.",
+    "testsUpdated": "test/parcel-r5-zoning.test.mjs: the 'ceiling re-derivation' describe block rewritten for both counties now re-derived; two VIOLATION tests at former lines ~769 and ~860 updated from ceiling=9 to ceiling=26; two more residue-fixture VIOLATION tests (former ~1126, ~1154) that used 12-parcel fixtures sized to exceed 9 but not any larger number, raised to 27-parcel fixtures to keep testing the same over-ceiling property against the new 26. Added a new describe block 'processCity VERIFY BY VIOLATING (P-124/CTX-CEILING): real BASTROP parcel ids' mirroring CTX-PARCELGATE's Travis proof exactly, using 108218 (staleness) and 115146 (genuinely-uncovered, one of CTX-ELGIN's original nine)."
+  },
+
+  "testRun": {
+    "beforeFix": "not applicable -- the two known-stale tests were identified by reading, not by running against an unedited tree first",
+    "afterAllUpdates": "node --test test/*.test.mjs: 1178 total, 1175 pass, 0 fail, 3 skipped. First pass after only the config edit (tests not yet updated) surfaced exactly the two expected failures (both asserting the old ceiling=9 behavior at residue=10); no other test regressed, confirming the blast radius was exactly the ceiling-pinning tests and nothing else."
+  },
+
+  "liveVerification": {
+    "scopedToElgin": "Re-ran the direct call against the CORRECTED declaration (--city=elgin-tx, apply=false): no throw. cities[0] (elgin-tx+elgin-tx-travis, grouped): totalParcels=5455, matchedParcels=4923, layerGapCells=465 (9 Bastrop + 456 Travis), stampSourcedCells=67 (17 + 50), completenessCells=0, residualAfterCompleteness=0. The sums match the per-county decomposition exactly (465=9+456, 67=17+50), confirming the fix behaves identically for Bastrop and Travis once both are correctly declared.",
+    "fullProgramRun": "Ran the FULL job with no --city filter (all 23 declared-complete/gap cities including Elgin, plus the 48 no-staged-layer cities, across all six PROGRAM_FIPS counties: 48021, 48055, 48209, 48309, 48453, 48491), apply=false. Announced before starting given its size (Austin alone: 218,444 in-city parcels). Completed with zero throws. totalParcels=537795, totalMatched=533093, totalCompleteness=4170, totalLayerGap=465, totalStampSourced=67, totalResidualAfterCompleteness=0. perCityNonZeroResidual=[] -- every single city's residualAfterCompleteness is individually zero, which structurally proves every one of the six program counties (Bastrop and Travis included) sums to zero too, since each city's contribution is non-negative."
+  },
+
+  "directAnswers": {
+    "bastrop48021": { "runsToCompletion": "YES", "unaccountedCountReachesZero": "YES" },
+    "travis48453": { "runsToCompletion": "YES", "unaccountedCountReachesZero": "YES" },
+    "fifthThingMissing": "None found. The full-program run (not just Elgin) completed cleanly across all six PROGRAM_FIPS counties with zero exceptions and zero residual unaccounted anywhere, which is a stronger check than the dispatch's own two-county question asked for."
+  },
+
+  "gitState": {
+    "commit": "ef1e6be00b9e3d089a5b7984db3e270e44ab1f59",
+    "pushedBranch": "fix/ctx-ceiling-bastrop-declaration",
+    "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/124",
+    "ciStatus": "pending at time of this checkpoint; will not merge until the CI check-run conclusion string reads 'success', per AGENT_CONTRACT section 5"
+  },
+
+  "openQuestionsCarriedToClose": [
+    "CI conclusion and merge SHA -- pending.",
+    "The CTX-STAGE2 48-before/48-after discrepancy remains unresolved (not this lane's task); this lane's own measurement independently confirms it was the wrong instrument for the question CTX-PARCELGATE/CTX-STAMPFALL/CTX-ZONESCOPE were actually asking, which is a data point in the open thread, not a resolution of it."
+  ]
+}

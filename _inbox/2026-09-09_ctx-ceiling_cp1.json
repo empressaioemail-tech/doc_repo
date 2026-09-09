@@ -1,0 +1,50 @@
+{
+  "lane": "ctx-ceiling",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T20:00:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-ceiling",
+  "branch": "fix/ctx-ceiling-bastrop-declaration",
+  "headAtOpen": "5800d4a86ab7ccb9e30605c027421b02ecbe77bc",
+
+  "confirmedBeforeAnyEdit": {
+    "seat": "property, per this dispatch's explicit registration line, matching seat_register.json's existing property-seat hauska-factory entries",
+    "worktree": "created via git worktree add -b fix/ctx-ceiling-bastrop-declaration from origin/main (fetched fresh)",
+    "branch": "fix/ctx-ceiling-bastrop-declaration, did not exist locally or on origin before this lane",
+    "commit": "5800d4a86ab7ccb9e30605c027421b02ecbe77bc, equals origin/main tip at fetch time (origin/main's HEAD IS 5800d4a8 -- CTX-STAMPFALL's own merge is the latest commit on main, nothing since)",
+    "commitContainsRequiredAncestor": "5800d4a8 (CTX-STAMPFALL, PR #123) is the branch's own HEAD, trivially satisfies 'base MUST contain 5800d4a8'",
+    "workingTree": "clean at creation (git status confirmed)"
+  },
+
+  "baselineReadBeforeAnyEdit": {
+    "src/config/zoning-layer-completeness.mjs": "read in full -- DECLARED_LAYER_GAP.Elgin.expectedResidue was {48021: 9, 48453: 506} at open, with bastropCeilingPending recording two unwritten candidates (36 stale, 26 hypothetical-post-fix) and an explicit precondition check ('S-P is NOT yet staged') dated before CTX-SP landed",
+    "src/jobs/parcel-r5-zoning.mjs": "read in full -- runParcelR5Zoning, processCity, assertResidueWithinDeclaration, buildLayerGapCells, buildStampSourcedCells, RESIDUE_HAS_REAL_ZONING_SQL, CHUNK_ZONE_MATCH_SQL",
+    "src/cli.mjs": "confirmed the exact defect the dispatch named: main().catch((err) => { console.error(err.code || err.message); ... }) -- discards err.actualResidue and err.declaredCeiling entirely, printing only the bare code string. Calling runParcelR5Zoning directly and inspecting the caught error object is the only way to read those fields.",
+    "test/parcel-r5-zoning.test.mjs": "read in full (1346 lines) -- located the exact hardcoded assertions pinning the OLD Bastrop ceiling (9) and its decomposition (36 = 9+17+10) that this lane's fix will legitimately break and must update, not loosen: lines ~769-861 (assertResidueWithinDeclaration violation tests, ceiling re-derivation describe block, bastropCeilingPending test), plus two more residue-fixture tests at ~1126/~1154 sized to exceed 9 but not any larger ceiling."
+  },
+
+  "theCrux": {
+    "twoDifferentInstrumentsForTheSameWord": "'Bastrop's residue' has meant two different, non-comparable things across this program's lanes. CTX-STAGE2's counting rule (which a prior, defective CTX-SP dispatch wrongly specified) is ST_Contains(polygon, ST_PointOnSurface(parcel)) against landing_parcel_jurisdiction -- a raw point-in-polygon test with its own denominator. The RAIL this file actually gates (parcel-r5-zoning's own processCity / CHUNK_ZONE_MATCH_SQL) uses best-overlap ST_Covers with an ST_Intersects + 1e-8 ring-area floor fallback and a bbox-centre fallback for parcels lacking usable ring geometry, ranked by overlap area, sourced from CITY_ALL_PARCELS_SQL's own in-city population. CTX-SP's own close already flagged its 48-before/48-after as an unexplained free finding under the WRONG instrument; this dispatch's fix is to measure with the RIGHT one and not import any number, including CTX-STAMPFALL's own expected 26, without independently reproducing it.",
+    "howTheMeasurementDoublesAsTheInstrument": "assertResidueWithinDeclaration fires INSIDE processCity, unconditional on the apply flag -- so calling runParcelR5Zoning directly with the CURRENT (unedited) declaration, where Bastrop's ceiling is still 9, is expected to throw LAYER_GAP_RESIDUE_EXCEEDED, and the thrown error's own actualResidue field IS the rail's live, real measurement. This is not a workaround; it is the intended mechanism the dispatch is pointing at by insisting on a direct call rather than cli.mjs."
+  },
+
+  "plan": [
+    "1. Call runParcelR5Zoning directly (--city=elgin-tx, apply=false) against the unedited declaration; catch the expected LAYER_GAP_RESIDUE_EXCEEDED and read actualResidue as Bastrop's rail-measured raw residue. Report agreement or disagreement with 26 before writing anything, per the dispatch's explicit instruction to stop rather than write a number that isn't 26.",
+    "2. If it agrees, write expectedResidue.48021 = 26 with the full decomposition (genuinely-uncovered / staleness / S-P), mirroring CTX-PARCELGATE's Travis shape exactly, plus mark bastropCeilingPending CLEARED rather than deleting it (the field's own audit trail -- the two candidate numbers and which one it landed on -- is itself evidence worth keeping).",
+    "3. Independently verify the decomposition (not just the total) with a live read-only query using the job's own exported SQL primitives, classifying each of the 26 residual parcels as staleness (RESIDUE_HAS_REAL_ZONING_SQL hit) or genuinely-uncovered (no hit), before trusting 9+17+0 as anything other than an assumption to check.",
+    "4. Update the two hardcoded-9 tests and the ceiling-re-derivation describe block to pin the new number, and add a Bastrop-equivalent 'VERIFY BY VIOLATING' describe block using real live-fetched Bastrop parcel ids, mirroring CTX-PARCELGATE's Travis proof (500816/227351) exactly.",
+    "5. Re-run the full test suite; confirm nothing else regresses.",
+    "6. Final live verification: re-run runParcelR5Zoning directly against the corrected declaration and confirm it no longer throws, and separately run the FULL job (all cities, both counties) to answer the dispatch's direct yes/no question for each county."
+  ],
+
+  "constraintsNoted": [
+    "Dry runs only -- never --apply. FACTORY_CLOUD left unset/undefined so a stray --apply would hit LAPTOP_WRITE_FROZEN rather than silently running.",
+    "Do not touch assertResidueWithinDeclaration.",
+    "Do not change Travis's ceiling (506) -- read it, do not re-measure or rewrite it.",
+    "Do not write not-applicable anywhere, and do not add an exception mechanism.",
+    "Do not write to hauska-engine or legacy-design-tools.",
+    "The 48-before/48-after CTX-STAGE2 discrepancy is explicitly not this lane's to resolve; noted only if this lane's own measurement sheds light on it, not chased."
+  ]
+}

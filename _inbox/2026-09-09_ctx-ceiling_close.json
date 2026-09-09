@@ -1,0 +1,92 @@
+{
+  "lane": "ctx-ceiling",
+  "planRow": "P-124",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-ceiling",
+  "branch": "fix/ctx-ceiling-bastrop-declaration",
+  "filedAt": "2026-09-09T20:35:00.000Z",
+
+  "missionPremise": "Every other P-124 precondition was done (CTX-SP merged, hauska-engine PR #415; CTX-PARCELGATE merged, f0fe15bb PR #122; CTX-STAMPFALL merged, 5800d4a8 PR #123). One thing remained: Bastrop's declared layer-gap ceiling was still CTX-ELGIN's original 9 while the rail's live raw residue was 26, so assertResidueWithinDeclaration refused, and because Elgin is one grouped city across both counties, that refusal blocked Travis too even though Travis was structurally complete. Source: this dispatch and CTX-PARCELGATE's own bastropCeilingPending field, which recorded the precondition and deliberately withheld the number.",
+
+  "completionPredicate": "Done when: (1) Bastrop's raw residue is re-measured with the rail's OWN predicate (runParcelR5Zoning's real spatial-join logic), not CTX-STAGE2's point-in-polygon rule, and not imported from any prior close; (2) if the number is not 26, that is the finding and nothing is written; (3) if it is 26, the ceiling is written WITH its class-by-class decomposition and counting rules, matching CTX-PARCELGATE's Travis shape; (4) the per-parcel-gate separation (staleness value / genuine-gap refused / over-ceiling refusal) is proven at the new ceiling with real Bastrop parcel ids, mirroring CTX-PARCELGATE's Travis proof; (5) both counties are answered plainly, yes or no, on whether the job runs to completion and unaccountedCount reaches zero. All five are met below.",
+
+  "scopeBasis": "hauska-factory only, specifically src/config/zoning-layer-completeness.mjs's DECLARED_LAYER_GAP.Elgin declaration and its pinning tests in test/parcel-r5-zoning.test.mjs. Excluded by explicit dispatch instruction: assertResidueWithinDeclaration itself (correct, untouched); Travis's ceiling (506, unchanged, not re-measured); any exception mechanism or not-applicable write; hauska-engine and legacy-design-tools (both held by other lanes); any --apply, deploy, Cloud Build, bake, publish, or walk (the integration seat owns execution). The CTX-STAGE2 48-before/48-after discrepancy is explicitly named in the dispatch as not this lane's task and is noted, not chased.",
+
+  "prAndMerge": {
+    "prNumber": 124,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/124",
+    "commitSha": "ef1e6be00b9e3d089a5b7984db3e270e44ab1f59",
+    "ciCheckRuns": [
+      { "name": "gate8", "status": "completed", "conclusion": "success" },
+      { "name": "test", "status": "completed", "conclusion": "success" }
+    ],
+    "conclusionVerification": "Verified via gh api repos/.../commits/<sha>/check-runs .conclusion field directly (returned \"success\" for both gate8 and test, x2 for the two check suites), not from `gh pr checks`' human-readable \"pass\" text.",
+    "mergeMethod": "squash",
+    "mergeCommitSha": "eed6f1321bffbc51cd7f72aa4d86c29d4460329a",
+    "mergedAt": "2026-09-09T19:58:13Z",
+    "state": "MERGED"
+  },
+
+  "measurement": {
+    "instrumentUsed": "runParcelR5Zoning called directly (import + await, --city=elgin-tx, apply=false), never through cli.mjs. cli.mjs's top-level catch -- main().catch((err) => { console.error(err.code || err.message); ... }) -- discards err.actualResidue and err.declaredCeiling entirely; calling directly and inspecting the caught error object was the only way to read them.",
+    "instrumentNotUsed": "CTX-STAGE2's counting rule (ST_Contains(polygon, ST_PointOnSurface(parcel)) against landing_parcel_jurisdiction) -- a prior, defective dispatch wrongly specified this for CTX-SP's own re-measurement and it produced an unexplained, incomparable 48-before/48-after. The rail this file gates uses a different predicate entirely (best-overlap ST_Covers / ST_Intersects+1e-8-floor / bbox-centre fallback, CHUNK_ZONE_MATCH_SQL) against a different population (CITY_ALL_PARCELS_SQL's in-city set). Not used here.",
+    "howMeasured": "assertResidueWithinDeclaration fires inside processCity unconditional on the apply flag. Called runParcelR5Zoning against the declaration UNEDITED (ceiling still 9) and caught the expected throw.",
+    "result": { "code": "LAYER_GAP_RESIDUE_EXCEEDED", "actualResidue": 26, "declaredCeiling": 9 },
+    "agreementWith26": "AGREES exactly. Independently re-measured with the rail's own instrument, not imported from CTX-STAMPFALL's close or any other. The dispatch's own instruction -- 'if your number is not 26, that is the finding and you stop rather than write it' -- did not apply; the number is 26."
+  },
+
+  "decompositionAsWritten": {
+    "shape": "Matches CTX-PARCELGATE's Travis shape exactly: expectedResidue.48021 = 26 (was 9); residueDecomposition.48021 = { ceilingMeaning: 'raw residue -- re-derived, this IS the active ceiling', activeCeiling: 26, rawResidueToday: 26, rawResidueTodayDecomposition: { genuinelyUncovered: 9, staleness: 17, sP: 0 }, sPBreakdown: { alreadyHasRealValueElsewhere: 7, noRealValueAnywhere: 3, nowMatchedUnderRailPredicate: 10 }, agreementCheck: '...' }.",
+    "classByClassCountingRules": {
+      "genuinelyUncovered_9": "A residual parcel (matched no polygon under CHUNK_ZONE_MATCH_SQL's predicate) that ALSO carries no real zoning_district value anywhere in txgio_parcel (RESIDUE_HAS_REAL_ZONING_SQL misses). Re-verified live: exactly 9, and the 9 prop_ids reproduce CTX-ELGIN's originally-named set exactly (115146, 115734, 11958, 12043, 15249, 15534, 15540, 15657, 61258).",
+      "staleness_17": "A residual parcel that DOES carry a real zoning_district value elsewhere in txgio_parcel (RESIDUE_HAS_REAL_ZONING_SQL hit) -- excluded from the refused write by condition 2, earns a stamp-sourced value instead (CTX-STAMPFALL's buildStampSourcedCells). Re-verified live: exactly 17. Sample checked: 108218 (R-1), 117364 (I), 11779 (C-3), all sharing Bastrop's single per-county wholesale-ingest floor timestamp (2026-09-03T04:38:06.918Z).",
+      "sP_0": "The ten parcels CTX-ELGIN geometrically identified as S-P-covered no longer appear in the residual set at all -- they now match their S-P polygon directly under the rail's own spatial predicate, since CTX-SP staged the district (hauska-engine PR #415). Re-verified live: 0 S-P parcels remain unmatched; the previous sPBreakdown (7 with a real value elsewhere, 3 without) is retained in the declaration as historical context, tagged nowMatchedUnderRailPredicate: 10."
+    },
+    "sumCheck": "9 + 17 + 0 = 26, exactly the measured raw residue. Zero unexplained residue."
+  },
+
+  "violationRuns": {
+    "method": "processCity called directly with a mocked cortex/factory but REAL, live-fetched Bastrop parcel ids and real ground-truth values (same method as CTX-PARCELGATE's Travis proof), plus one direct-call-against-real-DB run for the aggregate check.",
+    "run1_stalenessAndGap_atExactCeiling": "26 raw residue (2 named + 24 filler), ceiling 26: guard passes. layerGapCells=25 (24 filler + 115146), stampSourcedCells=1 (108218). 48021:108218 gets all three rails written as {kind:'value', source: STAMP_SOURCE}. 48021:115146 gets all three rails written as {kind:'refused'}.",
+    "run2_overCeiling": "27 raw residue (one filler too many), ceiling 26: processCity rejects with LAYER_GAP_RESIDUE_EXCEEDED, actualResidue=27, declaredCeiling=26 -- refuses the WHOLE county even though every individual parcel (including all 26 that are gate-eligible) would have resolved correctly on its own. Proves the guard counts the raw population, never the write-eligible subset.",
+    "run3_liveAggregateAtCorrectedDeclaration": "Direct call against the corrected declaration, real DB, --city=elgin-tx, apply=false: no throw. Elgin's combined result (both counties, one grouped processCity call): totalParcels=5455, matchedParcels=4923, layerGapCells=465 (9+456), stampSourcedCells=67 (17+50), completenessCells=0, residualAfterCompleteness=0."
+  },
+
+  "directAnswers": {
+    "bastrop_48021": { "runsToCompletion": "YES", "unaccountedCountReachesZero": "YES" },
+    "travis_48453": { "runsToCompletion": "YES", "unaccountedCountReachesZero": "YES" },
+    "evidence": "Full-program dry run (no --city filter), all 23 declared-complete/gap cities plus all 48 no-staged-layer cities, all six PROGRAM_FIPS counties (48021, 48055, 48209, 48309, 48453, 48491), apply=false: zero throws. totalParcels=537795, totalMatched=533093, totalCompleteness=4170, totalLayerGap=465, totalStampSourced=67, totalResidualAfterCompleteness=0. perCityNonZeroResidual=[] -- every city's own residualAfterCompleteness is individually zero, which structurally proves every county (each city's contribution is non-negative, so a zero grand total means every county's own subtotal is zero too) reaches zero, not just the two named.",
+    "fifthThingMissing": "None found. This is a stronger check than the dispatch's own two-county question asked for, run specifically to make sure nothing outside Bastrop/Travis silently broke."
+  },
+
+  "constraintsHonored": [
+    "assertResidueWithinDeclaration untouched",
+    "Travis's ceiling (506) unchanged -- read, not re-measured or rewritten",
+    "No not-applicable written anywhere; no exception mechanism added",
+    "Dry runs only throughout -- never --apply. FACTORY_CLOUD left unset so a stray --apply attempt would hit LAPTOP_WRITE_FROZEN rather than silently running",
+    "No deploy, Cloud Build, bake, publish, or walk run",
+    "No write to hauska-engine or legacy-design-tools",
+    "Measured with the rail's own instrument (runParcelR5Zoning called directly), not CTX-STAGE2's point-in-polygon rule",
+    "No number imported from any prior close, including CTX-STAMPFALL's own 26 -- independently re-derived and only then compared",
+    "Heavy-scan trap avoided: the full-program run was announced before starting given its size (Austin: 218,444 in-city parcels) and ran to completion with visible per-city progress logging, not a silent long-running query",
+    "Isolated worktree: created fresh from origin/main (which is exactly 5800d4a8, CTX-STAMPFALL's own merge); no other lane's worktree touched",
+    "CI merge gated on the check-run conclusion STRING 'success' for both gate8 and test, verified via the API directly",
+    "All ad hoc diagnostic scripts (5 total: measure, find_ids, verify, fullrun, plus their cleanup) deleted immediately after use; git status confirmed clean of anything but the intended config+test edits before commit"
+  ],
+
+  "leave_behind": [
+    { "kind": "GROUND-TRUTH", "text": "2026-09-09T19:5xZ, live, rail's own instrument (not point-in-polygon): Bastrop (48021) raw residue = 26 (9 genuinely-uncovered + 17 staleness + 0 S-P), reproducing CTX-ELGIN's original 9 named prop_ids exactly. Travis (48453) unchanged at 506 (456 + 50 + 0), read not re-measured. Full-program dry run: zero unaccounted across all six PROGRAM_FIPS counties (537,795 total parcels, 533,093 matched, 4,170 completeness, 465 layer-gap, 67 stamp-sourced, 0 residual)." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-09, live: cli.mjs's top-level catch (main().catch((err) => console.error(err.code || err.message))) discards custom error fields (actualResidue, declaredCeiling) on every job it dispatches, not just parcel-r5-zoning -- any future lane needing a thrown error's detail from ANY of this repo's ~25 CLI-dispatched jobs will hit the same defect and must call the job's run function directly, exactly as this dispatch required here." },
+    { "kind": "LESSON", "text": "Two lanes measuring 'the same residue' with two structurally different SQL predicates (point-in-polygon against one population vs. best-overlap-with-fallback against a differently-sourced population) will produce numbers that look comparable and are not. CTX-SP's 48-before/48-after was real data honestly reported, but it was answering a different question than the one CTX-PARCELGATE/CTX-STAMPFALL/CTX-ZONESCOPE were asking. When a dispatch names a specific counting rule 'verbatim', verify that rule is actually the one the consuming system reads before trusting the number it produces." },
+    { "kind": "OPEN", "text": "CTX-SP's CTX-STAGE2-instrument 48-before/48-after discrepancy remains genuinely unresolved -- this lane's own measurement (26, agreeing with the rail's real instrument) does not explain why the OTHER instrument didn't move, only that it was the wrong tool for this particular gate. Per the dispatch's instruction, not chased further here; whoever eventually reconciles CTX-STAGE2's own methodology should know this lane independently confirmed the rail-instrument number is correct and stable, which at least rules out 'the rail's own ceiling is somehow also wrong' as an explanation for CTX-STAGE2's non-movement." },
+    { "kind": "OPEN", "text": "The elgin-tx-travis registry entry (hauska-engine, uncommitted in CTX-STAGE2's own worktree, per CTX-SP's close) still has no committed source as of this lane's close. Not this lane's action (different repo, out of scope) -- carried forward from CTX-SP's own leave_behind." }
+  ],
+
+  "checkpoints": [
+    "_inbox/2026-09-09_ctx-ceiling_cp1.json",
+    "_inbox/2026-09-09_ctx-ceiling_cp2.json"
+  ],
+
+  "docRepoEdits": "This close, cp1, and cp2 written directly to _inbox/ by this lane; not committed to doc_repo git by this lane (doc_repo commits are planner-owned per AGENT_CONTRACT section 6)."
+}
