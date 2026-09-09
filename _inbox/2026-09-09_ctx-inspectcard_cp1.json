@@ -1,0 +1,30 @@
+{
+  "lane": "ctx-inspectcard",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T01:00:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/tmp/hauska-map-ctx-inspectcard",
+    "branch": "fix/ctx-inspectcard-landuse-guard",
+    "startCommit": "0d08ab33898cae95151f0de852b85cd77884ad7e",
+    "worktreeNote": "STANDALONE CLONE, path equals worktree, registered ahead of creation in _catalog/seat_register.json as hauska-map-ctx-inspectcard with BOTH path and worktree set. Fresh clone, not any of the many existing hauska-map worktrees, to avoid any dirty-checkout collision."
+  },
+
+  "lineNumberCorrection": "The dispatch (and the CTX-LEAVES close it quotes) name InspectCard.tsx:517. That is stale/wrong against current origin/main: line 517 in this file is inside ROW_SPECS (the 'zoning' row's wouldBeFilledBy text), unrelated. The real and ONLY call site of provenance.landUseSource in this file is at lines 1484-1486, inside the SourcesDisclosure entries array construction. This is a line-number correction, not a scope disagreement -- the grep below confirms it is still exactly ONE exposed site, matching the dispatch's own framing ('one grep... is enough').",
+
+  "currentAndFutureRenderBehavior": {
+    "todayNull": "baked.provenance.landUseSource is null for a no-land-use parcel. The construction is `baked.provenance.landUseSource ? [{label:'Land-use source', detail: baked.provenance.landUseSource}] : []` -- null is falsy, so NO entry is added for 'Land-use source' at all. Nothing renders for it, in either the collapsed or expanded Sources disclosure. This is the 'harmless' behavior the dispatch refers to.",
+    "afterUpstreamFixObject": "Once landUseSource becomes `{verdict, scope, asOf, basis}` (or similar), that object is TRUTHY, so the ternary DOES add the entry: `{label:'Land-use source', detail: <object>}`. `entries` is a plain JS array built eagerly on every render regardless of whether the disclosure is open. If a customer then taps 'Sources' (isOpen becomes true), SourcesDisclosure maps over entries and renders `{e.detail}` as a JSX child.",
+    "empiricalCorrectionToTheDispatchWording": "Verified live (renderToStaticMarkup, react-dom 18.3.1, this repo's real SourcesDisclosure component) with entries=[{label:'Land-use source', detail:{verdict:'absent-verified',scope:'county',asOf:'2026-09-08',basis:'no coded land-use record'}}], isOpen=true: this does NOT silently render the text \" . [object Object]\" -- it THROWS 'Objects are not valid as a React child (found: object with keys {verdict, scope, asOf, basis})'. React explicitly validates JSX children and rejects plain objects; it does not implicitly toString() them the way template-literal interpolation would. The one place in this file that IS a literal template literal touching this value is the React `key` prop one line below (`key={`${e.label}-${e.detail}`}`), which WOULD silently coerce to the string '[object Object]' via toString() -- but `key` is stripped by React before reaching the DOM, so that particular coercion is never customer-visible. The dispatch's underlying claim (a customer-facing break for every null-land-use parcel) is TRUE and confirmed; the specific literal string it quotes is not what actually happens -- the real failure mode is a harder one (a React render crash inside the disclosure's expanded state, not a garbled-but-visible text node)."
+  },
+
+  "grepConfirmation": {
+    "leavesChecked": ["landUseSource", "zoningSource", "landUse", "situsCity", "situsZip"],
+    "scope": "apps/property-explorer (api/ and src/), excluding *.test.ts",
+    "finding": "The dispatch's premise holds: InspectCard.tsx:1484-1486 (the SourcesDisclosure 'Land-use source' entry) is the only render-reachable, unguarded consumer of provenance.landUseSource in this repo. Every other landUseSource/zoningSource touch point in apps/property-explorer is either (a) pure data plumbing that copies the field through a typed-but-unenforced TS field without rendering it (baked-facets.ts:979, atom-chain-to-facets.ts:1635/337/2031, pe-property-atoms.ts:497), or (b) already string-guarded via this codebase's own str() coercion helper (compare-facts.ts's zoningSourceCaption reads facets.zoning.provenance.layerName/sourceUrl/stampedAt through str(), never provenance.zoningSource/landUseSource directly).",
+    "oneNotedNonExposure": "fact-sheet-resolver.ts:361 -- `source: str(lu?.source) ?? facets.provenance?.landUseSource ?? \"cad-roll\"` -- the fallback to facets.provenance?.landUseSource is NOT itself wrapped in str(). This line only executes inside the `if (code || description)` branch, i.e. only when baseFacts.landUse ITSELF already carries a real coded value. Per the CTX-LEAVES close doc (_inbox/2026-09-08_ctx-leaves_close.json): landUseSource is only ever replaced with the absence object when baseFacts.landUse is null, and the write path (assertLandUseAbsenceEarned) enforces landUse and landUseSource must correspond as a pair -- so this branch cannot observe the object shape given the current write-side invariant. Not treated as a second live instance (not fixed); named here as a defense-in-depth gap worth a future note if that invariant is ever relaxed, per the dispatch's instruction to name-but-not-fix anything outside the one line."
+  },
+
+  "planForCP2": "One typeof guard at InspectCard.tsx:1484 (`typeof baked.provenance.landUseSource === \"string\" && baked.provenance.landUseSource ? [...] : []`), matching the file's existing 'render nothing for an absent/invalid source' voice used for the neighboring parcelSource/vintage entries in the same array. Verify by violating: a test proving the unguarded shape throws (pins the real defect), plus string/null/object cases against the guarded construction."
+}

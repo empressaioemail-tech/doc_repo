@@ -1,0 +1,77 @@
+{
+  "lane": "ctx-inspectcard",
+  "planRow": "P-124",
+  "repo": "hauska-map",
+  "seat": "property",
+  "worktree": "P:/tmp/hauska-map-ctx-inspectcard (standalone clone, registered in _catalog/seat_register.json as hauska-map-ctx-inspectcard with BOTH path and worktree set)",
+  "branch": "fix/ctx-inspectcard-landuse-guard",
+  "startCommit": "0d08ab33898cae95151f0de852b85cd77884ad7e",
+  "checkpoints": [
+    "_inbox/2026-09-09_ctx-inspectcard_cp1.json",
+    "_inbox/2026-09-09_ctx-inspectcard_cp2.json"
+  ],
+  "status": "CLOSED GREEN. Merged, tested, CI-green, no deploy needed for this fix to be effective (client-side render guard, takes effect the moment property-explorer next builds/deploys, no data change required).",
+
+  "pr": {
+    "number": 381,
+    "url": "https://github.com/empressaioemail-tech/hauska-map/pull/381",
+    "state": "MERGED",
+    "mergeCommitSha": "0b07013f39f5da1e335108e8d5033cac821016db",
+    "mergedAt": "2026-09-09T01:19:57Z",
+    "ciConclusion": "literal check-run conclusion string \"success\" on all 3 check-runs (test, No double-encoded source, Typecheck), read from the check-runs API conclusion field, not gh pr checks' display bucket"
+  },
+
+  "missionPremise": "P-124 CTX-INSPECTCARD dispatch (_dispatches/2026-09-09_ctx-inspectcard_dispatch.md), itself carrying forward CTX-LEAVES's own blocking finding (_inbox/2026-09-08_ctx-leaves_close.json, whatRemainsOpen): legacy-design-tools PR #644 (merged 301bb75a) changes provenance.landUseSource from a bare null into a declared-absence object for parcels with no land use. hauska-map's InspectCard.tsx carries that field into a customer-facing render without a type guard. The CTX-LEAVES re-bake is held on this landing.",
+
+  "completionPredicate": "A stranger can evaluate this without me by: (1) reading InspectCard.tsx's SourcesDisclosure entries construction and confirming a non-string landUseSource can no longer reach entries[].detail; (2) running the new 'PROVES THE DEFECT' test, which independently demonstrates the pre-fix shape throws; (3) confirming the guarded construction is a no-op for the two cases that must stay unchanged (real string, null) via the other three new tests; (4) confirming CI is green on the literal check-run conclusion string and the PR is merged.",
+
+  "scopeBasis": "Dispatch named exactly one file, one line (with a stale line number, corrected in CP1), and explicitly forbade touching the bake, the served payload, legacy-design-tools, or deploying. Scope is the one-line typeof guard plus its regression tests, nothing else.",
+
+  "whatTheLineRendersToday": "null is falsy, so no 'Land-use source' entry is added to the Sources disclosure at all -- nothing renders, in either the collapsed or expanded state.",
+
+  "whatItWouldRenderAfterTheUpstreamFix": "The declared-absence object is truthy, so (before this fix) the entry WOULD be added with an object detail. Empirically verified (not assumed) against the real SourcesDisclosure component with react-dom 18.3.1: expanding the disclosure THROWS 'Objects are not valid as a React child (found: object with keys {verdict, scope, asOf, basis})'. This is a correction to the dispatch's own wording -- it describes the result as literally rendering the text ' . [object Object]'; what actually happens is a harder failure, a React render crash inside the expanded disclosure, not a garbled-but-visible text node. The one truly template-literal touch point in this file (the React `key` prop one line below, `key={`${e.label}-${e.detail}`}`) WOULD silently coerce to the string '[object Object]' the way the dispatch describes, but `key` never reaches the DOM, so that specific coercion was never customer-visible. The underlying claim -- a real, customer-facing break for every null-land-use parcel once the counties are re-baked -- is confirmed true; only the precise mechanism differs from the dispatch's illustration.",
+
+  "diff": {
+    "file": "apps/property-explorer/src/browse/InspectCard.tsx",
+    "linesChanged": 1,
+    "before": "...(baked.provenance.landUseSource\n  ? [{ label: \"Land-use source\", detail: baked.provenance.landUseSource }]\n  : []),",
+    "after": "...(typeof baked.provenance.landUseSource === \"string\" && baked.provenance.landUseSource\n  ? [{ label: \"Land-use source\", detail: baked.provenance.landUseSource }]\n  : []),",
+    "testsFile": "apps/property-explorer/src/browse/InspectCard.consumer-voice.test.tsx (+74 lines, new describe block \"CTX-INSPECTCARD — provenance.landUseSource guard\")"
+  },
+
+  "verifyByViolating": {
+    "realStringSource": "unchanged -- entry present, \"cad-roll\" rendered, identical before and after",
+    "nullSource": "unchanged -- no entry added, nothing rendered, identical before and after (already the safe behavior pre-fix)",
+    "declaredAbsenceObjectSource": "CHANGED, this is the fix: before, the object reaches the render and throws; after, the typeof guard excludes it before it ever becomes an entry -- renders successfully, no throw, and the output contains neither \"[object Object]\" nor \"absent-verified\" nor a \"Land-use source\" line at all (the 'render nothing' choice, matching how the neighboring null case has always been handled in this same array)."
+  },
+
+  "grepConfirmation": {
+    "leavesChecked": ["landUseSource", "zoningSource", "landUse", "situsCity", "situsZip"],
+    "agreedWithDispatch": true,
+    "finding": "This IS the entire exposure. InspectCard.tsx:1484-1486 (current line; the dispatch's cited :517 is stale against origin/main and corrected in CP1) is the only render-reachable, unguarded consumer of provenance.landUseSource in apps/property-explorer. Every other touch point is either pass-through data plumbing (never rendered) or already gated through this codebase's own str() coercion helper (compare-facts.ts's zoningSourceCaption, which in any case reads a different field -- facets.zoning.provenance.layerName/sourceUrl/stampedAt -- not provenance.zoningSource/landUseSource directly).",
+    "oneNamedNonExposure_notFixed": "fact-sheet-resolver.ts:361 (`source: str(lu?.source) ?? facets.provenance?.landUseSource ?? \"cad-roll\"`) falls back to the raw field WITHOUT its own str() guard. Named per the dispatch's instruction to name-but-not-fix a second real instance -- except this one is not currently reachable with the object shape: it only executes when baseFacts.landUse itself already carries a real coded value, and the CTX-LEAVES close doc confirms the write path enforces landUse/landUseSource must correspond as a pair (assertLandUseAbsenceEarned), so the object shape cannot appear here today. Flagged as a defense-in-depth gap for whoever next touches that invariant, not carded as a live defect."
+  },
+
+  "secondInstance": "None found that is both real and currently reachable. The one candidate (fact-sheet-resolver.ts:361, above) is named but explicitly not carded, since it is unreachable under the current write-side contract rather than merely untested.",
+
+  "constraintsHonored": [
+    "Did not touch the bake, the served payload, or anything in legacy-design-tools",
+    "Did not revert the upstream change to a bare null; the declared absence stands",
+    "Did not deploy -- confirmed (not just refrained): property-explorer-ci.yml has no deploy job, and the one workflow that does deploy on push to main is path-filtered to its own file, untouched by this PR",
+    "Did not widen the change to other fields, other cards, or a general formatting refactor",
+    "Did not spawn sub-agents (the dispatch's first line)",
+    "Cut the branch as the literal first step, before any file edit",
+    "Registered the worktree with BOTH path and worktree in _catalog/seat_register.json before the first git write to it, and pulled doc_repo immediately before that edit",
+    "Staged and committed by explicit pathspec in both repos, never git add -A / git add .",
+    "Merged only on the literal check-run conclusion string \"success\" (verified via gh api, not gh pr checks' display bucket)",
+    "A scratch verification test used to empirically observe the pre-fix throw was written, run, and deleted before staging -- it never entered the diff"
+  ],
+
+  "leave_behind": [
+    {"kind": "LESSON", "text": "A React JSX child that is a plain object THROWS ('Objects are not valid as a React child'), it does not implicitly stringify to '[object Object]' the way template-literal or string-concatenation interpolation of the same value would. When a dispatch describes an object reaching customer-visible copy as producing literal '[object Object]' text, verify which specific JS operation actually touches the value (JSX child vs. template literal vs. string concat) before assuming the described failure mode is the real one -- in this case the real failure was a harder one (a render crash), not a softer garbled-text one, even though the underlying 'customer-facing break' claim was correct."},
+    {"kind": "LESSON", "text": "This codebase's own established test seam for exactly this class of defect already exists: components with a disclosure/accordion pattern export the disclosure component directly with `isOpen` as a driven prop specifically so renderToStaticMarkup (which never runs effects/click handlers) can test the EXPANDED state without touching internal useState. Look for that seam ('Exported test seam' in the docstring) before assuming a stateful component's hidden content is untestable."},
+    {"kind": "GROUND-TRUTH", "text": "2026-09-09: hauska-map main at 0d08ab3 (pre-merge) / 0b07013f (post-merge, this PR). InspectCard.tsx grew from whatever length it was when CTX-LEAVES's 2026-09-08 note was written to 2129 lines; the provenance.landUseSource call site is at 1484-1486, not 517. No hauska-map commits landed between CTX-LEAVES's note and this session that would explain the discrepancy by file growth -- the :517 citation appears to have simply been wrong when written, not stale from later drift."},
+    {"kind": "OPEN", "text": "The CTX-LEAVES re-bake sequence (all six counties, integration seat's) can now proceed without this guard being the blocker -- reported here as the explicit unblock. Not this lane's to trigger."},
+    {"kind": "OPEN", "text": "fact-sheet-resolver.ts:361's unguarded str()-less fallback to provenance.landUseSource, named above, currently unreachable under the write-side landUse/landUseSource pairing invariant -- worth a defensive str() wrap the next time that file is touched for an unrelated reason, but not urgent and not carded on its own."}
+  ]
+}
