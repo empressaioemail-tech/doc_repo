@@ -1,0 +1,173 @@
+{
+  "lane": "ctx-leaves",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "seat": "property",
+  "worktree": "P:/tmp/legacy-design-tools-ctx-leaves (standalone clone, registered in _catalog/seat_register.json as legacy-design-tools-ctx-leaves with BOTH path and worktree set)",
+  "branch": "fix/ctx-leaves-required-nulls",
+  "startCommit": "0b4b6a228adfba0683dc3abac063d61aae2c5d15",
+  "checkpoints": [
+    "_inbox/2026-09-08_ctx-leaves_cp1.json",
+    "_inbox/2026-09-08_ctx-leaves_cp2.json"
+  ],
+  "status": "HONEST PARTIAL -- merged, not customer-done",
+  "closedGreenOrHonestPartial": "HONEST PARTIAL. The code is complete, tested, CI-green and merged, and the falsifier proves it produces the right cell states on the real cohort's real inputs. It has moved ZERO served rows: every one of the four bake-owned leaves needs a re-bake and the zoningSource mirror needs a deploy, and neither is this lane's to trigger. One cohort parcel will still fail afterwards for a cause outside the write path, and it is named below rather than absorbed.",
+
+  "pr": {
+    "number": 644,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/644",
+    "state": "MERGED",
+    "mergeSha": "301bb75ac3f287a424d859dfa86e6d4e89b75529",
+    "mergedAt": "2026-09-09T00:30:44Z",
+    "ciConclusion": "all 11 check-runs completed with the literal conclusion string 'success', read from the check-runs API conclusion field (total=11 success=11 notSuccess=0), not from `gh pr checks` display buckets",
+    "deployCheck": "Merging does NOT deploy. cloud-run-deploy.yml's push-to-main trigger runs `build-and-push` ONLY (`if: github.event_name == 'push'`); deploy-canary, shift-traffic, run-migrations and rollback are all `workflow_dispatch`-gated. Verified by reading the job conditions before merging, because the bare `on: push: branches: [main]` block reads like deploy-on-merge and is not."
+  },
+
+  "missionPremise": "P-124 CTX-LEAVES dispatch (_dispatches/2026-09-08_ctx-leaves_dispatch.md). The situsState fix (PR #642) was one INSTANCE of a defect, not the defect: BP-CONTENT-01 requires every required tier-1 leaf to classify as value|absent-verified|not-applicable|refused and says a present key holding null is none of those, and the same `?? null` shape runs through nodeFacetBakeTier1Conformant.ts. The six leaves were long-standing and merely UNMEASURABLE until hauska-factory's verify walk gained a jurisdiction-stratified cohort (the street sweep is perfectly correlated with any rail that varies by jurisdiction); there is no recent regression to look for. The 2026-09-05 join-miss ruling (_decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md) reaches landUse and does NOT reach zoningSource, because absence-of-row means absence-of-fact only when the source owns the fact.",
+
+  "completionPredicate": "A stranger can evaluate this without me by: (1) reading the four leaves' states off any payload buildConformantTier1Payload produces and confirming none is a bare null; (2) deleting one of those states and confirming assertRequiredLeafStatesEarned throws REQUIRED_LEAF_BARE_NULL; (3) re-deriving the Caldwell jurisdiction cohort from landing_parcel_jurisdiction and re-grading it with hauska-factory's own gradeParcelResponse. NOT satisfied by: any change to a served row, which requires a re-bake and a deploy this lane did not perform and was told not to.",
+
+  "scopeBasis": "The dispatch named ONE write path (nodeFacetBakeTier1Conformant.ts). Four of the five open leaves are honestly fixable there and were fixed there. The fifth, provenance.zoningSource, is NOT, and the dispatch's own instruction is the reason: it must MIRROR the zoning rail's already-earned state, and that state is earned at the SERVE, not at the bake. So structuralFactToFacetsWire.ts is in scope by the dispatch's ruling even though it is outside the dispatch's file pointer. Excluded deliberately: hauska-factory (different repo, different seat -- including its verify-walk classifier hole and its zoning completeness declaration), hauska-map (different repo -- including the one line that now needs a guard), the legacy txgio-keyed bake (retired for writes; its shared assembler is untouched so its output is byte-identical), any re-bake, any deploy, and any deletion or rewrite of the 18,100 stale old-shape rows.",
+
+  "diff": {
+    "files": "5 files, 1,098 insertions, 29 deletions",
+    "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts": "New Tier1LeafAbsence type + isEarnedLeafAbsence (checks EVERY field) + isResolvedLandUseFacet + BAKE_OWNED_REQUIRED_LEAF_PATHS + ConformantBaseFacts. buildConformantTier1Payload now replaces a null baseFacts.situsCity / situsZip / landUse and provenance.landUseSource with an earned absence, AFTER assembleTier1Payload returns (before it would change what resolveZoningJurisdiction and computeTier1Envelope read). New leafAbsenceFromLandUseAbsence (promotes the already-earned record; lookup-failed -> refused, never absent-verified), claimLeafAbsence (absent-verified scoped to the CAD-CARRIED field), assertRequiredLeafStatesEarned (code REQUIRED_LEAF_BARE_NULL). assertLandUseAbsenceEarned extended: an absence wire at the leaf counts as the ABSENT branch, and the leaf, its absence record and its twin must correspond. diffTier1KeyPaths teaches the divergence instrument that an old null leaf ANSWERED by a complete earned absence is not missing -- a shape rule, not a path allowlist, so DIVERGENCE_ALLOWLIST_NEW_SHAPE_PREFIXES is unwidened and its exact-match test stays green. New keyPathValue helper.",
+    "artifacts/api-server/src/lib/structuralFactToFacetsWire.ts": "New zoningSourceMirror + attachVerdictLayersToFacets mirrors provenance.zoningSource onto whichever zoning cell it just decided: the cell's own citation when a district stands, the parcel_record citation when parcel_record overrides the baked stamp, the city-limits LayerAbsenceWire VERBATIM otherwise, a parcel_record ZoningFactAbsent projected with its own verdict and reason, and `undefined` (leave the baked value alone) when nothing earned a state.",
+    "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts": "assertRequiredLeafStatesEarned called before every write, beside the two existing asserts.",
+    "artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts": "43 -> 56 tests. 5 rewritten (each asserted toBeNull() on a leaf this fix changes -- each was pinning the defect, and each replacement is STRICTER: it names the verdict, the scope and the basis instead of accepting any null). 13 added.",
+    "artifacts/api-server/src/lib/structuralFactToFacetsWire.test.ts": "8 -> 17 tests."
+  },
+
+  "perLeafBeforeAfterAllSixCounties": {
+    "countingRule": "n = the key EXISTS and holds JSON null (jsonb_typeof='null'). a = the key does NOT exist on its parent. Denominator = every place_layer_snapshots row with adapter_key='node-facets:tier1' and place_key 'node:<fips>:%'. Source: STAGING_NEONDB_URL, read-only, 2026-09-08.",
+    "before_measuredNotInherited": {
+      "48021_Bastrop_77799": { "zoningSource": "68243/0", "landUseSource": "62087/0", "landUse": "62087/0", "situsCity": "19013/0", "situsZip": "3404/16104", "situsState": "31866/0" },
+      "48055_Caldwell_48649": { "zoningSource": "38442/63", "landUseSource": "16925/0", "landUse": "16925/0", "situsCity": "15334/0", "situsZip": "15465/63", "situsState": "63/0" },
+      "48209_Hays_173050": { "zoningSource": "116905/768", "landUseSource": "42387/0", "landUse": "42387/0", "situsCity": "4308/0", "situsZip": "5436/768", "situsState": "44803/0" },
+      "48309_McLennan_114255": { "zoningSource": "58345/1165", "landUseSource": "23183/0", "landUse": "23183/0", "situsCity": "2325/0", "situsZip": "1182/1165", "situsState": "1165/0" },
+      "48453_Travis_500307": { "zoningSource": "267076/0", "landUseSource": "500307/0", "landUse": "500307/0", "situsCity": "363797/0", "situsZip": "31429/0", "situsState": "119389/0" },
+      "48491_Williamson_602050": { "zoningSource": "486218/0", "landUseSource": "91021/0", "landUse": "91021/0", "situsCity": "293146/0", "situsZip": "293192/0", "situsState": "91021/0" },
+      "note": "All 36 published figures reproduce to the row. The dispatch's table is correct as measured."
+    },
+    "after_inTheStore": "IDENTICAL to before, in all six counties, at every leaf. Nothing was re-baked and nothing was deployed. Reporting any other 'after' would be reporting code-done as customer-done.",
+    "after_projected": {
+      "bareNullsAtTheFourBakeOwnedLeaves": "ZERO in every county, by construction and by refusal -- assertRequiredLeafStatesEarned throws before the write, so a county whose bake completes cannot contain one. This is the only 'after' number that is a consequence of the code rather than of the data.",
+      "landUseValueVsEarnedAbsenceSplit": "Determined by cad_property coded rows at the DECLARED vintage. Measured today: Bastrop 51,281 coded of 77,799 (ty 2025); Caldwell 31,724 of 48,382 (ty 2026); Hays 121,230 of 134,606 (ty 2026); McLennan 91,072 of 114,255 (ty 2025); Travis 453,710 of 492,848 (ty 2026); Williamson 287,671 of 319,480 (ty 2026). Everything not coded becomes an earned absence rather than a null.",
+      "reconciliationThatConfirmsTheMechanism": "Caldwell was re-baked today on current code and its post-bake land-use population is 48,586 - 16,862 = 31,724, which equals its coded-row count EXACTLY. McLennan lands 34 apart (91,038 baked against 91,072 coded) and that gap reconciles too: McLennan has 1,165 parcels with no conformant atom, and 34 of them carry a coded row. Two counties, two independent derivations, both close.",
+      "gateBlockedCounties": "Hays and Williamson are in LANDUSE_JOIN_DISABLED_FIPS_SEED, so their prop_id roll join is refused and land use comes from the claim plus the owner-gated situs recovery. Their residual absences will therefore be `refused` (from lookup-failed), not absent-verified. I am NOT pre-registering a band for them: the address-recovery acceptance rate is not derivable from the roll counts, and guessing it would be exactly the invented number this program hunts."
+    },
+    "situsState": "Nothing done, as instructed. It is in the table only so it can be seen working: on the two counties re-baked today it is 0 of 48,586 (Caldwell) and 0 of 113,090 (McLennan) on the conformant shape. The other four still show pre-fix numbers because their bakes predate PR #642."
+  },
+
+  "travisLandUse100PercentDetermination": {
+    "answer": "NOT a Travis CAD ingest gap. NOT the leaf-null defect this lane fixes. It is a STALE BAKE predating a fix that was already merged nine days ago.",
+    "evidence": [
+      "Travis's conformant rows were baked 2026-08-30T02:36Z..05:27Z. The land-use resolution order (claim.propertyUseCode -> cad_property prop_id roll join -> owner-gated situs recovery) landed 2026-08-31, one day later. Before it the only source was claim.propertyUseCode, which Travis's conformant bodies carry null -- documented in the module's own header, whose worked examples are two Travis parcels.",
+      "cad_property for 48453 at the declared tax_year 2026 holds 492,848 rows, 453,710 of them with a property_use_code. The data is present and joinable on prop_id; the bake of 08-30 simply never asked.",
+      "All 500,307 Travis rows also carry NO provenance.landUseAbsence key at all -- that field did not exist when Travis was baked. The 500,307 is not 500,307 earned absences; it is 500,307 unexamined nulls.",
+      "Bastrop is the same story (61,695 of 61,695 conformant rows null, baked 2026-08-29, also pre-fix), which is why two counties sit at exactly 100 percent and the two baked today sit at 19.5 and 34.7."
+    ],
+    "preRegisteredBand": "A Travis re-bake on current code should resolve a land use for roughly 453,710 of 500,307 (90.7 percent), leaving on the order of 46,600 for the earned-absence wire. Registered in CP1 BEFORE the fix was written. A materially different result is a finding either way and should be raised, not absorbed.",
+    "scoping": "No separate card. Travis needs the re-bake the integration seat is already sequencing, on an image carrying this fix."
+  },
+
+  "caldwell63Explanation": {
+    "answer": "Not tier1 rows a re-bake missed. They are rows the RETIRED old bake wrote on 2026-07-23 for parcels that have no conformant-v1 cad-parcel-roll atom, so the conformant bake has never had anything to overwrite them with. They are still being served.",
+    "evidence": [
+      "All 63 carry facetSchemaVersion 'node-facets-tier1-v1', bakedAt 2026-07-23T14:30:15.068Z (one instant, one run), no shapeSource, no source, and a live buildable-envelope object -- the pre-anti-zombie shape.",
+      "All 63 prop_ids exist in cad_property for 48055 in some tax year and 0 of 63 exist at tax_year 2026, the declared vintage the conformant atoms are built from. Six of them are prop_id 0,1,2,3,4,5.",
+      "One cohort recurring across three leaves is three keys of one stale payload, not three defects.",
+      "Independently corroborated by a completely different route: the falsifier's builder pass found conformant atoms for 24 of the 25 cohort parcels, and the missing one is 48055:1 -- a member of the 63."
+    ],
+    "theOtherThreeCohorts": {
+      "48209_Hays_768": "Identical to Caldwell: 768 of 768 present in cad_property in some year, 0 of 768 at the declared tax_year 2026.",
+      "48021_Bastrop_16104": "DIFFERENT sub-cause and much more serious. All 16,104 ARE present at the declared tax_year 2025. 61,695 conformant + 16,104 old = 77,799 = exactly Bastrop's cad_property row count, so the Factory has produced conformant atoms for only 61,695 of the GOLD county's 77,799 current parcels and the remaining 20.7 percent is still served from a 2026-08-04 old-shape payload.",
+      "48309_McLennan_1165": "Same sub-cause as Bastrop, and still unconverted after today's re-bake."
+    },
+    "consequence": "All 18,100 rows fail BP-CONFORMANT-01 on the old schema literal BEFORE BP-CONTENT-01 is reached, so a whole-county walk on Bastrop cannot pass while they are served. The street-local sweep has never sampled one -- the same blindness that hid the six leaves.",
+    "notFixedHere": "Neither sub-cause is a write-path defect. One is atom coverage (Factory stage E), one is a store retirement of rows for parcels that no longer exist at the declared vintage. Integration/Factory seat, and DEV_PROCESS 5.4 says propose, do not remediate."
+  },
+
+  "absentKeyPopulationFinding": "The dispatch treated the absent keys as a separate, worse bug in the write path. Measured, they are not in the write path at all: splitting every county by facetSchemaVersion, the absent-key count on CONFORMANT-shape rows is 0 for provenance.zoningSource and 0 for baseFacts.situsZip in ALL SIX counties. Every absent key in the published table is an old-shape row (see above). The conformant writer never omits a key. The dispatch's prose also over-generalised on one cell -- it says zoningSource is missing on the same-sized cohorts including Bastrop's 16,104, but Bastrop's zoningSource absent count is 0; its own table already says 68243/0. The table is right, the prose is not. Cause: Bastrop's stale cohort was baked 2026-08-04/06, after provenance.zoningSource existed in the old bake; the other three were baked 2026-07-23/24, before it.",
+
+  "verifyByViolating": {
+    "principle": "A check observed only passing has not been observed working. Every control added here has a test that makes it FAIL for the right reason.",
+    "results": [
+      "assertRequiredLeafStatesEarned: a bare null at each of the four leaves throws REQUIRED_LEAF_BARE_NULL naming that path -- proven for all four, not one representative. A HALF-BUILT wire ({status,verdict} only) also throws, so the tolerance cannot be bought with a shape.",
+      "assertLandUseAbsenceEarned: a leaf whose verdict contradicts its own provenance.landUseAbsence throws /must correspond/; a twin whose basis has been reworded throws /verbatim mirror/. Two copies of one fact, one divergence check (DEV_PROCESS 2.4).",
+      "The divergence instrument still fails on a genuinely dropped leaf: delete baseFacts.situsCity outright and it is reported missing; replace it with a half-built wire and it is reported missing. Only a complete earned absence is accepted as an answer.",
+      "The four-state assertions are graded by hauska-factory's REAL classifyRequiredLeaf, reproduced verbatim from P:/tmp/ctx-w2-gate/src/jobs/verify-walk.mjs lines 252-306 -- the whole function including the object branch, the absent-verified scope/asOf/basis checks and the request-clock rule. CTX-situs reproduced only the scalar slice; this needed the rest.",
+      "The walk's own hole is asserted rather than exploited: the test shows that a wire keeping the raw `lookup-failed` verdict would classify as {state:'value', ok:true} -- reading as a POPULATED land use -- which is why lookup-failed is mapped to `refused` instead of passed through.",
+      "Elgin: the test greps the ENTIRE served payload for the string 'absent-verified' and asserts it is absent, on an unaccounted rail plus an in-city containment. A regression that writes absent-verified over an Elgin parcel fails that test on the string, not on a field name.",
+      "Basis diversity: two parcels' earned absences on the same path are asserted to differ, reproducing gradeAbsentVerifiedBasisDiversity's own rule.",
+      "The anti-zombie leaf: envelope is asserted still null and asserted NOT to be an earned absence, so this fix cannot creep onto it.",
+      "Populated cases asserted unchanged for every leaf, so the fix is provably about the absent case only."
+    ],
+    "testTotals": "nodeFacetBakeTier1Conformant 43 -> 56; structuralFactToFacetsWire 8 -> 17; nodeFacetBakeTier1 (the legacy bake) 69, unchanged and still green. 11 dependent suites, 259 tests, all passing locally. Typecheck 0 errors.",
+    "notRunnableLocally": "src/__tests__/brokerageNodeFacets.test.ts and siblings fail LOCALLY at schema creation with 'type public.vector does not exist' -- the local PostgreSQL has no pgvector. Known Windows-local artifact; CI is authoritative and passed. propertyExplorerBriefNodeFacetParity and propertyExplorerScreensStubs did run locally and passed."
+  },
+
+  "falsifier": {
+    "cohort": "Caldwell 48055 jurisdiction-stratified cohort, RE-DERIVED from landing_parcel_jurisdiction under selectJurisdictionCohort's own rule rather than assumed: 9 jurisdictions, 25 parcels, unincorporated bucket included -- matching the dispatch exactly.",
+    "grader": "hauska-factory's own gradeParcelResponse / gradeTier1Content / classifyRequiredLeaf, IMPORTED from verify-walk.mjs, not reproduced.",
+    "liveToday": "16 fail / 9 pass, reproducing the reported 16-of-25 exactly. BP-CONTENT-01 15, BP-CONFORMANT-01 1, pass 9.",
+    "theFindingThatMattersMost": "16 of 16 failures involve provenance.zoningSource, and 14 fail on NOTHING ELSE. A bake-only fix -- the one the dispatch's write-path pointer implies -- would have taken this cohort from 16 failures to 15. The CP1 ruling that zoningSource belongs at the serve was made from the code before this was measured; the measurement says it was not a fine distinction, it was where essentially all of the failure is.",
+    "perLeafLiveFailures": "provenance.zoningSource null 15 + MISSING 1; baseFacts.situsCity null 2; baseFacts.situsZip null 1 + MISSING 1; baseFacts.landUse null 1; provenance.landUseSource null 1; baseFacts.situsState null 1. Only two parcels fail anything besides zoningSource: 48055:115282 (situsCity + situsZip) and 48055:1 (everything).",
+    "newBuilderOnTheSameParcelsRealInputs": "Real conformant-v1 atom bodies from staging hauska_mcp, real cad_property land-use and dollar rolls, real txgio_parcel join, real ledger block set -- the publish CLI's own inputs with the write removed. Result: baseFacts.situsCity value 23 / absent-verified 1; situsZip value 23 / absent-verified 1; landUse value 24; landUseSource value 24 -- every bake-owned leaf classifies ok on all 24 parcels that have a conformant atom.",
+    "serveMirrorOnTheLiveRail": "The real zoningSourceMirror fed the live served zoning cell -- the exact function, the exact rail, not a simulation. ok on 25 of 25.",
+    "projected": "24 of 25 pass after a re-bake AND a deploy. NOT reported as 25 of 25, and NOT reported as achieved.",
+    "theOneThatStillFails": "48055:1. It has no conformant atom (the builder pass found 24 of 25) and is still served from the retired old bake's 2026-07-23 row, so it fails BP-CONFORMANT-01 before content is graded and no content fix can move it. It is a member of the Caldwell 63. Integration/Factory seat."
+  },
+
+  "constraintsHonored": [
+    "Did not remove any leaf from REQUIRED_TIER1_FACET_PATHS and did not admit null as a fifth state (asserted by a test).",
+    "Did not write absent-verified for zoningSource anywhere, and specifically not on Elgin's incomplete-layer parcels (asserted by a whole-payload string grep in a test).",
+    "Did not touch the anti-zombie envelope strip; envelope stays permanently null on the serve and the walk's stricter SERVE_STRIPPED_LEAVES rule is untouched.",
+    "Did not deploy. Verified before merging that a push to main builds an image only and that every deploy job is workflow_dispatch-gated.",
+    "Did not re-bake any county.",
+    "Did not write to any store: every database statement in this lane is a SELECT.",
+    "Did not edit hauska-factory or hauska-map.",
+    "Did not touch the legacy bake or the shared assembler, so the retired writer's output is byte-identical (its 69 tests still pass unchanged).",
+    "Did not spawn sub-agents (the dispatch's first line).",
+    "Cut the branch BEFORE the first file edit; registered the worktree with BOTH path and worktree before the first git write; pulled doc_repo immediately before editing the shared register; staged by explicit pathspec, never git add -A; left the doc_repo edit UNCOMMITTED for the planner.",
+    "Every credential read via gcloud secrets, never echoed, never written to a file.",
+    "The falsifier harness was written inside the repo so workspace imports would resolve, then deleted before staging; five source files were staged and nothing else."
+  ],
+
+  "docRepoEditsLeftUncommittedForThePlanner": [
+    "_catalog/seat_register.json -- appended the legacy-design-tools-ctx-leaves entry (7 lines, no reformatting of the rest)",
+    "_inbox/2026-09-08_ctx-leaves_cp1.json (new)",
+    "_inbox/2026-09-08_ctx-leaves_cp2.json (new)",
+    "_inbox/2026-09-08_ctx-leaves_close.json (new)"
+  ],
+
+  "whatRemainsOpen": [
+    "BLOCKING BEFORE DEPLOY, another repo: hauska-map apps/property-explorer/src/browse/InspectCard.tsx:517 interpolates provenance.landUseSource into a template literal, so an absent land use renders ' . [object Object]' on the inspect card. One typeof-string guard. Verified to be the ENTIRE blast radius -- every other consumer of the four leaves in both repos gates on a code-shaped or string-shaped predicate and degrades to 'absent' correctly, and provenance.zoningSource has ZERO consumers outside the modules changed here. The bake-side wires only reach a customer through a re-bake, so there is a clean window to land the guard first.",
+    "The re-bake sequence for all six counties, on an image carrying this fix and CTX-ELGIN's. Integration seat.",
+    "A deploy, for the zoningSource mirror to reach a served row. Planner-owned.",
+    "hauska-factory: classifyRequiredLeaf passes an object with an unrecognised verdict as {state:'value', ok:true}, so a served 'stamp-missing' or 'unmeasured' zoning verdict, and every parcel_record ZoningFactAbsent (whose real verdict is nested at absence.kind under state:'absent'), grade as POPULATED. Measured on the Caldwell cohort: 25 of 25 rails graded 'value' while 3 are actually not-applicable. BP-CONTENT-01 currently cannot tell a zoning district from an honest zoning absence. Pre-existing; this lane neither widens nor exploits it.",
+    "18,100 stale old-shape rows still served across four counties, 16,104 of them in the GOLD county. Two sub-causes: parcels absent from the declared CAD vintage (Caldwell 63, Hays 768) and parcels present at the declared vintage for which the Factory has produced no conformant atom (Bastrop 16,104, McLennan 1,165). A whole-county Bastrop walk cannot pass while they are served.",
+    "The operator ruling on Elgin's confirmed real GIS gaps (Bastrop 9, Travis 457) is still pending from CTX-ELGIN and is untouched here. The mirror deliberately carries whatever parcel_record earns for them, so it needs no ruling of its own."
+  ],
+
+  "leave_behind": {
+    "worktree": "P:/tmp/legacy-design-tools-ctx-leaves, branch fix/ctx-leaves-required-nulls, merged as 301bb75a and left in place (--delete-branch=false, the ctx-situs precedent). No uncommitted work remains.",
+    "entries": [
+      "LESSON: BP-CONTENT-01 grades the SERVED payload, not the baked row, and the two are not the same artifact. facets.zoning is baked as a bare null on hundreds of thousands of rows and passes the walk only because attachVerdictLayersToFacets attaches a four-state first. Before deciding WHERE a required leaf's state belongs, ask which artifact the grader reads and where that leaf's answer actually becomes knowable -- a leaf whose state depends on parcel_record or city-limits containment cannot be earned at bake time at all.",
+      "LESSON: the dispatch's own write-path pointer can be wrong about the fifth leaf while being right about the first four, and the falsifier is what tells you. 16 of 16 live cohort failures involved zoningSource and 14 involved nothing else, so a bake-only reading of this dispatch would have produced a merged, tested, CI-green change that moved the cohort by one parcel.",
+      "LESSON: always split a per-county payload measurement by facetSchemaVersion before drawing a conclusion. The published table blended the live conformant writer with a retired 2026-07 one, and that blend accounted for every single 'absent key' -- a defect class the dispatch called 'separate and worse' that does not exist in the write path at all.",
+      "LESSON: hauska-factory's classifyRequiredLeaf passes ANY non-empty object whose verdict is not absent-verified/not-applicable/refused as {state:'value', ok:true}. Anything writing a leaf state that must be graded honestly has to map into those three words; writing the true-but-unrecognised verdict (lookup-failed, stamp-missing, unmeasured) makes the leaf read as POPULATED, which is worse than failing.",
+      "LESSON: `on: push: branches: [main]` in this repo's cloud-run-deploy.yml does NOT mean deploy-on-merge -- the push path runs build-and-push only, and every deploy job is workflow_dispatch-gated. Read the job `if:` conditions, not the workflow trigger, before deciding whether a merge is a customer-visible act.",
+      "DEAD-END: giving provenance.zoningSource a bake-side verdict. It looks defensible (the bake knows whether a stamp joined) and it is wrong twice over: the rail is decided later with more information, and on Elgin's declared-incomplete layer the only available bake-side answer is the absent-verified that a standing ruling forbids. Mirroring at the serve is the only shape that cannot disagree with the rail.",
+      "DEAD-END: writing a lookup-failed land-use absence at the leaf with its own verdict intact. It PASSES the walk -- as a value. Verified against the real classifier and left in the test suite as a standing assertion so nobody re-derives it as a clever shortcut.",
+      "DEAD-END: heredocs with apostrophes through this session's Bash tool. `cat > f <<'EOF'` aborts with 'unexpected EOF while looking for matching quote' on any line containing an apostrophe, even though the delimiter is quoted. Write the file with the Write tool and `cat` it into place instead; cost two failed attempts.",
+      "GROUND-TRUTH (2026-09-08, STAGING_NEONDB_URL, read-only): tier1 rows are 5,141,451 total. By county and shape -- Bastrop 61,695 conformant (baked 2026-08-29) + 16,104 old-shape (2026-08-04/06); Caldwell 48,586 (2026-09-08 19:50) + 63 (2026-07-23); Hays 172,282 (2026-08-30 05:32) + 768 (2026-07-23); McLennan 113,090 (2026-09-08 21:20) + 1,165 (2026-07-24); Travis 500,307 (2026-08-30 02:36) + 0; Williamson 602,050 (2026-08-30 06:36) + 0.",
+      "GROUND-TRUTH (2026-09-08): cad_property coded rows at the declared vintage -- Bastrop 51,281/77,799 (ty2025), Caldwell 31,724/48,382 (ty2026), Hays 121,230/134,606 (ty2026), McLennan 91,072/114,255 (ty2025), Travis 453,710/492,848 (ty2026), Williamson 287,671/319,480 (ty2026). Caldwell's post-re-bake land-use population equals its coded count exactly; McLennan's is 34 lower and reconciles against the 1,165 parcels with no conformant atom.",
+      "GROUND-TRUTH (2026-09-08): the Caldwell jurisdiction cohort is 9 jurisdictions / 25 parcels -- (unincorporated) 1, 10001, 10002; Lockhart 101196, 103280, 103531; Luling 103324, 103587, 103601; Martindale 113648, 116628, 116629; Mustang Ridge 103436, 103539, 103540; Niederwald 115282, 115331, 115339; San Marcos 103524, 116906, 116910; Staples 27659 (only one available); Uhland 101005, 103731, 114104. Deterministic and re-derivable from landing_parcel_jurisdiction on the bake store (NOT the factory DB, where the table does not exist).",
+      "GROUND-TRUTH (2026-09-08): landing_parcel_jurisdiction lives on STAGING_NEONDB_URL / PRODUCTION_NEONDB_URL, not FACTORY_DATABASE_URL -- migrations/bake/ is a separate directory the Factory's applyMigrations never scans. Looking for it on the factory store wastes a round trip.",
+      "OPEN: the hauska-map InspectCard.tsx:517 guard must land before this reaches a customer through a re-bake. Named in whatRemainsOpen with the exact file and line.",
+      "OPEN: 18,100 stale old-shape rows, 16,104 of them in Bastrop. Blocks a whole-county Bastrop walk regardless of content fixes.",
+      "OPEN: the walk's classifier hole (unrecognised verdicts grade as `value`). Filed for the Factory seat; it is the reason BP-CONTENT-01 cannot currently distinguish a zoning district from an honest zoning absence."
+    ]
+  }
+}

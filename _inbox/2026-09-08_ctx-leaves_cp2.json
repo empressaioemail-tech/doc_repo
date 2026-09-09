@@ -1,0 +1,107 @@
+{
+  "checkpoint": "CP2",
+  "lane": "ctx-leaves",
+  "type": "pilot/mid-work",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/legacy-design-tools-ctx-leaves",
+  "branch": "fix/ctx-leaves-required-nulls",
+  "commit": "3fa42fc (on 0b4b6a22)",
+  "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/644 -- CI running at the time of filing; merge is gated on the literal check-run conclusion string 'success', not on a display bucket",
+  "filedAt": "2026-09-08",
+
+  "theResultThatCHANGESTHESHAPEOFTHELANE": {
+    "headline": "16 of 16 live cohort failures involve provenance.zoningSource, and 14 of them fail on NOTHING ELSE. A bake-only fix -- the one the dispatch's write-path pointer implies -- would have moved this cohort from 16 failures to 15.",
+    "whyThatMatters": "CP1 ruled that zoningSource must be mirrored at the SERVE because the rail's state does not exist at bake time. That ruling was made from the code before this measurement existed. The measurement says it was not a fine distinction: it is where essentially all of the failure is.",
+    "counterfactual": "Had zoningSource been given a bake-side verdict instead, it would have been a second answer to a question the rail answers later -- and on Elgin's declared-incomplete layer, the available bake-side answer (absent-verified) is the one the standing ruling forbids."
+  },
+
+  "falsifier": {
+    "cohort": "Caldwell 48055 jurisdiction-stratified cohort, RE-DERIVED not assumed: landing_parcel_jurisdiction on the bake store, bucket = city_name or '(unincorporated)', 3 per bucket, buckets in name order, prop_id ascending -- selectJurisdictionCohort's own rule (hauska-factory verify-walk.mjs lines 968-1016, read 2026-09-08).",
+    "cohortReproduced": "9 jurisdictions, 25 parcels, unincorporated bucket included -- matches the dispatch exactly. (unincorporated) 1/10001/10002; Lockhart 101196/103280/103531; Luling 103324/103587/103601; Martindale 113648/116628/116629; Mustang Ridge 103436/103539/103540; Niederwald 115282/115331/115339; San Marcos 103524/116906/116910; Staples 27659 (only 1 available); Uhland 101005/103731/114104.",
+    "grader": "hauska-factory's OWN gradeParcelResponse / gradeTier1Content / classifyRequiredLeaf, IMPORTED from P:/tmp/ctx-w2-gate/src/jobs/verify-walk.mjs -- not reproduced, not reimplemented.",
+
+    "passA_liveToday": {
+      "target": "STAGING_SITE_URL https://smart-site-factory.vercel.app/site, the same facets route the walk calls",
+      "result": "16 fail / 9 pass -- reproduces the dispatch's 16-of-25 exactly",
+      "gradeBreakdown": "BP-CONTENT-01 15, BP-MEANING-01 (pass) 9, BP-CONFORMANT-01 1",
+      "perLeafFailures": {
+        "provenance.zoningSource": "null 15, MISSING 1 -- every failing parcel",
+        "baseFacts.situsCity": "null 2",
+        "baseFacts.situsZip": "null 1, MISSING 1",
+        "baseFacts.landUse": "null 1",
+        "provenance.landUseSource": "null 1",
+        "baseFacts.situsState": "null 1"
+      },
+      "onlyTwoParcelsFailAnythingBesidesZoningSource": "48055:115282 (Niederwald -- situsCity + situsZip) and 48055:1 (the stale old-shape row, which fails everything)."
+    },
+
+    "passB_theNewBuilderOnTheSAMEParcelsRealInputs": {
+      "method": "buildConformantTier1Payload run on the real conformant-v1 atom bodies from staging hauska_mcp, the real cad_property land-use and dollar rolls, the real txgio_parcel join and the real ledger block set -- the same inputs the publish CLI assembles, with the write removed.",
+      "atomsFound": "24 of 25 (see the 25th below)",
+      "result": {
+        "baseFacts.situsCity": "value 23, absent-verified 1, no-atom 1",
+        "baseFacts.situsZip": "value 23, absent-verified 1, no-atom 1",
+        "baseFacts.landUse": "value 24, no-atom 1",
+        "provenance.landUseSource": "value 24, no-atom 1"
+      },
+      "reading": "Every bake-owned leaf classifies ok on all 24 parcels that have a conformant atom. 48055:115282's situsCity and situsZip -- null today -- are the absent-verified pair, which is the one cohort parcel where the bake-side half of this fix is load-bearing."
+    },
+
+    "passC_theServeMirrorOnTheLIVERail": {
+      "method": "the real zoningSourceMirror fed the live served zoning cell -- the exact function the serve will run, fed the exact rail the serve produced. Not a simulation of the serve.",
+      "result": "ok on 25 of 25. Classifier state: value 22, not-applicable 3.",
+      "mirrorVsRail": "Content agrees on all 25. The walk's CLASSIFIER reads them identically on 22 and reads the mirror as MORE precise on 3 -- see the finding below; that is the walk under-reading parcel_record's wire shape, not the mirror diverging."
+    },
+
+    "projectedAfterAReBakeAndADeploy": "24 of 25 pass; 1 still fails. I am NOT reporting that as 25 of 25 and I am NOT reporting it as achieved: nothing in this lane reaches a served row without a re-bake AND a deploy, neither of which is this lane's to trigger.",
+
+    "theOneThatSTILLFAILSNamed": {
+      "parcel": "48055:1",
+      "why": "It has no conformant-v1 cad-parcel-roll atom (the builder pass found 24 of 25) and is still served from the retired old bake's 2026-07-23 row. It fails BP-CONFORMANT-01 on facetSchemaVersion 'node-facets-tier1-v1' before BP-CONTENT-01 is ever reached, so no content fix can move it.",
+      "corroboration": "48055:1 is a member of the Caldwell-63 cohort identified independently in CP1 by a completely different route (a scan of place_layer_snapshots by schema version). Two methods, same 63 rows.",
+      "owner": "integration / Factory seat. Not fixable in the write path."
+    }
+  },
+
+  "buildAndTest": {
+    "typecheck": "tsc --build (workspace libs) then tsc -p artifacts/api-server --noEmit: 0 errors.",
+    "unitSuitesRun": "11 files, 259 tests, all passing -- nodeFacetBakeTier1Conformant (56, was 43 before this lane: 5 rewritten, 13 added), nodeFacetBakeTier1 (69, the legacy bake, unchanged and still green), structuralFactToFacetsWire (17, was 8), plus r1BriefCompose, r1BriefComposeLandUse, parcelConstraintProjection, parcelDrawFromReads, smartSiteStub, cadRollValue, verdictLayerServe, cityLimitsFactRoute.contract.",
+    "routeSuitesNotRunnableLocally": "src/__tests__/brokerageNodeFacets.test.ts and its siblings fail LOCALLY at schema creation with 'type public.vector does not exist' -- the local PostgreSQL has no pgvector. This is the known Windows-local artifact; CI is authoritative and its postgres provides the extension. propertyExplorerBriefNodeFacetParity and propertyExplorerScreensStubs DID run locally and pass.",
+    "fiveTestsRewrittenNotDeleted": "Each asserted toBeNull() on a leaf this fix changes -- i.e. each was pinning the defect. Every one now asserts the earned state instead, and each rewritten assertion is STRICTER than the one it replaces (it names the verdict, the scope and the basis rather than accepting any null). The same treatment CTX-situs gave its three."
+  },
+
+  "findingsForOTHERSEATSFiledNotFixed": [
+    {
+      "id": "walk classifier passes an unrecognised absence verdict as a VALUE",
+      "where": "hauska-factory src/jobs/verify-walk.mjs classifyRequiredLeaf",
+      "detail": "An object whose verdict is not one of absent-verified / not-applicable / refused falls through to {state:'value', ok:true}. So a served 'stamp-missing' or 'unmeasured' zoning verdict, and a parcel_record ZoningFactAbsent (which carries state:'absent' with the real verdict nested at absence.kind), all grade as POPULATED. Measured on the Caldwell cohort: 25 of 25 rails graded 'value' while 3 of them are actually not-applicable.",
+      "consequence": "BP-CONTENT-01 currently cannot tell a zoning district from an honest zoning absence. It is pre-existing, this lane does not widen it, and this lane deliberately does not exploit it -- that is exactly why lookup-failed is mapped to refused instead of being passed through raw.",
+      "owner": "Factory seat (different repo)."
+    },
+    {
+      "id": "20.7 percent of the GOLD county is still served on the retired old shape",
+      "where": "place_layer_snapshots on the bake store",
+      "detail": "16,104 of Bastrop's 77,799 parcels carry facetSchemaVersion 'node-facets-tier1-v1' baked 2026-08-04/06, with no shapeSource, no source, and a live buildable-envelope object. All 16,104 ARE present in cad_property at the declared tax_year 2025, so this is not a dead-parcel cohort -- the Factory has simply produced conformant atoms for only 61,695 of them. McLennan has 1,165 of the same. Caldwell 63 and Hays 768 are the other sub-cause (parcels absent from the declared vintage).",
+      "consequence": "Every one of these 18,100 rows fails BP-CONFORMANT-01 before content is graded, so a whole-county walk on Bastrop cannot pass while they are served. The street-local sweep has never sampled one -- the same blindness that hid the six leaves.",
+      "owner": "integration / Factory seat. Atom coverage plus a store retirement; neither is a write-path defect and DEV_PROCESS 5.4 says propose, do not remediate."
+    },
+    {
+      "id": "one line in hauska-map must land before this is deployed",
+      "where": "hauska-map apps/property-explorer/src/browse/InspectCard.tsx:517",
+      "detail": "Interpolates provenance.landUseSource into a template literal, so an absent land use renders ' . [object Object]' on the inspect card. Needs one typeof-string guard.",
+      "consequence": "Cosmetic but customer-visible, on 19.5 to 34.7 percent of parcels in the counties baked on current code.",
+      "owner": "whoever owns hauska-map. Verified to be the ENTIRE blast radius: every other consumer of the four leaves in both repos gates on a code-shaped or string-shaped predicate and degrades to 'absent' correctly."
+    }
+  ],
+
+  "constraintsHonoredSoFar": [
+    "No deploy. No re-bake. No write to any store -- every database statement in this lane is a SELECT.",
+    "No leaf removed from REQUIRED_TIER1_FACET_PATHS; no fifth state; the anti-zombie envelope strip untouched.",
+    "No absent-verified for zoningSource anywhere, and specifically none on Elgin's incomplete-layer parcels -- asserted by a test that greps the whole served payload for the string.",
+    "No edit to hauska-factory or hauska-map.",
+    "Branch cut before the first edit; worktree registered with BOTH path and worktree before the first git write; doc_repo pulled immediately before the register edit and staged by explicit pathspec, never git add -A; the doc_repo edit left uncommitted for the planner.",
+    "Every credential read via gcloud secrets, never echoed, never written to a file.",
+    "The falsifier harness was written inside the repo so workspace imports resolved, then DELETED before staging -- five source files are staged, by explicit pathspec, and nothing else."
+  ]
+}
