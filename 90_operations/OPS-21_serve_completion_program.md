@@ -91,7 +91,7 @@ later and citations repoint without changing a value. The boundary/envelope atom
 | Lane | Repo | Scope |
 |---|---|---|
 | **D5 gate widening** | hauska-factory | `DEFAULT_SCHED_RAIL_KEYS` 17 → 65. Grading, not serving; the code-owned slate still decides what serves. Makes the whole backlog visible and hourly. **Run this first** |
-| **D1 derivations** | hauska-factory | 6 rails from data on hand: `situsState`, `acreageSqft`, `landUseDescription`, `landUseVintage`, `exemptionCodes`, `citationUrl` |
+| **D1 derivations** | hauska-factory | 5 rails from data on hand: `situsState`, `acreageSqft`, `landUseVintage`, `exemptionCodes`, `citationUrl`. **`landUseDescription` removed 2026-09-10** — the lane verified live that no such `cad_property` column and no code-to-description lookup exist; it is not derivable, moves to 3P-13 |
 | **D2 permits cell-fill** | hauska-factory + LDT | `permit_record` → `permits` companion. Austin/Travis only; the other five stay honestly unaccounted. v1 on `address_normalized`; the TCAD id-join is a follow-on |
 | **D3 writer-runner unblock** | hauska-engine + hauska-factory | Add `road-node`, `rail-corridor-fact`, `rrc-pipeline-fact`, `parcel-node` to the atoms-writer allowlist, template the jobs, then cell-fill |
 | **D4 terrain grain** | hauska-factory | Terrain tiles are baked; decide what the cell carries and write it |
@@ -213,6 +213,37 @@ long enough to produce a real backlog.
 
 ---
 
+# Phase 3P — the deferred register, a parallel track to acquisition
+
+Phase 3 acquires what we do not hold. **Phase 3P drains what we deliberately put down.**
+It runs alongside, not after, because none of it blocks acquisition and all of it rots.
+
+**Every item declares its TRIGGER — the event that brings it back.** An item with no
+trigger is a wish, not a deferral, and this operation has a long record of wishes. The
+trigger is what makes this a register rather than a list.
+
+| # | Item | Why deferred | TRIGGER that wakes it | Owner |
+|---|---|---|---|---|
+| 3P-1 | **cadRoll overlay ruling.** Operator ruled 2026-09-10: the overlay is TRANSITIONAL, not permanent. Retirement is scheduled by measured divergence, not by calendar | Cannot be decided safely until we know whether the two values disagree | **L4 divergence measurement reports a number.** Until then L3 is held for these 36 pairs | operator |
+| 3P-2 | **`yearBuilt` has two legacy sources** depending on call site — baked in the snapshot on `brokerageNodeFacets`, live via `structuralFactRead` on `propertyExplorer`. A parcel can serve a different year by route | Found inside L1's audit; independent of any retirement | Same L4 pass; measure it in the same query | property |
+| 3P-3 | **Shared preamble prune.** 5,605 of 8,293 bytes of `_state/shared/STANDING_DECISIONS.md` is SmartCity G-row state shipped into every factory lane; 547 bytes are genuinely fleet-wide | Touches a file with concurrent writers; moving 15 bullets into OPS-17 is a deliberate card | **Any lane reports the preamble as noise, or a second program gets a preamble** | integration |
+| 3P-4 | **Dispatch preflight rule** (existence + blast radius). Logged in `_sessions/2026-09-10_ops21_program_open_and_dispatch_claude_code.md` | Prose today, which is the condition it exists to fix | **The next dispatch compiled for any program** — it should not ship without this | integration |
+| 3P-5 | **Three identity rulings**: does `place_key` normalize to match `parcelNodeId`; which CAD tax year is authoritative (latest vs per-county declared); does the `place_key` to `entity_id` crosswalk become a contract type | All three block a second state and none blocks Texas | **Utah, or any second state, reaching the roster** (OPS-19 F-13/F-14) | operator |
+| 3P-6 | **claims/leases split.** `claims` is wired into `parcel-record-fill.mjs` only; `conformant.mjs`, `f10-cad-loop.mjs`, `p2-juris.mjs`, `restamp-access.mjs` still use the random-token lease | ADR-031 says close it with the atom-backfill card, not standalone | **The CTX atom-backfill card opening beyond boundary/envelope** | property |
+| 3P-7 | **Which of four bakes is authoritative per rail.** Tier1, Tier1Conformant, Tier2, Tier2Conformant all run | No defect traced to it yet | **Any rail whose value differs by bake**, or L4 finding a divergence it explains | property |
+| 3P-8 | **Permits TCAD id-join.** `permit_record.tcad_id` is stored for a verified id-join and unused; the county GIS point query returns TCAD `PROP_ID` and the export carries a geo-format TCAD ID, correspondence unverified | v1 ships on `address_normalized` | **D2 measuring the address-match miss rate.** If it is small the join stays deferred; if large it becomes urgent | property |
+| 3P-9 | **`og-title` productionisation for `mineralRights`.** Real title-chain subsystem, method v0, proven on one Winkler tract, WI computation is a stub, graded UNGRADEABLE-YET because the answer key's OCR is unreadable | Not a CTX rail today and not on the serve path | **A readable answer key** for the Winkler exhibit, or a customer asking for mineral rights | operator |
+| 3P-10 | **Three atom-contract types the trading spine already has**: `ConfidenceBasis`, `OutcomeLabel`, `OutcomeDeclineBasis`. See `_sessions/2026-09-10_county_contract_and_scaling_diagnosis_claude_code.md` | Cheap while someone is in that repo; pointless as its own trip | **The next substantive session in Empressa Trading** | operator |
+| 3P-11 | **Jurisdiction model questions**: is an ETJ parcel `in-city` or `unincorporated` for the 18 collapsing rails; do the four `intersection-v1` counties get re-run to `covers-v1` | Product questions, not engineering; the six counties work today | **A customer question that turns on ETJ**, or the first report that spans all six as one number | operator |
+| 3P-13 | **`landUseDescription` has no source.** `cad_property` carries no such column and no code-to-description lookup table exists anywhere. We DO hold `landUseCode`, so the value exists and only the Texas state property-use code lookup is missing. It must NOT be written `absent-verified` — that would claim the parcel has no land use description when we simply lack the lookup | Acquiring a code table is Phase 3 work; D1 forbids new acquisition | **The Texas property-use code table being acquired**, or a customer asking for the description text rather than the code | property |
+| 3P-12 | **`boundary.digitisation_tolerance`** as a 69th county-contract column, and the three inferred columns' fate | Operator review owed on the contract's inferred set | **County seven entering the roster** | operator |
+
+**Rule for this register:** an item leaves only by being done or by an explicit ruling that
+it is dead. An item whose trigger fires and is not picked up is reported by the next status
+pass. Adding an item requires naming its trigger; a deferral with no trigger is refused.
+
+---
+
 # How this plan stays honest — the anti-drift mechanism
 
 Every plan in this operation to date has strayed the same way: the plan is prose, the work
@@ -240,7 +271,7 @@ S3    every registered write path has a test asserting a non-declined result for
 S4    count of (county, rail) pairs in the 19 zoning-envelope rails with no
       gate verdict row  ==  0
 D5    len(DEFAULT_SCHED_RAIL_KEYS)  ==  65
-D1    unaccounted count for the 6 derivable rails  ==  0
+D1    unaccounted count for the 5 derivable rails  ==  0
 D2    unaccounted count for `permits` on Austin-city parcels in Travis  ==  0
 D3    unaccounted count for roads, railCorridor, pipelines, parcelGeometry  ==  0
 D4    unaccounted count for terrain  ==  0
@@ -253,6 +284,9 @@ L1    count of slated (county, rail) pairs whose old serve path has not been
 L2    count of (county, rail) pairs record-served  ==  390 minus rails ruled
       out of the grid by D6 and Z8
 L3    count of legacy paths L1 found reachable that are still reachable  ==  0
+L4    count of (parcel, cadRoll rail) pairs where the baked snapshot value and the
+      parcel_record cell value DISAGREE  ==  measured (a number, not a target)
+3P    count of deferred-register items with no declared trigger  ==  0
 ```
 
 **Program done** is one number: `unaccounted` across 65 rails × 6 counties, excluding

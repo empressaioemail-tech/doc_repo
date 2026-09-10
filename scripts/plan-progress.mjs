@@ -41,10 +41,18 @@ const ENVELOPE_RAILS = [
   "maxLotCoveragePct",
   "maxFootprintSqFt",
 ];
+/**
+ * D1's derivable set. landUseDescription REMOVED 2026-09-10: the D1 lane verified live that
+ * cad_property carries no such column and no code-to-description lookup exists anywhere in the
+ * database. Not derivable from data on hand, so not D1's, and it must NOT be written
+ * absent-verified -- we hold landUseCode, so the value exists and only the lookup is missing.
+ * It stays `unaccounted` and moves to the Phase 3P deferred register.
+ * landUseVintage STAYS: DECLARED_CAD_VINTAGES (hauska-factory src/config/cad-declared-vintages.mjs)
+ * carries taxYear and tier per county.
+ */
 const DERIVABLE_RAILS = [
   "situsState",
   "acreageSqft",
-  "landUseDescription",
   "landUseVintage",
   "exemptionCodes",
   "citationUrl",
@@ -70,7 +78,7 @@ const unaccountedIn = (rails, extraJoin = "") => `
     FROM parcel_record_cell c${extraJoin}
    WHERE split_part(c.place_key, ':', 1) IN (${FIPS_LIST})
      AND c.rail_key IN (${railList(rails)})
-     AND c.cell_state = 'unaccounted'`;
+     AND c.cell_state->>'kind' = 'unaccounted'`;
 
 export const PREDICATES = [
   {
@@ -119,7 +127,7 @@ export const PREDICATES = [
      AND lpj.disposition = 'in-city'
      AND lower(lpj.city_name) = 'austin'
      AND c.rail_key = 'permits'
-     AND c.cell_state = 'unaccounted'`,
+     AND c.cell_state->>'kind' = 'unaccounted'`,
     note: "Austin/Travis ONLY. San Antonio is Bexar, outside the six. The other five counties stay honestly unaccounted and that is correct, not a failure.",
   },
   {
@@ -143,7 +151,7 @@ export const PREDICATES = [
     FROM parcel_record_cell c
    WHERE split_part(c.place_key, ':', 1) IN (${FIPS_LIST})
      AND c.rail_key IN (${railList(ONDEMAND_RAILS)})
-     AND c.cell_state <> 'available-on-request'`,
+     AND c.cell_state->>'kind' <> 'available-on-request'`,
     note: "RULED 2026-09-10: these carry the new sixth state `available-on-request`, which requires a named REACHABLE requestPath (P-85 Records Request) and which the gate treats as satisfied. The predicate counts cells NOT in that state, so a cell relabelled to anything else — including a fabricated absence — reopens this lane. `_decisions/2026-09-10_available_on_request_sixth_cell_state.md`.",
   },
   {
@@ -154,7 +162,7 @@ export const PREDICATES = [
   SELECT count(*) AS n
     FROM parcel_record_cell c
    WHERE split_part(c.place_key, ':', 1) IN (${FIPS_LIST})
-     AND c.cell_state = 'unaccounted'`,
+     AND c.cell_state->>'kind' = 'unaccounted'`,
     note: "The headline. Excludes nothing. Z8-deferred and D6-ruled rails still count here until their rulings land, deliberately, so the number cannot be improved by redefining it.",
   },
 ];
@@ -214,6 +222,14 @@ function selfTest() {
   push(
     "a predicate narrower than the six counties DECLARES why (D2 is deliberately Travis-only)",
     PREDICATES.every((p) => CTX.every((f) => p.sql.includes(f)) || Boolean(p.note))
+  );
+  push(
+    "TYPE: no predicate compares cell_state directly - it is jsonb, the state is at ->>'kind'",
+    PREDICATES.every((p) => !/cell_state\s*(=|<>)/.test(p.sql))
+  );
+  push(
+    "TYPE: every predicate touching cell_state reads ->>'kind'",
+    PREDICATES.every((p) => !p.sql.includes("cell_state") || p.sql.includes("cell_state->>'kind'"))
   );
   push(
     "NON-VACUITY: no predicate matches every row — each names cell_state or a verdict absence",
