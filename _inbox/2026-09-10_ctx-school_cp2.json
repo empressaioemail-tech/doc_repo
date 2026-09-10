@@ -1,0 +1,45 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "lane": "CTX-SCHOOL",
+  "timestamp": "2026-09-09T19:40:00-05:00",
+  "adversarialFinding_dispatchBriefCorrection": {
+    "claim": "the dispatch's own count (twelve parcels, two counties: Bastrop 10, Travis 2) is short by one parcel and one county",
+    "evidence": "live GROUP BY over parcel_record_cell.cell_state->>'kind' scoped by place_key prefix, all six CTX counties: 48021=10 unaccounted, 48055=0, 48209=0, 48309=1 unaccounted, 48453=2, 48491=0 (981392 value + 13 unaccounted total, 0 pre-existing 'refused' anywhere on this rail)",
+    "mclennanRow": "parcel_gate_verdict has a real row for county_fips=48309, rail_key=schoolDistrict, verdict=refuse, unaccounted_count=1, evaluated_at=2026-09-04T11:26:24.934Z, run_id=18fa6c0f-d345-49bc-aa97-c5fd2f5d78fc -- the SAME frozen manual run_id as the Bastrop and Travis rows the dispatch named, just not mentioned in the brief",
+    "dispositionPerDevProcess3.2": "reporting a planner figure as wrong is a successful outcome, not a deviation; McLennan parcel 48309:417928 is treated as in-scope for this lane (same rail, same run_id, same mechanism) and included in every count below"
+  },
+  "mechanismFalsification": {
+    "mechanismA_degenerateGeometry": {
+      "verdict": "REJECTED for all 13",
+      "evidence": "every one of the 13 has 1-2 txgio_parcel rows, all geom NOT NULL, ST_IsValid=true on every fragment, and the exact production centroid expression ST_Centroid(ST_MakeValid(ST_Union(t.geom))) returns a real, non-empty POINT for all 13 (live-run against the real HOIST_SCHOOL_DISTRICTS_SQL + SCHOOL_DISTRICT_PAGE_SQL constants imported from the job module, not hand-reconstructed)"
+    },
+    "mechanismC_acquisitionIncomplete": {
+      "verdict": "REJECTED for all 13",
+      "evidence": "an unscoped statewide ST_Contains against all 1,017 valid-geometry rows of tx_school_district (the full acquired source, no county hoist at all) finds EXACTLY ONE covering district for every one of the 13 -- Manor ISD (fid 798, 227-907) x6, Del Valle ISD (fid 684, 227-910) x3, Burnet Cons ISD (fid 977, 027-903) x2, Aquilla ISD (fid 825, 109-912) x1 -- named districts, real GEOIDs, real district_code, no ties, no ambiguity"
+    },
+    "mechanismB_genuineCoverageGap": {
+      "verdict": "REJECTED for all 13, as literally defined",
+      "reasoning": "mechanism B requires falling outside EVERY staged district polygon; that is false here -- a real staged polygon contains every one of the 13. What is actually true is narrower and different: each falls outside every polygon the PER-COUNTY HOIST includes as a candidate for that parcel's catalogued county. That is a candidate-set defect, not an absence, and writing absent-verified for these would be exactly the lie ENFORCEMENT.md and this dispatch warn against -- CTX-LEAVES2's own 100%-refused finding is the cautionary precedent."
+    },
+    "discoveredMechanismD_crossJurisdictionBoundaryHoistGap": {
+      "verdict": "CONFIRMED for all 13 -- the actual, single, shared root cause",
+      "rootCauseLocation": "src/jobs/parcel-school-district.mjs, HOIST_SCHOOL_DISTRICTS_SQL, final WHERE clause: `AND ST_Intersects(geom, county_geom)` (pre-fix)",
+      "mechanism": "every affected parcel's centroid sits just outside its own CATALOGUED county's tx_county_boundary polygon and just inside the TRUE neighboring county's polygon instead; tx_school_district and tx_county_boundary are independently digitized sources whose shared county-line edges do not align to the meter, so the district polygon and the catalogued county's polygon fail strict ST_Intersects by a small, real margin even though the parcel's true district is right there",
+      "perParcelMeasuredSample": [
+        { "placeKey": "48021:11585", "trueDistrict": "Manor ISD (227-907)", "metersOutsideCatalogedCounty": 25.46, "trueCounty": "48453 (Travis)", "districtToCountyGapMeters": 0.79 },
+        { "placeKey": "48021:13738", "trueDistrict": "Del Valle ISD (227-910)", "metersOutsideCatalogedCounty": 2.62, "trueCounty": "48453 (Travis)", "districtToCountyGapMeters": 0.80 },
+        { "placeKey": "48453:354721", "trueDistrict": "Burnet Cons ISD (027-903)", "metersOutsideCatalogedCounty": 370.84, "trueCounty": "48053 (Burnet)", "districtToCountyGapMeters": 0.92 },
+        { "placeKey": "48309:417928", "trueDistrict": "Aquilla ISD (109-912)", "metersOutsideCatalogedCounty": 1.19, "trueCounty": "48217 (Hill)", "districtToCountyGapMeters": null }
+      ],
+      "remainingNine": "not individually meter-measured (time-bounded); each individually confirmed via the same statewide single-hit test above, and all 13 collectively confirmed via the full-population live dry-run in the close artifact",
+      "whyInvisibleElsewhere": "p2-juris-store.mjs HOIST_CITIES_SQL and parcel-overlay-districts.mjs's hoist share the identical bbox+ST_Intersects(county) pattern and are unmodified by this fix -- untested for this defect class, but no live evidence it manifests there, because city/overlay-district polygons are compact interior features that essentially never have an edge running along a county line the way a Texas ISD boundary routinely does (acquire-school-district.mjs's own module doc: ISDs span multiple counties 'more so than a city')."
+    }
+  },
+  "fixDesign": {
+    "change": "remove the `AND ST_Intersects(geom, county_geom)` clause from HOIST_SCHOOL_DISTRICTS_SQL; keep the bbox pre-filter (west/east/south/north_lng/lat comparisons against tx_county_boundary), matching the same bbox test the hoist already ran",
+    "whySafe": "the per-parcel decision is untouched: SCHOOL_DISTRICT_PAGE_SQL still does the exact ST_Contains(z.geom, pr.centroid) test. A wider candidate pool can only ADD legitimate candidate districts to test against; it cannot fabricate a hit or change any already-correct value.",
+    "scopeDecision": "fix ONLY parcel-school-district.mjs's own hoist. Do NOT touch p2-juris-store.mjs (cities) or parcel-overlay-districts.mjs even though they share the pattern -- different rail, no live evidence of the same defect there, dispatch scopes this lane to schoolDistrict. Flagged as an OPEN item in the close's leave_behind.",
+    "notATolerance": "no buffer/distance constant introduced, no default value, no filter, no change to evaluatePreBakeReadiness or the rail gate -- the fix only widens the writer's own candidate SEARCH SPACE, which the exact per-parcel test still filters precisely."
+  }
+}
