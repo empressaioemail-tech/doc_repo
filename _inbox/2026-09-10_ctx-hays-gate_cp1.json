@@ -1,0 +1,63 @@
+{
+  "lane": "CTX-HAYS-GATE",
+  "checkpoint": "CP1",
+  "phase": "design/pre-build",
+  "timestamp": "2026-09-10T00:00:00Z",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-hays-gate",
+  "branch": "explore/ctx-hays-cadroll-postcondition",
+  "createdFrom": "origin/main",
+  "commit": "52c1b78",
+  "planRow": "P-124",
+  "repo": "hauska-factory",
+  "corrections_internalized": [
+    "Hays' pre-bake rail gate PASSES (parcel_gate_verdict, county_fips=48209). The blocker is the cadRoll POST-condition (publish-cadroll-postcondition.mjs), a different gate that fires after the bake, not before it. Do not conflate the two.",
+    "The 22.22% figure (38,444/173,050) in circulation is NOT the gate's arithmetic. CADROLL_EXPECTATION_SQL only selects prop_ids where cad_property already carries a real dollar (land_value>0 OR market_value>0 OR assessed_value>0 OR improvement_value>0). The 38,060 geometry-only rows CTX-HAYS-SPLIT identified are structurally excluded from this population and cannot be the cause of the refusal.",
+    "MAX_MISS_RATE (0.02) is not to be touched under any finding.",
+    "Hays' 2026 roll (134,606 accounts) is independently confirmed correct by Hays CAD's own 2025 Annual Report; that question is closed and out of scope."
+  ],
+  "readSourcesFirst": [
+    "P:/doc_repo/_dispatches/2026-09-10_ctx-hays-gate_dispatch.md (full)",
+    "90_runbooks/AGENT_CONTRACT.md (full)",
+    "90_runbooks/DEV_PROCESS.md (full)",
+    "90_runbooks/fleet_memory_practice.md (M0 install block)",
+    "src/lib/publish-cadroll-postcondition.mjs (CADROLL_EXPECTATION_SQL, CADROLL_BAKED_SQL, evaluateCadRollPostcondition read in full at source, not from the dispatch's excerpt)",
+    "src/jobs/bastrop-publish.mjs (call site, run_events recording, catch-path behavior: refusal detail is NOT persisted to run_events -- only runs.refuse_code, a bare string -- confirming the dispatch's cli.mjs warning generalizes to this path too)"
+  ],
+  "storeTopologyConfirmed": {
+    "instrument": "scripts/ctx-w2/store-topology.mjs (self-test PASS, both positive and negative controls correct)",
+    "FACTORY_DATABASE_URL_REPLICA": {
+      "host": "ep-crimson-lake-aummgosl.c-10.us-east-1.aws.neon.tech",
+      "holds": ["parcel_record", "parcel_record_cell", "landing_cad_property", "parcel_gate_verdict"],
+      "doesNotHold": ["cad_property", "place_layer_snapshots", "atoms", "txgio_parcel"]
+    },
+    "PRODUCTION_NEONDB_URL": {
+      "host": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech",
+      "holds": ["cad_property", "place_layer_snapshots", "txgio_parcel"],
+      "doesNotHold": ["parcel_gate_verdict", "parcel_record", "atoms"]
+    },
+    "STAGING_NEONDB_URL": {
+      "host": "ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech",
+      "holds": ["cad_property", "place_layer_snapshots", "txgio_parcel"],
+      "doesNotHold": ["parcel_gate_verdict", "parcel_record", "atoms"],
+      "note": "separate Neon host from PRODUCTION_NEONDB_URL -- staging and production cad_property/place_layer_snapshots are NOT the same rows. Both must be checked; whichever actually carries Hays baked snapshots is the one the gate's real numbers come from."
+    }
+  },
+  "planForCP2": [
+    "Query parcel_gate_verdict for county_fips=48209 on FACTORY_DATABASE_URL_REPLICA to re-confirm the pre-bake rail-gate-passes correction at source (not from the dispatch's prose).",
+    "Query the Factory 'runs' + 'run_events' tables for any real bastrop-publish run against county=48209, on either target, to find an actual recorded cadroll-postcondition or refuse_code=CADROLL_RENULLED event.",
+    "Run CADROLL_EXPECTATION_SQL verbatim (no LIMIT, i.e. the true population) plus the literal LIMIT 500 sampled form against whichever of PRODUCTION_NEONDB_URL / STAGING_NEONDB_URL actually holds Hays cad_property rows with real dollars, to get sampled-vs-population miss rates.",
+    "Run CADROLL_BAKED_SQL against the matching place_layer_snapshots to classify each expected prop_id as hit/miss/absentSnapshot, and pull real example prop_ids for misses.",
+    "Cross-reference misses against the known situs-skip defect (LDT 9873ff11, not yet in any image) to assess mechanism and the re-run-after-pin question."
+  ],
+  "constraintsHonored": [
+    "No bake, publish, walk, Cloud Build, or Cloud Run job invoked.",
+    "No write to cad_property, no backfill, no re-acquire.",
+    "MAX_MISS_RATE untouched.",
+    "No writes to legacy-design-tools, hauska-engine, or hauska-map from this worktree.",
+    "Secrets pulled from GCP Secret Manager per 90_runbooks/seat_loop.md, read-only handles only, never echoed to stdout/close."
+  ],
+  "missionPremise": "P-124 CTX-HAYS-GATE dispatch (2026-09-10): Hays' cadRoll post-condition refusal has never been read at the source-query level; the framing carried since 2026-09-09 (22.22%% derived from geometry-only rows) is a mischaracterization of what the gate actually measures.",
+  "completionPredicate": "Real sampled-vs-population miss rate for Hays reported with counting rules and example prop_ids, a stated mechanism (with one rejected alternative and evidence), and a plain yes/no on re-running Hays after the LDT pin lands -- all sourced from a run record and/or direct re-derivation of the gate's own SQL against the live store, never from prose.",
+  "scopeBasis": "Measurement lane only per dispatch title. A code diff is a possible finding, not the assignment. Scope is bounded to the cadRoll post-condition path in hauska-factory; the pre-bake readiness gate, MAX_MISS_RATE, and the Hays roll-completeness question are explicitly out of scope by the dispatch's own corrections."
+}

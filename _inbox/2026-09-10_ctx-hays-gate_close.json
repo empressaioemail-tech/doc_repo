@@ -1,0 +1,135 @@
+{
+  "lane": "CTX-HAYS-GATE",
+  "planRow": "P-124",
+  "repo": "hauska-factory",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-hays-gate",
+  "branch": "explore/ctx-hays-cadroll-postcondition",
+  "baseCommit": "52c1b78 (origin/main HEAD at worktree creation)",
+  "codeDiff": "none. Confirmed at close: `git status` on this worktree reads clean, working tree matches baseCommit exactly. This is a measurement lane per the dispatch's own framing ('a code diff may or may not be warranted; that is your finding, not your assignment') and it produced a precise fix location, not an implementation.",
+
+  "missionPremise": "P-124 CTX-HAYS-GATE dispatch (2026-09-10): the cadRoll post-condition's real refusal for Hays has never been read at the source-query level, and the 22.22%% figure in circulation (38,444/173,050) is not the gate's own arithmetic.",
+  "completionPredicate": "Real sampled-vs-population miss rate reported with counting rules and example prop_ids, sourced from a run record plus a direct re-derivation of the gate's own SQL against the live store; a stated mechanism with one rejected alternative and evidence; a plain yes/no on re-running Hays after the LDT pin; and, if a fix is warranted, its location precise enough to dispatch.",
+  "scopeBasis": "Measurement lane only. No bake, publish, walk, Cloud Build, or Cloud Run job invoked. No write to cad_property. MAX_MISS_RATE untouched. No writes to legacy-design-tools, hauska-engine, or hauska-map (legacy-design-tools-p118 was read via `git show`, never edited).",
+
+  "checkpoints": [
+    "_inbox/2026-09-10_ctx-hays-gate_cp1.json (design/pre-build: seat/worktree/branch/commit confirmed, corrections internalized, store topology mapped)",
+    "_inbox/2026-09-10_ctx-hays-gate_cp2.json (pilot/mid-work: sampled-vs-population numbers, mechanism confirmed, critical correction to the dispatch's own framing)"
+  ],
+
+  "instrumentsUsed": [
+    "scripts/ctx-w2/store-topology.mjs -- self-test PASS (both positive and negative controls correct) before trusting any table lookup; confirmed parcel_gate_verdict/runs/run_events live ONLY on FACTORY_DATABASE_URL_REPLICA and cad_property/place_layer_snapshots live ONLY on the per-target NEONDB_URL (staging and production are separate Neon hosts, not aliases of one store)",
+    "The gate's own exported code -- CADROLL_EXPECTATION_SQL, CADROLL_BAKED_SQL, evaluateCadRollPostcondition, placeKeyFor -- imported directly from src/lib/publish-cadroll-postcondition.mjs and run against the live store, never retyped",
+    "runs / run_events on FACTORY_DATABASE_URL_REPLICA (read-only, per 90_runbooks/seat_loop.md guidance to use the replica for reporting/measurement queries)",
+    "git show at pinned LDT SHA 65f924e8 in the legacy-design-tools-p118 worktree (confirmed 65f924e8 is an ancestor of that worktree's HEAD) -- read-only, to see the bake's actual tax-year selection code",
+    "Secrets pulled live from GCP Secret Manager (PRODUCTION_NEONDB_URL, STAGING_NEONDB_URL, FACTORY_DATABASE_URL, FACTORY_DATABASE_URL_REPLICA) per seat_loop.md; never echoed, written only to a scratch file outside the repo tree, deleted at end of session"
+  ],
+
+  "correction1_verifiedAtSource": {
+    "claim": "Hays' pre-bake rail gate passes; the blocker is the cadRoll post-condition, a different gate.",
+    "verification": "Live query, 2026-09-10, FACTORY_DATABASE_URL_REPLICA: parcel_gate_verdict WHERE county_fips='48209' returns 17 rows, all verdict IN ('pass','excluded'), zero 'refuse'. Sanity check against the dispatch's own claim: Bastrop (48021) and Travis (48453) both show verdict='refuse' on rail_key='schoolDistrict', exactly as stated.",
+    "verdict": "CONFIRMED, at source, not from prose."
+  },
+
+  "theRealRefusal": {
+    "runRecord": "runs.id=c6f61728-b664-41df-ac62-ed17b2caa162, phase=publish, target=staging:48209, started_at=2026-09-09T12:16:36.168Z, status=failure, refuse_code=CADROLL_RENULLED. This is the ONLY run for county 48209 with this refuse_code.",
+    "runRecordLimitation": "run_events for this run carries pre-bake-readiness (passed) and 22 bake-page events, but NO cadroll-postcondition body: recordCadRollEvent (bastrop-publish.mjs:437) only executes on the success path -- a refusal throws before it runs, so the run record only carries the bare termination reason string, never sampled/compared/misses/examples. This confirms the dispatch's cli.mjs warning generalizes to the run-record path too. The real numbers below were obtained by re-deriving the gate's own query against the live store, not from any run record."
+  },
+
+  "realNumbers": {
+    "countingRule": "CADROLL_EXPECTATION_SQL (DISTINCT prop_id, county_fips=$1, land_value>0 OR market_value>0 OR assessed_value>0 OR improvement_value>0) joined against CADROLL_BAKED_SQL (place_layer_snapshots, adapter_key='node-facets:tier1', has_dollar = jsonb_typeof(...)='object' on any of the four cadRoll sub-fields), evaluated via the gate's own evaluateCadRollPostcondition -- run verbatim against STAGING_NEONDB_URL (the target the real failing run used) and cross-checked byte-identical against PRODUCTION_NEONDB_URL.",
+    "sampled_asTheRealRunExecutedIt": { "sampleClause": "ORDER BY prop_id LIMIT 500 (the gate's literal SQL)", "compared": 500, "misses": 355, "missRate": 0.710, "note": "TEXT sort on prop_id, per the column's actual type -- not a numeric sort." },
+    "truePopulation_noLimit": { "compared": 172803, "misses": 38197, "missRate": 0.2210 },
+    "sampledVsPopulationGap": "The sample overstates the true miss rate by 3.2x (71.0% vs 22.1%). This directly confirms the dispatch's suspicion: the ascending-prop_id (text-sort) LIMIT 500 sample is biased, and the bias makes the gate look far worse than the true population -- i.e. a re-run today would refuse just as hard on the sample even if the true population's real rate were much smaller, and conversely the sample cannot be read as a reliable proxy for the population in either direction.",
+    "exampleParcelIds_fromTheGatesOwnSample": ["100002", "10001", "100010", "100012", "100015"],
+    "reconciliationWithTheOldCirculatingNumber": "The old 22.22%% figure (38,444/173,050) and the true gate arithmetic (38,197/172,803 = 22.10%%) are numerically close but NOT the same computation, and the closeness is coincidental. rollN=173,050 (pre-bake readiness event, this same run) is the UNION of all distinct prop_ids across both tax years (172,116 @2025 + 134,606 @2026 - 133,672 in both = 173,050), not the 2026 roll. The old numerator (38,444) is 'prop_ids present in cad_property at 2025 with no row at 2026' counted without excluding zero-dollar rows; the true numerator (38,197) is that same population minus exactly 247 rows that carry no dollar in any field (which CADROLL_EXPECTATION_SQL's own ABSENCE carve-out correctly excludes). 173,050-172,803=247 and 38,444-38,197=247, both reconciled exactly, zero unexplained residual."
+  },
+
+  "mechanism": {
+    "chosen": "CADROLL_EXPECTATION_SQL (src/lib/publish-cadroll-postcondition.mjs:94-104) carries no tax_year predicate and matches a dollar value in ANY historical cad_property row for a prop_id, while the bake reads only the county's DECLARED vintage for that tax year.",
+    "evidence": [
+      "legacy-design-tools @ 65f924e8 (pinned publish SHA; confirmed ancestor of legacy-design-tools-p118 HEAD), lib/cad-ingest/src/vintage.ts:58 -- Hays' declared vintage is hardcoded { taxYear: 2026, tier: 'cad-export' }.",
+      "legacy-design-tools @ 65f924e8, artifacts/api-server/src/lib/joinIntegrityGate.ts:351-380 (fetchCountyCadPropertyRoll) -- 'SELECT ... FROM cad_property WHERE county_fips = $1 AND tax_year = $2', $2 bound to declared.taxYear. File comment: '(L17 / P-25 vintage-read discipline -- replaces \"latest tax_year wins\")' -- a deliberate, documented design choice on the bake side.",
+      "Live measurement, STAGING_NEONDB_URL, 2026-09-10: cad_property county_fips=48209 has 172,116 rows at tax_year=2025 and 134,606 at tax_year=2026 (134,606 matches Hays CAD's own confirmed-correct 2026 total, per the dispatch's closed roll-completeness ruling).",
+      "Directly measured (never by subtraction, per DEV_PROCESS 1.3): 38,444 prop_ids exist at tax_year=2025 with NO row at all at tax_year=2026. Of those, 38,197 carry a real dollar under CADROLL_EXPECTATION_SQL's own 4-field test.",
+      "Classified the FULL 38,197-row miss list (not a sample) against 2026-row existence directly: 38,197 of 38,197 (100.00%) have zero 2026 cad_property row. No miss is explained by anything else."
+    ],
+    "rejected": [
+      {
+        "candidate": "situsForBake skip path (LDT 9873ff11, punctuation-only situs, not in any image yet)",
+        "why": "Exact count within the full 38,197-row miss population: 521 rows (1.4%) have a punctuation-only situs_address. This pin could affect at most 1.4% of the miss population; it cannot explain the other 98.6%.",
+        "evidence": "Direct SQL count, not a sample extrapolation, on STAGING_NEONDB_URL, 2026-09-10."
+      },
+      {
+        "candidate": "a join that drops the dollar object for a subset",
+        "why": "Not needed -- vintage-absence alone accounts for 100.00% (38,197/38,197) of misses with zero residual to explain."
+      },
+      {
+        "candidate": "the bake reads a stale/different snapshot of cad_property than the expectation query does (a caching or replication-lag issue rather than a vintage-scope issue)",
+        "why": "Ruled out by the vintage evidence itself: the mismatch is fully explained by the DECLARED-vintage design (tax_year=2026 by config, not by staleness), and staging and production -- two independent stores -- return byte-identical counts and example prop_ids, which would be an improbable coincidence for a timing/staleness artifact."
+      }
+    ]
+  },
+
+  "criticalCorrectionToTheDispatch": {
+    "whatTheDispatchClaimed": "\"the failing population is parcels that have dollars in cad_property, do have a baked snapshot, and whose snapshot lacks the dollar object. That is a real bake defect on real accounts, and nobody has read the list\" and separately, \"the 38,060 geometry-only rows CTX-HAYS-SPLIT identified cannot be causing this refusal.\"",
+    "whatWasFound": "Cross-tabulated the full 38,197-row miss list against CTX-HAYS-SPLIT's own already-published split of this exact 38,444-row population (_inbox/2026-09-09_ctx-hays-split_close.json, same anti-join, same 38,444 total, verified as the identical set) into 384 genuine-CAD-lineage rows vs 38,060 geometry-only/no-independent-CAD-signal rows. Result: 37,813 of the 38,197 misses (99.0%) are the source_file='stratmap25-landparcels_48209_lp.zip' / assessed_value-IS-NULL rows CTX-HAYS-SPLIT already classified as geometry-only. Only 384 misses (1.0%) are the hays-export2.zip / assessed-value-recovered genuine-CAD-lineage rows CTX-HAYS-SPLIT already flagged for recordRetirement. 37,813 + 384 = 38,197 exactly, zero residual.",
+    "theNuanceThatReconcilesBothLanes": "CTX-HAYS-SPLIT's 'no CAD signal' label rested on assessed_value / exemption_codes / living_area_sqft -- none of which StratMap's TxGIO mapper ever populates (legacy-design-tools @ 65f924e8, lib/cad-ingest/src/txgio/landuse.ts:143-146: landValue/improvementValue/marketValue ARE read straight from the shapefile's own LAND_VALUE/IMP_VALUE/MKT_VALUE attributes; only assessedValue is hardcoded null). Those three fields are exactly what satisfies CADROLL_EXPECTATION_SQL's OR test. So the 'geometry-only' population is not actually dollar-free -- it carries land/market/improvement figures sourced from TxGIO's own parcel attributes (themselves CAD-derived upstream, per the StratMap/TxGIO program's design, just via a different distribution channel than Hays' own tabular export). Both lanes' underlying measurements are correct; the dispatch's inference that the two populations must be disjoint was the wrong inference, not a bad count.",
+    "whyThisMattersButDoesNotChangeTheFix": "The severity/urgency framing changes (this is overwhelmingly the already-flagged geometry-only population, not a fresh 'real account' defect), and CTX-HAYS-SPLIT's still-open operator question about that population's honest absence state becomes directly relevant here too. But the CODE-LEVEL mechanism and fix location are the same regardless of framing: CADROLL_EXPECTATION_SQL's missing tax-year scope produces a false 'expected' classification for any dollar-bearing row absent from the declared current vintage, whether that dollar came from a genuine CAD export or from TxGIO's StratMap attributes."
+  },
+
+  "reRunRecommendation": {
+    "answer": "NO -- do not expect a re-run after the LDT 9873ff11 pin lands to resolve this refusal.",
+    "reasoning": "The pin fixes the punctuation-only situs skip (measured at 1.4% of the miss population, 521/38,197) and adds an unrelated acreage-earned-absence rule (a different rail, not cadRoll dollars). Neither touches the vintage-scope gap that explains 100% of the misses. Re-running Hays on staging (or production, which is confirmed byte-identical right now) after the pin would still refuse at approximately the same 22.1% true miss rate, because the underlying cad_property vintage-orphan population (38,444 prop_ids absent from the 2026 roll) is a fact about the ingested data, not something the pin changes.",
+    "note": "This is exactly the 'legitimate and valuable answer' the dispatch pre-authorized for a measurement lane where the evidence points to a re-run -- except here the evidence points the other way: a re-run alone will NOT clear this gate, and a query-level fix is warranted."
+  },
+
+  "fixLocationIfWarranted": {
+    "warranted": true,
+    "where": "src/lib/publish-cadroll-postcondition.mjs, CADROLL_EXPECTATION_SQL (currently lines 94-104). The query needs to scope its dollar-presence test to the SAME tax_year the bake actually consumed for that county, not any historical row.",
+    "twoImplementationOptions_notImplementedHere": [
+      "(a) Thread the county's declared bake vintage (legacy-design-tools lib/cad-ingest/src/vintage.ts, tryResolveDeclaredCadVintage) through to requireCadRollPostcondition as an explicit parameter, and add `AND tax_year = $3` to CADROLL_EXPECTATION_SQL. Most correct, but requires hauska-factory to either import/mirror that declared-vintage table from legacy-design-tools or receive it as a passed argument from the caller that already resolved it for the bake.",
+      "(b) A simpler, self-contained fix inside hauska-factory: scope to the county's own current maximum tax_year (`AND tax_year = (SELECT MAX(tax_year) FROM cad_property WHERE county_fips = $1)`), which equals 2026 for Hays today. Cheaper to ship, but silently assumes 'latest ingested year' equals 'declared bake vintage' for every county -- exactly the assumption the bake side deliberately moved away from per the L17/P-25 vintage-read discipline comment. Whichever lane implements this should verify that assumption holds for every CTX county before relying on it, or take option (a)."
+    ],
+    "notMyAssignment": "Per the dispatch's own framing ('A code diff may or may not be warranted; that is your finding, not your assignment'), this lane reports the location and the two candidate shapes without implementing either. MAX_MISS_RATE was not touched and this proposal does not touch it either -- the fix is entirely in what counts as 'expected,' not in the tolerance for misses."
+  },
+
+  "constraintsHonored": [
+    "No bake, publish, walk, Cloud Build, or Cloud Run job invoked -- every store interaction was a read-only SELECT with default_transaction_read_only=on set explicitly",
+    "No write to cad_property, no backfill, no re-acquire",
+    "MAX_MISS_RATE untouched -- not referenced in any query or edit",
+    "No writes to legacy-design-tools, hauska-engine, or hauska-map -- legacy-design-tools-p118 was read via `git show <pinned-sha>:<path>` only",
+    "No code diff produced in hauska-factory -- confirmed via `git status` at close, working tree clean and matching baseCommit",
+    "Secrets pulled from GCP Secret Manager per 90_runbooks/seat_loop.md, written only to a scratch file outside the repo tree (deleted at end of session), never echoed to any artifact or committed anywhere",
+    "Verified at source throughout: parcel_gate_verdict, the runs/run_events tables, and the gate's own SQL were all queried live rather than assumed from the dispatch's or CTX-HAYS-SPLIT's prose"
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: A gate's refusal detail (sampled/compared/misses/examples) recorded only via a success-path event write is invisible on the refusal path itself if the throw happens before the write -- bastrop-publish.mjs:436-437 calls cadRollFn then recordCadRollEvent in sequence, so a refusal from cadRollFn skips the record entirely. Any future postcondition of this shape should record its verdict (pass OR refuse) in a finally-equivalent path, or the run record will only ever carry a bare code string on the exact failures that most need the detail.",
+      "LESSON: 'no CAD signal' classifications built from a specific field allowlist (assessed_value/exemption_codes/living_area_sqft in CTX-HAYS-SPLIT's case) can miss a different field (land_value/market_value/improvement_value here) that the same non-CAD source DOES populate. Before declaring a population 'dollar-free' or 'signal-free,' check every field the next consumer's own predicate actually tests, not just the fields chosen for the current investigation's discriminator.",
+      "LESSON: two dispatches working the same underlying population from different angles (CTX-HAYS-SPLIT's absence-state question, CTX-HAYS-GATE's postcondition question) can each be individually correct in their own measurements and still produce a wrong combined inference (disjointness) if neither lane cross-checks the other's already-published numbers against its own new population. [[project_hauska_ctx_pipeline_architecture]] -- worth a durable note that P-124 lanes touching Hays 48209 should grep _inbox/ for prior close artifacts on the same county before asserting a population is novel or disjoint from a prior lane's."
+    ],
+    "deadEnds": [
+      "DEAD-END: hypothesized a tax-year vintage SPLIT within individual miss rows (a prop_id carrying both a 2025 and a 2026 row with different dollar populations) as the mechanism. Rejected: every one of 994 probed misses (and, later, all 38,197) has exactly ONE cad_property row, at tax_year=2025, with no 2026 row at all -- the mismatch is row-ABSENCE, not a cross-year value discrepancy on a shared row."
+    ],
+    "groundTruths": [
+      "GROUND-TRUTH (2026-09-10, live, FACTORY_DATABASE_URL_REPLICA): parcel_gate_verdict county_fips=48209 -- 17 rails, all pass/excluded, zero refuse.",
+      "GROUND-TRUTH (2026-09-10, live, STAGING_NEONDB_URL and PRODUCTION_NEONDB_URL, byte-identical): cad_property county_fips=48209 -- tax_year=2025 has 172,116 rows, tax_year=2026 has 134,606 rows; 38,444 prop_ids exist at 2025 with no 2026 row; of those, 38,197 carry a real dollar under CADROLL_EXPECTATION_SQL's own test and are the full CADROLL_RENULLED miss population; 521 of those 38,197 (1.4%) have a punctuation-only situs_address.",
+      "GROUND-TRUTH (2026-09-10, live): runs.id=c6f61728-b664-41df-ac62-ed17b2caa162 is the only county-48209 run ever to carry refuse_code=CADROLL_RENULLED, started 2026-09-09T12:16:36Z on target staging."
+    ],
+    "open": [
+      "OPEN: CTX-HAYS-SPLIT's own operator question (recordRetirement for the 384 genuine-CAD-lineage rows vs. a distinct non-appraisal-geometry absence state for the 38,060 geometry-only rows) is now directly load-bearing for this gate too, since 99% of the CADROLL_RENULLED population is that same geometry-only set. Whoever rules on CTX-HAYS-SPLIT's open question should be told this gate's refusal rides on the same population.",
+      "OPEN: whether TxGIO's StratMap LAND_VALUE/MKT_VALUE/IMP_VALUE attributes for Hays are themselves current, stale, or modeled (as opposed to a direct pass-through of the county's own most-recent appraisal figures) was not established here -- it would matter to CTX-HAYS-SPLIT's absence-state question but not to this gate's fix, and was out of this lane's scope to chase further.",
+      "OPEN: fix option (a) vs (b) in fixLocationIfWarranted is a real design decision (thread the declared vintage vs. assume MAX(tax_year)) that the implementing lane should make deliberately, not default into -- flagged, not decided here."
+    ]
+  },
+
+  "close_contract_extra": {
+    "note": "AGENT_CONTRACT section 6 fields for a lane that produced no code diff, stated explicitly rather than omitted",
+    "prNumbers": "not applicable: no code diff, no PR opened",
+    "mergeShas": "not applicable: no merge performed",
+    "ciConclusionStrings": "not applicable: no CI run triggered",
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's three _inbox/ writes: 2026-09-10_ctx-hays-gate_cp1.json, 2026-09-10_ctx-hays-gate_cp2.json, this close.json."
+  }
+}

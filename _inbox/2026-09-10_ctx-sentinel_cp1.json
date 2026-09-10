@@ -1,0 +1,76 @@
+{
+  "lane": "ctx-sentinel",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-sentinel",
+  "branch": "explore/ctx-sentinel-non-account-rows",
+  "baseCommit": "9873ff1172e79c0254aa164d305d83de7c664d4f",
+  "seatWorktreeBranchCommitConfirmedFirst": true,
+
+  "priorArtifactsRead": [
+    "_inbox/2026-09-09_ctx-retire_close.json",
+    "_inbox/2026-09-09_ctx-acreage_close.json",
+    "_inbox/2026-09-09_ctx-hays-split_close.json",
+    "_inbox/2026-09-09_ctx-hays_close.json",
+    "_inbox/2026-09-09_ctx-hays-deep_close.json",
+    "_inbox/2026-09-09_ctx-leaves2_close.json",
+    "_inbox/2026-09-09_ctx-walkrule_close.json",
+    "_inbox/2026-09-09_ctx-situs-skip_close.json",
+    "_inbox/2026-09-08_ctx-situs_close.json",
+    "_inbox/2026-09-03_pe_refusal_contract_split.md"
+  ],
+
+  "baselinePopulationDefinition": {
+    "choice": "cad_property at each county's DECLARED vintage per lib/cad-ingest/src/vintage.ts DECLARED_CAD_VINTAGES -- the exact table+filter the conformant bake itself reads (fetchCountyCadPropertyRoll), not a flat all-vintage scan, and not place_layer_snapshots (which retains stale/retired rows and would conflate 'ever served' with 'currently a live account').",
+    "sixCounties": {
+      "48021": { "name": "Bastrop", "taxYear": 2025, "tier": "cad-export" },
+      "48055": { "name": "Caldwell", "taxYear": 2026, "tier": "cad-export" },
+      "48209": { "name": "Hays", "taxYear": 2026, "tier": "cad-export" },
+      "48309": { "name": "McLennan", "taxYear": 2025, "tier": "stratmap-roll" },
+      "48453": { "name": "Travis", "taxYear": 2026, "tier": "cad-export" },
+      "48491": { "name": "Williamson", "taxYear": 2026, "tier": "cad-export" }
+    },
+    "rationale": "The dispatch's own three source findings (CTX-RETIRE's 48055:1, CTX-ACREAGE's 48491:PRIVATE ROAD, CTX-HAYS-SPLIT's 38,060 geometry-only Hays rows) were each found by querying a specific vintage or an anti-join across vintages -- none established whether the instance was in the CURRENTLY SERVING roll or a superseded one. That is the first thing this lane must settle before counting, because a family member that only exists in a retired vintage is a different disposition question (already-retired, no customer-facing exposure) than one sitting in the live roll today."
+  },
+
+  "criteriaDefinitions": {
+    "c1_badPropIdShape": {
+      "sql": "prop_id !~ '^[0-9]+$' AND prop_id !~ '^[Rr][0-9]+$'",
+      "sourceOfTruth": "inverse of isParcelShapedPropId, lib/cad-ingest/src/txgio/landuse.ts:113-115 -- the fleet's own existing definition of a parcel-shaped id (bare-numeric or Williamson's R-account form), added by CTX-LEAVES2 as a forward-looking ingest guard. This lane applies the same rule as a measurement, not a guard."
+    },
+    "c2_txgioBucketId": {
+      "sql": "per (county_fips, prop_id) in txgio_parcel, feature_count = count(*) via GROUP BY (never a flat join, per the dispatch's own stated trap); a 'bucket' is a prop_id whose feature_count is an outlier far above the ordinary 1-3 features a real multi-tile parcel carries",
+      "thresholdApproach": "Not assumed -- histogram the full feature-count distribution across all 6 counties first (bucket boundaries 1 / 2-5 / 6-20 / 21-100 / 100+) and pick the threshold from the observed gap, matching CTX-RETIRE's own worked values (203, 227) which sit far above any plausible legitimate multi-tile count."
+    },
+    "c3_punctSitusNoSignal": {
+      "sql": "situs_address ~ '^[\\s,.\\-;:''\"`]+$' AND assessed_value IS NULL AND (exemption_codes IS NULL OR cardinality(exemption_codes)=0) AND living_area_sqft IS NULL",
+      "sourceOfTruth": "situs regex is serveGuards.ts:10 PUNCTUATION_ONLY_RE verbatim (confirmed byte-identical against the live file before use); 'no other CAD signal' operationalized as CTX-HAYS-SPLIT's own calibrated three-field recovery signal (assessed_value, exemption_codes, living_area_sqft), reused rather than invented, so criterion 3 and criterion 4 are comparable on the same signal definition and their co-occurrence is measurable rather than an apples-to-oranges comparison."
+    },
+    "c4_stratmapNoSignal": {
+      "sql": "source_file ILIKE '%stratmap%' AND assessed_value IS NULL AND (exemption_codes IS NULL OR cardinality(exemption_codes)=0) AND living_area_sqft IS NULL",
+      "sourceOfTruth": "CTX-HAYS-SPLIT's own pre-registered-and-fired-clean recovery signal, reapplied here to the CURRENT declared vintage of all 6 counties rather than only a 2025-to-2026 anti-join population -- this generalizes the shape CTX-HAYS-SPLIT scoped to one county's dropout population to the full live roll of all 6."
+    }
+  },
+
+  "coOccurrencePlan": "A single 4-flag contingency table (GROUP BY all 4 boolean predicates) over the union of the 6 counties' declared-vintage rows, plus the same breakdown per county, answers directly whether criteria co-occur, nest, or are independent -- read off the table rather than asserted from four separate percentages.",
+
+  "predicateControl": {
+    "design": "Run the identical 4 predicates against 3 non-CTX Texas counties already used as a control population by a prior lane in this same fleet (48027, 48113, 48439 -- CTX-ACREAGE's own control set, reused for consistency rather than picking a fresh one) at their own current declared vintage. A control that returns all-zero would mean the predicates are dead code; a control that returns implausible near-100% on every row would mean a predicate is not discriminating.",
+    "note": "This control also functions as an important CAVEAT surfaced during measurement, not just a pass/fail gate -- see falsifierOutcome below."
+  },
+
+  "preRegisteredFalsifier": {
+    "statedBeforeRunning": "If c1 (bad-propid-shape) returns near-zero on ALL SIX target counties at their current declared vintage, that would mean CTX-ACREAGE's single 48491:PRIVATE ROAD instance is not a live, currently-served defect but a historical one already superseded by a later vintage -- a materially different, better finding than 'this family is live and uncounted.' This must be checked directly (is PRIVATE ROAD's row's tax_year equal to 48491's declared 2026, or an earlier one?) rather than assumed from the aggregate count.",
+    "secondFalsifier": "If running c1 against a non-CTX control county returns a large nonzero count, the specific matched values must be inspected before treating the control as a clean discrimination proof -- a large hit could mean the predicate is firing on a DIFFERENT county's legitimate, non-sentinel account-numbering convention rather than on real garbage, which would make the control support 'the predicate can fire' but NOT support 'the predicate reliably discriminates garbage everywhere.'"
+  },
+
+  "outOfScopeConfirmed": [
+    "No write, delete, or correction to any row (every connection this lane opens sets default_transaction_read_only=on before any query)",
+    "No weakening of PUNCTUATION_ONLY_RE or assertSitusNotPunctuationOnly -- not read for editing, only reproduced verbatim as a measurement predicate",
+    "No deploy, Cloud Build, Cloud Run job, bake, publish, or walk execution -- every check against a served payload (if any) is a plain HTTP GET",
+    "No write to hauska-factory, hauska-engine, or hauska-map",
+    "No sampler tuning -- this lane does not touch selectSweepParcels/selectJurisdictionCohort or any hauska-factory file at all"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "lane": "CTX-HAYS-GATE",
+  "checkpoint": "CP2",
+  "phase": "pilot/mid-work",
+  "timestamp": "2026-09-10T00:00:00Z",
+  "instrumentsUsed": [
+    "scripts/ctx-w2/store-topology.mjs (self-test PASS) to confirm table location before any query",
+    "Direct import of CADROLL_EXPECTATION_SQL, CADROLL_BAKED_SQL, evaluateCadRollPostcondition, placeKeyFor from src/lib/publish-cadroll-postcondition.mjs -- the gate's own code, not a retyped copy",
+    "Ad hoc read-only SQL against STAGING_NEONDB_URL and PRODUCTION_NEONDB_URL for cad_property/place_layer_snapshots (cortex-prod stores) and FACTORY_DATABASE_URL_REPLICA for parcel_gate_verdict/runs/run_events (Factory store)",
+    "git show at pinned LDT SHA 65f924e8 (legacy-design-tools-p118 worktree, read-only, confirmed 65f924e8 is an ancestor of that worktree's HEAD) to read fetchCountyCadPropertyRoll and the declared-vintage table"
+  ],
+  "findingsSoFar": {
+    "correction1_confirmedAtSource": "parcel_gate_verdict for county_fips=48209 (Hays), queried live 2026-09-10 on FACTORY_DATABASE_URL_REPLICA: 17 of 17 rails are 'pass' or 'excluded' (maxImperviousCoverPct), zero 'refuse'. Sanity check: Bastrop (48021) and Travis (48453) both show verdict='refuse' on rail_key='schoolDistrict', matching the dispatch's claim exactly.",
+    "realRefusalFound": "Exactly one CADROLL_RENULLED run exists: runs.id=c6f61728-b664-41df-ac62-ed17b2caa162, phase=publish, target=staging:48209, started_at=2026-09-09T12:16:36.168Z, status=failure. run_events for this run carry pre-bake-readiness (passed, all OK) and 22 bake-page events, but NO cadroll-postcondition body -- recordCadRollEvent only runs on the SUCCESS path in bastrop-publish.mjs; a refusal throws before it executes, so only the bare run_events 'termination' event (reason=CADROLL_RENULLED) and runs.refuse_code exist. This confirms the dispatch's cli.mjs warning generalizes to the run-record path too: the detailed payload (sampled/compared/misses/examples) is not persisted anywhere and must be re-derived.",
+    "sampledVsPopulationMissRate": {
+      "instrument": "CADROLL_EXPECTATION_SQL + CADROLL_BAKED_SQL + evaluateCadRollPostcondition, run verbatim (imported from source, not retyped) against STAGING_NEONDB_URL, county_fips=48209, 2026-09-10",
+      "sampled_LIMIT_500_ascending_prop_id": { "compared": 500, "misses": 355, "missRate": 0.71 },
+      "truePopulation_noLimit": { "compared": 172803, "misses": 38197, "missRate": 0.221 },
+      "note": "The gate's own ORDER BY prop_id ASC LIMIT 500 sample overstates the true miss rate by 3.2x (71.0% vs 22.1%). Confirmed the dispatch's bias warning, and the bias runs the direction that makes the gate look far worse than the true population -- the opposite of a false-negative risk.",
+      "productionCrossCheck": "Identical query run against PRODUCTION_NEONDB_URL returns byte-identical counts (172803 compared, 38197 misses, same 5 example prop_ids) -- production's cad_property/place_layer_snapshots for Hays currently mirror staging exactly, so a production re-run today would hit the same refusal."
+    },
+    "mechanismConfirmed": {
+      "claim": "CADROLL_EXPECTATION_SQL has no tax_year scope and matches a dollar in ANY historical cad_property row; the bake reads only the county's DECLARED vintage.",
+      "evidence": [
+        "legacy-design-tools @ 65f924e8, lib/cad-ingest/src/vintage.ts:58 -- Hays' declared vintage is hardcoded {taxYear: 2026, tier: 'cad-export'}.",
+        "legacy-design-tools @ 65f924e8, artifacts/api-server/src/lib/joinIntegrityGate.ts:351-380 (fetchCountyCadPropertyRoll) -- queries cad_property WHERE county_fips=$1 AND tax_year=$2, $2 bound to declared.taxYear. Comment at file top: '(L17 / P-25 vintage-read discipline -- replaces \"latest tax_year wins\")', i.e. this is a deliberate, documented design choice on the bake side, not an accident.",
+        "Live measurement: cad_property county_fips=48209 tax_year=2025 has 172,116 rows; tax_year=2026 has 134,606 rows (matches Hays CAD's own confirmed-correct 2026 total). Directly measured (not by subtraction): 38,444 prop_ids exist at tax_year=2025 with NO row at all at tax_year=2026.",
+        "Of those 38,444, exactly 38,197 carry a real dollar under CADROLL_EXPECTATION_SQL's own 4-field OR test (the other 247 have no dollar in the 2025 row either and are correctly excluded -- 172,803 vs 173,050 rollN, 38,444 vs 38,197 miss count, both deltas exactly 247).",
+        "Classified the FULL 38,197-row miss list (not a sample) against 2026-row existence: 38,197 of 38,197 (100%) have NO 2026 cad_property row at all. Zero misses are explained by anything other than vintage absence."
+      ],
+      "rejectedAlternatives": [
+        {
+          "candidate": "situsForBake skip path (LDT 9873ff11, punctuation-only situs, not yet in any image)",
+          "evidence": "Exact count within the full 38,197-row miss population: 521 rows (1.4%) have a punctuation-only situs_address. Even in the best case this pin could only affect 1.4% of the miss population; it cannot be the mechanism for the other 98.6%.",
+          "verdict": "rejected as the primary mechanism; a minor, mostly-unrelated co-occurrence"
+        },
+        {
+          "candidate": "a join that drops the dollar object for a subset",
+          "evidence": "Not needed -- the vintage-absence explanation accounts for 100.00% (38,197/38,197) of misses with zero residual.",
+          "verdict": "rejected for lack of any residual to explain"
+        }
+      ]
+    },
+    "criticalCorrectionToTheDispatchItself": {
+      "claim": "The dispatch states: 'the failing population is parcels that have dollars in cad_property, do have a baked snapshot, and whose snapshot lacks the dollar object. That is a real bake defect on real accounts, and nobody has read the list' and separately asserts the 38,060 CTX-HAYS-SPLIT geometry-only rows 'cannot be causing this refusal.'",
+      "counter_evidence": "Cross-tabulated the full 38,197-row miss list against CTX-HAYS-SPLIT's own already-published split (_inbox/2026-09-09_ctx-hays-split_close.json) of this SAME 38,444-row anti-join population (present@2025, absent@2026) into 384 genuine-CAD-lineage vs 38,060 geometry-only/no-independent-CAD-signal. Result: 37,813 of the 38,197 misses (99.0%) are the source_file='stratmap25-landparcels_48209_lp.zip' / assessed_value-IS-NULL rows CTX-HAYS-SPLIT already classified as geometry-only; only 384 misses (1.0%) are the hays-export2.zip / assessed-value-recovered genuine-CAD-lineage rows. 37,813 + 384 = 38,197 exactly, with zero residual.",
+      "nuance": "CTX-HAYS-SPLIT's 'no CAD signal' label was based on assessed_value/exemption_codes/living_area_sqft, none of which StratMap's TxGIO mapper populates (lib/cad-ingest/src/txgio/landuse.ts:143-146: landValue/improvementValue/marketValue ARE read straight from the shapefile's own LAND_VALUE/IMP_VALUE/MKT_VALUE attributes; only assessedValue is hardcoded null). Those three fields are what satisfy CADROLL_EXPECTATION_SQL's OR test, so the geometry-only population is NOT actually dollar-free -- it carries land/market/improvement values sourced from TxGIO's own parcel attributes (themselves ultimately CAD-derived, per the StratMap/TxGIO program's design, though via a different distribution channel than Hays' own tabular export). This is a live, evidenced correction to the dispatch's own framing: the dispatch's claim of disjointness between the geometry-only population and the cadRoll-miss population is factually wrong at the 99% level, and the 'real bake defect on real accounts' framing applies cleanly to only 384 of the 38,197 misses (1.0%).",
+      "importance": "This changes the practical severity read, not the code-level mechanism finding: whether framed as 'real accounts' or 'geometry-only StratMap rows,' the ROOT CAUSE (CADROLL_EXPECTATION_SQL's missing tax-year scope) and its FIX LOCATION are identical either way. What changes is how urgently a fix is needed and what data-quality follow-up (if any) belongs to CTX-HAYS-SPLIT's still-open operator question about the geometry-only population's honest absence state."
+    }
+  },
+  "remainingForClose": [
+    "Write the plain yes/no on re-running Hays after the LDT 9873ff11 pin lands (leaning strongly toward NO based on the 1.4% situs overlap -- the pin cannot meaningfully move the 22.1% population miss rate).",
+    "State precisely where a fix belongs if warranted (CADROLL_EXPECTATION_SQL tax-year scoping) without implementing it, per the dispatch's 'a code diff may or may not be warranted; that is your finding, not your assignment.'",
+    "Clean scratch artifacts from the hauska-factory worktree (done: git status confirms clean, zero diff, matching CTX-HAYS-SPLIT's own precedent for a measurement lane).",
+    "Write leave_behind (LESSON/DEAD-END/GROUND-TRUTH/OPEN) per fleet-memory practice.",
+    "Write final close at the contracted path."
+  ]
+}

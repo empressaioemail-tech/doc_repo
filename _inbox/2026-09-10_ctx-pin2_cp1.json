@@ -1,0 +1,86 @@
+{
+  "artifact": "CTX-PIN2_CP1_design_review",
+  "lane": "CTX-PIN2",
+  "planRow": "P-124",
+  "repo": "hauska-factory",
+  "reviewedAt": "2026-09-10T02:40:00Z",
+  "seatSetup": {
+    "seat": "property",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-pin2",
+    "branch": "fix/ctx-pin2-ldt-leaves2-and-staleness-check",
+    "createdFrom": "origin/main @ 52c1b782ddd2ae5fc068c3eafa5bd1f6700ffafd",
+    "createdVia": "git worktree add ... -b fix/ctx-pin2-... origin/main (before any edit, per dispatch)"
+  },
+  "missionPremise": "Two items: (1) bump cloudbuild.publish.yaml's _LDT_SHA from 7a739849 to LDT main (CTX-LEAVES2, PR #649), tracing whether the changed content actually reaches the esbuild-bundled /app/bakes image, not just whether the pin number moved; (2) replace the never-noticed-a-second-time-today gap with a mechanical staleness check that fires only when a commit between the pin and LDT main touches a file inside the bake's module graph -- explicitly NOT a bare pin-differs-from-main check, which the dispatch names as worse than nothing.",
+  "ldtMainAtPinTime": {
+    "command": "gh api repos/empressaioemail-tech/legacy-design-tools/commits/main --jq .sha",
+    "result": "9873ff1172e79c0254aa164d305d83de7c664d4f",
+    "matchesCTX-LEAVES2": true
+  },
+  "entrypointDiscovery": {
+    "source": "scripts/build-publish-bake-clis.mjs on origin/main",
+    "entries": [
+      "tier1-conformant -> artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts",
+      "tier2-conformant -> artifacts/api-server/src/nodeFacetBakeTier2ConformantCli.ts",
+      "parcels-pmtiles -> artifacts/api-server/src/parcelsPmtilesBakeCli.ts",
+      "dollar-fields -> artifacts/api-server/src/nodeFacetPatchCadRollFromCadPropertyCli.ts",
+      "tier1-conformant-lib -> artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts"
+    ],
+    "count": 5,
+    "note": "confirms the dispatch's own correction: five entrypoints, not the four an older pin comment claims (CTX-WALKRULE added tier1-conformant-lib)"
+  },
+  "tracerMethodology": {
+    "approach": "relative-import-only recursive resolution from the five entrypoints, TS-ESM .js-to-.ts sibling remap, bare specifiers (workspace packages, npm deps) not followed -- reproduces CTX-PIN's own described method exactly",
+    "isolation": "LDT is checked out from an independent scratch clone (blobless, in the session scratchpad), never inside any lane's live P:/legacy-design-tools working tree -- that tree has another lane's uncommitted work on a different branch and is out of bounds",
+    "reproductionCheck": {
+      "purpose": "CTX-PIN's own claimed result (26 modules, 0 unresolved at the old pin) must reproduce before this tracer is trusted on the new pin",
+      "oldPin7a739849Result": { "moduleCount": 26, "unresolvedCount": 0 },
+      "verdict": "REPRODUCED"
+    },
+    "newPin9873ff11Result": { "moduleCount": 26, "unresolvedCount": 0, "moduleSetDiffVsOldPin": "identical (0 added, 0 removed)" },
+    "graphMembership": {
+      "lib/nodeFacetBakeTier1Conformant.ts (acreage fix)": "IN the 26-module graph -- reaches the bake",
+      "artifacts/api-server/src/lib/verdictLayerServe.ts (unmeasured-to-refused fix)": "NOT in the graph; grep-confirmed its only non-test importers are *ServeCutover.ts and routes/*.ts -- LDT's own live API server serve path, a separate service this image does not contain",
+      "lib/cad-ingest/src/txgio/landuse.ts (prop_id shape guard)": "NOT in the graph; outside artifacts/api-server entirely, LDT's own CAD-ingest CLI"
+    },
+    "finding": "Of CTX-LEAVES2's three fixes, only the acreage earned-absence fix reaches this image through this pin. The other two are real fixes but reach production (if at all) through LDT's own separate deploys, not through hauska-factory's publish image. This qualifies the dispatch's four-counties framing: bumping this pin alone does not make Williamson's unmeasured-class failure pass -- that depends on LDT's live serve deployment separately reaching #649, which is outside this lane's write authority and unverified here."
+  },
+  "checkDesign": {
+    "rejectedDesign": "pin !== LDT main -> fail (explicitly named as worse than nothing by the dispatch; fires on nearly every run since most LDT commits never touch the bake)",
+    "adoptedDesign": "fail only if any file that differs between the pin and target (net tree diff, not per-commit union -- a change reverted within the range has zero net effect on what the bake would bundle) is a member of the module graph computed at the target commit",
+    "files": [
+      "scripts/bake-module-graph.mjs -- the tracer, now a committed, reusable, exported function (previously ad hoc per CTX-PIN's own account)",
+      "scripts/ldt-sha-shape-guard.mjs -- 40-hex-lowercase shape guard, absent until now per CTX-PIN's report",
+      "scripts/check-ldt-pin-staleness.mjs -- composes both; reads the pin from cloudbuild.publish.yaml by default, accepts --pin/--main overrides for testing"
+    ],
+    "ciVsScript": {
+      "decision": "both: a script (usable standalone/by a human/by the integration seat before a publish build) that ALSO runs automatically in CI, but in a dedicated workflow, not as a blocking job in ci.yml",
+      "whyNotCiYml": "ci.yml triggers on every branch push and PR fleet-wide. This check's subject (LDT's own history) is independent of what any given hauska-factory PR changes -- wiring it into the everything-gate would let LDT drifting on its own silently block unrelated lane merges, the same over-broad-control failure the dispatch names for the check's logic, just moved to blast radius. DEV_PROCESS 2.0/5.4 caution against a planner unilaterally creating a fleet-wide blocking policy; flagged here for the operator/integration seat to override if they want it stricter.",
+      "chosenTrigger": "new .github/workflows/ldt-pin-staleness.yml: push to main (post-merge monitoring), a 6-hour schedule (catches drift with zero hauska-factory activity -- the exact CTX-SITUS-SKIP shape), and workflow_dispatch (on demand before a publish build)",
+      "networkReachability": "not assumed -- ci.yml's existing test job already does actions/checkout against a different empressaioemail-tech sibling repo (hauska-engine) at a pinned SHA, and gh api confirms that step succeeded on the most recent run (34424903446) at this branch's own base commit 52c1b78. Will additionally verify with a real workflow_dispatch run against legacy-design-tools before close, not by analogy alone."
+    }
+  },
+  "verifyByViolationPlan": {
+    "case1_failAtOldPin": "pin=7a739849fb16be68576ba0b9f1e397818b710614, main=9873ff1172e79c0254aa164d305d83de7c664d4f -> expect FAIL, hit=nodeFacetBakeTier1Conformant.ts",
+    "case2_passAtNewPin": "pin=main=9873ff1172e79c0254aa164d305d83de7c664d4f -> expect PASS (trivial, pin already at target)",
+    "case3_passNonBakeGraphDivergence": "real LDT history: pin=301bb75a (CTX-LEAVES's own prior pin), main=3c3c243d (#645, one commit ahead, touches only .github/workflows/cloud-run-deploy-smartsite-mcp.yml) -> expect PASS, changedFiles=[that workflow file], hits=[]",
+    "shapeGuard": "reject branch name / abbreviated SHA / uppercase / non-hex; admit the real 40-hex LDT main SHA"
+  },
+  "cp1Verdict": "PASS -- proceed to bump the pin with a matching comment, finalize the three scripts and their node:test coverage, commit, push, and trigger a real workflow_dispatch run of ldt-pin-staleness.yml before close",
+  "ownedFilesBoundary": [
+    "cloudbuild.publish.yaml (the _LDT_SHA line + its comment block only)",
+    "scripts/bake-module-graph.mjs (new)",
+    "scripts/ldt-sha-shape-guard.mjs (new)",
+    "scripts/check-ldt-pin-staleness.mjs (new)",
+    "test/bake-module-graph.test.mjs (new)",
+    "test/ldt-sha-shape-guard.test.mjs (new)",
+    "test/check-ldt-pin-staleness.test.mjs (new)",
+    ".github/workflows/ldt-pin-staleness.yml (new)"
+  ],
+  "explicitlyNotTouched": [
+    "cloudbuild.parcel-r5-zoning.yaml's _LDT_SHA (false provenance label per dispatch, not a stale dependency; recorded as a leave_behind)",
+    ".github/workflows/ci.yml (reverted an initial attempt to add a job there once the blast-radius concern was identified -- see checkDesign.ciVsScript)",
+    "legacy-design-tools, hauska-engine, hauska-map (out of write authority)",
+    "any ceiling/assertResidueWithinDeclaration/rail gate/BP-CONTENT-01 code"
+  ]
+}

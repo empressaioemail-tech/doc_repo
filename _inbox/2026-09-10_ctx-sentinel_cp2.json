@@ -1,0 +1,100 @@
+{
+  "lane": "ctx-sentinel",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRow": "P-124",
+
+  "q0_basePopulation_declaredVintage": {
+    "countingRule": "SELECT count(*) FROM cad_property WHERE (county_fips,tax_year) IN <6 declared-vintage pairs from lib/cad-ingest/src/vintage.ts>, live read 2026-09-10 against cortex-prod (CORTEX_DATABASE_URL), SET default_transaction_read_only=on first.",
+    "48021": 77799, "48055": 48382, "48209": 134606, "48309": 114255, "48453": 492848, "48491": 319480,
+    "total": 1187370
+  },
+
+  "q1_c1_badPropIdShape_currentVintage": {
+    "countingRule": "prop_id !~ '^[0-9]+$' AND prop_id !~ '^[Rr][0-9]+$', same 6 declared-vintage pairs",
+    "result": "ZERO rows in all six counties' current declared vintage.",
+    "allVintageCheck": "Widened to every tax_year in these 6 counties (not just declared): exactly 1 row total -- 48491, prop_id='PRIVATE ROAD', tax_year=2025 (NOT 48491's declared vintage, which is 2026). CTX-ACREAGE's single instance is a HISTORICAL row in a superseded vintage, not a live member of the current serving population. The 2026 roll simply does not carry this prop_id at all (dropped, not renamed/recovered)."
+  },
+
+  "q2through6_criteria3and4_bareAndCombined": {
+    "countingRule": "situs_address ~ serveGuards.ts PUNCTUATION_ONLY_RE verbatim; 'no CAD signal' = assessed_value IS NULL AND (exemption_codes IS NULL OR cardinality=0) AND living_area_sqft IS NULL (CTX-HAYS-SPLIT's own calibrated 3-field recovery signal, reapplied); StratMap = source_file ILIKE '%stratmap%'",
+    "punctSitus_bare": { "48021": 16104, "48309": 1165, "others": 0 },
+    "noCadSignal_bare": { "48021": 62257, "48309": 114255, "others": 0 },
+    "stratmapSource_bare": { "48021": 62257, "48309": 114255, "others": 0 },
+    "punctSitusANDnoSignal_c3": { "48021": 16104, "48309": 1165, "others": 0, "identicalToPunctSitusBare": true },
+    "stratmapANDnoSignal_c4": { "48021": 62257, "48309": 114255, "others": 0, "identicalToStratmapBareAndNoSignalBare": true },
+    "reading": "In every one of the 6 counties, wherever it is nonzero, noCadSignal_bare === stratmapSource_bare exactly -- StratMap lineage and zero-CAD-signal are the SAME population in the current serving roll, no exceptions either direction. punctSitusANDnoSignal_c3 === punctSitus_bare exactly -- every punctuation-only-situs row in the current vintage also has zero CAD signal, no exceptions."
+  },
+
+  "q7_q8_coOccurrenceContingencyTable": {
+    "countingRule": "GROUP BY the 4 boolean predicates over the union of all 6 counties' declared-vintage rows",
+    "combinations_found": [
+      { "bad_propid": false, "punct_situs": false, "stratmap": false, "no_signal": false, "n": 986485, "reading": "well-formed rows with a real CAD signal" },
+      { "bad_propid": false, "punct_situs": false, "stratmap": true, "no_signal": true, "n": 159243, "reading": "StratMap, zero signal, but a NORMAL-LOOKING situs address -- previously uncounted, larger than the punctuation-flagged subset by 9.2x" },
+      { "bad_propid": false, "punct_situs": null, "stratmap": false, "no_signal": false, "n": 24373, "reading": "genuinely NULL situs_address (not punctuation-only), real CAD signal present -- the pre-existing, already-handled 'blank claim' population (CTX-LEAVES' claimLeafAbsence), unrelated to this family" },
+      { "bad_propid": false, "punct_situs": true, "stratmap": true, "no_signal": true, "n": 17269, "reading": "the full three-way intersection: StratMap + zero signal + punctuation-only situs" }
+    ],
+    "reconciliation": "986485+159243+24373+17269 = 1,187,370, exact match to Q0's total. bad_propid_shape is false in all four rows -- zero co-occurrence with any other flag anywhere in the 6-county current population, confirmed structurally not just by the separate 0-count in Q1.",
+    "familyTotal_c4_stratmapNoSignal": "159243 + 17269 = 176512 (the full extent of criterion 4, which strictly contains criterion 3: every c3 row is inside c4, c4 has 9.2x more rows than c3 alone).",
+    "perCountyBreakdown": {
+      "48021": { "stratmap_normalSitus_noSignal": 46153, "stratmap_punctSitus_noSignal": 16104, "wellFormed": 12563, "genuineBlankClaim": 2979 },
+      "48055": { "wellFormed": 33089, "genuineBlankClaim": 15293, "family": 0 },
+      "48209": { "wellFormed": 130069, "genuineBlankClaim": 4537, "family": 0 },
+      "48309": { "stratmap_normalSitus_noSignal": 113090, "stratmap_punctSitus_noSignal": 1165, "family_pct_of_county": "100%" },
+      "48453": { "wellFormed": 491298, "genuineBlankClaim": 1550, "family": 0 },
+      "48491": { "wellFormed": 319466, "genuineBlankClaim": 14, "family": 0 }
+    }
+  },
+
+  "c2_txgioBucketIds": {
+    "method": "Per-parcel EXISTS/GROUP BY aggregation (never a flat join, per the dispatch's own named trap), scoped to only the prop_ids already in the 6 counties' current declared-vintage roll (a semi-join against cad_property) rather than an unscoped full-table scan of txgio_parcel (16.5M rows / 29GB across the program's full county set) -- the unscoped version was attempted first, timed out at 90s twice, and was cancelled (pg_cancel_backend) per the heavy-scan-serialization rule rather than left running or retried blindly.",
+    "distributionAmongMatchedPropIds": {
+      "1_feature": 593151, "2-5_features": 58813, "6-20_features": 784, "21-100_features": 31, "100+_features": 31,
+      "totalMatchedPropIds": 652810,
+      "thresholdChosen": ">20 features -- the observed distribution shows 99.87% of matched prop_ids at <=5 features (ordinary multi-tile splits) with a clean break above 20; this is where CTX-RETIRE's own worked values (203, 227) sit, several multiples above this threshold"
+    },
+    "62outlierPropIds_fullDisposition": {
+      "queriedDirectly": "Joined all 62 back to cad_property (current declared vintage) for source_file/situs_address/assessed_value/exemption_codes/living_area_sqft/property_use_code/land_acres -- not inferred from the feature-count alone.",
+      "group_trueSentinel": {
+        "n": 11,
+        "counties": "48021 (4: prop_id 0/141271/141440/49351), 48309 (7: 999443/999666/0/999442/999441/999448/347551/135917)",
+        "finding": "100% blank assessed_value, blank exemption_codes, blank living_area_sqft, StratMap source_file -- EVERY one of these 11 is ALREADY a member of the 176,512-row c4 family counted above. Zero net-new rows. The '999441'-'999666' pattern in McLennan is a DIFFERENT sentinel-numbering convention than Caldwell's '0'/'1' (CTX-RETIRE) but the same underlying phenomenon: a placeholder id assigned by the StratMap ingest to a feature with no real CAD account key."
+      },
+      "group_legitimateLargeAccount": {
+        "n": 51,
+        "counties": "48453 Travis (50), 48055 Caldwell (1: prop_id 23017, a 75.4-acre ag account, assessed $1,206,730)",
+        "finding": "100% carry a real, often large, assessed_value (range $3,357 to $149.77M), a real street address, a real property_use_code (mostly F1), and StratMap plays no part in their source_file (Travis: '2026 Preliminary Appraisal Export Supp 0_07072026.zip', a genuine CAD export; Caldwell: the county's own 2026 CAD export). These are legitimately large, well-formed, currently-taxed accounts -- commercial corridors and large ranch/ag tracts along Research Blvd, Ben White Blvd, Riverside Dr, Slaughter Ln, etc. -- where TxGIO's geometry layer records many separate polygon features (buildings, sub-tracts, condo units) under one legitimate tax account. High feature-count here is a benign geometry-digitizing artifact, structurally unrelated to account well-formedness. NOT a member of the non-account family. Zero overlap with c1/c3/c4."
+      },
+      "verdict": "c2 is not one thing. It cleanly splits into a subset that is entirely redundant with c4 (contributes nothing new to the family census) and a disjoint subset that is not part of the family at all."
+    }
+  },
+
+  "predicateControl": {
+    "designedControl": "Same 4 predicates run against 3 non-CTX TX counties already used by CTX-ACREAGE as its own control set (48027, 48113, 48439), at their own current declared vintage, live 2026-09-10.",
+    "results": {
+      "48027": { "total": 165576, "bad_propid": 0, "punct_situs": 4649, "stratmap": 165576, "no_signal": 165576 },
+      "48113": { "total": 806563, "bad_propid": 205049, "punct_situs": 0, "stratmap": 0, "no_signal": 0 },
+      "48439": { "total": 975885, "bad_propid": 975876, "punct_situs": 0, "stratmap": 0, "no_signal": 0 }
+    },
+    "provesQueriesDiscriminate": "48027 (a full stratmap-roll-tier county, matching McLennan's own shape) returns real nonzero stratmap/no_signal/punct_situs counts, proving those 3 predicates are not dead code. bad_propid also returns real nonzero counts on 2 of 3 controls, proving it too can fire.",
+    "criticalCaveat_verifiedNotAssumed": "Sampled 48439's (Tarrant) 975,876 'bad-shaped' prop_id hits directly rather than trusting the count: EVERY sampled value is a real, structured hyphenated block-lot account number (e.g. '47156-14-22', '47156-14-23' -- a sequential real subdivision), Tarrant's own LEGITIMATE CAD account-numbering convention, confirmed against source_file='tad_propertydata_full.zip' (Tarrant Appraisal District's own genuine export, not a fallback ingest). This is NOT the same defect class as CTX-ACREAGE's 'PRIVATE ROAD' -- it is a DIFFERENT county's real, well-formed convention that criterion 1's specific regex (calibrated to this fleet's two known conventions: bare-numeric and Williamson's R-accounts) was never designed to recognize. The control therefore proves c1's QUERY can return non-zero on an untargeted population, but does NOT prove c1's regex is a general-purpose 'is this a real account' test outside the two conventions it was built for. Reported per DEV_PROCESS 3.2a rather than let the control read as a clean universal validation it is not.",
+    "outOfScopeNote": "Dallas (48113)'s own 205,049-row bad-propid-shape hit and Tarrant's convention mismatch are both outside the 6 named CTX counties and this lane's P-124 mandate -- flagged for whichever seat owns those counties, not investigated further here (govtech-style scope discipline)."
+  },
+
+  "falsifierOutcomes": {
+    "falsifier1_c1LiveOrHistorical": {
+      "predicted": "near-zero on all 6 counties would mean CTX-ACREAGE's instance is historical, not live",
+      "result": "FIRED (in the informative direction): 0 in current vintage across all 6; the sole instance is confirmed historical (48491 tax_year 2025, superseded, dropped from 2026) by direct row inspection, not just the aggregate zero."
+    },
+    "falsifier2_controlDiscrimination": {
+      "predicted": "a large control hit must be inspected before trusting it as clean discrimination proof",
+      "result": "FIRED: Tarrant's massive control hit inspected and found to be a different legitimate convention, not garbage -- caveat recorded above rather than the control being reported as an unqualified pass."
+    }
+  },
+
+  "livePayloadReadsPermittedByDispatch": {
+    "48055_1_today": "curl https://smart-site-factory.vercel.app/site/api/spine/cortex/api/brokerage/v1/place/node/48055:1/facets -> HTTP 422 {\"error\":\"SITUS_PUNCTUATION_ONLY\",...}, live 2026-09-10. The dispatch's own premise ('failed on every run today') still holds live, right now, despite CTX-RETIRE/CTX-SITUS-SKIP/CTX-LEAVES2/CTX-WALKRULE all having merged: the fix chain is code-complete but Caldwell has not yet been re-baked, so the stale pre-fix snapshot (raw ', ,' situs, no recordRetirement) is still what's served. Not a new defect -- the exact one CTX-WALKRULE already diagnosed and predicted would persist until a re-bake, which is outside every one of these lanes' scope.",
+    "48021_141440_today": "A live, currently-served StratMap/no-signal/normal-situs Bastrop row (member of the 159,243 previously-uncounted subgroup). baseFacts.cadRoll.assessedValue/marketValue/landValue/improvementValue all show {state:'refused', code:'studio-gated'} at the anonymous/free entitlement tier.",
+    "controlCheck_studioGatedIsNotThisFamilysDefect": "Curled a KNOWN-GOOD Bastrop account with a real DB assessed_value ($378,395, prop_id 10005, DATA-EXPORT-01.14.2026.zip) at the same free entitlement tier: IDENTICAL {state:'refused', code:'studio-gated'} shape on the same 4 dollar fields. This is a uniform product entitlement gate applied to every parcel regardless of whether real data exists underneath -- ruled out as a finding specific to this family, per the falsifier discipline (checked before claiming, not assumed). NOT reported as a defect.",
+    "genuineTierAgnosticSignal": "baseFacts.landUse on 48021:141440 IS tier-agnostic and IS honest today: absent-verified, basis 'the Bastrop CAD roll ... carries no coded row for prop_id join key 141440' -- correctly reveals the row has no appraisal record, visible at the free tier. This is scattered across one field's basis text rather than being a first-class declared state a downstream consumer or walk could grade on directly."
+  }
+}

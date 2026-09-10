@@ -1,0 +1,114 @@
+{
+  "lane": "ctx-sentinel",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "closeKind": "measurement lane, code diff not expected and none shipped -- consistent with CTX-ACREAGE and CTX-HAYS-SPLIT/CTX-HAYS-DEEP, three prior lanes in this fleet that correctly committed nothing and said so",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-sentinel",
+  "branch": "explore/ctx-sentinel-non-account-rows",
+  "baseCommit": "9873ff1172e79c0254aa164d305d83de7c664d4f",
+  "workingTreeConfirmedCleanAtClose": true,
+  "codeDiff": "none -- every DB connection this lane opened set default_transaction_read_only=on before any query; no row written, deleted, or corrected; no file in legacy-design-tools, hauska-factory, hauska-engine, or hauska-map edited.",
+  "checkpoints": [
+    "_inbox/2026-09-10_ctx-sentinel_cp1.json",
+    "_inbox/2026-09-10_ctx-sentinel_cp2.json"
+  ],
+
+  "missionPremise": "Three prior lanes (CTX-RETIRE/48055:1, CTX-ACREAGE/48491:PRIVATE ROAD, CTX-HAYS-SPLIT/38,060 Hays geometry-only rows) each found one instance of what looked like it might be one family of non-account rows, and none was scoped to count it. This lane's premise, stated in the dispatch, was that the population was real and uncounted. On investigation the premise was RIGHT about the phenomenon being real and larger than reported, but WRONG about where: two of the three original instances (48055:1, 48491:PRIVATE ROAD) turn out to sit in superseded, non-current vintages with zero live exposure today, while the actual live population is ~14.9x larger than any prior single-instance report and lives almost entirely in two counties (Bastrop, McLennan) nobody had run this specific measurement against before.",
+
+  "completionPredicate": "Done when: (1) the population is counted per county and in total with a stated counting rule and a predicate control proving the query fires on an untargeted population; (2) whether the four candidate criteria are one family or several is established from co-occurrence evidence, not assumed; (3) a disposition is recommended with the rejected alternatives named, including an explicit argument for why an exclusion recommendation (if made) is not the sampler-tuning mistake two prior lanes refused to make; (4) the serve-guard 422 legibility question is compared against the 2026-09-03 refusal-contract-split finding; (5) any warranted fix is named precisely enough to dispatch without a second diagnostic pass. All five are met below.",
+
+  "scopeBasis": "In scope: read-only measurement across the six CTX counties' cad_property (current declared vintage per lib/cad-ingest/src/vintage.ts) and txgio_parcel, plus permitted live HTTP GETs against the served staging surface. Out of scope, honored: no weakening of PUNCTUATION_ONLY_RE/assertSitusNotPunctuationOnly (read only, reproduced verbatim as a measurement predicate, never edited); no write/delete/correction to any row; no deploy, Cloud Build, Cloud Run job, bake, publish, or walk execution; no write to hauska-factory, hauska-engine, or hauska-map; no sampler tuning (selectSweepParcels/selectJurisdictionCohort never opened). Deliberately did NOT chase the two incidental out-of-scope findings this lane's own control queries surfaced (Dallas 48113's own 205,049-row bad-propid-shape population; Tarrant 48439's block-lot account convention) -- neither is one of the six named counties, and both are flagged for their owning seat rather than investigated, per this fleet's established govtech-style scope discipline.",
+
+  "population": {
+    "baselineDefinition": "cad_property at each county's DECLARED vintage (lib/cad-ingest/src/vintage.ts DECLARED_CAD_VINTAGES) -- the exact table+filter the conformant bake itself reads to build a county's roll. Chosen over an all-vintage scan or place_layer_snapshots because the first question this lane had to settle was whether the three prior single instances were even in the population the bake currently serves from, or in a superseded vintage already rolled off -- that distinction turned out to be the central finding (see below).",
+    "perCounty_base": { "48021_Bastrop": 77799, "48055_Caldwell": 48382, "48209_Hays": 134606, "48309_McLennan": 114255, "48453_Travis": 492848, "48491_Williamson": 319480, "total": 1187370 },
+    "theFamily_countingRule": "source_file ILIKE '%stratmap%' AND assessed_value IS NULL AND (exemption_codes IS NULL OR cardinality(exemption_codes)=0) AND living_area_sqft IS NULL, at each county's current declared vintage. This is criterion 4 from the dispatch, and it is proven below to be the SUPERSET that subsumes criterion 3 entirely and everything criterion 2 contributes net-new; criterion 1 contributes zero live rows. Live read 2026-09-10, cortex-prod (CORTEX_DATABASE_URL), read-only transaction.",
+    "perCounty_family": { "48021_Bastrop": 62257, "48055_Caldwell": 0, "48209_Hays": 0, "48309_McLennan": 114255, "48453_Travis": 0, "48491_Williamson": 0, "total": 176512 },
+    "familyAsPctOfCounty": { "48021_Bastrop": "80.0%", "48309_McLennan": "100%", "others": "0%" },
+    "familyAsPctOfSixCountyTotal": "14.87% (176512 / 1187370)",
+    "predicateControl": "Identical 4 predicates run against 3 non-CTX TX counties (48027, 48113, 48439 -- reusing CTX-ACREAGE's own control set for consistency). 48027, a full stratmap-roll-tier county, returns real nonzero stratmap/no-signal/punctuation counts (165576/165576/4649), proving the query is not dead code. Full results and a critical caveat about the Tarrant control (its huge bad-propid-shape hit is a different county's legitimate account convention, not garbage) are in CP2 -- reported rather than let the control read as a cleaner validation than it is."
+  },
+
+  "oneFamilyOrSeveral": {
+    "verdict": "Effectively ONE family in the current serving population, with one criterion contributing nothing live and one criterion splitting into a redundant half and an unrelated half.",
+    "evidence": [
+      "Criterion 1 (bad-shaped prop_id): ZERO rows in the current declared vintage across all six counties. The sole known instance (48491:PRIVATE ROAD) is a HISTORICAL row at tax_year 2025, not 48491's declared 2026 vintage -- confirmed by direct row lookup, not inferred from the aggregate zero. It contributes nothing to the live population.",
+      "Criterion 3 (punctuation-only situs AND no signal) is a STRICT SUBSET of criterion 4 (StratMap source AND no signal): the co-occurrence contingency table over all 1,187,370 rows found exactly 4 combinations, and in every one, punct_situs=true implies stratmap=true AND no_signal=true, with zero exceptions. 17,269 of criterion 4's 176,512 rows (9.8%) also carry punctuation-only situs; the other 159,243 (90.2%) carry a normal-looking situs address despite zero CAD signal -- a previously uncounted population 9.2x larger than the punctuation-flagged subset every prior lane's diagnosis focused on.",
+      "Criterion 2 (txgio_parcel bucket-sharing, feature_count>20 threshold chosen from an observed distribution break -- 99.87% of matched prop_ids carry <=5 features) resolves to 62 outlier prop_ids in the current rolls, and it is NOT one thing: 11 of the 62 (Bastrop x4, McLennan x7, including McLennan's own '999441'-'999666' sentinel-numbering convention, a different placeholder pattern than Caldwell's '0'/'1' but the same phenomenon) are StratMap-sourced with zero CAD signal -- already counted inside the 176,512, contributing zero net-new rows. The other 51 (Travis x50, Caldwell x1) carry real assessed values up to $149.77M, real addresses, real property-use codes, from genuine CAD-export source files -- large, legitimately multi-geometry-feature accounts (commercial corridors, big ranch/ag tracts) where high feature-count is a benign TxGIO digitizing artifact, structurally unrelated to account well-formedness. This half is explicitly NOT a member of the non-account family.",
+      "Net effect: the only criterion that independently matters for counting the family is criterion 4 (StratMap source + zero CAD signal); criteria 1 and half of criterion 2 contribute nothing live, criterion 3 is fully contained inside criterion 4, and the other half of criterion 2 is a false-positive risk this lane checked and ruled out rather than folding in."
+    ],
+    "ifTheyWereSeveral": "They are not several distinct defect mechanisms -- they are one mechanism (StratMap geometry-fill ingest producing rows with no underlying appraisal record) observed through four different lenses, three of which detect the same rows and one of which (bad-propid-shape) detects nothing live today."
+  },
+
+  "dispositionRecommendation": {
+    "recommendation": "A declared non-account state (Option A: a legitimate permanent condition, not a gap), structured as a NEW first-class object mirroring recordRetirement's shape (authority/scopeSearched/asOf/basis) but semantically distinct -- 'never assessed', not 'left the roll'. Applies to the full 176,512-row current population.",
+    "rejectedAlternatives": [
+      {
+        "alt": "recordRetirement (CTX-RETIRE's mechanism)",
+        "rejectedBecause": "Confirmed, not inherited: recordRetirement asserts an account WAS on a roll and has since left it. None of these 176,512 rows has ever appeared with a real assessed_value/exemption_codes/living_area_sqft at any point this lane checked -- there is no roll they left. Applying recordRetirement here would fabricate a false claim (an appraisal history that never existed), exactly the reasoning CTX-HAYS-SPLIT already applied to its own 38,060-row Hays population (which, per this lane's own measurement, is not even in Hays' CURRENT roll -- Hays is 100% clean today, so that specific recommendation from CTX-HAYS-SPLIT does not currently need to fire, but the reasoning transfers directly to Bastrop/McLennan's live population)."
+      },
+      {
+        "alt": "Data correction / deletion",
+        "rejectedBecause": "CTX-LEAVES2's single-row DELETE correction script is the right shape for a true one-off garbage value (the historical 'PRIVATE ROAD' row), not for 176,512 rows that are 14.9% of the entire six-county base population and 100% of one county's (McLennan) current roll. These rows carry real, load-bearing geometry the map depends on for coverage; deleting them would destroy legitimate parcel-shaped geometry to fix what is not a data error but a structural, permanent feature of how StratMap-fallback ingestion works when no CAD export exists yet for a county."
+      },
+      {
+        "alt": "Exclusion from the walk cohort",
+        "rejectedBecause": "Argued carefully, per the dispatch's own instruction, against the precedent CTX-ACREAGE and CTX-WALKRULE set by refusing to tune selectSweepParcels/selectJurisdictionCohort. That refusal was specifically about NOT adjusting the SAMPLER to dodge a single already-known failing sample and make a gate pass by omission -- sampling around a problem the sampler correctly found. This recommendation does not touch the sampler at all, and every one of the 176,512 rows should still be sampled, still be walked, still be counted and visibly reported. The only change is which GRADING BUCKET a sampled row falls into after content classification -- exactly the mechanism CTX-RETIRE/CTX-WALKRULE already built and proved legitimate for RECORD_RETIRED (rule 5: exclude retired rows from any single merged coverage denominator; report them as their own explicit, counted class instead of silently dropping them or folding them into BP-CONTENT-01). This is the identical pattern applied to a sibling case (never-assessed vs. left-the-roll), not a new precedent and not a filter. Grading these rows as BP-CONTENT-01 failures (the status quo, for the 159,243 whose normal-looking situs lets them slip past the punctuation guard and reach content grading) is the dishonest direction DEV_PROCESS 1.3 forbids -- it manufactures a false completeness gap for rows that were never going to have appraisal content, exactly the 'still needs a land use' vs. 'was never on a roll' conflation that rule already exists to prevent."
+      }
+    ],
+    "openInheritedQuestion": "Whether a declared-non-account row should also shield itself from BP-VALUE-01/S-family post-checks the way CTX-WALKRULE flagged as unresolved for RECORD_RETIRED -- the same open question, not re-litigated here, applies identically to this sibling class."
+  },
+
+  "the422LegibilityQuestion": {
+    "sameClassAsTheRefusalContractSplit": "Yes, in spirit, and this lane's own live read makes it a sharper instance than either of the two shapes the 2026-09-03 finding named. That finding contrasted Doc-19 layer-absence chips (rich: authority/scope/asOf/basis, inside a 200 payload) against bare atom-miss refusals (poorer: state/code/reason only, still inside a 200 payload that lets the rest of the card render). 48055:1's 422 is a THIRD, still poorer shape: a pre-body SERVE-GUARD throw that aborts the ENTIRE parcel payload over what is fundamentally a single-field problem (situsAddress), so a caller gets no card at all rather than a card with one honest gap. Confirmed live 2026-09-10 (curl against the staging endpoint, permitted read): 48055:1 still returns HTTP 422 today, despite CTX-RETIRE, CTX-SITUS-SKIP, CTX-LEAVES2, and CTX-WALKRULE all having merged -- the fix chain is code-complete but Caldwell has not been re-baked, so the stale pre-fix snapshot (raw ', ,' situs, no recordRetirement) is still what serves. This is not a new defect; CTX-WALKRULE already diagnosed and predicted exactly this persistence pending a re-bake outside every one of these lanes' scope.",
+    "controlCheckRuledOutAFalseLead": "This lane also live-curled a currently-served member of the newly-counted 159,243-row population (48021:141440) and initially suspected its {state:'refused', code:'studio-gated'} dollar-field shape was a defect specific to this family. Checked before claiming (DEV_PROCESS 3.2a): curled a KNOWN-GOOD Bastrop account with a real $378,395 assessed value at the same free entitlement tier and got an IDENTICAL studio-gated shape. This is a uniform product entitlement gate applied to every parcel regardless of underlying data, unrelated to this lane's family -- ruled out and NOT reported as a finding, named here only so the check is visible rather than silently done."
+  },
+
+  "ifAFixIsWarranted": {
+    "whereToImplement": "legacy-design-tools artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts -- add a sibling declaration to recordRetirement (e.g. a Tier1NonAccountGeometry type + isEarnedNonAccountGeometry, matching buildRecordRetirement's authority/scopeSearched/asOf/basis shape) earned when a row's claim carries a StratMap-tier source_file AND assessed_value/exemption_codes/living_area_sqft are all absent -- the same predicate this lane used to count criterion 4, reused as the earning condition rather than invented fresh.",
+    "walkGradingSide": "hauska-factory verify-walk.mjs, mirroring CTX-WALKRULE's own six-rule pattern (import the real predicate, never reimplement; grade as its own class, never BP-CONTENT-01; exclude from any merged coverage denominator; verify-by-violating against a malformed marker) -- the identical mechanism already proven out for RECORD_RETIRED, applied to a second, sibling declared state.",
+    "populationAffected": "176,512 of 1,187,370 rows across the six CTX counties' current serving population (14.87%), concentrated entirely in Bastrop (62,257, 80.0% of that county's roll) and McLennan (114,255, 100% of that county's roll)."
+  },
+
+  "constraintsHonored": [
+    "Worktree created from origin/main via git worktree add before any file edit; seat/worktree/branch/commit confirmed first (this lane's first four tool calls)",
+    "Read PUNCTUATION_ONLY_RE and assertSitusNotPunctuationOnly but never edited them -- grep-confirmed byte-identical to origin/main at close (git status clean)",
+    "No row written, deleted, or corrected -- every psql connection set default_transaction_read_only=on before its first query",
+    "No deploy, Cloud Build, Cloud Run job, bake, publish, or walk execution -- every live check against the served surface was a plain curl GET, explicitly permitted by the dispatch",
+    "No write to hauska-factory, hauska-engine, or hauska-map -- never opened",
+    "No sampler tuning -- selectSweepParcels/selectJurisdictionCohort never opened, and the disposition recommendation explicitly does not touch them",
+    "Heavy-scan serialization respected: an unscoped txgio_parcel scan across 6 counties (16.5M-row / 29GB table) was attempted, timed out twice at 90s, and was CANCELLED via pg_cancel_backend rather than left running or blindly retried; replaced with a semi-join scoped to the current declared-vintage roll",
+    "Credential hygiene: CORTEX_DATABASE_URL pulled from gcloud Secret Manager to a scratch file outside any tracked worktree, used for this lane's query batches only",
+    "Verified at source throughout, including reversing an initial wrong hypothesis (studio-gated dollar fields) after a control check disproved it, rather than reporting the first plausible read"
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: the three prior single-instance findings in this program (48055:1, 48491:PRIVATE ROAD, Hays' 38,060 geometry-only rows) were each diagnosed without checking whether the instance was in the county's CURRENT declared vintage or a superseded one -- two of the three turned out to be historical with zero live exposure today. Any future 'is this a live defect' question in this program should check tryResolveDeclaredCadVintage's own filter FIRST, before counting or diagnosing further, because the answer materially changes the disposition question (a superseded-vintage instance needs no action at all; a live one needs a declared state).",
+      "LESSON: 'StratMap source_file' and 'zero CAD signal (assessed_value/exemption_codes/living_area_sqft all null)' are, in this program's current data, the SAME population everywhere they co-occur at all -- no county in this measurement showed one without the other. A future lane can use either as a proxy for the other in these six counties, but should re-verify per-county before assuming it generalizes to a county not yet checked (McLennan and Bastrop are the only two currently exhibiting it).",
+      "LESSON: a large feature-count under one prop_id in txgio_parcel is NOT by itself evidence of a sentinel/bucket id -- it must be cross-checked against cad_property's own signal fields before concluding anything. In this measurement, the same statistical shape (dozens to 1000+ shared geometry features per prop_id) split cleanly into 'sentinel, zero signal' (11 cases) and 'legitimate large multi-geometry account, full signal' (51 cases, mostly Travis commercial/ranch parcels) with no ambiguous middle case. Always join back to the signal fields before naming a bucket id a defect.",
+      "LESSON: an unscoped txgio_parcel scan (even filtered to 6 counties via county_fips IN (...)) can still time out against this 16.5M-row/29GB table -- scope further, to a semi-join against a known smaller candidate set (here, the current-vintage cad_property roll) rather than aggregating the whole matching slice first."
+    ],
+    "groundTruths": [
+      "(2026-09-10, live read cortex-prod, read-only) Current declared-vintage cad_property population across 48021/48055/48209/48309/48453/48491: 1,187,370 total. Non-account family (StratMap source + zero CAD signal): 176,512 total -- 62,257 in Bastrop (80.0% of that county), 114,255 in McLennan (100% of that county), zero in Caldwell/Hays/Travis/Williamson's current rolls.",
+      "(2026-09-10, live read) 48491:PRIVATE ROAD sits only at tax_year=2025, not 48491's declared 2026 vintage -- historical, already superseded, zero live exposure.",
+      "(2026-09-10, live curl, staging) 48055:1 still returns HTTP 422 SITUS_PUNCTUATION_ONLY today, despite 4 merged fixes across 2 repos (#647, #648, #649, hauska-factory #120) -- pending only a Caldwell re-bake, which is outside every one of these lanes' scope.",
+      "(2026-09-10, live curl, staging) The studio-gated dollar-field refusal shown to anonymous/free callers is uniform across both a real-signal and a zero-signal parcel -- verified, not a defect of this family."
+    ],
+    "open": [
+      "Operator ruling needed: adopt the proposed Tier1NonAccountGeometry declared state (or an equivalent name) for the 176,512-row family, mirroring recordRetirement -- this lane recommends but does not have standing to rule.",
+      "Whether a declared-non-account row should shield itself from BP-VALUE-01/S-family post-checks the same way CTX-WALKRULE left unresolved for RECORD_RETIRED -- inherited, not re-litigated.",
+      "Caldwell's re-bake (to actually clear 48055:1's live 422 using the already-merged recordRetirement + situs-earned-absence fixes) is still pending -- integration seat's, not this lane's.",
+      "Dallas (48113, 205,049-row bad-propid-shape population) and Tarrant (48439, a hyphenated block-lot convention this program's own regex does not recognize) -- both surfaced incidentally by this lane's own control queries, neither investigated, flagged for their owning seat only."
+    ]
+  },
+
+  "close_contract_extra": {
+    "note": "AGENT_CONTRACT section 6 fields for a non-code doc_repo/measurement lane, stated explicitly rather than omitted",
+    "prNumbers": "not applicable: doc_repo/read-only measurement lane, no PR opened",
+    "mergeShas": "not applicable: no merge performed",
+    "ciConclusionStrings": "not applicable: no CI run triggered by this lane",
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's three _inbox/ writes: 2026-09-10_ctx-sentinel_cp1.json, 2026-09-10_ctx-sentinel_cp2.json, this close.json."
+  }
+}
