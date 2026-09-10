@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-10 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,70 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: P-132 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: hauska-factory
+
+# setback cell writer
+
+# MISSION - OPS-21 S1: setback cell writer (P-132)
+
+## What you are building
+A new hauska-factory rail job that fills the 4 setback scalar cells plus the
+`setbackRules` companion in `parcel_record`, per county per city.
+
+## STANDING FACTS - read these, do not re-derive them
+- **The root cause you are fixing.** `computeTier1Envelope` (LDT `nodeFacetBakeTier1.ts:92`)
+  has TWO return branches and BOTH are `status:"declined"`. It cannot return a value for any
+  parcel, ever. `write-setback-city.mjs:95` throws `SETBACK_APPLY_HELD` on `--apply` and has
+  no live parcel loader. Setbacks have had no write path to a value since anti-zombie.
+- **Do NOT try to lift `SETBACK_APPLY_HELD` or use the atom writer.** Out of scope for this
+  lane by operator decision. Cells are written direct from the ruled table.
+- **The computation already exists and is correct.** `brokeragePlaceBuildableEnvelope.ts`
+  (LDT) resolves district -> ruled table -> setbacks, live in production today for ~20
+  jurisdictions. Use `getSetbackTableForZoning` from `@hauska-engine/adapters`. Do not write
+  a second resolver.
+- **Ruled tables that exist:** austin-tx, bastrop-tx, bastrop-city-tx,
+  bastrop-development-code, elgin-development-code, kyle-tx, pflugerville-tx, round-rock-tx,
+  san-antonio-tx, waco-tx (plus Utah/Idaho). Inside the six CTX counties that is Austin,
+  Bastrop, Bastrop City, Elgin, Kyle, Pflugerville, Round Rock.
+- **IN-CITY ONLY.** `UNINCORPORATED_NOT_APPLICABLE_RAIL_KEYS`
+  (`src/lib/parcel-record-engine/rail-keys.js`) already writes `not-applicable` on every
+  setback rail at row-creation for unincorporated parcels. Do not touch those cells.
+- **In-city with no ruled table = `absent-verified` AFTER a probe, NEVER `not-applicable`.**
+  `not-applicable` on an in-city parcel is a false claim that the land is unzoned.
+  `plan-city-setback.ts`'s own header states this rule; honour it.
+- **Identity.** `place_key` is `{county_fips}:{prop_id}` RAW. The engine's `parcelNodeId` is
+  the same shape but normalized (`normalizeForJoin` strips leading zeros on all-digit
+  tokens). Write cells on the RAW `place_key`; do not normalize.
+- Store: `parcel_record_cell` in `neondb`. Atoms live in a different database
+  (`hauska_mcp`); a SQL join across the two cannot be written at all.
+
+## Completion predicate - this is what done means, not a close file
+`unaccounted` count for `setbackFrontFt|setbackSideFt|setbackRearFt|setbackCornerFt|setbackRules`
+on in-city parcels in the six CTX counties, in cities carrying a ruled table, equals 0.
+Run `node scripts/plan-progress.mjs --sql` in doc_repo for the exact query.
+
+## Out of scope
+Envelope rails (S2 / P-133). Gate and slate (S4 / P-135). Hays - P-145 must land first, so
+do not fill Hays cells.
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-10_ops21-s1_cp1.json
+  CP2: _inbox/2026-09-10_ops21-s1_cp2.json
+  CLOSE: _inbox/2026-09-10_ops21-s1_close.json

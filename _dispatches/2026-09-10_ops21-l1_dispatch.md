@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-10 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,61 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: P-142 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: legacy-design-tools
+
+# retirement audit of 94 slated pairs
+
+# MISSION - OPS-21 L1: retirement audit of 94 slated pairs (P-142)
+
+## What you are building
+A READ-ONLY audit. You retire nothing. You produce a ranked backlog.
+
+**For each of the 94 slated (county, rail) pairs: does its OLD serve path still exist, and is
+it still reachable?**
+
+## STANDING FACTS
+- `_decisions/2026-09-02_step7_consumer_c_then_b.md` requires that **each cutover carries its
+  old-path retirement in the same card.** That is the ENFORCEMENT retirement rule as designed.
+- **94 cutovers have shipped and nobody has verified that a single legacy path was retired.**
+  If none was, 24 percent of the serve path has two live implementations, and ENFORCEMENT's
+  rule - repoint consumers first, THEN retire the store, because reverse order turns an
+  invisible defect into a visible regression - is being violated 94 times.
+- The live slate is `PARCEL_RECORD_SLATE` in
+  `artifacts/api-server/src/lib/parcelRecordAllowlist.ts`: 18 rails, 94 pairs. The 13
+  `*ServeCutover.ts` modules name their own legacy loaders, and several state in their own
+  headers that there IS no legacy fallback loader - which is itself a per-rail answer worth
+  recording rather than assuming.
+- **Four read paths are live simultaneously:** the atom chain (retrieval-api), the baked
+  node-facets snapshot, the cortex fallback route (`envelope`-null by design), and the
+  engine-api feasibility route. A rail may have a legacy path on more than one.
+- **Reachability, not existence.** ENFORCEMENT: retirement is proven by decline, never by
+  documentation. Code existing is not the finding; a caller able to reach it is.
+
+## Completion predicate
+Every one of the 94 pairs carries an audited verdict - legacy absent, present-unreachable, or
+present-reachable. Count of unaudited pairs equals 0. Output ranks the reachable ones for L3.
+
+## Out of scope
+Retiring anything (L3 / P-144). Widening the slate (L2 / P-143).
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-10_ops21-l1_cp1.json
+  CP2: _inbox/2026-09-10_ops21-l1_cp2.json
+  CLOSE: _inbox/2026-09-10_ops21-l1_close.json

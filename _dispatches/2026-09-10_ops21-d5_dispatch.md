@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-10 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,59 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: P-136 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: hauska-factory
+
+# gate denominator 17 to 65
+
+# MISSION - OPS-21 D5: gate denominator 17 to 65 (P-136)
+
+## What you are building
+Widen `DEFAULT_SCHED_RAIL_KEYS` in `src/jobs/publish-gate-sched.mjs` (hauska-factory) from
+17 rails to all 65.
+
+## STANDING FACTS - this is safe, and here is exactly why
+- Today the scheduler grades SLATE_1 (5) + SLATE_1B (2) + SLATE_1C (1) + SLATE_1D (7) +
+  LANDUSE_OWNER_GATE_GAP (2) = **17 rails. 48 of 65 are never graded.** Canon says
+  `unaccounted` is fatal at publish; for three quarters of the grid that is written in canon
+  and not enforced in code.
+- **Grading is NOT serving.** `parcelRecordAllowlist.ts` (LDT) requires BOTH slate membership
+  AND a `pass` verdict before a rail serves from the record, and the slate is code-owned and
+  never auto-derived from a verdict. Widening the gate produces `refuse` verdicts for
+  unslated rails and **changes nothing a customer sees.**
+- Expect a large pile of refusals. That is the point. 48 rails currently cannot report a
+  problem; after this they fail loudly and countably, per rail per county, hourly.
+- The closed rail set is `src/lib/parcel-record-engine/rail-keys.js`, 65 rails, derived and
+  not hand-authored. **Derive from it.** Do not hand-author a second list - a hand-maintained
+  denominator is the exact defect class this program exists to close.
+- Watch the latent defect already recorded against the ledger rollup: `totalRails` reads a TS
+  constant while `totalCells` counts SQL rows, and nothing asserts the two agree. Do not
+  reproduce that shape.
+
+## Completion predicate
+`DEFAULT_SCHED_RAIL_KEYS` is derived from `PARCEL_RECORD_RAIL_KEYS` and has length 65, and a
+scheduler run produces verdict rows for all 65 rails across the six counties.
+
+## Out of scope
+Changing `PARCEL_RECORD_SLATE`. Fixing any rail that now refuses. Both are later rows.
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-10_ops21-d5_cp1.json
+  CP2: _inbox/2026-09-10_ops21-d5_cp2.json
+  CLOSE: _inbox/2026-09-10_ops21-d5_close.json

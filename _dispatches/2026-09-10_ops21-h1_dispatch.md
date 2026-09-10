@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-10 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,68 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: P-145 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: hauska-factory
+
+# Hays identity reconciliation
+
+# MISSION - OPS-21 H1: Hays identity reconciliation (P-145)
+
+## What you are building
+Hays is the identity-damaged county. **This must land before Hays receives any Phase 1 or
+Phase 2 cell fill**, because filling cells on a broken key writes wrong values faster.
+
+## STANDING FACTS - every one is a recorded finding, do not re-derive
+- **30.5 percent of parcel ids gone and 19.5 percent drifted** across the 2026-09-03 StratMap
+  reload. Worst of the six by a wide margin; Bastrop was zero across 400 samples. Healthy
+  aggregates mask it because new parcels backfill the count.
+- **The StratMap graft, 2026-08-25.** Someone needed Hays coverage, the CAD export was short,
+  so they padded `cad_property` with 116,421 StratMap geometry rows and **overwrote
+  `source_file` in place.** Invisible for five weeks; it then cost two lanes, a false alarm
+  about an appraisal district, and very nearly a `recordRetirement` written onto 38,060
+  parcels that were never accounts.
+- **The cadRoll gate is not vintage-scoped**, so 37,813 rows can only clear by claiming they
+  left a roll they were never on. CTX-B2 found that trap and refused to walk into it. Do not
+  clear it that way.
+- **Dollars are joined on a `prop_id` whose own payload says it does not join the CAD
+  account.** One San Marcos parcel serves a Buda parcel's label and acreage.
+- 5 of 11 Hays cities carry a zoning endpoint.
+
+## What the lane must produce
+The Hays `place_key` set measured as a real id-set intersection against the `cad_property`
+account set, and **a declared disposition for every non-intersecting row** - not a
+relabelling. Distinguish at minimum: never an account; was an account and left the roll; is
+an account under a different key; unknown. The fourth is legitimate and must stay countable.
+
+Precedent worth reading before concluding: the readiness gate once refused Williamson at 46.9
+and Caldwell at 51.4 percent for a defect that did not exist. `parcel_record`'s intended
+population is `landing_parcel_jurisdiction`, not the account roll, and measured as real id-set
+intersections the two matched EXACTLY in all six counties. Measure before concluding.
+
+## Completion predicate
+Every non-intersecting Hays row carries a declared disposition; count of rows with no
+disposition equals 0. Proven by violation against a control county.
+
+## Out of scope
+Filling any Hays cell. Re-running the StratMap load. Repairing `source_file` history.
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-10_ops21-h1_cp1.json
+  CP2: _inbox/2026-09-10_ops21-h1_cp2.json
+  CLOSE: _inbox/2026-09-10_ops21-h1_close.json
