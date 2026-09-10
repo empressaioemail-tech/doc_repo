@@ -1,0 +1,118 @@
+{
+  "lane": "CTX-LEAVES2",
+  "planRows": ["P-124"],
+  "closedAt": "2026-09-10T00:35:00Z",
+  "closeKind": "complete: three separate defects implemented, tested, merged",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-leaves2",
+  "branch": "fix/ctx-leaves2-acreage-zoning-propid",
+  "dispatch": "_dispatches/2026-09-09_ctx-leaves2_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-09_ctx-leaves2_cp1.json",
+    "_inbox/2026-09-09_ctx-leaves2_cp2.json"
+  ],
+
+  "snapshot": {
+    "worktreeCreatedFrom": "origin/main 7a739849fb16be68576ba0b9f1e397818b710614 via git worktree add, confirmed before any file edit",
+    "seatWorktreeBranchCommitConfirmedFirst": true
+  },
+
+  "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/649",
+  "mergeCommit": "9873ff1172e79c0254aa164d305d83de7c664d4f",
+  "mergeMethod": "squash, self-merged per property seat authority",
+  "ci": "green on the second run (34420408988), confirmed by exit code (gh pr checks), not just the printed pass label: L17 ci-vintage-predicate, L5 SF-24/25/26/30 greps, L5 silent-fallback greps, PR base is main, SS-W16 tier2 flood not served, SS-W18 api-server boots, Test (13m5s), Typecheck (2m5s), cortex daily limit bake -- all pass.",
+  "ciCaughtTwoRealDefectsMyLocalChecksMissed": [
+    "First push (run 34418479878): Typecheck failed -- LayerAbsenceVerdict did not include 'refused', so my first pass's verdict:'refused' literal did not type-check. vitest's esbuild transform strips types and never caught this locally; only tsc/CI did. Fixed by adding 'refused' as a genuine member (one of the serve contract's own four canonical states, not a new pipeline-internal word) -- zoningSourceMirror (structuralFactToFacetsWire.ts) already constructs a verdict:'refused' LayerAbsenceWire at runtime in its 'no recorded citation' branch, just never typed against LayerAbsenceWire, so the gap never surfaced before this dispatch's own return-type-annotated function tried the same thing. Considered and rejected reusing the existing 'lookup-failed' member instead: verify-walk.mjs's classifyRequiredLeaf (reproduced verbatim in this repo's own test suite) only recognizes the literal strings absent-verified/not-applicable/refused as an absence -- 'lookup-failed' would have fallen through to state:'value', exactly the silent-pass defect class this dispatch exists to close.",
+    "Same run: L17 ci-vintage-predicate failed -- the new correction script queries cad_property without a declared-vintage import. Correctly flagged: fixed by adding the established CAD_PROPERTY_MULTI_YEAR_INVENTORY marker (precedent: countyCoverageScoreCli.ts), since the script is a deliberate cross-vintage identity lookup by design -- the artifact's own source_vintage tier (stratmap-roll) predates Williamson's current declared tier (cad-export), so a declared-vintage-scoped query would miss the very row the script exists to find."
+  ],
+
+  "defect1_acreage": {
+    "location": "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts, nodeFacetBakeTier1Conformant.test.ts",
+    "absenceStateChosen": "refused for 100% of today's live population (291,231/291,231), decided per-parcel from parcelJoin/row availability, never a blanket rule.",
+    "verifiedAbsencePairEvidence": "Live read-only query (CORTEX_DATABASE_URL, SET default_transaction_read_only=on) against every one of today's null-acreage cells, grouped by provenance.parcelJoin.state per county: 48453 Travis 119,389/119,389 no-row; 48021 Bastrop 15,542/15,542 no-row; 48055 Caldwell 23,660/23,660 no-row; 48209 Hays 41,619/41,619 gate-blocked; 48491 Williamson 91,021/91,021 gate-blocked; 48309 McLennan 0. 0% carry a genuinely-examined degenerate ring (state joined/joined-situs). CTX-ACREAGE's absent-verified suggestion does not hold for a single row of today's real population -- the ring half of the pair was never genuinely checked (a lookup miss, not a verified absence). The code decides per parcel (ringRowAvailable = row != null, the same variable the ring itself is derived from), so a future row that reaches a real joined row with degenerate geometry still earns absent-verified correctly -- proven able to fire by a dedicated fixture, not asserted.",
+    "furtherMissedSiblingsFound": "None. Grepped every direct reader of baseFacts.acreage in artifacts/api-server (parcelConstraintProjection.ts's acreageCell, twinOnRecordSerialize.ts's acreageFromBase): both already degrade an absent/malformed acreage object to their own unknown/null branch, no crash, no misread as a value.",
+    "notAddedOpportunistically": "BAKE_OWNED_REQUIRED_LEAF_PATHS gained exactly one new entry (baseFacts.acreage). situsAddress stays deliberately excluded (CTX-SITUS-SKIP's own prior, narrower rule, unchanged)."
+  },
+
+  "defect2_unmeasured": {
+    "location": "artifacts/api-server/src/lib/verdictLayerServe.ts, verdictLayerServe.test.ts, __tests__/brokerageNodeFacets.test.ts",
+    "conversionConfirmedAtServeBoundaryOnly": "Only zoningVerdictFromCityLimits's two unmeasured-emitting branches changed. LAYER_ABSENCE_VERDICTS/LayerAbsenceVerdict (the internal Doc-19 vocabulary) still carries 'unmeasured' for other internal consumers -- 'refused' was ADDED as a genuine new member (not previously present; a real gap this dispatch's own type-checked call site exposed), not a repurposing of any existing member. Downstream consumers checked and confirmed unaffected: attachVerdictLayersToFacets and zoningSourceMirror both branch on structural shape (verdict+status, or state+specific code), never on the literal string 'unmeasured'; enrichLandUseFactWithZoningVerdict branches only on ==='not-applicable'. The narrow CTX-MIRROR refusal-code guards (parcel-record-engine-refused only) are untouched.",
+    "notARelaxationOfTheDecision": "_decisions/2026-09-01_serve_path_never_emits_pipeline_state.md's own worked example (cityLimitsFact.status=unmeasured, 'no usable parcel query point') names absent-verified as the correct conversion for THAT case (the OLD point-based loadCityLimitsFact mechanism, which genuinely looked and found nothing). Traced before implementing rather than assumed: for a PARCEL_RECORD-SLATE-gated county (cityLimitsFactFromParcelRecord.ts, a NEWER mechanism per _decisions/2026-09-02_step7_consumer_c_then_b.md), a parcel_record cell in state 'refused' (no-such-parcel-or-rail -- Williamson's actual case) collapses to the SAME status:'unmeasured' string but for a structurally different reason: an upstream REFUSAL/lookup-miss, never looked, not looked-and-found-nothing. The decision's own general rule ('converts to absent-verified carrying the basis it had, OR it refuses the facet') routes this specific case to refuse, matching the dispatch; its cited worked example is about the other mechanism and does not generalize here. Stated explicitly since the two readings could otherwise look contradictory on a shallow read.",
+    "verifiedBothDirections": "verdictLayerServe.test.ts (28/28) and __tests__/brokerageNodeFacets.test.ts (80/80, against a REAL Postgres in CI) both green: the two converted branches now assert refused; every untouched branch (stamp-missing, not-applicable, stamped-parcel-null) is unchanged."
+  },
+
+  "defect3_privateRoad": {
+    "location": "lib/cad-ingest/src/txgio/landuse.ts, __tests__/txgio.test.ts, lib/db/scripts/p124-ctx-leaves2-private-road-correction.mjs",
+    "stratMapAdapterExistsInTheTree": "Yes -- CTX-ACREAGE's close reported it as not locatable on origin/main under lib/cad-ingest. Independently re-searched rather than trusted (this program's own precedent: verify a relayed claim against the canon it cites before scoping to it). Found: lib/cad-ingest/src/txgio/landuse.ts's normalizeStratMapLandUse, wired live and currently runnable through lib/cad-ingest/src/txgio/landuse-cli.ts's 'stratmap-landuse' CLI (pnpm --filter @workspace/cad-ingest stratmap-landuse), writing into cad_property via lib/cad-ingest/src/ingest.ts's upsertCadProperties. Not a historical one-off dead file. lib/cad-ingest/src/p78Merge.ts (the file matching the P-78 name most literally) is a MERGE helper only -- it takes propId as an already-resolved input and never produces one.",
+    "guardLocation": "isParcelShapedPropId (lib/cad-ingest/src/txgio/landuse.ts): a Prop_ID must be bare-numeric or Williamson's own documented R-account convention (joinNormalize.ts: R062578) to be treated as a parcel; anything else (including the literal PRIVATE ROAD) is skipped and counted via recordSkip, never reaching upsertCadProperties.",
+    "provenRefusesPrivateRoadSpecifically": "New test: normalizeStratMapLandUse returns null for Prop_ID='PRIVATE ROAD', counters.rowsSkipped increments, skip sample names the reason (NOT_A_PARCEL_PROP_ID_REASON) and the offending value. Paired tests confirm a real numeric id and Williamson's real R-account form (both cases) still admit -- the guard is not so permissive it admits the value it exists to reject, nor so strict it rejects a real shape.",
+    "dataCorrection": "cad_property has no reclassification column (lib/db/src/schema/cadProperty.ts read directly) -- the only available correction is a targeted DELETE by the exact (county_fips, prop_id) composite key. Written as lib/db/scripts/p124-ctx-leaves2-private-road-correction.mjs (dry-run by default, --apply to execute; CAD_PROPERTY_MULTI_YEAR_INVENTORY-marked, per CI's own ci-vintage-predicate gate). NOT executed in this session -- no job runs, no live production mutation by this lane, per the dispatch's own constraint.",
+    "landingCadPropertyNotTouched": "hauska-factory's landing_cad_property (a separate, verbatim copy on a different Neon host, written by landing-import.mjs's own streamCopy() job) is out of this seat's write authority and this script's scope. Named in leave_behind for hauska-factory's own next landing-import run to inherit once the source correction is applied."
+  },
+
+  "violationRuns": {
+    "defect1": [
+      "no ring, no usable claim, no parcel-join row available -> refused (real fixture, both the no-row and gate-blocked shapes)",
+      "no ring, no usable claim, a REAL parcel-join row with degenerate geometry -> absent-verified (proves the branch can fire, not just the refused default)",
+      "no ring, a real usable claim landAcres -> unchanged resolved value (cad-roll-land-acres method)",
+      "a real ring -> unchanged resolved value (shoelace-wgs84 method), facetCoverage/assertRequiredLeafStatesEarned pass on the real 1.5M-plus population's shape (isResolvedAcreageFacet added so a real value is never mistaken for a malformed absence)"
+    ],
+    "defect2": [
+      "cityLimits.status='unmeasured' (no usable query point) -> refused",
+      "cityLimits.status='unincorporated' with undeclared county doctrine -> refused",
+      "cityLimits.status='unincorporated' with a declared unzoned-unincorporated doctrine -> unchanged (not-applicable)",
+      "cityLimits.status='incorporated' -> unchanged (stamp-missing)",
+      "a baked parcel with a real zoning stamp -> unchanged (function returns null, stamp served as-is)"
+    ],
+    "defect3": [
+      "Prop_ID='PRIVATE ROAD' -> refused, counted, never upserted",
+      "Prop_ID='105294' (real numeric) -> admitted, leading zeros stripped as before",
+      "Prop_ID='R062578' / 'r062578' (Williamson's real R-account form, both cases) -> admitted verbatim, never stripped"
+    ],
+    "healthyPopulationUnchanged": "80/80 nodeFacetBakeTier1Conformant.test.ts (defect 1's own test file, includes the pre-existing old-vs-new divergence suite over a real stamped/ringed fixture -- unchanged), 28/28 verdictLayerServe.test.ts, 80/80 brokerageNodeFacets.test.ts (real Postgres, CI), 292/292 lib/cad-ingest full suite (14 skipped needing a live integration DB unrelated to this change). A diff that changed output for an already-conformant parcel would have failed one of these; none did."
+  },
+
+  "constraintsHonored": [
+    "three defects implemented and reported as three separate commits, not one change or one number",
+    "no BP-CONTENT-01 widening, no unmeasured added to the permitted state set, no jurisdiction cohort sampler touch (all three untouched, all live in hauska-factory, none of this lane's business)",
+    "absent-verified never written where the verified-absence pair is not genuinely present -- tested per-parcel with live data for defect 1 rather than inherited from CTX-ACREAGE's suggestion",
+    "no deploy, Cloud Build, bake, publish, or walk run",
+    "no write to hauska-factory, hauska-engine or hauska-map",
+    "worktree created from origin/main via git worktree add before any file edit; seat/worktree/branch/commit confirmed first",
+    "doc_repo commits scoped to this lane's own new files by explicit pathspec, never -A, in a shared concurrently-edited tree"
+  ],
+
+  "fleetMemoryScratch": [
+    "LESSON: LayerAbsenceVerdict (Doc-19's serve vocabulary, verdictLayerServe.ts) did not include 'refused' as a literal member even though zoningSourceMirror (structuralFactToFacetsWire.ts) already constructs a verdict:'refused' object at runtime in its 'no recorded citation' branch -- that call site was simply never return-type-annotated against LayerAbsenceWire, so the type gap was invisible until a strictly-typed function tried to do the same thing. vitest's esbuild transform does not catch this class of error; only tsc/CI does. Run tsc --noEmit (or trust CI, not just vitest) before treating a Doc-19/LayerAbsenceWire change as verified.",
+    "LESSON: this repo has (at least) two parallel, differently-shaped 'refusal' conventions for the SAME rail concept -- LayerAbsenceWire's {status:'absent', verdict:...} and the *FactFromParcelRecord.ts family's {state:'refused', code, reason} (ZoningFactRead, CityLimitsFactWire's cell-level refusal collapsed into status:'unmeasured'). verify-walk.mjs's classifyRequiredLeaf (reproduced verbatim in nodeFacetBakeTier1Conformant.test.ts) reads `rec.verdict ?? rec.state`, deliberately dual-shape-aware so both conventions grade correctly -- but only for the literal strings absent-verified/not-applicable/refused; any other token (lookup-failed, unmeasured, stamp-missing) on a non-empty object silently grades as state:'value'. Check which of the two shapes (and which literal verdict/state string) a given serve-boundary fix actually needs BEFORE picking a fix, not after.",
+    "GROUND-TRUTH (2026-09-10, live read-only CORTEX_DATABASE_URL): every one of today's 291,231 null-baseFacts.acreage cells across the six CTX counties carries provenance.parcelJoin.state of exactly no-row (Bastrop/Caldwell/Travis) or gate-blocked (Hays/Williamson); zero carry joined/joined-situs with a genuinely examined degenerate ring. McLennan is zero.",
+    "OPEN: CTX-ACREAGE's leave_behind also names cityLimitsFact.status/etjStatus THEMSELVES (not just the zoning-derived verdict) as a second, still-unconverted instance of the same 2026-09-01 ruling -- out of this dispatch's named scope (the dispatch named zoningVerdictFromCityLimits specifically), not independently re-verified here, left for a successor exactly as CTX-ACREAGE left it.",
+    "OPEN: the StratMap-to-cad_property adapter's guard closes the write path going forward; the single existing 48491:PRIVATE ROAD row is unchanged in the live store until lib/db/scripts/p124-ctx-leaves2-private-road-correction.mjs is run explicitly (dry-run first) against cortex-prod's CORTEX_DATABASE_URL. landing_cad_property (hauska-factory) will still serve the bad row until its own next landing-import run after the source is corrected."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Run lib/db/scripts/p124-ctx-leaves2-private-road-correction.mjs (dry-run first, then --apply) against cortex-prod's CORTEX_DATABASE_URL to remove the single existing 48491:PRIVATE ROAD cad_property row.",
+      "owner": "integration seat / operator (live production mutation, out of this lane's own execution scope)",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "hauska-factory's landing_cad_property (a separate verbatim copy, different Neon host) still carries the bad row until its own next landing-import run after the cad_property correction above lands. Out of this seat's write authority (may not write to hauska-factory).",
+      "owner": "hauska-factory seat",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "cityLimitsFact.status/etjStatus themselves (not just the zoning-derived verdict this card converted) are a second, still-unimplemented instance of _decisions/2026-09-01_serve_path_never_emits_pipeline_state.md, per CTX-ACREAGE's own leave_behind. Not independently re-verified or touched here -- out of this dispatch's named scope.",
+      "owner": "planner (legacy-design-tools seat)",
+      "plan_row": "P-124"
+    }
+  ],
+
+  "prs": "legacy-design-tools#649, merged 9873ff1172e79c0254aa164d305d83de7c664d4f",
+  "docRepoCommitted": [
+    "_inbox/2026-09-09_ctx-leaves2_cp1.json",
+    "_inbox/2026-09-09_ctx-leaves2_cp2.json",
+    "_inbox/2026-09-09_ctx-leaves2_close.json"
+  ]
+}
