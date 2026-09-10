@@ -138,9 +138,13 @@ export const PREDICATES = [
     lane: "D6",
     title: "on-demand rails dispositioned",
     target: 0,
-    sql: unaccountedIn(ONDEMAND_RAILS),
-    blocked:
-      "BLOCKED on the operator ruling: do these leave the 65-rail grid, or carry a declared on-request state? The ruling defines what state closes this.",
+    sql: `
+  SELECT count(*) AS n
+    FROM parcel_record_cell c
+   WHERE split_part(c.place_key, ':', 1) IN (${FIPS_LIST})
+     AND c.rail_key IN (${railList(ONDEMAND_RAILS)})
+     AND c.cell_state <> 'available-on-request'`,
+    note: "RULED 2026-09-10: these carry the new sixth state `available-on-request`, which requires a named REACHABLE requestPath (P-85 Records Request) and which the gate treats as satisfied. The predicate counts cells NOT in that state, so a cell relabelled to anything else — including a fabricated absence — reopens this lane. `_decisions/2026-09-10_available_on_request_sixth_cell_state.md`.",
   },
   {
     lane: "PROGRAM",
@@ -229,8 +233,8 @@ function selfTest() {
       PREDICATES.length + CODE_PREDICATES.length
   );
   push(
-    "D6 is declared blocked rather than reported as zero",
-    Boolean(PREDICATES.find((p) => p.lane === "D6").blocked)
+    "D6 counts cells NOT in available-on-request, so a relabel reopens it",
+    PREDICATES.find((p) => p.lane === "D6").sql.includes("available-on-request")
   );
 
   let failures = 0;

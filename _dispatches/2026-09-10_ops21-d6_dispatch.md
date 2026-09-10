@@ -37,7 +37,7 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
-PLAN-ROW: P-145 (90_operations/OPS-16_texas_market_plan_of_record.md)
+PLAN-ROW: P-141 (90_operations/OPS-16_texas_market_plan_of_record.md)
 repo: hauska-factory
 
 # PROGRAM CONTEXT — OPS-21 serve completion
@@ -167,47 +167,50 @@ State your snapshot: repository, branch, commit. Verify by violation before repo
 check as working.
 
 
-# MISSION - OPS-21 H1: Hays identity reconciliation (P-145)
+# MISSION - OPS-21 D6: available-on-request (P-141)
 
 ## What you are building
-Hays is the identity-damaged county. **This must land before Hays receives any Phase 1 or
-Phase 2 cell fill**, because filling cells on a broken key writes wrong values faster.
+Implement the sixth parcel-record cell state, ruled 2026-09-10:
+`_decisions/2026-09-10_available_on_request_sixth_cell_state.md`.
 
-## STANDING FACTS - every one is a recorded finding, do not re-derive
-- **30.5 percent of parcel ids gone and 19.5 percent drifted** across the 2026-09-03 StratMap
-  reload. Worst of the six by a wide margin; Bastrop was zero across 400 samples. Healthy
-  aggregates mask it because new parcels backfill the count.
-- **The StratMap graft, 2026-08-25.** Someone needed Hays coverage, the CAD export was short,
-  so they padded `cad_property` with 116,421 StratMap geometry rows and **overwrote
-  `source_file` in place.** Invisible for five weeks; it then cost two lanes, a false alarm
-  about an appraisal district, and very nearly a `recordRetirement` written onto 38,060
-  parcels that were never accounts.
-- **The cadRoll gate is not vintage-scoped**, so 37,813 rows can only clear by claiming they
-  left a roll they were never on. CTX-B2 found that trap and refused to walk into it. Do not
-  clear it that way.
-- **Dollars are joined on a `prop_id` whose own payload says it does not join the CAD
-  account.** One San Marcos parcel serves a Buda parcel's label and acreage.
-- 5 of 11 Hays cities carry a zoning endpoint.
+Then set `hoaDeedRestrictions`, `ossf` and `publicRecordRefs` to it across the six counties.
 
-## What the lane must produce
-The Hays `place_key` set measured as a real id-set intersection against the `cad_property`
-account set, and **a declared disposition for every non-intersecting row** - not a
-relabelling. Distinguish at minimum: never an account; was an account and left the roll; is
-an account under a different key; unknown. The fourth is legitimate and must stay countable.
+## STANDING FACTS
+- Those three rails come from courthouse records through the Smart Site records tool
+  (P-85), user-initiated, per request. `purchaseApproved` QUEUES A HUMAN, it does not buy.
+  Nothing about that path is bulk, and it is working as designed.
+- **`available-on-request` is NOT an absence claim.** It says nothing about whether the fact
+  exists for the parcel. That is why it had to be a new state rather than a reuse:
+  `absent-verified` would be a lie (nothing looked), `not-applicable` would be a lie (it
+  probably does apply), `refused` means the source cannot say (here it can, we have not paid
+  to ask), and `unaccounted` means "a gap we must close" when this is not a gap.
+- **It requires a named, REACHABLE `requestPath`.** Refuse to write the state without one. A
+  `requestPath` that is dead makes the cell `unaccounted` or `refused`, never a promise the
+  product cannot keep. That guard is what stops this state becoming cover.
+- The publish gate treats it as **satisfied**, like `not-applicable`. `unaccounted` stays
+  fatal at publish.
+- **Adding a rail to this state is a ruling, never a lane's discretion.** Do not extend it to
+  a fourth rail because that rail is hard to acquire.
 
-Precedent worth reading before concluding: the readiness gate once refused Williamson at 46.9
-and Caldwell at 51.4 percent for a defect that did not exist. `parcel_record`'s intended
-population is `landing_parcel_jurisdiction`, not the account roll, and measured as real id-set
-intersections the two matched EXACTLY in all six counties. Measure before concluding.
+## The consequence you must handle, and it is the real work
+A six-value union across a 981,405 x 65 grid and every consumer that switches on cell state:
+`parcelRecordAllowlist.ts`, the gate CLI, the serve-layer rail adapters, the MCP tool schemas.
+**Each of those is a place where a missing case must FAIL CLOSED rather than fall through to a
+default.** Enumerate every switch on cell state before you write the first one, and report the
+list. A consumer that silently treats an unknown state as an absence is the `classifyRequiredLeaf`
+defect (2026-09-09) reproduced, where 25 of 25 Caldwell zoning rails graded `value` while three
+were absences.
 
 ## Completion predicate
-Every non-intersecting Hays row carries a declared disposition; count of rows with no
-disposition equals 0. Proven by violation against a control county.
+Count of `hoaDeedRestrictions|ossf|publicRecordRefs` cells in the six CTX counties whose
+`cell_state <> 'available-on-request'` equals 0. The predicate counts cells NOT in the state
+deliberately, so a relabel to anything else - including a fabricated absence - reopens this lane.
+`node scripts/plan-progress.mjs --sql` in doc_repo for the exact query.
 
 ## Out of scope
-Filling any Hays cell. Re-running the StratMap load. Repairing `source_file` history.
+Acquiring any of the three rails. Extending the state to other rails. Changing P-85.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-09-10_ops21-h1_cp1.json
-  CP2: _inbox/2026-09-10_ops21-h1_cp2.json
-  CLOSE: _inbox/2026-09-10_ops21-h1_close.json
+  CP1: _inbox/2026-09-10_ops21-d6_cp1.json
+  CP2: _inbox/2026-09-10_ops21-d6_cp2.json
+  CLOSE: _inbox/2026-09-10_ops21-d6_close.json

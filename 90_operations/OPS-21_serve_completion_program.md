@@ -109,10 +109,22 @@ apply. `refused` is close but means the source cannot say which. So these rails 
 `unaccounted` forever, dragging the count, until somebody relabels them to clear a gate —
 the exact failure the relabelling tripwire exists to catch.
 
-**Two options, operator's call:** these leave the 65-rail grid entirely because they belong
-to a different product surface with per-request economics; or they carry a declared
-on-request disposition the publish gate treats as satisfied. Either is defensible. Doing
-neither is not.
+**RULED 2026-09-10: a sixth cell state, `available-on-request`.**
+`_decisions/2026-09-10_available_on_request_sixth_cell_state.md`.
+
+It means the rail is not acquired in bulk; it is fetched per parcel on demand through a named,
+REACHABLE request path, and nobody has asked for this one. It is **not** an absence claim. It
+requires a `requestPath` and refuses without one — a promise with no path is cover, not a
+state. The publish gate treats it as satisfied; `unaccounted` stays fatal.
+
+Rejected: removing the three rails from the grid (loses the product signal that the facts are
+obtainable), and overloading `not-applicable` with a ruling pointer (a state needing a
+footnote to be read correctly will eventually be read incorrectly).
+
+Consequence, taken deliberately: a six-value union across a 981,405 x 65 grid and every
+consumer that switches on cell state. `parcelRecordAllowlist.ts`, the gate CLI, the
+serve-layer rail adapters and the MCP tool schemas each need the new member, and each is a
+place a missing case must fail closed rather than fall through to a default.
 
 ---
 
@@ -232,8 +244,8 @@ D1    unaccounted count for the 6 derivable rails  ==  0
 D2    unaccounted count for `permits` on Austin-city parcels in Travis  ==  0
 D3    unaccounted count for roads, railCorridor, pipelines, parcelGeometry  ==  0
 D4    unaccounted count for terrain  ==  0
-D6    unaccounted count for hoaDeedRestrictions, ossf, publicRecordRefs  ==  0
-      (reachable only after the ruling; the ruling defines what state closes it)
+D6    count of hoaDeedRestrictions/ossf/publicRecordRefs cells NOT in state
+      'available-on-request'  ==  0   (a relabel to anything else reopens the lane)
 H1    Hays place_key set intersect cad_property account set, measured, with a
       declared disposition for every non-intersecting row  ==  complete
 L1    count of slated (county, rail) pairs whose old serve path has not been
@@ -258,7 +270,7 @@ Plan rows open in OPS-16 as a single amendment.
 
 **Immediately dispatchable, no dependencies: S1, S3, D5, D1, H1, L1.**
 S2 and S4 compile when S1 closes. D2, D3, D4 compile as preconditions clear. L2 compiles
-after S4, D5 and L1. L3 compiles after L1. D6 waits on the operator ruling.
+after S4, D5 and L1. L3 compiles after L1. D6 is RULED and dispatchable.
 
 Verification never delegates below the lane planner. Subagents produce artifacts; the
 planner commits.

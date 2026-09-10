@@ -50,7 +50,14 @@ const COUNTIES = {
 };
 
 const NL = String.fromCharCode(10);
-const LEGAL_STATES = ['unaccounted', 'value', 'absent-verified', 'not-applicable', 'refused'];
+const LEGAL_STATES = [
+  'unaccounted',
+  'value',
+  'absent-verified',
+  'not-applicable',
+  'refused',
+  'available-on-request',
+];
 
 // ---------------------------------------------------------------- cell writer
 
@@ -74,6 +81,12 @@ export function makeCell(input) {
       );
     }
   }
+  if (state === 'available-on-request' && !input.requestPath) {
+    throw new CellRefused(
+      'available-on-request requires a named requestPath. A promise with no path is cover, ' +
+        'not a state. Ruled 2026-09-10.'
+    );
+  }
   if (state === 'not-applicable' && !input.ruling) {
     throw new CellRefused(
       'not-applicable requires a `ruling` pointer to a decision record. A ruling nobody can ' +
@@ -88,6 +101,7 @@ export function makeCell(input) {
   };
   if ('value' in input) cell.value = input.value;
   if (input.ruling) cell.ruling = input.ruling;
+  if (input.requestPath) cell.requestPath = input.requestPath;
   if (input.source) cell.source = input.source;
   return cell;
 }
@@ -287,6 +301,24 @@ function selfTest() {
       name: 'NEGATIVE: not-applicable with no ruling pointer is refused',
       run: () =>
         makeCell({ state: 'not-applicable', instrument: 'x', scope: 'y', measuredAt: '2026-09-10' }),
+      expect: 'refuse',
+    },
+    {
+      name: 'POSITIVE: available-on-request with a requestPath is accepted',
+      run: () =>
+        makeCell({
+          state: 'available-on-request',
+          instrument: 'i',
+          scope: 's',
+          measuredAt: '2026-09-10',
+          requestPath: 'P-85 Records Request',
+        }),
+      expect: 'accept',
+    },
+    {
+      name: 'NEGATIVE: available-on-request with no requestPath is refused',
+      run: () =>
+        makeCell({ state: 'available-on-request', instrument: 'i', scope: 's', measuredAt: '2026-09-10' }),
       expect: 'refuse',
     },
     {

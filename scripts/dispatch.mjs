@@ -29,12 +29,16 @@ const getArg = (name) => {
 const lane = getArg('lane');
 const planRowArg = getArg('plan-row');
 if (!lane || !planRowArg) {
-  console.error('Usage: node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx[,P-yy]> [--title t] [--mission-file f] [--repo r]');
+  console.error('Usage: node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx[,P-yy]> [--title t] [--mission-file f] [--repo r] [--program-preamble f]');
   process.exit(1);
 }
 const title = getArg('title') || `${lane} dispatch`;
 const repo = getArg('repo');
 const missionFile = getArg('mission-file');
+// Program-scoped context. ADDITIVE ONLY: it never touches the CANON-PREAMBLE hash the
+// canon gate validates, so compiler and gate cannot diverge (the CTRL-1 defect class).
+// Auto-resolves _catalog/program_preambles/<PLAN>.md when present; --program-preamble overrides.
+const programPreambleArg = getArg('program-preamble');
 const planRows = planRowArg.split(',').map((s) => s.trim()).filter(Boolean);
 
 // --- 1. Validate PLAN-ROWs against the selected plan of record. Fail closed. ---
@@ -159,10 +163,26 @@ if (!m0Block.startsWith('FLEET MEMORY (M0):')) {
   process.exit(1);
 }
 
+// --- 3d. Program-scoped context (additive; not part of any hashed marker). ---
+const programPreamblePath =
+  programPreambleArg || join(root, '_catalog', 'program_preambles', planId + '.md');
+let programPreamble = '';
+try {
+  programPreamble = readFileSync(programPreamblePath, 'utf8').trim();
+} catch {
+  if (programPreambleArg) {
+    console.error('--program-preamble ' + programPreambleArg + ' not readable. Refusing rather than compiling without it.');
+    process.exit(1);
+  }
+}
+
 // --- 4. Mission section. ---
 const mission = missionFile
   ? readFileSync(missionFile, 'utf8').trim()
   : '<<< MISSION — replace this line with the hand-written mission section before dispatching >>>';
+
+const NL = String.fromCharCode(10);
+const programPreambleBlock = programPreamble ? NL + programPreamble + NL : '';
 
 // --- 5. Compose. ---
 const laneLower = lane.toLowerCase();
@@ -189,8 +209,7 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 ${m0Block}
 
 PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
-${repo ? `repo: ${repo}\n` : ''}
-# ${title}
+${repo ? `repo: ${repo}\n` : ''}${programPreambleBlock}
 
 ${mission}
 
