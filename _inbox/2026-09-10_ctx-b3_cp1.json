@@ -1,0 +1,76 @@
+{
+  "lane": "CTX-B3",
+  "checkpoint": "CP1 (design/pre-build)",
+  "filedAt": "2026-09-10",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-b3",
+  "branch": "feat/ctx-b3-store-census",
+  "baseCommit": "b9ca9b4ac0ac22f29faa217ba1743e521f61da11",
+
+  "registrationConfirmed": {
+    "seat": "property",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-b3 (created with git worktree add from origin/main; did not exist before this lane)",
+    "branch": "feat/ctx-b3-store-census (new, tracks origin/main)",
+    "commit": "b9ca9b4 -- matches the third-party review's own snapshot line for hauska-factory (\"origin/main b9ca9b4, PR #127, pin bump to LDT 9873ff11\"), confirmed before any file was touched"
+  },
+
+  "collisionCheck": {
+    "atRegistration": "git worktree list on the base repo showed no hauska-factory-ctx-b2 or hauska-factory-ctx-teardown worktree yet",
+    "midLane": "P:/seat-worktrees/property/hauska-factory-ctx-b2 appeared during this lane's work, branch fix/ctx-b2-cadroll-vintage-and-tracer, same base commit b9ca9b4. CTX-B2's dispatch scope is src/lib/publish-cadroll-postcondition.mjs, scripts/bake-module-graph.mjs, and (conditionally) cloudbuild.publish.yaml's _LDT_SHA. This lane's own file set is two NEW files only -- scripts/ctx-b3/store-census.mjs and test/ctx-b3-store-census.test.mjs -- touching none of those. No collision; re-checked at CP2 and again before close.",
+    "ctxTeardown": "no hauska-factory-ctx-teardown worktree observed at any point in this lane; dispatch describes it as read-only in this repo regardless."
+  },
+
+  "missionPremiseAsRead": "The review's finding (`_inbox/2026-09-10_ctx_third_party_review.md` section 2): the walk (`verify-walk.mjs` gradeParcelResponse) grades ~180 sampled parcels per county, short-circuits on a non-ok HTTP response or an earned retirement, and its content check (gradeTier1Content) validates a hand-grown required-leaf list against only a four-state contract -- never a dollar value, a provenance string, or a second source. `scripts/ctx-prov/provenance-population.mjs` re-expressed one walk predicate as SQL over the whole store and found 18,037 rows the sampled walk had surfaced as a single parcel. CTX-B3 generalises that precedent to every leaf the bake owns.",
+
+  "designDecisions": [
+    {
+      "topic": "Leaf list source -- a correction to the dispatch's own scope, found and resolved before any code was written",
+      "finding": "The dispatch names `BAKE_OWNED_REQUIRED_LEAF_PATHS` as the source of the leaf list, and separately says 'the walk's list is stale by eight paths' as the reason to prefer it. Those two statements do not describe the same constant. Verified at source (LDT at pin 9873ff11, artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts): `BAKE_OWNED_REQUIRED_LEAF_PATHS` (line 594) is FIVE leaves -- baseFacts.situsCity, baseFacts.situsZip, baseFacts.landUse, provenance.landUseSource, baseFacts.acreage -- 'the five leaves this bake owns the cell state of' per its own comment. `REQUIRED_TIER1_FACET_PATHS` (line 1847, a DIFFERENT constant in the same file) is 36 leaves and IS the one that is stale by exactly eight paths against hauska-factory's own 28-item mirror in verify-walk.mjs (the eight cadRoll/yearBuilt/legalDescription/exemptionCodes paths named in `_inbox/2026-09-09_ctx-walkrule_close.json`'s incidentalFinding). Per DEV_PROCESS 3.2/3.2a (a brief's numbers are the planner's and are often wrong; a correction quotes the source with file and line), this lane follows the dispatch's LITERAL, explicitly-named constant (BAKE_OWNED_REQUIRED_LEAF_PATHS, five leaves) as the required-leaf list for the census, and reports the naming/scope mismatch as a correction rather than silently reconciling it one way or the other.",
+      "verification": "Confirmed TWO independent ways at the pin: the source array itself (nodeFacetBakeTier1Conformant.ts:594-600) and that file's own test asserting `[...BAKE_OWNED_REQUIRED_LEAF_PATHS]` equals the identical five-item list (nodeFacetBakeTier1Conformant.test.ts:1574-1580 and again 2078-2080). The running script re-derives this from the pin at run time via `git show <pin>:<path>` (text extraction of the literal array, not module execution -- see next item) and REFUSES if it disagrees with the maintained mirror."
+    },
+    {
+      "topic": "Why the leaf list is read as TEXT from the pinned git blob, not imported/executed",
+      "finding": "BAKE_OWNED_REQUIRED_LEAF_PATHS is a plain string-literal array with no computed values. The existing precedent for pulling a REAL LDT artifact into this repo (src/lib/record-retirement.mjs's loadIsEarnedRecordRetirement, built by CTX-WALKRULE) bundles the whole 1900+-line module with esbuild specifically because it needs to EXECUTE a predicate FUNCTION, and that bundling needed its own DATABASE_URL placeholder shim and a require-banner to work around two real runtime hazards (documented in that file). Building a second, near-duplicate bundling implementation for a five-item data array would be exactly the 'one rule, two implementations, free to disagree silently' shape DEV_PROCESS 2.4 warns against, for a case (static data) that does not need it. This lane instead reads the source at the pinned SHA as text and extracts the array literal with a narrow, single-purpose regex, self-tested against the pin two ways (see resolveLeafPaths / the test suite)."
+    },
+    {
+      "topic": "tier1PayloadOf shadowing landmine -- found and worked around before it corrupted the census",
+      "finding": "verify-walk.mjs's gradeTier1Content/classifyRequiredLeaf-calling code reads a body via `tier1PayloadOf`, which prefers `body.facets` when present -- correct for an HTTP response body, where a route nests the payload under `.facets`. A live probe of a real place_layer_snapshots row (node:48309:184293, 2026-09-10) showed the STORED payload_json is NOT wrapped that way -- facetSchemaVersion/tier/baseFacts/provenance/bakedAt are all top-level on payload_json itself -- but the row ALSO carries its OWN small, unrelated `facets: {base: {apn, parcelNodeId, situsAddress}}` sub-object. Calling tier1PayloadOf(payload_json) directly, or the walk's gradeTier1Content(payload_json) directly, would silently redirect every leaf lookup into that three-key sub-object and report every required leaf missing -- a systematic false-fail that would have made this census look like it was working (producing consistent, if wrong, counts) while measuring nothing real. This lane wraps as `{payload: payloadJson}` before handing anything to a walk function that calls tier1PayloadOf, which resolves correctly without touching tier1PayloadOf itself. Reproduced both ways in the test suite (RUN 1 red: direct call reports ~27 of 28 leaves missing; RUN 2 green: wrapped call reads the real payload)."
+    },
+    {
+      "topic": "Dollar fields, owner name, structural tier -- verified empirically against real staging rows, not assumed from source reading alone",
+      "finding": "Live-probed four real staging rows (48309:184293, 48309:109745, 48021:35585, 48055:1 -- three of these are named directly in the third-party review) before writing any classifier. Findings: (1) baseFacts.cadRoll.marketValue/assessedValue/landValue/improvementValue are stored as `null` or `{v, source, vintage, valueBasis}` -- the BAKED shape (cadRollValue.ts), never the WIRE shape ({state:'present'|'zero'|'absent', ...}) the review's serve-side probe described; classifyRequiredLeaf's four-state contract does not apply to this shape at all (no state/verdict key), so a NEW, narrow classifier (classifyBakedDollar) was written rather than misapplying the walk's classifier to a shape it was never meant to grade. (2) No owner-name-bearing key (baseFacts.ownerName, ownerName, owner.ownerName) appears on any of the four rows, four levels deep -- consistent with nodeFacetBakeTier1Conformant.ts's own comment ('OWNER. The claim carries `ownerName`. This module never reads it' -- lines 75, 211). The review's owner-name sentinel example (48309:109745, ownerName '-') was read from the brokerage `parcel_record_cell`-backed 'ownerFact' surface, a DIFFERENT table this dispatch explicitly does not scope this census to (place_layer_snapshots only; the two tables' differing place_key shapes are the dispatch's own named trap). (3) The review's 'structural tier vs vintage string' disagreement (48021:35585, structuralFact.tier='cad-export' vs sourceVintage='tier:stratmap-roll;adapter:stratmap') is ALSO from that same parcel_record_cell 'structuralFact' surface -- confirmed absent from place_layer_snapshots: the top-level `tier` field there is a plain NUMBER (1 or 2, the Tier-1/Tier-2 designation, per provenance.tierNote's own text 'Tier 1 (deterministic)...'), unrelated in meaning to the cad-export/stratmap-roll tier label the review means, and no `tier:...;adapter:...`-shaped string appears anywhere in any of the four probed rows.",
+      "disposition": "This census still classifies owner-name candidate paths and tallies the raw `tier` value distribution per county (so the finding is a measured, positive absence with basis, per AGENT_CONTRACT's 'an empty result is not an absence; only a positive determination writes one' -- not a silently-skipped dimension), and reports in the close that the two sentinel classes the review named for these two dimensions are not reproducible within this table's schema, naming exactly which table they do live in and why this lane does not follow them there (out of the dispatch's own stated scope: 'reads every place_layer_snapshots tier-1 row')."
+    },
+    {
+      "topic": "Retirement handling",
+      "finding": "A row whose recordRetirement is an EARNED retirement (isEarnedRecordRetirement, imported from LDT via the existing record-retirement.mjs loader -- reused, not reimplemented) is counted separately (retiredCount per county) and excluded from leaf/dollar/owner/tier classification, mirroring the walk's own treatment (gradeParcelResponse rule 2: an earned retirement is graded RECORD_RETIRED and never reaches gradeTier1Content). Rationale: a retired record's baseFacts are explicitly the 'LAST-KNOWN claim, not current' (per the retirement's own basis text), so classifying its leaves alongside live accounts would conflate two populations (DEV_PROCESS 1.3: measure the class you are reporting, never derive it by subtraction / never conflate)."
+    }
+  ],
+
+  "instrumentBoundaries": {
+    "readsOnly": "place_layer_snapshots (adapter_key = 'node-facets:tier1'); SET default_transaction_read_only = on for the whole session; SET statement_timeout = '60s' (scoped per the dispatch's own trap: 'unscoped scans on these tables time out'); every scan is scoped by place_key LIKE 'node:<fips>:%' plus adapter_key, matching provenance-population.mjs's own established scoping, with keyset pagination on place_key (no OFFSET) to avoid the same timeout class.",
+    "doesNotModify": "verify-walk.mjs (the walk), BP-CONTENT-01 (gradeTier1Content/classifyRequiredLeaf/REQUIRED_TIER1_FACET_PATHS/SERVE_STRIPPED_LEAVES -- all imported, zero lines changed), the permitted state set (FOUR_STATES/POPULATED_STATE_TOKENS/ABSENCE_STATE_TOKENS -- imported via classifyRequiredLeaf, not touched), the cohort sampler (selectSweepParcels/selectJurisdictionCohort -- not referenced at all, this script does not walk HTTP).",
+    "doesNotWriteTo": "any store, any table, any row. No Cloud Build, Cloud Run job, bake, publish, or walk is submitted or run by this lane.",
+    "storeNaming": "every reported number names its store (target + the env var name resolveTargetStores resolved, e.g. STAGING_NEONDB_URL), per the dispatch's own requirement that an unnamed-store census is the stale-instrument failure this repo already documents."
+  },
+
+  "heavyScanAnnouncement": {
+    "registeredWatch": "_catalog/watch_registry/ctx-b3-store-census.json",
+    "target": "staging (STAGING_NEONDB_URL)",
+    "scope": "place_layer_snapshots, adapter_key='node-facets:tier1', all six CTX counties, keyset-paginated batches of 2000",
+    "checkedNoOtherHeavyScanActive": "reviewed _catalog/watch_registry/ before starting; all existing entries are dated Aug 2026 or 2026-09-01/02 and describe paused or completed runs, none an active concurrent heavy scan"
+  },
+
+  "requiredSelfTestFixturesPlanned": [
+    "a bare null must fail (all five bake-owned leaves, via the imported classifyRequiredLeaf)",
+    "an owner name of \"-\" must fail (classifyOwnerName, new)",
+    "a clean fixture must pass (all four dimensions)",
+    "the instrument's own falsifier: sample real staging rows, compare this census's per-leaf verdict against the walk's own gradeTier1Content leaf-for-leaf; zero disagreements required"
+  ],
+
+  "openQuestionsForCP2": [
+    "Whether the pilot run against a real subset of staging data confirms the design before the full six-county scan is run",
+    "Exact per-(county,leaf,state) counts, once the full scan completes"
+  ]
+}

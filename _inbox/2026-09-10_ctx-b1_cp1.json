@@ -1,0 +1,52 @@
+{
+  "lane": "ctx-b1",
+  "planRow": "P-124",
+  "checkpoint": "CP1 (design/pre-build)",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b1",
+  "branch": "fix/ctx-b1-provenance-honest-cadroll",
+  "baseCommitConfirmed": "9873ff11 (origin/main at dispatch time, matches the third-party review's own frontmatter snapshot)",
+  "workingTreeAtStart": "worktree freshly created via git worktree add from origin/main; confirmed clean and on the correct branch/commit before any file was touched",
+
+  "priorArtifactsRead": [
+    "_dispatches/2026-09-10_ctx-b1_dispatch.md",
+    "_inbox/2026-09-10_ctx_third_party_review.md section 3 (and surrounding sections 4-12 for the Travis/A3/leave-behind context)",
+    "90_runbooks/AGENT_CONTRACT.md",
+    "90_runbooks/DEV_PROCESS.md",
+    "90_runbooks/fleet_memory_practice.md",
+    "_inbox/2026-09-09_ctx-hays-split_close.json / _cp1.json (the assessed_value discriminator this dispatch tells the lane to reuse)",
+    "artifacts/api-server/src/lib/cadRollValue.ts (bake path)",
+    "artifacts/api-server/src/lib/cadRollFactFromParcelRecord.ts + cadRollServeCutover.ts (live overlay path, and its call-site orchestration)",
+    "artifacts/api-server/src/lib/joinIntegrityGate.ts (fetchCountyCadPropertyRoll)",
+    "artifacts/api-server/src/lib/parcelRecordCellRead.ts",
+    "lib/cad-ingest/src/p78Merge.ts (applyPathAMerge -- confirms source_file/source_vintage are unconditional overwrites, assessedValue is COALESCE-preserved)",
+    "lib/cad-ingest/src/txgio/landuse.ts (confirms the StratMap adapter hard-codes assessedValue: null on every row it produces)",
+    "artifacts/smartsite-mcp/src/constants.ts, tool-honesty.ts (wire path)",
+    "artifacts/api-server/src/lib/nodeFacetBakeTier1ConformantCli.ts, nodeFacetBakeTier1Conformant.ts, serveGuards.ts (the A3 retirement/situs contradiction)"
+  ],
+
+  "discriminatorEstablishedFromCode": "Same mechanism CTX-HAYS-SPLIT already proved: lib/cad-ingest/src/p78Merge.ts's applyPathAMerge sets `out.sourceFile = inc.sourceFile` and `out.sourceVintage = inc.sourceVintage` UNCONDITIONALLY on every ON CONFLICT merge (never coalesced) -- confirmed by reading the function directly, lines ~196-197. `assessedValue` is in COALESCE_FIELDS (coalesce(incoming, existing)), so a genuine CAD import's assessed value survives a later StratMap merge at the same declared tax year even though source_file does not. lib/cad-ingest/src/txgio/landuse.ts hard-codes `assessedValue: null` on every row the StratMap adapter produces (line ~181) -- it cannot structurally populate this field. Rows reach the bake already scoped to the declared vintage (joinIntegrityGate.ts's fetchCountyCadPropertyRoll: `WHERE tax_year = declared.taxYear`), so 'declared vintage + a field StratMap cannot populate' reduces to: `assessedValue != null` (via the same nonNegativeDollarOrNull coercion already used elsewhere in this file) on a row already scoped to the declared tax year.",
+
+  "designDecision_bakeAndOverlay": "Add `STRATMAP_REDISTRIBUTED_VALUE_BASIS = 'stratmap-redistributed'` and a `ValueBasis` union alongside the existing `COUNTY_ASSESSED_VALUE_BASIS` in cadRollValue.ts. Add `isGenuineCadExportRow`/`valueBasisFromRow` there as the single shared discriminator. Bake path: `bakedDollar` and `cadRollFromCadProperty` take the per-row valueBasis instead of stamping the constant. Overlay path: since `resolveCadRollOverlaysForServe` (cadRollServeCutover.ts) already resolves all four dollar rails for one parcel together via one Promise.all, compute the tier ONCE per parcel (`resolveValueBasisFromParcelRecord`, added to cadRollFactFromParcelRecord.ts -- reads the assessedValue cell directly, bypassing that rail's own allowlist gate, because this is a tier determination not a value serve) and thread it into all four `dollarFactFromParcelRecord` calls, so one parcel cannot serve two different valueBasis values across its own fields depending on which rails happen to be cut over.",
+
+  "designDecision_wire": "artifacts/smartsite-mcp is a thin HTTP client of the api-server/cortex-api backend (confirmed: no `valueBasis` or `county-assessed` reference anywhere in artifacts/smartsite-mcp/src except the tool description string at constants.ts:21, which names the block generically ('CAD-roll ... value') and asserts nothing about tier). cadRollFieldToWire already forwards `baked.valueBasis` unchanged onto the wire for both present and zero states, so once the bake/overlay fix lands, the wire carries it through with no separate code change; the wire path is proven by inspection (no re-stamping anywhere in the MCP layer) rather than by a code diff there.",
+
+  "designDecision_A3_retirement_situs": "Two options were named by the dispatch. Chose: exempt the serve guard for an earned retirement, NOT null out the retired payload's situs. Reason: `situsForRetiredBake` (nodeFacetBakeTier1ConformantCli.ts) already deliberately preserves the raw last-known claim value even when punctuation-only, by explicit design comment ('an honest retirement declaration must not depend on whether the stale claim happens to carry a well-formed address'); nulling it at bake time would reverse that already-deliberate CTX-RETIRE decision. `recordRetirement` (Tier1RecordRetirement) is already present on every conformant payload with a well-formed-object guard (`isEarnedRecordRetirement`), and `refusePayloadAtServe` (serveGuards.ts) already receives the full payload including that field, so exempting the guard is additive and does not weaken it for any on-roll (non-retired) claim -- confirmed no circular import between serveGuards.ts and nodeFacetBakeTier1Conformant.ts.",
+
+  "findingNotYetInDispatch_UIlabelPathFilesNotInThisRepo": "The dispatch's path-4 citations (`fact-sheet-resolver.ts:289-298`, `tax-valuation-paint.ts:24-31`) do not exist anywhere in `legacy-design-tools` at commit 9873ff11 -- verified by repo-wide `find -iname` and case-insensitive `grep -rl` for both filenames and both quoted strings ('McLennan County appraisal roll', 'A REAL, SOURCED FIGURE FROM THE COUNTY APPRAISAL DISTRICT'), and by `git log --all` for either filename across every branch. Neither this dispatch nor the review's own frontmatter (`applies_to: hauska-factory, legacy-design-tools, hauska-map, hauska-engine, smartsite-mcp`) names a fifth repo, but the review's own live-state table (section 11) lists a distinct deploy surface, 'smartsite.cloud (property-explorer on Vercel)', separate from cortex-api/smartsite-mcp/engine-api -- the most likely home of these two files. No such repo is checked out anywhere on this machine (checked P:/ root and every seat-worktrees directory) and this dispatch names no clone target or URL for it. Per DEV_PROCESS 3.2/3.3 (report a wrong planner premise; name what is out of scope, don't just omit it) and this program's govtech-style scope discipline (do not chase a finding into another surface without standing), this lane will report path 4 as NOT REACHED and why, rather than fabricate a fix or silently skip it. Will re-confirm with a second independent search before close.",
+
+  "pendingBeforeClose": [
+    "pnpm install in the fresh worktree (no node_modules on worktree creation) -- running",
+    "run the full modified test suite (cadRollValue.test.ts, cadRollFactFromParcelRecord.test.ts, cadRollServeCutover.test.ts, serveGuards.test.ts) and the required violation tests",
+    "confirm no other callers of the now-4-arg dollarFactFromParcelRecord or the now-ValueBasis-typed wire types break a build/typecheck",
+    "CP2, then close with the merge commit"
+  ],
+
+  "constraintsHonoredSoFar": [
+    "No deploy, Cloud Build, or Cloud Run job issued or attempted",
+    "No write to hauska-factory, hauska-engine, or hauska-map",
+    "No non-account absence state implemented (operator ruling honored)",
+    "No serve guard weakened -- the A3 change is an additive, narrowly-scoped exemption gated on a well-formed earned retirement, not a blanket bypass",
+    "Worktree confirmed clean and on the correct branch/commit before any file was touched"
+  ]
+}

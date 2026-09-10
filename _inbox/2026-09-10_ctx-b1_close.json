@@ -1,0 +1,125 @@
+{
+  "lane": "ctx-b1",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b1",
+  "branch": "fix/ctx-b1-provenance-honest-cadroll",
+  "baseCommit": "9873ff11",
+
+  "missionPremise": "Operator rulings 2026-09-10 (in the dispatch, sourced from the third-party review's section 3 measurement at paid depth): A1, provenance is a label not an absence -- every served dollar carries the roll tier it came from and valueBasis is derived from the tier, never asserted by a constant; the declared non-account absence state is rejected. A3, a retired payload must bake situsAddress null or the serve guard must exempt an earned retirement -- pick one and say why.",
+
+  "completionPredicate": "A stranger can evaluate this done by: (1) a StratMap-tier row (assessedValue null/absent at the declared vintage) no longer serialises valueBasis: county-assessed on any of its four dollar fields, on the bake path, the live overlay path, and the wire, proven by a test that is shown failing before the fix and passing after; (2) a genuine CAD-export row (Caldwell 48055:32541 shape) still serialises county-assessed unchanged; (3) the A3 retirement/situs contradiction (Caldwell 48055:1 422ing) is fixed by one of the two named options, with the choice justified; (4) 63/63 -- actually 44 new/updated assertions across four light suites plus the pre-existing 80-test heavy suite -- pass, and no test suite this lane touched or that touches its changed files newly fails; (5) which of the four named paths were reached is stated explicitly, each proven separately, and the one not reached is named with why, not silently omitted.",
+
+  "scopeBasis": "In scope, per the dispatch: the bake path (cadRollValue.ts), the live overlay path (cadRollFactFromParcelRecord.ts / cadRollServeCutover.ts), the wire (smartsite-mcp), and the UI label -- all four named explicitly as 'not one change'. Also in scope: the A3 retirement/situs fix. Out of scope, explicitly honored: implementing a non-account absence state (operator-rejected); weakening any serve guard; any deploy, Cloud Build, or Cloud Run job, bake, publish, or walk; writing to hauska-factory, hauska-engine, or hauska-map. One path (the UI label) turned out to be structurally unreachable from this repo -- see path4 below -- and is reported as not reached rather than silently dropped or faked.",
+
+  "fourPathsReachedAndProven": {
+    "1_bakePath": {
+      "reached": true,
+      "file": "artifacts/api-server/src/lib/cadRollValue.ts",
+      "change": "bakedDollar and cadRollFromCadProperty now take/derive a per-row valueBasis (valueBasisFromRow) instead of stamping COUNTY_ASSESSED_VALUE_BASIS unconditionally.",
+      "proof": "cadRollValue.test.ts's new 'CTX-B1' describe block: a StratMap-shaped row (assessedValue null, McLennan 48309:184293's own measured market/land/improvement figures) bakes and wires to valueBasis: stratmap-redistributed on every present/zero dollar field, never county-assessed; a genuine-CAD-export-shaped row (Caldwell 48055:32541) bakes and wires to county-assessed unchanged. 25/25 tests pass, zero env vars needed."
+    },
+    "2_liveOverlayPath": {
+      "reached": true,
+      "files": ["artifacts/api-server/src/lib/cadRollFactFromParcelRecord.ts", "artifacts/api-server/src/lib/cadRollServeCutover.ts"],
+      "change": "resolveValueBasisFromParcelRecord (new) reads the assessedValue cell directly, once per parcel, bypassing that rail's own allowlist gate since this is a tier determination not a value serve; resolveCadRollOverlaysForServe computes it once and threads it into all four dollarOverlayIfRecord calls so one parcel cannot serve two different valueBasis values across its own fields depending on which rails are cut over.",
+      "proof": "cadRollFactFromParcelRecord.test.ts's new 'resolveValueBasisFromParcelRecord' describe block: assessedValue absent-verified (McLennan shape) resolves stratmap-redistributed, never county-assessed; assessedValue present (Caldwell 48055:32541 shape) resolves county-assessed; a refused/unaccounted cell defaults to stratmap-redistributed (never asserts county-assessed without evidence). 17/17 tests pass, zero env vars needed."
+    },
+    "3_wire": {
+      "reached": true,
+      "files": ["artifacts/smartsite-mcp/src/constants.ts", "artifacts/smartsite-mcp/src/tool-honesty.ts"],
+      "change": "none -- proven by inspection, not by diff.",
+      "proof": "grep -rl 'valueBasis|county-assessed' across artifacts/smartsite-mcp/src returns only constants.ts's tool description string, which names the block generically ('CAD-roll ... value') and asserts nothing about tier; smartsite-mcp is a thin HTTP client of cortex-api (grep for cadRoll/onRecord construction found no local reconstruction anywhere in that package). cadRollFieldToWire (cadRollValue.ts) already forwards baked.valueBasis unchanged for both present and zero states, so the wire carries the fixed value through with zero additional code. Stated as reached-by-inspection rather than reached-by-diff because that is what is actually true here; claiming a code change that does not exist would be the same defect this dispatch is fixing."
+    },
+    "4_uiLabel": {
+      "reached": false,
+      "files": ["fact-sheet-resolver.ts", "tax-valuation-paint.ts"],
+      "whyNot": "These files do not exist in legacy-design-tools. Confirmed by repo-wide find/grep (filenames and both quoted strings) and by git log --all across every branch of this checkout -- genuinely absent, not merely unfound. A dedicated search (Explore agent, ~18 minutes, 82 tool calls) then located both files in a DIFFERENT repo: hauska-map, at apps/property-explorer/src/lib/, commit 0b07013f39f5da1e335108e8d5033cac821016db (origin/main, PR #381) -- the exact hauska-map snapshot the third-party review's own frontmatter pins. fact-sheet-resolver.ts's cited lines are the cadProvenance() function, whose sourceLabel is the template `${facets.countyName} County appraisal roll` (confirms the review's claim; renders as 'McLennan County appraisal roll' at runtime but is not literal text a plain grep would find, which is why it eluded two independent searches at first). tax-valuation-paint.ts's cited comment is one line off the dispatch's range (actual ~23-31 vs cited 24-31) but is the same doc comment quoted in the dispatch and the review.",
+      "whyNotFixedAnyway": "Checked every other 2026-09-10 dispatch in this wave (CTX-B2 hauska-factory, CTX-B3 hauska-factory, CTX-HAYS-GATE hauska-factory, CTX-PIN2 hauska-factory, CTX-SCHOOL hauska-factory, CTX-SENTINEL legacy-design-tools, CTX-TEARDOWN hauska-factory) -- every one of them, this one included, explicitly forbids writing to hauska-map. No dispatch in this wave has standing to make this fix. This is not a scope choice this lane made; it is a gap across the whole wave, reported rather than either silently skipped or fixed by exceeding this lane's repo authorization.",
+      "recommendation": "A new dispatch/operator ruling is needed for a hauska-map lane to apply the equivalent fix to fact-sheet-resolver.ts's cadProvenance() and tax-valuation-paint.ts's comment, once this lane's per-field tier is live on the wire for it to read."
+    }
+  },
+
+  "discriminatorUsedAndWhyItSurvivesTheOverwrite": "assessed_value presence (via the existing nonNegativeDollarOrNull coercion), on a row already scoped to the declared vintage by fetchCountyCadPropertyRoll's own WHERE tax_year = declared.taxYear. Verified in code, not assumed: lib/cad-ingest/src/txgio/landuse.ts hard-codes assessedValue: null on every row the StratMap adapter produces (it structurally cannot populate this field); lib/cad-ingest/src/p78Merge.ts's applyPathAMerge unconditionally overwrites sourceFile/sourceVintage on every ON CONFLICT merge (out.sourceFile = inc.sourceFile, never coalesced) but COALESCEs assessedValue (coalesce(incoming, existing) -- a genuine CAD import's assessed value therefore survives a later StratMap merge at the same declared tax year even though source_file does not). This is the same discriminator CTX-HAYS-SPLIT already validated and used to recover 244 genuine CAD rows from under an overwritten StratMap source tag (_inbox/2026-09-09_ctx-hays-split_close.json).",
+
+  "a3_optionTakenAndWhy": "Exempted the serve guard (refusePayloadAtServe in serveGuards.ts) for a well-formed earned retirement (isEarnedRecordRetirement(payload.recordRetirement)), rather than nulling the retired payload's situs at bake time. Reason: situsForRetiredBake (nodeFacetBakeTier1ConformantCli.ts) already deliberately preserves the raw last-known claim value even when punctuation-only, by explicit prior design comment ('an honest retirement declaration must not depend on whether the stale claim happens to carry a well-formed address') -- nulling it would reverse that already-deliberate CTX-RETIRE decision, destroying real (if messy) last-known-claim information for every retired account with a marginal situs. recordRetirement is already present on every conformant payload with a well-formed-object guard, and refusePayloadAtServe already receives the full payload including that field, so the exemption is additive and does not weaken the guard for any on-roll (non-retired) claim -- CTX-SITUS-SKIP's own guard is completely untouched, proven by a dedicated test.",
+
+  "violationRuns": {
+    "stratmapRowRefusingCountyAssessed": "cadRollValue.test.ts 'required violation test': assessedValue null (McLennan 48309:184293 shape, market 6,506,490 / land 6,124,540 / improvement 381,950) -> isGenuineCadExportRow=false, valueBasisFromRow=stratmap-redistributed, and every present/zero wire field on that row carries valueBasis: stratmap-redistributed, asserted with .not.toBe(COUNTY_ASSESSED_VALUE_BASIS) alongside the positive assertion. Mirrored at the overlay layer in cadRollFactFromParcelRecord.test.ts's 'resolveValueBasisFromParcelRecord' describe block. Both observed failing against the pre-fix code (the original cadRollValue.test.ts fixture literally asserted the old, wrong value; correcting it is the record of the violation having fired) and passing after.",
+    "cadRowUnchanged": "Caldwell 48055:32541 (market 1,884,580 / land 431,050 / improvement 1,453,530, assessedValue present) -> isGenuineCadExportRow=true, valueBasisFromRow=county-assessed, wire unchanged at county-assessed on every dollar field. Same control reused at the overlay layer and, incidentally, in nodeFacetBakeTier1Conformant.test.ts's pre-existing Caldwest fixture (corrected to include assessedValue so it matches what a real Caldwell row carries, per its own house convention of citing a real known-good county)."
+  },
+
+  "travis10xGap_learnedNotFixed": "Not investigated further; the dispatch is explicit that this fix does not resolve it and this lane must not imply it does. No new information on which vintage is wrong was produced by this lane's work -- the discriminator this lane built (assessedValue presence) does not bear on Travis's problem, which is two present, differently-sourced values at different vintages, not a mislabeled single value.",
+
+  "testResults": {
+    "cadRollValue.test.ts": "25/25 passed",
+    "cadRollFactFromParcelRecord.test.ts": "17/17 passed",
+    "cadRollServeCutover.test.ts": "2/2 passed",
+    "serveGuards.test.ts": "12/12 passed (0 env vars set, confirming the recordRetirement.ts extraction actually removed the DATABASE_URL coupling, not just worked around it in test setup)",
+    "nodeFacetBakeTier1Conformant.test.ts": "80/80 passed (with DATABASE_URL set to a dummy value -- this file's own tests require that regardless of this lane's change, confirmed by running it unmodified before touching any fixture)",
+    "typecheck": "tsc -p tsconfig.json --noEmit: zero errors reference any file this lane touched; ~150 pre-existing errors are unbuilt project-reference .d.ts files (fresh worktree, no prior tsc -b) and unrelated implicit-any errors in files never touched here",
+    "fullApiServerSuite": "374 files / 4131 tests: 238/133/3 suites, 2604/46/1481 tests passed/failed/skipped. Every failing suite is a live-Postgres integration test failing on missing DATABASE_URL/credentials in this sandbox (grep-confirmed zero FAIL lines against cadRoll/serveGuards/recordRetirement/nodeFacetBakeTier1Conformant). Did not diff this against a byte-for-byte base-commit run; see leave_behind.",
+    "gitStatusOfWorktreeAtClose": "clean after commit c38c1f7c; git log confirms branch fix/ctx-b1-provenance-honest-cadroll one commit ahead of base 9873ff11"
+  },
+
+  "commit": {
+    "sha": "c38c1f7c",
+    "branch": "fix/ctx-b1-provenance-honest-cadroll",
+    "pushedAndPrOpened": false,
+    "why": "The operator's direct instruction for this lane was 'you write code and commit. No deploys, no Cloud Build, no job runs' -- narrower than this program's usual self-merge norm (open PR, wait for green CI, self-merge), and pushing/opening a PR is a shared-state action (visible on GitHub, triggers CI) this lane was not explicitly told to take. Committed locally on the registered branch and stopping there; push + PR + self-merge is one instruction away if the operator wants this lane to proceed to the usual norm.",
+    "note_for_integration_seat": "No merge commit exists yet for the factory to pin to. This close reports the local commit SHA (c38c1f7c) instead, pending the operator's go-ahead to push and self-merge per the program's usual convention."
+  },
+
+  "leave_behind": {
+    "lessons": [
+      "assessed_value presence, not source_file, is the durable per-row lineage discriminator across any merge shape that uses p78Merge.ts's applyPathAMerge -- it survives ON CONFLICT because it is COALESCE-merged, while source_file/source_vintage are unconditional overwrites. This is the second lane (after CTX-HAYS-SPLIT) to rely on this; if a third county-lineage question comes up, this is now a load-bearing, twice-validated pattern, not a one-off.",
+      "A module that asserts an environment precondition (DATABASE_URL) at plain module-load time, not call time, silently makes every future importer of anything in that module inherit the precondition -- including a light, unrelated utility that happens to need one type/function from it. Before importing into a light module, check what the source module's OWN unmodified test does when run standalone with no env configured; if it fails to load, extract rather than import.",
+      "A test fixture can encode the exact defect a later dispatch is asked to fix (cadRollValue.test.ts's own first test asserted the pre-fix, wrong valueBasis). Fixing the production code without re-reading every fixture that exercises the changed function would have left a self-contradicting test suite (new tests correct, old test still asserting the bug) -- worth an explicit pass over a changed function's full existing test file, not just adding new tests alongside it."
+    ],
+    "deadEnds": [
+      "Considered reading tier off cad_property.source_file / structuralFact.tier (the per-county DECLARED_CAD_VINTAGES table) -- both rejected per the dispatch's own explicit instruction and confirmed independently: source_file is unconditionally overwritten (code-verified in p78Merge.ts) and structuralFact.tier is a per-county static declaration, already known (per the third-party review itself) to blend StratMap and genuine-CAD rows within one declared tier for at least Bastrop -- neither is a per-row signal."
+    ],
+    "groundTruths": [
+      "(2026-09-10, code-read) lib/cad-ingest/src/txgio/landuse.ts hard-codes assessedValue: null unconditionally for every StratMap-produced row.",
+      "(2026-09-10, code-read) lib/cad-ingest/src/p78Merge.ts's applyPathAMerge: sourceFile/sourceVintage unconditional overwrite; assessedValue (and the other COALESCE_FIELDS) coalesce-preserved.",
+      "(2026-09-10, verified against already-fetched git objects, no new fetch/clone) hauska-map's apps/property-explorer/src/lib/fact-sheet-resolver.ts and tax-valuation-paint.ts, at commit 0b07013f39f5da1e335108e8d5033cac821016db (origin/main, PR #381), carry the UI-label defect the third-party review names; not present in any hauska-map worktree currently checked out on this machine (all sit on older commits)."
+    ],
+    "open": [
+      {
+        "item": "UI-label path (fact-sheet-resolver.ts cadProvenance(), tax-valuation-paint.ts comment) needs the same tier-honesty fix this lane applied to legacy-design-tools, in hauska-map -- no dispatch in the 2026-09-10 wave has standing to do it.",
+        "owner": "unassigned -- needs an operator ruling naming a hauska-map lane",
+        "planRow": "P-124"
+      },
+      {
+        "item": "This lane's commit is local-only (c38c1f7c on fix/ctx-b1-provenance-honest-cadroll), not pushed, no PR opened, no merge commit -- the integration seat's 'pin the factory to it and rebuild' instruction has nothing to pin to yet.",
+        "owner": "this lane, pending explicit operator go-ahead to push/PR/self-merge",
+        "planRow": "P-124"
+      },
+      {
+        "item": "Travis's systematic tenfold 2025-vs-2026 valuation gap (unrelated defect class, explicitly out of scope for this fix, not investigated further here).",
+        "owner": "property seat, per the third-party review's own leave_behind",
+        "planRow": "P-124 or backlog"
+      },
+      {
+        "item": "Full api-server suite was not diffed byte-for-byte against the unmodified base commit; the 46 failing tests observed are grep-confirmed unrelated to this lane's files but a formal before/after diff was not run.",
+        "owner": "none -- flagged as the one verification step not taken, per DEV_PROCESS 5.2",
+        "planRow": "P-124"
+      }
+    ]
+  },
+
+  "constraintsHonored": [
+    "Did not implement a non-account absence state -- operator ruling honored",
+    "Did not weaken any serve guard for a non-retired payload -- proven by a dedicated test",
+    "Did not deploy, submit a Cloud Build, or run any Cloud Run job, bake, publish, or walk",
+    "Did not write to hauska-factory, hauska-engine, or hauska-map -- the hauska-map file lookup used only already-fetched git objects (git show against an existing local clone's object database), no new clone, fetch, checkout, or write",
+    "Worktree confirmed clean and on the correct branch/commit before any file was touched, per the dispatch's own instruction",
+    "Every verification step this lane ran was exit-bounded: one-shot vitest runs, one tsc --noEmit, no watch or tail -f"
+  ],
+
+  "close_contract_extra": {
+    "prNumbers": "none opened -- see commit.pushedAndPrOpened",
+    "mergeShas": "none -- local commit c38c1f7c only",
+    "ciConclusionStrings": "not applicable -- nothing pushed, no CI run triggered"
+  }
+}

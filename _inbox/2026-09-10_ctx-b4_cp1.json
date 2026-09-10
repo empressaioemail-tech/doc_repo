@@ -1,0 +1,141 @@
+{
+  "lane": "CTX-B4",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "planRow": ["P-124"],
+  "dispatch": "_dispatches/2026-09-10_ctx-b4_dispatch.md",
+  "at": "2026-09-09",
+  "snapshot": {
+    "repo": "hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-ctx-b4",
+    "branch": "fix/ctx-b4-valuation-basis-label",
+    "commit": "0b07013f39f5da1e335108e8d5033cac821016db",
+    "commitSubject": "fix(pe): guard provenance.landUseSource against a non-string value on InspectCard (#381)",
+    "baseline": "origin/main at fetch time 2026-09-09",
+    "seatRegistered": "_catalog/seat_register.json property seat, entry hauska-map-ctx-b4 (uncommitted; doc_repo commits are planner-owned)"
+  },
+  "missionPremise": "CTX-B1 (legacy-design-tools PR #650) implements operator ruling A1: valueBasis is derived per row from assessed_value presence, not asserted by a constant. It reached three of four serve paths and named the fourth -- the Property Explorer label in hauska-map -- as out of scope rather than dropping it. This lane is that fourth path.",
+  "groundTruthEstablishedBeforeBuilding": [
+    {
+      "claim": "PR #650 is OPEN, not merged, as of this checkpoint.",
+      "instrument": "gh pr view 650 --json state,mergedAt in P:/legacy-design-tools",
+      "result": "state=OPEN, mergedAt=null",
+      "consequence": "valueBasis stratmap-redistributed is NOT yet on the production wire. This lane's change is therefore inert on live data until #650 merges and a re-bake runs. That must not be narrated as a live customer fix. The county-assessed arm IS live today (the constant), so the control arm is exercised in production and the stratmap arm is not."
+    },
+    {
+      "claim": "The on-wire union is exactly two members plus absence.",
+      "instrument": "gh pr diff 650 -- artifacts/api-server/src/lib/cadRollValue.ts",
+      "result": "COUNTY_ASSESSED_VALUE_BASIS = county-assessed; STRATMAP_REDISTRIBUTED_VALUE_BASIS = stratmap-redistributed; type ValueBasis is their union; valueBasis is OPTIONAL on CadRollPresentWire and CadRollZeroWire and absent entirely on CadRollAbsentWire."
+    },
+    {
+      "claim": "LDT resolves ONE basis per parcel and stamps it on all four dollar rails.",
+      "instrument": "gh pr diff 650, cadRollOverlayFromParcelRecord hunk: 'One tier determination per parcel, shared by all four dollar rails (CTX-B1, operator ruling A1) -- never re-derived per rail'",
+      "consequence": "The four rails SHOULD agree. Should agree is not does agree on an older baked payload, so this lane must detect disagreement rather than assume the invariant. See the five-state decision below."
+    },
+    {
+      "claim": "The StratMap dollars are the free public TxGIO/StratMap land-parcels DBF fields LAND_VALUE / IMP_VALUE / MKT_VALUE, and that adapter hard-codes assessedValue null on every row.",
+      "instrument": "read P:/legacy-design-tools/lib/cad-ingest/src/txgio/landuse.ts lines 1-40 and 142-145 (read-only; no write to that repo)",
+      "consequence": "Two things follow. (1) A stratmap row can never show an Assessed entry, so the card face ALREADY differs between the two bases -- but a viewer reads that difference as 'the county recorded no assessed value', which is a different and false claim. Naming the tier is what fixes it. (2) I can state where the number came from (the statewide StratMap parcel file) but I must NOT state how TxGIO derived it, because nothing I read says."
+    },
+    {
+      "claim": "The taxValuation row reaches InspectCard by exactly ONE path.",
+      "instrument": "grep taxValuation across apps/property-explorer + packages, non-test",
+      "result": "fact-sheet-resolver.taxValuationFromCadRoll -> ParcelFactSheet.taxValuation -> sheet-to-card-model.taxValuationFacetFromSheet -> BakedCardModel.taxValuation -> InspectCard row 1128-1137. baked-facets.ts deriveBakedCardModel sets taxValuation to state unknown and never populates it, so there is no second producer to keep in sync."
+    },
+    {
+      "claim": "A FactPresentation provenance string is DEMOTED into the collapsed SourcesDisclosure, not rendered on the card face.",
+      "instrument": "read InspectCard.tsx 1189-1198 (demotedProvenance) and 1474-1490 (SourcesDisclosure entries)",
+      "consequence": "THE LOAD-BEARING FINDING FOR THE DESIGN. Putting the basis distinction only in the provenance chip would put it behind a click. The dispatch asks what a viewer who never opens a tooltip takes away; behind a click, the answer is nothing. Additionally: taxValuationFacetFromSheet maps a present fact through present(display), and CardFacet<string> has no provenance field, so the taxValuation row's provenance sibling is dropped before the card and never reaches the disclosure at all today. Chip-only would have rendered NOTHING."
+    },
+    {
+      "claim": "There is an existing house pattern for a face-level basis line under a value.",
+      "instrument": "read InspectCard.tsx FactRow 2018-2026",
+      "result": "layerProv.basis renders as data-testid layer-absence-basis, marginTop 3, fontSize 11.5, directly under the value, no interaction. This is the honest-absence carrier the house already ships."
+    },
+    {
+      "claim": "The app resolves @empressaio/parcel-fact-sheet from SOURCE, not dist.",
+      "instrument": "read apps/property-explorer/vite.config.ts resolve.alias",
+      "consequence": "Amending the frozen contract needs no package build step for the app or for vitest."
+    }
+  ],
+  "theQuestionTheDispatchAsked": "Decide and justify how the panel should express the two bases so a viewer can tell them apart without being told the value is missing.",
+  "candidateTreatments": [
+    {
+      "id": "T1",
+      "name": "Provenance chip / SourcesDisclosure only. Heading untouched.",
+      "verdict": "REJECTED",
+      "why": "Two independent kills. (a) It is behind a click, and the dispatch's own framing -- what a viewer who never opens a tooltip takes away -- is exactly the failure mode. (b) It does not even work: the taxValuation row's provenance sibling is dropped at taxValuationFacetFromSheet because CardFacet<string> cannot carry it, so the disclosure would render nothing at all. This is the treatment that LOOKS like the house rule (provenance chip, never a bare score) and is in fact the artifact-that-does-nothing defect class ENFORCEMENT.md opens with. It would have passed a review and enforced nothing."
+    },
+    {
+      "id": "T2",
+      "name": "Row heading only: swap Tax-assessed value for a per-basis heading.",
+      "verdict": "REJECTED as sufficient, ADOPTED in part",
+      "why": "A changed heading tells a viewer THAT something is different and never WHAT. It also cannot express the difference between 'the source is StratMap', 'the payload did not state a source', and 'this build does not recognise the source it stated' without three distinct headings, which turns the row's name into a status field. And the natural heading words for the stratmap case -- estimated, modelled, approximate -- are precisely the market-opinion vocabulary A-103 item 5 and Masters 06 forbid. Adopted only for the narrow job of REMOVING a false claim, not for carrying the explanation."
+    },
+    {
+      "id": "T3",
+      "name": "Keep the ruled heading on every parcel and carry the basis in a face-level line only.",
+      "verdict": "REJECTED",
+      "why": "It leaves Tax-assessed value standing over a dollar that is not this county's tax assessment. The dispatch names that heading as one of the three false statements; leaving it is not fixing it. A true line under a false heading is still a card with a false statement on its face."
+    },
+    {
+      "id": "T4",
+      "name": "CHOSEN: heading and face line, each doing one job.",
+      "why": "The heading's only job is to stop making a claim the row cannot support: Tax-assessed value is kept EXACTLY as ruled for county-assessed, and every non-county basis renders the neutral Recorded value. The face line, always rendered in the same slot the layer-absence basis uses at 11.5px directly under the value, carries the actual statement in customer language. Heading = no false claim. Line = the takeaway. Provenance sourceLabel corrected too, for the sheet's own consumers, but it is not asked to carry the distinction on its own."
+    }
+  ],
+  "adoptedRendering": {
+    "county-assessed": {
+      "heading": "Tax-assessed value (unchanged -- A-103 item 5 is honoured exactly where it applies)",
+      "faceLine": "From <County> County's own appraisal-roll export.",
+      "note": "A line is rendered in this case TOO, deliberately. If the line appeared only for the non-county bases, then a payload where the line was dropped by a rendering bug would be indistinguishable from a genuine county-assessed row. Always occupying the slot makes the county case a positive statement rather than a default-by-silence -- ENFORCEMENT.md, a missing column is invisible, an unaccounted cell is countable."
+    },
+    "stratmap-redistributed": {
+      "heading": "Recorded value",
+      "faceLine": "From the Texas StratMap statewide parcel file, not <County> County's own appraisal-roll export."
+    },
+    "unstated": {
+      "heading": "Recorded value",
+      "faceLine": "This record does not state which source the figure came from.",
+      "decision": "THE EXPLICIT DECISION THE DISPATCH DEMANDED. An absent valueBasis renders as its OWN state and is never defaulted to either member. Defaulting to county-assessed would write the claim 'someone checked and it is the county's' onto a record where nothing checked -- the same lie as converting unaccounted to absent-verified to clear a gate. Defaulting to stratmap-redistributed asserts a specific lineage on equally no evidence and would also read as a downgrade of every older baked payload in the corpus. Absent, zero and unmeasured are three different states."
+    },
+    "unrecognised": {
+      "heading": "Recorded value",
+      "faceLine": "This build does not recognise the source tier on this record (<token>).",
+      "decision": "A FOURTH state, for a valueBasis string that is present but is not a member this build knows. Folding it into unstated would say the record stated nothing when it stated something we failed to read -- and it would make a future LDT contract widening silently invisible on this surface. The raw token is printed so the drift is diagnosable from a screenshot."
+    },
+    "mixed": {
+      "heading": "Recorded value",
+      "faceLine": "The dollar amounts on this record do not agree on their source.",
+      "decision": "A FIFTH state, for a payload whose four rails carry more than one distinct basis. LDT's invariant is one determination per parcel, but that is LDT's invariant on NEW bakes, not a property of every payload already in the store. Contract section 5: two numbers that should agree and do not is a free finding, reconcile it rather than round it off. Silently taking the first rail's basis would hide exactly that finding."
+    }
+  },
+  "constraintsHonored": {
+    "valueIsPresentAndUsable": "All five states render the dollars unchanged, in the same slot, at the same weight. state stays present. Nothing renders as missing, unknown, degraded or refused.",
+    "noConfidenceNumber": "No numeric score is produced or rendered anywhere in this change.",
+    "absentBasisIsDecidedNotDefaulted": "See the unstated entry -- it is its own union member with its own copy, reachable and tested.",
+    "noMarketOpinionVocabulary": "No heading or line uses valuation, worth, estimate, estimated, modelled or approximate."
+  },
+  "plannedChangeSet": [
+    "NEW apps/property-explorer/src/lib/valuation-basis.ts -- the five-member union, the reader that narrows an on-wire string, the resolver across the four rails, and the three copy functions (heading, face line, provenance sourceLabel). One module so heading copy and provenance copy cannot drift apart. No imports, so no cycle risk with tax-valuation-paint.ts or fact-sheet-resolver.ts.",
+    "packages/parcel-fact-sheet/src/index.ts -- AMENDMENT 3: add valuationBasis to the taxValuation value type. Required because the basis must cross the sheet boundary and no existing field can carry it without being overloaded as a sentinel (provenance.method was considered and rejected for exactly that reason). Follows the AMENDMENT 1 / AMENDMENT 2 precedent in the same file.",
+    "apps/property-explorer/src/lib/fact-sheet-resolver.ts -- taxValuationFromCadRoll resolves the basis and uses a VALUATION-SPECIFIC provenance. cadProvenance itself is NOT changed: it is shared with apn, situs and land use, and valueBasis is evidence about the DOLLAR fields only (derived from assessed_value presence). Widening it to those rows would be a control broader than its claim.",
+    "apps/property-explorer/src/lib/baked-facets.ts -- optional valuationBasis on CardFacet, alongside the existing optional layerAbsence / silentEmpty side channels.",
+    "apps/property-explorer/src/lib/sheet-to-card-model.ts -- carry the basis onto the CardFacet.",
+    "apps/property-explorer/src/browse/InspectCard.tsx -- FactPresentation carries the basis; toFactPresentation maps it; FactRow renders the face line and a data-value-basis attribute; the row label is selected from the basis. The row key and testid stay taxValuation / inspect-tax-valuation so machine identity never moves -- only the human label does, which is what should move when the thing named changes.",
+    "apps/property-explorer/src/lib/tax-valuation-paint.ts -- correct the load-bearing false module comment."
+  ],
+  "violationPlan": {
+    "shape": "Two commits on the branch, so the violation run is reproducible from git history rather than only from a pasted transcript.",
+    "commit1": "The seam plus the tests, with the row-label selector STUBBED to the current behaviour (always Tax-assessed value) and the face line not yet derived. The stratmap violation test must FAIL here and the county-assessed control must PASS. A test that fails only because a symbol is missing has not observed anything; this shape makes it fail on the wording.",
+    "commit2": "Implement the derivation. Same test text, unchanged, now passes.",
+    "preRegisteredFalsifier": "If the stratmap test PASSES at commit 1, the test is vacuous and I must not report it. If the county-assessed control FAILS at commit 1, the fixture is wrong, not the code."
+  },
+  "risksAcceptedWithReason": [
+    "Per-parcel heading variation was argued against in T2 and is adopted anyway, narrowly. The comparison objection (two parcels side by side showing two different row names) is real and is answered by holding key and testid fixed: the row is the same row to every machine consumer, compare surface and export, and only its human name changes. A row whose name stays constant while the thing it names changes is the worse failure.",
+    "This change is inert on live data until PR #650 merges and a re-bake runs. Stated in the close rather than narrated as a live fix.",
+    "The five-state union is more states than the wire has members. That is deliberate: two of the extra three (unstated, unrecognised) are properties of the READ, not of the wire, and the third (mixed) is a property of the payload. Each is reachable by fixture and each is tested, so none is dormant."
+  ],
+  "scopeBasis": "hauska-map only, per the dispatch. legacy-design-tools was READ (gh pr view/diff 650, lib/cad-ingest/src/txgio/landuse.ts) to establish the wire contract and the StratMap row shape; nothing was written there. hauska-factory and hauska-engine untouched. No deploy, no Cloud Build, no Cloud Run job, no bake, no publish, no walk.",
+  "completionPredicate": "A fixture carrying valueBasis stratmap-redistributed renders neither the string Tax-assessed value nor county-appraisal-roll wording, and that same assertion is observed FAILING at commit 1 and PASSING at commit 2. A genuine county-assessed fixture renders byte-identically to today at both commits. The tax-valuation-paint.ts comment no longer asserts every figure comes from the county appraisal district. PE typecheck and the PE test suite terminate green. A PR is open on fix/ctx-b4-valuation-basis-label and is not merged."
+}

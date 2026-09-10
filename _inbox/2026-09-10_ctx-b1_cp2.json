@@ -1,0 +1,51 @@
+{
+  "lane": "ctx-b1",
+  "planRow": "P-124",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b1",
+  "branch": "fix/ctx-b1-provenance-honest-cadroll",
+  "baseCommit": "9873ff11",
+
+  "codeChanges": [
+    "artifacts/api-server/src/lib/cadRollValue.ts -- bake path: added STRATMAP_REDISTRIBUTED_VALUE_BASIS + ValueBasis union; added isGenuineCadExportRow/valueBasisFromRow (the assessed_value discriminator); bakedDollar and cadRollFromCadProperty now derive valueBasis per row instead of stamping the constant.",
+    "artifacts/api-server/src/lib/cadRollFactFromParcelRecord.ts -- overlay path: dollarFactFromParcelRecord takes valueBasis as a parameter instead of hardcoding COUNTY_ASSESSED_VALUE_BASIS; added resolveValueBasisFromParcelRecord (reads the assessedValue cell directly, bypassing that rail's own allowlist gate, since this is a tier determination not a value serve).",
+    "artifacts/api-server/src/lib/cadRollServeCutover.ts -- resolveCadRollOverlaysForServe computes valueBasis ONCE per parcel and threads it into all four dollarOverlayIfRecord calls, so one parcel cannot serve two different valueBasis values across its own fields.",
+    "artifacts/api-server/src/lib/recordRetirement.ts (new) -- Tier1RecordRetirement + isEarnedRecordRetirement extracted out of nodeFacetBakeTier1Conformant.ts so a light consumer does not inherit that module's DATABASE_URL-at-load-time chain (joinIntegrityGate.ts -> @workspace/cad-ingest -> vintage-crosswalk.ts). nodeFacetBakeTier1Conformant.ts now imports+re-exports from here; every existing importer of those two names from nodeFacetBakeTier1Conformant.ts is unaffected.",
+    "artifacts/api-server/src/lib/serveGuards.ts -- A3: refusePayloadAtServe exempts the punctuation-only situs guard for a well-formed earned retirement (isEarnedRecordRetirement(p.recordRetirement)); every other payload's guard is untouched.",
+    "test files updated/added: __tests__/cadRollValue.test.ts, cadRollFactFromParcelRecord.test.ts, __tests__/serveGuards.test.ts, nodeFacetBakeTier1Conformant.test.ts (one fixture corrected -- see below)."
+  ],
+
+  "discoveredMidWork_testFixtureEncodedTheBug": "artifacts/api-server/src/lib/__tests__/cadRollValue.test.ts's own first test (`cadRollFromCadProperty is the bake mapper`) asserted `valueBasis: 'county-assessed'` on a row with `assessedValue: null` -- i.e. it had the pre-fix defect baked into its own expectation. Corrected to 'stratmap-redistributed', which is exactly the required violation test's shape. Separately, nodeFacetBakeTier1Conformant.test.ts's 'Caldwell stored improvement $0' fixture (Caldwell is this program's own known-good CAD-export county) omitted assessedValue entirely, defaulting to null via the test helper -- added an explicit assessedValue so the fixture matches what a real Caldwell row would actually carry; the test's own assertion (valueBasis: county-assessed) was already correct and needed no change once the fixture was fixed.",
+
+  "discoveredMidWork_importCouplingRisk": "First implementation imported isEarnedRecordRetirement directly from nodeFacetBakeTier1Conformant.ts into serveGuards.ts. That module transitively imports joinIntegrityGate.ts -> @workspace/cad-ingest, whose vintage-crosswalk.ts throws 'DATABASE_URL must be set' as a MODULE-LOAD-TIME side effect (not call-time). This made serveGuards.ts -- previously a light, dependency-minimal guard module -- newly require a configured DATABASE_URL just to load, in ANY context, including tests and any lightweight consumer. Confirmed this was not merely a test-harness gap by running nodeFacetBakeTier1Conformant.test.ts itself without DATABASE_URL set: it fails to load identically, proving the coupling is real and pre-existing in that heavier module, not introduced by this change. Fixed by extracting the type/function into recordRetirement.ts (see codeChanges); re-verified serveGuards.test.ts passes with zero environment variables set.",
+
+  "testResults": {
+    "cadRollValue.test.ts": "25/25 passed, no env vars needed",
+    "cadRollFactFromParcelRecord.test.ts": "17/17 passed (includes new resolveValueBasisFromParcelRecord describe block), no env vars needed",
+    "cadRollServeCutover.test.ts": "2/2 passed, no env vars needed",
+    "serveGuards.test.ts": "12/12 passed (4 new A3 tests), no env vars needed, confirmed with zero env vars set",
+    "nodeFacetBakeTier1Conformant.test.ts": "80/80 passed with DATABASE_URL set to a dummy connection string (this file's own tests require it regardless of this lane's change -- confirmed pre-existing by running it unmodified before touching any fixture)",
+    "typecheck": "npx tsc -p tsconfig.json --noEmit -- zero errors reference any file this lane touched (cadRollValue.ts, cadRollFactFromParcelRecord.ts, cadRollServeCutover.ts, serveGuards.ts, recordRetirement.ts, nodeFacetBakeTier1Conformant.ts). All ~150 reported errors are pre-existing: TS6305 project-reference .d.ts files not built (lib/db, lib/api-zod, etc. -- a fresh worktree has no dist/ output and this repo has not been `tsc -b`'d here) and unrelated implicit-any/type errors in files never touched by this lane (packages.ts, parcelBriefings.ts, planReviewBff.ts, qa.ts, knowledge-atoms/store.ts, etc.).",
+    "fullApiServerSuite": "374 test files (2604 passed / 46 failed / 1481 skipped tests; 238/133/3 suites). Every failing suite grep-confirmed to be either a live-Postgres integration test failing on 'password authentication failed for user test' / 'DATABASE_URL must be set' (no real database in this sandbox) or a pre-existing unrelated failure (recordsRequestRoutes 500s, brokerageTxParcels store-query error, reportRunState cross-instance DB tests). Grepped the full run for FAIL lines against cadRoll/serveGuards/recordRetirement/nodeFacetBakeTier1Conformant -- zero matches. Did not re-run the full suite against the unmodified base commit to produce a byte-for-byte before/after diff (would cost another ~70s run for marginal certainty beyond the direct evidence already gathered); flagging that as the one verification step not done, per DEV_PROCESS 5.2's preference for an honest partial over a narrated full close."
+  },
+
+  "path4_findingConfirmed": {
+    "summary": "Escalated in CP1 as a suspicion; now confirmed by direct evidence. fact-sheet-resolver.ts and tax-valuation-paint.ts are real files, but they live in `hauska-map` (apps/property-explorer/src/lib/), not `legacy-design-tools` -- at commit 0b07013f39f5da1e335108e8d5033cac821016db (origin/main, PR #381), the exact hauska-map snapshot the third-party review's own frontmatter pins. Verified via `git show 0b07013:apps/property-explorer/src/lib/fact-sheet-resolver.ts` and the same for tax-valuation-paint.ts against already-fetched hauska-map git objects on this machine (no new clone or fetch was needed or performed). `fact-sheet-resolver.ts`'s cited lines are the `cadProvenance()` function, whose `sourceLabel` is the template `` `${facets.countyName} County appraisal roll` `` -- confirming the review's claim, just not literal text a plain grep would find. `tax-valuation-paint.ts`'s comment is one line off the dispatch's cited range (actual ~23-31, not 24-31) but is the same doc comment the dispatch quotes.",
+    "whyNotFixedHere": "Checked every sibling dispatch in this wave (CTX-B2 hauska-factory, CTX-B3 hauska-factory, CTX-HAYS-GATE hauska-factory, CTX-PIN2 hauska-factory, CTX-SCHOOL hauska-factory, CTX-SENTINEL legacy-design-tools, CTX-TEARDOWN hauska-factory) -- every single one, including this one, explicitly forbids writing to hauska-map. No dispatch in the 2026-09-10 wave has standing to fix this. This is not a scope choice this lane made; it is a genuine gap across the whole wave, surfaced here because CTX-B1 is the dispatch that most directly implies path 4 should be reachable.",
+    "recommendation": "New operator ruling/dispatch needed: a hauska-map lane to apply the equivalent CTX-B1 fix at apps/property-explorer/src/lib/fact-sheet-resolver.ts and tax-valuation-paint.ts -- once this lane's legacy-design-tools change ships a real per-field tier (structuralFact.tier or the fixed cadRoll.*.valueBasis) on the wire, that UI code's sourceLabel/comment need the same StratMap-vs-CAD-export honesty this lane applied to the backend. Left as an explicit leave_behind item, not attempted."
+  },
+
+  "notYetDone": [
+    "final close.json with the merge commit",
+    "commit this lane's changes on the branch (dispatch: write code and commit, no deploy/build/job)"
+  ],
+
+  "constraintsHonoredSoFar": [
+    "No deploy, Cloud Build, or Cloud Run job issued or attempted",
+    "No write to hauska-factory, hauska-engine, or hauska-map (confirmed: read-only git show against already-fetched objects, no new clone/fetch/checkout of hauska-map)",
+    "No non-account absence state implemented",
+    "No serve guard weakened for any non-retired payload",
+    "Every test/typecheck run above is exit-bounded (one-shot vitest run / tsc --noEmit), never a watch or tail -f"
+  ]
+}

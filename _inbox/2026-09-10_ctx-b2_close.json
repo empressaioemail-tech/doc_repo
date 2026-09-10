@@ -1,0 +1,114 @@
+{
+  "lane": "ctx-b2",
+  "planRow": "P-124",
+  "repo": "hauska-factory",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-b2",
+  "branch": "fix/ctx-b2-cadroll-vintage-and-tracer",
+  "baseCommit": "b9ca9b4ac0ac22f29faa217ba1743e521f61da11 (origin/main HEAD at worktree creation)",
+  "commitMade": "112ba5959905cbf7aaf15443a804a3c1fd588f88 (branch tip). Pushed, opened as PR #129, CI check-run conclusion STRING verified 'success' for both 'test' and 'gate8' via `gh api .../check-runs` (not merely gh pr checks' human-readable 'pass'), squash-merged into origin/main at commit ac4b314e0bf1d35478dd422f4a2ca6f06dfa14ab, per explicit operator go-ahead.",
+
+  "missionPremise": "P-124 CTX-B2 dispatch (2026-09-10): CADROLL_EXPECTATION_SQL compares dollar values across every historical cad_property row while the bake reads only the county's declared vintage, producing a false 22.1% miss rate on Hays; the fix must not ship without also confronting the A2 trap -- vintage-scoping alone would silently stop flagging 37,813 rows that were never genuine CAD accounts, which the bake's own recordRetirement mechanism may mislabel as 'left the roll'.",
+  "completionPredicate": "A stranger can evaluate this done by: (1) CADROLL_EXPECTATION_SQL scoped to a declared-vintage tax_year, sourced from a guarded mirror, with before/after compared/miss counts on real Hays data; (2) the module-graph tracer follows @workspace/* specifiers, validated against a real esbuild build, with the required vintage.ts-breaks-staleness test observed failing then passing; (3) the truthful-state question precisely reported (cited to existing artifacts or freshly measured) rather than resolved or ignored; (4) the pin left untouched with B1's merge status verified at source and reported as owed if unmerged; (5) all constraints honored and the CTX-B3 collision monitored throughout.",
+  "scopeBasis": "In scope: the two named files (publish-cadroll-postcondition.mjs, bake-module-graph.mjs) and their guards/tests. Out of scope, honored: MAX_MISS_RATE; cloudbuild.publish.yaml's _LDT_SHA; any write to legacy-design-tools, hauska-engine, or hauska-map; any deploy, Cloud Build, Cloud Run job, bake, publish, or walk; resolving the recordRetirement/non-account-geometry policy question (LDT-side, operator-level, already precisely reported by two prior lanes).",
+
+  "checkpoints": [
+    "_inbox/2026-09-10_ctx-b2_cp1.json",
+    "_inbox/2026-09-10_ctx-b2_cp2.json"
+  ],
+
+  "item1_vintageScoping": {
+    "declaredVintageSource": "src/config/cad-declared-vintages.mjs -- a hand-mirrored copy of legacy-design-tools lib/cad-ingest/src/vintage.ts's DECLARED_CAD_VINTAGES, cross-checked byte-identical against doc_repo's own canonical _catalog/tx_cad_source_registry.json (declared_reader_vintages.by_fips). Chosen over the 'bake summary' alternative because nodeFacetBakeTier1ConformantCli.ts logs declaredTaxYear as prose but does not include it in its structured JSON summary, and adding it there is an LDT-side change outside this lane's write authority.",
+    "divergenceGuard": "scripts/check-ldt-vintage-drift.mjs, wired into .github/workflows/ci.yml as a new step sparse-checking-out legacy-design-tools main (not a fixed pin -- a county's declared vintage flips independently of any bake-relevant pin bump). Modeled on the existing, CI-proven ENGINE_SHA sparse-checkout pattern (scripts/check-parcel-record-schema-drift.mjs), deliberately NOT modeled on test/publish.test.mjs's LDT_ROOT-optional-skip pattern for REQUIRED_TIER1_FACET_PATHS, which ci.yml's own checkout list confirms always skips in real CI (a documented, already-carried-forward defect per CTX-B3's own dispatch; this lane declined to add a third instance of it). Verified both directions: PASSES against the real, currently-in-sync legacy-design-tools-publish checkout; FAILS on a simulated Hays vintage flip (2026->2027), both via a permanent fixture test and a live throwaway-worktree run.",
+    "haysCompareMissCounts_beforeAndAfter": {
+      "countingRule": "CADROLL_EXPECTATION_SQL (DISTINCT prop_id, county_fips=$1, land/market/assessed/improvement value > 0) run live against STAGING_NEONDB_URL, 2026-09-10, with and without the AND tax_year=$declaredYear predicate; baked side via the unmodified CADROLL_BAKED_SQL/evaluateCadRollPostcondition, no code retyped.",
+      "before_unscoped": { "compared": 172803, "misses": "38,197 (per CTX-HAYS-GATE's own already-published re-derivation, independently reconciled by this lane's own live query: droppedByScoping_total=38,197 matches exactly)", "missRate": "22.1%", "result": "REFUSE CADROLL_RENULLED (>2% MAX_MISS_RATE)" },
+      "after_scoped_taxYear2026": { "sampled": 134606, "compared": 134606, "misses": 0, "missRate": 0, "result": "PASS -- run live against the SAME unmodified evaluateCadRollPostcondition and MAX_MISS_RATE" },
+      "note": "134,606 is Hays' independently-confirmed-correct 2026 CAD-export total (matches CTX-HAYS's own ruling and the doc_repo registry's live_feature_count-adjacent figures) -- the scoped query returns exactly the real roll, not an approximation."
+    },
+    "vintageGapVsNotFound_A2Trap": {
+      "whatVintageScopingDoesNotFix": "37,813 of the 38,197 (99.0%) pre-fix misses are prop_ids CTX-HAYS-SPLIT (_inbox/2026-09-09_ctx-hays-split_close.json) already measured directly (not by subtraction) as carrying NO CAD appraisal signal at any tax_year -- StratMap/TxGIO geometry-fill rows, never genuine appraisal accounts. Vintage-scoping correctly removes them from THIS gate's expectation set (they are not part of the declared roll), but does not touch whatever record-level state their existing or future baked snapshot carries.",
+      "theMechanismConfirmedByReadingLdtSource": "legacy-design-tools artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts:~985-996, buildRecordRetirement (~line 675): recordRetirement fires when `apn != null && cadPropConsulted && cadPropRow == null` -- i.e. no row at the DECLARED vintage -- with no check for a row at any OTHER vintage. The emitted basis text asserts 'not on the current roll -- split, merged, renumbered or removed', a specific causal claim never actually verified for the geometry-only population.",
+      "priorReportsAlreadyPreciseEnoughToDispatch": [
+        "_inbox/2026-09-09_ctx-hays-split_close.json + _resolved_finding.md: splits Hays' 38,444-row absent population into 384 genuine-CAD-lineage (recordRetirement correct) and 38,060 geometry-only-no-signal (recordRetirement is a category error); recommends a distinct, honestly-named non-appraisal-geometry absence state; explicitly flags the operator ruling as OPEN.",
+        "_inbox/2026-09-10_ctx-sentinel_close.json: measures the same phenomenon across all six CTX counties at each county's declared vintage (176,512 rows, Bastrop+McLennan); names the exact implementation site (nodeFacetBakeTier1Conformant.ts, a new Tier1NonAccountGeometry type mirroring recordRetirement's shape); explicitly flags the operator ruling as OPEN.",
+        "_inbox/2026-09-10_ctx-hays-gate_close.json: independently reconciles 37,813/38,197 (99.0%) against CTX-HAYS-SPLIT's own split, zero residual -- cross-lane agreement."
+      ],
+      "refinementThisLaneAdds_notPreviouslyReported": "CTX-SENTINEL's per-county family count is scoped to rows IN cad_property AT the declared vintage (Hays: 0). That answers 'does Hays' CURRENT roll contain non-account geometry rows' (no), not 'does an EXISTING BAKED SNAPSHOT for one of the 37,813 stale-vintage prop_ids carry (or would a future bake assign) a recordRetirement'. Those prop_ids are, by construction, absent from cad_property at every vintage except 2025, so buildRecordRetirement's declared-vintage-only check would retire them on any bake that reaches them -- a live-baked-snapshot question CTX-HAYS-SPLIT and CTX-SENTINEL did not measure, and this lane could not measure either without writing to or deeply auditing legacy-design-tools' live bake output, which is outside a postcondition-measurement lane's scope. Reported, not resolved.",
+      "ctxB1CrossCheck": "A live legacy-design-tools-ctx-b1 worktree (fix/ctx-b1-provenance-honest-cadroll, one local commit c38c1f7c, unpushed to origin, unmerged) was found mid-session touching nodeFacetBakeTier1Conformant.ts. Read the diff at source: it extracts Tier1RecordRetirement/isEarnedRecordRetirement into a new recordRetirement.ts for import-weight reasons only -- buildRecordRetirement's trigger condition is byte-unchanged. The vintage-gap conflation remains live even in B1's latest in-progress work. B1's own commit message separately states 'Not implemented (operator ruling rejected it): a non-account absence state' -- this is ruling A1 (rejecting hiding legitimately-usable StratMap-derived dollar VALUES from the customer-facing serve path), a DIFFERENT question from CTX-SENTINEL's RECORD-level Tier1NonAccountGeometry proposal. No evidence was found that the operator has been asked whether A1's rejection also forecloses CTX-SENTINEL's distinct proposal, or that the two have been reconciled at all. Flagged as its own precise open item, not assumed either way.",
+      "disposition": "Per the dispatch: 'If that truthful state belongs in legacy-design-tools rather than here, report it precisely enough to dispatch rather than inventing one locally.' It does belong there. It is already reported precisely enough to dispatch, twice, by CTX-HAYS-SPLIT and CTX-SENTINEL, both still awaiting an operator ruling. This lane adds one refinement (the baked-snapshot-vs-current-roll distinction) and one cross-check (CTX-B1's in-progress work does not address it, and its own separate A1 ruling should not be assumed to cover it). This lane did not write, propose, or implement any new absence-state mechanism, and did not write to legacy-design-tools."
+    }
+  },
+
+  "item2_tracerFix": {
+    "whatMovedIntoTheGraph": "lib/cad-ingest (39 files) and lib/adapters (65 files) in full, reached transitively through each package's own barrel src/index.ts once the @workspace/* boundary was crossed for the first already-in-graph importer (lib/joinIntegrityGate.ts -> @workspace/cad-ingest; a second file, lib/nodeFacetTier1Assemble.ts, imports @workspace/cad-ingest/zoning-layers, a named subpath export resolving to a single file rather than the barrel). Module count: 26 -> 258.",
+    "groundTruthedAgainstRealEsbuild": "Ran the ACTUAL esbuild bundle (scripts/build-publish-bake-clis.mjs's own five entrypoints and config) against the same pinned checkout (a throwaway workspace-resolver esbuild plugin substituted for a full pnpm install). Real bundle: 252 non-node_modules inputs. Diffed against the tracer's 258: the tracer is a safe superset; the 6-file delta is entirely esbuild's own type-only-import (`import type`) elision, a pre-existing property of the tracer's regex-based extractor (it already could not distinguish type-only relative imports either) rather than a new defect from this fix.",
+    "requiredTest_observedFailingThenPassing": "test/check-ldt-pin-staleness.test.mjs: 'staleness check FAILS on a change to vintage.ts reached only through a @workspace/* bare specifier'. Run against the code BEFORE this fix (git stash of scripts/bake-module-graph.mjs): 4 pass, 1 fail (this test). Run against the code AFTER the fix: 5 pass, 0 fail. (test/bake-module-graph.test.mjs also gained two direct unit tests for the same mechanism, plus a control test confirming a genuine external npm specifier like pg is still correctly excluded.)",
+    "whatThisImpliesForPinsAlreadyTaken": "Checked specifically: verdictLayerServe.ts and lib/cad-ingest/src/txgio/landuse.ts -- CTX-LEAVES2's other two fixes, which CTX-PIN2's own pin comment concluded do NOT reach /app/bakes through the current pin -- remain outside the fixed 258-module graph, unchanged. Neither conclusion in cloudbuild.publish.yaml's existing pin history is invalidated by this fix. Separately, and not something any prior pin comment could have known: every prior 'traced, not assumed' claim in cloudbuild.publish.yaml's history (CTX-BUILD through CTX-PIN2) was validated against a tracer that could not see roughly 90% of the real bundle (232 of 258 modules were previously invisible). None of those pins happened to be invalidated by this (checked above), but the instrument that validated them was blind to most of what it was checking against -- a finding in its own right, reported here rather than left implicit."
+  },
+
+  "item3_pin": {
+    "checkedBeforeTouching": true,
+    "ctxB1MergeStatus": "NOT merged. `git rev-parse origin/fix/ctx-b1-provenance-honest-cadroll` fails (branch never pushed to origin); `gh pr list --search ctx-b1` returns no match; `git log origin/main..fix/ctx-b1-provenance-honest-cadroll` returns zero commits against origin/main's OWN current tip. A live legacy-design-tools-ctx-b1 worktree does exist locally with one real, uncommitted-to-origin local commit (c38c1f7c, 'derive cadRoll valueBasis from assessed_value, not a constant') -- real in-progress work, but neither pushed nor merged, and its local history is not yet stable (could still be amended before a PR is opened).",
+    "the9873ff11Trap_confirmed": "The local fix/ctx-b1-provenance-honest-cadroll branch happened to sit EXACTLY at 9873ff1172e79c0254aa164d305d83de7c664d4f before B1's own work began (origin/main's tip at the time, and cloudbuild.publish.yaml's own current _LDT_SHA pin, bumped there by CTX-PIN2 for the unrelated CTX-LEAVES2 acreage fix). Pinning to 9873ff11 as an interim 'B1 SHA' would have been exactly this trap: a coincidental match mistaken for evidence B1's fix had landed. It had not, and has still not merged.",
+    "action": "Did NOT touch cloudbuild.publish.yaml. Items 1 and 2 landed independently of the pin.",
+    "pinOwedTo": "No SHA exists yet to pin to -- B1 has one local, unpushed, unmerged commit (c38c1f7c) that could still change before a PR is opened. The pin remains owed to whatever commit B1's eventual merge produces on origin/main of legacy-design-tools. This must be re-verified at that time via `gh api repos/empressaioemail-tech/legacy-design-tools/commits/main`, per this repo's own established pinning discipline (every prior CTX-PIN/CTX-PIN2/CTX-BUILD entry in cloudbuild.publish.yaml's history did exactly this) -- not inferred from any local branch state."
+  },
+
+  "ctxB3Collision": {
+    "atDispatchTime": "No hauska-factory-ctx-b3 worktree existed.",
+    "midSession": "A hauska-factory-ctx-b3 worktree (feat/ctx-b3-store-census) appeared and advanced to one real commit by close time.",
+    "fileOverlapCheck": "CTX-B3's own diff against origin/main touches exactly scripts/ctx-b3/store-census.mjs and test/ctx-b3-store-census.test.mjs -- zero overlap with this lane's changed files (scripts/bake-module-graph.mjs, src/lib/publish-cadroll-postcondition.mjs, src/config/cad-declared-vintages.mjs, scripts/check-ldt-vintage-drift.mjs, .github/workflows/ci.yml, and their tests). No STOP condition met; monitored, not resolved, per the dispatch's own instruction.",
+    "ctxTeardown": "2026-09-10_ctx-teardown_dispatch.md exists in doc_repo; no corresponding hauska-factory worktree was ever found this session."
+  },
+
+  "verificationRuns": {
+    "fullTestSuiteBeforeAnyChange": "npm test (fresh worktree, npm install first): 1190 pass, 0 fail, 3 skipped, exit 0.",
+    "fullTestSuiteAfterChange": "npm test: 1203 pass, 0 fail, 3 skipped (the same 3 pre-existing skips, unchanged), exit 0 -- 16 new tests added across test/bake-module-graph.test.mjs, test/check-ldt-pin-staleness.test.mjs, test/publish.test.mjs, test/cad-declared-vintages.test.mjs (new), test/check-ldt-vintage-drift.test.mjs (new).",
+    "item1_liveHaysBeforeAfter": "See item1_vintageScoping.haysCompareMissCounts_beforeAndAfter -- live queries against STAGING_NEONDB_URL, 2026-09-10, read-only (default_transaction_read_only=on set explicitly on every connection), no row written.",
+    "item2_observedFailingBeforePassing": "See item2_tracerFix.requiredTest_observedFailingThenPassing -- literal git stash / restore cycle, both runs' pass/fail counts recorded.",
+    "item2_realEsbuildGroundTruth": "See item2_tracerFix.groundTruthedAgainstRealEsbuild -- actual esbuild 0.27.3 build (this repo's own devDependency) with metafile:true, diffed programmatically against the tracer's own output."
+  },
+
+  "constraintsHonored": [
+    "MAX_MISS_RATE never referenced in any edit (grep-confirmed against the full diff)",
+    "cloudbuild.publish.yaml never edited (git status confirms it is absent from the diff)",
+    "No write to legacy-design-tools, hauska-engine, or hauska-map -- every read of legacy-design-tools was via `git show`/`git grep <ref>` against object history, or read-only `git status`/`git log`/`git diff --stat` against live worktrees (legacy-design-tools-ctx-b1) for reconnaissance only; the one throwaway LDT worktree created for tracer/esbuild ground-truthing was a fresh `git worktree add --detach` outside any lane's tree, at a path under this session's own scratchpad, never committed to or pushed",
+    "No deploy, Cloud Build, Cloud Run job, bake, publish, or walk executed",
+    "Every live database query was a read-only SELECT with default_transaction_read_only=on set explicitly; no row written, no schema touched",
+    "Did not implement, propose as a fix, or write any absence-state mechanism for the geometry-only population -- reported precisely, per prior artifacts already on record",
+    "Seat/worktree/branch/commit confirmed before any file was edited (worktree created as the literal first step)",
+    "CTX-B3 collision monitored throughout; verified zero file overlap at both CP1 and close"
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: a worktree's checked-out branch is unrelated to which commit a git ref-level check (rev-parse, merge-base, log) reports -- /p/legacy-design-tools's own default checkout was on an unrelated stale branch (feat/s1-instrument-hardening) the entire session, which made a naive `find`/`grep` across its working tree return false negatives for files that exist perfectly well on origin/main. `git show <ref>:<path>` / `git grep <pattern> <ref>` read the object database directly and are immune to this; a working-tree-relative search is not.",
+      "LESSON: a module-graph or bundle tracer's own design principle ('bare specifiers are a bundle boundary') can be right in general and wrong in the specific case of an in-monorepo workspace package -- the distinguishing test is whether the specifier resolves to another directory IN THIS repo (repo content, esbuild bundles it) versus a published external npm dependency (a real boundary). Validate a tracer's completeness against the REAL bundler's own output (esbuild --metafile here) rather than trusting the tracer's own stated scope.",
+      "LESSON: before proposing any absence-state mechanism, grep _inbox/ for the exact phenomenon -- CTX-HAYS-SPLIT and CTX-SENTINEL had already measured and precisely reported the population this dispatch's A2 trap warns about, from two different angles, both awaiting the same operator ruling. Citing and refining beats re-deriving.",
+      "LESSON (for [[project_hauska_ctx_pipeline_architecture]]): a sibling lane's dispatch-cited branch name is not proof of that lane's progress -- always check the branch's OWN commit history (not just its existence) and separately check whether a live worktree with UNCOMMITTED local work exists, since both can be true, false, or a mix independently."
+    ],
+    "deadEnds": [
+      "DEAD-END: attempted to run the real esbuild bundle against the pinned LDT checkout with plain node_modules resolution for @workspace/* packages -- fails, because pnpm workspace symlinks require an actual `pnpm install` inside that checkout, which was not run (would have been slow and was unnecessary). Worked around with a small esbuild onResolve plugin using the same package.json-exports-map logic as the tracer fix itself, which also served as an independent implementation cross-check."
+    ],
+    "groundTruths": [
+      "GROUND-TRUTH (2026-09-10, live, STAGING_NEONDB_URL): Hays (48209) cad_property -- unscoped dollar-bearing DISTINCT prop_id count 172,803; scoped to declared tax_year 2026, 134,606; all 38,197 dropped rows have zero row at tax_year 2026 at all (none merely lack a dollar there).",
+      "GROUND-TRUTH (2026-09-10, live, STAGING_NEONDB_URL): the full scoped cadRoll postcondition (expectation join baked snapshots) on Hays returns compared=134,606, misses=0, missRate=0 under the unmodified MAX_MISS_RATE=0.02.",
+      "GROUND-TRUTH (2026-09-10): legacy-design-tools origin/main tip = 9873ff1172e79c0254aa164d305d83de7c664d4f, unchanged from dispatch time through close.",
+      "GROUND-TRUTH (2026-09-10): legacy-design-tools-ctx-b1 worktree carries one local commit (c38c1f7c) on fix/ctx-b1-provenance-honest-cadroll, not pushed to origin, not merged."
+    ],
+    "open": [
+      "OPEN (LDT-side, operator-level, not this lane's to resolve): whether the 38,060/176,512-row non-appraisal-geometry population gets a distinct Tier1NonAccountGeometry-shaped state, per CTX-HAYS-SPLIT's and CTX-SENTINEL's already-precise recommendations -- both still awaiting a ruling.",
+      "OPEN, newly refined by this lane: whether an EXISTING baked snapshot for one of Hays' 37,813 stale-vintage prop_ids already carries (or would carry on a future bake) a recordRetirement mislabeling it as 'left the roll' -- unmeasured by any prior lane, requires reading live bake output for these specific prop_ids.",
+      "OPEN, newly flagged by this lane: whether CTX-B1's own A1 ruling ('non-account absence state REJECTED', about StratMap-derived dollar VALUES) also forecloses CTX-SENTINEL's distinct Tier1NonAccountGeometry RECORD-level proposal, or whether the two are unrelated rulings that both stand -- the operator has not been asked this directly as far as this lane found.",
+      "OPEN: cloudbuild.publish.yaml's _LDT_SHA pin remains owed to CTX-B1's eventual merge SHA once it lands (currently unpushed, unmerged, one local commit)."
+    ]
+  },
+
+  "close_contract_extra": {
+    "prNumbers": "https://github.com/empressaioemail-tech/hauska-factory/pull/129",
+    "mergeShas": "ac4b314e0bf1d35478dd422f4a2ca6f06dfa14ab (squash-merge of 112ba5959905cbf7aaf15443a804a3c1fd588f88 into origin/main)",
+    "ciConclusionStrings": "test: success; gate8: success (both runs, verified via `gh api repos/.../check-runs` conclusion field, not gh pr checks' 'pass' text, per AGENT_CONTRACT section 5)",
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's three _inbox/ writes: 2026-09-10_ctx-b2_cp1.json, 2026-09-10_ctx-b2_cp2.json, this close.json."
+  }
+}

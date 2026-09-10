@@ -1,0 +1,136 @@
+{
+  "lane": "CTX-B4",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint — the violation runs and what they caught",
+  "planRow": ["P-124"],
+  "dispatch": "_dispatches/2026-09-10_ctx-b4_dispatch.md",
+  "at": "2026-09-10",
+  "snapshot": {
+    "repo": "hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-ctx-b4",
+    "branch": "fix/ctx-b4-valuation-basis-label",
+    "base": "origin/main 0b07013f39f5da1e335108e8d5033cac821016db",
+    "violationCommit": "6953fd9",
+    "note": "The violation run is a COMMIT, not only a transcript. `git checkout 6953fd9` and running the two test files reproduces the failure. The four rules in ENFORCEMENT.md's instrument section say a load-bearing claim needs a file-based instrument that has been shown to fail; a commit is the strongest form of that."
+  },
+  "preRegisteredFalsifiers": [
+    {
+      "predicate": "If the stratmap violation test PASSES at the stub commit, the test is vacuous and must not be reported.",
+      "outcome": "HELD. It failed."
+    },
+    {
+      "predicate": "If the county-assessed control FAILS at the stub commit, the fixture is wrong, not the code.",
+      "outcome": "FIRED, and it was right to. The control failed on the first run, and the cause was a defect in the test rather than in the fixture or the code. See instrumentDefectsCaught below. This is the falsifier earning its keep: without it the run would have been read as '20 failures, violation confirmed' and two of those twenty were the instrument lying."
+    }
+  ],
+  "instrumentDefectsCaught": [
+    {
+      "defect": "Copy assertions ran against raw markup. `expect(html).toContain(\"From Caldwell County's own appraisal-roll export.\")` failed on a row that rendered exactly that string, because React escapes the apostrophe to `&#x27;`.",
+      "howFound": "The pre-registered control-must-pass falsifier.",
+      "fix": "A `visibleText()` helper strips tags and decodes entities. Copy assertions run on visible text; structural assertions (data attributes, test ids) still run on the markup."
+    },
+    {
+      "defect": "The 'no market-opinion vocabulary' regex `/valuation|worth|estimate|.../i` matched `data-testid=\"valuation-basis\"` — the test tripping over its own hook. It reported a violation that no viewer could ever see.",
+      "howFound": "Same run. It failed at the stub AND would have failed after the fix, which is the tell: an assertion that can never pass is not an assertion.",
+      "fix": "Runs on visible text."
+    },
+    {
+      "defect": "VACUOUS PASS. 'renders different basis lines' compared a McLennan render against a Caldwell render, so the two lines differed because the COUNTY NAMES differed, not because the bases did. It passed against the stubbed build, where both bases produced the identical claim.",
+      "howFound": "Reading the stub run's PASS list rather than only its FAIL list. A test that passes when the thing it checks is broken is worth more attention than one that fails.",
+      "fix": "Both fixtures now render under the same county name, so the basis is the only variable. It fails at the stub with the rest."
+    }
+  ],
+  "violationRunBefore": {
+    "command": "npx vitest run src/browse/tax-valuation-basis-label.test.tsx src/lib/valuation-basis.test.ts --reporter=basic",
+    "cwd": "P:/seat-worktrees/property/hauska-map-ctx-b4/apps/property-explorer",
+    "at": "commit 6953fd9, copy functions stubbed to pre-CTX-B4 behaviour",
+    "totals": "Test Files  2 failed (2) | Tests  19 failed | 46 passed (65)",
+    "failed": [
+      "the copy — headings > does not claim a tax assessment on any other basis",
+      "the copy — basis lines and source labels > every basis produces a DISTINCT sentence — none is a synonym for another",
+      "the copy — basis lines and source labels > every basis produces a distinct source label too",
+      "the copy — basis lines and source labels > only county-assessed claims the county's own appraisal export",
+      "the copy — basis lines and source labels > the stratmap line names the real source and denies the false one in the same breath",
+      "the copy — basis lines and source labels > an unrecognised token is printed, never swallowed",
+      "presentValuationBasis — composed once, at the boundary that knows the county > carries basis, token, heading and line together",
+      "CTX-B4 required violation: a stratmap-redistributed dollar must not render the county-appraisal wording > does not render the heading 'Tax-assessed value'",
+      "CTX-B4 required violation: ... > does not attribute the figure to the county appraisal roll, anywhere on the face",
+      "CTX-B4 required violation: ... > does not carry the county-appraisal source label on the sheet's provenance either",
+      "CTX-B4 required violation: ... > names the real source on the card FACE, with no tap and no tooltip",
+      "CTX-B4: the two parcels are distinguishable, which is the whole point > renders different headings",
+      "CTX-B4: the two parcels are distinguishable, which is the whole point > renders different basis lines",
+      "CTX-B4: an ABSENT valueBasis is its own state and is never defaulted > does not claim the county appraisal roll",
+      "CTX-B4: an ABSENT valueBasis is its own state and is never defaulted > says so in words on the face",
+      "CTX-B4: a basis this build cannot read is NOT folded into `unstated` > prints the token it could not read",
+      "CTX-B4: a basis this build cannot read is NOT folded into `unstated` > does not claim the county appraisal roll",
+      "CTX-B4: rails that disagree are reported, not rounded off > says so on the face",
+      "CTX-B4: rails that disagree are reported, not rounded off > does not claim the county appraisal roll on the strength of one agreeing rail"
+    ],
+    "controlBlockVerbatim": [
+      "   ✓ CTX-B4 control: a genuine county-assessed dollar is unchanged > keeps the heading operator ruling A-103 item 5 set 0ms",
+      "   ✓ CTX-B4 control: a genuine county-assessed dollar is unchanged > keeps the county appraisal-roll source label on the sheet's provenance 0ms",
+      "   ✓ CTX-B4 control: a genuine county-assessed dollar is unchanged > serves all four dollars, assessed included, exactly as before 0ms",
+      "   ✓ CTX-B4 control: a genuine county-assessed dollar is unchanged > states its source positively on the face rather than by silence 0ms",
+      "   ✓ CTX-B4 control: a genuine county-assessed dollar is unchanged > says nothing about StratMap 0ms"
+    ],
+    "sampleFailureVerbatim": "AssertionError: expected 'From McLennan County\\'s own appraisal…' to be 'From the Texas StratMap statewide par…' // Object.is equality\n\nExpected: \"From the Texas StratMap statewide parcel file, not McLennan County's own appraisal-roll export.\"\nReceived: \"From McLennan County's own appraisal-roll export.\"",
+    "readingOfIt": "Every failure is a non-county basis being labelled as the county's appraisal roll. The county-assessed control is 5 of 5 green, so the suite is not simply refusing everything."
+  },
+  "violationRunAfter": {
+    "command": "same, identical test text apart from one expected-string update recorded below",
+    "at": "stubs removed",
+    "totals": "Test Files  2 passed (2) | Tests  66 passed (66)",
+    "testTextChangedBetweenRuns": "One expected string, honestly. The 'after' run's first pass had ONE remaining failure and it was a real design finding, not a plumbing bug — see copyDecisionForcedByTheViolationRun. Changing it added one assertion and tightened another; no assertion was weakened to make a failure go away."
+  },
+  "copyDecisionForcedByTheViolationRun": {
+    "finding": "After the stubs came off, exactly one assertion still failed: `expect(text).not.toContain(\"McLennan County's own appraisal-roll export.\")`. The stratmap basis line read 'From the Texas StratMap statewide parcel file, not McLennan County's own appraisal-roll export.' — so the line contained the forbidden phrase, as a DENIAL.",
+    "twoWaysToClearIt": [
+      "Loosen the check to distinguish a denial from an attribution.",
+      "Change the copy so the phrase is not there at all."
+    ],
+    "chosen": "Change the copy. Three reasons, in order of weight. First, the dispatch's success criterion is 'must not render the county-appraisal wording', which is a ruling to follow, not a constraint to reinterpret once it becomes inconvenient. Second, a substring check cannot tell attribution from denial, and rewriting it to try would have made it presence-shaped and fragile — the exact class ENFORCEMENT.md warns about. Third and most important, the product argument: on an 11.5px muted line the phrase a skim-reader lands on in 'From A, not B' is B, and B here is the false claim this whole lane exists to remove. A sentence whose skim-read is the false claim is not an improvement on the false claim.",
+    "result": "The stratmap line is now the positive statement alone: 'From the Texas StratMap statewide parcel file.' The non-claim is carried by the heading, which stops saying 'Tax-assessed value' on exactly these records. A new assertion was ADDED forbidding the word 'appraisal' in ANY non-county-assessed line, denial included, so this cannot drift back.",
+    "whatWasGivenUp": "The explicit correction of a reader's prior expectation. A reader who has seen 'Tax-assessed value / From Caldwell County's own appraisal-roll export.' on one parcel and 'Recorded value / From the Texas StratMap statewide parcel file.' on the next has to notice that both halves changed rather than being told so. That is a real cost and it is the deliberate trade, not an oversight."
+  },
+  "renderedFaceAllFiveStates": {
+    "instrument": "a throwaway probe test rendering the real chain (taxValuationFromCadRoll -> taxValuationFacetFromSheet -> toFactPresentation -> FactRow) and printing tag-stripped, entity-decoded text. Deleted after capture; the working tree is clean of it.",
+    "48309:184293 McLennan, StratMap": {
+      "face": "Recorded value | Market $6,506,490 · Land $6,124,540 · Improvement $381,950 | From the Texas StratMap statewide parcel file.",
+      "provenanceSourceLabel": "Texas StratMap statewide parcel file"
+    },
+    "48055:32541 Caldwell, genuine county export": {
+      "face": "Tax-assessed value | Market $1,884,580 · Land $431,050 · Improvement $1,453,530 · Assessed $1,884,580 | From Caldwell County's own appraisal-roll export.",
+      "provenanceSourceLabel": "Caldwell County appraisal roll"
+    },
+    "older bake, no basis on any rail": {
+      "face": "Recorded value | Market $245,000 · Land $52,000 · Improvement $193,000 · Assessed $245,000 | This record does not state which source the figure came from.",
+      "provenanceSourceLabel": "Bastrop County parcel record, source not stated"
+    },
+    "a token this build cannot read": {
+      "face": "Recorded value | Market $100,000 · Land $40,000 · Improvement $60,000 | This build does not recognise the source stated on this record (some-future-tier).",
+      "provenanceSourceLabel": "Hays County parcel record, source not recognised (some-future-tier)"
+    },
+    "rails that disagree": {
+      "face": "Recorded value | Market $300,000 · Land $80,000 · Improvement $220,000 | The amounts on this record do not agree on their source.",
+      "provenanceSourceLabel": "Travis County parcel record, amounts disagree on their source"
+    },
+    "readingOfIt": "Every state serves its dollars at full weight in the same slot. No state renders as missing, unknown, degraded or refused. No state carries a number that could be read as a confidence score. Only the McLennan and Caldwell rows are live-reachable today; the other three are reachable by payload shape and are tested."
+  },
+  "verificationRuns": [
+    { "what": "PE typecheck", "command": "npx tsc --noEmit in apps/property-explorer", "result": "exit 0", "note": "requires `pnpm --filter @hauska/map-renderer build` first; without it 9 pre-existing TS2307 errors on @hauska/map-renderer appear and are unrelated to this change" },
+    { "what": "PE full vitest suite", "command": "npx vitest run --reporter=basic", "result": "Test Files 201 passed (201) | Tests 2891 passed | 1 todo (2892)" },
+    { "what": "contract package tests", "command": "pnpm --filter @empressaio/parcel-fact-sheet test", "result": "Test Files 1 passed (1) | Tests 28 passed (28)" },
+    { "what": "the three gate scripts that run before vitest in the PE `test` script", "command": "pnpm run gate:chrome-kit / gate:seam-retired / gate:public-pages", "result": "all exit 0" }
+  ],
+  "everyRunIsExitBounded": "Yes. Builds, one-shot vitest runs with `run`, tsc --noEmit and node gate scripts. No watch, no dev server, no tail.",
+  "constraintsHonored": [
+    "hauska-map only. legacy-design-tools was read (gh pr view/diff 650, lib/cad-ingest/src/txgio/landuse.ts) and never written. hauska-factory and hauska-engine untouched.",
+    "No deploy, no Cloud Build, no Cloud Run job, no bake, no publish, no walk.",
+    "Own registered worktree, own branch, cut from origin/main before any edit.",
+    "No merge."
+  ],
+  "openAtThisCheckpoint": [
+    "TAX_VALUATION_STUDIO_UPGRADE_CUE still reads 'County tax-assessed value is on Studio.' When the server refuses the dollar fields for an under-tier caller it sends no basis, so nothing on this path can know which source the parcel would have served, and the cue over-promises on a StratMap parcel. Fixing it needs the gated refusal to carry the basis, which is a legacy-design-tools change. Named in the source and carried to the close, not silently left.",
+    "The change is inert on live data until legacy-design-tools PR #650 merges and a re-bake runs. Until then every live payload resolves to `county-assessed` (the old constant) or `unstated` (an older bake), and no live parcel renders the stratmap arm."
+  ]
+}

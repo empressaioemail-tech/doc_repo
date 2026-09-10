@@ -1,0 +1,27 @@
+{
+  "lane": "CTX-B3",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "filedAt": "2026-09-10",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-b3",
+  "branch": "feat/ctx-b3-store-census",
+  "baseCommit": "b9ca9b4ac0ac22f29faa217ba1743e521f61da11",
+
+  "collisionRecheck": "P:/seat-worktrees/property/hauska-factory-ctx-b2 (branch fix/ctx-b2-cadroll-vintage-and-tracer) still the only other active worktree in this repo at CP2. This lane's diff is still exactly the two new files added at CP1 (scripts/ctx-b3/store-census.mjs, test/ctx-b3-store-census.test.mjs); `git status --short` confirms no other file touched. No overlap with CTX-B2's named scope (src/lib/publish-cadroll-postcondition.mjs, scripts/bake-module-graph.mjs, cloudbuild.publish.yaml).",
+
+  "pilotIncident_operationallyLoadBearing": {
+    "what": "The FIRST full-scan attempt failed twice before producing real numbers, for reasons worth recording because they generalise beyond this lane.",
+    "failure1": "resolveTargetStores (src/lib/publish-target-env.mjs) requires BOTH STAGING_NEONDB_URL and STAGING_HAUSKA_MCP_URL for target=staging even though this census only ever uses the DB URL -- by design (no partial-target reads), not a bug in this lane's code. Fixed by also fetching STAGING_HAUSKA_MCP_URL from Secret Manager before running.",
+    "failure2_moreSignificant": "loadIsEarnedRecordRetirement (src/lib/record-retirement.mjs), with LDT_ROOT unset, defaults to candidate root P:/legacy-design-tools -- the SAME shared, non-worktree checkout this lane's leaf-path reader also defaulted to for `git show <pin>:<path>`. That call is safe against working-tree state (git show reads the object database). loadIsEarnedRecordRetirement's esbuild bundling is NOT safe: it reads files from the WORKING TREE on disk. Live-checked mid-lane: P:/legacy-design-tools's working tree was sitting at commit 10069854 (2026-08-12), a commit roughly a month before the pin (9873ff11) and predating nodeFacetBakeTier1Conformant.ts's current form -- something else (a concurrent LDT-repo lane, per AGENT_CONTRACT's 'work in an isolated worktree' note, other lanes may check that shared repo out to different commits at any time) had it checked out elsewhere when this lane's first bundling attempt ran, and a second attempt against the same shared path produced a DIFFERENT failure (a bundle that built but did not export the function), consistent with the checkout changing again mid-session. Neither failure was this lane's code being wrong; both were a load-bearing dependency (a live-served pin) resting on a shared, actively-mutating checkout outside this lane's control.",
+    "fix": "Built a throwaway, ISOLATED scratch clone pinned to the exact SHA under this session's scratchpad (git init; git remote add; git fetch --depth 1 origin <pin>; git checkout FETCH_HEAD) -- the same pattern CTX-WALKRULE's close already documents for exactly this class of problem ('a throwaway scratch clone of legacy-design-tools pinned to <SHA>... never the live sibling-seat worktree'). Then a SCOPED pnpm install (`pnpm install --filter @workspace/api-server --filter @workspace/cad-ingest`, 18.9s, matching CTX-WALKRULE's own documented scope) to resolve the `@workspace/cad-ingest` bare specifier esbuild could not otherwise resolve. LDT_ROOT pointed at this scratch clone for every subsequent run. Verified in isolation before the full scan: loadIsEarnedRecordRetirement resolved a real function; a malformed retirement marker was rejected and a well-formed one accepted, both checked directly.",
+    "generalisableFinding": "P:/legacy-design-tools is not a stable reference for any script that reads files from its working tree (as opposed to its git history) while other lanes may be actively checking it out to other commits. Recorded in FLEET_MEMORY_SCRATCH below as a LESSON for the planner to consider promoting."
+  },
+
+  "pilotRun": {
+    "beforeTheFullScan": "the required-fixture and sentinel self-tests (synthetic, no DB) all passed; the falsifier test ran for real against 200 live Bastrop rows / 1,000 leaf comparisons with 0 disagreements against the walk's own gradeTier1Content, BEFORE the full six-county scan was run -- this is the 'pilot' proof the design works on real data before committing to the full, heavier six-county pass.",
+    "fullSuiteBeforeTheFullScan": "npm test: 1201 tests, 1197 pass, 0 fail, 4 skipped (STAGING_NEONDB_URL unset -- falsifier live-row test skips with a named reason). With STAGING_NEONDB_URL set: 1198 pass, 3 skipped -- the falsifier test executes and passes."
+  },
+
+  "fullScanNowRunning": "the full six-county scan against staging was launched after this pilot evidence; its results are reported in the close, not here, per CP2 being a mid-work checkpoint rather than the final artifact."
+}
