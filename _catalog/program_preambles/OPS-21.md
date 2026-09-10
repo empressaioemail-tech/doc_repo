@@ -74,8 +74,21 @@ opened.
 
 `publish-gate-sched` writes verdicts to `parcel_gate_verdict`. `parcelRecordAllowlist.ts`
 (LDT) requires BOTH code-owned slate membership AND a `pass` verdict before a rail serves from
-the record, and the slate is **never** auto-derived from a passing verdict. Widening what is
-graded changes nothing a customer sees. Do not conflate the two controls.
+the record, and the slate is **never** auto-derived from a passing verdict. Do not conflate
+the two controls.
+
+**CORRECTION 2026-09-10, found by the D5 lane, not by the planner.** An earlier version of
+this preamble said "widening what is graded changes nothing a customer sees." That is true of
+the LDT serve-side allowlist and **FALSE for hauska-factory's own publish gate**:
+`publish-readiness-gate.mjs:359` defaults `requiredRails` to `DEFAULT_SCHED_RAIL_KEYS`, and
+`bastrop-publish.mjs:407` calls `requirePreBakeReadiness` with no third argument, so it takes
+that default. Widening that constant literally would block every publish for every county.
+
+**The general lesson, which is this program's whole subject:** one constant, two controls,
+and the planner read one of them. Before you change any shared constant, enumerate its
+consumers — `git grep` the symbol across the repo — and check that your mission's stated
+blast radius matches what you find. If it does not, stop and report rather than proceeding on
+the mission's word. A grading denominator and a policy floor can be the same identifier.
 
 ## Jurisdiction
 
