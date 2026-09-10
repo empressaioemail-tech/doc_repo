@@ -141,13 +141,13 @@ destination after slates prove out."*
 
 ## Where it actually stands, measured 2026-09-10
 
-**18 rails, 94 of 390 possible (county, rail) pairs, roughly 24 percent of the grid.**
+**18 rails, 97 of 390 possible (county, rail) pairs, roughly 24 percent of the grid.**
 
 ```
 6 counties: cityLimits, flood, schoolDistrict, utilityService, overlayDistricts,
             valueHistory, zoningDistrict, marketValue, assessedValue, landValue,
             improvementValue, livingAreaSqft, yearBuilt
-5 counties: wells, specialDistricts        3 counties: setbackFrontFt
+5 counties: wells, specialDistricts        
 2 counties: agValuation                    1 county:  maxImperviousCoverPct
 ```
 
@@ -170,7 +170,7 @@ compounds at the rate the slate grows.
 
 | Lane | Repo | Scope | Depends on |
 |---|---|---|---|
-| **L1 retirement audit** | LDT | For each of the 94 slated pairs, does its old path still exist and is it reachable? Produces a retirement backlog, one row per unretired path. **Read-only. Retires nothing** | — |
+| **L1 retirement audit** | LDT | For each of the 97 slated pairs, does its old path still exist and is it reachable? Produces a retirement backlog, one row per unretired path. **Read-only. Retires nothing** | — |
 | **L2 slate expansion** | LDT + factory | Widen `PARCEL_RECORD_SLATE` rail by rail as gate verdicts pass, each cutover carrying its retirement item in the same card. Phase 1's setback/envelope rails enter here | S4, D5, L1 |
 | **L3 legacy retirement** | LDT | Retire the paths L1 found, in the order L1 ranks them. A retired path returns a decline or 404 and a CI check fails if it reappears | L1 |
 

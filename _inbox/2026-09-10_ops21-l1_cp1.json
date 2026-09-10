@@ -1,0 +1,58 @@
+{
+  "lane": "OPS21-L1",
+  "checkpoint": "CP1",
+  "phase": "design/pre-build",
+  "timestamp": "2026-09-10T00:00:00Z",
+  "planRow": "P-142",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/legacy-design-tools-worktrees/l1-retirement-audit",
+  "branch": "audit/ops21-l1-retirement (new, tracking origin/main)",
+  "createdFrom": "origin/main",
+  "commit": "cebd041d7ddf102f29ab60eeb9feb04946888125",
+  "note_on_worktree": "The default checkout at P:/legacy-design-tools was on feat/s1-instrument-hardening at commit 10069854 (2026-08-12), dirty with ~4 weeks of unrelated uncommitted changes, and roughly a month behind origin/main -- not usable for a read-only audit that must reflect current shipped state. Cut a fresh isolated worktree off origin/main per AGENT_CONTRACT section 5 rather than touch that tree.",
+
+  "readSourcesFirst": [
+    "P:/doc_repo/_dispatches/2026-09-10_ops21-l1_dispatch.md (full)",
+    "90_runbooks/AGENT_CONTRACT.md (full)",
+    "90_runbooks/DEV_PROCESS.md (full)",
+    "90_runbooks/fleet_memory_practice.md (full)",
+    "90_operations/OPS-16_texas_market_plan_of_record.md (A-122 row, P-142 text, confirmed PLAN-ROW is real)",
+    "90_operations/OPS-21_serve_completion_program.md:144,173 (94-pair claim, L1 mission line)",
+    "90_operations/OPS-22_spine_architecture_map.md (full; read-fan-out section, live-slate breakdown)",
+    "_decisions/2026-09-02_step7_consumer_c_then_b.md (the c-then-b / same-card-retirement rule L1 exists to audit compliance with)",
+    "node scripts/plan-progress.mjs --sql (confirmed L1's completion predicate is code-shape, not SQL: 'every slated (county, rail) pair's OLD serve path audited for reachability -- 94 pairs shipped, none audited [legacy-design-tools, read-only audit]')",
+    "artifacts/api-server/src/lib/parcelRecordAllowlist.ts (full; the live PARCEL_RECORD_SLATE and its per-rail module-doc narration)"
+  ],
+
+  "criticalFinding_slateCountDiscrepancy": {
+    "claim_in_dispatch_and_OPS21_and_OPS22": "94 slated (county, rail) pairs, 18 rails (OPS-21_serve_completion_program.md:144; OPS-22_spine_architecture_map.md:242 breaks it down as 'agValuation 2, maxImperviousCoverPct 1, setbackFrontFt 3, specialDistricts 5, wells 5, and [13 rails] at 6 each' = 94).",
+    "measured_at_source": "Parsed PARCEL_RECORD_SLATE literally out of artifacts/api-server/src/lib/parcelRecordAllowlist.ts at commit cebd041d (current origin/main HEAD): 97 distinct (county, rail) string entries, 18 rails, zero duplicates (Set size == literal count == 97).",
+    "reconciliation": "The single discrepancy is setbackFrontFt. OPS-22:242 states 'setbackFrontFt 3'. The live code (parcelRecordAllowlist.ts:318-323) lists setbackFrontFt for ALL SIX counties (48021, 48055, 48209, 48309, 48453, 48491), and the file's own inline module doc (lines 181-183) says explicitly: 'zoningDistrict + setbackFrontFt, ALL SIX counties including Caldwell'. 97 - 94 = 3 = exactly the gap between 6 (actual) and 3 (documented) for this one rail. Every other rail's count in OPS-22's breakdown matches the code exactly.",
+    "disposition_per_DEV_PROCESS_3.2": "DEV_PROCESS 3.2 requires stating explicitly when a planner/program figure is wrong rather than silently absorbing it, and rule 1.4 treats a disagreeing pair of numbers as a free finding to reconcile, not round off. This lane audits the REAL live slate (97 pairs) rather than truncating to the stated 94, since the mission question ('does the old path still exist and is it reachable') is a property of the actual code, not of a stale doc figure. OPS-22's setbackFrontFt count is flagged for correction; not this lane's authority to edit (doc_repo commits are planner-owned per contract section 6), so it is reported here and in the close rather than fixed inline."
+  },
+
+  "missionUnderstanding": {
+    "question": "For each of the (94-claimed / 97-actual) slated (county, rail) pairs: does the OLD serve path still exist in code, and is it still reachable by a live caller? Three-way verdict per pair: legacy absent / present-unreachable / present-reachable. Read-only -- retires nothing.",
+    "keyMechanism": "artifacts/api-server/src/lib/parcelRecordAllowlist.ts's resolveAllowlist() is fail-closed: 'record' only when BOTH slate-membership AND a passing gate verdict; everything else ('legacy' or 'refused') falls through to whatever the pair's *ServeCutover.ts wrapper does on 'not record'.",
+    "granularity": "13 *ServeCutover.ts modules cover the 18 rails (6 dollar/structural rails share one module, cadRollServeCutover.ts). None of the wrapper code branches by county except through the allowlist's own slate/verdict lookup (a DATA question), so a rail's present/absent/reachable verdict is uniform across every county slated for that rail -- the per-pair audit collapses to a per-rail audit for the 'does code exist / is it wired in' half of the question."
+  },
+
+  "planForCP2": [
+    "Read all 13 *ServeCutover.ts modules in full; for each, identify whether the 'state !== record' branch calls a real legacy loader or a typed not-cut-over refusal (no legacy path).",
+    "For rails with a real legacy loader, grep every call site of that loader across artifacts/api-server/src to confirm (a) no bypass caller exists outside the wrapper, and (b) the loader body still performs live I/O rather than being stubbed/dead.",
+    "Trace both consumer routes (brokerageNodeFacets.ts, propertyExplorer.ts) up through their router mounts to app.ts to confirm both are genuinely live production entrypoints, not orphaned files.",
+    "For the two rails whose legacy source is an offline bake (zoningDistrict, setbackFrontFt via nodeFacetBakeTier1.ts's computeTier1Envelope), read the bake function itself and cross-check against the dispatch's own cited defect (computeTier1Envelope:92, both branches status:declined) to determine whether the reachable legacy value is ever real or permanently vacuous.",
+    "Produce a ranked backlog of present-reachable rail-groups for L3, ranked by two-implementation divergence risk, not just pair count."
+  ],
+
+  "constraintsHonored": [
+    "Read-only: zero edits to legacy-design-tools. Isolated worktree, never touching another lane's checkout.",
+    "No SETBACK_APPLY_HELD lift, no setback-atom-writer route touched.",
+    "No hand-authored rail list -- the audited set is read directly out of PARCEL_RECORD_SLATE, not retyped from the dispatch's prose.",
+    "Bastrop MyGov / smartcity-os tenant_id=2 never queried."
+  ],
+
+  "missionPremise": "OPS-21 A-122 / P-142: 94 (per program docs; 97 measured) cutovers have shipped since 2026-09-02 under the c-then-b decision's same-card-retirement rule, and nobody has verified whether a single legacy path was actually retired.",
+  "completionPredicate": "Every slated (county, rail) pair (97, per the corrected count) carries an audited verdict -- legacy absent, present-unreachable, or present-reachable -- stated with file:line evidence, not prose. Zero unaudited pairs. Output ranks the present-reachable rail-groups for L3.",
+  "scopeBasis": "Read-only audit, legacy-design-tools only (per the dispatch's own repo scoping and the plan-progress.mjs predicate's '[legacy-design-tools, read-only audit]' tag). Retirement itself (L3/P-144) and slate widening (L2/P-143) are out of scope by the dispatch's own text."
+}

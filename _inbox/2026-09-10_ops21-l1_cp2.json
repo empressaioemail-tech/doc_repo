@@ -1,0 +1,64 @@
+{
+  "lane": "OPS21-L1",
+  "checkpoint": "CP2",
+  "phase": "pilot/mid-work",
+  "timestamp": "2026-09-10T00:00:00Z",
+  "planRow": "P-142",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/legacy-design-tools-worktrees/l1-retirement-audit",
+  "commit": "cebd041d7ddf102f29ab60eeb9feb04946888125",
+
+  "verificationCompleted": [
+    "Read all 13 *ServeCutover.ts modules in full at source (wellFactServeCutover, specialDistrictFactServeCutover, cityLimitsFactServeCutover, floodHazardFactServeCutover, cadRollServeCutover, utilityServiceFactServeCutover, overlayDistrictsFactServeCutover, agValuationFactServeCutover, schoolDistrictFactServeCutover, maxImperviousCoverPctFactServeCutover, valueHistoryFactServeCutover, zoningFactServeCutover, setbacksFactServeCutover).",
+    "For the 4 whole-function-swap rails (wells/specialDistricts/cityLimits/flood): grepped every call site of loadWellFactAtom, loadSpecialDistrictFactAtom, loadCityLimitsFact, loadFloodHazardFactAtom across artifacts/api-server/src -- each has exactly ONE caller (its own ServeCutover wrapper), no bypass. Read each loader's body: all four still issue real live queries (ATOMS store SELECTs / tx_city_boundary point-in-polygon), none stubbed.",
+    "Traced brokerageNodeFacetsRouter and propertyExplorerRouter mounting chains to confirm both are genuinely live: brokerageNodeFacetsRouter -> brokerageV1 (brokerageBrief.ts:344) -> brokerageBriefRouter -> routes/index.ts:91 router.use(...) ; propertyExplorerRouter -> routes/index.ts:82 router.use(...) ; both feed the top-level router imported by app.ts. Not orphaned code.",
+    "Confirmed all 13 *ForServe wrapper functions are called from exactly these two routes and no others (grep across the full src tree, excluding tests).",
+    "For the 6 rails whose ServeCutover module imports a typed notCutOver*Fact refusal instead of a legacy loader (utilityService, overlayDistricts, agValuation, schoolDistrict, maxImperviousCoverPct, valueHistory): confirmed by direct source read that no legacy loader is imported or referenced at all -- absence is a code-shape fact, not merely a claim in a header comment.",
+    "For zoningDistrict and setbackFrontFt: read nodeFacetBakeTier1.ts:92 (computeTier1Envelope) directly -- confirmed both return branches carry status:'declined' (matches the dispatch's own CANON-PREAMBLE root-cause citation verbatim, independently reproduced here). Then traced the CONSUMPTION side, which the module-doc comments do not fully spell out."
+  ],
+
+  "correctionToOwnCP1Draft": {
+    "whatCP1Assumed": "Read the setbacksFactServeCutover.ts / zoningFactServeCutover.ts header comments ('no live legacy loader -- the legacy value is whatever the Tier-1 bake already wrote') as meaning both rails' baked legacy values pass through to the customer identically whenever the cutover doesn't apply, i.e. both present-reachable.",
+    "whatVerificationFound": "The two rails diverge. brokerageNodeFacets.ts:625-640 defines stripZombieEnvelopeFromFacets, which the SHARED loadBakedNodeFacetSnapshot() (brokerageNodeFacets.ts:651-699, used by BOTH live routes per its own doc comment 'shared pure-read path for the public facet endpoint and paid Property Explorer reports') calls UNCONDITIONALLY on every snapshot read (line 691), setting `envelope: null` regardless of allowlist/cutover state. computeTier1Envelope's output -- including the `setbacks` sub-field of Tier1EnvelopeFacet -- lives inside `facets.envelope`, which this function deletes before any response leaves either route. The function's own comment: 'Land-use / zoning / baseFacts stay; envelope is atom-path only.' Zoning (`facets.zoning`) and cadRoll (`facets.baseFacts.*`) are explicitly exempted and DO pass through -- verified separately for zoning via attachVerdictLayersToFacets (structuralFactToFacetsWire.ts:229-255), which leaves `out.zoning` untouched when no parcel_record zoning fact is supplied, i.e. the baked value surfaces as-is.",
+    "bypassCheck": "Grepped every other consumer of the `placeLayerSnapshots` table (brokerageSiteContext.ts, operatorRunState.ts, warmingHarness.ts, brokeragePlace.ts) -- none selects payloadJson/facets; brokeragePlace.ts only reads latRounded/lngRounded. loadBakedNodeFacetSnapshot is the sole path any live route uses to expose snapshot facets, and it always strips envelope. No bypass exists.",
+    "revisedVerdict": "setbackFrontFt's legacy value (computeTier1Envelope's bake-time output) is PRESENT in storage (written into place_layer_snapshots at bake time; the bake CLI still runs) but UNREACHABLE by any live customer request through either of the two serve routes in this repo -- independently confirmed by two separate facts that would each be sufficient alone: (1) the computation itself is vacuous (both branches decline, never populates `setbacks`), and (2) the serve-side strip discards `facets.envelope` unconditionally before every response, with no code path bypassing it. This is a DIFFERENT verdict than zoningDistrict, which shares the same header-comment language ('no live legacy loader') but whose baked value is NOT stripped and DOES reach customers. Reported as a correction rather than silently fixed in CP1, per DEV_PROCESS 1.4 (two things that look identical from a header comment and aren't is a free finding, not a rounding error) and 4.1 (verify at source, not at the comment)."
+  },
+
+  "railVerdicts_verified": {
+    "wells": { "pairs": 5, "verdict": "present-reachable", "mechanism": "loadWellFactAtom, live ATOMS-store query, sole call site inside wellFactServeCutover.ts's fail-closed branch" },
+    "specialDistricts": { "pairs": 5, "verdict": "present-reachable", "mechanism": "loadSpecialDistrictFactAtom, same shape as wells" },
+    "cityLimits": { "pairs": 6, "verdict": "present-reachable", "mechanism": "loadCityLimitsFact, live point-in-polygon against tx_city_boundary index, same shape" },
+    "flood": { "pairs": 6, "verdict": "present-reachable", "mechanism": "loadFloodHazardFactAtom, live ATOMS-store query, same shape" },
+    "marketValue/assessedValue/landValue/improvementValue/livingAreaSqft/yearBuilt": { "pairs": 36, "verdict": "present-reachable", "mechanism": "cadRollServeCutover.ts overlays onto (never replaces) loadBakedNodeFacetSnapshot's facets.baseFacts.cadRoll.*, which is unconditionally loaded and NOT stripped; livingAreaSqft/yearBuilt additionally served via a second live legacy source, loadStructuralFactAtom, called unconditionally in both routes. Strongest-exposure class: legacy is the base value on literally every request, cutover only overlays select fields on top." },
+    "utilityService": { "pairs": 6, "verdict": "absent", "mechanism": "no legacy loader ever existed; notCutOverUtilityServiceFact typed refusal only, confirmed by source read" },
+    "overlayDistricts": { "pairs": 6, "verdict": "absent", "mechanism": "same, notCutOverOverlayDistrictsFact" },
+    "agValuation": { "pairs": 2, "verdict": "absent", "mechanism": "same, notCutOverAgValuationFact" },
+    "schoolDistrict": { "pairs": 6, "verdict": "absent", "mechanism": "same, notCutOverSchoolDistrictFact" },
+    "maxImperviousCoverPct": { "pairs": 1, "verdict": "absent", "mechanism": "same, notCutOverMaxImperviousCoverPctFact" },
+    "valueHistory": { "pairs": 6, "verdict": "absent", "mechanism": "same, notCutOverValueHistoryFact" },
+    "zoningDistrict": { "pairs": 6, "verdict": "present-reachable", "mechanism": "facets.zoning, baked by nodeFacetTier1Assemble.ts, explicitly exempted from stripZombieEnvelopeFromFacets, kept as-is by attachVerdictLayersToFacets whenever the parcel_record path is not cut in" },
+    "setbackFrontFt": { "pairs": 6, "verdict": "present-unreachable", "mechanism": "computed by computeTier1Envelope at bake time (vacuous -- always status:declined per nodeFacetBakeTier1.ts:92-122, matching the dispatch's own cited root cause) and written into place_layer_snapshots, but facets.envelope (which would carry it) is unconditionally nulled by stripZombieEnvelopeFromFacets inside the sole shared snapshot loader before any response on either live route -- no bypass found" }
+  },
+
+  "runningTotals": {
+    "pairsAudited": 97,
+    "pairsRemaining": 0,
+    "presentReachable": 70,
+    "presentUnreachable": 6,
+    "absent": 27,
+    "arithmeticCheck": "5+5+6+6+36+6 = 64 present-reachable non-cadRoll... corrected: wells5+specialDistricts5+cityLimits6+flood6+cadRoll36+zoningDistrict6 = 64 present-reachable + setbackFrontFt6 present-unreachable + absent(utilityService6+overlayDistricts6+agValuation2+schoolDistrict6+maxImpervious1+valueHistory6=27) = 64+6+27 = 97. Matches the measured slate size exactly."
+  },
+
+  "planForClose": [
+    "Finalize the ranked L3 backlog: cadRoll (36 pairs, highest exposure -- legacy is the unconditional base value every request) first, then wells/specialDistricts/cityLimits/flood (22 pairs, real independent computations with genuine divergence risk), then zoningDistrict (6 pairs, reachable but lower exposure -- only surfaces when the parcel_record path isn't cut in). setbackFrontFt (6, present-unreachable) and the 6 absent rail-groups (27) need no L3 retirement work -- flag for the backlog as 'no action' with reasons, not silently dropped.",
+    "State the slate-count correction (97 vs OPS-22's documented 94, isolated to setbackFrontFt's county count) plainly in the close.",
+    "File close artifact, leave doc_repo commits uncommitted per contract section 6."
+  ],
+
+  "constraintsHonored": [
+    "Read-only throughout -- zero edits to legacy-design-tools.",
+    "No SQL run against neondb/hauska_mcp; audit is entirely code-shape per the completion predicate's own scoping.",
+    "No SETBACK_APPLY_HELD lift, no atom-writer route touched.",
+    "Bastrop MyGov never queried."
+  ]
+}

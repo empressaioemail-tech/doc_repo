@@ -1,0 +1,126 @@
+{
+  "lane": "OPS21-L1",
+  "planRow": "P-142",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/legacy-design-tools-worktrees/l1-retirement-audit",
+  "branch": "audit/ops21-l1-retirement",
+  "baseCommit": "cebd041d7ddf102f29ab60eeb9feb04946888125 (origin/main HEAD at worktree creation, 2026-09-10)",
+  "codeDiff": "none. Read-only audit per dispatch. `git status` at close is clean against baseCommit.",
+
+  "missionPremise": "OPS-21 A-122 / P-142: 94 (per OPS-21_serve_completion_program.md:144 and OPS-22_spine_architecture_map.md:242; 97 measured -- see correction below) (county, rail) cutovers have shipped into PARCEL_RECORD_SLATE since 2026-09-02 under the c-then-b decision's requirement that every cutover carries its old-path retirement in the same card (_decisions/2026-09-02_step7_consumer_c_then_b.md), and nobody had verified whether a single legacy path was actually retired.",
+  "completionPredicate": "Every slated (county, rail) pair carries an audited verdict -- legacy absent, present-unreachable, or present-reachable -- with file:line evidence, not prose. Zero unaudited pairs. Output ranks the present-reachable rail-groups for L3. Met: all 97 pairs (the corrected, code-measured count) audited, 0 unaudited, ranked backlog below.",
+  "scopeBasis": "Read-only, legacy-design-tools only, per the dispatch's own text ('This lane is READ-ONLY and retires nothing') and the plan-progress.mjs predicate's own repo tag ('[legacy-design-tools, read-only audit]'). L2 slate-widening (P-143) and L3 retirement itself (P-144) are explicitly out of scope. SETBACK_APPLY_HELD / the atom writer route were not touched, per program-wide prohibition.",
+
+  "checkpoints": [
+    "_inbox/2026-09-10_ops21-l1_cp1.json (design/pre-build: snapshot, mission read, the 94-vs-97 slate-count discrepancy identified and reconciled to a single mis-stated rail)",
+    "_inbox/2026-09-10_ops21-l1_cp2.json (pilot/mid-work: full per-rail verification, including a correction to CP1's own working assumption about setbackFrontFt's reachability)"
+  ],
+
+  "criticalFinding_slateCountCorrection": {
+    "claim": "OPS-21_serve_completion_program.md:144 and OPS-22_spine_architecture_map.md:242 both state 94 slated pairs across 18 rails (OPS-22's own breakdown: 'setbackFrontFt 3').",
+    "measured": "97 distinct pairs, 18 rails, parsed directly out of PARCEL_RECORD_SLATE in artifacts/api-server/src/lib/parcelRecordAllowlist.ts at commit cebd041d (zero duplicates -- literal array length equals Set size).",
+    "source": "parcelRecordAllowlist.ts:318-323 lists setbackFrontFt for all six counties (48021/48055/48209/48309/48453/48491); the file's own inline module doc at lines 181-183 states this explicitly: 'zoningDistrict + setbackFrontFt, ALL SIX counties including Caldwell.' OPS-22's '3' undercounts this one rail by exactly 3, accounting for the entire 94-vs-97 gap; every other rail in OPS-22's breakdown matches the code.",
+    "disposition": "This audit covers the real, measured 97-pair slate, not the stated 94, per DEV_PROCESS 1.4 (a disagreeing pair of numbers is a free finding, not a rounding error) and 3.2 (a planner figure being wrong is a reportable, successful outcome, not something to quietly absorb). Not fixed inline -- doc_repo prose edits are outside a read-only code-audit lane's authority; flagged here for whoever owns OPS-22 next."
+  },
+
+  "counts": {
+    "totalPairsAudited": { "n": 97, "countingRule": "distinct '{countyFips}:{railKey}' entries in PARCEL_RECORD_SLATE, artifacts/api-server/src/lib/parcelRecordAllowlist.ts, at commit cebd041d." },
+    "unaudited": { "n": 0, "countingRule": "pairsAudited - pairs with a verdict recorded below; every rail-group's verdict is recorded, and every pair belongs to exactly one rail-group (verified uniform-per-rail, see methodology note)." },
+    "legacyAbsent": { "n": 27, "countingRule": "pairs whose rail's ServeCutover module imports no legacy loader at all (typed not-cut-over refusal only), confirmed by direct source read of all 6 modules." },
+    "presentUnreachable": { "n": 6, "countingRule": "pairs whose legacy value is computed and stored but structurally discarded before any live response on either consumer route, with no bypass found." },
+    "presentReachable": { "n": 70, "countingRule": "pairs whose legacy value is computed by a still-live, still-called code path reachable through brokerageNodeFacetsRouter and/or propertyExplorerRouter, both confirmed mounted into the live app." }
+  },
+
+  "methodologyNote": "None of the 13 *ServeCutover.ts wrapper modules branch on county except through the allowlist's own slate-membership/gate-verdict lookup, which is a DATA question, not a code-existence question. A rail's present/absent/reachable verdict for 'does the old code path exist and can a live caller reach it' is therefore uniform across every county slated for that rail -- verified by reading each module's full source, not assumed. The 18-rail verdict table below is exhaustive over all 97 pairs.",
+
+  "railVerdicts": {
+    "wells": { "pairs": 5, "counties": "48021,48209,48309,48453,48491", "verdict": "present-reachable", "evidence": "artifacts/api-server/src/lib/wellFactServeCutover.ts:57-58 calls loadWellFactAtom (wellFactRead.ts:508) whenever allowlist state != 'record'. Sole call site (grep-confirmed). Loader still issues a live SELECT against the ATOMS store. Wrapper's loadWellFactForServe is called from brokerageNodeFacets.ts and propertyExplorer.ts, both confirmed mounted into app.ts." },
+    "specialDistricts": { "pairs": 5, "counties": "48021,48209,48309,48453,48491", "verdict": "present-reachable", "evidence": "specialDistrictFactServeCutover.ts:56-57 -> loadSpecialDistrictFactAtom (specialDistrictFactRead.ts:468), same shape, sole call site, live ATOMS-store SELECT confirmed by source read." },
+    "cityLimits": { "pairs": 6, "counties": "all six", "verdict": "present-reachable", "evidence": "cityLimitsFactServeCutover.ts:66-67 -> loadCityLimitsFact (cityLimitsFactRead.ts:178), same shape, sole call site, live point-in-polygon query against tx_city_boundary confirmed by source read." },
+    "flood": { "pairs": 6, "counties": "all six", "verdict": "present-reachable", "evidence": "floodHazardFactServeCutover.ts:56-57 -> loadFloodHazardFactAtom (floodHazardFactRead.ts:304), same shape, sole call site, live ATOMS-store SELECT confirmed." },
+    "marketValue_assessedValue_landValue_improvementValue_livingAreaSqft_yearBuilt": { "pairs": 36, "counties": "all six x 6 rails", "verdict": "present-reachable", "evidence": "cadRollServeCutover.ts's resolveCadRollOverlaysForServe OVERLAYS parcel_record values onto -- never replaces -- the legacy base. brokerageNodeFacets.ts:774 and propertyExplorer.ts:242 both call loadBakedNodeFacetSnapshot() unconditionally on every request; its facets.baseFacts.cadRoll.* is explicitly exempted from stripZombieEnvelopeFromFacets ('Land-use / zoning / baseFacts stay', brokerageNodeFacets.ts:622). livingAreaSqft/yearBuilt additionally have a second live legacy source, loadStructuralFactAtom, also called unconditionally in both routes. This is the single highest-exposure class: the legacy computation is not a fallback branch, it is the base value on literally 100% of requests, with only specific fields optionally overwritten when a pair resolves to 'record'." },
+    "utilityService": { "pairs": 6, "counties": "all six", "verdict": "legacy-absent", "evidence": "utilityServiceFactServeCutover.ts imports no legacy loader; 'not record' resolves to notCutOverUtilityServiceFact, a typed refusal. No atom, bake field, or route was ever written for this rail (confirmed by source read, not by trusting the header comment alone)." },
+    "overlayDistricts": { "pairs": 6, "counties": "all six", "verdict": "legacy-absent", "evidence": "overlayDistrictsFactServeCutover.ts, same shape, notCutOverOverlayDistrictsFact." },
+    "agValuation": { "pairs": 2, "counties": "48453,48491", "verdict": "legacy-absent", "evidence": "agValuationFactServeCutover.ts, same shape, notCutOverAgValuationFact." },
+    "schoolDistrict": { "pairs": 6, "counties": "all six", "verdict": "legacy-absent", "evidence": "schoolDistrictFactServeCutover.ts, same shape, notCutOverSchoolDistrictFact." },
+    "maxImperviousCoverPct": { "pairs": 1, "counties": "48453", "verdict": "legacy-absent", "evidence": "maxImperviousCoverPctFactServeCutover.ts, same shape, notCutOverMaxImperviousCoverPctFact." },
+    "valueHistory": { "pairs": 6, "counties": "all six", "verdict": "legacy-absent", "evidence": "valueHistoryFactServeCutover.ts, same shape, notCutOverValueHistoryFact." },
+    "zoningDistrict": { "pairs": 6, "counties": "all six", "verdict": "present-reachable", "evidence": "facets.zoning is baked by nodeFacetTier1Assemble.ts and explicitly NOT stripped by stripZombieEnvelopeFromFacets (which only nulls facets.envelope). structuralFactToFacetsWire.ts:229-255 (attachVerdictLayersToFacets) leaves out.zoning untouched whenever no parcel_record zoning fact is supplied -- the baked value passes straight through to both live routes." },
+    "setbackFrontFt": { "pairs": 6, "counties": "all six (not 3 -- see slate-count correction)", "verdict": "present-unreachable", "evidence": "computeTier1Envelope (nodeFacetBakeTier1.ts:92-122) still runs at bake time and is written into place_layer_snapshots, but BOTH return branches carry status:'declined' (independently reproduced here, matches the dispatch's own cited root cause verbatim) and never populate its own optional `setbacks` field. Separately and sufficiently on its own: the serve-side loadBakedNodeFacetSnapshot (shared by both live routes) unconditionally nulls facets.envelope via stripZombieEnvelopeFromFacets (brokerageNodeFacets.ts:625-640,691) before any response, with no bypass found across every other consumer of place_layer_snapshots. Two independent reasons, either sufficient alone, for why this rail's legacy value cannot reach a live caller through this repo's routes." }
+  },
+
+  "rankedBacklogForL3": [
+    {
+      "rank": 1,
+      "railGroup": "cadRoll six (marketValue, assessedValue, landValue, improvementValue, livingAreaSqft, yearBuilt)",
+      "pairs": 36,
+      "why_highest": "Legacy is not a conditional fallback -- it is the unconditional base value computed and loaded on every single request (loadBakedNodeFacetSnapshot + loadStructuralFactAtom, both called unconditionally in both live routes), with the parcel_record path only ever overlaid on top. This is the largest genuine two-implementation-divergence surface in the slate, on dollar-denominated rails (three are Studio|Team-gated, OPS-16 A-103/A-104), the highest-consequence data class in the grid.",
+      "proposedDisposition": "Retirement here is NOT a simple branch deletion -- it requires either (a) making the parcel_record-sourced overlay unconditionally authoritative and deleting the bake-time computation of these fields from nodeFacetTier1Assemble.ts / the structuralFactRead live path, or (b) an explicit operator ruling that the overlay pattern is permanent (never fully retiring, by design) rather than a transitional cutover -- the file's own header calls the overlay pattern deliberate ('never a whole-object swap'), which may mean this rail-group was never intended to reach a 'legacy retired' end-state the way wells/specialDistricts/cityLimits/flood were. Flagging this distinction is itself an L3-scoping question, not an L1 answer."
+    },
+    {
+      "rank": 2,
+      "railGroup": "wells, specialDistricts, cityLimits, flood",
+      "pairs": 22,
+      "why": "Four independent whole-function-swap wrappers, each with exactly one live legacy loader performing a real, separate computation (ATOMS-store SELECT or tx_city_boundary point-in-polygon) that can genuinely disagree with parcel_record's value for the same parcel. Straightforward, well-isolated retirement candidates -- deleting the 'state !== record' branch and its loader import in each of the four wrapper files is a small, mechanical, well-contained change per rail once every county's gate verdict is confirmed durably 'pass'.",
+      "proposedDisposition": "Per-rail: once a rail's gate verdict is stable 'pass' across all its slated counties (this audit did not verify current live verdict values -- that is DB-backed live state, out of a code-only audit's reach; see Open below), delete the wrapper's legacy branch and its loader import, and archive or delete the now-dead loader file if nothing else references it."
+    },
+    {
+      "rank": 3,
+      "railGroup": "zoningDistrict",
+      "pairs": 6,
+      "why": "Present-reachable but lower exposure than the two groups above -- the baked value only surfaces when the parcel_record path is not cut in for a given parcel (not on every request unconditionally), and it is a single scalar/provenance triplet rather than a live independent computation.",
+      "proposedDisposition": "Retirement means deciding what a parcel should show when zoningDistrict is not cut in for it, since today's fallback is 'keep the baked stamp' -- likely an honest-decline rather than deleting the baked field outright, given OPS-16 A-096's ruling that unincorporated parcels need not-applicable, not silence."
+    },
+    {
+      "rank": "no action",
+      "railGroup": "setbackFrontFt",
+      "pairs": 6,
+      "why": "present-unreachable, not present-reachable -- no live caller can reach this legacy value through either route regardless of allowlist state. Retiring it would be a no-op for customers today.",
+      "note": "Not an L3 item by this audit's own definition (L3 retires REACHABLE paths). But the underlying vacuity of computeTier1Envelope is the exact root cause OPS-21 P-132/P-133 already exist to fix on a completely different mechanism (the direct-write cell path) -- this audit did not touch that in-flight work, only confirms its premise from a different angle."
+    },
+    {
+      "rank": "no action",
+      "railGroup": "utilityService, overlayDistricts, agValuation, schoolDistrict, maxImperviousCoverPct, valueHistory",
+      "pairs": 27,
+      "why": "legacy-absent. Nothing to retire; these are net-new rails with no prior serve path.",
+      "note": "The c-then-b same-card-retirement rule these cutovers were built under is honored trivially and correctly for this group -- there was nothing to leave behind."
+    }
+  ],
+
+  "constraintsHonored": [
+    "Read-only: zero edits to legacy-design-tools. Confirmed via `git status` clean at close.",
+    "Isolated worktree cut fresh from origin/main rather than reusing the stale, dirty default checkout (per AGENT_CONTRACT section 5).",
+    "No hand-authored rail list -- audited set read directly out of PARCEL_RECORD_SLATE.",
+    "No SETBACK_APPLY_HELD lift, no atom-writer route touched.",
+    "Bastrop MyGov / smartcity-os tenant_id=2 never queried.",
+    "Retired nothing; widened nothing (L2/P-143 and L3/P-144 both untouched)."
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: A ServeCutover module's own header comment describing 'no live legacy loader, the legacy value is whatever the bake already wrote' is necessary but not sufficient to establish reachability -- the SERVE-side loader can still unconditionally discard part of the baked payload before response (stripZombieEnvelopeFromFacets nulls facets.envelope for every request, on every route, regardless of cutover state). Two rails (zoningDistrict, setbackFrontFt) share identical wrapper-level language and diverge completely on actual reachability. Always trace the shared response-assembly function (here, loadBakedNodeFacetSnapshot), not just the per-rail wrapper.",
+      "LESSON: when a program doc states a per-rail pair count (OPS-22's 'setbackFrontFt 3'), re-derive it from the literal source array rather than trusting the arithmetic -- it silently drifted from the code by exactly the population of one rail's excluded county subset, and nothing had caught it because L1 is the first lane to have needed the exact number."
+    ],
+    "deadEnds": [
+      "DEAD-END: assumed at CP1 that 'no live legacy loader' (zoning/setbacks' shared wrapper-doc language) implied identical reachability for both rails. Corrected at CP2 after tracing the shared snapshot loader -- see criticalFinding and setbackFrontFt's verdict above."
+    ],
+    "groundTruths": [
+      "GROUND-TRUTH (2026-09-10, legacy-design-tools origin/main @ cebd041d): PARCEL_RECORD_SLATE holds 97 pairs across 18 rails, not 94.",
+      "GROUND-TRUTH (2026-09-10, same commit): 70 of 97 pairs have a present-reachable legacy path, 6 have a present-but-serve-side-unreachable legacy path (setbackFrontFt), 27 have no legacy path at all.",
+      "GROUND-TRUTH (2026-09-10, same commit): computeTier1Envelope (nodeFacetBakeTier1.ts:92) is confirmed vacuous by direct read -- both branches return status:'declined' -- independently corroborating the OPS-16 A-122 root-cause citation from a different code path (the serve/read side) than that amendment's own citation (the write side)."
+    ],
+    "open": [
+      "OPEN: this audit is code-shape only -- it did not query parcel_gate_verdict live, so it cannot say which of the 70 present-reachable pairs currently have a 'pass' verdict (meaning legacy is a dormant fail-closed contingency today) versus 'refuse'/'excluded'/no-verdict-yet (meaning legacy is ACTIVELY serving 100% of that pair's traffic right now). That live-DB read is a natural, cheap next step for whoever scopes the L3 retirement cards, and would sharpen the rank-1/rank-2 backlog above into 'safe to retire now' vs 'retire after the verdict stabilizes.'",
+      "OPEN: rank-1 (cadRoll) may not be a retirement candidate in the same sense as the others -- the overlay pattern reads as a deliberate permanent design in its own header comment, not a transitional state. Whoever scopes L3 should get an explicit operator ruling on whether cadRoll's legacy computation is meant to ever go away, rather than defaulting either way.",
+      "OPEN: OPS-22_spine_architecture_map.md:242's 'setbackFrontFt 3' should be corrected to 6 (and the 94 total to 97) by whoever owns that doc -- out of this lane's write scope."
+    ]
+  },
+
+  "close_contract_extra": {
+    "note": "AGENT_CONTRACT section 6 fields for a lane that produced no code diff and has no PRs/merges/CI, stated explicitly per the 'non-code lane in doc_repo' provision rather than omitted",
+    "prNumbers": "not applicable: doc_repo lane, no code diff, no PR opened",
+    "mergeShas": "not applicable: no merge performed",
+    "ciConclusionStrings": "not applicable: no CI run triggered",
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's three _inbox/ writes: 2026-09-10_ops21-l1_cp1.json, 2026-09-10_ops21-l1_cp2.json, this close.json."
+  }
+}

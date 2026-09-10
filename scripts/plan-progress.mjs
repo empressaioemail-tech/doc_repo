@@ -183,7 +183,7 @@ export const CODE_PREDICATES = [
   {
     lane: "L1",
     title:
-      "every slated (county, rail) pair's OLD serve path audited for reachability — 94 pairs shipped, none audited",
+      "every slated (county, rail) pair's OLD serve path audited for reachability — 97 pairs shipped (measured, not the 94 stated); L1 CLOSED 2026-09-10: 70 present-reachable, 27 legacy-absent, 6 present-unreachable",
     where: "legacy-design-tools, read-only audit",
   },
   {

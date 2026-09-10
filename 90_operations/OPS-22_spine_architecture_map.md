@@ -13,7 +13,9 @@ related:
   - _catalog/county_contract_v0.json
 snapshot: >
   Read read-only 2026-09-10 against origin/main of four repos:
-  hauska-factory 63a606b, legacy-design-tools c43e2436, hauska-engine 15021ef,
+  hauska-factory 63a606b, legacy-design-tools c43e2436 (main since moved to cebd041d;
+  the L1 lane re-measured the slate there — see the correction in section 5),
+  hauska-engine 15021ef,
   hauska-map fb41c05, plus smartcity-os 332a16c and plan-review 3615ee1.
   Every claim below cites the file it came from. Re-read before relying on a
   count; code moves and this page does not.
@@ -240,9 +242,15 @@ everything else -> LEGACY:  atom chain (retrieval-api)
   from one nobody tried.
 
 **Live slate, 18 rails / 94 pairs:** agValuation 2, maxImperviousCoverPct 1,
-setbackFrontFt 3, specialDistricts 5, wells 5, and cityLimits, flood, schoolDistrict,
+setbackFrontFt 6, specialDistricts 5, wells 5, and cityLimits, flood, schoolDistrict,
 utilityService, overlayDistricts, valueHistory, zoningDistrict, marketValue,
 assessedValue, landValue, improvementValue, livingAreaSqft, yearBuilt at 6 each.
+
+**CORRECTED 2026-09-10 by the OPS-21 L1 lane.** This section first said 94 pairs and
+`setbackFrontFt 3`. Measured directly out of `PARCEL_RECORD_SLATE` at LDT `cebd041d`: **97
+distinct pairs**, zero duplicates, with `setbackFrontFt` slated on all six counties. The
+file's own module doc at lines 181-183 states it. A per-rail count in a program doc must be
+re-derived from the literal source array, never trusted as arithmetic.
 
 **The gate's denominator is 17, not 65.** `DEFAULT_SCHED_RAIL_KEYS`
 (`src/jobs/publish-gate-sched.mjs`) is SLATE_1 (5) + SLATE_1B (2) + SLATE_1C (1) +
