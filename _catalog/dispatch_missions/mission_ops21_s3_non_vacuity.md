@@ -7,6 +7,22 @@ generalises to every rail.
 **A test per registered write path asserting that for at least one real input it produces a
 value.** Not that it runs. That it CAN succeed.
 
+## REPO CORRECTION — read this first, it supersedes the dispatch header
+
+The dispatch header says `repo: hauska-engine`. **That is a planner miscope, corrected
+2026-09-10 before you hit it.** `computeTier1Envelope` exists in ZERO files in
+hauska-engine and six in legacy-design-tools. Your FIRST target is:
+
+    legacy-design-tools  artifacts/api-server/src/lib/nodeFacetBakeTier1.ts:92
+    worktree: P:/seat-worktrees/property/legacy-design-tools-ops21-s3
+    branch:   fix/ops21-s3-non-vacuity-ldt   (registered; off LDT origin/main)
+
+Work there. The engine worktree stays registered for the second half of the mission (the
+sweep of engine-side write paths), but do not start there.
+
+This correction is itself an instance of what your lane is for: a claim verified in one
+repo and stated generally. Note it in CP1.
+
 ## STANDING FACTS
 - **The instance.** `computeTier1Envelope` (LDT `nodeFacetBakeTier1.ts:92`) has two return
   branches, both `status:"declined"`. It is called, executes, returns a well-formed object,

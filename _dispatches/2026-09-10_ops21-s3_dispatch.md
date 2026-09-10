@@ -38,7 +38,7 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
 PLAN-ROW: P-134 (90_operations/OPS-16_texas_market_plan_of_record.md)
-repo: hauska-engine
+repo: legacy-design-tools
 
 # PROGRAM CONTEXT — OPS-21 serve completion
 
@@ -175,6 +175,22 @@ generalises to every rail.
 
 **A test per registered write path asserting that for at least one real input it produces a
 value.** Not that it runs. That it CAN succeed.
+
+## REPO CORRECTION — read this first, it supersedes the dispatch header
+
+The dispatch header says `repo: hauska-engine`. **That is a planner miscope, corrected
+2026-09-10 before you hit it.** `computeTier1Envelope` exists in ZERO files in
+hauska-engine and six in legacy-design-tools. Your FIRST target is:
+
+    legacy-design-tools  artifacts/api-server/src/lib/nodeFacetBakeTier1.ts:92
+    worktree: P:/seat-worktrees/property/legacy-design-tools-ops21-s3
+    branch:   fix/ops21-s3-non-vacuity-ldt   (registered; off LDT origin/main)
+
+Work there. The engine worktree stays registered for the second half of the mission (the
+sweep of engine-side write paths), but do not start there.
+
+This correction is itself an instance of what your lane is for: a claim verified in one
+repo and stated generally. Note it in CP1.
 
 ## STANDING FACTS
 - **The instance.** `computeTier1Envelope` (LDT `nodeFacetBakeTier1.ts:92`) has two return
