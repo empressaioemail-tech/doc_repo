@@ -1,0 +1,138 @@
+{
+  "lane": "CTX-B6",
+  "checkpoint": "CP2",
+  "kind": "adversarial mid-work / pilot",
+  "planRows": ["P-124"],
+  "dispatch": "_dispatches/2026-09-10_ctx-b6_dispatch.md",
+  "filedAt": "2026-09-10T14:05:00Z",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b6",
+  "branch": "fix/ctx-b6-situs-address-earned-absence",
+  "baseCommit": "fa7b9b67d5f313b2d40b5748242a768f957431ca",
+  "snapshot": {
+    "database": "neon fancy-fire-06136146 branch f06-staging-neondb, database neondb, READ ONLY",
+    "hauskaFactory": "origin/main 83c98f97, read via git show from the object store; no worktree entered, no file edited",
+    "measuredAt": "2026-09-10T13:15Z - 13:50Z"
+  },
+
+  "preRegisteredFalsifiersScored": [
+    {
+      "id": "F1",
+      "prediction": "the street-less population is DISJOINT from the retired-record population",
+      "outcome": "FALSE, and by more than expected. Cross-tab over all 1,516,110 stored tier-1 rows in the six counties: 48055 all 63 pure-punctuation rows are retired (CTX-RETIRE's 63), 48209 all 768 pure-punctuation rows are retired, and 48453 carries 7,234 RETIRED leading-comma rows against 139,260 live ones. 48491 has 5 retired bare nulls. Total street-less-and-retired: 8,065.",
+      "consequence": "the design already assumed this and routes roll-absent rows down situsForRetiredBake ungated, so those 8,065 keep their last-known string untouched. The 5 Williamson retired BARE NULLS do change: they now earn claimLeafAbsence, which is correct -- a retired record with no claim address still owes a four-state, and the retirement declaration beside it is what says the payload is not current.",
+      "scoredAs": "prediction wrong, design unaffected. Worth stating plainly: had the design not carried the retired branch, this measurement would have been a stop."
+    },
+    {
+      "id": "F2",
+      "prediction": "adding baseFacts.situsAddress to BAKE_OWNED_REQUIRED_LEAF_PATHS makes assertRequiredLeafStatesEarned throw REQUIRED_LEAF_BARE_NULL on a null at that path",
+      "outcome": "TRUE, proven by violation in nodeFacetBakeTier1Conformant.test.ts (a good payload is built, situsAddress is nulled by hand, and both asserts refuse with their own codes: REQUIRED_LEAF_BARE_NULL and SITUS_ADDRESS_ABSENCE_UNEARNED).",
+      "scoredAs": "held"
+    },
+    {
+      "id": "F3",
+      "prediction": "48055:1 keeps grading RECORD_RETIRED and serving 200",
+      "outcome": "TRUE, but only after the instrument was fixed twice. Final live run: leaf still the string \", ,\", byte-identical to what is stored, isEarnedRecordRetirement=true (the predicate hauska-factory verify-walk.mjs grades RECORD_RETIRED on through the bundled tier1-conformant-lib entrypoint), and refusePayloadAtServe does NOT refuse.",
+      "scoredAs": "held"
+    },
+    {
+      "id": "F4",
+      "prediction": "nulling the situs for street-less rows cannot create a bad land-use address join",
+      "outcome": "TRUE and now strictly safer. addressJoinKey fires only for gate-blocked counties (Hays, Williamson). Hays's street-less rows are the 768 pure-punctuation retired ones, which already resolved to situs=null; Williamson has none. The change can only REMOVE keys: normalizeSitusAddress(\", TX 78756\") is \"TX78756\", one key every parcel in that ZIP would collide on, and joinParcelRowsBySitus keeps the FIRST feature_index on a collision. The CLI's situsKeys builder now skips any claim the predicate refused.",
+      "scoredAs": "held"
+    }
+  ],
+
+  "theInstrumentCaughtItselfTwice": {
+    "why this is in the checkpoint": "ENFORCEMENT.md: a load-bearing claim needs a file-based instrument that has been shown to fail. Both of these would have been confident wrong answers from a shell one-liner.",
+    "defects": [
+      {
+        "id": "I1",
+        "what": "the first verification run reported Caldwell 48055:1 BROKEN by this change.",
+        "cause": "the instrument did not reproduce the bake CLI's rollAbsent branch, so it ran the retired record through the on-roll classifier and converted its last-known \", ,\" into an absence. The CODE was correct the whole time; the instrument was not.",
+        "fix": "the rollAbsent branch is reproduced in afterLeaf, and the retired assertion now runs the real isEarnedRecordRetirement and the real refusePayloadAtServe rather than a != null check."
+      },
+      {
+        "id": "I2",
+        "what": "with I1 fixed, 48055:1 STILL failed: recordRetirement was not earned.",
+        "cause": "the instrument resolved the county's declared CAD vintage from the stored payload's provenance.parcelVintage, which is the TxGIO PARCEL JOIN vintage and a different field. On Caldwell that reads 2025 while the declared CAD vintage is 2026, so an account on the 2025 roll and absent from 2026 came back on-roll. Reading a proxy for the authoritative record, the exact shape ENFORCEMENT.md names.",
+        "fix": "tryResolveDeclaredCadVintage(countyFips) from @workspace/cad-ingest, the same declaration the bake itself reads."
+      }
+    ],
+    "instrumentProvenAbleToFail": {
+      "selfTest": "npx tsx src/ctxB6VerifySitusAddressCli.ts --self-test -> failures=0 over 8 synthetic cases, one of which (a HALF-BUILT absence) the grader MUST reject and does.",
+      "violationRun": "npx tsx src/ctxB6VerifySitusAddressCli.ts --violate swaps the street-less and control sets. Result: 11 of 12 FAIL, exit 1. A run that passed under --violate would mean the instrument certifies nothing."
+    }
+  },
+
+  "theSecondQuestionAnswered": {
+    "instrument": "all 28 leaves in hauska-factory verify-walk.mjs REQUIRED_TIER1_FACET_PATHS, classified by that file's own classifyRequiredLeaf rules reimplemented in SQL, over every stored node-facets:tier1 row in the six CTX counties. One pass, WITH t AS MATERIALIZED. 2026-09-10T13:23:08Z to 13:34:14Z.",
+    "denominator": 1516110,
+    "denominatorRule": "every place_layer_snapshots row with adapter_key='node-facets:tier1' whose place_key second segment is one of the six county FIPS. Not a sample.",
+    "result": "FOUR of the 28 leaves carry a non-four-state anywhere in the six counties. Nothing else in the list is defective on a single row.",
+    "leavesWithNonFourStateValues": [
+      {
+        "path": "provenance.zoningSource",
+        "klass": "bare null",
+        "rows": 856374,
+        "counties": "all six",
+        "ownedAtBake": false,
+        "verdict": "NOT this gap. The bake explicitly disclaims this leaf's cell state (see the comment on assertRequiredLeafStatesEarned): it belongs to the zoning rail, which the SERVE earns, and CTX-MIRROR (#646) is the code that mirrors it onto the served payload. A stored null here is expected and is not evidence of a served defect. This scan measures the STORED payload and cannot see the serve-side mirror; that boundary is declared, not merged into the headline."
+      },
+      {
+        "path": "zoning",
+        "klass": "bare null",
+        "rows": 844629,
+        "counties": "all six",
+        "ownedAtBake": false,
+        "verdict": "same as above, same reason, same declared boundary."
+      },
+      {
+        "path": "envelope",
+        "klass": "bare null",
+        "rows": 292578,
+        "counties": "48021, 48055, 48209, 48453, 48491",
+        "ownedAtBake": false,
+        "verdict": "NOT a defect at all. envelope is the single entry in verify-walk.mjs SERVE_STRIPPED_LEAVES: the serve deliberately strips it to null (stripZombieEnvelopeFromFacets, WDLL 3.7 anti-zombie) and the walk requires it to be EXACTLY null on the served payload. These 292,578 are rows with no parcel ring, where the bake also writes null. Requiring a four-state here would demand something permanently and deliberately absent."
+      },
+      {
+        "path": "baseFacts.situsAddress",
+        "klass": "bare null",
+        "rows": 22805,
+        "counties": "48021 2979 / 48055 15289 / 48209 2973 / 48453 1545 / 48491 19 / 48309 0",
+        "ownedAtBake": "was false, is now TRUE",
+        "verdict": "THE ANSWER. This is the only leaf in the walk's required set that the bake genuinely owns, genuinely writes, and left as a four-state violation. It is what Hays failed its 2026-09-10 staging walk on, and it is what this card closes."
+      }
+    ],
+    "soTheGapIsSmallerThanFeared_andTheRealFindingIsWorse": "The four-state gap turned out to be ONE leaf. Nothing else in the walk's 28 is unowned and defective. But closing it does NOT close the defect class, and the measurement says so directly: `\", TX 78756\"` satisfies BP-CONTENT-01 perfectly. A non-empty string is a `value` by the walk's own classifier. Of the eight named street-less parcels in the live verification run, the factory's TWO graders together (BP-CONTENT-01 plus the S1 sentinel family) catch FIVE and MISS THREE -- `\", TX\"` (16,010 Travis rows on that exact string), `\", WACO, TX 76705\"` (McLennan) and `\", CEDAR CREEK, TX 78612\"` (Bastrop). Across the whole population the S1 regex pair catches 124,319 of the 147,199 street-less rows, 84.5%. The four-state contract asks whether a cell has a DECLARED STATE. It does not ask whether the value means anything. Those are different questions and only the first has a control.",
+    "theThreeLists": {
+      "ldt_REQUIRED_TIER1_FACET_PATHS": {"count": 36, "predicate": "presence (does the key exist); a key holding null satisfies it", "enforcedAt": "bake, non-gating"},
+      "factory_REQUIRED_TIER1_FACET_PATHS": {"count": 28, "predicate": "four-state on the SERVED payload", "enforcedAt": "verify-walk, ~180-parcel sample", "note": "a HAND-COPIED mirror of the 36-path list, eight paths short: baseFacts.cadRoll.marketValue, .assessedValue, .landValue, .improvementValue, .livingAreaSqft, baseFacts.yearBuilt, baseFacts.legalDescription, baseFacts.exemptionCodes"},
+      "ldt_BAKE_OWNED_REQUIRED_LEAF_PATHS": {"count": "5 -> 6", "predicate": "four-state, REFUSES THE WRITE", "enforcedAt": "bake, gating"}
+    }
+  },
+
+  "reconciliationOfTheFiveRowTravisDisagreement": {
+    "dispatchSplit": "124,455 leading-comma-no-street + 22,044 no-street-tokens = 146,499; 352,263 looks-real",
+    "thisInstrument": "146,494 leading-comma-no-street; 352,268 has-street-segment",
+    "sameTotal": 500307,
+    "whatTheDispatchSplitActuallyIs": "the two hauska-factory S1 regexes. Measured: 124,319 Travis rows match ^,\\s*TX\\s+\\d{5} and 22,175 street-less rows match neither regex, of which 16,010 are the literal \", TX\" and the rest are \", TX 0\", \", TX 1\" and similar degenerate-ZIP variants.",
+    "theSixBoundaryROWS": "the disagreement is a boundary rule, and here it is with real prop_ids: 48453:860626 and one sibling carry \"D , TX 78617\", 48453:461495 carries \"CA , TX 78758\", 48453:159610 carries \"349564 , TX 78645\", 48453:178062 carries \"58818 , TX 78645\", 48453:773537 carries \"18829\". Six rows whose pre-comma segment is a lone token with no street name.",
+    "whyThisInstrumentDoesNOTRefuseThem": "refusing them requires 'the street segment must contain a letter'. That rule would also refuse ten real Travis RANGE addresses whose first comma segment is a bare house number -- \"2610, 2612 S 1 ST\", \"720,729 NOMAD DR\", \"4701,4703 SHOAL CREEK BLVD\", \"5237, 5241 N LAMAR BLVD\" and six more. Ruling A1 forbids converting usable data into an absence, so the residue is admitted and NAMED: 6 of 500,307 Travis rows, with a test (serveGuardsSitusAddress.test.ts, 'declared residue') so it is a decision somebody made rather than one nobody noticed."
+  },
+
+  "whatWasBuilt": {
+    "sharedPredicate": "artifacts/api-server/src/lib/serveGuards.ts: classifyRawSitusAddress -> blank | usable | unusable{punctuation-only | no-street-component}, plus situsStreetSegment and situsCarriesStreetComponent. The punctuation branch DELEGATES to assertSitusNotPunctuationOnly so that rule keeps one implementation.",
+    "bake": "nodeFacetBakeTier1Conformant.ts: situsAddressUnusableAbsence (replaces situsAddressPunctuationOnlyAbsence, now carries the reason so the two shapes stay tellable apart in the served basis); claimLeafAbsence widened to situsAddress for the blank claim; ConformantBaseFacts.situsAddress loses null from its union; baseFacts.situsAddress added to BAKE_OWNED_REQUIRED_LEAF_PATHS; assertSitusAddressAbsenceEarned now refuses a bare null instead of documenting it as legitimate.",
+    "cli": "nodeFacetBakeTier1ConformantCli.ts: situsForBake returns the classification; situsAddressPunctuationOnlyRaw becomes situsAddressUnusable{raw,reason}; three counters (punctuation-only / no-street-component / blank-claim) and one log line carrying all three, because a run that turns 22,805 silent nulls into 22,805 declared absences must be able to say so; the gate-blocked situsKeys builder skips refused claims.",
+    "notArmedAtServe_deliberately": "refusePayloadAtServe still refuses only the punctuation-only shape. Arming the street rule there in the same change would 422 the ~147,199 rows already baked on the old rule the instant it deployed, before the re-bake the integration seat owns. That is repoint-then-retire ordering, and it is written into the module comment, not left implicit. It is a leave_behind, not a claim of coverage."
+  },
+
+  "openAtCP2": [
+    "full api-server vitest suite result (running); the three affected files pass: nodeFacetBakeTier1Conformant.test.ts 85/85, serveGuards.test.ts 12/12, serveGuardsSitusAddress.test.ts 11/11",
+    "PR number and head SHA -> close",
+    "arming the street-less rule at refusePayloadAtServe, after the re-bake -> leave_behind",
+    "a single source of truth for the situs-sentinel rule across LDT and hauska-factory -> leave_behind"
+  ]
+}

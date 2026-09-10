@@ -1,0 +1,116 @@
+{
+  "lane": "ctx-b5",
+  "checkpoint": "CP1",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b5",
+  "branch": "fix/ctx-b5-retirement-basis",
+  "baseCommit": "fa7b9b67d5f313b2d40b5748242a768f957431ca",
+  "workingTreeCleanAtStart": true,
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "branch": "fix/ctx-b5-retirement-basis",
+    "commit": "fa7b9b67d5f313b2d40b5748242a768f957431ca",
+    "dataSnapshots": [
+      "neon project fancy-fire-06136146 (cortex-prod) branch production db neondb, read-only, measured 2026-09-10T05:13:55Z",
+      "neon project fancy-fire-06136146 branch production db hauska_mcp, read-only, measured 2026-09-10",
+      "neon project fancy-fire-06136146 branch f06-staging-neondb db neondb, read-only, measured 2026-09-10"
+    ]
+  },
+  "priorArtifactsRead": [
+    "_dispatches/2026-09-10_ctx-b5_dispatch.md",
+    "_inbox/2026-09-09_ctx-hays-split_close.json",
+    "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts (buildRecordRetirement, call site 950-972)",
+    "artifacts/api-server/src/lib/recordRetirement.ts (CTX-B1 extraction)",
+    "artifacts/api-server/src/lib/serveGuards.ts (refusePayloadAtServe retirement exemption)",
+    "artifacts/api-server/src/lib/joinIntegrityGate.ts (fetchCountyCadPropertyRoll)",
+    "lib/cad-ingest/src/txgio/landuse.ts (normalizeStratMapLandUse field map)",
+    "lib/cad-ingest/src/vintage.ts (DECLARED_CAD_VINTAGES)",
+    "hauska-factory@ctx-b3 worktree: src/lib/record-retirement.mjs and src/jobs/verify-walk.mjs (cross-repo consumer, READ ONLY)"
+  ],
+
+  "theDefectIsNotHypothetical": {
+    "dispatchPremise": "roughly 37,813 records will serve a false basis on the NEXT Hays bake",
+    "measuredCorrection": "the defect is ALREADY MATERIALISED on the staging serving store, not pending. place_layer_snapshots adapter_key node-facets:tier1 on branch f06-staging-neondb holds 282,837 rows whose payload_json recordRetirement is an object: 282,570 in Williamson 48491 and 267 in Caldwell 48055. Every one of the 282,570 Williamson rows carries the basis string: This account is not on the current roll -- split, merged, renumbered or removed.",
+    "productionIsClean": "the SAME query against branch production db neondb returns 0 rows carrying the recordRetirement key across all 5,141,451 tier1 rows. No customer is served a fabricated retirement basis today. The exposure is staging plus every future bake.",
+    "verbatim": {
+      "productionQuery": "SELECT adapter_key, count(*) n, count(*) FILTER (WHERE payload_json ? 'recordRetirement') has_key, count(*) FILTER (WHERE jsonb_typeof(payload_json->'recordRetirement')='object') retired_obj FROM place_layer_snapshots WHERE adapter_key LIKE '%tier1%' GROUP BY 1;",
+      "productionResult": "node-facets:tier1 | 5141451 | 0 | 0",
+      "stagingResult": "tier1_rows 5141451 | has_key 842753 | retired_obj 282837",
+      "stagingByCounty": "48491 retired 282570 of 602050 with-key ;; 48055 retired 267 of 48649 with-key",
+      "stagingBasisSample": "node:48491:R461463 lastSeenTaxYear 2025 basis: 48491:R461463: prop_id R461463 carries no row in the Williamson County CAD roll's declared tax_year 2026; this record's own claim last carried tax_year 2025. This account is not on the current roll -- split, merged, renumbered or removed; no successor account has been verified. The facts elsewhere on this payload are the LAST-KNOWN claim, not current."
+    }
+  },
+
+  "mechanismsConsidered": [
+    {
+      "id": "M1",
+      "name": "row exists for that prop_id at any other tax_year",
+      "source": "named first in the dispatch",
+      "verdict": "REJECTED - measurably vacuous, and vacuous by construction not by accident",
+      "evidence": "Live anti-join over all 10 declared-vintage counties that carry conformant cad-parcel-roll atoms (48021, 48027, 48029, 48055, 48085, 48091, 48209, 48309, 48453, 48491; 2,875,485 distinct atom prop_ids): the count of atom prop_ids with NO cad_property row at ANY tax_year is 0 in every single county. For the three counties that produce retirements the absent-at-declared-vintage populations are 48491 282,570 / 48209 38,444 / 48055 267, and M1 classifies 100 percent of all 321,281 of them as was-on-a-roll-once. It would change nothing and fix nothing while reading as a fix.",
+      "whyStructural": "the parcel nodes are atoms of entity_type cad-parcel-roll generated FROM cad_property. A prop_id can therefore never be an atom without having been a cad_property row at some tax_year. M1's discriminating branch is unreachable by construction, so its negative-case violation test can never fire on real data.",
+      "consequenceIfTaken": "all 282,570 Williamson rows and 38,060 of the 38,444 Hays rows keep the fabricated split-merged-renumbered-or-removed basis."
+    },
+    {
+      "id": "M2",
+      "name": "per-row prior-appraisal evidence across ALL vintages held for the county, via the fields the StratMap/TxGIO geometry loader structurally cannot populate",
+      "verdict": "TAKEN",
+      "derivation": "lib/cad-ingest/src/txgio/landuse.ts normalizeStratMapLandUse hardcodes assessedValue: null, exemptionCodes: null, livingAreaSqft: null on EVERY StratMap row, unconditionally. lib/cad-ingest/src/p78Merge.ts keeps those three in COALESCE_FIELDS so a prior genuine CAD value survives a StratMap re-apply on ON CONFLICT DO UPDATE, while source_file and source_vintage are overwritten unconditionally (applyPathAMerge, p78Merge.ts:196-197). Presence of any one of the three, at ANY tax_year, is therefore positive proof that some genuine CAD export wrote this prop_id as an appraisal account.",
+      "supersetOfCtxB1": "CTX-B1 used assessed_value alone. M2 uses assessed_value OR living_area_sqft OR exemption_codes, all three StratMap-impossible; the union is strictly more sensitive and cannot produce a false positive that assessed_value alone would not.",
+      "asymmetryDeclaredNotHidden": "presence PROVES a prior appraisal account. ABSENCE proves only that no vintage held for the county carries appraisal-only evidence for this prop_id; it does not prove the account never existed. The basis text for that population is written to say exactly that and no more.",
+      "measuredSplit": {
+        "48491_williamson": {"absentAtDeclared2026": 282570, "priorAppraisalAccount": 0, "geometryFillOnly": 282570, "noRecordAtAnyYear": 0},
+        "48209_hays": {"absentAtDeclared2026": 38444, "priorAppraisalAccount": 384, "geometryFillOnly": 38060, "noRecordAtAnyYear": 0},
+        "48055_caldwell": {"absentAtDeclared2026": 267, "priorAppraisalAccount": 0, "geometryFillOnly": 267, "noRecordAtAnyYear": 0}
+      },
+      "independentAgreement": "the Hays 384 / 38,060 split reproduces CTX-HAYS-SPLIT's figure exactly, derived here by a different instrument (three-field union over a full cross-vintage scan) than that lane's (assessed_value alone over a 2025-vs-2026 anti-join)."
+    },
+    {
+      "id": "M3",
+      "name": "keep source_file / source_vintage as the lineage discriminator",
+      "verdict": "REJECTED without further measurement",
+      "why": "already disproven upstream. p78Merge.ts applyPathAMerge overwrites sourceFile and sourceVintage unconditionally on the ON CONFLICT DO UPDATE path, so a genuine CAD row touched by the 2026-08-25 P-78 StratMap apply now reads as StratMap. CTX-HAYS-SPLIT measured this costing 244 of Hays's 384 genuine rows their legible tag."
+    }
+  ],
+
+  "theRegressionControlIsWrong": {
+    "dispatchClaim": "Caldwell 48055:1 is a genuine retirement and its serve-guard exemption, added by CTX-B1, must keep working. It is your regression control.",
+    "measured": "48055 tax_year 2025 is 24,989 rows with assessed_value NOT NULL on 0 of them, living_area_sqft on 0, exemption_codes on 0 - 100 percent StratMap geometry fill, consistent with CTX-HAYS-SPLIT's finding that Caldwell 2025 is 100 percent stratmap25-landparcels_48055_lp.zip. prop_id 1 is in that population. Under M2, 48055:1 classifies geometry-fill-only, NOT a genuine roll departure.",
+    "reportedNotWorkedAround": "per DEV_PROCESS 3.2 this is reported rather than silently substituted. The serve-guard exemption is preserved regardless: the chosen shape keeps 48055:1 an EARNED, well-formed retirement (isEarnedRecordRetirement still true, refusePayloadAtServe still returns early, its punctuation-only last-known situs still does not 422). Only the basis prose changes, from a causal claim the evidence does not support to a statement of what is actually held.",
+    "genuinePopulationDoesExist": "Hays's 384 are the real left-the-roll population, so M2's positive branch is not empty - unlike M1's negative branch."
+  },
+
+  "chosenShape": {
+    "noSecondAbsenceStateInvented": "honours the CTX-B1 / operator ruling A1 constraint. There remains exactly ONE record-level state, Tier1RecordRetirement. What changes is that its basis stops being a fixed causal assertion and becomes derived per row from evidence, plus a machine-readable discriminator so a consumer never has to parse prose.",
+    "newRequiredField": "priorRollEvidence, a four-value discriminated union on Tier1RecordRetirement",
+    "values": {
+      "prior-appraisal-account": "at least one vintage held for this county carries an appraisal-only field for this prop_id. The ONLY population that keeps the existing split-merged-renumbered-or-removed basis.",
+      "no-appraisal-record-in-any-vintage": "rows exist at other vintages but not one carries an appraisal-only field. Basis says only what is held and claims no roll departure.",
+      "no-record-in-any-vintage": "no cad_property row at any tax_year. Measured 0 today in all 10 counties and structurally unreachable while nodes are generated from cad_property; kept as its own value so the count is VISIBLE rather than folded into a neighbour if that ever changes.",
+      "not-consulted": "the cross-vintage evidence input was not supplied. The honest UNMEASURED state, distinct from both absences per ENFORCEMENT absent-zero-and-unmeasured-are-three-different-states. Its basis makes no claim in either direction. The bake CLI wires the real fetcher so a production bake can never land here."
+    },
+    "predicateTightens": "isEarnedRecordRetirement requires priorRollEvidence to be one of the four. Admitting an object without it would be exactly the presence-shaped widening ENFORCEMENT forbids: a pre-CTX-B5 payload carrying the fabricated basis would keep buying the serve-guard tolerance."
+  },
+
+  "preRegisteredFalsifiers": [
+    "M2 is wrong if any county's genuine CAD export vintage leaves assessed_value, living_area_sqft AND exemption_codes all null across the whole vintage, which would make the discriminator blind. OUTCOME: did not fire. Every declared 2026 cad-export vintage measured is 100 percent populated on assessed_value (48055 48,382/48,382; 48209 134,606/134,606; 48491 319,480/319,480).",
+    "M2 is wrong if the split it produces on Hays disagrees with CTX-HAYS-SPLIT's independently derived 384/38,060. OUTCOME: did not fire; exact agreement.",
+    "M1 would have been the better mechanism if its discriminating branch were non-empty on real data. Pre-registered as: if any declared county has even one atom prop_id with no cad_property row at any tax_year, M1 discriminates something and must be reconsidered. OUTCOME: fired for M1's rejection - 0 in all 10 counties, 0 of 2,875,485."
+  ],
+
+  "threeQuestionGate": {
+    "whatExecutes": "isEarnedRecordRetirement (recordRetirement.ts), called by refusePayloadAtServe at serve and by hauska-factory verify-walk.mjs at grade time; plus a new assertRecordRetirementEarned in the bake CLI write path, which refuses the INSERT.",
+    "whatTriggers": "every serve of a tier1 payload, every walk of a parcel whose payload carries recordRetirement, and every row the conformant bake writes.",
+    "whatFails": "serve throws SITUS_PUNCTUATION_ONLY instead of exempting; the walk grades the row on ordinary BP-CONTENT-01 instead of RECORD_RETIRED; the bake refuses the row rather than writing it. The bake refusal is the new one and it runs in the same CLI path the four existing assertions already run in.",
+    "whatBypasses": "a writer that does not go through nodeFacetBakeTier1ConformantCli (for instance nodeFacetPatchCadRollFromCadPropertyCli, which patches cadRoll fields only and never writes recordRetirement), and any direct SQL UPDATE of place_layer_snapshots.payload_json. Named, not claimed absent."
+  },
+
+  "outOfScope": [
+    "writing to hauska-factory, hauska-engine or hauska-map",
+    "any deploy, Cloud Build, Cloud Run job, bake, publish or walk",
+    "re-baking 48491 and 48055 to clear the 282,837 stale staging rows - that is an integration-seat execution and is declared as leave_behind",
+    "MAX_MISS_RATE or any gate threshold"
+  ]
+}

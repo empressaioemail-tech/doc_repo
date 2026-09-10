@@ -1,0 +1,155 @@
+{
+  "lane": "CTX-B6",
+  "checkpoint": "CP1",
+  "kind": "adversarial design / pre-build",
+  "planRows": ["P-124"],
+  "dispatch": "_dispatches/2026-09-10_ctx-b6_dispatch.md",
+  "filedAt": "2026-09-10T13:35:00Z",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b6",
+  "branch": "fix/ctx-b6-situs-address-earned-absence",
+  "commit": "fa7b9b67d5f313b2d40b5748242a768f957431ca",
+  "snapshot": {
+    "ldt": "origin/main fa7b9b67 (CTX-B1 #650 merged)",
+    "hauskaFactoryReadOnlyReference": "origin/main 83c98f97 via git show, no worktree entered",
+    "database": "neon fancy-fire-06136146 branch f06-staging-neondb, database neondb, READ ONLY (SET default_transaction_read_only=on, statement_timeout set on every session)",
+    "measuredAt": "2026-09-10T13:15Z - 13:30Z"
+  },
+
+  "heavyScanAnnouncements": [
+    {
+      "id": "scan-1",
+      "target": "place_layer_snapshots adapter_key=node-facets:tier1, six CTX counties, situsAddress leaf classification",
+      "start": "2026-09-10T13:15:09Z",
+      "end": "2026-09-10T13:17:22Z",
+      "durationMs": 132736,
+      "readOnly": true
+    },
+    {
+      "id": "scan-2-aborted",
+      "target": "same table, 28-leaf four-state classification, CTE NOT materialized",
+      "start": "2026-09-10T13:19:49Z",
+      "cancelled": "2026-09-10T13:23:00Z",
+      "reason": "instrument defect, self-caught: a 28-way UNION ALL over a non-materialized CTE re-inlines the CTE once per branch, i.e. 28 full scans of a 17 GB table rather than one. Cancelled with pg_cancel_backend and re-run as WITH t AS MATERIALIZED. Same class as the recorded postgis zone-major lesson."
+    },
+    {
+      "id": "scan-2",
+      "target": "same, WITH t AS MATERIALIZED",
+      "start": "2026-09-10T13:23:08Z",
+      "readOnly": true
+    }
+  ],
+
+  "reproducedTheDispatchNumbers": {
+    "countingRule": "one row per place_layer_snapshots row with adapter_key=node-facets:tier1 and split_part(place_key,':',2) in the six counties; classified on payload_json->'baseFacts'->'situsAddress' (STORED payload, where baseFacts sits at the top level of payload_json). Class definitions: bare-null = jsonb null at an existing key; earned-absence-obj = object with status=absent and all five evidence fields non-null; pure-punctuation = string matching ^[[:punct:][:space:]]+$; leading-comma-no-street = string whose pre-first-comma segment is empty after btrim; has-street-segment = everything else.",
+    "byCounty": {
+      "48021": {"has-street-segment": 58707, "earned-absence-obj": 16104, "bare-null": 2979, "leading-comma-no-street": 9},
+      "48055": {"has-street-segment": 33231, "bare-null": 15289, "earned-absence-obj": 66, "pure-punctuation": 63},
+      "48209": {"has-street-segment": 168499, "bare-null": 2973, "earned-absence-obj": 810, "pure-punctuation": 768},
+      "48309": {"has-street-segment": 112394, "earned-absence-obj": 1165, "leading-comma-no-street": 696},
+      "48453": {"has-street-segment": 352268, "leading-comma-no-street": 146494, "bare-null": 1545},
+      "48491": {"has-street-segment": 602031, "bare-null": 19}
+    },
+    "defectiveTotal": 170835,
+    "defectiveBreakdown": {"bare-null": 22805, "pure-punctuation": 831, "leading-comma-no-street": 147199},
+    "agreementWithDispatch": "every county figure matches exactly except Travis, where the dispatch splits 124,455 leading-comma + 22,044 no-street-tokens = 146,499 and this instrument counts 146,494 in one bucket, with 352,268 looks-real against the dispatch's 352,263. Same 500,307-row population; a 5-row boundary disagreement between two classifiers. Reconciled in CP2, not rounded off."
+  },
+
+  "correctionsToTheDispatchPremise": [
+    {
+      "claim": "a string with no street was assembled out of the components that survived",
+      "measured": "legacy-design-tools does not assemble baseFacts.situsAddress at all. Three passthrough sites and no composer anywhere: artifacts/api-server/src/lib/nodeFacetTier1Assemble.ts:334 is situsAddress: str(input.situsAddress); lib/cad-ingest/src/txgio/parse.ts:617 and lib/cad-ingest/src/txgio/landuse.ts:173 take str(properties.SITUS_ADDR) raw off the StratMap shapefile; lib/cad-ingest/src/pacs/parser.ts:176 uses joinParts(), which DROPS empty components and therefore structurally cannot produce a leading comma; lib/cad-ingest/src/p78Merge.ts COALESCE_FIELDS carries situsAddress across unchanged.",
+      "evidence": "staging cad_property, 48453:224793 -- tax_year 2026, source_file '2026 Preliminary Appraisal Export Supp 0_07072026.zip', situs_address '4709 SHOALWOOD AVE', situs_city AUSTIN, situs_zip 78756, assessed_value 1223482; tax_year 2025, source_file 'stratmap25-landparcels_48453_lp.zip', situs_address ', TX 78756', situs_city empty string, situs_zip 78756, assessed_value NULL. The stored tier-1 snapshot for node:48453:224793 carries situsAddress ', TX 78756', provenance.parcelVintage 2025, bakedAt 2026-09-10T05:59:22.982Z, facetCoverage.baseFacts true, recordRetirement null, and facets.base.situsAddress ', TX 78756'.",
+      "consequence": "the defective string is a RAW upstream StratMap value at the county's declared vintage, not a local concatenation. The dispatch's second named mechanism -- refusing to assemble an address string when the street component is missing -- is therefore not available inside this repo: there is no assembly step here to refuse. The equivalent cause-fix within LDT's reach is to refuse to PRESENT a street-less claim as the value of the leaf, which is mechanism A.",
+      "secondMechanismConsideredAndRejected": "that the bake read the wrong vintage and a correct 2026 address exists one row away. It DOES exist -- and that is CTX-B2's card (CADROLL_EXPECTATION_SQL vintage scope), not this one. Rejected as this lane's fix because re-pointing the declared vintage changes which roll every dollar facet comes from for six counties, and because a vintage fix still leaves this leaf with no defined shape for a record that genuinely has no street. Named here so it is not lost."
+    },
+    {
+      "claim": "serveGuards.ts PUNCTUATION_ONLY_RE is why the existing guard does not catch it",
+      "measured": "true, and there is a second, already-built detector the dispatch does not mention: hauska-factory src/stages/grade/s-rules.mjs isSentinelSitus, with SENTINEL_EMPTY_COMMAS and SENTINEL_STATE_ZIP_ONLY, the latter matching ', TX 78756' exactly. It is not starved -- gradeS1 runs in the walk -- but it sits DOWNSTREAM of the write on a ~180-parcel sample, so it detects the defect one parcel at a time and never refuses it. That is the shape of this whole defect class.",
+      "consequence": "the LDT-side predicate must be a superset of those two regexes or one rule has two disagreeing implementations (DEV_PROCESS 2.4). LDT cannot edit the factory, so the available control is a containment test in LDT carrying the factory's two regexes as fixtures, plus a cross-repo single-source item in leave_behind."
+    }
+  ],
+
+  "theQuestion": {
+    "decision": "baseFacts.situsAddress expresses 'no street on record' as an EARNED ABSENCE OBJECT (Tier1LeafAbsence, absent-verified) that quotes the raw claim value verbatim in its basis -- the same shape baseFacts.situsCity already carries on the very same parcel, and a widening of the CTX-SITUS-SKIP mechanism from 'the raw value is pure punctuation' to 'the raw value carries no street component'.",
+    "mechanismsConsidered": [
+      {
+        "id": "A",
+        "name": "earned absence on the leaf",
+        "taken": true,
+        "why": "the only shape that is simultaneously (a) one of the four states BP-CONTENT-01 requires, (b) already implemented and tested in this file for the strictly more degenerate case, so the two populations stop having two answers, (c) non-destructive under ruling A1 -- situsZip 78756 and situsCity's own earned absence are separate leaves and are untouched, and the raw string survives verbatim inside the basis, so nothing on record is thrown away, and (d) enforceable at the write with a fail-closed assert rather than discovered by a downstream sample."
+      },
+      {
+        "id": "B",
+        "name": "refuse to assemble the address string when the street component is missing",
+        "taken": false,
+        "whyNot": "there is no assembly step in this repo to refuse (see the correction above). Implemented literally here it means writing null, which is not one of the four states and is exactly what Hays fails BP-CONTENT-01 on. Implemented at the true assembly site it is a StratMap-ingest change in the Factory stage pipeline, outside this dispatch's scope, and it would still leave this leaf undefined for a record that genuinely has no street."
+      },
+      {
+        "id": "C",
+        "name": "keep the string and add a sibling quality/state field",
+        "taken": false,
+        "whyNot": "the leaf every consumer and the grader read would still hold ', TX 78756' as its value; a paying customer still sees a street-less string presented as their address. It is also two implementations of one meaning with no divergence test, which is the CTRL-1 shape."
+      },
+      {
+        "id": "D",
+        "name": "normalise the string (strip the leading comma, serve 'TX 78756')",
+        "taken": false,
+        "whyNot": "that fabricates an address out of a state and a ZIP. The factory's own S1 rule already classifies the result as a sentinel."
+      },
+      {
+        "id": "E",
+        "name": "skip the row / refuse the whole payload",
+        "taken": false,
+        "whyNot": "CTX-SITUS-SKIP (#648) explicitly reversed exactly this. A bad situs is a fact about one leaf, not a reason to discard the row."
+      }
+    ]
+  },
+
+  "theSecondQuestion": {
+    "answer": "YES, baseFacts.situsAddress joins BAKE_OWNED_REQUIRED_LEAF_PATHS.",
+    "whatThatImplies": "the bare-null population (22,805 rows measured) stops being writable. It must therefore also earn an absence -- claimLeafAbsence, the same machinery situsCity and situsZip already use for the identical input condition (the claim carries nothing). Without that half, adding the path to the list turns the bake into a refusal for 22,805 rows, which is a worse outcome than the defect.",
+    "theStructuralGapBehindTheDefectClass": "there are THREE lists, not two. legacy-design-tools REQUIRED_TIER1_FACET_PATHS has 36 paths and is enforced with a PRESENCE predicate (does the key exist). hauska-factory verify-walk.mjs REQUIRED_TIER1_FACET_PATHS is a hand-copied MIRROR of it with 28 paths -- eight short (baseFacts.cadRoll.marketValue, .assessedValue, .landValue, .improvementValue, .livingAreaSqft, baseFacts.yearBuilt, baseFacts.legalDescription, baseFacts.exemptionCodes) -- and is enforced with a FOUR-STATE predicate. legacy-design-tools BAKE_OWNED_REQUIRED_LEAF_PATHS has 5 paths and is the only one enforced with a four-state predicate AT THE WRITE. The gap that produces this defect class is walk-list minus bake-owned-list = 23 leaves the grader requires as a four-state that nobody owns at bake time. situsAddress is one of them; the counts for the other 22 are in CP2.",
+    "pendingMeasurement": "scan-2 classifies all 28 walk-required leaves against the walk's own classifyRequiredLeaf rules over all 1.5M stored tier-1 rows in the six counties. Filed in CP2 with counts."
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "prediction": "the street-less population is DISJOINT from the retired-record population, so a no-street absence can never fire on a record CTX-RETIRE deliberately serves as last-known.",
+      "falsifier": "any row with recordRetirement non-null AND situsAddress classified pure-punctuation or leading-comma. If found, the change must route retired rows around the new refusal explicitly.",
+      "status": "pending, measured in CP2",
+      "note": "48055's 63 pure-punctuation rows are expected to be exactly CTX-RETIRE's 63, so this prediction is expected to FAIL for Caldwell. The design assumes it fails and leaves situsForRetiredBake ungated."
+    },
+    {
+      "prediction": "adding baseFacts.situsAddress to BAKE_OWNED_REQUIRED_LEAF_PATHS makes assertRequiredLeafStatesEarned throw REQUIRED_LEAF_BARE_NULL on a payload whose situsAddress is null.",
+      "falsifier": "the assert passes on such a payload. If it passes, the list membership is decorative and the whole second-question answer is a ceremony.",
+      "status": "to be proven by violation in the test suite"
+    },
+    {
+      "prediction": "48055:1 keeps grading RECORD_RETIRED and returning a well-formed retirement after the change.",
+      "falsifier": "isEarnedRecordRetirement returns false, or refusePayloadAtServe throws, on the rebuilt payload for 48055:1.",
+      "status": "to be proven by running the real code against the real stored row"
+    },
+    {
+      "prediction": "nulling the situs for street-less rows cannot create a bad land-use address join, because addressJoinKey fires only for gate-blocked counties and normalizeSitusAddress(', TX 78756') is 'TX78756', a key that collides across every parcel in that ZIP.",
+      "falsifier": "a gate-blocked county whose street-less rows currently resolve a DIFFERENT land use per parcel through that key. If so, nulling removes real signal.",
+      "status": "Hays and Williamson are the gate-blocked pair; Hays's street-less rows are the 768 pure-punctuation ones, which already resolve to situs=null today, and Williamson has none. Expected effect: zero. Confirmed in CP2."
+    }
+  ],
+
+  "constraintsHonored": [
+    "CTX-SITUS-SKIP #648 not reversed: the punctuation-only case still writes the row with an earned absence; this widens that rule, never narrows it.",
+    "Ruling A1 not violated: no usable component is discarded. situsZip and situsCity are separate leaves and are untouched; the raw value is quoted verbatim in the basis.",
+    "CTX-B1 #650 serve-guard exemption preserved: retired records keep situsForRetiredBake ungated and refusePayloadAtServe keeps returning early on an earned retirement.",
+    "A bare null is not proposed as any part of the answer.",
+    "legacy-design-tools only. hauska-factory read via git show from its object store; no factory worktree entered, no factory file edited.",
+    "No deploy, no Cloud Build, no Cloud Run job, no bake, no publish, no walk. Database access read-only with default_transaction_read_only=on and a statement_timeout on every session."
+  ],
+
+  "openAtCP1": [
+    "scan-2 results (28-leaf four-state census) -> CP2",
+    "retirement x situs-class cross-tab -> CP2",
+    "the 5-row Travis classifier disagreement with the dispatch -> CP2"
+  ]
+}
