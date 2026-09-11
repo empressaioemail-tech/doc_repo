@@ -14,9 +14,11 @@
  *   1. What executes this?  This file. `node scripts/surface-probe.mjs`.
  *   2. What triggers it?    A lane close (the close must cite the artifact this writes to
  *                           _inbox/), and any planner or operator by hand. The hook that
- *                           refuses a P-151..P-159 close without a cited artifact is
- *                           .claude/hooks/dirty-tree-close-gate.ps1 once armed; until then the
- *                           trigger is the close reviewer, which is not a control and is said so.
+ *                           refuses a P-151..P-167 close without a cited passing artifact is
+ *                           .claude/hooks/probe-close-gate.mjs (rules and self-test in
+ *                           scripts/enforcement/probe-close-gate.mjs; registered 2026-09-11,
+ *                           verified by direct invocation, live firing through the harness
+ *                           owed the next session and said so in the P-160 close).
  *   3. What fails?          Non-zero exit, and a FAIL row in the artifact. Exit 1 = a measured
  *                           predicate failed. Exit 2 = refused: a required leg could not run
  *                           (missing credential, no network) and this never reports a pass it
@@ -147,6 +149,10 @@ export function extractFacets(resp) {
     cityLimitsStatus: str(cl?.status),
     recordPoint: qp && num(qp.latitude) != null && num(qp.longitude) != null ? { lat: qp.latitude, lng: qp.longitude } : null,
     structuralState: str(rec(j.structuralFact)?.status ?? rec(j.structuralFact)?.state),
+    // Present shape carries the two values (LDT structuralFactResolve.ts:18-28); the absent shape
+    // carries neither, so null here means "not present", never a default (P-157).
+    structuralLivingArea: num(rec(j.structuralFact)?.livingAreaSqft),
+    structuralYearBuilt: num(rec(j.structuralFact)?.yearBuilt),
     footprintState: str(rec(j.buildingFootprintFact)?.state),
     boundaryState: str(rec(j.boundaryEdgeFact)?.state),
   };
@@ -241,6 +247,20 @@ export function extractGisRing(resp, propId, point = null) {
 const sameSetbacks = (a, b) => !!a && !!b && ["front", "side", "rear", "corner"].every((k) => a[k] === b[k]);
 const fmtSb = (s) => (s ? `${s.front}/${s.side}/${s.rear}/${s.corner ?? "-"}` : "none");
 
+// The retrieval service's near-bbox route through the PE proxy. Shape read live 2026-09-11:
+// { countyFips, bbox, limit, count, footprints: [...] } (present atoms only, pg-storage.ts:552-597).
+// An unrecognised shape is reported as such, never counted as zero (P-158).
+const FOOTPRINT_NEAR_METRES = 120;
+const nearBboxQuery = (b) => `westLng=${b.west}&southLat=${b.south}&eastLng=${b.east}&northLat=${b.north}`;
+export function extractFootprintNear(resp) {
+  const j = rec(resp?.json);
+  if (!j) return { measured: false, http: resp?.http ?? 0, ms: resp?.ms ?? null, error: resp?.error ?? resp?.text ?? "no JSON body" };
+  const fps = Array.isArray(j.footprints) ? j.footprints : null;
+  const count = num(j.count) ?? (fps ? fps.length : null);
+  if (count == null) return { measured: true, http: resp.http, ms: resp.ms, count: null, shapeUnknown: true, keys: Object.keys(j).slice(0, 12) };
+  return { measured: true, http: resp.http, ms: resp.ms, count, returned: fps ? fps.length : null };
+}
+
 export const ROWS = {
   "P-151": {
     title: "placement never depends on geocoding",
@@ -312,6 +332,83 @@ export const ROWS = {
       return sameSetbacks(fx.setbacks, m) ? { verdict: "PASS", basis } : { verdict: "FAIL", basis: basis + " -- DISAGREE" };
     },
   },
+  // ------------------------------------------------------------------ OPS-23 wave 1 (2026-09-11)
+  "P-155": {
+    title: "feasibility refresh is asynchronous; both clients get the PDF without a retry",
+    parcels: ["48453:474034", "48021:34049"],
+    evaluate(id, legs, obs) {
+      // export_instrument and the app are operator-run legs; the BFF status is pasted from the
+      // lane's raw response. All three enter via --observations. Nothing here is inferred.
+      const o = obs?.[id] ?? {};
+      const http = o.feasibilityRefreshHttp;
+      const mcp = o.feasibilityMcpPdf;
+      const app = o.feasibilityAppPdfWithoutRetry;
+      const basis = `refresh http ${http ?? "not observed"} (202 required); MCP PDF ${mcp === true ? "OBSERVED yes" : mcp === false ? "OBSERVED no" : "not observed"}; app PDF without retry ${app === true ? "OBSERVED yes" : app === false ? "OBSERVED no" : "not observed"}`;
+      if ((http != null && http !== 202) || mcp === false || app === false) return { verdict: "FAIL", basis };
+      if (http !== 202 || mcp !== true || app !== true) return { verdict: "UNMEASURED", basis };
+      return { verdict: "PASS", basis };
+    },
+  },
+  "P-157": {
+    title: "TCAD improvement detail ingested: structural fact present with living area and year built",
+    parcels: ["48453:113408", "48453:474034"],
+    evaluate(id, legs) {
+      const fx = legs.facets;
+      if (!fx?.measured) return { verdict: "UNMEASURED", basis: "facets leg did not run" };
+      const basis = `structuralFact ${fx.structuralState ?? "absent from payload"}; livingAreaSqft ${fx.structuralLivingArea ?? "null"}; yearBuilt ${fx.structuralYearBuilt ?? "null"} (readPath ${fx.readPath}, bakedAt ${fx.bakedAt})`;
+      const ok = fx.structuralState === "present" && fx.structuralLivingArea != null && fx.structuralYearBuilt != null;
+      return ok ? { verdict: "PASS", basis } : { verdict: "FAIL", basis };
+    },
+  },
+  "P-158": {
+    title: "building footprint present on the facets and returned by near-bbox around the record point",
+    parcels: ["48021:34049", "48453:113408"],
+    evaluate(id, legs) {
+      const fx = legs.facets;
+      const nb = legs.footprintNear;
+      if (!fx?.measured) return { verdict: "UNMEASURED", basis: "facets leg did not run" };
+      const parts = [`buildingFootprintFact ${fx.footprintState ?? "absent from payload"}`];
+      if (fx.footprintState !== "present") return { verdict: "FAIL", basis: parts.join("; ") };
+      if (!nb?.measured) return { verdict: "UNMEASURED", basis: parts.join("; ") + `; near-bbox leg did not run (${nb?.error ?? "no leg"})` };
+      if (nb.shapeUnknown) return { verdict: "UNMEASURED", basis: parts.join("; ") + `; near-bbox shape unknown, keys ${nb.keys?.join(",")}` };
+      parts.push(`near-bbox count ${nb.count} in ${nb.ms} ms`);
+      return nb.count >= 1 ? { verdict: "PASS", basis: parts.join("; ") } : { verdict: "FAIL", basis: parts.join("; ") };
+    },
+  },
+  "P-159": {
+    title: "one buildable figure per feasibility document or none; sheet 2 never claims an empty lot",
+    parcels: ["48021:34049"],
+    evaluate(id, legs, obs) {
+      // The PDF is an operator/lane-extracted leg; the three values are read from the document text.
+      const o = obs?.[id] ?? {};
+      const figs = Array.isArray(o.pdfBuildableFigures) ? o.pdfBuildableFigures : null;
+      const distinct = figs ? new Set(figs.map((n) => Math.round(Number(n)))).size : null;
+      const pct = o.pdfPercentWithoutAtom;
+      const empty = o.pdfSheet2ClaimsEmptyLot;
+      const basis = `distinct buildable figures printed ${distinct ?? "not observed"}; percent without atom ${pct === true ? "OBSERVED YES (defect)" : pct === false ? "OBSERVED no" : "not observed"}; sheet 2 claims empty lot ${empty === true ? "OBSERVED YES (defect)" : empty === false ? "OBSERVED no" : "not observed"}`;
+      if ((distinct != null && distinct > 1) || pct === true || empty === true) return { verdict: "FAIL", basis };
+      if (distinct == null || pct !== false || empty !== false) return { verdict: "UNMEASURED", basis };
+      return { verdict: "PASS", basis };
+    },
+  },
+  "P-167": {
+    title: "one display vocabulary: strings identical across panel, MCP and PDF; parity locks gone",
+    parcels: ["48021:34049", "48021:33223", "48453:113408", "48453:474034", "48453:367134"],
+    evaluate(id, legs, obs) {
+      // Per-parcel: the lane's side-by-side string table, judged by the planner. Global (_vocab):
+      // the retirement, proven on origin/main, and the package version every consumer imports.
+      const o = obs?.[id] ?? {};
+      const v = rec(obs?._vocab) ?? {};
+      const same = o.displayStringsIdentical;
+      const lock = v.parityLockDeleted;
+      const importers = Array.isArray(v.importers) ? v.importers : [];
+      const missing = ["hauska-map", "hauska-engine", "legacy-design-tools"].filter((r) => !importers.includes(r));
+      const basis = `strings identical ${same === true ? "OBSERVED yes" : same === false ? "OBSERVED no" : "not observed"}; parity locks deleted ${lock === true ? "OBSERVED yes" : lock === false ? "OBSERVED no" : "not observed"}; package ${v.packageVersion ?? "not observed"} imported by ${importers.length ? importers.join(",") : "none observed"}`;
+      if (same === false || lock === false) return { verdict: "FAIL", basis };
+      if (same !== true || lock !== true || missing.length) return { verdict: "UNMEASURED", basis: basis + (missing.length ? `; importers missing ${missing.join(",")}` : "") };
+      return { verdict: "PASS", basis };
+    },
+  },
 };
 
 // --------------------------------------------------------------------------- live run
@@ -330,6 +427,9 @@ async function runLegs(parcel, opts) {
   legs.gisRing = pt
     ? extractGisRing(await call("POST", `${CORTEX_PROXY}/brokerage/v1/map-data/gis-layer`, { layer: "parcels", bbox: bboxAround(pt, RING_PROBE_METRES) }, LEG_TIMEOUT_MS.gisRing), propId, pt)
     : { measured: false, error: "no record point; ring leg not attempted" };
+  legs.footprintNear = pt
+    ? extractFootprintNear(await call("GET", `${PE_BASE}/api/spine/retrieval/building-footprints/near-bbox?countyFips=${parcel.fips}&${nearBboxQuery(bboxAround(pt, FOOTPRINT_NEAR_METRES))}&limit=50`, null, LEG_TIMEOUT_MS.gisRing))
+    : { measured: false, error: "no record point; near-bbox leg not attempted" };
   if (opts.cortex) {
     const r = await call("GET", `${opts.cortex.base}/api/brokerage/v1/place/node/${encodeURIComponent(parcel.id)}`, null, LEG_TIMEOUT_MS.cortexNode, { [opts.cortex.header]: opts.cortex.key });
     legs.cortexNode = { measured: !!r.json, http: r.http, ms: r.ms, error: r.error ?? r.text ?? null, keys: r.json ? Object.keys(r.json).slice(0, 12) : null };
@@ -402,6 +502,8 @@ function printReport(results, legsById) {
     console.log(`    env/point    ${p.measured ? `http ${p.http} status ${p.status} node ${p.parcelNodeId ?? "-"} ${p.ms} ms` : `NOT MEASURED http ${p.http ?? "-"} ${p.error ?? ""}`}`);
     const g = legs.gisRing;
     console.log(`    gis ring     ${g.measured ? `http ${g.http} features ${g.featureCount} matches ${g.matchesParcel}${g.matchedBy ? " by " + g.matchedBy : ""}${g.idSchemeMismatch ? " ID-SCHEME-MISMATCH (" + g.containingFeatureId + ")" : ""}${g.noContainingPolygon ? " NO-CONTAINING-POLYGON (nearest " + (g.nearest ? g.nearest.id + " " + g.nearest.metres + " m" : "none") + ")" : ""}` : `NOT MEASURED ${g.error ?? ""}`}`);
+    const n = legs.footprintNear;
+    if (n) console.log(`    near-bbox    ${n.measured ? `http ${n.http} count ${n.count ?? "?"}${n.shapeUnknown ? " SHAPE-UNKNOWN keys " + n.keys?.join(",") : ""} ${n.ms} ms` : `NOT MEASURED ${n.error ?? ""}`}`);
     const c = legs.cortexNode;
     console.log(`    cortex node  ${c.measured ? `http ${c.http} keys ${c.keys?.join(",")}` : `NOT MEASURED ${c.error ?? ""}`}`);
   }
@@ -430,6 +532,7 @@ function loadFixtureLegs() {
       envelopeByPoint: f.envelopeByPoint ? extractEnvelope(read(f.envelopeByPoint)) : { measured: false, error: "no fixture" },
       gisRing: f.gisRing ? extractGisRing(read(f.gisRing), id.split(":")[1], facets.recordPoint) : { measured: false, error: "no fixture" },
       cortexNode: { measured: false, error: "fixtures carry no cortex leg" },
+      footprintNear: { measured: false, error: "fixtures carry no near-bbox leg (read live 2026-09-11: count 0 for both P-158 parcels)" },
     };
   }
   return { manifest, legsById };
@@ -480,6 +583,36 @@ function selfTest() {
   check("P-152 can PASS on a good world", ROWS["P-152"].evaluate("48021:34049", good, goodObs).verdict === "PASS");
   check("P-153 FAILS when MCP and map polygons differ (two implementations)", ROWS["P-153"].evaluate("48021:34049", good, { "48021:34049": { ...goodObs["48021:34049"], mcpEnvelopeGeomVertices: 5 } }).verdict === "FAIL");
   check("P-153 FAILS when any surface prints the figure", ROWS["P-153"].evaluate("48021:34049", good, { "48021:34049": { ...goodObs["48021:34049"], figurePrinted: true } }).verdict === "FAIL");
+
+  // OPS-23 wave 1 rows. Known-bad on the 2026-09-11 fixtures and the day's observations.
+  const r157 = ROWS["P-157"].evaluate("48453:113408", legsById["48453:113408"], obs);
+  check("P-157 fails on the 2026-09-11 state of 48453:113408 (structural absent-verified)", r157.verdict === "FAIL", r157.basis);
+  const r158 = ROWS["P-158"].evaluate("48021:34049", legsById["48021:34049"], obs);
+  check("P-158 fails on the 2026-09-11 state of 48021:34049 (footprint absent)", r158.verdict === "FAIL", r158.basis);
+  const r159 = ROWS["P-159"].evaluate("48021:34049", legsById["48021:34049"], obs);
+  check("P-159 fails on the 2026-09-11 PDF observation (two figures, empty-lot narrative)", r159.verdict === "FAIL", r159.basis);
+  check("P-155 FAILS on an observed 503 refresh", ROWS["P-155"].evaluate("48453:474034", good, { "48453:474034": { feasibilityRefreshHttp: 503, feasibilityMcpPdf: false, feasibilityAppPdfWithoutRetry: false } }).verdict === "FAIL");
+  check("P-155 is UNMEASURED with no observation (never PASS by default)", ROWS["P-155"].evaluate("48453:474034", good, {}).verdict === "UNMEASURED");
+  const vocabOk = { parityLockDeleted: true, packageVersion: "1.33.0", importers: ["hauska-map", "hauska-engine", "legacy-design-tools"] };
+  check("P-167 FAILS when a string differs on one surface", ROWS["P-167"].evaluate("48021:34049", good, { "48021:34049": { displayStringsIdentical: false }, _vocab: vocabOk }).verdict === "FAIL");
+  check("P-167 FAILS when a parity lock survives", ROWS["P-167"].evaluate("48021:34049", good, { "48021:34049": { displayStringsIdentical: true }, _vocab: { ...vocabOk, parityLockDeleted: false } }).verdict === "FAIL");
+  check("P-167 is UNMEASURED when a consumer has not imported", ROWS["P-167"].evaluate("48021:34049", good, { "48021:34049": { displayStringsIdentical: true }, _vocab: { ...vocabOk, importers: ["hauska-map"] } }).verdict === "UNMEASURED");
+  // Good world for the wave rows, so each predicate can succeed.
+  const goodWave = { ...good, facets: { ...good.facets, structuralState: "present", structuralLivingArea: 1800, structuralYearBuilt: 1906, footprintState: "present" }, footprintNear: { measured: true, http: 200, ms: 500, count: 2, returned: 2 } };
+  const goodWaveObs = {
+    "48453:474034": { feasibilityRefreshHttp: 202, feasibilityMcpPdf: true, feasibilityAppPdfWithoutRetry: true },
+    "48021:34049": { pdfBuildableFigures: [], pdfPercentWithoutAtom: false, pdfSheet2ClaimsEmptyLot: false, displayStringsIdentical: true },
+    _vocab: vocabOk,
+  };
+  check("P-155 can PASS on a good world", ROWS["P-155"].evaluate("48453:474034", goodWave, goodWaveObs).verdict === "PASS");
+  check("P-157 can PASS on a good world", ROWS["P-157"].evaluate("48453:113408", goodWave, goodWaveObs).verdict === "PASS");
+  check("P-157 FAILS when present but year built is null", ROWS["P-157"].evaluate("48453:113408", { ...goodWave, facets: { ...goodWave.facets, structuralYearBuilt: null } }, goodWaveObs).verdict === "FAIL");
+  check("P-158 can PASS on a good world", ROWS["P-158"].evaluate("48021:34049", goodWave, goodWaveObs).verdict === "PASS");
+  check("P-158 FAILS when near-bbox returns nothing around a present footprint", ROWS["P-158"].evaluate("48021:34049", { ...goodWave, footprintNear: { measured: true, http: 200, ms: 500, count: 0, returned: 0 } }, goodWaveObs).verdict === "FAIL");
+  check("P-158 is UNMEASURED on an unrecognised near-bbox shape (never counted as zero)", ROWS["P-158"].evaluate("48021:34049", { ...goodWave, footprintNear: extractFootprintNear({ http: 200, ms: 1, json: { items: [] } }) }, goodWaveObs).verdict === "UNMEASURED");
+  check("P-159 can PASS on a good world (no figure, no percent, no empty-lot claim)", ROWS["P-159"].evaluate("48021:34049", goodWave, goodWaveObs).verdict === "PASS");
+  check("P-159 can PASS with exactly one figure", ROWS["P-159"].evaluate("48021:34049", goodWave, { ...goodWaveObs, "48021:34049": { ...goodWaveObs["48021:34049"], pdfBuildableFigures: [16386, 16386] } }).verdict === "PASS");
+  check("P-167 can PASS on a good world", ROWS["P-167"].evaluate("48021:34049", goodWave, goodWaveObs).verdict === "PASS");
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;

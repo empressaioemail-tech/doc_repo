@@ -1,8 +1,8 @@
 ---
 decision_id: 2026-09-11_overseer_dispatch_planner_lane_topology
 date: 2026-09-11
-owner: Nick (operator), proposed; recorded by the integration seat
-status: proposed
+owner: Nick (operator); recorded by the integration seat
+status: active (go 2026-09-11 evening, with the first dispatch-planner dispatch)
 related_canonical:
   - 90_operations/OPS-23_surface_completion_program
   - 90_runbooks/AGENT_CONTRACT
@@ -24,6 +24,13 @@ dispatch planner that knows something the plan and the missions do not is the de
 Operator's framing: "You are the overseer keeping things on track, we have another planner that
 is running the dispatches, and the dispatch agents are doing the heavy lifting as one-off agents.
 Keep your context window as fresh as possible."
+
+**Activated 2026-09-11.** The operator's go arrived as the instruction to dispatch OPS-23 wave 1
+(P-155, P-157, P-158, P-159, P-167, the rows with no dependency) as one dispatch to a sub-planning
+agent that spawns sub-agents, manages the wave, and reports back to the overseer's thread. The
+dispatch-planner seat is registered in `_catalog/seat_register.json` as `dispatch-planner` the same
+day, with its own doc_repo worktree and namespace; it compiles and writes there and never commits.
+The first checkpoint is due after three closes per OPS-23 section 6.
 
 ## Context
 

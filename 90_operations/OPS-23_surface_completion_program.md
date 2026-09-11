@@ -180,8 +180,10 @@ as each is written. A mission not yet written is not a dispatchable row.
 
 ## 6. Roles and the swap protocol
 
-The operator's ruling 2026-09-11, recorded as proposed in the topology decision and active on
-his go.
+The operator's ruling 2026-09-11, recorded in the topology decision and ACTIVE from the
+operator's go the same evening (first dispatch-planner dispatch: OPS-23 wave 1, rows P-155,
+P-157, P-158, P-159, P-167). The dispatch-planner seat is `dispatch-planner` in
+`_catalog/seat_register.json`.
 
 **Overseer** (the integration seat, `P:/doc_repo`, branch `main`). Owns this document, the
 rulings, the probe instrument, and every commit to doc_repo. Reads only three things: lane
