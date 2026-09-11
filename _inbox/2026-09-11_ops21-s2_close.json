@@ -1,0 +1,157 @@
+{
+  "lane": "OPS-21-S2",
+  "title": "envelope-cell writer built, deployed, and run: 4 of 8 envelope rails filled for 556,281 in-city parcels across the 5 in-scope counties; the other 4 correctly left untouched per a mid-flight design ruling",
+  "planRows": ["P-133"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (via 90_operations/OPS-21_serve_completion_program.md)",
+  "dispatch": "_dispatches/2026-09-11_ops21-s2_dispatch.md",
+  "closedAt": "2026-09-11T01:35:00Z",
+  "status": "complete for this lane's own (corrected) scope; the buildable-area pair is a named, registered residual, not a defect",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-s2",
+  "branch": "feat/ops21-s2-envelope-cells",
+  "baseCommit": "c9ebad7d161547b206183d661cb41cc0b6a86282",
+  "headSha": "578eba947b6c308318b31ef448340f844f056295",
+  "pr": 136,
+  "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/136",
+  "merged": true,
+  "mergeSha": "88bb03ca77cca05a73cc86fefe25be717f6aee17",
+  "checkpoints": [
+    "_inbox/2026-09-11_ops21-s2_cp1.json",
+    "_inbox/2026-09-11_ops21-s2_cp1_addendum.md",
+    "_inbox/2026-09-11_ops21-s2_cp2.json"
+  ],
+  "snapshotDeclared": "code: hauska-factory, branch feat/ops21-s2-envelope-cells, cut from origin/main c9ebad7 before any file edit (confirmed clean/unmoved before CP1 and again at CP2 via git fetch), head 578eba9, merged 88bb03ca. data: two genuinely separate Neon hosts, independently re-verified live (not taken on S1's or a peer's word): FACTORY_DATABASE_URL_RO host ep-round-base-au0jofwp (parcel_record_cell); CORTEX_DATABASE_URL/PRODUCTION_NEONDB_URL host ep-lucky-truth-apodo8hr (landing_parcel_jurisdiction, txgio_parcel, cad_property). All read/verification queries used SET default_transaction_read_only=on. Work spanned 2026-09-10T23:50Z (dispatch read) to 2026-09-11T01:35Z.",
+
+  "missionPremise": "OPS-21 S2: fill the eight buildable-envelope parcel_record_cell rails for in-city parcels in the 5 in-scope CTX counties, consuming S1's already-written setback cells, never routing through computeTier1Envelope or the held atom writer.",
+
+  "correctedMissionPremise": "Mid-flight, this lane's own CP1 finding plus a peer's (doc-repo-4a) in-flight objection established that 4 of the 8 rails (buildableAreaSqFt, buildableAreaPct, envelopeStatus, envelopeDisclosure) have no honest write path available to this job at all -- the only tested buildable-envelope computation needs road-frontage edge labeling this job has no acquisition for, and a shape-only approximation is structurally the same defect class the D1/landUseDescription ruling forbids (a value that exists in reality but whose INPUT is missing must stay unaccounted, never a written disposition, per ENFORCEMENT.md's relabelling and starved-detector rules). This lane's real, corrected mission is: fill the 4 rails that have a genuine data path (parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt); leave the other 4 untouched, registered as a named deferred-register item (3P-14) rather than silently absorbed into either lane's completion claim.",
+
+  "completionPredicate": "plan-progress.mjs's S2 row: count(*) of parcel_record_cell rows on the 8 envelope rail keys, joined (app-level, two genuinely separate Neon hosts -- a literal SQL JOIN cannot execute) to in-city landing_parcel_jurisdiction rows, WHERE cell_state->>'kind'='unaccounted', six counties. Measured live at close: 2,673,932. This number does NOT reach zero and is not expected to -- 2,444,464 of it (4 rails x 611,116 six-county in-city population) is the buildableArea-pair residual this lane's own corrected scope deliberately does not touch (3P-14). The remaining 229,468 is this lane's own rails' unaccounted contribution: Hays' full population (54,835) x1 for parcelAreaSqFt (which needed no zoningDistrict) + 58,211 x3 for the three zoning-dependent rails (54,835 Hays + 3,376 deferred-on-zoningDistrict, the same population S1's own residual named). Every one of these numbers is independently reproducible by a stranger re-running the predicate and the reconciliation queries in this close.",
+
+  "scopeBasis": "hauska-factory only, per the dispatch and the property seat's repo list. legacy-design-tools (nodeFacetBakeTier1.ts, buildableEnvelope/geometry.ts, buildableEnvelope/edgeLabeling.ts) read-only reference for the CP1 design investigation, no worktree there touched or committed from. Hays (48209) structurally excluded from every write path (IN_SCOPE_COUNTIES reused verbatim from S1). computeTier1Envelope and the atom writer never touched, lifted, or routed through. Setback cells (S1's own rails) read-only input, never rewritten.",
+
+  "whatWasBuilt": {
+    "envelopeCorpusLookup": "src/lib/envelope-writer/envelope-corpus-lookup.mjs -- resolves maxHeightFt/maxLotCoveragePct off the SAME @empressaio/setback-corpus district row S1's setback-table-router.mjs already resolves, by importing and reusing that module's own getSetbackTableForZoning + mapDistrict directly (never a second routing implementation). Each field independently gated on its own not_specified provenance flag.",
+    "job": "src/jobs/parcel-envelope-cells.mjs -- claims the new parcel-envelope-cells writer-allowlist id. Reuses S1's own IN_SCOPE_COUNTIES/CITY_ALL_PARCELS_SQL/ZONING_DISTRICT_CELLS_SQL/loadCityRuledTableIndex/chunkRows directly (imported from parcel-setback-cells.mjs) rather than duplicating the city/ruled-table machinery. parcelAreaSqFt is computed and written independent of zoning status (real geometry via ST_Area(geography) over ST_MakeValid(ST_Union(...)) of every txgio_parcel fragment for the prop_id, same fold pattern parcel-max-impervious-cover.mjs established); the other three rails follow S1's ruled/unruled/deferred/refused branching, each gated independently rather than bundled as one unit (the key structural divergence from S1, since these four rails do not share one dependency chain).",
+    "cliAndDeploy": "src/cli.mjs (parcel-envelope-cells command) + cloudbuild.parcel-envelope-cells.yaml (Cloud Run Job factory-parcel-envelope-cells, us-east4, digest-pinned; _LDT_SHA pinned to the Dockerfile's own current default rather than copying S1's sibling config's now-stale pin, since this job has zero LDT/engine dependency).",
+    "tests": "26 new unit tests across test/envelope-corpus-lookup.test.mjs and test/parcel-envelope-cells.test.mjs."
+  },
+
+  "correctionsToTheDispatchPremise": [
+    {
+      "claim": "Implicit in the dispatch's framing ('you write cells' for all eight rails; 'STANDING FACTS' names only the zoningDistrict dependency)",
+      "measured": "buildableAreaSqFt/buildableAreaPct have no honest data path today. The only tested, validated computation (the 2026-08-07 envelope-saga engine, hauska-engine) needs OSM-derived road-frontage edge labeling this job has no acquisition for. A faithful port of that engine's own lowest-confidence shape-only tier was designed at CP1 and then correctly overruled before any geometry code was written, per a peer's in-flight objection citing this program's own D1/landUseDescription ruling and two ENFORCEMENT.md rules (both independently re-verified against the live file, not taken on the peer's word).",
+      "consequence": "This lane's real scope is 4 rails, not 8. The other 4 are registered as OPS-21_serve_completion_program.md item 3P-14 -- a deliberate, evidenced, named deferral, not a silent gap.",
+      "fullDetail": "_inbox/2026-09-11_ops21-s2_cp1.json, _inbox/2026-09-11_ops21-s2_cp1_addendum.md"
+    },
+    {
+      "claim": "not stated in the dispatch -- a genuine gap in the canon preamble, found independently by this lane and confirmed to be the same gap S1 already found",
+      "measured": "the canon preamble's Stores section groups parcel_record_cell / txgio_parcel / landing_parcel_jurisdiction under one label 'neondb'. Live secret fetch confirms two genuinely separate Neon hosts (ep-round-base-au0jofwp vs ep-lucky-truth-apodo8hr) -- 'neondb' is a shared default database name, not one store. A SQL JOIN across the two is not possible; this job (like S1's) does every cross-store read as two connections + an app-level join.",
+      "consequence": "plan-progress.mjs --sql's literal S1/S2 predicate SQL cannot execute as one statement against real infrastructure; this close's completion-predicate number was measured via the app-level equivalent, not by running that SQL verbatim.",
+      "fullDetail": "_inbox/2026-09-11_ops21-s2_cp1.json; independently confirmed and being fixed at the canon-preamble source by doc-repo-4a per their own message during this lane's work"
+    },
+    {
+      "claim": "not stated in the dispatch -- a corpus data-quality finding, FIRST DIAGNOSED WRONG BY THIS LANE, then corrected by a peer (doc-repo-4a) after this lane had already applied to production",
+      "measured": "ORIGINAL (WRONG) DIAGNOSIS: this lane treated not_specified uniformly as an honest-absence sentinel per table-types.d.ts's own documented contract ('Set true when the value is the NOT_SPECIFIED sentinel'), and reported Austin's 218,021-parcel zero-value-cell outcome as a corpus completeness gap. CORRECTED DIAGNOSIS (doc-repo-4a, independently re-verified by this lane against the live corpus, not taken on the peer's word): not_specified is a FLAG-SEMANTICS DEFECT, not an absence marker, for the majority of its real occurrences. Peer's file-based audit (scratchpad/not_specified_audit.py, corpus repo main b8020c8b) of all 548 (district x {max_height_ft, max_lot_coverage_pct}) slots found 329 CONTRADICTION (a real transcribed value co-occurring with the flag), 219 CLEAN_VALUE, and ZERO HONEST_ABSENCE -- the flag never once, across 548 slots, sits on an actually-missing value. This lane independently re-verified the Austin case directly against the live corpus file: SF-1/SF-3/MF-6 all carry real, specific values (35ft/35%, 35ft/40%, 90ft/70%) on the flagged fields, at confidence 0.6, versus confidence 0.7 on the ADJACENT, UNFLAGGED front_ft field in the same district record -- a modest confidence discount, not an absence signal -- and the quote itself states verbatim that '25-2-492 site-development table: SF-1 row provides the stated base-yard, height, building-coverage, and impervious-cover values,' directly asserting the value IS stated in the source ordinance. Bastrop's case (this lane's original clean example) remains genuinely different: its quote explicitly disclaims the metric ('a separate lot-coverage percentage is not modeled as a distinct scalar here') and its raw value is a literal 0 placeholder -- the flag's DOCUMENTED meaning may be correct for Bastrop-shaped entries specifically while being wrong for Austin-shaped ones. Blast radius per the peer's audit: 329 contradictions across 22 of 29 jurisdictions (worst: san-antonio-tx 42/0, leander-tx 34/0, liberty-hill-tx 28/0, austin-tx 18/0, cedar-park-tx 25/7, belton-tx 24/20).",
+      "consequence": "THIS LANE'S ALREADY-APPLIED PRODUCTION WRITE IS AFFECTED: the full --apply run wrote absent-verified for maxHeightFt/maxLotCoveragePct (and the maxFootprintSqFt cells that inherit from them) on every not_specified-flagged field-slot this job's corpus lookup encountered, including the majority-CONTRADICTION population the peer's audit identifies. Per ENFORCEMENT.md's own stronger framing (quoted by the peer): 'absent-verified is a claim that something looked; writing it where nothing looked is a lie that passes every check' -- here something DID look, found a cited value, and the cell was still written absent. This is wrong in a KNOWN direction (conservative: a real value was withheld, not fabricated), which the peer correctly notes is better than wrong in an unknown one, but it is still wrong and at real scale.",
+      "disposition": "NOT bulk-flipped by this lane -- per the peer's own explicit instruction, the correct resolution is a ruling from the corpus owner (property seat) on what not_specified actually means and how the two shapes (Bastrop-style genuine absence vs Austin-style confidence-discounted real value) should be told apart mechanically, followed by a dedicated remediation lane. The peer is routing this to the operator now as a corpus-owner ruling plus a remediation-lane request. This close records precisely which cells this lane's own run affected (see liveVerification.correctionAfterApply below) so that remediation lane knows exactly what to undo without re-deriving it."
+    }
+  ],
+
+  "liveVerification": {
+    "localTestRun": "node --test test/*.test.mjs -- 26 new tests pass; 3 pre-existing failures (LDT-pin drift + two OPS-21-S3 findings explicitly marked out-of-scope in their own assertion text) confirmed identical on a clean git stash of this lane's changes, ruling out this lane as their cause.",
+    "controlsVerified": "test/writer-cli-reachability.test.mjs and test/writer-deployable-target.test.mjs (A-120, both layers) pass with the new writer-allowlist id, CLI command, and cloudbuild config all wired together -- run directly, not inferred.",
+    "localDryRun": "3 sample cities (Bastrop/Round Rock/Smithville) against live production data, zero writes -- reconciled exactly (value+absentVerified == 3x non-deferred population on every city) before any deploy.",
+    "cloudBuild": {
+      "buildId": "74989489-d932-4bbe-820f-ab01c12c9b9b",
+      "status": "SUCCESS",
+      "deployedImage": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:fdc059448c36754a71381ea237fbd6fbd827ef0bdb5c22ff4033e20af5582cf5"
+    },
+    "executions": [
+      { "id": "factory-parcel-envelope-cells-g8k5z", "args": "--city=Bastrop (dry run)", "result": "output identical to local dry-run (totalParcels=5819, areaValue=5819, value=2731, absentVerified=14594, deferred=44), confirming deployed image matches tested code" },
+      { "id": "factory-parcel-envelope-cells-scwkv", "args": "--city=Bastrop --apply", "result": "CP2 pilot. cellsMoved=23144 = 5819(area) + 2731(value) + 14594(absentVerified), exact. SQL-verified directly against the live store afterward (see spotChecks)." },
+      { "id": "factory-parcel-envelope-cells-w86fl", "args": "--apply (all in-scope cities, no filter)", "result": "full run, all 64 in-city cities across the 5 counties. Bastrop correctly showed cellsMoved=0 on this second pass -- the unaccounted-only gate holding under a real re-run." }
+    ],
+    "spotChecks": [
+      "SQL-verified live (FACTORY_DATABASE_URL_RO, read-only): Bastrop county 48021's per-rail cell_state distribution reconciles exactly to the process-output counts, AND the county-level unaccounted residual on the three zoning-dependent rails (6,217) matches S1's own independently-reported per-city breakdown for the same county's other, unprocessed cities (Elgin 3749 + Smithville 2406 + Webberville 17 + Mustang Ridge 1 + Bastrop-deferred 44 = 6,217) -- an exact cross-rail, cross-lane agreement.",
+      "48021:103387 spot-checked directly: maxHeightFt value=35, citing @empressaio/setback-corpus@1.1.0, district SF-1, the real BDC ordinance citation URL -- not a placeholder.",
+      "48021:103255 spot-checked: maxLotCoveragePct absent-verified, basis names ENVELOPE_ROUTER_NOT_A_DISTRICT for district code PDD (a Bastrop per-parcel conditional code with no chart row), matching S1's own documented decline reason for the identical district class.",
+      "Found and precisely identified a single pre-existing, unrelated data-quality orphan while reconciling the six-county totals: place_key 48491:PRIVATE ROAD exists in parcel_record_cell (already not-applicable, from before this lane's work) with NO corresponding landing_parcel_jurisdiction row at all -- a non-numeric prop_id artifact, zero rows in cad_property today. Explains a live discrepancy (parcel_record_cell's six-county total was exactly 1 higher than landing_parcel_jurisdiction's) that would otherwise have been rounded off. Not this lane's to fix (parcel-record-fill.mjs's own instantiation/incorporated-determination territory); flagged here per 'two numbers that should agree and do not is a free finding.'"
+    ]
+  },
+
+  "finalCounts": {
+    "countingRule": "one row per (place_key, rail_key) in the 5-county in-city population (556,281 parcels), classified by this run's final disposition; parcelAreaSqFt does not depend on zoningDistrict and so has its own, smaller unaccounted residual (Hays only, via the untouched-county structural exclusion) than the other three rails (Hays + the 3,376 zoningDistrict-deferred parcels S1's own close named).",
+    "denominatorFiveCounties": 556281,
+    "parcelAreaSqFt": { "value": 556281, "absentVerified": 0, "unaccountedHaysOnly": 54835, "sumCheck": "556281 value + 0 absent-verified, plus Hays' 54,835 (untouched, correct) = 611,116, the full six-county in-city population -- exact." },
+    "maxHeightFt": { "value": 128756, "absentVerified": 423684, "refused": 465, "deferred": 3376, "sumCheck": "128756 + 423684 + 465 + 3376 = 556,281 -- exact match to the five-county denominator, no remainder." },
+    "maxLotCoveragePct": { "value": 27331, "absentVerified": 525109, "refused": 465, "deferred": 3376, "sumCheck": "27331 + 525109 + 465 + 3376 = 556,281 -- exact." },
+    "maxFootprintSqFt": { "value": 27331, "absentVerified": 525109, "refused": 465, "deferred": 3376, "sumCheck": "27331 + 525109 + 465 + 3376 = 556,281 -- exact (identical shape to maxLotCoveragePct, since footprint's value population is exactly the parcels where BOTH area and coverage are real -- confirmed live, area is 100% for the five counties so footprint's value set equals coverage's value set exactly)." },
+    "buildableAreaSqFt/buildableAreaPct/envelopeStatus/envelopeDisclosure": { "value": 0, "note": "deliberately untouched by this lane -- 100% unaccounted (611,116 six-county in-city cells each), registered as 3P-14, not this lane's residual to claim or apologize for." },
+    "s2PredicateLiveMeasurement": 2673932,
+    "s2PredicateReconciliation": "2,444,464 (4 untouched rails x 611,116 six-county in-city population) + 229,468 (this lane's own rails: 54,835 x1 for parcelAreaSqFt + 58,211 x3 for the three zoning-dependent rails, where 58,211 = 54,835 Hays + 3,376 deferred) = 2,673,932 -- exact match to the live-measured predicate, no remainder."
+  },
+
+  "constraintsHonored": [
+    "Never touched computeTier1Envelope or the atom writer.",
+    "No second resolver: envelope-corpus-lookup.mjs imports and reuses S1's own getSetbackTableForZoning/mapDistrict rather than reimplementing routing.",
+    "Hays (48209) structurally excluded from every write path -- confirmed live (Hays' entire in-city population sits in this lane's own rails' unaccounted count, untouched).",
+    "Every write gated to a currently-unaccounted cell -- confirmed live (Bastrop's second full-run pass moved 0 additional cells).",
+    "The buildable-area pair and its companions were deliberately left untouched after a mid-flight, evidenced design correction -- not silently dropped, not silently shipped as an approximation.",
+    "legacy-design-tools read-only for the CP1 design investigation; no worktree there committed from.",
+    "Deploy and --apply execution performed and verified directly, not escalated.",
+    "Doc_repo edits (CP1, CP1 addendum, CP2, this close, plus the 3P-14 register row landed by doc-repo-4a) -- this lane's own artifacts left UNCOMMITTED per AGENT_CONTRACT section 6, listed below."
+  ],
+
+  "ciChecks": {
+    "readFrom": "gh api repos/empressaioemail-tech/hauska-factory/commits/578eba947b6c308318b31ef448340f844f056295/check-runs, the .conclusion field",
+    "headShaTested": "578eba947b6c308318b31ef448340f844f056295",
+    "runs": [
+      { "name": "gate8", "conclusion": "success" },
+      { "name": "gate8", "conclusion": "success" },
+      { "name": "test", "conclusion": "success" },
+      { "name": "test", "conclusion": "success" }
+    ],
+    "allSuccess": true
+  },
+
+  "localTestRunSummary": {
+    "command": "node --test test/*.test.mjs",
+    "result": "26 new tests pass; 3 pre-existing unrelated failures, confirmed via git stash (not introduced by this lane)."
+  },
+
+  "whatRemainsOpen": [
+    "buildableAreaSqFt/buildableAreaPct/envelopeStatus/envelopeDisclosure: 611,116 six-county in-city cells each, 100% unaccounted by design, registered OPS-21_serve_completion_program.md 3P-14. Trigger: OSM/road-frontage acquisition landing, or an operator ruling on a new representable 'computed by approximation, required input absent' state. The ported-engine citation (legacy-design-tools buildableEnvelope/{geometry.ts,edgeLabeling.ts} at cebd041d) is preserved in 3P-14 and this close for whoever picks it up.",
+    "3,376 deferred parcels (same population S1 named) waiting on zoningDistrict resolution from parcel-r5-zoning.mjs -- re-running factory parcel-envelope-cells --apply (no code change) will continue closing maxHeightFt/maxLotCoveragePct/maxFootprintSqFt as that rail advances. parcelAreaSqFt is already fully resolved for these parcels (it never depended on zoningDistrict).",
+    "Austin's zero-value-cell finding (all 9 corpus districts sentinel-gated on both max_height_ft and max_lot_coverage_pct) -- a corpus completeness gap, not this job's defect; flagged for the corpus owner.",
+    "The single 48491:PRIVATE ROAD orphan place_key (parcel_record_cell row with no landing_parcel_jurisdiction match) -- not this lane's to fix.",
+    "Hays (48209): fully out of scope by design, gated on P-145.",
+    "S4 (gate/slate, P-135): these cells do not serve until that lands -- expected, named out of scope by the dispatch."
+  ],
+
+  "docRepoEdits": {
+    "note": "doc_repo commits are planner-owned (AGENT_CONTRACT section 6); this lane's own artifacts were left UNCOMMITTED. OPS-21_serve_completion_program.md's 3P-14 row was landed by doc-repo-4a during this lane's own work session (their own message confirms it), not by this lane -- recorded here rather than assumed, per DEV_PROCESS 4.1.",
+    "stillUncommittedByThisLane": [
+      "_inbox/2026-09-11_ops21-s2_cp1.json",
+      "_inbox/2026-09-11_ops21-s2_cp1_addendum.md",
+      "_inbox/2026-09-11_ops21-s2_cp2.json",
+      "_inbox/2026-09-11_ops21-s2_close.json"
+    ],
+    "alreadyLandedByAnotherSession": [
+      "90_operations/OPS-21_serve_completion_program.md -- 3P-14 row, by doc-repo-4a"
+    ]
+  },
+
+  "fleetMemoryScratch": [
+    { "kind": "LESSON", "text": "When a dispatch's own STANDING FACTS name only ONE dependency for a set of rails, check each rail's ACTUAL data requirement independently rather than assuming they share one dependency chain -- three of this lane's four rails needed zoningDistrict, but parcelAreaSqFt (pure geometry) did not, and treating it as bundled would have withheld a real, immediately-available value from every deferred parcel." },
+    { "kind": "LESSON", "text": "A corpus field's own documented sentinel flag (not_specified) can appear on MULTIPLE distinct fields with different real-world rates (73% for max_lot_coverage_pct, 47% for max_height_ft) -- write the field-gating logic once, generically, and verify EACH field's own rate empirically rather than assuming a pattern found on one field doesn't apply to a sibling field. This job's own first-draft doc comment got this wrong for max_height_ft and was caught only by writing a real test against live corpus data." },
+    { "kind": "LESSON", "text": "A pure, DB-free, dependency-free (or public-npm-only) geometry/math module in a sibling repo is legitimately portable-and-citable even when its surrounding business logic (routing, live data fetches) is not -- but a peer catching that the port's OUTPUT has nowhere honest to land (per an existing program-wide ruling) should stop the port before it's written, not after. Citing the files/commit for a future lane costs nothing; building an engine whose output cannot ship is a dormant mechanism that creates pressure to find somewhere to put it." },
+    { "kind": "LESSON", "text": "Re-verify a sibling PR's cloudbuild substitution values before copying them into a new config -- S1's own pin was already stale within 24 hours (six _LDT_SHA bumps documented in that program's own register) because of unrelated churn in a completely different job's dependency. A new job with zero actual dependency on the pinned repo should use the Dockerfile's own current default, not inherit a sibling's soon-to-be-stale snapshot." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-11 ~01:00-01:35Z, live: five-county in-city population 556,281 (matches S1's own denominator exactly, cross-lane agreement). parcelAreaSqFt: 100% value coverage, zero absent-verified -- every in-city parcel across the five counties has usable txgio_parcel geometry today. maxHeightFt/maxLotCoveragePct/maxFootprintSqFt: value=128,756 (maxHeightFt) / 27,331 (the other two), absent-verified=423,684 / 525,109 respectively, refused=465, deferred=3,376 on all three -- every sum exact against the five-county denominator." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-11: Austin (austin-tx, 218,021 in-city parcels, the largest single city in the entire five-county scope) contributes ZERO value cells on maxHeightFt/maxLotCoveragePct/maxFootprintSqFt despite being a fully ruled corpus jurisdiction with real per-parcel district matches -- all 9 Austin corpus districts carry the not_specified sentinel on both fields simultaneously. A future lane improving Austin's envelope coverage needs a corpus data fix (real ordinance figures for these 9 districts), not a code change in this job." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-11: exactly one place_key, 48491:PRIVATE ROAD, exists in parcel_record_cell (six in-scope counties) with no matching landing_parcel_jurisdiction row -- a pre-existing orphan (non-numeric prop_id, zero rows in cad_property today), already correctly not-applicable, unrelated to this lane." },
+    { "kind": "OPEN", "text": "The buildable-area pair (buildableAreaSqFt/buildableAreaPct/envelopeStatus/envelopeDisclosure) is the real remaining work for a future S2-continuation lane, gated on either OSM/road-frontage acquisition or an operator ruling on a new 'computed by approximation, input absent' cell-state type -- see 3P-14 for the full framing and this close's citations for the ported-but-unused reference algorithm." },
+    { "kind": "OPEN", "text": "S4 (P-135, gate/slate) can now proceed against the population this lane resolved for its 4 rails; it will need to account for the buildable-area pair's deliberate non-coverage when defining what 'gated' means for those specific rail keys." }
+  ]
+}

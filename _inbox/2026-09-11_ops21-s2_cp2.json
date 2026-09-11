@@ -1,0 +1,66 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "lane": "OPS-21-S2",
+  "planRow": "P-133",
+  "repo": "hauska-factory",
+  "snapshot": "branch feat/ops21-s2-envelope-cells, still cut from origin/main c9ebad7 (confirmed unmoved via git fetch immediately before this checkpoint), working tree has: src/jobs/parcel-envelope-cells.mjs, src/lib/envelope-writer/envelope-corpus-lookup.mjs, cloudbuild.parcel-envelope-cells.yaml (new); src/cli.mjs, src/control/writer-allowlist.mjs (modified to wire the new job); test/parcel-envelope-cells.test.mjs, test/envelope-corpus-lookup.test.mjs (new, 26 tests total, all passing).",
+
+  "scopeChangeSinceCP1": "CP1 proposed 8 rails via a ported shape-only geometry engine for buildableAreaSqFt/buildableAreaPct. doc-repo-4a objected in-flight (D1/landUseDescription precedent + ENFORCEMENT.md lines 67-68 and 78, both independently verified against the live file) before any geometry code was written. Adopted in full: this job now writes exactly 4 rails (parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt); the other 4 stay untouched/unaccounted, registered as OPS-21_serve_completion_program.md 3P-14. Full record: _inbox/2026-09-11_ops21-s2_cp1_addendum.md.",
+
+  "localTestRun": {
+    "command": "node --test test/*.test.mjs",
+    "result": "full suite (all files) run; 3 pre-existing failures confirmed unrelated via git stash (test/ctx-b3-store-census.test.mjs's LDT-pin drift check, and two test/p3-absence.test.mjs OPS-21-S3 findings explicitly marked 'not fixed by this lane, out of scope' in their own assertion messages) -- identical failures reproduced on a clean stash of this lane's own changes, confirming they predate this work.",
+    "newTests": "26 (8 in envelope-corpus-lookup.test.mjs, 18 in parcel-envelope-cells.test.mjs), all passing.",
+    "controlsVerified": "test/writer-cli-reachability.test.mjs and test/writer-deployable-target.test.mjs (A-120, both layers) pass with the new writer-allowlist id and cloudbuild config wired in -- confirmed by running both files directly, not inferred from the full-suite pass."
+  },
+
+  "localDryRun": {
+    "command": "node src/cli.mjs parcel-envelope-cells --city=Bastrop --city=Smithville --city=\"Round Rock\" --page-size=500",
+    "against": "live production data via PRODUCTION_NEONDB_URL (real) and FACTORY_DATABASE_URL_RO (real, read-only replica secret) -- a local process making real read queries against the actual production Neon databases; NOT run through the deployed Cloud Run image yet, and no --apply (zero writes) -- see precise-empirical-claims discipline.",
+    "results": [
+      {
+        "city": "Bastrop",
+        "ruled": true,
+        "totalParcels": 5819,
+        "deferred": 44,
+        "parcelAreaSqFt": "value=5819 (100% -- every parcel had usable txgio_parcel geometry)",
+        "maxHeightFt/maxLotCoveragePct/maxFootprintSqFt": "value=2731, absentVerified=14594",
+        "arithmeticCheck": "2731 (maxHeightFt only, the not_specified-gated Bastrop districts contribute zero maxLotCoveragePct/maxFootprintSqFt value cells) + 14594 (3044 maxHeightFt absent-verified [non-Euclidean district codes, same NOT_A_DISTRICT population S1's own setback pilot found] + 5775 maxLotCoveragePct absent-verified [sentinel, all districts] + 5775 maxFootprintSqFt absent-verified [inherits]) = 17325 = 3 x 5775 (non-deferred population) exactly, no remainder.",
+        "crossCheck": "2731 matches S1's own CP2 Bastrop pilot value count for setbacks exactly (_inbox/2026-09-10_ops21-s1_cp2.json) -- same underlying district-match population, independently confirmed by a different rail's job."
+      },
+      {
+        "city": "Round Rock",
+        "ruled": true,
+        "totalParcels": 39163,
+        "deferred": 165,
+        "parcelAreaSqFt": "value=39163 (100%)",
+        "maxHeightFt/maxLotCoveragePct/maxFootprintSqFt": "value=54660, absentVerified=62334",
+        "arithmeticCheck": "54660 + 62334 = 116994 = 3 x 38998 (non-deferred population) exactly.",
+        "finding": "SF-R's max_height_ft (999) carries its own not_specified sentinel (corpus quote: '999 is the reconciled non-binding sentinel... not a real value') -- confirmed the not_specified pattern is not unique to max_lot_coverage_pct, corrected in this job's own module doc, which originally (wrongly) claimed max_height_ft carried no comparable sentinel."
+      },
+      {
+        "city": "Smithville",
+        "ruled": false,
+        "totalParcels": 2406,
+        "deferred": 0,
+        "parcelAreaSqFt": "value=2406 (100%)",
+        "maxHeightFt/maxLotCoveragePct/maxFootprintSqFt": "value=0, absentVerified=7218 = 3 x 2406 exactly (no ruled table at all).",
+        "confirms": "zoningDistrict was never queried for this city (asserted in the unit test, and matches S1's own no-ruled-table discipline)."
+      }
+    ]
+  },
+
+  "corpusPopulationFindings": {
+    "not_specified_rate_max_lot_coverage_pct": "199 of 274 districts (73%) across the full corpus (all 29 jurisdictions), per CP1.",
+    "not_specified_rate_max_height_ft": "130 of 274 districts (47%) -- measured while writing this checkpoint's tests, not anticipated at CP1. Both fields are gated identically and independently in envelope-corpus-lookup.mjs's resolveField, which is field-agnostic by design, so this finding required no code change -- only the module's own doc comment (which had wrongly claimed max_height_ft carried no comparable sentinel) needed correcting."
+  },
+
+  "nextSteps": [
+    "Deploy cloudbuild.parcel-envelope-cells.yaml (LDT_SHA pinned to the Dockerfile's own current default, not copied from S1's now-stale pin, since this job has zero LDT/engine dependency).",
+    "Verify deployed image's dry-run output matches this checkpoint's local numbers exactly (same discipline as S1's CloudBuild verification).",
+    "Pilot --apply on Bastrop, SQL-verify the live store matches the predicted counts.",
+    "Full --apply across all in-scope cities.",
+    "Reconcile against the S2 completion predicate and file close."
+  ]
+}

@@ -183,6 +183,40 @@ Access is written on every row. `owner` carries `OWNER_RAIL_ACCESS`; every other
 
 ---
 
+## 3a. Stores — CORRECTED 2026-09-11, and OPS-13 does not cover this
+
+OPS-13 (2026-08-09) records ONE Neon endpoint with TWO databases. True of the cortex and atoms
+stores, and **it does not cover the Factory control store, which is a third, on a different
+host.** Two OPS-21 lanes hit this independently (S1 and S2), each re-verifying live.
+
+```
+HOST ep-lucky-truth-apodo8hr      (PRODUCTION_NEONDB_URL, and atoms)
+  db hauska_mcp   atoms
+  db neondb       txgio_parcel, cad_property, landing_parcel_jurisdiction
+
+HOST ep-round-base-au0jofwp       (FACTORY_DATABASE_URL)
+  db neondb       parcel_record, parcel_record_cell, parcel_record_companion_row
+
+NOT ESTABLISHED — do not assume either host
+                  parcel_gate_verdict, tx_* layers, permit_record
+```
+
+The three unresolved entries were carried in the old single bucket and neither lane actually
+resolved their host. **They are listed unresolved on purpose rather than silently assigned to
+the more likely one.** A lane that needs one resolves it live and reports which host answered,
+so this block gains a line instead of a guess.
+
+**The same-name `neondb` on both hosts is the trap.** A connection string that looks right, a
+database name that looks right, and a query against the wrong host returns a FALSE ABSENCE,
+not an error. Declare which HOST and which database you opened, not just the database.
+
+`parcel-record-fill.mjs:13-14` states the split outright: "That table is NOT on the Factory
+control store." **A SQL JOIN between `parcel_record_cell` and any cortex table cannot
+execute** — which is why S2 joins in application code, and why two predicates in
+`scripts/plan-progress.mjs` were structurally un-runnable until a lane found it.
+
+---
+
 ## 4. Write fan-in
 
 ```

@@ -1,0 +1,51 @@
+{
+  "lane": "ops21-d5-gate-denominator-65",
+  "planRow": "P-136",
+  "checkpoint": "CP2 (pilot / mid-work)",
+  "date": "2026-09-10",
+
+  "prior": "_inbox/2026-09-10_ops21-d5_cp1.json",
+
+  "codeChange": "DEFAULT_SCHED_RAIL_KEYS (src/jobs/publish-gate-sched.mjs) now = Object.freeze([...PARCEL_RECORD_RAIL_KEYS]), derived from rail-keys.js, length 65. Added PUBLISH_FLOOR_RAIL_KEYS (src/lib/publish-readiness-gate.mjs), a deliberately separate 17-rail policy floor with a load-time subset assertion against PARCEL_RECORD_RAIL_KEYS; evaluatePreBakeReadiness and requirePreBakeReadiness now default to it instead of DEFAULT_SCHED_RAIL_KEYS. Five slate constants unchanged; their union preserved as SLATE_1_THROUGH_LANDUSE_OWNER_UNION. New/updated tests in test/publish-gate-sched.test.mjs and test/publish.test.mjs, including an explicit decoupling falsifier.",
+
+  "testing": {
+    "targeted": "node --test test/publish-gate-sched.test.mjs test/publish.test.mjs -- 143 pass, 1 pre-existing unrelated skip (LDT source unavailable for isEarnedRecordRetirement import)",
+    "full": "npm test -- 1219 total: 1214 pass, 1 fail, 4 skipped. The 1 failure (test/ctx-b3-store-census.test.mjs:137, LDT pin-staleness: resolveLeafPaths against the live pinned LDT checkout disagrees with the maintained mirror by one path) confirmed via `git stash` + rerun on the unmodified base to predate this lane's changes entirely -- not a regression introduced here."
+  },
+
+  "pr": {
+    "number": 132,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/132",
+    "ciChecks": [
+      { "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS" },
+      { "name": "gate8", "status": "COMPLETED", "conclusion": "SUCCESS" }
+    ],
+    "mergeMethod": "squash",
+    "mergeCommit": "855e7c6ee04bc994dc1f46311f01ab9daed97649",
+    "mergedAt": "2026-09-10T22:04:46Z"
+  },
+
+  "deploy": {
+    "mechanism": "gcloud builds submit --config=cloudbuild.parcel-record-fill.yaml --project=hauska-prod-497015 (bundles factory-parcel-record-fill, factory-flood-ingest, factory-parcel-r4-companions, factory-publish-gate-sched from one image/digest -- pre-existing repo shape, not introduced by this lane)",
+    "buildId": "dc5ede77-3f04-434b-bb0e-3928e440dd51",
+    "buildStatus": "SUCCESS",
+    "buildDuration": "2m15s",
+    "preBuildDigest": "sha256:8979d7b48d30756aa2a33ca655699291b81ba6886f19ecfeb35f491eed5bc0ea",
+    "postBuildDigest": "sha256:ef7eebc3cedca6969cf54d39892a36e07d70739c8c9958e1c0203f9cd0fb6bcd",
+    "digestVerification": "Confirmed BOTH by describing the deployed factory-publish-gate-sched job's container image AND by independently describing the freshly built artifact registry tag -- both returned sha256:ef7eebc3cedca6969cf54d39892a36e07d70739c8c9958e1c0203f9cd0fb6bcd, an exact match, different from the pre-build baseline."
+  },
+
+  "applyExecution": {
+    "trigger": "gcloud run jobs execute factory-publish-gate-sched --project=hauska-prod-497015 --region=us-east4 --args=publish-gate-sched,--county=48021,--county=48055,--county=48209,--county=48309,--county=48453,--county=48491,--apply",
+    "executionName": "factory-publish-gate-sched-gmcj4",
+    "startTime": "2026-09-10T22:08:56Z",
+    "status": "RUNNING as of this checkpoint -- 65 rails x 6 counties = 390 (county,rail) pairs, each a sequential shell-out to gate-rail-cli.mjs (see publish-gate-sched.mjs's own module doc: 'each verdict written independently, one upsert per pair, no all-rails/all-counties transaction'). Prior comparable run (_inbox/2026-09-05_ctx-wrapup-factory_gate-eval-slate1d_close.json, 54 pairs) took ~27 minutes; this is a live Cloud Run execution being polled to completion (not left unmonitored -- watch registered, polling every 90s on the execution's Completed condition), not assumed to finish inside this checkpoint's own duration.",
+    "expectedOutcome": "A large number of 'refuse' and 'excluded' verdicts among the 48 newly-graded rails is expected and is the entire point of D5 (STANDING FACTS: '48 rails currently cannot report a problem; after this they fail loudly and countably'). PUBLISH_FLOOR_RAIL_KEYS (17 rails) is unaffected by whatever those 48 rails report -- bastrop-publish.mjs's pre-bake gate only ever reads the floor."
+  },
+
+  "openAtCP2": [
+    "Awaiting applyExecution terminal state.",
+    "Live verification against parcel_gate_verdict (390 rows expected, all 65 rail_key values, all six counties) pending execution completion.",
+    "Close pending the above."
+  ]
+}

@@ -59,16 +59,36 @@ A parcel is not an account. `parcel_record`'s intended population is
 
 ## Stores
 
+CORRECTED 2026-09-10. This block previously read "Two databases on one Neon host" and
+bucketed every table under a single `neondb`. That was wrong in the way that matters most,
+because `neondb` is a shared default database NAME, not one store. Two lanes hit it
+independently: OPS-21 S1 (`_inbox/2026-09-10_ops21-s1_close.json`) and OPS-21 S2
+(`_inbox/2026-09-11_ops21-s2_cp1.json`), each re-verifying live. It also contradicted the
+FACTORY canon line that gives `hauska-factory` its own Neon store.
+
 ```
-neondb      txgio_parcel, cad_property, parcel_record, parcel_record_cell,
-            parcel_record_companion_row, parcel_gate_verdict,
-            landing_parcel_jurisdiction, tx_* layers, permit_record
-hauska_mcp  atoms
+HOST ep-lucky-truth-apodo8hr          (PRODUCTION_NEONDB_URL, and atoms)
+  db hauska_mcp    atoms
+  db neondb        txgio_parcel, cad_property, landing_parcel_jurisdiction
+
+HOST ep-round-base-au0jofwp           (FACTORY_DATABASE_URL)
+  db neondb        parcel_record, parcel_record_cell, parcel_record_companion_row
+
+NOT ESTABLISHED -- do not assume either host
+                   parcel_gate_verdict, tx_* layers, permit_record
 ```
 
-**Two databases on one Neon host. A SQL join across them cannot be written at all.** A query
-against the wrong database returns a FALSE ABSENCE, not an error. Declare which store you
-opened.
+The three NOT ESTABLISHED entries were carried in the old single bucket and their host was
+never actually resolved by either lane. They are listed unresolved on purpose rather than
+being silently assigned to the more likely host. If your lane needs one, resolve it live and
+report which host answered, so this block gains a line instead of a guess.
+
+**Two separate Neon HOSTS. A SQL join across them cannot be written at all**, and that
+includes the join a reader of the old block would most naturally reach for, between
+`parcel_record_cell` and `landing_parcel_jurisdiction`, which are on different hosts. The
+same-name `neondb` on each host is the trap: a connection string that looks right, a
+database name that looks right, and a query against the wrong host returns a FALSE ABSENCE,
+not an error. Declare which HOST and which database you opened, not just the database.
 
 ## Grading is not serving
 

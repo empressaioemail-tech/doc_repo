@@ -63,15 +63,24 @@ const ONDEMAND_RAILS = ["hoaDeedRestrictions", "ossf", "publicRecordRefs"];
 const railList = (rails) => rails.map((r) => `'${r}'`).join(",");
 
 /**
- * IN-CITY population only. Setback and envelope rails are written not-applicable at
- * row creation for unincorporated parcels (UNINCORPORATED_NOT_APPLICABLE_RAIL_KEYS),
- * so counting them would understate progress against a denominator that is already done.
+ * CROSS-STORE JOIN REMOVED 2026-09-11, found by the S2 lane. These predicates used to JOIN
+ * parcel_record_cell to landing_parcel_jurisdiction. That JOIN CANNOT EXECUTE: they are on two
+ * genuinely different Neon hosts, both of whose default database is named `neondb`.
+ *
+ *   FACTORY_DATABASE_URL      parcel_record, parcel_record_cell, parcel_record_companion_row,
+ *                             parcel_gate_verdict            (the Factory control store)
+ *   PRODUCTION_NEONDB_URL     landing_parcel_jurisdiction, txgio_parcel, cad_property, tx_*
+ *                             (the cortex store) -- parcel-record-fill.mjs:13-14 states it:
+ *                             "That table is NOT on the Factory control store."
+ *   DATABASE_URL / hauska_mcp atoms
+ *
+ * THE JOIN WAS ALSO UNNECESSARY, which is why it survived review. Setback and envelope rails
+ * are written `not-applicable` at row creation for unincorporated parcels
+ * (UNINCORPORATED_NOT_APPLICABLE_RAIL_KEYS), so an unincorporated cell is NEVER `unaccounted`.
+ * Counting `unaccounted` alone already yields exactly the in-city population. One store, no
+ * join, same answer, and it can actually run.
  */
-const IN_CITY = `
-    JOIN landing_parcel_jurisdiction lpj
-      ON lpj.county_fips = split_part(c.place_key, ':', 1)
-     AND lpj.prop_id     = substr(c.place_key, strpos(c.place_key, ':') + 1)
-     AND lpj.disposition = 'in-city'`;
+const IN_CITY = "";
 
 const unaccountedIn = (rails, extraJoin = "") => `
   SELECT count(*) AS n
@@ -120,15 +129,10 @@ export const PREDICATES = [
     sql: `
   SELECT count(*) AS n
     FROM parcel_record_cell c
-    JOIN landing_parcel_jurisdiction lpj
-      ON lpj.county_fips = split_part(c.place_key, ':', 1)
-     AND lpj.prop_id     = substr(c.place_key, strpos(c.place_key, ':') + 1)
    WHERE split_part(c.place_key, ':', 1) = '48453'
-     AND lpj.disposition = 'in-city'
-     AND lower(lpj.city_name) = 'austin'
      AND c.rail_key = 'permits'
      AND c.cell_state->>'kind' = 'unaccounted'`,
-    note: "Austin/Travis ONLY. San Antonio is Bexar, outside the six. The other five counties stay honestly unaccounted and that is correct, not a failure.",
+    note: "Travis-wide, NOT Austin-only: the city restriction lived in landing_parcel_jurisdiction, which is on a DIFFERENT Neon host and cannot be joined. This predicate therefore over-counts (it includes non-Austin Travis parcels) and is declared as such rather than silently narrowed. San Antonio is Bexar, outside the six. The other five counties stay honestly unaccounted and that is correct, not a failure.",
   },
   {
     lane: "D3",
@@ -224,6 +228,15 @@ function selfTest() {
     PREDICATES.every((p) => CTX.every((f) => p.sql.includes(f)) || Boolean(p.note))
   );
   push(
+    "STORE: no predicate JOINs parcel_record_cell to a cortex-store table - they are different Neon hosts",
+    PREDICATES.every(
+      (p) =>
+        !/parcel_record_cell[\s\S]*JOIN[\s\S]*(landing_parcel_jurisdiction|txgio_parcel|cad_property|tx_)/i.test(
+          p.sql
+        )
+    )
+  );
+  push(
     "TYPE: no predicate compares cell_state directly - it is jsonb, the state is at ->>'kind'",
     PREDICATES.every((p) => !/cell_state\s*(=|<>)/.test(p.sql))
   );
@@ -236,8 +249,13 @@ function selfTest() {
     PREDICATES.every((p) => p.sql.includes("cell_state") || p.sql.includes("parcel_gate_verdict"))
   );
   push(
-    "setback + envelope predicates restrict to in-city (unincorporated is already not-applicable)",
-    ["S1", "S2"].every((l) => PREDICATES.find((p) => p.lane === l).sql.includes("'in-city'"))
+    "setback + envelope predicates reach the in-city population WITHOUT a cross-store join — " +
+      "counting `unaccounted` alone already excludes unincorporated, whose cells are " +
+      "not-applicable at row creation",
+    ["S1", "S2"].every((l) => {
+      const q = PREDICATES.find((p) => p.lane === l).sql;
+      return q.includes("'unaccounted'") && !q.includes("landing_parcel_jurisdiction");
+    })
   );
   push(
     "the PROGRAM headline excludes nothing — no rail_key filter",

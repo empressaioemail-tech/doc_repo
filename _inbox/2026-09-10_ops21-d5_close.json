@@ -1,0 +1,138 @@
+{
+  "lane": "ops21-d5-gate-denominator-65",
+  "planRow": "P-136",
+  "sprintDoc": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ops21-d5_dispatch.md",
+  "checkpoint": "CLOSE. PR #132, merged 855e7c6. Deployed via a real Cloud Build (bundled cloudbuild.parcel-record-fill.yaml), digest-verified, and cut over live via a real Cloud Run job execution.",
+  "date": "2026-09-11",
+  "priorCheckpoints": [
+    "_inbox/2026-09-10_ops21-d5_cp1.json",
+    "_inbox/2026-09-10_ops21-d5_cp2.json"
+  ],
+
+  "snapshot": {
+    "repository": "hauska-factory",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-d5-gate65",
+    "branch": "feat/ops21-d5-gate-denominator-65",
+    "baseCommit": "63a606b (origin/main at start)",
+    "mergeCommit": "855e7c6ee04bc994dc1f46311f01ab9daed97649"
+  },
+
+  "missionPremise": "The publish-gate scheduler graded 17 of the 65 closed parcel-record rails (SLATE_1+1B+1C+1D+LANDUSE_OWNER_GATE_GAP). Canon requires 'unaccounted' to be fatal at publish; for 48 of 65 rails that was unenforced. D5's ruling: widen DEFAULT_SCHED_RAIL_KEYS (publish-gate-sched.mjs) to derive from the closed rail set (rail-keys.js, PARCEL_RECORD_RAIL_KEYS, 65), on the stated premise that grading is not serving and this is customer-invisible. That premise was TRUE for parcelRecordAllowlist.ts (legacy-design-tools, confirmed at source: parcelRecordAllowlist.ts:356-359, a slated pair with a non-pass verdict fails soft to legacy) and FALSE for this repo's own pre-bake publish gate (publish-readiness-gate.mjs, consumed with no override by bastrop-publish.mjs's live publish path -- fails hard, throws, refuses the bake). Full detail, evidence and file:line citations in CP1.",
+
+  "codeChange": "DEFAULT_SCHED_RAIL_KEYS (src/jobs/publish-gate-sched.mjs) now = Object.freeze([...PARCEL_RECORD_RAIL_KEYS]), derived from rail-keys.js, never hand-authored, length 65 (test-pinned). The five slate constants (SLATE_1/1B/1C/1D, LANDUSE_OWNER_GATE_GAP) are unchanged; their union is preserved under a new name, SLATE_1_THROUGH_LANDUSE_OWNER_UNION, since DEFAULT_SCHED_RAIL_KEYS no longer means that union. Added PUBLISH_FLOOR_RAIL_KEYS (src/lib/publish-readiness-gate.mjs): a deliberately separate, explicitly documented POLICY FLOOR (analogous to parcelRecordAllowlist.ts's PARCEL_RECORD_SLATE -- a curated, hand-declared subset, not a denominator), seeded at the pre-D5 17-rail union, asserted at load time to be a subset of PARCEL_RECORD_RAIL_KEYS, with its expansion path documented for later OPS-21 lanes. evaluatePreBakeReadiness and requirePreBakeReadiness now default `requiredRails` to PUBLISH_FLOOR_RAIL_KEYS instead of DEFAULT_SCHED_RAIL_KEYS -- bastrop-publish.mjs (unmodified, still calls with no override) is therefore provably unaffected.",
+
+  "decisionAuthorization": "The decoupling design (Option A, with three named refinements: name the floor as a policy subset not a frozen list; assert subset-of-65 at load time; document the expansion path so the floor is not a permanent carve-out) was an explicit operator/user ruling made mid-lane via AskUserQuestion on 2026-09-10, after this lane surfaced and evidenced the publish-readiness-gate hazard the dispatch's STANDING FACTS did not account for. The user also asked for precise reconciliation of an apparent contradiction (schoolDistrict already refusing in the live table vs. the dispatch's 'no customer impact' claim); resolved by reading parcelRecordAllowlist.ts at source (legacy-design-tools origin/main) -- both claims are true simultaneously because they describe two different gates on the same table with opposite failure semantics (fail-soft LDT serve routing vs. fail-hard Factory publish gate). Full narrative in CP1.",
+
+  "testing": {
+    "targeted": "node --test test/publish-gate-sched.test.mjs test/publish.test.mjs -- 143 pass, 1 pre-existing unrelated skip",
+    "full": "npm test -- 1219 total: 1214 pass, 1 fail, 4 skipped. The 1 failure (test/ctx-b3-store-census.test.mjs:137, LDT pin-staleness check against a live sibling checkout) confirmed via git stash + rerun on the unmodified base to predate this lane entirely.",
+    "newFalsifiers": [
+      "'SLATE_1_THROUGH_LANDUSE_OWNER_UNION is the union of all five slates in order, unchanged by OPS-21 D5' -- pins the old 17-rail set survives under its new name",
+      "'OPS-21 D5 (P-136): DEFAULT_SCHED_RAIL_KEYS is exactly PARCEL_RECORD_RAIL_KEYS, derived not hand-authored, length 65'",
+      "'OPS-21 D5 (P-136): PUBLISH_FLOOR_RAIL_KEYS is deliberately decoupled from the widened DEFAULT_SCHED_RAIL_KEYS' -- asserts the two constants now differ in length and that every floor rail is still a real graded rail",
+      "publish-readiness-gate.mjs's own load-time subset assertion (PUBLISH_FLOOR_RAIL_KEYS ⊆ PARCEL_RECORD_RAIL_KEYS) -- not a test, a runtime guard that throws on import if violated"
+    ]
+  },
+
+  "pr": {
+    "number": 132,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/132",
+    "ciChecks": [
+      { "name": "test", "status": "COMPLETED", "conclusion": "SUCCESS" },
+      { "name": "gate8", "status": "COMPLETED", "conclusion": "SUCCESS" }
+    ],
+    "mergeMethod": "squash",
+    "mergeCommit": "855e7c6ee04bc994dc1f46311f01ab9daed97649",
+    "mergedAt": "2026-09-10T22:04:46Z"
+  },
+
+  "deploy": {
+    "mechanism": "gcloud builds submit --config=cloudbuild.parcel-record-fill.yaml --project=hauska-prod-497015 (bundles factory-parcel-record-fill, factory-flood-ingest, factory-parcel-r4-companions, factory-publish-gate-sched from one image/digest -- pre-existing repo shape)",
+    "buildId": "dc5ede77-3f04-434b-bb0e-3928e440dd51",
+    "buildStatus": "SUCCESS",
+    "buildDuration": "2m15s",
+    "preBuildDigest": "sha256:8979d7b48d30756aa2a33ca655699291b81ba6886f19ecfeb35f491eed5bc0ea",
+    "postBuildDigest": "sha256:ef7eebc3cedca6969cf54d39892a36e07d70739c8c9958e1c0203f9cd0fb6bcd",
+    "digestVerification": "Confirmed by describing BOTH the deployed factory-publish-gate-sched job's container image AND the freshly built artifact registry tag independently -- both returned the identical postBuildDigest, distinct from preBuildDigest."
+  },
+
+  "applyExecution": {
+    "trigger": "gcloud run jobs execute factory-publish-gate-sched --project=hauska-prod-497015 --region=us-east4 --args=publish-gate-sched,--county=48021,--county=48055,--county=48209,--county=48309,--county=48453,--county=48491,--apply",
+    "executionName": "factory-publish-gate-sched-gmcj4",
+    "startTime": "2026-09-10T22:08:56.998578Z",
+    "completionTime": "2026-09-11T00:37:52.966748Z",
+    "duration": "2h28m55.96s",
+    "conclusion": "Completed status=True, succeededCount=1, no retries, maxRetries=0 -- a clean single-task run, matching the job's own 'one upsert per (county,rail) pair, no all-rails/all-counties transaction' design (a kill mid-run would leave partial verdicts standing; this run needed no such recovery)."
+  },
+
+  "liveVerification": {
+    "queryTool": "FACTORY_DATABASE_URL_RO (read-only secret), pg client, direct SQL against parcel_gate_verdict",
+    "totalRows": { "value": 390, "countingRule": "SELECT count(*) FROM parcel_gate_verdict -- one row per (county_fips, rail_key) via ON CONFLICT upsert, no duplicates possible", "expected": "65 rails x 6 counties = 390", "match": true },
+    "railCoverage": "count(DISTINCT rail_key) = 65, count(DISTINCT county_fips) = 6. Every one of the 65 closed rail keys carries exactly 6 county rows; zero missing, zero short. Zero rail_key values present that are NOT in PARCEL_RECORD_RAIL_KEYS (no drift in either direction).",
+    "freshness": "All 390 rows carry evaluated_at between 2026-09-10T22:41:00.691Z and 2026-09-11T00:38:11.634Z -- entirely from this execution, none stale-carried-over, including the two rails (agValuation, schoolDistrict) that had pre-existing out-of-band rows before this run.",
+    "verdictBreakdown": {
+      "countingRule": "SELECT verdict, count(*) FROM parcel_gate_verdict GROUP BY verdict, all 390 rows",
+      "excluded": 183,
+      "pass": 168,
+      "refuse": 39
+    },
+    "refuseBreakdown": {
+      "countingRule": "SELECT rail_key, count(*), array_agg(county_fips) FROM parcel_gate_verdict WHERE verdict='refuse' GROUP BY rail_key -- the 39 refuse rows named exactly",
+      "byRail": {
+        "acreageMethod": ["48055", "48209", "48453"],
+        "buildingFootprint": ["48491"],
+        "exemptionCodes": ["48055", "48209", "48453", "48491"],
+        "landUseSource": ["48021", "48055", "48209", "48309", "48453", "48491"],
+        "setbackCornerFt": ["48021", "48055", "48309", "48453", "48491"],
+        "setbackFrontFt": ["48021", "48055", "48309", "48453", "48491"],
+        "setbackRearFt": ["48021", "48055", "48309", "48453", "48491"],
+        "setbackRules": ["48021", "48055", "48309", "48453", "48491"],
+        "setbackSideFt": ["48021", "48055", "48309", "48453", "48491"]
+      },
+      "note": "Matches the dispatch's own named instance (computeTier1Envelope, LDT nodeFacetBakeTier1.ts:92, both return branches 'declined') -- the five setback rails refuse in 5 of 6 counties each (Hays 48209 not among them for the setback-specific rails, present for landUseSource). Fixing any of these is explicitly out of scope for D5 (dispatch's own 'Out of scope' list); named here per the dispatch's own framing that this pile of refusals is the intended, load-bearing result, not a defect in this lane's work."
+    },
+    "publishFloorUnaffected": {
+      "countingRule": "SELECT rail_key, verdict, count(*) FROM parcel_gate_verdict WHERE rail_key = ANY(PUBLISH_FLOOR_RAIL_KEYS) GROUP BY rail_key, verdict",
+      "totalFloorRows": 102,
+      "expected": "17 rails x 6 counties = 102",
+      "nonRefuseCount": 102,
+      "refuseCount": 0,
+      "conclusion": "Every one of the 17 PUBLISH_FLOOR_RAIL_KEYS remains 100% pass/excluded across all six counties after this run -- empirically confirms the decoupling fix works as designed: bastrop-publish.mjs's pre-bake gate (which reads only this floor by default) is unaffected by the 39 new refuse verdicts among the other 48 rails. maxImperviousCoverPct: 1 pass (Travis, the only in-scope county) + 5 excluded (out-of-scope counties, the writer's own COUNTY_NOT_IN_SCOPE design, unchanged from before this lane)."
+    },
+    "schoolDistrictNote": "CP1 observed schoolDistrict at 3 pass / 3 refuse (a stale snapshot from a prior out-of-band manual run). This live run re-evaluated it fresh and found it 100.00% clean (verdict=pass, unaccounted_count=0) in all six counties as of 2026-09-11T00:03-00:18Z -- the prior refuse state has since resolved (data/writer improvement, not something this lane touched). Recorded for precision per the operator's own request to state claims exactly, not because it changes this lane's scope."
+  },
+
+  "completionPredicate": {
+    "statement": "DEFAULT_SCHED_RAIL_KEYS is derived from PARCEL_RECORD_RAIL_KEYS and has length 65, and a scheduler run produces verdict rows for all 65 rails across the six counties.",
+    "clause1": "DONE, code + test enforced (test/publish-gate-sched.test.mjs).",
+    "clause2": "DONE, live-verified: 390/390 (county,rail) pairs present, fresh, zero drift (liveVerification above)."
+  },
+
+  "scopeBasis": "PUBLISH_FLOOR_RAIL_KEYS was not named by the dispatch; added because leaving the pre-bake gate pointed at the widened DEFAULT_SCHED_RAIL_KEYS would have violated the dispatch's own 'Out of scope: fixing any rail that now refuses' by creating unfixable-within-this-lane publish blockage as an unintended side effect of the named change -- confirmed this would have happened immediately (pre-existing schoolDistrict refuses + 46 zero-row rails at the time of CP1) and would have recurred going forward (this run's own 39 fresh refuses, none in the floor). Scoped exactly to preventing that regression: the floor starts byte-identical in membership to the pre-D5 default and touches no rail's writer, data, or the LDT-side PARCEL_RECORD_SLATE.",
+
+  "constraintsHonored": [
+    "Derived, not hand-authored: DEFAULT_SCHED_RAIL_KEYS = [...PARCEL_RECORD_RAIL_KEYS], length 65, test-pinned equal to the source.",
+    "Did not touch PARCEL_RECORD_SLATE (legacy-design-tools) -- read-only cross-repo verification only.",
+    "Did not fix any rail that now refuses -- all 39 refuse verdicts left exactly as the real gate CLI reported them.",
+    "Did not lift SETBACK_APPLY_HELD or touch the setback atom writer.",
+    "Worked in an isolated, newly registered worktree, never in another lane's checkout.",
+    "Verified at source before choosing an implementation (live read-only DB query, not the dispatch's own prose) and again after deploying (live query, not the execution's 'completed' status alone -- matching the exact discipline in the 2026-09-05 precedent close).",
+    "Merged only on CI check-run conclusion string 'SUCCESS' (checked via gh api statusCheckRollup, not gh pr checks' 'pass' label).",
+    "Deployed via the real Cloud Build + gcloud run jobs execute path, never FACTORY_CLOUD=1 set locally (the exact mistake flagged in the 2026-09-05 precedent close's own postmortem)."
+  ],
+
+  "remainingOpen": [
+    "48 of 65 rails are now graded but not yet slate-eligible for either the LDT serve allowlist or this repo's PUBLISH_FLOOR_RAIL_KEYS -- fixing any of the 39 refusing (rail,county) pairs (setbacks, landUseSource, exemptionCodes, acreageMethod, buildingFootprint) is future OPS-21 work, explicitly out of scope here.",
+    "PUBLISH_FLOOR_RAIL_KEYS is a 17-rail floor by design, not auto-grown; a later lane's dispatch is expected to widen it once a given rail's writer is verified clean across all six counties, per its own header comment's stated expansion path.",
+    "The hourly Cloud Scheduler trigger for factory-publish-gate-sched (if configured, unverified in this lane -- not named in D5's scope) will now re-evaluate all 65 rails going forward rather than 17; not independently confirmed here since D5's completion predicate only required this one real execution."
+  ],
+
+  "fleetMemoryScratch": [
+    "LESSON: a shared constant used as both a grading denominator and a hard-fail publish-blocking floor is a landmine -- widening 'the graded set' silently widens 'what blocks the bake' unless the two are deliberately named and decoupled. Check every consumer of a constant a dispatch names before widening it, not just the one the dispatch describes.",
+    "LESSON: parcelRecordAllowlist.ts's serve-side gate and a repo's own pre-bake/publish gate can read the identical verdict table with opposite failure semantics (fail-soft vs fail-hard) -- a 'this is customer-invisible' claim about one is not evidence about the other.",
+    "GROUND-TRUTH (2026-09-11T00:38Z): parcel_gate_verdict carries exactly 390 rows, 65 distinct rail_key, 6 distinct county_fips, verdict breakdown pass=168/excluded=183/refuse=39, PUBLISH_FLOOR_RAIL_KEYS (17 rails) at 102/102 non-refuse.",
+    "GROUND-TRUTH (2026-09-11T00:38Z): the five setback rails (setbackFrontFt/SideFt/RearFt/CornerFt/setbackRules) refuse in 5 of 6 counties each (not Hays 48209) -- live confirmation of the dispatch's own named vacuous-write-path instance (computeTier1Envelope).",
+    "OPEN: whether an hourly Cloud Scheduler trigger for factory-publish-gate-sched exists and picks up the widened 65-rail default automatically, or whether a scheduler config also needs updating -- not checked in this lane, named in _inbox/2026-09-05_ctx-wrapup-factory_gate-eval-slate1d_close.json's own nextStep as 'factory-publish-gate-sched-hourly' but not independently reverified here."
+  ]
+}
