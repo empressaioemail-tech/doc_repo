@@ -26,6 +26,7 @@ const LANES = [
   { lane: 'D5', row: 'P-136', repo: 'hauska-factory', match: /ops21-d5|gate.?denominator|gate65/i, what: 'gate 17 -> 65' },
   { lane: 'D1', row: 'P-137', repo: 'hauska-factory', match: /ops21-d1|derivable/i, what: 'six derivable rails' },
   { lane: 'D6', row: 'P-141', repo: 'hauska-factory', match: /ops21-d6|available-on-request|on-request/i, what: 'sixth cell state' },
+  { lane: 'R1', row: 'P-146', repo: 'hauska-factory', match: /ops21-r1|not-specified-remediation/i, what: 'not_specified remediation' },
   { lane: 'L1', row: 'P-142', repo: 'legacy-design-tools', match: /ops21-l1|retirement-audit/i, what: 'retirement audit' },
   { lane: 'H1', row: 'P-145', repo: 'hauska-factory', match: /ops21-h1|hays-identity/i, what: 'Hays identity' },
 ];
