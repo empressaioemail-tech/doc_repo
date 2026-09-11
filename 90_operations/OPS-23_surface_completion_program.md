@@ -15,6 +15,7 @@ related:
   - _decisions/2026-09-11_ruling_b_reversed_polygon_only
   - _decisions/2026-09-11_overseer_dispatch_planner_lane_topology
   - _catalog/program_preambles/OPS-23.md
+  - _inbox/2026-09-11_ops23_ledger_serving_path_WDLL.md
 snapshot: >
   Authored 2026-09-11 by the integration seat against origin/main of hauska-map fb41c05,
   legacy-design-tools 489f428c, hauska-engine 79fa573, hauska-factory 217b7dd, doc_repo
@@ -32,6 +33,9 @@ conversation history can pick it up cold. Nothing that matters lives only in a c
 
 1. Identify your role in section 6. There are three: overseer, dispatch planner, lane.
 2. Run the instruments in section 8 before believing anything in sections 2 or 4.
+   Then read the durable card, `_inbox/2026-09-11_ops23_ledger_serving_path_WDLL.md`: it is the
+   statement of done for every row, ruling and owed item in this program, and it and section 4
+   carry the same eighteen rows by construction.
 3. Read the latest checkpoint in `_inbox/` matching `*_ops23_checkpoint_*.md`, if one exists.
    It supersedes the lane board here.
 4. Do not relitigate section 3. Those are operator rulings with reversal criteria on file.
