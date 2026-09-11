@@ -23,6 +23,7 @@ const LANES = [
   { lane: 'S2', row: 'P-133', repo: 'hauska-factory', match: /ops21-s2|envelope-cell/i, what: 'envelope cells' },
   { lane: 'S4', row: 'P-135', repo: 'legacy-design-tools', match: /ops21-s4|gate-and-slate/i, what: 'gate verdicts + slate' },
   { lane: 'S5', row: 'P-148', repo: 'legacy-design-tools', match: /ops21-s5|serve-wrappers/i, what: 'five serve wrappers' },
+  { lane: 'S6', row: 'P-150', repo: 'legacy-design-tools', match: /ops21-s6|final-slate/i, what: 'final slate' },
   { lane: 'S3', row: 'P-134', repo: 'hauska-engine', match: /ops21-s3|non-vacuity/i, what: 'non-vacuity guard' },
   { lane: 'D5', row: 'P-136', repo: 'hauska-factory', match: /ops21-d5|gate.?denominator|gate65/i, what: 'gate 17 -> 65' },
   { lane: 'D1', row: 'P-137', repo: 'hauska-factory', match: /ops21-d1|derivable/i, what: 'six derivable rails' },
