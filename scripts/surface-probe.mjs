@@ -47,7 +47,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -619,53 +619,64 @@ function selfTest() {
 }
 
 // --------------------------------------------------------------------------- main
-const args = process.argv.slice(2);
-const flag = (n) => args.includes(n);
-const val = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
+// Runs only when this file is the entry point. Importing the module (for its extractors and
+// ROWS) must never probe production: on 2026-09-11 a fixture-reading one-liner that imported
+// it fired a live run and wrote an artifact nobody asked for. Case-insensitive on purpose:
+// Windows argv[1] and import.meta.url can differ in drive-letter case.
+const isEntry = (() => {
+  try { return !!process.argv[1] && fileURLToPath(import.meta.url).toLowerCase() === resolve(process.argv[1]).toLowerCase(); } catch { return false; }
+})();
+if (isEntry) await main();
 
-if (flag("--self-test")) {
-  process.exit(selfTest() === 0 ? 0 : 1);
-}
+async function main() {
+  const args = process.argv.slice(2);
+  const flag = (n) => args.includes(n);
+  const val = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
 
-const rowFilter = val("--rows") ? val("--rows").split(",").map((s) => s.trim()) : null;
-const { obs, sha256 } = loadObservations(val("--observations"));
-const cortex = process.env.CORTEX_API_BASE && process.env.CORTEX_SERVICE_API_KEY && process.env.CORTEX_API_KEY_HEADER
-  ? { base: process.env.CORTEX_API_BASE.replace(/\/$/, ""), key: process.env.CORTEX_SERVICE_API_KEY, header: process.env.CORTEX_API_KEY_HEADER }
-  : null;
-
-const ranAt = new Date().toISOString();
-let legsById;
-let source;
-if (flag("--fixtures")) {
-  const fx = loadFixtureLegs();
-  legsById = fx.legsById;
-  source = `fixtures captured ${fx.manifest.capturedAt}`;
-} else {
-  legsById = {};
-  const wanted = rowFilter ? new Set(rowFilter.flatMap((r) => ROWS[r]?.parcels ?? [])) : null;
-  for (const p of PARCELS) {
-    if (wanted && !wanted.has(p.id)) continue;
-    process.stdout.write(`probing ${p.id} ... `);
-    legsById[p.id] = await runLegs(p, { cortex });
-    console.log("done");
+  if (flag("--self-test")) {
+    process.exit(selfTest() === 0 ? 0 : 1);
   }
-  source = "live";
+
+  const rowFilter = val("--rows") ? val("--rows").split(",").map((s) => s.trim()) : null;
+  const { obs, sha256 } = loadObservations(val("--observations"));
+  const cortex = process.env.CORTEX_API_BASE && process.env.CORTEX_SERVICE_API_KEY && process.env.CORTEX_API_KEY_HEADER
+    ? { base: process.env.CORTEX_API_BASE.replace(/\/$/, ""), key: process.env.CORTEX_SERVICE_API_KEY, header: process.env.CORTEX_API_KEY_HEADER }
+    : null;
+
+  const ranAt = new Date().toISOString();
+  let legsById;
+  let source;
+  if (flag("--fixtures")) {
+    const fx = loadFixtureLegs();
+    legsById = fx.legsById;
+    source = `fixtures captured ${fx.manifest.capturedAt}`;
+  } else {
+    legsById = {};
+    const wanted = rowFilter ? new Set(rowFilter.flatMap((r) => ROWS[r]?.parcels ?? [])) : null;
+    for (const p of PARCELS) {
+      if (wanted && !wanted.has(p.id)) continue;
+      process.stdout.write(`probing ${p.id} ... `);
+      legsById[p.id] = await runLegs(p, { cortex });
+      console.log("done");
+    }
+    source = "live";
+  }
+
+  const results = evaluateRows(legsById, obs ?? (flag("--fixtures") ? loadFixtureLegs().manifest.observations : null), rowFilter);
+  console.log(`\nSURFACE PROBE  ${ranAt}  doc_repo ${docRepoHead()}  source ${source}  PE ${PE_BASE}  observations ${sha256 ? "sha256 " + sha256.slice(0, 12) : "none"}`);
+  const tally = printReport(results, legsById);
+
+  const artifactDir = join(ROOT, "_inbox");
+  if (!existsSync(artifactDir)) mkdirSync(artifactDir);
+  const stamp = ranAt.slice(0, 10) + "_" + ranAt.slice(11, 19).replace(/:/g, "");
+  const outPath = val("--out") ?? join(artifactDir, `${stamp}_surface_probe.json`);
+  writeFileSync(outPath, JSON.stringify({ instrument: "scripts/surface-probe.mjs", ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally }, null, 2));
+  console.log(`\nartifact: ${outPath.replace(/\\/g, "/")}`);
+
+  if (tally.FAIL) process.exit(1);
+  if (tally.UNMEASURED && !flag("--allow-unmeasured")) {
+    console.log("exit 2: unmeasured predicates present; pass --allow-unmeasured to accept an artifact that does not decide them");
+    process.exit(2);
+  }
+  process.exit(0);
 }
-
-const results = evaluateRows(legsById, obs ?? (flag("--fixtures") ? loadFixtureLegs().manifest.observations : null), rowFilter);
-console.log(`\nSURFACE PROBE  ${ranAt}  doc_repo ${docRepoHead()}  source ${source}  PE ${PE_BASE}  observations ${sha256 ? "sha256 " + sha256.slice(0, 12) : "none"}`);
-const tally = printReport(results, legsById);
-
-const artifactDir = join(ROOT, "_inbox");
-if (!existsSync(artifactDir)) mkdirSync(artifactDir);
-const stamp = ranAt.slice(0, 10) + "_" + ranAt.slice(11, 19).replace(/:/g, "");
-const outPath = val("--out") ?? join(artifactDir, `${stamp}_surface_probe.json`);
-writeFileSync(outPath, JSON.stringify({ instrument: "scripts/surface-probe.mjs", ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally }, null, 2));
-console.log(`\nartifact: ${outPath.replace(/\\/g, "/")}`);
-
-if (tally.FAIL) process.exit(1);
-if (tally.UNMEASURED && !flag("--allow-unmeasured")) {
-  console.log("exit 2: unmeasured predicates present; pass --allow-unmeasured to accept an artifact that does not decide them");
-  process.exit(2);
-}
-process.exit(0);
