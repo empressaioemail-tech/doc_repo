@@ -1,0 +1,97 @@
+{
+  "lane": "OPS21-S4",
+  "planRow": "P-135",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ops21-s4",
+  "branch": "feat/ops21-s4-gate-and-slate",
+  "baseCommit": "cebd041d7ddf102f29ab60eeb9feb04946888125 (origin/main, matches dispatch's stated base)",
+  "codeDiff": "none. git status clean against baseCommit throughout the lane. parcelRecordAllowlist.ts not touched, per planner direction after CP1.",
+
+  "missionPremise": "OPS-21 A-122 / P-135: D5 (P-136) already widened DEFAULT_SCHED_RAIL_KEYS to grade all 65 rails. This lane's job was to read the live parcel_gate_verdict rows for the nine rails S1/S2 newly write cells for, across the five in-scope counties (Hays excluded, P-145 not landed), and slate into PARCEL_RECORD_SLATE only the (county, rail) pairs that genuinely pass -- 'grading is not serving; YOUR change is the one that does' per the dispatch's own framing.",
+
+  "completionPredicate": "Every (county, rail) pair among the nine written rails carries a reported verdict, and every pair with a pass verdict is either slated or carries a named reason it was not. A lane that slates nothing because nothing can be genuinely, non-vacuously slated meets this predicate, provided the grid and the blocking cause are reported. MET -- see grid and reasons below.",
+
+  "scopeBasis": "Repo is legacy-design-tools only (hauska-factory's DEFAULT_SCHED_RAIL_KEYS widening is D5's, done, not re-touched). Out of scope per dispatch: re-widening the grading set, writing any cell, running parcel-r5-zoning, fixing the 3,376 deferred parcels, retiring any legacy path (L3/P-144), Hays. Building new ServeCutover infrastructure was assessed as out of scope for a slate-measurement lane (see finding below) and confirmed out of scope by the planner.",
+
+  "step1_hostResolution": {
+    "gap": "parcel_gate_verdict's Neon host was listed NOT ESTABLISHED in the OPS-21 program preamble.",
+    "resolved": "Live-checked both candidate hosts, read-only. FACTORY_DATABASE_URL host (ep-round-base-au0jofwp), db neondb -- same host as parcel_record itself. PRODUCTION_NEONDB_URL host (ep-lucky-truth-apodo8hr) has no such table. Landed by the planner into the program preamble and OPS-22 per this lane's finding."
+  },
+
+  "step1_verdictGrid_final_2026-09-11T11:52Z": {
+    "countingRule": "SELECT county_fips, rail_key, verdict, unaccounted_count FROM parcel_gate_verdict WHERE county_fips IN (48021,48055,48309,48453,48491) AND rail_key IN (the 9 rails S1/S2 wrote), read-only, live. 45/45 expected pairs present, zero missing. Re-verified fresh at CP2 after catching that this table is under active scheduled re-evaluation (see driftNote).",
+    "pass": {
+      "n": 5,
+      "pairs": ["48021:parcelAreaSqFt", "48055:parcelAreaSqFt", "48309:parcelAreaSqFt", "48453:parcelAreaSqFt", "48491:parcelAreaSqFt"]
+    },
+    "refuse": {
+      "n": 40,
+      "rails": ["setbackFrontFt", "setbackSideFt", "setbackRearFt", "setbackCornerFt", "setbackRules", "maxHeightFt", "maxLotCoveragePct", "maxFootprintSqFt"],
+      "counties": "all 5 in-scope, every rail above, no exception",
+      "unaccountedByCounty": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 }
+    },
+    "reconciliation": "8 refusing rails x 5 counties, every rail's per-county unaccounted count identical: 44+26+1014+1021+1271 = 3376, exactly matching S1's own stated residual (its close records 3,376 parcels unaccounted on the setback rails, blocked on zoningDistrict not yet being value/refused). This lane derived the same number independently from the verdict side; S1 derived it from the write side. Two lanes, two derivations, one number -- now an established fact, not an assertion. The single zoningDistrict-dependent residual of 3,376 parcels across Bastrop/Caldwell/McLennan/Travis/Williamson is what gates eight of the nine written rails, on every in-scope county, without exception. This is what sizes the next lane on this dependency."
+  },
+
+  "mechanicalCompletionPredicate": {
+    "source": "node scripts/plan-progress.mjs --sql (doc_repo), the S4 row's own machine-checkable predicate -- broader than this lane's prose scope: 6 counties (including Hays 48209) x 13 rail keys (including the 4 envelope rails S2 deliberately left unwritten: buildableAreaSqFt, buildableAreaPct, envelopeStatus, envelopeDisclosure). TARGET 0 -- counts pairs with NO verdict row at all; the query's own note is explicit that a refuse verdict is a result and absence is not.",
+    "executedLive": "2026-09-11T11:52Z, FACTORY host ep-round-base-au0jofwp/neondb, read-only.",
+    "result": "n = 0. Zero of the 78 (6 x 13) combinations lack a verdict row -- Hays and all four held-out envelope rails already carry a verdict (not written by this lane; the widened scheduler evaluates all 65 rails x 6 counties per D5/P-136). PREDICATE MET, independently of and in addition to this lane's own prose-scoped 45-pair grid above."
+  },
+
+  "driftNote": "CP1's first grid read (measured earlier in the session) showed 48453:parcelAreaSqFt as refuse (1755 unaccounted). A CP2 adversarial re-check found it had flipped to pass (0 unaccounted) live, mid-session -- a new gate run (run_id c6177dfb-4b13-4bae-b9c1-b7484a11357e, evaluated_at 2026-09-11 11:36:03 UTC) landed between the two reads. All other 44 pairs were byte-identical (verdict and unaccounted_count) across both reads despite every pair getting a fresh run_id/evaluated_at, confirming the scheduler re-evaluated the whole grid but only this one pair's answer actually changed. Final numbers above are the CP2-verified state. Full detail: _inbox/2026-09-11_ops21-s4_cp2.json.",
+
+  "step2_decision": {
+    "action": "0 pairs added to PARCEL_RECORD_SLATE.",
+    "reasonForThe40Refusing": "Real, data-blocked. The 3,376-parcel zoningDistrict-dependent residual (reconciled above) is a known, already-tracked gap, not a slating decision this lane can affect. Out of scope per dispatch (fixing the residual is a different lane's job).",
+    "reasonForThe5PassingParcelAreaSqFtPairs": "NOT slated despite passing, because slating them would be a vacuous write. Evidence: every existing PARCEL_RECORD_SLATE entry has a dedicated *ServeCutover.ts wrapper (or, for the cadRoll six, attachCadRollOverlaysToFacets) that actually calls resolveAllowlist for that exact rail_key -- repo-wide grep for resolveAllowlist call sites returns exactly the 13 known wrapper files plus parcelRecordAllowlist.ts/parcelGateVerdictRead.ts themselves. No wrapper exists for parcelAreaSqFt (or for setbackRules/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt, though those all fail the gate so this is moot for them at this checkpoint). computeTier1Envelope (nodeFacetBakeTier1.ts:92-122), the program's own named root-cause function, never populates parcelAreaSqFt on either of its two branches (both status:'declined'), so there is also no legacy path for this rail -- unlike every rail L1 audited, neither path currently exists in this repo's serve layer for parcelAreaSqFt. Adding it to the slate would satisfy the completion predicate's text while changing nothing any customer-facing route serves -- exactly the 'runs perfectly, every test passes, cannot succeed on any branch' defect class this program's own preamble names as its reason for existing. Confirmed by the planner as the correct call, not scope discipline for its own sake: a coherent wrapper-building lane would need to cover five rails (setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt, parcelAreaSqFt), not one, and parcelAreaSqFt is the least customer-relevant of the nine (geometric lot area, not setbacks/buildable envelope)."
+  },
+
+  "wrapperCoverageFinding": {
+    "shape": "A clean inverse across the 9 written rails: the one rail-group WITH a serve-side wrapper (setbackFrontFt, representative of all 4 setback siblings via setbacksFactServeCutover.ts) fails the gate on every county. Every rail WITHOUT a wrapper either fails too (setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt) or is the sole passer with nothing able to consume a slate entry (parcelAreaSqFt).",
+    "backlogItem": "Building parcelAreaSqFtFactServeCutover.ts (and eventually wrappers for the other four wrapper-less rails, and wiring into the shared response-assembly path) is real, non-trivial follow-on scope -- named here for whoever scopes the next lane, not started by this one."
+  },
+
+  "checkpoints": [
+    "_inbox/2026-09-11_ops21-s4_cp1.json (design/pre-build: host resolution, first verdict grid, critical vacuous-slate finding)",
+    "_inbox/2026-09-11_ops21-s4_cp2.json (pilot/mid-work adversarial re-verification: caught and reconciled a live drift on parcelAreaSqFt/48453, reconfirmed wrapper-coverage finding)"
+  ],
+
+  "constraintsHonored": [
+    "Did not re-widen DEFAULT_SCHED_RAIL_KEYS (D5's, untouched).",
+    "Wrote no cell, ran no writer (parcel-r5-zoning or otherwise).",
+    "Did not fix or attempt to fix the 3,376-parcel residual.",
+    "Retired no legacy path (L3/P-144 territory, untouched).",
+    "Hays (48209) excluded from every query.",
+    "Did not lift SETBACK_APPLY_HELD or touch the atom writer route.",
+    "Stayed in legacy-design-tools; read hauska-factory's DB live (read-only) but wrote nothing there.",
+    "Declared which Neon HOST and database was opened for every query, per the program's own store-block requirement.",
+    "SET default_transaction_read_only = on as the first statement of every DB session.",
+    "Did not unilaterally build new ServeCutover infrastructure beyond dispatch; proposed it as backlog and got an explicit planner ruling before closing.",
+    "Two adversarial checkpoints filed (CP1, CP2), per AGENT_CONTRACT section 1."
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: before adding any (county,rail) pair to PARCEL_RECORD_SLATE, grep for a resolveAllowlist call site keyed to that exact rail_key first. Slate membership with no consumer is indistinguishable from a correct cutover by every test in parcelRecordAllowlist.test.ts, which tests the pure decision function, never whether anything calls it.",
+      "LESSON: parcel_gate_verdict is a live table under active scheduled per-county re-evaluation, not a stable snapshot -- a lane holding it open across a multi-step checkpoint flow must re-verify before close, not trust its first read. Caught here because CP2's aggregate cross-check disagreed with CP1's per-row numbers; the discrepancy itself was the signal, not a manual re-check that happened to be run."
+    ],
+    "groundTruths": [
+      "GROUND-TRUTH (2026-09-11T11:52Z live, FACTORY host ep-round-base-au0jofwp/neondb): parcel_gate_verdict holds all 45/45 expected verdicts for the 9 S1/S2-written rails x 5 in-scope counties. 5 pass (parcelAreaSqFt, all 5 counties), 40 refuse (8 rails, all 5 counties, reconciled to the shared 3,376-parcel residual).",
+      "GROUND-TRUTH (2026-09-11, legacy-design-tools @ cebd041d): resolveAllowlist has exactly 13 call sites (the *ServeCutover.ts wrappers), none for setbackRules/parcelAreaSqFt/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt."
+    ],
+    "deadEnds": [],
+    "open": [
+      "OPEN: whether/when to build ServeCutover wrappers for the five wrapper-less rails is a planner backlog decision, not started here.",
+      "OPEN: setbackRules has zero references anywhere in legacy-design-tools' src tree -- whether it is meant to have an LDT-side consumer at all is unresolved.",
+      "OPEN: the 3,376-parcel zoningDistrict residual (now doubly-confirmed) remains the single dependency blocking 8 of 9 rails across all 5 counties -- this is the next lane's real target, sized precisely by this close."
+    ]
+  },
+
+  "close_contract_extra": {
+    "prNumbers": "not applicable: no code change, no PR opened",
+    "mergeShas": "not applicable: no merge performed",
+    "ciConclusionStrings": "not applicable: no CI run triggered",
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's three _inbox/ writes: 2026-09-11_ops21-s4_cp1.json, 2026-09-11_ops21-s4_cp2.json, this close.json."
+  }
+}

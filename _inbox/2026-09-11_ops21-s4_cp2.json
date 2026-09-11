@@ -1,0 +1,41 @@
+{
+  "lane": "OPS21-S4",
+  "planRow": "P-135",
+  "checkpoint": "CP2 (pilot/mid-work adversarial re-verification, AGENT_CONTRACT section 1)",
+  "purpose": "Adversarially re-check CP1's central claims before close: (1) re-run the 45-pair grid fresh to catch drift on a table under active scheduled re-evaluation, (2) confirm wrapper-coverage claim with a final targeted grep.",
+
+  "driftFound_correctsCP1": {
+    "what": "48453:parcelAreaSqFt flipped from refuse (unaccounted_count=1755, evaluated_at 2026-09-11 01:27:16+00, run c6177dfb was not yet run) to pass (unaccounted_count=0, evaluated_at 2026-09-11 11:36:03.65+00, run_id c6177dfb-4b13-4bae-b9c1-b7484a11357e) between CP1's read and this re-check -- roughly 16 minutes before this query, live, mid-session.",
+    "howCaught": "A first re-verification pass (aggregate GROUP BY rail_key) disagreed with CP1's per-row numbers -- DEV_PROCESS 1.4 (two numbers that should agree and do not = free finding, reconcile, never round off) applied to my own prior output, not just a planner's. Reconciled with a full fresh per-row re-query rather than trusting either number.",
+    "scope": "Isolated to exactly this one pair. All other 44 pairs re-verified byte-identical in verdict AND unaccounted_count to CP1's grid (fresh run_ids per county confirm the scheduler re-evaluated everything since CP1, but only this one pair's answer changed) -- see full re-check grid below.",
+    "corrected_currentState": "5 of 5 in-scope counties now pass parcelAreaSqFt (48021, 48055, 48309, 48453, 48491 -- all unaccounted_count=0), not 4 of 5 as CP1 reported. CP1's core finding (no ServeCutover consumer exists for this rail) is UNCHANGED by this correction -- it does not depend on which/how many counties pass, only on whether any code reads slate membership for this rail_key, which remains zero regardless.",
+    "note_forPlanner": "This table is a live moving target under an active per-county scheduler (6 distinct run_ids observed across the 45-row re-check, evaluated_at spanning 2026-09-11 07:37 through 11:52 UTC). Any close/report against parcel_gate_verdict should carry its query timestamp; this close's numbers are as of 2026-09-11 11:52 UTC."
+  },
+
+  "finalReVerifiedGrid_2026-09-11T11:52Z": {
+    "countingRule": "SELECT county_fips, rail_key, verdict, unaccounted_count, evaluated_at, run_id FROM parcel_gate_verdict WHERE county_fips IN (48021,48055,48309,48453,48491) AND rail_key IN (the 9 named rails), read-only, live. 45/45 rows present.",
+    "pass": [
+      "48021:parcelAreaSqFt", "48055:parcelAreaSqFt", "48309:parcelAreaSqFt", "48453:parcelAreaSqFt", "48491:parcelAreaSqFt"
+    ],
+    "refuse_unaccountedByCounty": {
+      "setbackFrontFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackSideFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackRearFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackCornerFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackRules": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "maxHeightFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "maxLotCoveragePct": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "maxFootprintSqFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 }
+    },
+    "reconciliation": "8 rails x 5 counties = 40 refusing pairs, every one of the five per-county unaccounted counts identical across all 8 rails: 44+26+1014+1021+1271 = 3376, exactly S1's stated residual. Independently derived from the verdict side (this lane) vs. S1's write side -- same number, two derivations. This is now an established fact, not an assertion: the single zoningDistrict-dependent residual of 3,376 parcels across Bastrop/Caldwell/McLennan/Travis/Williamson is what gates all eight of the nine written rails, on every in-scope county, without exception."
+  },
+
+  "wrapperCoverageConfirmation": {
+    "method": "grep -rl <rail-name> artifacts/api-server/src/lib/*ServeCutover.ts for all 9 rail names, final pass before close.",
+    "result": "Only setbacksFactServeCutover.ts matches any of the 9 names, and it matches on SETBACK_FRONT_FT_RAIL_KEY only (setbacksFactFromParcelRecord.ts's own SETBACK_RAIL_KEYS = [Front, Side, Rear, Corner], confirmed again, no Rules member). No wrapper file references parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt, or setbackRules anywhere.",
+    "shape": "A clean inverse across the 9 rails: the one rail-group WITH a serve-side wrapper (setbackFrontFt, representing all 4 setback siblings) fails the gate on every county; every rail WITHOUT a wrapper either fails too (setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt) or is the sole passer with nothing to consume a slate entry (parcelAreaSqFt). Building a wrapper for parcelAreaSqFt alone would not be a one-off -- FIVE of the nine written rails have no wrapper at all, and parcelAreaSqFt is the least customer-relevant of the nine (a geometric lot-area figure, not setbacks or buildable envelope, the actual customer question). A coherent wrapper-building lane covering all five is a properly-scoped follow-on, not a bolt-on to this measurement lane."
+  },
+
+  "codeDiff": "none. git status clean against baseCommit cebd041d at both CP1 and CP2.",
+  "decision_confirmed": "0 pairs added to PARCEL_RECORD_SLATE. parcelRecordAllowlist.ts not touched. Confirmed by the planner (OPS-21 integration seat, doc_repo) after CP1 review."
+}
