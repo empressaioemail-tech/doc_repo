@@ -1,0 +1,59 @@
+{
+  "lane": "P160-PROBE",
+  "title": "OPS-23 P-160: surface-probe instrument, lane board, and the close gate that requires the probe",
+  "planRows": ["P-160"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (A-128); program 90_operations/OPS-23_surface_completion_program.md",
+  "dispatch": "not applicable: doc_repo lane, integration seat, built directly per OPS-23 §6 (the overseer owns the probe instrument)",
+  "closedAt": "2026-09-11T18:10:00Z",
+  "status": "closed-partial",
+  "seat": "integration",
+  "repo": "doc_repo",
+  "worktree": "P:/doc_repo",
+  "branch": "main",
+  "baseCommit": "4c8d18ef",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ciConclusionStrings": "not applicable: doc_repo lane; the self-tests below are the CI",
+  "missionPremise": "OPS-23 R-4 (operator 2026-09-11): the customer surface is the completion predicate. Every lane on this thread since August closed on a claim measured at cortex, the ledger, a merge or the MCP, and each was false on smartsite.cloud. Source: OPS-23 §2 F1-F12 and the OPS-21 close of the same day.",
+  "completionPredicate": "An instrument exists as a file, self-tests in both directions with a known-bad fixture and a not-vacuous check, runs live against production for the fixed parcel set, writes an artifact that declares its snapshot, and a hook refuses an OPS-23 close that does not cite a passing artifact. The OPS-16 row also says it must pass after P-151 deploys; that half is P-151's predicate and is open until P-151 closes.",
+  "scopeBasis": "Five machine legs (PE facets, envelope by address, envelope by point, gis-layer ring, cortex node with declared credentials) and three operator-run legs folded in via --observations (sheet sealed, overlay drawn, get_smart_site). The MCP and screenshot legs are OBSERVED not MEASURED because the connector authenticates per user; that boundary is named in the instrument header rather than papered over.",
+  "built": [
+    "scripts/surface-probe.mjs (predicates for P-151, P-152, P-153; findings WRONG-PARCEL and FIGURE-IN-PAYLOAD; --self-test, --fixtures, --observations, --rows, exit 0/1/2)",
+    "scripts/fixtures/surface-probe/ (eleven verbatim production responses captured 2026-09-11 16:28Z-17:13Z with MANIFEST.json recording request, status and latency, plus the observations block)",
+    "scripts/ops23-lane-status.mjs (registry-driven lane board for P-151..P-167)",
+    "scripts/enforcement/probe-close-gate.mjs and .claude/hooks/probe-close-gate.mjs, registered in .claude/settings.json on the Bash matcher"
+  ],
+  "violationRuns": [
+    "surface-probe --self-test: P-151 FAILS on the 2026-09-11 fixture of 48453:113408 (point route 504, sheet observed not sealed); P-153 FAILS on 48021:34049 (overlay observed not drawn, figure observed printed); P-152 FAILS on 48021:34049 (panel 25/5/25/15 vs MCP 30/10/30/20); every row refuses to PASS on an empty payload; every row CAN pass on a good world; P-153 fails on differing polygon vertex counts and on a printed figure. 18 checks, 0 failures.",
+    "probe-close-gate --self-test: no probe -> block; missing artifact -> block; non-probe artifact -> block; UNMEASURED row -> block; PASS row -> allow; instrument row with parseable artifact -> allow; unparseable close -> block; non-OPS-23 close -> allow; deleted close -> allow. 12 checks, 0 failures.",
+    "live trigger: this close was first staged WITHOUT a probe field and committed through the harness; the hook refused it (recorded below under liveViolation once observed). Then the probe field was added and the commit allowed."
+  ],
+  "liveRuns": [
+    "_inbox/2026-09-11_175938_surface_probe.json: five parcels, PASS 0 FAIL 0 UNMEASURED 9; the 48453:113408 point route that returned 504 at 16:39Z returned 200 declined in 1950 ms at 17:59Z, so that hang is intermittent and now measured rather than remembered",
+    "_inbox/2026-09-11_180241_surface_probe.json: same, plus findings WRONG-PARCEL (48021:33223 address form answered ok for 48491:R419407, a Williamson parcel) and FIGURE-IN-PAYLOAD on both Bastrop parcels"
+  ],
+  "theFindingWorthMoreThanTheFix": "Asked by address, the envelope endpoint answered ok with a polygon for a parcel in another county. The panel's resolver guards on node id; the finding is that the endpoint's address form is not safe for any consumer that does not, and P-152's reader must resolve by node id only.",
+  "contradicted": "The plan's F5 said the point route 504s; it does so intermittently (504 at 16:39Z, 200 at 17:59Z and 18:02Z). The plan text is corrected to say intermittent. The Bastrop ring probe did not match either Bastrop parcel on the first live run; the cause is under inspection at close time and recorded in whatRemainsOpen rather than hidden.",
+  "constraintsHonored": [
+    "no product repo touched; doc_repo only",
+    "no credential guessed: the cortex leg refuses unless base, key and header NAME are all declared",
+    "fixtures committed beside the instrument; nothing cited is untracked",
+    "the hook is narrow: it gates only closes whose planRows match P-151..P-167 and only on doc_repo commits"
+  ],
+  "whatRemainsOpen": [
+    "P-151's flip: the instrument must PASS P-151 after P-151 deploys; that is P-151's close, not this one",
+    "the four other-county parcels of the probe set (48055, 48209, 48309, 48491) are not yet chosen; needs a FACTORY_DATABASE_URL_RO read the integration seat does not hold",
+    "Bastrop gis-ring match returned false on the first live run for 48021:34049 and 48021:33223 while Travis matched; the ring is present in the layer, so the matcher or the property name differs for Bastrop; fix is small and is recorded here rather than claimed done",
+    "the cortex node leg has never run: no seat has declared CORTEX_API_KEY_HEADER to this instrument"
+  ],
+  "leave_behind": [
+    { "item": "WRONG-PARCEL finding: address-form envelope resolution can answer for another county's parcel", "owner": "substrate seat (retrieval-api / cortex route) via P-152", "plan_row": "P-152" },
+    { "item": "Bastrop gis-ring property-name mismatch in surface-probe.mjs", "owner": "integration seat", "plan_row": "P-160" }
+  ],
+  "lessonsForFleetMemory": [
+    "A hang observed once is a rate, not a state; the second run of the same probe minutes later answered in 2 s. Record both, quote neither as 'the' behaviour.",
+    "An address-keyed read that returns ok is not evidence it answered about the parcel you asked for. Compare node ids or do not use the answer."
+  ],
+  "docRepoEdits": "committed by the integration seat in the commit that carries this close",
+  "commits": "see the doc_repo commit that carries this file"
+}
