@@ -1,0 +1,105 @@
+{
+  "lane": "OPS-21 Z1",
+  "planRow": ["P-147"],
+  "repo": "hauska-factory",
+  "branch": "fix/ops21-z1-zoning-residual",
+  "commit": "711cc06",
+  "workingTree": "clean, no code changes made -- verified at close",
+
+  "missionPremise": "OPS-16 amendment A-124 / OPS-21 A-122: S1 (P-132, write side) and S4 (P-135, verdict side) independently derived the same number -- 3,376 parcels x 5 counties (44/26/1014/1021/1271) -- as the zoningDistrict residual gating eight of nine written rails across the five in-scope counties. This lane's mandate: characterise the 3,376 into the four named populations (undeclared-city miss, stamp-gap city, pre-existing not-applicable, genuinely stampable), and apply ONLY the genuinely-stampable population (bucket 4). Step 1 was characterisation-first by explicit instruction: report before applying anything.",
+
+  "completionPredicate": "Every one of the 3,376 carries a named disposition, and bucket 4 (if non-empty) has been applied. Unaccounted count for zoningDistrict on in-city parcels in the five in-scope counties, before and after, with the delta attributed by bucket -- MET, see countsWithCountingRules below. Zero parcels unaccounted-for IN THE ACCOUNTING SENSE (every one of the 3,376 has a named, evidenced bucket) even though the count of parcels UNACCOUNTED IN THE CELL SENSE was already zero before this lane began (see finding).",
+
+  "scopeBasis": "hauska-factory only (parcel-r5-zoning.mjs and its config), per dispatch. Out of scope and untouched, per dispatch: declaring any city complete, fixing S1's deferral rule, re-running the setback/envelope writers, Hays (48209), the five stamp-gap cities' underlying layer problem, parcelRecordAllowlist.ts, legacy-design-tools. Nothing in this lane's scope required a code change or a --apply run, because Step 1 characterisation found bucket 4 (the only bucket this lane may write) to be empty -- see headlineFinding.",
+
+  "headlineFinding": "Bucket 4 is EMPTY. There is nothing for this lane to apply. The entire 3,376-parcel residual is bucket 3 (already not-applicable), and every one of the 3,376 is verified LEGITIMATE: a genuine zoning-polygon miss inside a city whose staged layer is declared complete (DECLARED_COMPLETE, src/config/zoning-layer-completeness.mjs), correctly written by parcel-r5-zoning's completeness sweep, not a defect, not a relabelling, not this job's premise failing. Full derivation and evidence chain in _inbox/2026-09-11_ops21-z1_cp1.json and _inbox/2026-09-11_ops21-z1_cp2.json (independently re-verified, zero drift).",
+
+  "countsWithCountingRules": {
+    "globalZoningDistrictKindDistribution": {
+      "countingRule": "SELECT cell_state->>'kind', count(*) FROM parcel_record_cell WHERE rail_key='zoningDistrict' GROUP BY 1 -- unscoped, whole store, verified on both FACTORY primary and FACTORY_DATABASE_URL_REPLICA, re-verified at CP2, byte-identical both times.",
+      "before": { "value": 533160, "refused": 73786, "not-applicable": 374459, "unaccounted": 0 },
+      "after": { "value": 533160, "refused": 73786, "not-applicable": 374459, "unaccounted": 0 },
+      "delta": "none -- this lane made zero writes"
+    },
+    "fiveCountyResidualBucketBreakdown": {
+      "countingRule": "S1's own residual population (place_key WHERE rail_key='setbackRules' AND kind='unaccounted', 5 in-scope counties by place_key prefix), joined to that same place_key's zoningDistrict cell_state, then classified by dispatch bucket.",
+      "bucket1_undeclaredCityStillUnaccounted": 0,
+      "bucket2_stampGapExcludedCity": 0,
+      "bucket3_alreadyNotApplicable": 3376,
+      "bucket4_genuinelyStampable_APPLIED": 0,
+      "perCountyBucket3": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "sumCheck": "0+0+3376+0 = 3376, exact match to S1 (write side) and S4 (verdict side); three independent derivations now agree to the parcel.",
+      "bucket3CityAttribution": {
+        "48021": { "Bastrop": 44 },
+        "48055": { "Lockhart": 24, "San Marcos": 2 },
+        "48309": { "Waco": 1014 },
+        "48453": { "Austin": 861, "Pflugerville": 118, "Leander": 27, "Cedar Park": 11, "Round Rock": 3, "Buda": 1 },
+        "48491": { "Hutto": 691, "Round Rock": 162, "Georgetown": 117, "Leander": 105, "Cedar Park": 83, "Liberty Hill": 53, "Taylor": 37, "Austin": 18, "Pflugerville": 5 }
+      }
+    },
+    "postApplyCountPerCounty": {
+      "note": "Mission asked this to be reported 'so S4's successor can re-read the verdict grid against a real number rather than an estimate.' Since bucket 4 = 0, the post-characterisation count is UNCHANGED from pre-characterisation: 44/26/1014/1021/1271, still summing to 3,376. This is not a failure to move the number -- it is the correct, verified answer. Re-running parcel-setback-cells --apply or parcel-envelope-cells --apply now will move ZERO additional cells, because nothing about zoningDistrict's state has changed or can change under the current S1/S2 writer logic (see openFinding)."
+    }
+  },
+
+  "openFinding_notThisLanesToFix": {
+    "statement": "The eight downstream rails are blocked on S1's (parcel-setback-cells.mjs) and, by the same class, S2's (parcel-envelope-cells.mjs) writers having no branch for a not-applicable zoningDistrict -- both writers' documented gate is 'zoningDistrict has reached value or refused.' A legitimately not-applicable zoningDistrict (unzoned land in a declared-complete city) will never become value or refused, and parcel-r5-zoning's UPDATE is permanently gated to cells currently kind='unaccounted', so it will never revisit these cells either. These 3,376 parcels' setback/envelope cells are PERMANENTLY unaccounted under current logic, with zero path to resolution short of teaching S1/S2 to recognize a not-applicable zoningDistrict and propagate not-applicable onto their own rails.",
+    "whyNotFixedHere": "Dispatch explicitly: 'Fixing S1's deferral rule' is out of scope; 'do not fix S1's writer from here.' Reported for a successor or the operator to route.",
+    "suggestedNextPlanRow": "A new P-row against parcel-setback-cells.mjs / parcel-envelope-cells.mjs: when a residual parcel's zoningDistrict is kind='not-applicable', write kind='not-applicable' (with a pointer back to the zoningDistrict cell's own completenessDeclaration as the decision-record basis) on the dependent rail instead of leaving it unaccounted. Would resolve all 3,376 x 8 = 26,608 dependent cells in one pass, no further zoningDistrict work needed."
+  },
+
+  "correctionsToTheDispatchPremise": [
+    {
+      "claim": "\"parcel-r5-zoning.mjs's own header names at least four ways a parcel stays unresolved\" / bucket 4 exists and is this lane's to apply",
+      "measured": "As of 2026-09-11, zero parcel_record_cell rows anywhere carry rail_key='zoningDistrict' AND kind='unaccounted' -- verified live on both the FACTORY primary and its read replica, re-verified at CP2 with zero drift. Bucket 4 requires kind='unaccounted' by definition and is therefore empty.",
+      "consequence": "This lane had nothing to apply. The mission's 'What done looks like' section (re-running the setback/envelope writers 'continues closing the eight rails automatically') does not hold: re-running them now moves zero cells.",
+      "fullDetail": "_inbox/2026-09-11_ops21-z1_cp1.json"
+    },
+    {
+      "claim": "S1's close: residual zoningDistrict cells are 'still unaccounted or a pre-existing cross-system not-applicable drift'",
+      "measured": "100% not-applicable, 0% unaccounted, and the not-applicable is NOT a drift/defect -- every one of the 3,376 carries a byte-exact completenessDeclaration naming a real DECLARED_COMPLETE city (spot-checked in full against source code's own generated shape).",
+      "consequence": "S1's hedge is resolved: the residual is legitimate, evidenced, and belongs to the deliberate completeness-sweep design, not to a data-integrity drift.",
+      "fullDetail": "_inbox/2026-09-11_ops21-z1_cp1.json"
+    }
+  ],
+
+  "freeFindingNotActioned": {
+    "text": "src/config/zoning-layer-completeness.mjs's EXPLICITLY_HELD.Elgin prose ('Holds Bastrop county at 26 and Travis county at 1,680') disagrees with the same file's own, later DECLARED_LAYER_GAP.Elgin.expectedResidue.48453 (506, re-derived 2026-09-09). The 2026-09-09T20:38Z parcel-r5-zoning run succeeded with no LAYER_GAP_RESIDUE_EXCEEDED throw, live evidence the 506 ceiling is current and binding and the 1,680 prose figure is a stale carry-over. Not actioned: out of scope (no city may be declared/re-declared by this lane; this is a prose-only staleness inside a file this lane must not edit)."
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-11_ops21-z1_cp1.json (design/characterisation: the full evidence chain -- global kind distribution, run history, residual-population join, provenance spot-check, bucket accounting)",
+    "_inbox/2026-09-11_ops21-z1_cp2.json (adversarial re-verification: both load-bearing queries re-run fresh, byte-identical results, zero drift)"
+  ],
+
+  "prNumbers": "not applicable: no code change made in hauska-factory. Working tree verified clean at close (git status --short empty).",
+  "mergeSHAs": "not applicable, same reason.",
+  "ciConclusionStrings": "not applicable, same reason.",
+
+  "constraintsHonored": [
+    "STEP 1 characterisation completed and reported before any apply attempt; no --apply was ever run against production.",
+    "Did not add any city to zoning-layer-completeness.mjs.",
+    "Did not touch SETBACK_APPLY_HELD or the atom writer.",
+    "Did not fix S1's or S2's deferral rule; did not write to parcel-setback-cells.mjs or parcel-envelope-cells.mjs.",
+    "Did not retire any legacy path, did not touch legacy-design-tools or parcelRecordAllowlist.ts.",
+    "Hays (48209) excluded from every query.",
+    "Declared HOST and database for every query (FACTORY host ep-round-base-au0jofwp/neondb; primary used only for the replication-lag cross-check, replica used for all read-only reporting per 90_runbooks/seat_loop.md).",
+    "No secret echoed; every credential was piped directly from `gcloud secrets versions access` into psql and never written to a file or printed to output.",
+    "Two adversarial checkpoints filed (CP1 design, CP2 re-verification), per AGENT_CONTRACT section 1.",
+    "Verified at source throughout -- every count is a live query result, not a figure carried over from a prior close, per AGENT_CONTRACT section 5 and DEV_PROCESS 4.1."
+  ],
+
+  "whatRemainsOpen": [
+    "openFinding_notThisLanesToFix: S1/S2's deferral-rule gap is real, evidenced, and unresolved -- needs a new plan row, not this lane's to write.",
+    "freeFindingNotActioned: EXPLICITLY_HELD.Elgin's stale prose figure (1,680 vs the binding 506) should be corrected for a future reader, by whichever lane next has legitimate write access to zoning-layer-completeness.mjs's prose.",
+    "The eight gated rails remain gated at 3,376 parcels x 8 rails until the openFinding above is actioned by a successor lane."
+  ],
+
+  "fleetMemoryScratch": [
+    { "kind": "GROUND-TRUTH", "text": "2026-09-11T12:18-12:24Z live, FACTORY host ep-round-base-au0jofwp/neondb: parcel_record_cell has ZERO rows with rail_key='zoningDistrict' AND kind='unaccounted', anywhere, any county. Re-verified twice (CP1, CP2), byte-identical both times, both primary and replica agree." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-11 live, runs table: last parcel-r5-zoning run is 2026-09-09T20:38:32Z (id 3bc89b18...), status=succeeded, all 24 in-scope cities including both Elgin groups, no throw. No run since. This is the stable state S1 (2026-09-10) and S4 (2026-09-11) both measured." },
+    { "kind": "LESSON", "text": "When a dispatch names a rail's 'unaccounted' residual sourced from a DOWNSTREAM writer's deferral count (S1/S4's setback/verdict-side numbers), verify the UPSTREAM rail's own literal cell_state kind directly before assuming the population is actually sitting 'unaccounted' there -- a downstream writer's own deferral condition ('not yet value or refused') can be satisfied by a state (not-applicable) that is neither 'value/refused' nor 'unaccounted', and conflating the two changes which bucket the whole residual belongs to." },
+    { "kind": "LESSON", "text": "parcel_record_cell is ~64M rows (65 rails x the full multi-county universe); a query filtering only on cell_state->>'kind' without a leading rail_key or place_key-prefix predicate that the query planner can use as its FIRST bitmap scan will time out even at 100s on the small autoscaling replica under concurrent fleet load. Lead with rail_key (has a plain btree index) or use the existing partial index on kind='unaccounted', never both as an unweighted AND across the full table." },
+    { "kind": "OPEN", "text": "See openFinding_notThisLanesToFix -- a successor plan row against parcel-setback-cells.mjs/parcel-envelope-cells.mjs should teach both writers to propagate a not-applicable zoningDistrict onto their own rails instead of deferring forever." }
+  ]
+}
