@@ -2,7 +2,7 @@
 id: adr_031_parcel_record_ledger_over_atoms
 title: "ADR-031 — The parcel record and the atom estate: ledger over claims"
 status: accepted
-last_updated: 2026-09-06
+last_updated: 2026-09-11
 applies_to: portfolio
 related: [adr_018_atom_contract_substrate_layer, adr_028_contract_cross_vertical_adoption, 19_the_instrument_contract, 28_mcp_first_product_design]
 owner: nick
@@ -78,6 +78,51 @@ tool schemas, with `absent-verified` returned as a first-class answer carrying i
 basis. (d) Access pairs enforced at call time. (e) A stable identity crosswalk
 between `place_key` and catalog `entity_id` ranges.
 
+## Amendment 2026-09-11 — the end state becomes the program
+
+Operator ruling 2026-09-11, `_decisions/2026-09-11_ledger_as_serving_path_seven_steps.md`.
+Decisions 1 through 5 stand. What changes is that Decision 2's end state ("record cells
+thin to state plus atom reference plus provenance, and the grid remains") stops being a
+destination and becomes the plan of record, and Decision 4's bounded debt stops being
+tolerated and gets a backfill row.
+
+**A1. Atoms are canonical; a cell is accounting, never a copy.** In Doc 19's terms: a node
+carries no facts; an atom is one claim from one authority at one time; an edge is an atom
+whose value is a node. A cell holds the state, the atom reference, provenance, and a
+**cached rendering** keyed to the atom version and the vocabulary version (ruled 2026-09-11;
+not a second source of truth, because a rendering cannot be served stale without its key
+mismatching). A cell that holds a value with no atom behind it is the seam this amendment
+retires.
+
+**A2. One reader, in the substrate.** Decision 5(b) made concrete: the reader that walks
+gated cells and dereferences atoms lives in the Hauska retrieval service
+(`hauska-engine/services/retrieval-api`, which today reads the substrate and cortex stores
+and gains a read-only factory role), below both cortex and the Hauska MCP server. Cortex,
+smartsite-mcp, the engine reports, Property Explorer and the Hauska MCP tools consume it.
+An unslated rail refuses with its cell state; it does not fall to a legacy path, and each
+cutover carries the retirement of the path it replaces.
+
+**A3. One writer discipline.** The conformant writer (Decision 3's F-16/F-18 machinery)
+mints the atom, sets the cell pointer and writes the rendering in one transaction. Every
+factory cell job routes through it. Every engine writer is reachable by the runner.
+
+**A4. One vocabulary.** The human face of an atom is one versioned module both writer and
+reader import, shipped as a subpath of the atom-contract package.
+
+**A5. The seven steps** (rows in OPS-23 and OPS-16 A-129): nodes and the crosswalk as a
+contract type; the rail-to-atom map for all 65 rails; the one writer; the backfill that
+mints atoms from existing gated cells with values unchanged (Decision 4's own repair, now
+scheduled, for every rail rather than one family); the one reader with the refuse default
+and retirement; edges as first-class atoms; succession. The boundary/envelope atom program
+opened 2026-09-06 folds into steps 4 and 7. The L4 divergence tripwire stays owed until no
+gated cell holds a value without an atom, and is then retired as unnecessary.
+
+**Reconsidered and rejected again.** Cells as canonical with atoms projected from them was
+weighed on 2026-09-11 because it makes divergence impossible by construction and is
+cheaper this quarter. Rejected: it inverts the thesis (the catalog becomes a view of a
+product table) and forces edges, supersession and calibration to be re-invented on cells.
+The projection survives only as the mechanism of step 4.
+
 ## Alternatives considered
 
 **Record-first, atoms only where evidence demands.** Cheapest continuation of the
@@ -107,10 +152,12 @@ atom-served and record-served paths coexist for as long as the slates take.
 
 ## Open decisions
 
-The CTX atom-backfill card timing and scope. The policy for minting verified-absence
-atoms under absent-verified cells versus leaving absence ledger-only. Growth of the
-gate verdict store into the catalog surface. Formalizing the place_key to entity_id
-crosswalk as a contract type.
+**Closed 2026-09-11 by the amendment above:** the CTX atom-backfill card timing and scope
+(step 4, all rails); formalizing the place_key to entity_id crosswalk as a contract type
+(step 1). **Still open:** the policy for minting verified-absence atoms under
+absent-verified cells versus leaving absence ledger-only (the ADR-028 verified-absence pair
+exists; whether step 4 mints them is a ruling owed before step 4 runs on absence cells).
+Growth of the gate verdict store into the catalog surface.
 
 **Named scope item for that card (2026-09-05):** the F-01 item 5 queue-claim mechanism
 (Postgres-native `claims` table, transactional claim-and-verify) is wired into
@@ -165,3 +212,8 @@ ADR-018, ADR-028. Session origin: the 2026-09-01/02 parcel-record planner sessio
   narrowly scoped to `property-boundary-edge`/`buildable-envelope` per the
   2026-09-05/06 pilot; explicitly noted the remaining rails stay a separate,
   deferred decision.
+- **2026-09-11 (operator ruling, integration seat):** Amendment: the end state becomes
+  the program. Atoms canonical, cells as accounting with a cached rendering, one reader in
+  the substrate retrieval service, one writer discipline, one vocabulary, seven steps as
+  rows. Supersedes the 2026-09-06 narrow scope: the backfill is all rails.
+  `_decisions/2026-09-11_ledger_as_serving_path_seven_steps.md`.
