@@ -1,0 +1,66 @@
+{
+  "artifact": "CTX-PIN4_CP1_design_review",
+  "lane": "CTX-PIN4",
+  "planRow": "P-124",
+  "repo": "hauska-factory",
+  "reviewedAt": "2026-09-10T21:30:00Z",
+  "seatSetup": {
+    "seat": "property",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-pin4-hays",
+    "branch": "chore/ctx-pin4-ldt-hays",
+    "createdFrom": "origin/main @ 88bb03ca77cca05a73cc86fefe25be717f6aee17",
+    "confirmedBeforeAnyEdit": "git rev-parse --show-toplevel / git branch --show-current / git log -1 all matched the dispatch's stated registration exactly; git worktree list confirmed the sibling hauska-factory-ctx-pin4 (no -hays suffix) sits at a different commit (c446e0d, the previous bump) and was not touched"
+  },
+  "missionPremise": "Three items, not one: (1) bump cloudbuild.publish.yaml's _LDT_SHA from 591f5efe to LDT main (cebd041d, #653 CTX-HAYS-REBIND + #654 CTX-HAYS-BACKFILL), re-tracing whether the picked-up content reaches /app/bakes; (2) restore the pin's provenance comment for the whole undocumented range -- PR #130 and #131 each changed the pin's value with zero added comment lines, so the file's last comment block (CTX-PIN2's) sits over a value two bumps stale -- and answer what mechanism, if any, makes the next bump carry a comment; (3) answer whether hand-bumping a pin that needs bumping roughly every six hours during an active LDT arc is the right shape, without building auto-follow automation (explicitly forbidden by the dispatch).",
+  "ldtMainAtPinTime": {
+    "command": "gh api repos/empressaioemail-tech/legacy-design-tools/commits/main --jq .sha",
+    "result": "cebd041d7ddf102f29ab60eeb9feb04946888125",
+    "matchesDispatchAndRegistration": true
+  },
+  "priorArtifactsFound": {
+    "search": "_inbox/ for ctx-b1, ctx-b2, ctx-b6, ctx-b7, ctx-pin2 close artifacts, per DEV_PROCESS 3.3b",
+    "found": [
+      "_inbox/2026-09-10_ctx-b1_close.json (legacy-design-tools lane, local commit only, unpushed at its own close time -- since landed as LDT PR #650/fa7b9b67, confirmed by this lane's own git log read)",
+      "_inbox/2026-09-10_ctx-b6_close.json (legacy-design-tools lane, PR #651/9ae49246, reopened once by its own coordinator, merged)",
+      "_inbox/2026-09-10_ctx-b7_close.json (legacy-design-tools lane, PR #652/591f5efe, merged)",
+      "_inbox/2026-09-10_ctx-b2_close.json (hauska-factory lane, merged as ac4b314 -- the module-graph tracer fix this lane's tracing depends on)"
+    ],
+    "disposition": "read and cited directly rather than re-derived -- CTX-B2's close supplies the ground-truthed 258-module baseline at the 9873ff11 pin (validated against a real esbuild build) that this lane's own tracer reproduction is checked against; CTX-B1/B6/B7 closes supply what each LDT commit's fix actually does, cited in the restored pin comment rather than re-investigated from scratch"
+  },
+  "keyFindingBeforeAnyEdit": {
+    "finding": "The dispatch's own premise -- 'the previous two pins both read 26 modules and 0 unresolved with a byte-identical set' -- does not reproduce. Running the current tracer (scripts/bake-module-graph.mjs) against the last documented pin (9873ff11) returns 258 modules, not 26.",
+    "rootCause": "P-124/CTX-B2 (ac4b314, landed on hauska-factory main 2026-09-09T23:56:06 -0500) taught the tracer to cross @workspace/* package boundaries, pulling lib/cad-ingest (39 files) and lib/adapters (65 files) into the graph. This landed AFTER CTX-PIN2's own bump commit (b9ca9b4a, 2026-09-09T21:25:59 -0500) and CTX-B2's own close states explicitly it left cloudbuild.publish.yaml untouched. So the 26-module figure was never wrong when written; it went stale the moment CTX-B2 merged, and nothing in this file was ever updated to record that.",
+    "verification": "CTX-B2's own close records the fixed tracer's 258-module set at 9873ff11 as a validated superset of a real esbuild build's 252 real inputs (6-module delta = esbuild's own type-only-import elision). This lane's independent reproduction of 258 at 9873ff11, using the current committed tracer, matches that ground truth exactly.",
+    "disposition": "Per DEV_PROCESS 3.2, reported as a correction to the dispatch's own numbers rather than silently reconciled. Does not change item 1's outcome (the pin still needs to move to cebd041d) but changes what the comment can honestly claim about module counts for every entry back through CTX-BUILD."
+  },
+  "planOfAttack": {
+    "step1": "Isolated LDT checkout: a fresh clone into this session's own scratchpad (never a shared seat worktree, per AGENT_CONTRACT section 5's isolation rule), full history, to run the tracer and staleness check at arbitrary historical commits without touching any lane's live tree.",
+    "step2": "Reconstruct the undocumented range's commit-by-commit content: 9873ff11..fa7b9b67 (CTX-B1/#650), fa7b9b67..9ae49246 (CTX-B6/#651), 9ae49246..591f5efe (CTX-B7/#652), 591f5efe..cebd041d (this bump, #653+#654) -- for each, run the real check-ldt-pin-staleness.mjs script with explicit --pin/--main to get its authoritative 'hits' list (which changed files are actual bake-module-graph members), rather than inferring reach from git diff --stat alone.",
+    "step3": "Cross-check the dispatch's claimed 'ten changed files' for the current red run against the live CI run's own logged output (gh api / gh run view --log on run 34526748288), not only against a local reproduction, per DEV_PROCESS 4.1 verify-at-source.",
+    "step4": "Write the pin comment covering the full undocumented range plus this bump, in the file's established per-bump style, stating what is picked up, what is not, and the 26-vs-258 correction explicitly.",
+    "step5": "Build scripts/check-ldt-sha-comment-presence.mjs: fails CI only when a diff changes _LDT_SHA's VALUE without an accompanying added comment line; inert on any other edit to the file, per the dispatch's explicit over-broad constraint. Test against the real #130/#131 shape (must reject) and the real CTX-PIN/#125 shape (must admit), per the dispatch's explicit fixture requirement.",
+    "step6": "Re-confirm LDT main via gh api immediately before writing the pin value (second check since registration).",
+    "step7": "Commit, push, open PR, verify CI check-run conclusion strings (not gh pr checks prose), self-merge per the program's standing norm, re-confirm LDT main a third time (at literal close), and confirm the ldt-pin-staleness check-run conclusion string on main post-merge."
+  },
+  "verifyByViolationPlan": {
+    "stalenessFailAtOldPin": "pin=591f5efe14aab6efda6d79e15aa7357751975655, main=cebd041d7ddf102f29ab60eeb9feb04946888125 -> expect FAIL; hits list must match the live CI run 34526748288's own logged output byte-for-byte",
+    "stalenessPassAtNewPin": "pin=main=cebd041d7ddf102f29ab60eeb9feb04946888125 -> expect PASS (trivial, pin already at target)",
+    "commentPresenceRejects": "real historical diffs of commits 83c98f97 (#130) and 63a606b1 (#131) against their own parents -> expect FAIL (no added comment)",
+    "commentPresenceAdmits": "real historical diff of commit f8293d53 (#125, CTX-PIN's own commented bump) against its own parent -> expect PASS",
+    "commentPresenceNotApplicable": "a constructed fixture that edits the pin file without touching _LDT_SHA's value -> expect PASS, reason names 'not touched by this diff'"
+  },
+  "cp1Verdict": "PASS -- proceed. The dispatch's own module-count premise is stale (found before any edit, not discovered mid-work), which changes what the restored comment can claim but not the pin bump itself. Plan covers all three dispatch items plus the correction.",
+  "ownedFilesBoundary": [
+    "cloudbuild.publish.yaml (the _LDT_SHA line + its comment block only)",
+    "scripts/check-ldt-sha-comment-presence.mjs (new)",
+    "test/check-ldt-sha-comment-presence.test.mjs (new)",
+    ".github/workflows/ci.yml (one new job only, additive)"
+  ],
+  "explicitlyNotTouched": [
+    "scripts/bake-module-graph.mjs, scripts/check-ldt-pin-staleness.mjs, scripts/ldt-sha-shape-guard.mjs (read and reused, not edited)",
+    ".github/workflows/ldt-pin-staleness.yml (read, not edited -- its own header comment already answers why it stays out of ci.yml, which this dispatch explicitly says not to re-derive)",
+    "cloudbuild.parcel-r5-zoning.yaml's _LDT_SHA (explicitly out of scope per the dispatch)",
+    "legacy-design-tools, hauska-engine, hauska-map (out of write authority; LDT read only via an isolated scratch clone, never a shared seat worktree)",
+    "no deploy, Cloud Build submission, Cloud Run job execution, bake, publish, or walk"
+  ]
+}
