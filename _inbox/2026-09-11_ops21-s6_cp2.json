@@ -1,0 +1,43 @@
+{
+  "lane": "OPS21-S6",
+  "planRow": "P-150",
+  "checkpoint": "CP2 (pilot/mid-work adversarial re-verification, AGENT_CONTRACT section 1)",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ops21-s6",
+  "branch": "feat/ops21-s6-final-slate",
+  "snapshotDeclared": "repository legacy-design-tools, branch feat/ops21-s6-final-slate, base commit 63fda040. Working tree carries 6 modified files (parcelRecordAllowlist.ts + 5 test files), not yet committed.",
+
+  "editMade": {
+    "file": "artifacts/api-server/src/lib/parcelRecordAllowlist.ts",
+    "added": "20 new PARCEL_RECORD_SLATE entries: {48021,48055,48309,48453,48491} x {setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt}. Plus a module-doc block explaining the addition and the deliberate non-addition of setbackSideFt/setbackRearFt/setbackCornerFt (see CP1's criticalFinding_slateAddressability).",
+    "notAdded_deliberately": "setbackFrontFt for the 5 in-scope counties: already present (PARCEL-B-SLATE3, 2026-09-04), zero edit needed. setbackSideFt/setbackRearFt/setbackCornerFt for the 5 in-scope counties: no resolveAllowlist call site exists for these keys anywhere in the repo (grep-confirmed twice, CP1 and again at this checkpoint) -- adding them would be inert. These 3 rails serve automatically as part of the setbackFrontFt group once that pair resolves to 'record' -- already true in production before this card's edit (see CP1's liveProbe_preEdit)."
+  },
+
+  "testUpdatesMade": {
+    "why": "Slating these 4 rails for 5 real program counties changes real behavior that 5 existing test files asserted against the OLD (unslated) state. Each of the 4 *ServeCutover.test.ts files had a 'FALSIFIER: even a fabricated PASS verdict has no effect' test using a NOW-SLATED county (Bastrop/Travis/Williamson) as its example -- these would have started failing (verdict=pass on a slated pair now genuinely resolves to 'record', not 'legacy'/'not-cut-over') had they been left as-is, which per DEV_PROCESS 2.2 ('a gating indicator is tested for its ability to FIRE before it is trusted') would have meant either a red PR (correct signal, but not silently ignorable) or, worse, an un-noticed semantic regression in what the test claims to prove.",
+    "files": [
+      "parcelRecordAllowlist.test.ts: slate-size assertion 102->122 (with countingRule note), the 'never slated' test rewritten to 'now slated for 5 in-scope counties, not Hays', the big unslated-pairs falsifier loop's rail list and expected counts updated (102->122), one new FALSIFIER test added covering all 4 newly-slated rails' record/refused/legacy branches including the Hays-stays-legacy check.",
+      "setbackRulesFactServeCutover.test.ts, maxHeightFtFactServeCutover.test.ts, maxLotCoveragePctFactServeCutover.test.ts, maxFootprintSqFtFactServeCutover.test.ts: each rewritten to the parcelAreaSqFtFactServeCutover.test.ts precedent S5 established -- a 'never-slated pairs' describe block re-pointed at Hays (the pair that is STILL genuinely unslated) instead of the now-slated example county, plus a new 'SLATED pairs' describe block proving a real PASS verdict on the rail's own gold county genuinely reaches the parcel_record adapter (present-state fixtures drawn from each rail's own existing FromParcelRecord.test.ts LIVE-SHAPE fixture, not invented), and that no-verdict/refuse/store-failure still fail closed to not-cut-over even once slated."
+    ],
+    "noOtherConsumers": "grep-confirmed no other test file (route-level __tests__/*.test.ts, cadRollServeCutover.test.ts, etc.) references any of these 4 rail keys or hardcodes a PARCEL_RECORD_SLATE count."
+  },
+
+  "verification": {
+    "typecheck": "pnpm run typecheck (tsc --noEmit) in artifacts/api-server. 1096 pre-existing errors both with and without this lane's 6-file changeset (git-stash diff, same method S5 used) -- byte-identical count, zero net-new errors. The 1096 are dirty-build-state noise (workspace .d.ts outputs not rebuilt, TS6305/TS7006 across unrelated route files) present on a clean checkout before this lane touched anything.",
+    "targetedVitest": "7 directly-affected test files, run with DATABASE_URL set to a placeholder (clears an unrelated module-load-time guard per S5's own documented precedent, gates nothing these tests exercise): parcelRecordAllowlist.test.ts (47 tests), setbacksFactServeCutover.test.ts (7), setbackRulesFactServeCutover.test.ts (8), maxHeightFtFactServeCutover.test.ts (8), maxLotCoveragePctFactServeCutover.test.ts (8), maxFootprintSqFtFactServeCutover.test.ts (8), parcelAreaSqFtFactServeCutover.test.ts (9, unmodified -- confirms this lane did not regress S5's own prior slate). 95 of 95 pass.",
+    "fullSuite": "Running at CP2 time (full `vitest run`, same placeholder DATABASE_URL); result will be reported at close rather than blocking this checkpoint, per the dispatch's own checkpoint cadence -- CP2 is pilot/mid-work, not final."
+  },
+
+  "liveReVerification_atEditTime": {
+    "immediateBeforeWrite": "Re-ran the 20-pair grid (the genuinely new entries) immediately before editing parcelRecordAllowlist.ts: all 20 still verdict=pass, unaccounted_count=0, no drift from the CP1 read.",
+    "atThisCheckpoint": "Re-ran the full 40-pair grid again just now: all 40 still verdict=pass, unaccounted_count=0 (COUNT(*) with that filter = 40). No drift across three independent live reads spanning this lane's own session (CP1, immediate-pre-write, this CP2), consistent with S4/S5/Z2's own documented pattern of a live-scheduling table that keeps re-evaluating without changing outcome."
+  },
+
+  "remainingWork": [
+    "Await full local vitest suite result.",
+    "Commit, push, open PR, watch CI to raw SUCCESS conclusion strings, merge.",
+    "Deploy: build-and-push -> workflow_dispatch deploy-canary (image tag pinned to merge SHA) -> canary smoke -> workflow_dispatch shift-traffic -> production smoke. Planner-owned throughout.",
+    "Post-deploy live probes: (1) positive, 2 counties, real parcel_record-sourced setback/envelope values, named parcels; (2) negative control, 3P-14 rails still refuse on the same probes; (3) Hays probe, 48209 still declines.",
+    "Final live re-verification of the 40-pair grid at close, per the dispatch's own drift discipline."
+  ]
+}

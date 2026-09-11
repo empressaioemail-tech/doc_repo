@@ -1,0 +1,65 @@
+{
+  "lane": "OPS21-S6",
+  "planRow": "P-150",
+  "checkpoint": "CP1 (design/pre-build, AGENT_CONTRACT section 1)",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ops21-s6",
+  "branch": "feat/ops21-s6-final-slate",
+  "baseCommit": "63fda0408a73ffc0945d70f0695393fb1173b08c (origin/main, matches dispatch's stated base)",
+  "snapshotDeclared": "repository legacy-design-tools, branch feat/ops21-s6-final-slate, commit 63fda040, working tree clean at CP1 time.",
+
+  "missionRead": "Dispatch names 8 rail keys x 5 in-scope counties = 40 (county,rail) pairs (setbackFrontFt, setbackSideFt, setbackRearFt, setbackCornerFt, setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt across 48021/48055/48309/48453/48491) to add to PARCEL_RECORD_SLATE, now that Z2/P-149 closed the 3,376-parcel residual that was the sole blocker. Re-verify the gate live immediately before writing, carry the L1 legacy-retirement status per pair, then prove three live-probe classes: positive (2 counties), negative control (3P-14 rails), Hays decline.",
+
+  "priorArtifactsInherited": [
+    "_inbox/2026-09-10_ops21-l1_close.json -- P-142, read-only legacy-path audit of the (then-97-pair) slate. Directly load-bearing here: setbackFrontFt's own verdict is 'present-unreachable' (computeTier1Envelope's two declined branches AND stripZombieEnvelopeFromFacets nulling facets.envelope regardless of cutover state -- two independent sufficient reasons). setbackSideFt/RearFt/CornerFt were NOT independently audited by L1 because they carried no independent slate entry as of 2026-09-10 -- see criticalFinding below for why that is not an oversight.",
+    "_inbox/2026-09-11_ops21-s5_close.json -- P-148. Built and wired (both brokerageNodeFacets.ts and propertyExplorer.ts) all 5 *ServeCutover.ts wrappers this card needs (setbackRules, parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt), slated ONLY parcelAreaSqFt (leave alone, per this dispatch's own instruction). The other 4 shipped wired but permanently inert pending a future slate edit -- that edit is this card's job for 4 of them.",
+    "_inbox/2026-09-11_ops21-z2_close.json -- P-149, hauska-factory. Closed the 3,376-parcel residual (5 counties) that held all 8 dependent rails' gate at refuse. Live-verified there: all 40 (county,rail) pairs flipped to verdict=pass, unaccounted_count=0, 2026-09-11T13:41-14:10Z. Re-verified independently below, later timestamps, no drift."
+  ],
+
+  "liveReVerification_2026-09-11": {
+    "host": "FACTORY_DATABASE_URL_RO secret (gcloud secrets versions access, project hauska-prod-497015), host ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech, db neondb -- confirmed via psql current_database(), matches the dispatch's declared FACTORY host and S4/S5/Z2's own resolution. parcel_record_ro role, read-only.",
+    "fortyPairGrid": "SELECT county_fips, rail_key, verdict, unaccounted_count, evaluated_at FROM parcel_gate_verdict WHERE county_fips IN (48021,48055,48309,48453,48491) AND rail_key IN (the 8 named rails). Result: all 40 rows verdict=pass, unaccounted_count=0, evaluated_at spanning 2026-09-11T13:44:54Z-14:21:16Z -- later than Z2's own close-time read (13:41-14:10Z), confirming continued scheduler activity with zero outcome drift, matching the exact pattern S4/S5/Z2 already documented on other rails.",
+    "haysSanity": "Same 8 rails, county_fips=48209: all 8 read verdict=excluded, unaccounted_count=0. Correctly not-pass -- Hays stays out regardless of any slate membership it may already carry (see criticalFinding: setbackFrontFt already lists 48209 from PARCEL-B-SLATE3, but an excluded verdict resolves the allowlist to 'refused', never 'record').",
+    "3p14Sanity": "buildableAreaSqFt/buildableAreaPct/envelopeStatus/envelopeDisclosure, spot-checked 48021+48491: all verdict=excluded. Confirms the negative-control premise before any probe is attempted."
+  },
+
+  "criticalFinding_slateAddressability": {
+    "claim_in_dispatch": "8 rail keys are independently slateable; 40 new/confirmed PARCEL_RECORD_SLATE pairs are the deliverable.",
+    "measured_at_source": "grep -rn 'resolveAllowlist(' across artifacts/api-server/src (excluding tests): every call site passes a SINGLE LITERAL rail-key string, except cadRollServeCutover.ts's three helpers, which are typed to the 4 dollar rails / livingAreaSqft / yearBuilt only (unrelated). setbacksFactServeCutover.ts:52-56 -- the ONLY wrapper touching this dispatch's 4 Ft-suffixed rail names -- calls resolveAllowlist exactly ONCE per request, with the literal constant SETBACK_FRONT_FT_RAIL_KEY ('setbackFrontFt'). No call site anywhere passes 'setbackSideFt', 'setbackRearFt', or 'setbackCornerFt' to resolveAllowlist -- confirmed by a second grep restricted to those three literal strings, matching only parcelRecordAllowlist.ts's own doc comment, setbackRulesFactRead.ts (an unrelated companion-row constant list), and setbacksFactFromParcelRecord.ts itself.",
+    "whatThisMeans": "This is NOT a gap -- it is PARCEL-B-SLATE3's own documented design (parcelRecordAllowlist.ts's module doc, 2026-09-04): 'Each three/four-key group is gated on ONE representative rail key... rather than seven independent slate entries.' setbacksFactFromParcelRecord.ts reads side/rear/corner directly off their own parcel_record cells (scalarNumberOrNull, no allowlist check) ONCE the group's single gate (setbackFrontFt's own (county) pair) resolves to 'record'. A PARCEL_RECORD_SLATE entry literally spelled '48021:setbackSideFt' would be inert prose -- no code anywhere would ever read it. Adding it would be the exact vacuous-compliance defect this program exists to close (S4's parcelAreaSqFt precedent, cited in this dispatch's own MISSION section), just relocated from a write path to a slate entry.",
+    "consequence_for_this_card": "Of the 8 named rail keys, only 5 are independently slate-addressable: setbackFrontFt (representative for its 4-key group), setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt. setbackFrontFt is ALREADY IN PARCEL_RECORD_SLATE for all 5 in-scope counties (added 2026-09-04 by PARCEL-B-SLATE3, ahead of any passing verdict, exactly as that card's own doc comment anticipated) -- so it needs zero new Set entries; only its GATE needed to flip, and Z2 just flipped it. This card's only genuine, non-vacuous Set edit is the 4 remaining independent rails x 5 counties = 20 new entries. setbackSideFt/RearFt/CornerFt get zero entries, not because they are excluded from being served, but because they are ALREADY served -- see liveProbe_preEdit below, taken BEFORE any code change in this lane.",
+    "reconciliation": "40 named pairs = 40 real (county,rail) GATE pairs (Z2's own count, confirmed above) but only 25 of them are SLATE pairs at all (5 counties x setbackFrontFt, already present; 5 counties x 4 new independent rails, added by this card) because the slate's unit is 'group', not 'rail', for the 4-key setback family. 15 of the 40 named pairs (setbackSideFt/RearFt/CornerFt x 5 counties) have no slate unit of their own by design and are correctly outside this card's Set edit. Flagging this discrepancy per DEV_PROCESS 3.2/1.4 rather than silently padding the Set to hit a round number, or silently doing less than the dispatch asked without saying so."
+  },
+
+  "liveProbe_preEdit_2026-09-11": {
+    "purpose": "Prove the setback four-key group is ALREADY serving from parcel_record in production today, entirely on the strength of Z2's merge plus PARCEL-B-SLATE3's pre-existing slate entry -- zero code or slate change from this lane required for that portion of the 40 named pairs.",
+    "probe1_williamson": "GET https://cortex-api-tds7av26va-uc.a.run.app/api/brokerage/v1/place/node/48491:R638791/facets -- setbacksFact: {state:'present', source:'parcel_record', frontFt:20, sideFt:5, rearFt:10, cornerFt:15, sourceVintage:'2026-09-10T22:36:30.509Z'}. Real, distinct values across all four keys.",
+    "probe2_bastrop_differentDataSpecimen": "GET .../place/node/48021:103255/facets -- setbacksFact: {state:'absent', absence:{kind:'absent-verified', reason:'SETBACK_ROUTER_NOT_A_DISTRICT'}, sourceAdapter:'parcel_record'}. A genuinely different real disposition on a different parcel (not the fixture-masquerade shape fleet-memory practice warns against) -- still parcel_record-sourced, still gated live.",
+    "sameProbes_confirmTheGenuinelyOpenRails": "Same 2 parcels: setbackRulesFact / maxHeightFtFact / maxLotCoveragePctFact / maxFootprintSqFtFact all read {state:'refused', code:'not-cut-over'} -- exactly the pre-slate state this card exists to change for those 4 rails, and exactly the state the negative control at close must show has NOT happened for out-of-scope rails.",
+    "haysPreEdit": "GET .../place/node/48209:34137/facets -- setbacksFact: null (wrapper correctly returns 'not cut over' shape given verdict=excluded), setbackRulesFact still not-cut-over. Confirms Hays is untouched before this lane makes any edit, establishing the baseline the close-time Hays probe will be diffed against (expected: no change)."
+  },
+
+  "legacyPathStatus_perRail": {
+    "setbackFrontFt_and_siblings": "present-unreachable, per L1's close verbatim (computeTier1Envelope both branches declined; serve-side stripZombieEnvelopeFromFacets nulls facets.envelope on every request regardless of cutover state). No further retirement action needed or possible from this card -- L1 already ranked this 'no action' (a present-but-unreachable path costs nothing to leave in place) and P-144/L3 owns retiring genuinely reachable paths, of which this is not one.",
+    "setbackRules_maxHeightFt_maxLotCoveragePct_maxFootprintSqFt": "legacy-absent, per S5's close verbatim ('Confirmed by repo-wide grep... none of the 5 rail names appear in any legacy read path anywhere in artifacts/api-server/src'). Nothing to retire -- these rails never had a prior serve path; the c-then-b same-card-retirement rule is honored trivially, matching L1's own classification of the other legacy-absent rail groups (utilityService, overlayDistricts, etc.)."
+  },
+
+  "slatingPlan": {
+    "toAdd": "20 new PARCEL_RECORD_SLATE entries: {48021,48055,48309,48453,48491} x {setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt}.",
+    "alreadyPresent_noEditNeeded": "5 pairs: {48021,48055,48309,48453,48491}:setbackFrontFt, added 2026-09-04 by PARCEL-B-SLATE3. Gate now passes live (re-verified above) -- this pair, and its 3 riding-along siblings per county, are already resolving to 'record' in production, confirmed by the pre-edit probe above.",
+    "deliberatelyNotAdded": "15 pairs: {48021,48055,48309,48453,48491} x {setbackSideFt, setbackRearFt, setbackCornerFt}. No resolveAllowlist call site exists for these literal keys anywhere in the repo (see criticalFinding). Adding them would be inert.",
+    "reVerifyAtWriteTime": "Will re-run the live gate query a second time, immediately before editing parcelRecordAllowlist.ts, per the dispatch's own drift discipline (S4's documented flip precedent) -- not relying on this CP1 read alone."
+  },
+
+  "openQuestionsForThisCheckpoint": [
+    "OPEN, flagged for planner/operator, not blocking this card: should setbackSideFt/RearFt/CornerFt ever get their OWN independent gate (allowing e.g. side-only to serve while front fails), or is the single-representative-key group design permanent? This card takes no position beyond reporting the current architecture faithfully -- same posture L1 took on the cadRoll overlay question."
+  ],
+
+  "constraintsAcknowledged": [
+    "Writing any cell is out of scope -- this lane only edits parcelRecordAllowlist.ts (a TS source constant) and reads live via the parcel_record_ro role.",
+    "Retiring a legacy path is out of scope -- L3/P-144 owns that; this card only reports status (above), citing L1 where its audit covers the rail, determining directly where it does not (the 4 new rails, via S5's own grep finding).",
+    "Hays (48209) excluded from the slate edit and from any write; probed read-only for the baseline above and will be probed again at close.",
+    "The 3P-14 rails (buildableAreaSqFt/buildableAreaPct/envelopeStatus/envelopeDisclosure) are not touched; sanity-checked above ahead of the close-time negative control.",
+    "hauska-factory not touched -- cross-repo reads only (Z2's close, rail-keys.js confirmation that all 8 named rail keys are real closed-set rails, not hand-authored)."
+  ]
+}
