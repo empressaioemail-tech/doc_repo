@@ -1,0 +1,97 @@
+{
+  "lane": "ops21-s3-non-vacuity",
+  "planRow": "P-134",
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "filedAt": "2026-09-10T21:57:03Z",
+  "snapshot": {
+    "hauska-engine": {
+      "worktree": "P:/tmp/ops21-s3",
+      "branch": "fix/ops21-s3-non-vacuity",
+      "commit": "15021ef3112e869c22c8271c27eb9e22b5e5a257",
+      "note": "Branch pre-existed, created FROM origin/main by tooling (single reflog entry 'Created from origin/main'); confirmed identical to origin/main tip -- not prior WIP to recover, just the provisioned starting point."
+    },
+    "hauska-factory": {
+      "worktree": "P:/tmp/ops21-s3-factory",
+      "branch": "fix/ops21-s3-non-vacuity",
+      "commit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195",
+      "note": "No pre-existing branch for this lane; created fresh from origin/main by this lane (branch-before-edit)."
+    },
+    "legacy-design-tools": {
+      "worktree": "P:/tmp/ops21-s3-ldt-verify",
+      "commit": "cebd041d7ddf102f29ab60eeb9feb04946888125 (origin/main, detached)",
+      "note": "READ/VERIFY ONLY. Main LDT checkout (P:/legacy-design-tools) has another lane's uncommitted work on feat/s1-instrument-hardening -- untouched. This scratch worktree was created solely to run the anchor demonstration below; nothing here is committed or pushed, and this worktree is deleted at close per 'stay in your own repository.'"
+    }
+  },
+  "missionPremise": {
+    "ruling": "OPS-21 S3 dispatch (_dispatches/2026-09-10_ops21-s3_dispatch.md == _catalog/dispatch_missions/mission_ops21_s3_non_vacuity.md, verified byte-identical): build a test per registered write path asserting it CAN produce a value on at least one real input, distinct from existing dormant/starved reachability controls.",
+    "authoritativeScopeSource": "doc_repo scripts/plan-progress.mjs --sql, whose trailing 'code-shape predicates, checked in their own repos, not here' block states verbatim: 'S3: every registered write path has a non-vacuity test [hauska-engine + hauska-factory]'. This is the completion-predicate-as-query the AGENT_CONTRACT/canon preamble treats as authoritative over dispatch prose ('a lane is done when its predicate says so')."
+  },
+  "findings_planner_numbers_check": [
+    {
+      "claim": "dispatch: rail closed set lives at src/lib/parcel-record-engine/rail-keys.js",
+      "actual": "packages/engine-core/src/parcel-record/rail-keys.ts (hauska-engine). Confirmed 65 entries in PARCEL_RECORD_RAIL_META, matches dispatch's '65 rails' figure exactly. Path/extension in dispatch prose is stale (likely copied from a compiled build artifact under P:/tmp/parcel-record-js-*/rail-keys.js), the count is right.",
+      "impact": "none -- corrected at source before use, no scope change."
+    },
+    {
+      "claim": "dispatch STANDING FACTS names computeTier1Envelope as 'the instance', with no repo-scope caveat beyond its own '(LDT)' tag",
+      "actual": "computeTier1Envelope lives in legacy-design-tools/artifacts/api-server/src/lib/nodeFacetBakeTier1.ts:92 (confirmed, matches dispatch exactly: two branches, both status:\"declined\", literal string). S3's own authoritative predicate (plan-progress.mjs) scopes durable non-vacuity coverage to hauska-engine + hauska-factory ONLY -- it does not list legacy-design-tools. The 'Stay in your own repository... write only where your lane says' hard prohibition further blocks committing anything to LDT from this lane.",
+      "resolution": "Treated computeTier1Envelope as the ANCHOR DEMONSTRATION of the technique (STANDING FACTS explicitly says 'start there' to prove the assertion shape actually fires), executed read-only/uncommitted in a throwaway worktree (see evidence below), and NOT as a file this lane commits a durable test into. Durable, committed non-vacuity tests are written only in hauska-engine and hauska-factory, matching the authoritative predicate. This boundary is reported, not silently chosen -- flag for the operator/planner if a durable LDT-side test was actually intended; L2/L3 in plan-progress.mjs's own predicate list are already named as separate legacy-design-tools lanes."
+    },
+    {
+      "claim": "dispatch: 'related but distinct controls that already exist -- check-live-job-has-config.mjs, writer-cli-reachability' (no repo named)",
+      "actual": "Both live in hauska-factory: scripts/check-live-job-has-config.mjs (live Cloud Run job vs tracked deploy config) and test/writer-cli-reachability.test.mjs (allowlist id -> CLI command -> deployable Cloud Run target). Read in full. Both check REACHABILITY (dormant/starved: can the writer be invoked/deployed at all); neither checks whether an invoked writer can ever produce a value on any branch. Confirms the dispatch's own framing -- non-vacuity is a genuine third, uncovered category, not a rebuild.",
+      "impact": "none -- confirms scope, no rebuild risk."
+    }
+  ],
+  "anchorDemonstration": {
+    "target": "computeTier1Envelope, legacy-design-tools/artifacts/api-server/src/lib/nodeFacetBakeTier1.ts:92, commit cebd041d (origin/main)",
+    "method": "Added a throwaway (uncommitted) vitest file in the P:/tmp/ops21-s3-ldt-verify scratch worktree asserting that across four plausible real-parcel inputs (varied zoningCode/situsCity/jurisdictionFallback), at least one yields envelope.status !== \"declined\". Ran `npx vitest run` against @workspace/api-server (pnpm install --filter, from the shared P:/.pnpm-store).",
+    "result": "FAILED as predicted: 'expected [ declined, declined, declined, declined ] to include ok'. Confirms the STANDING FACT empirically (not just by code inspection) and confirms the assertion SHAPE fires correctly against a real vacuous path before being trusted (DEV_PROCESS 2.2). Per completion predicate: 'the computeTier1Envelope test demonstrably FAILS against current main before any fix' -- satisfied.",
+    "artifact": "test file content and full failing run transcript held in this session's scratch notes; not committed anywhere (scratch worktree to be removed at close)."
+  },
+  "registeredWritePathDefinition": {
+    "statement": "A registered write path is a compute unit that, given real input, decides whether a parcel-record rail (or Factory writer job) cell resolves to a value on some branch. One test per unit, asserting a real input reaches a non-declined/non-null/non-skip outcome. This mirrors computeTier1Envelope's own shape: a pure decision function, called by a CLI/job, that is or is not structurally capable of a positive outcome.",
+    "hauska-engine": {
+      "closedSetBasis": "packages/engine-core/scripts/write-*.mjs naming convention -- 12 CLI scripts, each importing exactly one packages/engine-core/src/<domain>/index.ts module (derived by grep, not hand-picked). No pre-existing formal registry (unlike hauska-factory's WRITER_JOBS) -- noted as a gap this lane's registry work partially closes.",
+      "units": [
+        "building-footprint -> plan-county-building-footprints.ts",
+        "cad-parcel-roll -> plan-county-cad-parcel-roll.ts",
+        "flood-hazard-fact -> plan-county-flood-hazard.ts",
+        "land-use-fact -> plan-county-land-use-facts.ts",
+        "owner-fact -> plan-county-owner-facts.ts",
+        "parcel-node -> plan-county-parcel-nodes.ts",
+        "rail-corridor-fact -> plan-county-rail-corridor.ts",
+        "road-intake + road-node (one write-*.mjs, two src modules) -> plan-county-road-nodes.ts (+ road-intake classify/emit chain)",
+        "rrc-pipeline-fact -> plan-county-rrc-pipeline.ts",
+        "setback-writer -> plan-city-setback.ts",
+        "special-district-fact -> plan-county-special-districts.ts",
+        "utility-easement -> plan-county-utility-easement.ts",
+        "well-fact -> plan-county-well-facts.ts"
+      ],
+      "excludedNamed": [
+        "bake-property-atom-county.mjs (reads LDT's node-facets:tier1 snapshot into atoms) -- upstream of the atom-chain envelope/setback path, which the dispatch's hard prohibition explicitly walls off ('do not lift SETBACK_APPLY_HELD or route through the setback atom writer... out of scope by operator decision'). Named, not silently dropped, per DEV_PROCESS 3.3."
+      ]
+    },
+    "hauska-factory": {
+      "closedSetBasis": "src/control/writer-allowlist.mjs WRITER_JOBS -- an existing, authoritative, code-owned registry (22 entries) already consumed by writer-cli-reachability.test.mjs for the reachability control. Using the SAME registry for non-vacuity keeps one source of truth per DEV_PROCESS 2.4 (paired controls / one data file, never two).",
+      "unitCount": 22,
+      "note": "All 22 allowlisted jobs included, including gate/remediate/purge/acquire-staging kinds -- the allowlist's own comments already distinguish parcel-record writers from cortex-staging-only jobs, but ALL are registered writer jobs per this allowlist, so all get a non-vacuity assertion (adapted per kind: a gate job's 'value' is a real, non-default verdict branch; a remediation job's 'value' is actually detecting/flagging a crafted collision, not always reporting clean)."
+    }
+  },
+  "plan": {
+    "phase2": "Fan out to supervised sub-agents (one level, do-not-spawn-further as first line) in parallel batches across the two repos' worktrees to draft + run non-vacuity tests per unit above, each returning a fleet-memory scratch block.",
+    "phase3": "Adversarially review every added test myself (re-run, check for tautological/always-true assertions, confirm each genuinely exercises a real branch decision) -- verification not delegated.",
+    "phase4": "File CP2 (pilot/mid-work) once a first batch is verified; iterate remaining batches.",
+    "phase5": "Close: report the count of registered write paths with no non-vacuity test (target 0), leave both repos' commits uncommitted per 'doc_repo commits are planner-owned' analog for product repos (PRs opened, not self-merged, unless self-merge norm applies -- to confirm at close)."
+  },
+  "constraintsHonored": [
+    "Branch-before-edit: cut/verified branches in both product repos before any file edit.",
+    "Isolated worktrees only: never touched P:/hauska-engine (another lane's uncommitted well-fact changes) or P:/legacy-design-tools (another lane's uncommitted feat/s1-instrument-hardening changes).",
+    "Stay in own repository: no durable writes proposed to legacy-design-tools.",
+    "No county write-slot taken: read-only/local-test work only, no --apply run against any store."
+  ],
+  "openQuestions": [
+    "Whether L2/L3 (legacy-design-tools lanes in plan-progress.mjs's own predicate list) already plan to add a durable computeTier1Envelope-shaped test on the LDT side, or whether this lane's anchor-only treatment leaves a real gap -- surfaced for the planner, not decided unilaterally here."
+  ]
+}

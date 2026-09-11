@@ -1,0 +1,60 @@
+{
+  "lane": "OPS21-D1",
+  "planRow": "P-137",
+  "checkpoint": "CP2 pilot/mid-work",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-d1",
+  "branch": "seat/property-ops21-d1",
+
+  "operatorRulingsIncorporatedSinceCP1": {
+    "landUseDescription": "OUT OF SCOPE. Never wrote absent-verified (that would claim the parcel has no land-use description when we simply lack the code-to-description lookup, per the operator's own correction of my CP1 recommendation). Left unaccounted, untouched by this lane. Tracked as OPS-21 3P-13.",
+    "landUseVintage": "STAYS IN SCOPE, sourced from src/config/cad-declared-vintages.mjs's DECLARED_CAD_VINTAGES (per-county taxYear/tier), NOT the per-row cad_property.tax_year I had floated in CP1. Implemented as deriveLandUseVintageOntoRecords.",
+    "d1RailSet": "Confirmed live in doc_repo: scripts/plan-progress.mjs's DERIVABLE_RAILS is now exactly 5 rails (situsState, acreageSqft, landUseVintage, exemptionCodes, citationUrl). Pulled doc_repo before this checkpoint (git pull reported already up to date -- the fix commit d8788c2e was already local/pushed).",
+    "planProgressBug": "Confirmed fixed independently, not just trusted: grepped scripts/plan-progress.mjs and every `cell_state` comparison now reads `cell_state->>'kind'`; two new TYPE self-tests exist (lines ~227-232) and pass under --self-test."
+  },
+
+  "implemented": [
+    {
+      "rail": "situsState",
+      "where": "src/jobs/parcel-record-fill.mjs: deriveSitusStateOntoRecords (new), wired into instantiateAndIngest, added to FILL_OWNED_RAIL_KEYS",
+      "engineTouched": false
+    },
+    {
+      "rail": "acreageSqft",
+      "where": "src/jobs/parcel-record-fill.mjs: deriveAcreageSqftOntoRecords (new), runs after cadIngest, wired into instantiateAndIngest, added to FILL_OWNED_RAIL_KEYS",
+      "engineTouched": false
+    },
+    {
+      "rail": "landUseVintage",
+      "where": "src/jobs/parcel-record-fill.mjs: deriveLandUseVintageOntoRecords (new), reads src/config/cad-declared-vintages.mjs's tryResolveDeclaredCadVintage, wired into instantiateAndIngest, added to FILL_OWNED_RAIL_KEYS",
+      "engineTouched": false
+    },
+    {
+      "rail": "exemptionCodes",
+      "where": "NO CODE CHANGE. Code already correct (ENGINE_PIN dfdf6fd). Fix is operational: re-run parcel-record-fill against Caldwell/Hays/Travis/Williamson to pick up already-correct code on rows last written under a pre-2026-09-05 pin.",
+      "engineTouched": false
+    },
+    {
+      "rail": "citationUrl",
+      "where": "src/jobs/parcel-r5-zoning.mjs: RAIL_KEYS 3->4; buildZoningCells and buildStampSourcedCells each grew an explicit 4th cell; buildCompletenessCells/buildLayerGapCells/buildNoStagedLayerCells picked it up automatically (they iterate RAIL_KEYS generically)",
+      "engineTouched": false
+    }
+  ],
+
+  "testsUpdated": {
+    "test/parcel-record-fill.test.mjs": "FILL_OWNED_RAIL_KEYS's two tests updated to the new 21-rail shape (were 18, asserting the three new rails were absent -- now asserting they are present). Added 4 new describe blocks (deriveSitusStateOntoRecords, deriveAcreageSqftOntoRecords, deriveLandUseVintageOntoRecords, plus real-pipeline wiring tests) -- 20 new tests total, each carrying a falsifier (non-Texas FIPS, an unresolved acreageAcres sibling, a county with no declared vintage) proving the positive-path assertions are not vacuous.",
+    "test/parcel-r5-zoning.test.mjs": "RAIL_KEYS length assertions and every cellsMoved/cells.length arithmetic that hardcoded 3 updated to 4 across 13 sites (buildZoningCells, buildNoStagedLayerCells, buildStampSourcedCells, processCity x4, processOutOfScopeCity, buildLayerGapCells x2, the two 'real parcel ids' VERIFY BY VIOLATING tests). Each site that asserted 'every cell is a value/refused' uniformly now carves out citationUrl's own kind explicitly (refused on the stamp-fallback path) rather than loosening the assertion."
+  },
+
+  "verification": {
+    "unitTests": "node --test test/*.test.mjs: 1230 tests, 1225 pass, 1 pre-existing failure (test/ctx-b3-store-census.test.mjs, LDT-pin mirror drift -- confirmed via git stash to predate this lane's first commit, unrelated to P-137, not touched), 4 skipped (pre-existing, unrelated).",
+    "schemaAndPinGuards": "node scripts/check-parcel-record-schema-drift.mjs -> ok:true. node scripts/check-ldt-vintage-drift.mjs -> ok:true, fipsChecked:15 (confirms cad-declared-vintages.mjs, which landUseVintage now depends on, is NOT drifted from LDT's live source). node --test test/pin-divergence.test.mjs -> 2/2 pass.",
+    "livePilot_fillJob": "node src/cli.mjs parcel-record-fill --sample --county=48021 against PRODUCTION_NEONDB_URL (read-only; apply=false, so FACTORY_DATABASE_URL was never touched). 41 real Bastrop parcels. Result: situsState 41/41 value; acreageSqft 41/41 value; landUseVintage 41/41 value; exemptionCodes 41/41 absent-verified (correct -- Bastrop's StratMap-sourced sample carries no real exemption codes); landUseDescription 41/41 unaccounted, unchanged, correctly untouched.",
+    "livePilot_zoningJob": "node src/cli.mjs parcel-r5-zoning --city=bastrop-tx against PRODUCTION_NEONDB_URL (read-only; apply=false). Real Bastrop city run: 5819 total in-city parcels, 5775 matched a staged polygon, 44 residual all covered by the completeness declaration, residualAfterCompleteness=0. Confirms the citationUrl-widened RAIL_KEYS wiring executes end to end against live data without error across a real, large city; per-cell content is proven by the unit tests above (a dry run's JSON summary does not expose per-cell state)."
+  },
+
+  "whatRemainsForClose": [
+    "This lane cannot execute a real --apply write from this environment: parcel-record-fill.mjs and parcel-r5-zoning.mjs both hard-refuse (LAPTOP_WRITE_FROZEN) unless FACTORY_CLOUD=1, i.e. running as the actual Cloud Run job. Getting the D1 predicate to 0 requires triggering the real Cloud Run jobs (factory-parcel-record-fill for situsState/acreageSqft/landUseVintage/exemptionCodes-rerun across all six counties; factory job for parcel-r5-zoning for citationUrl across all in-scope cities) -- a genuine production write this checkpoint deliberately did not take without a separate go-ahead, per the earlier scope conversation.",
+    "PR not yet opened as of this checkpoint -- next step."
+  ]
+}

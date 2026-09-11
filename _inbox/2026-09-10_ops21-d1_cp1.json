@@ -1,0 +1,120 @@
+{
+  "lane": "OPS21-D1",
+  "planRow": "P-137",
+  "checkpoint": "CP1 design/pre-build",
+  "repo": "hauska-factory",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-d1",
+  "branch": "seat/property-ops21-d1",
+  "baseCommit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195",
+  "at": "2026-09-10, live measurements below carry their own timestamps implicitly (same session)",
+
+  "priorArtifactsReconciled": {
+    "rule": "DEV_PROCESS 3.3b: search _inbox/ before writing, say whether to inherit/subset/supersede.",
+    "found": [
+      "_inbox/2026-09-09_ctx-acreage_close.json (P-124) -- diagnosed baseFacts.acreage bare-null in legacy-design-tools' node-facets:tier1 BAKE. DIFFERENT serving system (place_layer_snapshots) from this lane's target (hauska-factory parcel_record_cell). Not inherited, not superseded -- disjoint write surface. Confirmed by reading both jobs directly.",
+      "_inbox/2026-09-08_ctx-situs_close.json + 2026-09-08_situsstate-bare-null-blocks-every-county_finding.md (P-124) -- same disjoint-system relationship for situsState. This lane REUSES the derivation logic they established (situsState = f(countyFips), all-TX for the six CTX counties) but applies it as a NEW job-level fill step here, per this dispatch's own STANDING FACTS instruction ('situsState is already solved once... Reuse that derivation').",
+      "_inbox/2026-09-10_ctx-b6_close.json (P-124) -- same disjoint-system relationship, plus a directly reusable finding: its leave_behind item 'acreage's claim fallback is the same defect class, 103,913 cells' documents the SAME conformantAcreageFromClaim/cad_property.land_acres read-source gap this lane's acreageAcres already avoids by reading land_acres directly in hauska-factory's own ingest-existing.js (a different, already-correct code path -- confirmed by reading it, not assumed)."
+    ],
+    "verdict": "No prior artifact targets this lane's write surface. Nothing to inherit or supersede. All three are read-only context."
+  },
+
+  "missionPremiseCheck": {
+    "rule": "DEV_PROCESS 3.2: the brief's numbers are the planner's, and the planner is often wrong. Say so.",
+    "findings": [
+      {
+        "claim": "dispatch STANDING FACTS: 'landUseDescription, landUseVintage and exemptionCodes are columns cad_property carries.'",
+        "verdict": "TWO OF THREE ARE WRONG, verified live.",
+        "evidence": "information_schema.columns on cad_property (cortex-prod neondb, live, 2026-09-10) lists exactly: county_fips, prop_id, tax_year, owner_name, owner_mailing_address, situs_address, situs_city, situs_zip, legal_description, exemption_codes, land_value, improvement_value, market_value, assessed_value, year_built, living_area_sqft, land_acres, property_use_code, source_file, source_vintage, ingested_at, quick_ref_id, property_number. There is no land_use_description or land_use_vintage column. exemption_codes exists (text[]) and the claim holds for that one. A table-name search (information_schema.tables ILIKE '%land%' OR '%use%') across the same database found no dedicated land-use table either -- no alternate source, staged or not.",
+        "disposition": "Reported per DEV_PROCESS 3.2, not silently worked around. See landUseDescription/landUseVintage design below for the honest resolution."
+      }
+    ]
+  },
+
+  "instrumentDefectFound": {
+    "severity": "high -- blocks this lane's own completion predicate AND every other OPS-21 lane's (S1, S2, D1-D6, PROGRAM all share the same broken helper)",
+    "file": "doc_repo scripts/plan-progress.mjs (NOT hauska-factory -- out of this lane's write scope; reporting only, per AGENT_CONTRACT 'stay in your own repository' and DEV_PROCESS 5.4 'propose, do not unilaterally remediate')",
+    "defect": "unaccountedIn()'s WHERE clause reads `c.cell_state = 'unaccounted'`. parcel_record_cell.cell_state is jsonb (confirmed live: information_schema.columns data_type=jsonb). Comparing a jsonb column to the bare string literal 'unaccounted' makes Postgres attempt `'unaccounted'::jsonb`, which is not valid JSON (an unquoted bare word) -- every predicate built by unaccountedIn() (S1, S2, D1, D3, D4) plus the inline D2 and PROGRAM predicates throws `invalid input syntax for type json` (code 22P02) at runtime. D6's `c.cell_state <> 'available-on-request'` has the identical defect.",
+    "liveProof": "Ran the D1 predicate's exact generated SQL against FACTORY_DATABASE_URL_RO (read-only) this session: `QUERY FAILED: invalid input syntax for type json 22P02`. Every other read of cell_state in this codebase (cell-state.js, liveness.js's RAIL_LIVENESS_SQL, ingest-existing.js, parcel-r5-zoning.mjs's UPDATE_ZONING_CELLS_SQL) consistently uses `cell_state->>'kind'`, confirming this is the actual, established, correct access pattern and unaccountedIn() is the outlier.",
+    "blastRadiusIsBounded": "plan-progress.mjs's own runtime (main(), not --sql or --self-test) wraps each query in try/catch and reports status 'UNMEASURED' on any thrown error rather than treating the exception as a false zero -- so this does NOT silently report DONE. It fails loud in the sense the file's own header promises. But every lane depending on 'node scripts/plan-progress.mjs' (no flag) to state whether its predicate is met currently sees UNMEASURED for all 8 ledger predicates, not a real number -- the exact 'first plan in this operation whose completion is machine-checkable' claim (OPS-16 amendment A-122) is not true today.",
+    "selfTestBlindSpot": "selfTest()'s own NON-VACUITY check only asserts the SQL STRING contains the substring 'cell_state' (`p.sql.includes('cell_state')`), which is true for the broken query too -- the self-test cannot catch this class of defect because it never executes the SQL against a real schema. DEV_PROCESS 2.2: 'a gating indicator is tested for its ability to FIRE before it is trusted' -- this self-test does not fire the predicate at all.",
+    "proposedFix": "In unaccountedIn(), change `AND c.cell_state = 'unaccounted'` to `AND c.cell_state->>'kind' = 'unaccounted'`. In D2's inline SQL, same change. In D6's inline SQL, change `c.cell_state <> 'available-on-request'` to `c.cell_state->>'kind' <> 'available-on-request'`. Strengthening selfTest() to actually execute against a live or fixture schema (or at minimum assert the exact substring `cell_state->>'kind'`) would close the blind spot per DEV_PROCESS 2.2/2.4.",
+    "notFixedHere": "doc_repo commits are planner-owned (AGENT_CONTRACT section 6); this lane's write scope is hauska-factory only. Verification of THIS lane's own numbers below was done with hand-written SQL using the correct `->>'kind'` pattern, not by trusting the broken helper."
+  },
+
+  "sixRailDesign": [
+    {
+      "rail": "situsState",
+      "currentState": "100% unaccounted, all six counties (verified live: county totals 62256/24988/116420/114254/380917/282570 -- exactly the full parcel_record population each, zero touched). Not in FILL_OWNED_RAIL_KEYS; no code path anywhere stamps it. Not vacuous in the computeTier1Envelope sense -- simply never attempted in this serving system.",
+      "source": "countyFips alone. Every county in PROGRAM_FIPS starts with '48' (Texas). Reuses CTX-SITUS's already-validated derivation (legacy-design-tools PR #642, merged 2026-09-08): situs state is certain from county membership, not looked up.",
+      "design": "New job-level function `deriveSitusStateOntoRecords(records, vintage)` in parcel-record-fill.mjs, same layering precedent as the existing `ingestJurisdictionOntoRecords` (job decides the data source; the vendored, hand-edit-forbidden engine in src/lib/parcel-record-engine/ is untouched). For every record with cells.situsState.kind==='unaccounted': stamp {kind:'value', value:'TX', source:'derived-county-fips', vintage}. No absence branch -- this is unconditionally resolvable for every record in the six-county program, matching CTX-SITUS's own finding that the value is 'not unknown, it is resolvable exactly.'",
+      "railOwnership": "Add 'situsState' to FILL_OWNED_RAIL_KEYS so upsertRecords actually sends it to the DB (the proactive allowlist half of the two-guard mechanism PARCEL-FILL-OWNERSHIP documents)."
+    },
+    {
+      "rail": "acreageSqft",
+      "currentState": "100% unaccounted, all six counties, same shape as situsState -- never attempted.",
+      "source": "acreageAcres cell, already populated by the existing applyCadScalar/applyCadJoinMiss in ingest-existing.js (vendored, already FILL_OWNED). Confirmed structurally: every record's acreageAcres resolves to 'value' or 'absent-verified' after ingestCadOntoRecords runs (stampValue/stampAbsent both fire unconditionally on a fresh unaccounted cell); it never stays unaccounted post-ingest.",
+      "design": "New job-level function `deriveAcreageSqftOntoRecords(records, vintage)`, same file, run AFTER ingestCadOntoRecords in instantiateAndIngest's pipeline (acreageAcres must already be resolved). Mirrors acreageAcres's state: value -> value(acres * 43560), source 'derived:acreageAcres', provenance noting the multiplier and that it is a derived value per the dispatch's own instruction ('a derived value is a value, but it must say it is derived'); absent-verified -> absent-verified, basis referencing that acreageAcres itself carried no numeric value to derive from (never re-deriving a fresh CAD-column basis -- there is no separate acreageSqft column to have searched).",
+      "railOwnership": "Add 'acreageSqft' to FILL_OWNED_RAIL_KEYS."
+    },
+    {
+      "rail": "landUseDescription",
+      "currentState": "100% unaccounted, all six counties.",
+      "source": "NONE FOUND. cad_property has no description column; property_use_code (already landUseCode's source) is a bare code like 'A1', not text. No lookup/crosswalk table for use-code descriptions exists anywhere in the cortex-prod database (table-name search came back empty).",
+      "design": "NOT IMPLEMENTED. Per the dispatch's own rule ('Do not write a value you cannot source... becomes absent-verified with a scope naming the column that was searched'), the natural instinct is a blanket absent-verified across all 1,516,110... wait, this store's population -- but that is a claim that 'something looked and it is not there' at the PARCEL level, and the actual fact here is one level up: no COLUMN exists at all, for any parcel, in any county. That is closer to 'this rail has no connected source in this program' than a per-row absence, and it is EXACTLY the shape DEV_PROCESS 3.2 asks to be routed rather than guessed through. Flagging for operator/planner decision rather than choosing unilaterally between: (a) a program-wide absent-verified citing the schema search as the instrument (defensible: a real, positive, verified determination was made, just at the table level rather than per-row), or (b) leaving it unaccounted and amending the dispatch/predicate to exclude it, since 'no acquisition, no new source' forecloses building a use-code description dictionary here.",
+      "recommendation": "(a) is my read of the better answer -- a schema-level absence is still a real absence, verified once and applying uniformly, not a fabrication -- but this is an interpretive call on a state whose own definition says 'requires a NAMED instrument and an explicit SCOPE,' and a table-wide scope for 700K+ rows is a new pattern for this vocabulary worth a second set of eyes before 700K+ cells commit to it."
+    },
+    {
+      "rail": "landUseVintage",
+      "currentState": "100% unaccounted, all six counties. Same false-premise finding as landUseDescription: no dedicated column.",
+      "source": "cad_property.tax_year -- the SAME row that backs landUseCode's own value already carries a real tax_year. This reframes 'landUseVintage' as a companion/provenance stamp for landUseCode (the vintage of the land-use CLASSIFICATION), exactly the same relationship acreageMethod already has to acreageAcres and landUseSource already has to landUseCode in the existing code -- not a fabrication, but also not what the dispatch literally described (a dedicated cad_property column), so named as an interpretive substitution rather than assumed silently.",
+      "design": "IF the operator/planner confirms this reframing: new job-level function stamping landUseVintage from the same cad row's tax_year, mirroring landUseCode's own state (value when property_use_code is real, absent-verified when blank/missing, matching landUseSource's existing mirror pattern in applyCadScalar). NOT IMPLEMENTED YET pending that confirmation, same reasoning as landUseDescription.",
+      "recommendation": "Same as landUseDescription -- flagging rather than choosing. If confirmed, this one has a real, non-fabricated source and is low-risk to implement."
+    },
+    {
+      "rail": "exemptionCodes",
+      "currentState": "NOT vacuous. Code is correct today and already in FILL_OWNED_RAIL_KEYS (ENGINE_PIN dfdf6fd, landed 2026-09-05, PR #381's array-type fix). Live per-county split: 48021 Bastrop 62256/62256 absent-verified (0 unaccounted, already done -- genuine, StratMap slice carries no real exemption codes). 48309 McLennan 114254/114254 absent-verified (0 unaccounted, already done -- genuine, county carries zero real exemption codes anywhere in cad_property). 48055 Caldwell 16030 absent-verified + 8958 UNACCOUNTED. 48209 Hays 62092 absent-verified + 54328 UNACCOUNTED. 48453 Travis 154029 absent-verified + 226888 UNACCOUNTED. 48491 Williamson 95384 absent-verified + 187186 UNACCOUNTED.",
+      "diagnosis": "STALE DATA, not a code defect -- verified by direct violation test, not inferred. Sampled 100 currently-unaccounted place_keys per stuck county (400 total) and ran them through the REAL, current, unmodified job functions (loadLandingAndCad + instantiateAndIngest, exercising Williamson's real R-account/numeric crosswalk too) against live cad_property: 400/400 resolved to 'value' with real exemption codes. Every one of these place_keys already carries a correct apn/marketValue/situsAddress/acreageAcres 'value' cell (proving the fill job DID reach these rows), yet exemptionCodes alone is stuck -- consistent with these rows having last been written under the pre-2026-09-05 engine pin (before the array-handling fix was ever vendored into this repo; ENGINE_PIN.json's own note: 'PR #381's changes were NEVER previously vendored... this re-vendor is the first time hauska-factory's served code actually carries either fix'), and never re-run since.",
+      "design": "NO CODE CHANGE. This is an operational re-run: `parcel-record-fill --apply` for 48055, 48209, 48453, 48491 against current origin/main will pick up the already-correct code and resolve every currently-unaccounted exemptionCodes cell (and, structurally, cannot regress any other rail -- ingestCadOntoRecords' stamp functions no-op on any cell that is not currently unaccounted, and UPSERT_CELLS_BATCH_SQL's own CASE guard independently refuses to downgrade a non-unaccounted cell). Confirming this DOES fully converge (rather than partially, e.g. a subset written under an even-older pin missing other fixes) is CP2's job -- a live --apply pilot run on one stuck county, graded before and after.",
+      "outOfScopeFindingNoted": "Bastrop's landing_parcel_jurisdiction (and therefore parcel_record) is 100% sourced from the StratMap slice of cad_property (62,256 of 62,256 landing rows trace to source_file stratmap25-landparcels_48021_lp.zip) and contains ZERO of the 15,542-row genuine-CAD-export slice (DATA-EXPORT-01.14.2026.zip) that carries Bastrop's only real exemption codes (and, structurally, likely other CAD-sourced facts for those same 15,542 accounts). This does NOT block this lane's completion predicate -- those accounts were never instantiated as parcel_record rows, so they carry no parcel_record_cell to be 'unaccounted.' It is a population-instantiation gap (which accounts EXIST in the store), not a rail-sourcing gap (which columns get read for accounts that exist), and fixing it would mean widening landing_parcel_jurisdiction's population -- acquisition-adjacent and outside 'no acquisition, no new source.' Same defect family CTX-SITUS-SKIP and CTX-B6 already found and reported for the OTHER serving system; naming it here rather than re-diagnosing it, per DEV_PROCESS 1.4 (two related findings across two systems should be reconciled, not treated as coincidence)."
+    },
+    {
+      "rail": "citationUrl",
+      "currentState": "100% split between not-applicable (unincorporated, correct, from UNINCORPORATED_NOT_APPLICABLE_RAIL_KEYS at instantiate time -- untouched) and unaccounted (in-city, 100% of that population, zero writer exists anywhere for this rail today).",
+      "source": "tx_zoning_district_staging.source_url -- already selected (as z.source_url) by the EXISTING, live parcel-r5-zoning.mjs job's CHUNK_ZONE_MATCH_SQL, for the exact same matched-parcel population that already writes zoningDistrict/zoningJurisdictionKey/zoningProvenance. Not a new source; a value already computed in memory for every matched parcel and simply never persisted to its own rail.",
+      "design": "Extend parcel-r5-zoning.mjs, NOT a new job -- this rail's data flows through the same spatial-match/completeness/stamp-fallback/layer-gap/no-staged-layer machinery the other three zoning-group rails already use, and a second, independently-written job for the same population would be exactly the divergence-risk DEV_PROCESS 2.4 warns against (two implementations of one match, no shared source of truth). Concretely: RAIL_KEYS grows from 3 to 4 (add 'citationUrl'), and each of the five cell-building functions gets a fourth cell: buildZoningCells -> citationUrl = value(sourceUrl) (same branch, same source, already in hand). buildCompletenessCells -> citationUrl = not-applicable via the same completenessNotApplicableState (the land is verifiably unzoned; no citation applies, matching the other three rails' treatment there). buildStampSourcedCells -> citationUrl = refused (STAMP_SOURCE's own doc already states plainly 'no per-parcel source URL is captured in txgio_parcel' -- a real zoningDistrict value exists via the LDT stamp fallback, but no URL can be named for it: this is precisely the mission's own 'refused' definition, 'a real value exists upstream and the source cannot say which,' not absent-verified, which would wrongly claim no citation exists). buildLayerGapCells -> citationUrl = refused, matching the other three (a real determination could not be made at all for this parcel). buildNoStagedLayerCells -> citationUrl = refused, matching the other three (no staged layer exists to cite).",
+      "railOwnership": "citationUrl is written by an UPDATE (parcel-r5-zoning's own gated UPDATE_ZONING_CELLS_SQL, only on cell_state->>'kind'='unaccounted'), same mechanism as the other three -- no FILL_OWNED_RAIL_KEYS change needed (that allowlist belongs to the OTHER job, parcel-record-fill.mjs)."
+    }
+  ],
+
+  "engineVsJobBoundary": {
+    "rule": "src/lib/parcel-record-engine/*.js is vendored from hauska-engine (packages/engine-core/src/parcel-record), pinned by ENGINE_PIN.json ('Do not edit these .js files by hand; regenerate from the pin'). Every rail this lane adds is implemented as a JOB-LEVEL function in the consuming job file (parcel-record-fill.mjs for situsState/acreageSqft; parcel-r5-zoning.mjs for citationUrl), the same layering the existing ingestJurisdictionOntoRecords (cityLimits) already established and documented for exactly this reason.",
+    "engineFilesTouched": "none",
+    "ENGINE_PIN_json": "unchanged"
+  },
+
+  "completionPredicateForThisLane": {
+    "asStated": "unaccounted count for these six rails across the six CTX counties equals 0 (dispatch, and scripts/plan-progress.mjs's D1 predicate once its cell_state->>'kind' bug is fixed).",
+    "reachable": "situsState, acreageSqft, exemptionCodes, citationUrl -- yes, by the designs above. Bastrop's excluded 15,542-account population does not block exemptionCodes specifically (see above) but is worth the operator's attention separately.",
+    "blocked": "landUseDescription, landUseVintage -- pending operator/planner confirmation of the schema-level-absence and tax_year-as-vintage interpretations above. Neither can be implemented as the dispatch literally describes them (no such cad_property columns exist)."
+  },
+
+  "verificationPlanForCP2": [
+    "Pilot the situsState + acreageSqft job-level functions against a --sample run (no --apply) for all six counties; assert 0 remaining unaccounted on those two rails in the sample output.",
+    "Pilot exemptionCodes re-run: --apply against ONE stuck county (smallest, Caldwell) only, behind its write-slot claim; measure before/after unaccounted count directly against the DB; confirm no other rail's cell_state changed (a full-record fingerprint diff, same technique parcel-record-fill.mjs's own --twice drift check uses).",
+    "Pilot citationUrl against one declared-complete, one layer-gap, and one no-staged-layer city with --apply; confirm all four zoning-group rails move together and citationUrl's state matches the table above in each case.",
+    "Re-run the (corrected, hand-written) D1 predicate SQL directly against FACTORY_DATABASE_URL_RO after each pilot to watch the count actually fall.",
+    "Full six-county --apply only after CP2 passes and is reviewed."
+  ],
+
+  "constraintsHonoredSoFar": [
+    "Isolated worktree created via git worktree add from origin/main 63a606b before any file edit; registered in _catalog/seat_register.json before any file edit.",
+    "All DB access read-only this checkpoint (SET default_transaction_read_only=on every session); FACTORY_DATABASE_URL_RO used for the Factory store, never the writable FACTORY_DATABASE_URL.",
+    "No --apply run yet, no write to any store yet.",
+    "Credentials pulled from gcloud Secret Manager for this checkpoint's verification; scratch files deleted at the end of this checkpoint (see close housekeeping).",
+    "No edit to src/lib/parcel-record-engine (vendored, hand-edit forbidden).",
+    "No edit to doc_repo scripts/plan-progress.mjs despite finding and precisely locating its defect -- reported only, per repo-write-scope.",
+    "Did not lift SETBACK_APPLY_HELD or touch the setback atom writer.",
+    "Did not fabricate landUseDescription/landUseVintage values against a premise verified false -- flagged for decision instead."
+  ]
+}

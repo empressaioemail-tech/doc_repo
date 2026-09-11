@@ -1,0 +1,168 @@
+{
+  "lane": "OPS-21-S1",
+  "title": "setback-cell writer built, deployed, and run: 552,905 of 556,281 in-city parcels resolved across the 5 in-scope counties",
+  "planRows": ["P-132"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (via 90_operations/OPS-21_serve_completion_program.md)",
+  "dispatch": "_dispatches/2026-09-10_ops21-s1_dispatch.md",
+  "closedAt": "2026-09-10T23:00:08Z",
+  "status": "complete for this lane's own scope; residual is a real, named upstream dependency (see completionPredicate)",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-s1",
+  "branch": "feat/ops21-s1-setback-cell-writer",
+  "baseCommit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195",
+  "headSha": "db39f0459f3b0c15f2eee29b04eb907a1f9df8f5",
+  "pr": 135,
+  "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/135",
+  "merged": true,
+  "mergeSha": "c9ebad7d161547b206183d661cb41cc0b6a86282",
+  "checkpoints": [
+    "_inbox/2026-09-10_ops21-s1_cp1.json",
+    "_inbox/2026-09-10_ops21-s1_cp2.json"
+  ],
+  "snapshotDeclared": "code: hauska-factory, branch feat/ops21-s1-setback-cell-writer, cut from origin/main 63a606b1 before any file edit, head db39f04, merged c9ebad7d. data: two Neon endpoints (PRODUCTION_NEONDB_URL host ep-lucky-truth-apodo8hr, database neondb, holding landing_parcel_jurisdiction; FACTORY_DATABASE_URL host ep-round-base-au0jofwp, database neondb, holding parcel_record_cell/parcel_record_companion_row) -- confirmed genuinely separate Neon hosts, so no cross-store SQL join is possible, matching canon. All read/verification queries used SET default_transaction_read_only=on. Between 2026-09-10T21:40Z and 23:00Z.",
+
+  "missionPremise": "OPS-21's root-cause finding: setbacks have had no write path to a value since the anti-zombie change (computeTier1Envelope's two branches both decline; write-setback-city.mjs's --apply is held). The chosen path (ADR-031-consistent, same expedient already blessed for CAD rails): write parcel_record_cell cells DIRECTLY from the existing, live, correct ruled-table computation -- never lift the held atom writer, never build a second resolver. This lane (S1) is that writer for the four setback scalars + the setbackRules companion, in-city only, in the five counties P-145 does not yet gate.",
+
+  "completionPredicate": "scripts/plan-progress.mjs --sql's S1 row: count(*) of parcel_record_cell rows on the 5 setback rail keys, joined to in-city landing_parcel_jurisdiction rows, WHERE cell_state='unaccounted', across the SIX CTX counties. Measured live at close: 291,055 (six-county scope, includes Hays 48209 which stays 100% unaccounted by design -- P-145 has not landed). Scoped to this lane's own five in-scope counties (48021/48055/48309/48453/48491): 16,880, down from a 2,781,405 baseline (556,281 in-city parcels x 5 rails, ALL unaccounted before this lane ran -- confirmed live, zero pre-existing value/refused/absent-verified rows on any of the 5 rails anywhere in the in-city population). That is a 99.39% reduction, reproducible by a stranger re-running the same predicate query. The residual 16,880 (=3,376 parcels x 5 rails, arithmetically exact -- every deferred parcel's 5 rails move as one unit) is NOT a defect in this lane's writer: every one of those 3,376 parcels has a zoningDistrict cell that is not yet `value` or `refused` (still `unaccounted` or a pre-existing cross-system `not-applicable` drift, see openFinding below) -- a DIFFERENT rail, owned by a DIFFERENT already-existing job (parcel-r5-zoning.mjs), which this dispatch never named as a dependency. Re-running `factory parcel-setback-cells --apply` after zoningDistrict advances further will continue closing this gap with ZERO additional code changes -- the writer itself asks nothing more of the world.",
+
+  "scopeBasis": "hauska-factory only, per the dispatch and per the property seat's repo list. legacy-design-tools and hauska-engine were read-only reference (no worktree entered was ever committed from; the router module is a documented PORT, cited by file/line, not an import). Hays (48209) structurally excluded from every query IN_SCOPE_COUNTIES issues -- P-145 (Hays identity reconciliation) must land first per the OPS-21 program doc's Phase 2H, and filling cells on a broken key would write wrong values faster. Envelope rails (S2/P-133) and gate/slate (S4/P-135) are explicitly out of scope and untouched. SETBACK_APPLY_HELD and the atom writer were never touched, lifted, or routed through.",
+
+  "whatWasBuilt": {
+    "router": "src/lib/setback-writer/setback-table-router.mjs -- a verbatim port of legacy-design-tools' getSetbackTableForZoning (Bastrop 3-table routing) + mapDistrict (district-code matching), sourcing table DATA from the published @empressaio/setback-corpus@1.1.0 (added as a real npm dependency) rather than either repo's private, already-diverged local copy.",
+    "job": "src/jobs/parcel-setback-cells.mjs -- claims the pre-reserved f11-setback writer-allowlist id (kind='setback', planRow historically 'F-11', now also OPS-21 P-132). Derives ruled-table city membership MECHANICALLY (probes the corpus per city_name), never from a hand-typed list. Reads the already-written zoningDistrict cell as its district-code input. Every write gated to a currently-unaccounted cell (never regresses an earned cell, confirmed live: re-running on Bastrop after the pilot moved 0 additional cells).",
+    "cliAndDeploy": "src/cli.mjs (`parcel-setback-cells` command) + cloudbuild.parcel-setback-cells.yaml (Cloud Run Job factory-parcel-setback-cells, us-east4, digest-pinned) -- otherwise the job would have been CLI-dispatchable but undeployable, the exact A-120 class cloudbuild.parcel-r5-zoning.yaml's own header names.",
+    "tests": "36 new unit tests across test/setback-table-router.test.mjs and test/parcel-setback-cells.test.mjs. test/writer-cli-reachability.test.mjs's ORPHANS_KNOWN quarantine shrunk by one (f11-setback was a known orphaned allowlist id; now claimed and dispatched)."
+  },
+
+  "correctionsToTheDispatchPremise": [
+    {
+      "claim": "\"Use getSetbackTableForZoning from @hauska-engine/adapters... the same adapter the live route uses\"",
+      "measured": "the live production route (legacy-design-tools brokeragePlaceBuildableEnvelope.ts -> authoritativeSetbackSource.ts) calls @workspace/adapters (legacy-design-tools' OWN local package), never @hauska-engine/adapters -- a separate, already-diverged fork (3-arg signature vs. 2) in a different repo that nothing live calls. Neither package is importable from hauska-factory (both private workspace packages).",
+      "consequence": "this lane vendors the routing logic (a faithful port, cited file/line) against @empressaio/setback-corpus -- the actual published single source of truth neither legacy-design-tools nor hauska-engine has repointed onto yet, and which is MORE complete than either repo's local copy (see next correction).",
+      "fullDetail": "_inbox/2026-09-10_ops21-s1_cp1.json"
+    },
+    {
+      "claim": "\"Ruled tables that exist... Inside the six CTX counties that is Austin, Bastrop, Bastrop City, Elgin, Kyle, Pflugerville, Round Rock\" (7 cities)",
+      "measured": "the corpus carries 29 jurisdictions, 15 of which have real in-city populations in this lane's 5 counties: the named 7, PLUS Waco (48,693 parcels), Lockhart (6,490), Leander (31,779), Cedar Park (24,756), Georgetown (39,015), Hutto (16,496), Taylor (8,541), Liberty Hill (3,114), San Marcos (72, a Caldwell sliver), and Buda (7, a Travis sliver). legacy-design-tools' own local copy is ALSO missing waco-tx entirely (zero import), so the dispatch's own list -- which names waco-tx as an existing table one line above the city enumeration that omits Waco -- was internally inconsistent, not just incomplete.",
+      "consequence": "this lane's actual value population (351,872 parcels) is roughly 3.4x what a literal reading of the dispatch's 7-city list would have produced.",
+      "fullDetail": "_inbox/2026-09-10_ops21-s1_cp1.json"
+    },
+    {
+      "claim": "not stated in the dispatch -- a genuine gap, not a wrong number",
+      "measured": "setback resolution needs a per-parcel zoning district code, which is the zoningDistrict rail, written by a pre-existing, different job (parcel-r5-zoning.mjs). This is the entire explanation for the 16,880-cell residual documented in completionPredicate above.",
+      "fullDetail": "_inbox/2026-09-10_ops21-s1_cp1.json"
+    }
+  ],
+
+  "liveVerification": {
+    "localDryRun": "runParcelSetbackCells invoked locally against real production data (4 cities) before any deploy. Caught and fixed a real bug: a ruled city's dry-run preview needs to READ zoningDistrict from the factory store (unlike parcel-r5-zoning.mjs's cortex-only inputs), but the factory connection was only opened when apply=true. Fixed before deploy.",
+    "cloudBuild": {
+      "buildId": "26e7687c-4838-4ea6-a6e3-2b39347f09b1",
+      "status": "SUCCESS",
+      "deployedImage": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:b61a1001f3f8fc7b5e467ed24494332d578caafcdc415215d540afc9a96b9abf"
+    },
+    "executions": [
+      { "id": "factory-parcel-setback-cells-mt6sl", "args": "--city=Bastrop (dry run)", "result": "output identical to local dry-run, confirming deployed image matches tested code" },
+      { "id": "factory-parcel-setback-cells-b98k7", "args": "--city=Bastrop --apply", "durationSeconds": 40, "result": "CP2 pilot. SQL-verified against the live store: value=2731, absentVerified=3044 on all 5 rails, exact match to the dry-run prediction. County 48021's remaining-unaccounted delta reconciled to 6,217 = Elgin(3749)+Smithville(2406)+Webberville(17)+MustangRidge(1)+Bastrop-deferred(44), an exact arithmetic match." },
+      { "id": "factory-parcel-setback-cells-db2fj", "args": "--apply (all in-scope cities, no filter)", "durationSeconds": 965, "result": "full run, all 64 in-city cities across the 5 counties (15 ruled-table, 49 non-ruled). Bastrop correctly showed cellsMoved=0 on this second pass -- the unaccounted-only gate holding under a real re-run, not just in a unit-test fixture." }
+    ],
+    "spotChecks": [
+      "48021:103387 / 48021:104119 (Bastrop SF-1 parcels): setbackFrontFt value=30 matching bastrop-development-code's real SF-1 front_ft; setbackRules companion row payload carries the real BDC ordinance citation URL, district name, and effectiveDate 2026-04-14 -- not a placeholder.",
+      "RAW place_key confirmed at the code level: no normalizeForJoin or any normalization call anywhere in parcel-setback-cells.mjs; place_key is `${county_fips}:${prop_id}` built directly off the landing_parcel_jurisdiction row."
+    ]
+  },
+
+  "finalCounts": {
+    "countingRule": "one row per (place_key) in the 5-county in-city population, classified by this run's final disposition on its 5 setback rails (all 5 always move together as one unit, confirmed by construction and by the exact 5x arithmetic on every reconciliation in this close).",
+    "denominator": 556281,
+    "citiesProcessed": 64,
+    "ruledTableCities": 15,
+    "nonRuledTableCities": 49,
+    "value": 351872,
+    "absentVerified": 200568,
+    "refused": 465,
+    "deferredStillUnaccounted": 3376,
+    "sumCheck": "351872 + 200568 + 465 + 3376 = 556281 -- exact match to the denominator, no unaccounted-for remainder."
+  },
+
+  "genuineFindingNotThisLanesToFix": {
+    "summary": "legacy-design-tools' local round-rock-tx.json (what its live production route currently serves) disagrees with the published @empressaio/setback-corpus's round-rock-tx table on side_corner_ft for every district, and on SF-3's side_ft/rear_ft too.",
+    "evidence": "direct file diff (district-data only, formatting/notes ignored): e.g. SF-1 side_corner_ft LDT=5 vs corpus=30; SF-3 LDT side=5/rear=10 vs corpus side=12/rear=15 (LDT's own district name also drops the '(Standard Lot)' suffix the corpus's predecessor had).",
+    "consequence": "this job serves the corpus's numbers for Round Rock's 27,330 value-state parcels; legacy-design-tools' live route may be serving DIFFERENT corner-setback numbers for the same parcels today. A real, customer-facing-adjacent cross-repo inconsistency, found as a byproduct of this card.",
+    "disposition": "flagged in CP2 and here for the operator / L2 slate-expansion lane. hauska-factory never writes to legacy-design-tools; not resolved in this PR."
+  },
+
+  "unrelatedPreExistingCiFailureDiscoveredAtMergeTime": {
+    "summary": "hauska-factory's main branch carries a standing, unrelated failure on the `ldt-pin-staleness` workflow's `check` job (NOT \"the check workflow, job check-ldt-pin-staleness\" -- that naming is inverted; corrected here after a peer caught it in this artifact's first draft) -- NOT caused by this PR.",
+    "proof": "STRONGEST FORM (peer-supplied, independently re-verified at source via `gh api repos/.../actions/runs/<id>`, not taken on the peer's word): the IDENTICAL factory commit 63a606b1 both passed (run 34500572096, event=push, 2026-09-10T16:12:02Z) and later failed (run 34526748288, event=schedule, 2026-09-10T20:30:05Z) on this same workflow, because legacy-design-tools main moved underneath it (cebd041d landed 20:02:15Z) in between -- ruling out any factory-side commit as the cause by construction, not by one-generation inspection. (Weaker form this lane found first and which still holds: the failure is also present on the merge commit's direct parent, f3423f2/PR #133.) The workflow triggers on push/schedule/workflow_dispatch only -- confirmed by reading .github/workflows/ldt-pin-staleness.yml directly -- never on pull_request, so it was structurally unobservable before merging (it never appeared in `gh pr checks 135`'s output on either workflow run against head db39f04). Not a lapse in this lane's own verification, which correctly confirmed conclusion=\"success\" on every check-run `gh pr checks` DID surface, per AGENT_CONTRACT section 5.",
+    "rootCause": "cloudbuild.publish.yaml's own _LDT_SHA pin (591f5efe14aab6efda6d79e15aa7357751975655, a file this PR never touched) is now stale relative to legacy-design-tools main (cebd041d7ddf102f29ab60eeb9feb04946888125) -- two intervening LDT commits (c43e2436 CTX-HAYS-REBIND, cebd041d CTX-HAYS-BACKFILL) touch files inside the bake's module graph per the check's own meaning-shaped rule (confirmed: nodeFacetBakeTier1Conformant.ts, named in cloudbuild.publish.yaml's own 26-module bake-graph comment, is one of the ten in-graph files the failing job log names).",
+    "actionTaken": "flagged to a live peer session (doc-repo-4a) rather than fixed. Independently verified and confirmed correct by that peer, who compiled CTX-PIN4 (P-124, _dispatches/2026-09-10_ctx-pin4_dispatch.md, property seat) to actually land the fix: Item 1 the pin bump itself, Item 2 the two prior pin-bump commits (#130, #131) having landed as one-line value changes with no updated provenance comment (now stale, describing 9873ff11 while the value is two bumps further on), Item 3 the BUMP CADENCE ITSELF as the real finding -- six _LDT_SHA bumps in ~38 hours (#113, #118, #125, #127, #130, #131, 2026-09-09T02:25:36Z to 2026-09-10T16:12:00Z, CTX-PIN4 the seventh), and the gate went red TWICE in one day (a 15:57:23Z scheduled run failed on 83c98f97 before #131 re-greened it at 16:12:02Z, then failed again at 20:30:05Z per this close's own finding). An earlier draft of this field cited a fourth 'pull_request gap' item that does not exist: the workflow YAML's own header comment already answers that question, deliberately and at length (kept main-only so LDT's independent drift cannot block every unrelated lane's PR, DEV_PROCESS 2.0), and a peer caught this close nearly sending a future reader to re-derive settled canon by archaeology.",
+    "notThisLanesDefect": true
+  },
+
+  "constraintsHonored": [
+    "Never lifted SETBACK_APPLY_HELD; never routed through or touched the atom writer.",
+    "No second resolver in the sense the dispatch prohibits: the router is a cited, verbatim port of the real, live routing decisions, not an independently-derived computation.",
+    "place_key RAW, never normalized -- confirmed by code inspection (no normalization call exists in the module) and live spot-check.",
+    "Hays (48209) structurally excluded from every query IN_SCOPE_COUNTIES issues; no flag or code path can reach it.",
+    "Every write gated to a currently-unaccounted cell -- confirmed live (Bastrop's second pass moved 0 additional cells).",
+    "Envelope (S2) and gate/slate (S4) untouched.",
+    "legacy-design-tools and hauska-engine read-only; no worktree in either committed from.",
+    "Deploy and --apply execution were this lane's own responsibility per canon (\"deploys are planner-owned\"); performed and verified directly, not escalated.",
+    "Doc_repo edits (this close, both checkpoints, the seat_register.json worktree registration) left UNCOMMITTED per AGENT_CONTRACT section 6, listed below for the reviewing planner to commit."
+  ],
+
+  "ciChecks": {
+    "readFrom": "gh api repos/empressaioemail-tech/hauska-factory/commits/db39f0459f3b0c15f2eee29b04eb907a1f9df8f5/check-runs, the .conclusion field (never `gh pr checks` printing \"pass\")",
+    "headShaTested": "db39f0459f3b0c15f2eee29b04eb907a1f9df8f5",
+    "runs": [
+      { "name": "gate8", "conclusion": "success" },
+      { "name": "gate8", "conclusion": "success" },
+      { "name": "test", "conclusion": "success" },
+      { "name": "test", "conclusion": "success" }
+    ],
+    "allSuccess": true,
+    "note": "the `ldt-pin-staleness` workflow's `check` job does not run on pull_request events and never appeared here -- see unrelatedPreExistingCiFailureDiscoveredAtMergeTime above."
+  },
+
+  "localTestRun": {
+    "command": "node --test test/*.test.mjs",
+    "result": "1248 tests, 1243 pass, 1 fail (pre-existing, confirmed via git stash -- unrelated: test/ctx-b3-store-census.test.mjs, a stale hand-maintained leaf-path mirror against a different program thread's LDT change), 4 skipped (pre-existing)"
+  },
+
+  "whatRemainsOpen": [
+    "16,880 unaccounted setback cells (3,376 parcels) in the 5 in-scope counties, waiting on zoningDistrict resolution from a different, already-existing job (parcel-r5-zoning.mjs). Re-running `factory parcel-setback-cells --apply` (no code change) will continue closing this as that rail advances.",
+    "Hays (48209): fully out of scope by design, gated on P-145.",
+    "The Round Rock corner-setback cross-repo data drift (see genuineFindingNotThisLanesToFix) -- not this lane's to fix.",
+    "The pre-existing main-branch CI pin staleness (see unrelatedPreExistingCiFailureDiscoveredAtMergeTime) -- flagged to a live peer (doc-repo-4a), independently verified, and now CTX-PIN4 (P-124, property seat) is compiled to land the actual fix. Not this lane's to fix.",
+    "S2 (envelope cells) can now proceed -- its dependency on S1 is satisfied for the population this lane resolved."
+  ],
+
+  "docRepoEdits": {
+    "note": "doc_repo commits are planner-owned (AGENT_CONTRACT section 6); this lane's own edits were left UNCOMMITTED, as required. doc_repo is a SHARED, concurrently-edited working tree: verified at source (git log -S) that another live session's commit 1a1ff325 (\"ops(OPS-21): register four lane worktrees the seat gate would have refused, add a lane monitor\") already picked up and committed this lane's seat_register.json registration -- confirmed identical to what this lane wrote, appearing exactly once, zero working-tree diff remaining against HEAD. Not this lane's own commit; recorded here rather than assumed uncommitted, per DEV_PROCESS 4.1 (verify, don't presume).",
+    "alreadyCommittedByAnotherSession": [
+      "_catalog/seat_register.json -- this lane's hauska-factory-ops21-s1 worktree registration, via commit 1a1ff325"
+    ],
+    "stillUncommittedByThisLane": [
+      "_inbox/2026-09-10_ops21-s1_cp1.json",
+      "_inbox/2026-09-10_ops21-s1_cp2.json",
+      "_inbox/2026-09-10_ops21-s1_close.json"
+    ]
+  },
+
+  "fleetMemoryScratch": [
+    { "kind": "LESSON", "text": "When a dispatch names a specific cross-repo package as 'the live resolver,' verify the actual call chain (grep the real route's imports), not just that the named package exists and has the right function name. Two packages had the identical exported function signature-ish shape (2-arg vs 3-arg) in two different repos; only one was actually wired to anything live." },
+    { "kind": "LESSON", "text": "A dispatch's enumerated data list (here, '7 ruled-table cities') should be treated as a hypothesis to verify mechanically (probe the real data source per real city_name), never copied as the authoritative scope -- the true population was 3.4x larger. This is the same 'do not hand-author a rail list' discipline rail-keys.js already enforces one layer up, applied to a city dimension nobody had named as needing the same discipline." },
+    { "kind": "LESSON", "text": "A published 'merge the two divergent copies' package (here, @empressaio/setback-corpus) can be published and correct while BOTH of the repos it was built to unify still read their own stale local copies. Check actual import sites in both consumers before assuming a publish event changed anything live." },
+    { "kind": "LESSON", "text": "A job whose only input from another store is a READ (not the job's own eventual write) still needs that store's connection opened on a dry run, or the dry-run preview crashes / silently no-ops. Caught by live verification against real data before deploy, not by unit tests with fake clients (which happily accept a null connection you never actually call)." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-10 ~22:30-22:57Z, live: the 5 in-scope-county in-city population is 556,281 parcels across 64 city names, 15 of which have a real ruled setback table in @empressaio/setback-corpus@1.1.0 (not the 7 the dispatch named). Full run result: value=351,872, absent-verified=200,568, refused=465, deferred=3,376 -- sums exactly to the denominator." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-10 ~23:00Z: hauska-factory main's ldt-pin-staleness workflow (job `check`) is failing independent of this PR because cloudbuild.publish.yaml's _LDT_SHA (591f5efe...) now trails two legacy-design-tools main commits (c43e2436, cebd041d) that touch the bake's module graph. Strongest proof (peer-supplied, re-verified at source via `gh run list --workflow=ldt-pin-staleness`): the SAME factory commit 63a606b1 passed on push (16:12:02Z) and failed on the scheduled trigger (20:30:05Z) once LDT main moved underneath it at 20:02:15Z -- rules out any factory commit as cause by construction. The gate went red twice in one day, not once: a 15:57:23Z scheduled run also failed (on 83c98f97, before #131 re-greened it). Six _LDT_SHA bumps landed in ~38 hours (#113 through #131); CTX-PIN4 is the seventh. The cron is configured `0 */6 * * *` but GitHub delivered it 2.5-5h late in the observed runs (10:48:32Z/15:57:23Z/20:30:05Z against nominal 06:00/12:00/18:00Z) -- so real worst-case drift-detection latency is closer to 11 hours than 6; do not reason about the detection window from the cron string alone. Flagged to doc-repo-4a, who compiled CTX-PIN4 (P-124) to fix it; not fixed by this lane." },
+    { "kind": "LESSON", "text": "Get a workflow-vs-job name pair exactly right before writing it into a durable artifact: this close originally inverted it (\"the check workflow, job check-ldt-pin-staleness\") when it's really the ldt-pin-staleness WORKFLOW whose job id is check -- caught by a peer review, the mistake would have cost the next reader a `gh run list --workflow=check` failing with 'could not find any workflows named check'. When citing a CI job by name, read the workflow YAML's own `name:` and job-id fields directly rather than reconstructing the pair from a check-run listing." },
+    { "kind": "LESSON", "text": "When two mechanisms could each explain a live discrepancy (a workflow's push-vs-schedule triggers, here), the strongest falsifier is the SAME input observed under both, at two times, with the intervening external change identified -- not just 'the state was already this way one generation back'. A peer's re-framing of an already-correct finding into its cleanest form is still worth adopting." },
+    { "kind": "LESSON", "text": "A control's absence (here, no pull_request trigger on ldt-pin-staleness) is itself a claim to verify before proposing to add it back -- read the file's own header comment first. A peer's mission (CTX-PIN4) briefly carried an item to 'fix' this exact gap before its own author caught, from a detail in this close, that the YAML already explains the exclusion at length as a deliberate DEV_PROCESS 2.0 tradeoff (a permanently-red gate is a dead gate). Nearly shipped a fix for something that was never broken." },
+    { "kind": "DEAD-END", "text": "Do not assume 'the mission's dispatch premise about a package name' is settled just because the package exists and exports a same-named function -- @hauska-engine/adapters exports getSetbackTableForZoning too, with a different (3-arg) signature, and is not what anything live calls." },
+    { "kind": "OPEN", "text": "S2 (envelope cells, P-133) can now proceed against the population S1 resolved. S2's own writer will need the same 'probe the corpus mechanically, don't hand-type the city list' discipline this close established." },
+    { "kind": "OPEN", "text": "The Round Rock corner-setback cross-repo drift and the main-branch CI pin staleness are both real, evidenced, unresolved findings outside this lane's write scope -- see genuineFindingNotThisLanesToFix and unrelatedPreExistingCiFailureDiscoveredAtMergeTime above for a successor or the operator to pick up." }
+  ]
+}

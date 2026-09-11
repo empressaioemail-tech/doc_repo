@@ -1,0 +1,68 @@
+{
+  "lane": "OPS21-H1",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRow": "P-145",
+  "repo": "hauska-factory",
+  "seat": "property",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-h1",
+    "branch": "feat/ops21-h1-hays-identity",
+    "baseCommit": "63a606b1",
+    "workingTreeAtThisCheckpoint": "uncommitted, 3 new files: src/lib/ops21-h1-crosswalk.mjs, test/ops21-h1-crosswalk.test.mjs, scripts/ops21-h1/hays-identity-reconciliation.mjs -- not yet committed pending the hold resolution (see below), since a commit message naming a completion state should not be written while the lane is mid-hold"
+  },
+
+  "status": "ON HOLD for the live Hays production measurement, per mid-session instruction. Everything below is work that does NOT touch Hays production data.",
+
+  "whatWasBuilt": {
+    "srcLibOps21H1Crosswalk": "Pure functions, zero I/O: quickRefStem, buildCrosswalk (ambiguity-refusing, both directions -- an R-stem or property number claimed by >1 account is excluded from the resolving map and recorded as ambiguous, never guessed), classifyDisposition (the four-bucket classifier: different-key / left-the-roll / never-an-account / unknown, per the dispatch's own vocabulary).",
+    "testSuite": "test/ops21-h1-crosswalk.test.mjs, 14 tests: stem parsing edge cases, ambiguous-stem refusal, ambiguous-property-number refusal, P/M-class exclusion from the R-stem index, all four dispositions reachable by construction, a disagreement case (stem and property-number crosswalks resolve to DIFFERENT accounts -> unknown, never picks one), an ambiguity-on-one-side-only case (the OTHER side's clean resolution must still win), a VIOLATION test (calling the classifier on a prop_id that already IS a real account throws), and a self-test that every disposition the module can emit is one of the four declared ones. All 14 pass.",
+    "cli": "scripts/ops21-h1/hays-identity-reconciliation.mjs. Three modes: --control (Bastrop+Caldwell only, no crosswalk, asserts zero false different-key resolutions -- see results below), --county=<fips> [--crosswalk=<path>] (the real run), with a STRUCTURAL REFUSAL for --county=48209 unless --allow-hays is also passed, so the hold cannot be bypassed by a routine invocation. Every DB session verified read-only by violation (CREATE TEMP TABLE refused) before any count is trusted."
+  },
+
+  "controlRunResults_live_2026_09_10": {
+    "48021_Bastrop": {
+      "parcelRecordRows": 62256,
+      "realCadAccounts": 15542,
+      "intersecting": 0,
+      "nonIntersecting": 62256,
+      "counts": { "different-key": 0, "left-the-roll": 0, "never-an-account": 8616, "unknown": 53640 },
+      "noDispositionCount": 0,
+      "read": "Bastrop is a DIFFERENT-SHAPED defect than Hays, not a clean control (see CP1): its real CAD roll (DATA-EXPORT-01.14.2026.zip, 15,542 accounts) has ZERO geometric overlap with txgio_parcel at all, so parcel_record's entire population is disconnected from real accounts, not colliding with them. Given no crosswalk (none supplied -- this instrument has no Bastrop export loaded), the classifier correctly refuses to invent a different-key resolution for any of the 62,256 rows: 8,616 have no geo_id at all (never-an-account) and 53,640 have a geo_id but no resolving crosswalk entry (unknown, correctly refused rather than guessed)."
+    },
+    "48055_Caldwell": {
+      "parcelRecordRows": 24988,
+      "realCadAccounts": 48382,
+      "intersecting": 24722,
+      "nonIntersecting": 266,
+      "counts": { "different-key": 0, "left-the-roll": 0, "never-an-account": 60, "unknown": 206 },
+      "noDispositionCount": 0,
+      "read": "Caldwell's numbering is coherent (CAD PropertyID == txgio prop_id directly, no R-prefix scheme), so 24,722 of 24,988 already intersect directly and never reach the classifier at all. The small residue (266, 1.1%) is a genuine coverage gap (txgio geometry not yet matched for those accounts), not a key mismatch -- correctly sorted to never-an-account/unknown, never different-key."
+    },
+    "verdict": "CONTROL PASS both counties: zero false different-key resolutions with no crosswalk supplied; every non-intersecting row received exactly one of the four declared dispositions. This proves the completion predicate's own check ('count of rows with no disposition == 0') is a real, fireable test on live, messy, differently-shaped data -- not merely true by construction."
+  },
+
+  "crosswalkParserCrossValidation_STAGING_ONLY_live_2026_09_10": {
+    "why": "Before this lane's own crosswalk (built by parsing the county's public CAD export directly) is ever used against Hays, cross-check it against an INDEPENDENTLY-derived source: CTX-HAYS-BACKFILL's own quick_ref_id/property_number columns, already populated on STAGING (not production -- the hold on production is respected; this read touches staging only, to validate parsing logic, not to measure Hays dispositions).",
+    "sourceUsed": "https://hayscad.com/wp-content/uploads/2026/03/2026-PRELIMINARY-DATA-EXPORT-FILES.zip, sha256 7bcc95aa..., PROPERTY member PropertyDataExport1351089.txt, 134,606 data rows -- this is the SAME file cad_property's current declared 48209/2026 vintage is sourced from (source_file matches exactly), fetched fresh this session via the real data-downloads page (an earlier guessed URL 404'd and was discarded before any file was trusted -- see note below).",
+    "urlCorrectionNote": "An initial attempt used a fabricated/guessed URL for the export and correctly got a 404 (caught before being treated as data -- 'file not found' would have been read as a WRONG SIGNAL, not a wrong URL, had the response not been inspected). Corrected by fetching the real hayscad.com/data-downloads/ listing page with a browser User-Agent and reading the actual current-file links from it, per this program's established acquisition method (browser UA required; hayscad.com 403s a bare request).",
+    "result": {
+      "stagingBackfilledRows": 134216,
+      "quickRefId": { "agree": 134216, "disagree": 0, "missingInMyExport": 0 },
+      "propertyNumber": { "agree": 134195, "disagree": 21 }
+    },
+    "read": "100.00% agreement on quick_ref_id (134,216/134,216) and 99.98% on property_number (134,195/134,216), despite this lane's export snapshot (2026-PRELIMINARY, March 2026 upload) being a DIFFERENT file than CTX-HAYS-BACKFILL's own source (the 2026-08-26 drop). Strong, independent confirmation that (a) this lane's CSV parser and column mapping are correct, (b) Hays' identity columns (QuickRefID, PropertyNumber) are stable across export vintages even where dollar/roll-membership figures are NOT (matching CTX-HAYS-BACKFILL's own finding that the two exports disagree on 390+ roll rows and 45,524 market values but describe the same underlying account numbering). The 21 property_number disagreements (0.02%) are not yet root-caused -- left as a minor open item, not chased further given the strength of the overall result and this lane's remaining scope."
+  },
+
+  "regressionCheck": {
+    "fullSuite": "npm test (node --test test/*.test.mjs), run twice -- once with this session's live DB secrets sourced, once with them explicitly unset -- identical result both times: 1231 tests, 1226 pass, 1 fail.",
+    "theOneFailure": "test/ctx-b3-store-census.test.mjs:140, pre-existing and unrelated to this lane (a different lane's LDT-pin-dependent test; fails identically with and without this session's env vars, confirmed before and after this lane's changes existed since the branch point). Not fixed here -- out of scope, would be scope creep onto another lane's test.",
+    "thisLanesOwnTests": "14/14 pass (test/ops21-h1-crosswalk.test.mjs), included in the 1231/1226 total above."
+  },
+
+  "openQuestionsCarriedFromCP1": [
+    "Whether/when the CTX-HAYS-BACKFILL production backfill will run -- this lane is not the executor and does not run it.",
+    "Which export (PRELIMINARY vs 8-26-2026) is Hays' declared 2026 roll -- operator-level, surfaced not decided."
+  ],
+
+  "readyState": "Instrument built, unit-tested, control-validated live, and its export-parsing cross-validated against an independent source. The moment production's cad_property.quick_ref_id/property_number are backfilled and confirmed settled (or an explicit --allow-hays go is given), the real Hays run is: node scripts/ops21-h1/hays-identity-reconciliation.mjs --county=48209 --crosswalk=<path to a JSON array of {propertyId,quickRefId,propertyNumber} parsed from the county's declared-vintage export> --allow-hays. Given the cross-validation above, this lane could ALSO simply read cad_property.quick_ref_id/property_number directly once production is backfilled (no export re-parse needed) -- a small follow-on change to measureCounty's crosswalk-loading path, not yet made, since which source to prefer depends on the still-open declared-roll question."
+}

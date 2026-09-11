@@ -1,0 +1,134 @@
+{
+  "lane": "OPS21-D6",
+  "checkpoint": "CP1",
+  "phase": "design/pre-build",
+  "timestamp": "2026-09-10T00:00:00Z",
+  "planRow": "P-141",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-d6-available-on-request",
+  "branch": "feat/ops21-d6-available-on-request (new, tracking origin/main)",
+  "createdFrom": "origin/main",
+  "commit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195",
+  "note_on_worktree": "hauska-factory-d5-gate65 already exists at P:/seat-worktrees/property/hauska-factory-d5-gate65 for the sibling D5 lane. Per AGENT_CONTRACT section 5 ('never build in another lane's checkout'), cut a new isolated worktree off origin/main rather than reuse or branch from it.",
+
+  "readSourcesFirst": [
+    "P:/doc_repo/_dispatches/2026-09-10_ops21-d6_dispatch.md (full)",
+    "90_runbooks/AGENT_CONTRACT.md (full)",
+    "90_runbooks/DEV_PROCESS.md (full)",
+    "90_runbooks/fleet_memory_practice.md (full)",
+    "_decisions/2026-09-10_available_on_request_sixth_cell_state.md (full)",
+    "90_operations/OPS-21_serve_completion_program.md (full)",
+    "_catalog/dispatch_missions/mission_ops21_d6_on_request.md (full; identical text to dispatch's mission section)",
+    "_catalog/plan_registry.json (full; confirms row-level repo assignment is NOT machine-registered anywhere -- dispatch.mjs's 'repo: hauska-factory' line is an operator/CLI-time choice, not derived from this file)",
+    "hauska-factory src/lib/parcel-record-engine/{cell-state,rail-keys,publish-gate,liveness,not-applicable-audit,index,gate-rail-cli}.js + ENGINE_PIN.json (full)",
+    "hauska-factory migrations/0007_parcel_record.sql (full)",
+    "hauska-factory src/lib/county-rail-coverage.mjs, src/ledgers/{cells,manifest-read,rail_absence,rail_absence_serve}.mjs, src/jobs/publish-gate-sched.mjs (full)",
+    "Live MCP probe: mcp__claude_ai_Smart_Site__check_request (see reachability finding below)",
+    "Live gcloud: legacy-design-tools-prod / us-central1 Cloud Run service records-request-worker (see reachability finding below)"
+  ],
+
+  "criticalFinding_repoScopeDiscrepancy": {
+    "claim_in_dispatch": "'repo: hauska-factory' (dispatch header, PLAN-ROW block).",
+    "claim_in_OPS21_phase_table": "OPS-21_serve_completion_program.md:98, Phase 2 table row: 'D6 on-demand disposition | Repo: doc_repo then LDT | hoaDeedRestrictions, ossf, publicRecordRefs. Blocked on an operator ruling.'",
+    "claim_in_mission_consequence_section": "OPS-21:124-127 and the mission file, verbatim: 'parcelRecordAllowlist.ts, the gate CLI, the serve-layer rail adapters and the MCP tool schemas each need the new member' -- parcelRecordAllowlist.ts lives in legacy-design-tools (confirmed by OPS21-L1's own CP1, same _inbox/ directory, which read it at artifacts/api-server/src/lib/parcelRecordAllowlist.ts in that repo), and the MCP tool schemas live in hauska-mcp-server. Neither is in hauska-factory.",
+    "reconciliation": "_catalog/plan_registry.json (read in full) carries no per-row repo field for any plan -- it only maps plan-ID prefixes (P/G/R/F) to their baseline file. So 'repo: hauska-factory' in my dispatch was an explicit choice at dispatch-compile time (an operator/CLI argument to scripts/dispatch.mjs), not a value derived from OPS-21's own prose, and it postdates that prose (OPS-21 doc dated 2026-09-10, my dispatch also 2026-09-10, both same day the ruling landed). Read as: THIS dispatch instance deliberately narrows P-141/D6 to the hauska-factory-owned half of the ruling's consequence (schema + data + this repo's own gate CLI), leaving the LDT allowlist/serve-adapter half and the MCP tool-schema half for separate lane(s) not given to me.",
+    "disposition_per_AGENT_CONTRACT_hard_prohibition": "'Stay in your own repository. Read across repos freely; write only where your lane says.' I read legacy-design-tools and hauska-mcp-server (see switch enumeration below) but made zero edits there. Flagging this discrepancy per DEV_PROCESS 3.2/3.3 rather than silently picking a side or silently overreaching."
+  },
+
+  "switchEnumeration_everyConsumerThatSwitchesOnCellState": {
+    "in_repo_hauska_factory_VENDORED_do_not_hand_edit": {
+      "provenance": "src/lib/parcel-record-engine/ENGINE_PIN.json: module packages/engine-core/src/parcel-record, engineSha dfdf6fd0930b72d929f9a44834f9c33fb2d3eb75, 'Do not edit these .js files by hand; regenerate from the pin.' migrations/0007_parcel_record.sql header: 'packages/engine-core/src/parcel-record/schema.sql (verbatim; do not edit DDL below)'. All of the below are byte-identical vendored copies from hauska-engine, confirmed by reading the pin note.",
+      "files": [
+        "cell-state.js -- EARNED_CELL_KINDS=[value,absent-verified,refused]; isUnaccounted/isPublishable/countCellState",
+        "rail-keys.js -- PARCEL_RECORD_RAIL_META (65 rails, no per-rail requestPath field exists today)",
+        "publish-gate.js -- evaluatePublishGate, evaluateRailGate, PublishGateRefusedError",
+        "liveness.js -- deriveLiveRailKeys/deriveDeclaredAheadRailKeys (RAIL_LIVENESS_SQL literal: kind IN ('value','absent-verified','refused'))",
+        "not-applicable-audit.js -- auditNotApplicableCells (single-kind filter, not a full-union switch; not effectively touched by a 6th kind)",
+        "index.js -- barrel re-export only",
+        "instantiate.js, load.js, ingest-existing.js, record-shape.js, access-pair.js, config.js -- read, no positive 5-way enumeration found in any (see analysis below)",
+        "gate-rail-cli.mjs -- the actual 'gate CLI' the mission text names; shells loadCountyRailCells+evaluateRailGate, both vendored"
+      ],
+      "analysis": "evaluatePublishGate/evaluateRailGate/isUnaccounted/isPublishable are ALL negative checks against the literal string 'unaccounted' -- never a positive enumeration of the 5 known kinds. A cell with kind:'available-on-request' is therefore ALREADY treated as non-unaccounted / gate-satisfied with ZERO code change to any vendored file. isEarnedCell/EARNED_CELL_KINDS correctly excludes it too, by the same not-applicable precedent (a ruling-type disposition, never earned by a direct look) -- also needs no change. Verified by direct code read, not assumed; will add a hauska-factory-side regression TEST in CP2 proving this holds (mechanical guard, not a vendored-file edit, per fleet-memory's promotion-order preference)."
+    },
+    "in_repo_hauska_factory_HAND_AUTHORED_editable_this_lane": {
+      "src/lib/county-rail-coverage.mjs": "COVERAGE_CELL_KINDS is a hardcoded 5-item array; summarizeCountyRailCoverage() explicitly destructures and sums value+absentVerified+notApplicable+refused+unaccounted into inLedger. A cell with kind:'available-on-request' would be silently EXCLUDED from inLedger (not merely miscounted as an absence -- dropped from the ledger total entirely), inflating notInLedger = cadPop - inLedger by exactly the on-request count. This is the real, measurable silent-miscount bug the mission's classifyRequiredLeaf warning describes. IN SCOPE, FIXING THIS LANE.",
+      "migrations/0007_parcel_record.sql CHECK constraint": "parcel_record_cell_state_kind CHECK (cell_state->>'kind' IN ('value','absent-verified','not-applicable','refused','unaccounted')) -- the actual hard mechanical gate. Postgres REJECTS any write of kind:'available-on-request' today. Fixed by a NEW migration file (not editing 0007's 'do not edit DDL' body) that ALTERs the constraint -- ordinary migration practice, stays inside this repo, touches no vendored file. THE single most load-bearing fix in this lane; without it the completion predicate is mechanically unreachable."
+    },
+    "in_repo_hauska_factory_RULED_OUT_different_vocabulary_not_touched": {
+      "src/ledgers/cells.mjs CELL_STATES": "[satisfied, absent-verified, lookup-failed, quarantined, unmeasured, not-yet] -- F-05 CAD county-manifest acquisition-layer vocabulary (per-county CAD roll ingest verdicts), not parcel-record. 'absent-verified' name collision only; confirmed by reading nodeLayerState/cellVerdict, which never reference rail-keys.js or the parcel-record CellState shape.",
+      "src/ledgers/rail_absence.mjs + rail_absence_serve.mjs": "ABSENCE_STATES=[not-applicable, unmeasured, absent-verified] -- the P3/F-05/F-06 rail_absence ledger, scoped ONLY to ZONING_INHERITED_RAILS (setbacks/edges/envelope) plus utility-easement. Does not carry hoaDeedRestrictions/ossf/publicRecordRefs at all; confirmed by reading its own rail allowlist (ZONING_INHERITED_RAILS, SERVED_RAILS). Out of scope by rail, independent of the state question.",
+      "src/jobs/parcel-{ag-valuation,r5-zoning,overlay-districts,max-impervious-cover,school-district,building-footprint-reconcile,utility-service,owner,r4-companions,value-history}.mjs": "Each is a rail-specific writer that stamps not-applicable/refused for its OWN single rail only (verified by grep + file headers). None write or read hoaDeedRestrictions/ossf/publicRecordRefs. Out of scope by rail."
+    },
+    "out_of_repo_read_only_survey_not_edited": {
+      "legacy-design-tools": "parcelRecordAllowlist.ts (per OPS21-L1's own CP1, filed the same day in this same _inbox/ directory: artifacts/api-server/src/lib/parcelRecordAllowlist.ts, resolveAllowlist() fail-closed on slate-membership AND verdict==='pass'). The dispatch's own program-context text (line 117-120) states this requires a PASS verdict specifically, not pass-or-excluded. Given hoaDeedRestrictions/ossf/publicRecordRefs will read as gate 'excluded' (no earned cell ever exists once they are 100% available-on-request -- see EARNED_CELL_KINDS analysis above), whether the allowlist's own verdict check treats 'excluded' as gate-satisfied for on-request rails is an LDT-side code question I read about but did not verify against LDT's live source this session, and cannot fix from this repo. Also 'the serve-layer rail adapters' the mission names are presumed to live here or in hauska-map; not enumerated exhaustively (out of repo, time-boxed).",
+      "hauska-mcp-server": "'the MCP tool schemas' -- get_smart_site's own live tool schema (read via ToolSearch this session) enumerates the exact facts it returns at node depth and explicitly does NOT include hoaDeedRestrictions/ossf/publicRecordRefs at any depth, consistent with the mission's on-demand-only framing. Whether any OTHER MCP tool schema encodes the 5-state cell vocabulary as a closed enum (which would need a 6th literal added to avoid a schema-validation rejection) was not exhaustively checked against hauska-mcp-server's source this session."
+    }
+  },
+
+  "liveVerification_requestPathReachability": {
+    "requirement": "_decisions/2026-09-10_available_on_request_sixth_cell_state.md: 'A requestPath that is not reachable is not available-on-request. If the path is dead, the honest state is unaccounted or refused, not a promise the product cannot keep.' Refuse to write the state without a confirmed-reachable path.",
+    "probe_1_mcp_check_request": "Called mcp__claude_ai_Smart_Site__check_request with a synthetic jobId (non-mutating poll). LIVE RESULT: {\"status\":\"not_ready\",\"tool\":\"check_request\",\"reason\":\"P-85 item 4\",\"message\":\"check_request is not available on Smart Site MCP yet.\"} -- confirms the MCP-surfaced POLL leg of the records-request flow is NOT live as of this session (2026-09-10).",
+    "probe_2_mcp_request_records": "mcp__claude_ai_Smart_Site__request_records(parcelNodeId) exists; its own schema description reads 'Not available until Records Request is live on production.' Deliberately did NOT invoke it live -- it is a real, side-effecting, human-queuing action (purchaseApproved semantics per doc_repo: 'pushes pendingHuman... never checks out'), and firing it against a real parcel purely to test reachability is not a verification action I am authorized to take unilaterally.",
+    "probe_3_underlying_worker_gcloud": "legacy-design-tools-prod / us-central1 Cloud Run service records-request-worker is deployed and serving 100% traffic on revision records-request-worker-00029-guy -- newer than every revision named in doc_repo's dated scratch notes (latest there was 00018-65w, 2026-08-27ish), so it has shipped further since those notes were written. GET /, /health, /healthz all return HTTP 404 (not a connection failure/timeout) -- the app is up and routing, just has no handler on those specific paths, consistent with the scratch notes' prior observation that POST /run returns a structured JSON error rather than failing to connect.",
+    "probe_4_get_smart_site_schema": "get_smart_site's live tool schema confirms hoaDeedRestrictions/ossf/publicRecordRefs are not among the facts it serves at any depth -- consistent with these being on-demand-only, never bulk-served, matching the mission's own framing.",
+    "conclusion": "MIXED SIGNAL, not resolved to a clean yes/no by this lane's available read-only tools. The underlying worker infrastructure is alive; the specific MCP polling wrapper is explicitly not (P-85 item 4). Given the decision's explicit refuse-without-a-confirmed-path guard and the ~2.9M-row blast radius of the write this state change authorizes, I am NOT executing the bulk backfill against real data until this is resolved -- either by a live-verifiable signal I can obtain without firing a real side-effecting request, or by an explicit ruling on what the canonical requestPath value is (the PE/smartsite web UI route vs. the MCP tool) and confirmation of its reachability basis."
+  },
+
+  "whatThisLaneWillBuildNowRegardlessOfTheReachabilityAnswer": [
+    "New migration widening parcel_record_cell_state_kind's CHECK constraint to include 'available-on-request' (the mechanical gate the completion predicate cannot clear without).",
+    "Fix to county-rail-coverage.mjs's COVERAGE_CELL_KINDS + summarizeCountyRailCoverage to add the 6th kind explicitly (closes the silent-undercount finding above).",
+    "A regression test proving evaluatePublishGate/evaluateRailGate already fail closed correctly (gate-satisfied, never counted as unaccounted) for kind:'available-on-request' without any vendored-file edit.",
+    "The backfill job/script itself (county-scoped, --apply-gated per this repo's LAPTOP_WRITE_FROZEN convention, refuses without a resolved+reachable requestPath argument), built and dry-run tested but NOT executed with --apply against real parcel_record_cell rows until the reachability question above is resolved."
+  ],
+
+  "constraintsHonored": [
+    "Isolated worktree, never touching D5's or any other lane's checkout.",
+    "No edit to any vendored src/lib/parcel-record-engine/*.js file or to migrations/0007's DDL body.",
+    "No write outside hauska-factory (legacy-design-tools and hauska-mcp-server read-only this session).",
+    "No live-firing of a real per-parcel records request purely for verification purposes.",
+    "Bastrop MyGov / smartcity-os tenant_id=2 never queried.",
+    "No hand-authored rail list -- scope is exactly hoaDeedRestrictions/ossf/publicRecordRefs per the ruling, no fourth rail considered."
+  ],
+
+  "missionPremise": "Operator ruling 2026-09-10 (_decisions/2026-09-10_available_on_request_sixth_cell_state.md) adds a sixth parcel-record cell state; this dispatch's own repo scoping (hauska-factory) covers the schema/data/gate-CLI portion of that ruling's consequence, not the LDT-allowlist or MCP-schema portions the same ruling names.",
+  "completionPredicate": "Count of hoaDeedRestrictions|ossf|publicRecordRefs cells in the six CTX counties whose cell_state->>'kind' <> 'available-on-request' equals 0 (node scripts/plan-progress.mjs --sql in doc_repo). Mechanically unreachable until the CHECK constraint is widened, and not executed until the requestPath reachability question above is resolved.",
+  "scopeBasis": "hauska-factory only, per this dispatch's explicit repo field -- flagged above as narrower than OPS-21's own phase-table text for this row ('doc_repo then LDT') and than the ruling's full named consequence list (LDT allowlist, MCP schemas). Three rails only (hoaDeedRestrictions, ossf, publicRecordRefs), per the ruling's explicit 'adding a rail to this state is a ruling, never a lane's discretion.'",
+
+  "ADDENDUM_2026-09-10_operator_scope_correction": {
+    "receivedMidFlight": "Operator message, after this CP1 was already filed: confirms the cross-repo scope discrepancy flagged above independently by this lane, and re-scopes the lane to ENUMERATE AND STOP across all three repos (hauska-factory, legacy-design-tools, hauska-engine): read freely, write nothing outside hauska-factory. 'The factory half (the state itself, the cell writer, the gate CLI) you may implement.' LDT and engine halves get their own companion lanes compiled from this inventory. 'That list is your deliverable and your close.'",
+    "howThisWasHonored": "No file was written or edited in legacy-design-tools or hauska-engine at any point this session -- both inventories were produced by dedicated read-only Explore sub-agents (one level of fan, per AGENT_CONTRACT section 1), each instructed to read via git plumbing against origin/main without touching any working tree, and to make zero edits. The factory-half implementation already in flight when the correction arrived (migration 0012, the county-rail-coverage.mjs fix, the gate-CLI regression tests, the available-on-request-backfill.mjs writer + its CLI/allowlist/cloudbuild wiring) was kept, since it falls squarely inside 'the state itself, the cell writer, the gate CLI' -- none of it required touching LDT or hauska-engine.",
+
+    "fileCountsPerRepo_forSizingTheSiblingLanes": {
+      "countingRuleNote": "Two different denominators are reported per repo because they answer different questions and must not be collapsed (DEV_PROCESS 1.2/1.4). 'raw grep matches' = every file any of the search terms appear in at all, including tests, fixtures, prose-only comments, and confirmed false-positive vocabulary collisions. 'real consumers' = files that actually construct, branch on, or type a parcel-record cell-state kind value. The operator's own pre-measurement ('~55 factory, ~82 LDT, ~14 engine') sits closer to the 'real consumers' denominator for hauska-engine specifically (14 measured exactly matches 14 estimated) but the raw-match counts for factory and LDT are both substantially higher than the estimate -- reconciled, not rounded off, per DEV_PROCESS 1.4.",
+      "hauska-factory": {
+        "rawGrepMatches": 77,
+        "realConsumers_orNotableFindings": 6,
+        "breakdown": "2 fixed this lane (county-rail-coverage.mjs silent-undercount; migrations/0007's CHECK constraint via new migration 0012), 1 high-value fails-closed-today-but-will-need-a-companion-fix finding (verify-walk.mjs's classifyRequiredLeaf -- literally the file implementing the 2026-09-09 classifyRequiredLeaf defect fix the dispatch's mission text names), 14 vendored engine-core files (already safe, proven by 4 new tests, not independently edited), ~15 single-rail writer jobs (safe by construction, never touch the 3 D6 rails), ~9 false-positive vocabulary collisions, ~30 test files, 5 cloudbuild prose files, plus the new cell writer itself.",
+        "fullDetail": "_inbox/2026-09-10_ops21-d6_factory-consumer-inventory.md"
+      },
+      "legacy-design-tools": {
+        "rawGrepMatches": 149,
+        "realConsumers": "~55 production files (a mix of fails-open and fails-closed) + ~14 schema/type-only files (safe), remainder tests/fixtures/false-positives",
+        "topFailOpenRisks": [
+          "artifacts/smartsite-mcp/src/mcp-app.ts:293-299,1855-1866 -- every get_smart_site MCP call narrates the new state as 'unread' to the calling AI agent. Highest reach of any finding.",
+          "artifacts/api-server/src/lib/r1BriefCompose.ts:223-234 -- the only place found in the whole survey that defaults an unrecognized-but-populated state to 'present', fabricating data-presence. Single most dangerous direction found.",
+          "artifacts/api-server/src/lib/structuralFactToFacetsWire.ts:229-243 -- parcel facets/inspect wire; collapses any non-present/non-refused state into the absence-serving branch, every request.",
+          "artifacts/api-server/src/lib/parcelConstraintSearch.ts:306-314,372 -- constraint-search hot path; own doc comment: 'silently drains into the other two' if a 4th state is ever admitted.",
+          "the 13 *FactFromParcelRecord.ts adapters -- currently masked only because the shared upstream reader (parcelRecordCellRead.ts) never emits a 4th state yet; the largest blast-radius item once that reader is extended, so must be fixed in the same lane/PR as the reader, not left for later."
+        ],
+        "alreadyFailClosed_goldStandardPattern": "artifacts/api-server/src/lib/floodHazardFactFromParcelRecord.ts uses true TypeScript exhaustiveness (default: { const _exhaustive: never = cell; throw ... }) -- the pattern every other *FactFromParcelRecord.ts adapter should be brought up to. artifacts/api-server/src/lib/parcelRecordCellRead.ts and parcelRecordFactRead.ts (the two chokepoint readers) already refuse an unrecognized kind explicitly. artifacts/api-server/src/ctxB6VerifySitusAddressCli.ts carries a verbatim reproduction of the program's own namesake classifyRequiredLeaf classifier and already refuses correctly.",
+        "fullDetail": "_inbox/2026-09-10_ops21-d6_ldt-consumer-inventory.md"
+      },
+      "hauska-engine": {
+        "rawGrepMatches": 58,
+        "realConsumers": 14,
+        "theHardBlocker": "packages/engine-core/src/parcel-record/schema.sql:22-31 -- the CHECK constraint, canonical source of the same constraint hauska-factory vendors. Confirmed via a pin-vs-origin/main diff that hauska-factory's vendored copy is functionally identical to origin/main today (one unrelated commit since the pin, a null-safety guard).",
+        "theLeveragePoint": "packages/engine-core/src/parcel-record/cell-state.ts:61-86 -- ScalarCellState/CompanionCellState discriminated unions, the true source of the type. No TypeScript exhaustiveness guard exists anywhere in this repo, so widening the type will NOT compiler-force every consumer to be fixed -- the schema.sql CHECK and a minor countCellState zero-seed gap (lines 107-121) both need explicit manual edits regardless.",
+        "productSemanticsNoteForLater": "ingest-existing.ts:151,156,240,289 only ever overwrites a cell currently 'unaccounted' -- once a cell is available-on-request, ordinary CAD/atom bulk ingest will never later promote it to a real value under the current guard. Out of D6's stated scope (D6 does not acquire the three rails) but worth a row in whoever eventually builds that lifecycle's backlog.",
+        "fullDetail": "_inbox/2026-09-10_ops21-d6_engine-consumer-inventory.md"
+      }
+    },
+
+    "recommendedCompanionLaneSequencing": "hauska-engine first (widen the two union types + schema.sql CHECK + countCellState seed; no exhaustiveness guard exists to force downstream discovery, so this alone will not surface every LDT consumer -- the LDT inventory above already did that work). Then LDT, in two tiers: tier 1 (parcelRecordCellRead.ts, parcelRecordFactRead.ts -- the two chokepoint readers, already fail closed, need the new state added as a recognized-and-handled case rather than a refusal, since refusing forever would mean these three rails permanently 404 through this path) before tier 2 (the 13 *FactFromParcelRecord.ts adapters, mcp-app.ts, tool-honesty.ts, r1BriefCompose.ts, structuralFactToFacetsWire.ts, parcelConstraintSearch.ts/parcelConstraintProjection.ts) -- fixing tier 2 before tier 1 lands would leave every fix guessing at a wire shape the chokepoint readers haven't settled yet, the same drift risk this lane's own verify-walk.mjs finding flags."
+  }
+}

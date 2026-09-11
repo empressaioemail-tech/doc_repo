@@ -1,0 +1,45 @@
+{
+  "lane": "ops21-s3-non-vacuity",
+  "planRow": "P-134",
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "filedAt": "2026-09-10T22:20:00Z",
+  "fanSummary": {
+    "subAgentsUsed": 4,
+    "fanDepth": "one level, do-not-spawn clause as first line of every prompt, verified none spawned further",
+    "batches": [
+      { "id": "engine-1", "repo": "hauska-engine", "units": ["building-footprint", "cad-parcel-roll", "flood-hazard-fact", "land-use-fact", "owner-fact", "parcel-node", "road-intake+road-node"], "gapsFilled": 4, "alreadyAdequate": 3, "newVacuousPathFound": false },
+      { "id": "engine-2", "repo": "hauska-engine", "units": ["rail-corridor-fact", "rrc-pipeline-fact", "setback-writer", "special-district-fact", "utility-easement", "well-fact"], "gapsFilled": 1, "alreadyAdequate": 5, "newVacuousPathFound": false },
+      { "id": "factory-1", "repo": "hauska-factory", "units": ["factory-conformant", "containment-persist", "p3-rail-absence", "parcel-record-fill", "flood-ingest", "parcel-r4-companions", "purge-bastrop-orphans", "parcel-r5-zoning", "parcel-value-history", "s6-collision-remediate", "vh-collision-remediate"], "gapsFilled": 1, "alreadyAdequate": 10, "newVacuousPathFound": true, "findingId": "p3-rail-absence" },
+      { "id": "factory-2", "repo": "hauska-factory", "units": ["publish-gate-sched", "acquire-school-district", "parcel-school-district", "parcel-utility-service", "parcel-overlay-districts", "parcel-ag-valuation", "parcel-owner", "parcel-max-impervious-cover", "owner-rail-collision-check", "parcel-building-footprint-reconcile"], "gapsFilled": 0, "alreadyAdequate": 10, "newVacuousPathFound": false }
+    ]
+  },
+  "adversarialReview": {
+    "method": "Every sub-agent claim was independently re-executed by the planner (this session), not taken on report alone, per AGENT_CONTRACT section 1 ('verification is NEVER delegated below you') and DEV_PROCESS 4.2.",
+    "spotChecks": [
+      "Re-ran special-district-fact/__tests__/plan.test.ts directly: 5/5 pass, confirmed.",
+      "Re-ran owner-rail-collision-check.test.mjs + publish-gate-sched.test.mjs directly: 54/54 pass, confirmed, and read several 'falsifier' assertions myself to confirm they pin real positive-branch values (e.g. toGateVerdictKind reaching 'pass', a genuine regression still reaching 'refuse') rather than tautologies.",
+      "Read src/jobs/p3-absence.mjs myself in full (lines 1-64) before accepting the factory-1 agent's headline finding -- confirmed independently, by direct source inspection, that runP3Absence returns a fixed shape regardless of input and never references any of the 5 named ledger functions.",
+      "Re-ran test/p3-absence.test.mjs myself after fixing a typo (DOCUCMENTED->DOCUMENTED) the sub-agent left in its comment: 15 pass / 0 fail / 2 todo, exit code 0 -- confirmed the finding is real and reproducible, and confirmed the todo conversion (done by the planner, not the sub-agent -- see below) keeps the suite green.",
+      "Ran the FULL suite in both repos (not just the touched files) to catch collateral damage: hauska-engine `npx vitest run` from packages/engine-core = 197/201 files passed, 1537/1548 tests passed, 11 skipped, 4 files fail to COLLECT (SyntaxError at import) -- confirmed via `git status --porcelain` that none of those 4 files were touched by any sub-agent or by me; pre-existing in this worktree's base commit. hauska-factory `npm test` = 1219 tests, 1212 pass, 1 fail (pre-existing, unrelated: test/ctx-b3-store-census.test.mjs compares against a sibling hauska-engine checkout path that does not exist in this isolated worktree -- confirmed via `git log`/`git status` the file is untouched and was merged in PR #128, long before this lane), 2 todo (the p3-absence finding, by design)."
+    ],
+    "plannerCorrections": [
+      "Converted the 2 new p3-absence tests from plain failing tests to node:test `{ todo: '<reason + close artifact pointer>' }` tests. Rationale: DEV_PROCESS 2.0 ('a permanently red gate is a dead gate') -- fixing the underlying wiring is explicitly out of this lane's scope (mirrors 'out of scope: fixing computeTier1Envelope' for the anchor), so committing them as plain failures would either block merge indefinitely on unrelated work or, worse, get the whole suite normalized as 'always a little red' and ignored (the exact failure mode DEV_PROCESS 2.0 warns about). `{ todo }` keeps the assertion executing against real code (so it remains a true, re-triggerable regression proof, not a dead comment) while keeping CI green; removing the todo marker is the literal re-enable step for whoever wires runP3Absence to its ledger. Verified: exit code 0, fail 0, todo 2 after the change.",
+      "Fixed one typo (DOCUCMENTED->DOCUMENTED) in the sub-agent's added comment before committing."
+    ]
+  },
+  "gitState": {
+    "hauska-engine": { "worktree": "P:/tmp/ops21-s3", "branch": "fix/ops21-s3-non-vacuity", "newCommit": "8cb89b0", "filesChanged": 5, "allNew": true },
+    "hauska-factory": { "worktree": "P:/tmp/ops21-s3-factory", "branch": "fix/ops21-s3-non-vacuity", "newCommit": "94a112b", "filesChanged": 1 }
+  },
+  "runningCompletionCount": {
+    "hauska-engine": "13/13 write-path units now carry a non-tautological non-vacuity test",
+    "hauska-factory": "21/21 implemented write-path units now carry one (2 additional allowlist entries, f11-setback and easement-no-live-rest, have no implementation at all yet -- dormant, explicitly the OTHER controls' territory per the dispatch's own framing, named not silently dropped)",
+    "secondVacuousPathFound": "src/jobs/p3-absence.mjs runP3Absence (hauska-factory) -- real, independently-verified, reported not fixed"
+  },
+  "remainingWork": [
+    "Push both branches, open PRs, monitor CI, self-merge only on a real green check-run conclusion (never on red, never skip this gate) per AGENT_CONTRACT section 5.",
+    "File the close artifact with final counts, PR numbers, merge SHAs / CI conclusion strings once available.",
+    "Remove the scratch LDT verification worktree (P:/tmp/ops21-s3-ldt-verify) -- read-only artifact, never committed, no longer needed once its evidence is captured in CP1/close."
+  ]
+}

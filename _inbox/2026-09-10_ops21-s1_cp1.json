@@ -1,0 +1,125 @@
+{
+  "lane": "OPS-21-S1",
+  "checkpoint": "CP1",
+  "kind": "adversarial design / pre-build",
+  "planRows": ["P-132"],
+  "dispatch": "_dispatches/2026-09-10_ops21-s1_dispatch.md",
+  "filedAt": "2026-09-10T22:12:26Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-s1",
+  "branch": "feat/ops21-s1-setback-cell-writer",
+  "commit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195",
+  "snapshot": {
+    "hauskaFactory": "origin/main 63a606b1",
+    "legacyDesignToolsReadOnlyReference": "P:/seat-worktrees/property/legacy-design-tools, read-only, no worktree edits",
+    "hauskaEngineReadOnlyReference": "P:/hauska-engine, read-only, no worktree edits",
+    "database": "cortex-prod (fancy-fire-06136146): PRODUCTION_NEONDB_URL/neondb (landing_parcel_jurisdiction) and FACTORY_DATABASE_URL/neondb (parcel_record_cell), both via SET default_transaction_read_only = on",
+    "measuredAt": "2026-09-10T21:40Z - 22:05Z"
+  },
+
+  "correctionsToTheDispatchPremise": [
+    {
+      "claim": "\"brokeragePlaceBuildableEnvelope.ts... resolves district -> ruled table -> setbacks, live in production today for ~20 jurisdictions. Use getSetbackTableForZoning from @hauska-engine/adapters. Do not write a second resolver.\"",
+      "measured": "The live route's real call chain (legacy-design-tools artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts -> lib/buildableEnvelope/authoritativeSetbackSource.ts:172 resolveAuthoritativeSetbacks) calls getSetbackTableForZoning from @workspace/adapters (legacy-design-tools' OWN local package, lib/adapters/src/local/setbacks/index.ts), not @hauska-engine/adapters. @hauska-engine/adapters is a separate, already-diverged fork living in a different repo (hauska-engine/packages/adapters, 3-arg signature vs. the live 2-arg one) that the live production route never calls. Neither package is published or importable cross-repo (both private, workspace-local) -- hauska-factory has no dependency path to either today.",
+      "evidence": "legacy-design-tools lib/adapters/package.json:2 name=\"@workspace/adapters\"; authoritativeSetbackSource.ts:172 `const table = getSetbackTableForZoning(jurisdictionKey, districtCode);`; hauska-engine packages/adapters/package.json description literally \"lifted from legacy-design-tools lib/adapters per ADR-008\"; hauska-engine's own copy at packages/adapters/src/local/setbacks/index.ts:152-156 has a third `options` param the live one does not.",
+      "consequence": "the actual single published source of truth for this data is @empressaio/setback-corpus (real npm package; confirmed `npm view` versions 1.0.0/1.0.1/1.1.0, dist-tag latest=1.1.0), whose own description says it exists to replace \"two independently-maintained local copies\" -- but grep across both legacy-design-tools and hauska-factory finds ZERO references to it in either repo; neither has actually repointed onto it yet.",
+      "decisionTaken": "hauska-factory (a third repo with no import path into either private package) takes @empressaio/setback-corpus as a real npm dependency for TABLE DATA, and PORTS -- not reinvents -- the small amount of consumer-side district-code routing logic (the Bastrop 3-table special case; see falsifier 2 below) verbatim from legacy-design-tools' current @workspace/adapters implementation, citing file/line at the port site. This is not \"a second resolver\" in the sense the dispatch prohibits (an independently-derived computation of what a district's setbacks ARE) -- same table data, same routing decisions, relocated only because the source implementation is not mechanically importable across these three repos, following the same vendor-a-trimmed-copy precedent already established for Property Explorer's own setback consumption (hauska-map PR #360)."
+    },
+    {
+      "claim": "\"Ruled tables that exist: austin-tx, bastrop-tx, bastrop-city-tx, bastrop-development-code, elgin-development-code, kyle-tx, pflugerville-tx, round-rock-tx, san-antonio-tx, waco-tx (plus Utah/Idaho). Inside the six CTX counties that is Austin, Bastrop, Bastrop City, Elgin, Kyle, Pflugerville, Round Rock.\"",
+      "measured": "This 10-table list matches legacy-design-tools' STALE, un-migrated local @workspace/adapters copy, not the published corpus. @empressaio/setback-corpus@1.1.0 ships 29 jurisdiction keys, including six more real Central Texas cities with real in-city populations inside the five in-scope counties that the dispatch's own \"inside the six CTX counties\" sentence omits: lockhart-tx (48055, 6,490 in-city parcels), leander-tx / cedar-park-tx / georgetown-tx / hutto-tx / taylor-tx / liberty-hill-tx (all 48491 Williamson, 91,880 in-city parcels combined), plus a tiny 7-parcel Travis sliver of buda-tx and a 72-parcel Caldwell sliver of san-marcos-tx. waco-tx itself is in the dispatch's own table list but its own city-enumeration sentence never mentions Waco/McLennan at all (48309, 48,693 in-city Waco parcels) -- an internal inconsistency in the dispatch's own two adjacent sentences.",
+      "evidence": "npm pack @empressaio/setback-corpus@1.1.0; dist/setbacks/ contains all 29 <key>.json files. landing_parcel_jurisdiction city_name census for the 5 in-scope counties (below) cross-referenced against SETBACK_JURISDICTION_KEYS.",
+      "consequence": "using the dispatch's named 7-city list literally would write absent-verified on ~104,780 real in-city parcels (Waco 48,693 + Lockhart 6,490 + the six Williamson cities 91,880 + slivers, minus double count adjustments) that a ruled table actually covers -- the opposite of the program's own stated goal (\"values where we have data\").",
+      "decisionTaken": "derive the ruled-table city set MECHANICALLY: candidate jurisdictionKey = slugify(city_name)+\"-tx\", confirmed live against getSetbackTable() from the corpus (never a hand-typed list), with Bastrop and Elgin carrying the two documented special-cased keys (see falsifier 2). This is the same discipline rail-keys.js's own \"do not hand-author a rail list\" already applies one layer up in this program, applied here to the city list."
+    },
+    {
+      "claim": "not stated in the dispatch at all -- a genuine gap, not a wrong number",
+      "measured": "Setback resolution needs a per-parcel zoning district code as an input, which is a DIFFERENT rail (zoningDistrict) written by an already-existing, independent job (parcel-r5-zoning.mjs), not by anything in this mission's scope. Of the 288,698 in-city parcels in the dispatch's originally-named 7 ruled-table cities across the 5 in-scope counties: 287,022 (99.4%) already carry a real zoningDistrict `value`; 1,211 carry a pre-existing `not-applicable` (a cross-system disposition-timing disagreement between landing_parcel_jurisdiction's current live disposition and this cell's row-creation-time snapshot -- already internally consistent with every other UNINCORPORATED_NOT_APPLICABLE_RAIL_KEYS sibling on the same row, out of this lane's scope to reconcile); 465 (all Elgin/48453) carry a zoningDistrict `refused`.",
+      "decisionTaken": "read the ALREADY-WRITTEN zoningDistrict cell (same store, same place_key) as the district-code input rather than re-deriving a second spatial/staging join. A parcel whose zoningDistrict is not yet `value` stays exactly as-is this run (correctly deferred) -- except: where zoningDistrict is itself `refused`, setback cells inherit `refused` citing the upstream refusal as basis (re-probing an already-refused input would manufacture false specificity; leaving it unaccounted forever would misstate that nobody has looked, when the same source already looked and refused)."
+    }
+  ],
+
+  "livePopulationCensus": {
+    "countingRule": "landing_parcel_jurisdiction rows with disposition='in-city', county_fips in the 5 in-scope counties (48021,48055,48309,48453,48491 -- 48209 Hays structurally excluded, P-145 gate), grouped by city_name. Measured 2026-09-10 ~21:45-21:55Z.",
+    "byCountyCityRuledTableStatus": {
+      "48021_Bastrop": {"Bastrop": 5819, "Elgin": 3749, "Smithville_noTable": 2406, "Webberville_noTable": 17, "MustangRidge_noTable": 1},
+      "48055_Caldwell": {"Lockhart": 6490, "SanMarcos_sliver": 72, "Luling_noTable": 2898, "Martindale_noTable": 618, "Uhland_noTable": 221, "Niederwald_noTable": 170, "MustangRidge_noTable": 157, "Staples_noTable": 1},
+      "48309_McLennan": {"Waco": 48693, "allOtherCities_noTable_sumApprox": 30460},
+      "48453_Travis": {"Austin": 204079, "Pflugerville": 20138, "Elgin": 1706, "Leander": 5192, "CedarPark": 2389, "RoundRock": 324, "Buda_sliver": 7, "allOtherCities_noTable_sumApprox": 27673},
+      "48491_Williamson": {"Georgetown": 39015, "RoundRock": 38839, "Leander": 26587, "CedarPark": 22367, "Hutto": 16496, "Austin": 13942, "Taylor": 8541, "LibertyHill": 3114, "allOtherCities_noTable_sumApprox": 5145}
+    },
+    "zoningDistrictInputReadiness_originalSevenCityScope": {
+      "totalInCityParcels": 288698,
+      "value": 287022,
+      "notApplicable_preexistingCrossSystemDrift_outOfLaneScope": 1211,
+      "refused_allElginTravis": 465
+    },
+    "note": "full census of the SIX additional corpus-ruled cities' own zoningDistrict readiness deferred to CP2; sizing above is real-row-count from landing_parcel_jurisdiction only, not yet joined to their zoningDistrict cell state."
+  },
+
+  "theDesign": {
+    "perInCityParcel": [
+      "1. Determine ruled-table jurisdictionKey for the parcel's city_name mechanically (probe @empressaio/setback-corpus's getSetbackTable). No match -> write absent-verified on all 4 scalars + setbackRules companion (empty-set), instrument='@empressaio/setback-corpus@1.1.0 getSetbackTable(<jurisdictionKey>)=null', scope=county_fips+city_name.",
+      "2. Match found (ruled-table city). Read this parcel's own zoningDistrict cell (same store, same place_key).",
+      "   2a. kind=value -> route (jurisdictionKey, districtCode) through the ported router (Bastrop special-case + generic lookup, verbatim-ported from legacy-design-tools' current getSetbackTableForZoning).",
+      "       - matched district -> write value cells (front_ft/side_ft/rear_ft/side_corner_ft) + setbackRules companion (rowCount 1, payload={district_name, citation_url, effective_date, note, jurisdictionKey}), source cites corpus package version + jurisdictionKey.",
+      "       - no matched district (repealed code / unmapped code) -> absent-verified, instrument='ported router + corpus@1.1.0, jurisdictionKey=<k>, districtCode=<c> -> null', scope=jurisdictionKey+districtCode.",
+      "   2b. kind=refused -> setback cells -> refused, instrument='zoningDistrict rail refusal for the same place_key', scope=place_key.",
+      "   2c. kind=unaccounted or not-applicable or anything else -> untouched this run (correctly deferred; not-applicable case is the pre-existing cross-system drift noted above, out of lane scope)."
+    ],
+    "neverTouched": "not-applicable cells (query scoped to disposition='in-city' only from the start; every UPDATE additionally guarded to cell_state->>'kind'='unaccounted', matching parcel-r5-zoning.mjs's established gated-batch-write convention -- a re-run can never regress an already-earned cell).",
+    "placeKey": "RAW county_fips:prop_id, never normalizeForJoin'd -- confirmed against parcel-r5-zoning.mjs's own buildZoningCells convention.",
+    "writerAllowlistId": "f11-setback (pre-reserved in writer-allowlist.mjs, kind='setback', planRow currently 'F-11', REQUIRED_NON_CAD_WRITERS member with no implementing job file on this branch -- this job claims it, and its planRow note is updated to also cite P-132/OPS-21-S1).",
+    "haysExclusion": "county filter hardcoded to the 5 non-Hays counties in every query this job runs; never a 6th county, honoring P-145's gate.",
+    "companionCellShape": "follows the 7-times-repeated existing companion convention ({kind:'value', disposition, rowCount, source, vintage} on the cell + one row per matched setback rule in parcel_record_companion_row.payload) rather than inventing a {value:{...}} shape on setbackRules itself -- avoids a second implementation of one meaning (DEV_PROCESS 2.4).",
+    "deployAndApply": "--apply refuses off Cloud Run (LAPTOP_WRITE_FROZEN), matching every sibling job. A cloudbuild.<job>.yaml + Cloud Run Job deploy (factory-<job>) is required before any real write; CP2's pilot is a bounded single-city --apply execution on the deployed Cloud Run job, never a local write."
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "id": 1,
+      "prediction": "every parcel this job would touch (in-city, mechanically-derived ruled-table city, 5 in-scope counties) currently has setbackFrontFt cell_state.kind='unaccounted' -- no prior undiscovered writer has touched any of these rails.",
+      "falsifier": "any row not unaccounted at read time.",
+      "status": "CONFIRMED at CP1 -- live census across all 5 counties: setbackFrontFt/SideFt/RearFt/CornerFt/setbackRules are 308,704 not-applicable + 556,281 unaccounted + 0 of any other kind, repo-wide. The ruled-table-city subset is therefore also 100% unaccounted (a subset of a population with zero non-unaccounted/non-not-applicable rows)."
+    },
+    {
+      "id": 2,
+      "prediction": "the ported Bastrop routing (isBastropCityJurisdiction / repealed-B3 exclusion / bastrop-development-code default / bastrop-tx legacy-fallback-only-on-literal-key) reproduces legacy-design-tools' live getSetbackTableForZoning byte-for-byte on every real district code observed in Bastrop's live zoningDistrict cells, when the port's entry jurisdictionKey is fixed to the literal string 'bastrop-development-code' (never 'bastrop-tx', which the live code only reaches via a different, codes-library-driven caller this job does not replicate).",
+      "falsifier": "any live Bastrop district code for which the ported function's output differs from legacy-design-tools' real function given the same (jurisdictionKey='bastrop-development-code', code) inputs.",
+      "status": "pending -- measured in CP2 against the real distinct Bastrop district-code set."
+    },
+    {
+      "id": 3,
+      "prediction": "no in-scope in-city parcel's zoningDistrict value maps (via the corpus) to a real ruled table but to no matching district entry, other than the known repealed-B3 Bastrop case.",
+      "falsifier": "any such parcel -- requires a citation of exactly why the code doesn't map, never a fabricated match.",
+      "status": "pending -- measured in CP2 against real distinct-code counts per city."
+    },
+    {
+      "id": 4,
+      "prediction": "the 465 Elgin/Travis zoningDistrict-refused parcels' own refusal basis is a real, citable reason (not an artifact of this job's own read), safe to cite as setback's basis too.",
+      "falsifier": "the refusal basis is empty, malformed, or itself references a since-resolved condition.",
+      "status": "pending -- spot-check in CP2."
+    }
+  ],
+
+  "constraintsHonored": [
+    "hauska-factory only; legacy-design-tools and hauska-engine read-only for reference, no worktree edits in either",
+    "no SETBACK_APPLY_HELD lift, atom writer never touched",
+    "no second resolver in the sense of a new/independent setback computation -- same tables, same routing decisions, ported for cross-repo reachability only",
+    "place_key raw, never normalized",
+    "48209 Hays structurally excluded from every query",
+    "no --apply from a laptop; Cloud Run only (LAPTOP_WRITE_FROZEN honored, not bypassed)",
+    "read-only DB sessions only at CP1 (SET default_transaction_read_only = on)",
+    "worktree registered in seat_register.json before any file edit; branch cut from origin/main before registration and before any file edit",
+    "doc_repo edits (this file, seat_register.json registration) left uncommitted, listed here for the reviewing planner to commit"
+  ],
+
+  "openAtCP1": [
+    "final mechanically-derived ruled-table city set + per-city zoningDistrict-readiness counts for the 6 additional corpus cities -> CP2",
+    "falsifiers 2, 3, 4 -> CP2",
+    "router module + job implementation + unit tests -> CP2",
+    "cloudbuild.<job>.yaml + Cloud Run Job deploy + bounded single-city --apply pilot -> CP2",
+    "full apply run across all in-scope counties/cities, re-measurement against the plan-progress.mjs predicate, PR + self-merge, close"
+  ]
+}

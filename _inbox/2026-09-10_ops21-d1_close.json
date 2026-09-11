@@ -1,0 +1,134 @@
+{
+  "lane": "OPS21-D1",
+  "planRows": ["P-137"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (dispatched via 90_operations/OPS-21_serve_completion_program.md)",
+  "closedAt": "2026-09-10T22:40:00Z",
+  "status": "code complete and merged; six-county production write NOT executed (see whatRemainsOpen)",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-d1",
+  "branch": "seat/property-ops21-d1",
+  "baseCommit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195",
+
+  "pr": {
+    "number": 134,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/134",
+    "mergeMethod": "squash",
+    "mergeCommit": "51115b6f506eb856841d05c77b6fe7e998eda87b",
+    "mergedAt": "2026-09-10T22:37:04Z",
+    "ciConclusion": "test: success, gate8: success -- read via gh api .../check-runs .conclusion field on head ce00d10, the literal conclusion STRING, not gh pr checks' 'pass' display text",
+    "headSha": "ce00d10705d1ce20480014b33dd5f2542666ee19"
+  },
+  "checkpoints": [
+    "_inbox/2026-09-10_ops21-d1_cp1.json",
+    "_inbox/2026-09-10_ops21-d1_cp2.json"
+  ],
+
+  "missionPremise": "OPS-21 D1's dispatch asked for six parcel_record rails to be filled from data already staged in hauska-factory, no acquisition. Two of its six named rails did not hold up under verification: landUseDescription and landUseVintage were both claimed to be cad_property columns; live schema inspection showed neither exists. The operator ruled mid-lane (after CP1): landUseDescription has no source anywhere and must stay unaccounted (not absent-verified, which would falsely claim the parcel has no land-use description when the value exists in the world and only the lookup table is missing) -- tracked as OPS-21 deferred item 3P-13. landUseVintage DOES have a real source in this repo (src/config/cad-declared-vintages.mjs's DECLARED_CAD_VINTAGES, the declared CAD vintage, not the per-row tax_year) and stays in scope. scripts/plan-progress.mjs's DERIVABLE_RAILS was corrected to match (5 rails) before this close.",
+  "completionPredicate": "unaccounted count for {situsState, acreageSqft, landUseVintage, exemptionCodes, citationUrl} across the six CTX counties (48021, 48055, 48209, 48309, 48453, 48491) equals 0, per scripts/plan-progress.mjs's D1 predicate (itself found broken this lane -- see instrumentDefectFound in CP1 -- and independently fixed by the operator, confirmed live before this close: every cell_state comparison now reads cell_state->>'kind'). A stranger can evaluate this by running `node scripts/plan-progress.mjs` from doc_repo with FACTORY_DATABASE_URL set and reading the D1 row.",
+  "scopeBasis": "Repo hauska-factory only, per the dispatch header. Every rail is implemented as a job-level function in the consuming job (parcel-record-fill.mjs, parcel-r5-zoning.mjs), never in src/lib/parcel-record-engine (vendored from hauska-engine, ENGINE_PIN.json forbids hand-editing it) -- the same layering ingestJurisdictionOntoRecords already established for cityLimits. landUseDescription excluded per the operator's own ruling (3P-13). No write to legacy-design-tools, hauska-engine, or hauska-map. Did not lift SETBACK_APPLY_HELD or touch the setback atom writer. Did not touch doc_repo scripts/plan-progress.mjs myself despite finding and precisely locating its bug -- doc_repo commits are planner-owned (AGENT_CONTRACT section 6); reported in CP1, the operator applied the fix independently and it was verified, not just trusted, before this close.",
+
+  "railsImplemented": [
+    {
+      "rail": "situsState",
+      "mechanism": "deriveSitusStateOntoRecords (new, parcel-record-fill.mjs) -- unconditional 'TX' from countyFips, no CAD/atom dependency. Reuses CTX-SITUS's own derivation (legacy-design-tools PR #642) for this repo's disjoint serving system.",
+      "fillOwned": true,
+      "livePilotResult": "48021 sample, 41/41 -> value"
+    },
+    {
+      "rail": "acreageSqft",
+      "mechanism": "deriveAcreageSqftOntoRecords (new, parcel-record-fill.mjs), runs after cadIngest -- mirrors the already-resolved acreageAcres cell's state (value * 43560, or absent-verified referencing acreageAcres' own basis).",
+      "fillOwned": true,
+      "livePilotResult": "48021 sample, 41/41 -> value"
+    },
+    {
+      "rail": "landUseVintage",
+      "mechanism": "deriveLandUseVintageOntoRecords (new, parcel-record-fill.mjs) -- reads tryResolveDeclaredCadVintage(countyFips) from src/config/cad-declared-vintages.mjs, a CI-drift-guarded mirror of legacy-design-tools' own declared-vintage table. Unconditional per county, independent of whether this record's own landUseCode resolved.",
+      "fillOwned": true,
+      "livePilotResult": "48021 sample, 41/41 -> value (declared vintage 2025)"
+    },
+    {
+      "rail": "exemptionCodes",
+      "mechanism": "NO CODE CHANGE. Already correct and already FILL_OWNED (ENGINE_PIN dfdf6fd, 2026-09-05). The unaccounted residue in Caldwell/Hays/Travis/Williamson is stale data from before that engine re-vendor, proven by directly replaying the current, unmodified job functions (loadLandingAndCad + instantiateAndIngest, including Williamson's real R-account crosswalk) against 400 live sampled stuck rows: 400/400 resolved correctly to 'value'. Bastrop and McLennan already show 0 unaccounted today. This lane also corrected a stale doc comment in reportNullAtSourceMapping() that still claimed the array case fell through to unaccounted.",
+      "fillOwned": "already true, pre-existing",
+      "livePilotResult": "not re-piloted directly (would require --apply, which this environment cannot run); the code-replay verification (CP1) is the evidence"
+    },
+    {
+      "rail": "citationUrl",
+      "mechanism": "Extended the EXISTING parcel-r5-zoning.mjs writer (RAIL_KEYS 3->4) rather than building a second writer for the same population (DEV_PROCESS 2.4). tx_zoning_district_staging.source_url was already selected by CHUNK_ZONE_MATCH_SQL for every matched parcel; buildZoningCells and buildStampSourcedCells each grew an explicit 4th cell (value=sourceUrl on a real match; refused on the stamp-fallback path, since a real district exists there but no citation URL is captured anywhere for it). buildCompletenessCells/buildLayerGapCells/buildNoStagedLayerCells picked up the rail automatically since they iterate RAIL_KEYS generically.",
+      "fillOwned": "n/a -- owned by parcel-r5-zoning's own gated UPDATE, not FILL_OWNED_RAIL_KEYS",
+      "livePilotResult": "live dry-run against Bastrop (5819 total, 5775 matched, 44 completeness residual, 0 residualAfterCompleteness) confirms the wiring executes end to end without error; per-cell shape proven by unit tests"
+    }
+  ],
+  "railNotImplemented": {
+    "rail": "landUseDescription",
+    "reason": "No cad_property column, no code-to-description lookup table anywhere in the store. Verified live via information_schema.columns and a table-name search. Writing absent-verified would falsely claim the parcel has no land-use description when the value exists in the world (we hold landUseCode) and only the Texas property-use code lookup is missing -- an operator correction of this lane's own CP1 recommendation.",
+    "disposition": "Left unaccounted, untouched. Tracked as OPS-21 3P-13 (90_operations/OPS-21_serve_completion_program.md), trigger: the code table being acquired, or a customer asking for description text rather than the code.",
+    "ownedBy": "property (per 3P-13), out of D1's corrected scope"
+  },
+
+  "constraintsHonored": [
+    "Isolated worktree created via git worktree add from origin/main before any file edit; registered in _catalog/seat_register.json before any file edit.",
+    "No hand-edit to src/lib/parcel-record-engine (vendored, ENGINE_PIN.json forbids it) -- confirmed via `git diff` on that directory being empty in the merged PR.",
+    "No write to legacy-design-tools, hauska-engine, or hauska-map.",
+    "Did not lift SETBACK_APPLY_HELD or touch the setback atom writer.",
+    "No fabricated absence: landUseDescription stays unaccounted rather than a false absent-verified; the acreageSqft/landUseVintage absence branches always cite a real, checked source, never invent one.",
+    "Verified by violation before reporting any check as working: exemptionCodes' 'not vacuous' finding rests on directly replaying the live code against 400 real sampled rows (CP1), not on reading the diff and assuming; the plan-progress.mjs bug was reproduced with a hand-run query against the live schema before being reported, and the operator's fix was independently re-verified (grep + --self-test) rather than trusted.",
+    "MERGE only on the CI check-run conclusion STRING 'success' -- read via `gh api .../check-runs`, not `gh pr checks`'s display text.",
+    "No --apply / no production write executed by this lane -- both jobs hard-refuse (LAPTOP_WRITE_FROZEN) outside Cloud Run, and this lane deliberately did not escalate to triggering the real Cloud Run jobs without a separate go-ahead (see whatRemainsOpen).",
+    "Credentials pulled from gcloud Secret Manager for verification and pilots; all scratch credential files deleted immediately after use, each time.",
+    "Committed by explicit pathspec (`git add <files>`), never `git add .` or `-A`.",
+    "doc_repo commits (this close, both checkpoints, the seat_register.json registration) left as the planner's own responsibility per AGENT_CONTRACT section 6 -- listed below, not committed by this session."
+  ],
+
+  "docRepoUncommitted": [
+    "_catalog/seat_register.json (the hauska-factory-ops21-d1 entry, added before any file edit)",
+    "_inbox/2026-09-10_ops21-d1_cp1.json",
+    "_inbox/2026-09-10_ops21-d1_cp2.json",
+    "_inbox/2026-09-10_ops21-d1_close.json"
+  ],
+
+  "outOfScopeFindingsReported": [
+    {
+      "finding": "Bastrop (48021) landing_parcel_jurisdiction is 100% sourced from the StratMap slice of cad_property (62,256 of 62,256 landing rows trace to stratmap25-landparcels_48021_lp.zip) and contains ZERO of the 15,542-row genuine-CAD-export slice (DATA-EXPORT-01.14.2026.zip) that carries Bastrop's only real exemption codes and, structurally, likely other CAD facts for those same accounts.",
+      "whyNotFixedHere": "A population-instantiation gap (which accounts exist as parcel_record rows), not a rail-sourcing gap (which columns get read for accounts that exist). Fixing it means widening landing_parcel_jurisdiction -- acquisition-adjacent, outside 'no acquisition, no new source', and outside this repo's write authority over that table's own upstream pipeline.",
+      "doesNotBlockD1": "Correct as stated: those 15,542 accounts never became parcel_record rows, so they carry no parcel_record_cell to be 'unaccounted' -- D1's predicate is unaffected.",
+      "sameDefectFamily": "Same StratMap/CAD-export blend CTX-SITUS-SKIP and CTX-B6 already found and reported for the OTHER serving system (legacy-design-tools' node-facets:tier1 bake); named here as confirmation, not re-diagnosed.",
+      "owner": "CAD-ingest / landing_parcel_jurisdiction owner (F-10 CAD roll, per prior closes)"
+    },
+    {
+      "finding": "test/ctx-b3-store-census.test.mjs's LDT-pin mirror drift test fails on origin/main independent of this lane (confirmed via git stash before this branch's first commit): the live pinned LDT checkout (591f5efe) now includes baseFacts.situsAddress in its required-leaf list (CTX-B6's own addition) but the maintained mirror in this repo has not been updated to match.",
+      "whyNotFixedHere": "Different rail, different card (CTX-B3/CTX-B6's own follow-up), no write authority claimed over that mirror by this dispatch.",
+      "owner": "property seat, CTX-B6 follow-up"
+    },
+    {
+      "finding": "Two new todo-marked non-vacuity findings in test/p3-absence.test.mjs arrived via this branch's rebase onto origin/main (landed by the parallel OPS-21 S3/P-134 lane, already self-documented as out of this lane's scope in the test's own skip reason).",
+      "whyNotFixedHere": "A different plan row (S3/P-134), already tracked in _inbox/2026-09-10_ops21-s3_close.json.",
+      "owner": "already owned, no action needed from this close"
+    }
+  ],
+
+  "fleetMemoryScratch": [
+    "LESSON: src/lib/parcel-record-engine/*.js in hauska-factory is vendored from hauska-engine (packages/engine-core/src/parcel-record), pinned by ENGINE_PIN.json, and explicitly hand-edit-forbidden. A new rail derivation that needs no new engine semantics (pure countyFips/static-config logic, or mirroring a sibling cell's already-resolved state) belongs at the JOB layer in the consuming job file, not the engine -- ingestJurisdictionOntoRecords (cityLimits) is the established precedent; this lane added three more (situsState, acreageSqft, landUseVintage) on the same pattern.",
+    "LESSON: a rail with zero earned cells anywhere is 'declared-ahead' and excluded from the publish gate (liveness.js's deriveLiveRailKeys); the moment even one cell earns a real state, the rail becomes LIVE and every remaining unaccounted cell on it, program-wide, starts gating. Landing even a small, correct fix flips this switch -- converging the fix close to completion (via a real fill-job run) matters more for rails that start at 100% unaccounted than for one already partially live.",
+    "LESSON: parcel-record-fill.mjs and parcel-r5-zoning.mjs both hard-refuse --apply outside Cloud Run (LAPTOP_WRITE_FROZEN, checked against env.FACTORY_CLOUD==='1') -- a lane working from a non-Cloud-Run environment can verify everything (unit tests, --sample/dry-run pilots against live read-only data) except the actual production write, which can only happen by triggering the real Cloud Run job execution.",
+    "LESSON: cad_property.exemption_codes is text[]; the array-handling fix landed 2026-09-05 (ENGINE_PIN dfdf6fd, PR #381) but a pin landing in the codebase does not retroactively fix rows a --apply run already wrote under the OLD code -- those rows need a re-run, and 'the code is right but the data is stale' is a genuinely different diagnosis from 'the write path is vacuous', distinguishable only by replaying the CURRENT code against the SAME stuck rows and checking whether it resolves them.",
+    "GROUND-TRUTH (2026-09-10, live, FACTORY_DATABASE_URL_RO + PRODUCTION_NEONDB_URL read-only): situsState/acreageSqft/landUseVintage were 100% unaccounted across all six CTX counties before this PR (exactly the full parcel_record population each -- 62256/24988/116420/114254/380917/282570). exemptionCodes: 48021 and 48309 already 0 unaccounted (100% absent-verified, genuine); 48055/48209/48453/48491 carried 8958/54328/226888/187186 unaccounted respectively, all confirmed stale-not-vacuous by direct code replay.",
+    "GROUND-TRUTH (2026-09-10, doc_repo, live): scripts/plan-progress.mjs's unaccountedIn() compared a jsonb column (parcel_record_cell.cell_state) against a bare string literal ('unaccounted'), throwing invalid input syntax for type json (22P02) on every one of 6 predicates it builds (S1, S2, D1, D3, D4) plus the two inline ones (D2, PROGRAM) and D6's inverse comparison -- every ledger predicate in OPS-21's own anti-drift instrument was silently reporting UNMEASURED rather than a real number. Reported at CP1, independently fixed and verified by the operator before this close (commit d8788c2e, two new TYPE self-tests added).",
+    "OPEN: getting the D1 completion predicate to 0 requires the real Cloud Run job executions (factory-parcel-record-fill county-wide --apply for all six counties; the parcel-r5-zoning job for all in-scope cities) -- not run by this lane. This is the next, and only remaining, step to close P-137 against its own predicate.",
+    "OPEN: 3P-13 (landUseDescription) has no owner action pending until its trigger fires (code table acquired, or a customer asks for description text)."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Trigger the real Cloud Run executions for factory-parcel-record-fill (six counties, --apply) and parcel-r5-zoning (all in-scope cities, --apply) to actually move the D1 predicate to 0. Both are safe to re-run repeatedly: every stamp function in this PR (and the pre-existing ones) only ever moves a cell FROM unaccounted, never downgrades an already-earned cell (UPSERT_CELLS_BATCH_SQL's own CASE guard, independent of this PR).",
+      "owner": "planner (property seat) or operator go-ahead",
+      "plan_row": "P-137"
+    },
+    {
+      "item": "Bastrop's 15,542-row genuine-CAD-export slice missing from landing_parcel_jurisdiction (see outOfScopeFindingsReported) -- a real, unfixed population gap affecting every CAD rail for those accounts, not only exemptionCodes.",
+      "owner": "CAD-ingest / landing_parcel_jurisdiction owner",
+      "plan_row": "F-10 (per prior closes' own attribution)"
+    }
+  ]
+}

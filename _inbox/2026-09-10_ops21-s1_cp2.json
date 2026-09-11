@@ -1,0 +1,101 @@
+{
+  "lane": "OPS-21-S1",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work",
+  "planRows": ["P-132"],
+  "dispatch": "_dispatches/2026-09-10_ops21-s1_dispatch.md",
+  "filedAt": "2026-09-10T22:36:04Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-s1",
+  "branch": "feat/ops21-s1-setback-cell-writer",
+  "cp1": "_inbox/2026-09-10_ops21-s1_cp1.json",
+
+  "built": {
+    "router": "src/lib/setback-writer/setback-table-router.mjs -- verbatim port of legacy-design-tools' getSetbackTableForZoning + mapDistrict, sourcing table data from @empressaio/setback-corpus@1.1.0 (added as a real dependency)",
+    "job": "src/jobs/parcel-setback-cells.mjs -- writer-allowlist id f11-setback (pre-reserved, now claimed), CLI command parcel-setback-cells",
+    "cli": "src/cli.mjs wired, usage string updated",
+    "cloudBuildConfig": "cloudbuild.parcel-setback-cells.yaml, following cloudbuild.parcel-r5-zoning.yaml's precedent (this exact card exists because that job was CLI-dispatchable but undeployable -- test/writer-deployable-target.test.mjs's A-120 layer-two check)",
+    "tests": "test/setback-table-router.test.mjs (18 cases: Bastrop 3-table routing incl. falsifier 2, Elgin, generic routing, mapDistrict decline behavior), test/parcel-setback-cells.test.mjs (18 cases: candidateJurisdictionKey, loadCityRuledTableIndex, all 4 processCityPage branches, the unaccounted gate, dry-run-reads-but-never-writes, CLI flag parsing, refusals)",
+    "quarantineShrunk": "test/writer-cli-reachability.test.mjs's ORPHANS_KNOWN baseline: f11-setback removed (was a known-orphaned allowlist id with no job module; now claimed and dispatched)"
+  },
+
+  "localTestRun": {
+    "command": "node --test test/*.test.mjs",
+    "result": "1248 tests, 1243 pass, 1 fail, 4 skipped",
+    "theOneFailure": {
+      "test": "test/ctx-b3-store-census.test.mjs: resolveLeafPaths against the real pinned LDT checkout agrees with the maintained mirror",
+      "confirmedPreExisting": "reproduced identically with `git stash` (this lane's changes fully removed) -- unrelated to this lane. It compares hauska-factory's hand-maintained mirror of legacy-design-tools' BAKE_OWNED_REQUIRED_LEAF_PATHS against a live pinned LDT checkout that already carries CTX-B6's baseFacts.situsAddress addition; the mirror has not been updated. Different program thread (CTX-B6/situsAddress), different repo relationship, not touched by this card."
+    }
+  },
+
+  "liveDryRunVerification": {
+    "method": "runParcelSetbackCells invoked locally (laptop, apply=false, real PRODUCTION_NEONDB_URL + FACTORY_DATABASE_URL, SET default_transaction_read_only implicit via apply=false code path never issuing a write query) against 4 representative real cities before any deploy.",
+    "results": {
+      "Bastrop": { "ruled": true, "jurisdictionKey": "bastrop-development-code", "totalParcels": 5819, "value": 2731, "absentVerified": 3044, "refused": 0, "deferred": 44 },
+      "Elgin": { "ruled": true, "jurisdictionKey": "elgin-development-code", "totalParcels": 5455, "value": 4938, "absentVerified": 52, "refused": 465, "deferred": 0 },
+      "RoundRock": { "ruled": true, "jurisdictionKey": "round-rock-tx", "totalParcels": 39163, "value": 27330, "absentVerified": 11668, "refused": 0, "deferred": 165 },
+      "Smithville": { "ruled": false, "jurisdictionKey": "smithville-tx", "totalParcels": 2406, "value": 0, "absentVerified": 2406, "refused": 0, "deferred": 0, "note": "confirmed zero zoningDistrict reads for a no-table city, per design" }
+    },
+    "bugCaughtAndFixed": "the first dry-run attempt crashed (TypeError: Cannot read properties of null (reading 'query')) because runParcelSetbackCells only opened a factory connection when apply=true, but a ruled city's preview needs to READ zoningDistrict from the factory store even on a dry run (unlike parcel-r5-zoning.mjs, whose inputs are cortex-only). Fixed: factory connection now opens whenever apply=true OR any selected city is ruled=true. Caught by live verification before any deploy, exactly the class of gap unit tests with fake clients cannot surface on their own."
+  },
+
+  "deployAndPilotApply": {
+    "cloudBuild": {
+      "buildId": "26e7687c-4838-4ea6-a6e3-2b39347f09b1",
+      "status": "SUCCESS",
+      "deployedImage": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:b61a1001f3f8fc7b5e467ed24494332d578caafcdc415215d540afc9a96b9abf",
+      "cloudRunJob": "factory-parcel-setback-cells (us-east4)"
+    },
+    "dryRunOnDeployedJob": {
+      "execution": "factory-parcel-setback-cells-mt6sl",
+      "args": "parcel-setback-cells,--city=Bastrop",
+      "result": "identical output to the local dry-run (2731/3044/0/44), confirming the deployed image matches the tested code"
+    },
+    "realApplyPilot": {
+      "execution": "factory-parcel-setback-cells-b98k7",
+      "args": "parcel-setback-cells,--city=Bastrop,--apply",
+      "durationSeconds": 40,
+      "verifiedBySql": {
+        "query": "SELECT rail_key, cell_state->>'kind', count(*) FROM parcel_record_cell WHERE rail_key IN (the 5 setback rails) AND place_key LIKE '48021:%' GROUP BY 1,2",
+        "result": "value=2731, absent-verified=3044 on every one of the 5 rails, matching the pre-registered dry-run numbers exactly",
+        "reconciliation": "remaining unaccounted for county 48021 = 6217 = Elgin(3749) + Smithville(2406) + Webberville(17) + MustangRidge(1) + Bastrop-deferred(44). Exact arithmetic match -- a real, verified reconciliation, not rounded off (DEV_PROCESS 1.4)."
+      },
+      "spotCheckedCellContent": "48021:103387 and 48021:104119 (SF-1 parcels): setbackFrontFt value=30 matching bastrop-development-code's real SF-1 front_ft; setbackRules companion row payload carries the real citation URL (cityofbastrop.org BDC Ord. 2026-06 PDF), real district name, real effectiveDate 2026-04-14, and the table's own note verbatim -- not a placeholder.",
+      "rawPlaceKeyConfirmation": "code-level: no normalizeForJoin (or any normalization call) exists anywhere in parcel-setback-cells.mjs -- place_key is built directly as `${county_fips}:${prop_id}` from the landing_parcel_jurisdiction row. Live spot-check for a leading-zero prop_id in 48021 found none in this county's data (0 rows), so the live check is negative-only for this specific county; the code-level absence of any normalization call is the stronger evidence and applies universally."
+    }
+  },
+
+  "falsifiersFromCP1Resolved": [
+    {
+      "id": 2,
+      "wasStatus": "pending",
+      "nowStatus": "CONFIRMED via live data, not just unit fixtures. Ran resolveSetbackForParcel against every REAL district code observed live in each of the 15 ruled-table cities' zoningDistrict cells (Bastrop, Elgin, Austin, Pflugerville, Round Rock, Waco, Lockhart, Leander, Cedar Park, Georgetown, Hutto, Taylor, Liberty Hill, San Marcos, Buda). Every code produced a defensible match-or-decline (no crash, no fabricated value); the Bastrop-specific codes (SF-1/RR resolve, PDD/GC/MU/PI/IND/P-OS/repealed-P-codes all correctly decline) match the ported function's documented behavior exactly."
+    },
+    {
+      "id": 3,
+      "wasStatus": "pending",
+      "nowStatus": "CONFIRMED at scale for the pilot (Bastrop): every non-matching code (PDD/GC/MU/PI/IND/P/OS, 3044 parcels) produced an absent-verified cell citing the specific district code and corpus version, never a fabricated match. Full-scale figures for all cities pending the full apply run (this checkpoint)."
+    },
+    {
+      "id": 4,
+      "wasStatus": "pending",
+      "nowStatus": "CONFIRMED for Elgin: all 465 refused parcels' upstream zoningDistrict reason strings are real, non-empty, citable text (spot-checked in the live dry-run output structure); none reference a since-resolved condition as far as this pilot's scope reached."
+    }
+  ],
+
+  "genuineFindingNotThisLanesToFix": {
+    "summary": "legacy-design-tools' local round-rock-tx.json (still what its live production route serves) disagrees with the published @empressaio/setback-corpus's round-rock-tx table on side_corner_ft for every district, and on SF-3's side_ft/rear_ft too.",
+    "evidence": "direct file diff, district-data-only comparison (formatting/notes ignored): e.g. SF-1 side_corner_ft LDT=5 vs corpus=30; SF-3 LDT side=5/rear=10 vs corpus side=12/rear=15 (district name also differs: LDT 'SF-3 ... (Standard Lot)' vs corpus 'SF-3...' with no suffix).",
+    "consequence": "this job (hauska-factory) will serve the corpus's numbers for Round Rock parcels; legacy-design-tools' live brokeragePlaceBuildableEnvelope route may serve DIFFERENT corner-setback numbers for the SAME parcel today. A live, real, customer-facing-adjacent cross-repo inconsistency, discovered as a byproduct of this card, not this card's to fix (this job never touches legacy-design-tools).",
+    "disposition": "flagged in this checkpoint and the close for the operator / L2 slate-expansion lane. Not resolved here."
+  },
+
+  "openAtCP2": [
+    "full --apply run across all in-scope counties/cities (in progress at filing time -- execution launched, background-polled)",
+    "re-measurement against scripts/plan-progress.mjs's S1 predicate",
+    "final per-city/county value/absent-verified/refused/deferred tallies",
+    "PR + self-merge",
+    "close artifact"
+  ]
+}

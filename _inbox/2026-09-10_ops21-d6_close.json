@@ -1,0 +1,75 @@
+{
+  "lane": "OPS21-D6",
+  "planRow": "P-141",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-d6-available-on-request",
+  "branch": "feat/ops21-d6-available-on-request",
+  "commit": "63a606b1db76db6c0d71fb2b9772fbf9fe8de195 (base; local changes uncommitted, see below)",
+  "checkpoints": [
+    "_inbox/2026-09-10_ops21-d6_cp1.json (design/pre-build, plus a mid-flight ADDENDUM capturing the operator's scope correction and per-repo file counts)"
+  ],
+  "cp2_note": "Not filed separately. The operator's mid-flight correction ('ENUMERATE AND STOP... that list is your deliverable and your close') collapsed what would have been CP2 (pilot/mid-work) and the close into one artifact, since the pilot work (the cross-repo inventory) IS the close.",
+
+  "scopeCorrectionReceivedMidFlight": "Operator message, after CP1 was filed and factory-side implementation was already underway: cell-state consumers exist in ~55 factory / ~82 LDT / ~14 hauska-engine files (operator's own pre-measurement); a six-value union cannot land from one repo. Lane re-scoped to ENUMERATE AND STOP: produce the consumer inventory across all three repos, read freely, write nothing outside hauska-factory, for each consumer say whether an unknown state falls through to a default or fails closed. 'The factory half (the state itself, the cell writer, the gate CLI) you may implement.' LDT and engine halves get their own lanes compiled from this inventory.",
+
+  "whatWasDelivered": {
+    "crossRepoConsumerInventory": {
+      "method": "Two one-level-deep sub-agents (AGENT_CONTRACT section 1 fan model), each instructed as its first line not to spawn further agents, each reading via git plumbing against origin/main without touching any working tree, zero edits made in either repo. The factory-side portion was read and classified directly by this lane (no sub-agent), since it is the repo this lane owns.",
+      "hauska-factory": { "rawGrepMatches": 77, "detail": "_inbox/2026-09-10_ops21-d6_factory-consumer-inventory.md" },
+      "legacy-design-tools": { "rawGrepMatches": 149, "detail": "_inbox/2026-09-10_ops21-d6_ldt-consumer-inventory.md" },
+      "hauska-engine": { "rawGrepMatches": 58, "realConsumers": 14, "detail": "_inbox/2026-09-10_ops21-d6_engine-consumer-inventory.md" },
+      "countingRuleReconciliation": "The operator's own pre-measurement ('~55/~82/~14') is closer to a 'real consumers' denominator than a raw-grep-match one -- confirmed by hauska-engine's real-consumer count (14) landing exactly on the operator's estimate (14), while factory's and LDT's raw-match counts are both substantially higher than their estimates. Both denominators are reported in each appendix rather than collapsed, per DEV_PROCESS 1.2/1.4.",
+      "topLineFinding": "The single highest-value discovery: legacy-design-tools' artifacts/api-server/src/lib/r1BriefCompose.ts:223-234 defaults an unrecognized-but-POPULATED declared state to 'present' -- the only place in either repo's survey that would fabricate data-presence rather than merely drop or misclassify an absence. artifacts/smartsite-mcp/src/mcp-app.ts:293-299,1855-1866 has the highest reach (every get_smart_site MCP call) and narrates the new state as 'unread' (nothing was checked) to the calling AI agent -- the opposite lie from r1BriefCompose's, on the highest-traffic surface found.",
+      "recommendedSequencing": "hauska-engine first (the two union types + schema.sql CHECK + a minor countCellState zero-seed gap; no TS exhaustiveness guard exists there to force downstream discovery on its own). Then LDT in two tiers: the two chokepoint readers (parcelRecordCellRead.ts, parcelRecordFactRead.ts) before the 13 *FactFromParcelRecord.ts adapters and the MCP/brief-compose surfaces that sit downstream of them -- fixing downstream first would leave those fixes guessing at a wire shape the chokepoint readers haven't settled."
+    },
+
+    "factoryHalfImplemented": {
+      "premise": "Per the operator's own carve-out ('the state itself, the cell writer, the gate CLI you may implement'), kept and finished the work already in flight when the correction arrived.",
+      "changes": [
+        "migrations/0012_available_on_request_cell_state.sql (NEW) -- widens parcel_record_cell_state_kind's CHECK to admit 'available-on-request'; adds a second CHECK enforcing the ruling's own guard (no such cell without requestPath/instrument/measuredAt, each non-empty). Does not edit 0007's vendored 'do not edit DDL' body -- a new migration, the ordinary way to evolve a CHECK. NOT executed against a live database this session (no local Postgres available; docker was not running) -- inspected, not live-verified.",
+        "src/lib/county-rail-coverage.mjs (MODIFIED) -- fixed a real silent-undercount bug: COVERAGE_CELL_KINDS and summarizeCountyRailCoverage's inLedger sum were about to silently exclude the new state's cells from the ledger count entirely, inflating notInLedger. Regression test added.",
+        "src/jobs/available-on-request-backfill.mjs (NEW) -- the cell writer. County-scoped, gated (only a currently-unaccounted cell moves, never clobbers an earned or already-relabelled cell), refuses without --request-path/--instrument. Registered on src/control/writer-allowlist.mjs, wired into src/cli.mjs, has cloudbuild.available-on-request-backfill.yaml for Cloud Run deploy.",
+        "test/gate-county-scoped-rail.test.mjs (MODIFIED) -- 4 new regression tests proving the vendored publish-gate.js/cell-state.js already handle the 6th state correctly (gate-satisfied, never counted as unaccounted) with ZERO edits to the vendored files, since isUnaccounted/isEarnedCell are negative/deliberately-scoped checks rather than positive 5-way enumerations.",
+        "test/available-on-request-backfill.test.mjs (NEW) -- 14 tests covering flag parsing, the writer-allowlist gate, LAPTOP_WRITE_FROZEN, dry-run counts, and apply behavior (proves a real value/absent-verified/refused/already-on-request cell is never clobbered, and county scoping is a real WHERE bound)."
+      ],
+      "verification": "npm test: 1230/1235 pass. The one failure (ctx-b3-store-census.test.mjs, an LDT-pin-vs-mirror drift check unrelated to cell state) is pre-existing and confirmed unaffected by this lane's changes (same failure present on a clean checkout before any edit).",
+      "notExecuted": "No --apply run against real parcel_record_cell rows. Two independent reasons, both still open: (1) the operator's ENUMERATE-AND-STOP correction itself, which frames the inventory as this lane's deliverable rather than completion of the predicate; (2) the requestPath reachability question from this lane's own CP1 live probe -- mcp__claude_ai_Smart_Site__check_request reported 'not available on Smart Site MCP yet' (P-85 item 4) when probed live this session; the underlying records-request-worker Cloud Run service was confirmed deployed and serving, but the only MCP-surfaced leg tested returned not-ready. Not resolved to a clean yes/no by this lane's read-only tools."
+    }
+  },
+
+  "verificationByViolation": "gate-county-scoped-rail.test.mjs's new FALSIFIER test proves a live gap remaining after the new state is added still correctly refuses (unaccountedCount stays exactly 1, not masked by the available-on-request cells sitting alongside it) -- the same discipline the file's pre-existing not-applicable falsifiers already used. available-on-request-backfill.test.mjs's apply test proves a real value/absent-verified/refused cell is never clobbered by --apply, and that a different county's unaccounted cell is left untouched (county scoping is a real WHERE bound, not a post-filter).",
+
+  "docRepoArtifacts_uncommitted": [
+    "_inbox/2026-09-10_ops21-d6_cp1.json (edited: addendum appended)",
+    "_inbox/2026-09-10_ops21-d6_factory-consumer-inventory.md (new)",
+    "_inbox/2026-09-10_ops21-d6_ldt-consumer-inventory.md (new)",
+    "_inbox/2026-09-10_ops21-d6_engine-consumer-inventory.md (new)",
+    "_inbox/2026-09-10_ops21-d6_close.json (new, this file)"
+  ],
+  "docRepoCommitDisposition": "Left uncommitted per AGENT_CONTRACT section 6 ('doc_repo commits are planner-owned'). Listed here for the planner to commit.",
+
+  "hauskaFactoryCommitDisposition": "Also left UNCOMMITTED, deliberately, despite this being a product repo rather than doc_repo -- git status shows 5 modified + 4 new files, all inspectable in the worktree above. Not committed or pushed because (1) the operator's correction reads as wanting the inventory reviewed before this lane's own factory-side work advances further, and (2) opening a PR / pushing is the point where this lane's local, reversible work becomes externally visible on a shared repo, which this lane is not treating as authorized by 'you may implement' alone without confirmation. Awaiting direction: commit+PR now, or hold pending inventory review.",
+
+  "constraintsHonored": [
+    "Zero writes to legacy-design-tools or hauska-engine at any point (both inventories read-only, via two supervised one-level-deep sub-agents, each carrying the do-not-spawn-further-agents clause as its literal first line).",
+    "No hand-edit of any vendored src/lib/parcel-record-engine/*.js file or of migrations/0007's DDL body.",
+    "No live-firing of a real per-parcel records request purely for verification purposes.",
+    "Isolated worktree, never touching D5's or any other lane's checkout.",
+    "Bastrop MyGov / smartcity-os tenant_id=2 never queried.",
+    "No hand-authored rail list beyond the ruled three (hoaDeedRestrictions, ossf, publicRecordRefs); no fourth rail considered.",
+    "No PR opened, no push, no doc_repo commit -- all left for explicit confirmation, given the scope correction's own framing of this turn as an enumeration checkpoint."
+  ],
+
+  "missionPremise": "Operator ruling 2026-09-10 adds a sixth parcel-record cell state. This dispatch's repo (hauska-factory) covers the schema/data/gate-CLI portion of that ruling's consequence. A same-day mid-flight operator correction reframed the lane's actual deliverable as the full cross-repo consumer inventory (hauska-factory + legacy-design-tools + hauska-engine) rather than execution of the bulk data migration, on the finding that a six-value union cannot land from one repo.",
+  "completionPredicate": "P-141's own predicate (count of hoaDeedRestrictions|ossf|publicRecordRefs cells in the six CTX counties whose cell_state <> 'available-on-request' equals 0) is NOT met and was not attempted this lane -- superseded by the operator's own restated deliverable for this turn: the consumer inventory, delivered in full across all three repos, plus a ready-but-unexecuted factory-side implementation.",
+  "scopeBasis": "Read-everywhere / write-only-in-hauska-factory, per the operator's explicit mid-flight instruction, which itself confirms and extends this lane's own independently-filed CP1 finding that the dispatch's 'repo: hauska-factory' header is narrower than the ruling's full named consequence.",
+
+  "whatRemainsOpen": [
+    "The actual bulk backfill (--apply) against parcel_record_cell -- blocked on both the requestPath reachability question and, now, on review of this inventory before this lane's own scope resumes.",
+    "hauska-engine companion lane: widen ScalarCellState/CompanionCellState (cell-state.ts:61-86), widen schema.sql's CHECK, fix countCellState's zero-seed gap, then re-vendor into hauska-factory (bump ENGINE_PIN.json) so migration 0012 can eventually be retired in favor of a from-source-current one.",
+    "legacy-design-tools companion lane(s): tier 1 the two chokepoint readers, tier 2 the ~13 adapters and the MCP/brief-compose surfaces named in the LDT inventory's top-risk list, per the sequencing note above.",
+    "src/jobs/verify-walk.mjs's classifyRequiredLeaf (hauska-factory, this lane's own repo) -- correctly fails closed today, will misfire as a false blocker once LDT's serve wire for the new state ships; fix only after that wire's shape is decided.",
+    "Whether/when to commit and open a PR for this lane's own uncommitted hauska-factory changes.",
+    "Whether/when to commit the doc_repo artifacts listed above."
+  ]
+}
