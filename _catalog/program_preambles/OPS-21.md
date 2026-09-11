@@ -74,8 +74,11 @@ HOST ep-lucky-truth-apodo8hr          (PRODUCTION_NEONDB_URL, and atoms)
 HOST ep-round-base-au0jofwp           (FACTORY_DATABASE_URL)
   db neondb        parcel_record, parcel_record_cell, parcel_record_companion_row
 
+  db neondb        parcel_gate_verdict   (RESOLVED 2026-09-11 by the OPS-21 S4 lane:
+                   it lives on the FACTORY host, same host as parcel_record itself)
+
 NOT ESTABLISHED -- do not assume either host
-                   parcel_gate_verdict, tx_* layers, permit_record
+                   tx_* layers, permit_record
 ```
 
 The three NOT ESTABLISHED entries were carried in the old single bucket and their host was

@@ -1,0 +1,75 @@
+{
+  "lane": "OPS21-S4",
+  "planRow": "P-135",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ops21-s4",
+  "branch": "feat/ops21-s4-gate-and-slate",
+  "baseCommit": "cebd041d7ddf102f29ab60eeb9feb04946888125 (origin/main, matches dispatch's stated base)",
+  "checkpoint": "CP1 (design/pre-build, AGENT_CONTRACT section 1)",
+  "codeDiff": "none as of this checkpoint. git status clean against baseCommit.",
+
+  "step1_hostResolution": {
+    "question": "parcel_gate_verdict's Neon host, listed NOT ESTABLISHED in the OPS-21 program preamble",
+    "method": "Live-checked both candidate hosts read-only (SET default_transaction_read_only = on first, per project convention): PRODUCTION_NEONDB_URL (ep-lucky-truth-apodo8hr) has no such table (\"Did not find any tables named public.parcel_gate_verdict\"); FACTORY_DATABASE_URL (ep-round-base-au0jofwp) has it.",
+    "answer": "parcel_gate_verdict lives on the FACTORY host (ep-round-base-au0jofwp), db neondb -- the SAME host/db as parcel_record, parcel_record_cell, parcel_record_companion_row. Program preamble block should gain this line."
+  },
+
+  "step1_verdictGrid": {
+    "countingRule": "SELECT county_fips, rail_key, verdict, unaccounted_count FROM parcel_gate_verdict WHERE county_fips IN (48021,48055,48309,48453,48491) AND rail_key IN (the 9 named rails), read-only, live, 2026-09-11. 45 of 45 expected (county,rail) pairs returned -- zero missing verdicts.",
+    "passing": [
+      "48021:parcelAreaSqFt (unaccounted=0)",
+      "48055:parcelAreaSqFt (unaccounted=0)",
+      "48309:parcelAreaSqFt (unaccounted=0)",
+      "48491:parcelAreaSqFt (unaccounted=0)"
+    ],
+    "refusing": {
+      "setbackFrontFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackSideFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackRearFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackCornerFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "setbackRules": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "maxHeightFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "maxLotCoveragePct": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "maxFootprintSqFt": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271 },
+      "parcelAreaSqFt_48453": 1755
+    },
+    "reconciliation_freeFindng_DEV_PROCESS_1.4": "The five setback rails plus maxHeightFt/maxLotCoveragePct/maxFootprintSqFt share IDENTICAL per-county unaccounted counts (44,26,1014,1021,1271), confirming they refuse on the exact same population -- consistent with S1's close stating S2 inherited the same 3,376-parcel residual on three of its four rails. Sum check: 44+26+1014+1021+1271 = 3376, matching S1's stated residual exactly (_inbox close cited in dispatch). parcelAreaSqFt is the one rail with an independent, much smaller failure population (1755, Travis-only).",
+    "summary": "Only 4 of 45 pairs pass, all on one rail (parcelAreaSqFt), all outside Travis. Every setback rail and 3 of 4 S2 rails fail on all 5 counties, same root cause dispatch already named (3,376-parcel zoningDistrict-dependent residual)."
+  },
+
+  "step2_criticalFinding_vacuousSlateRisk": {
+    "claim": "Adding the 4 passing parcelAreaSqFt pairs to PARCEL_RECORD_SLATE as Step 2 literally describes would be a VACUOUS write: it would satisfy the completion predicate's text (\"slated\") while changing nothing any customer-facing route serves.",
+    "evidence": [
+      "Every existing PARCEL_RECORD_SLATE entry has a dedicated *ServeCutover.ts wrapper (or, for the cadRoll six, attachCadRollOverlaysToFacets) that calls resolveAllowlist/resolveAllowlistState for that exact rail key. Repo-wide grep for resolveAllowlist call sites returns exactly the 13 known wrapper files plus parcelRecordAllowlist.ts/parcelGateVerdictRead.ts themselves -- nothing else.",
+      "No wrapper exists for parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, or maxFootprintSqFt. Repo-wide grep for these four names outside test files hits only: nodeFacetBakeTier1.ts / nodeFacetBakeTier2.ts (type-only interface fields, never a resolveAllowlist call), buildableEnvelope/derive.ts + geometry.ts + reconcileAtomEnvelope.ts (bake-time geometry, no parcel_record read), and brokerageResearchAreaContext.ts (a downstream text-formatting consumer that only reads whatever facets.envelope already carries -- it does not independently query parcel_record or consult the allowlist).",
+      "The shared response-assembly functions (structuralFactToFacetsWire.ts's attachVerdictLayersToFacets and attachCadRollOverlaysToFacets -- the exact functions L1's close says to trace instead of the per-rail wrapper) contain zero references to any of the four rail names.",
+      "computeTier1Envelope (nodeFacetBakeTier1.ts:92-122), the program's own named root-cause function, has exactly two return branches and BOTH are status:'declined' -- neither branch ever sets parcelAreaSqFt/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt on its return object, even though they are declared as optional fields on Tier1EnvelopeFacet. So there is also no LEGACY value for these four rails today -- unlike every rail L1 audited (legacy-absent/-unreachable/-reachable), this is a rail where NEITHER path currently exists in this repo's serve layer.",
+      "Confirmed setbackRules -- one of S1's five written rails -- has ZERO occurrences anywhere in legacy-design-tools' src tree (repo-wide grep, zero hits). It is not part of SETBACK_RAIL_KEYS (setbacksFactFromParcelRecord.ts's own list is Front/Side/Rear/Corner only, 4 keys, no Rules). Moot for this checkpoint since it refuses everywhere, but worth naming: it may be an orphaned rail_key with no LDT-side consumer at all, independent of gate outcome.",
+      "Searched OPS-21_serve_completion_program.md and doc_repo broadly: no existing plan row names building a ServeCutover wrapper for these four rails. This gap is not currently tracked anywhere."
+    ],
+    "contrastWithPrecedent": "This file's own established pattern (utilityService/overlayDistricts/agValuation/schoolDistrict) DOES slate rails ahead of their gate verdict landing -- but every one of those precedents already had its wrapper file calling resolveAllowlist at slating time; only the verdict was pending, so an unslated/no-verdict pair fails closed to 'legacy' by construction. parcelAreaSqFt has no wrapper AT ALL, so it is not the same situation: there is no code path that would ever consult its slate membership, verdict-pending or not.",
+    "decision_thisCheckpoint": "NOT adding parcelAreaSqFt's 4 passing pairs to PARCEL_RECORD_SLATE this checkpoint. Slating them would be textually compliant but functionally inert -- exactly the class of defect (\"it runs perfectly, every test passes, and it cannot succeed on any branch\") this program's own preamble names as the reason it exists. Building a NEW ServeCutover wrapper (following the established per-rail pattern: injectable test store, resolveAllowlist call, wiring into the response-assembly path, tests) would make it non-vacuous, but that is materially more scope than \"add pairs to PARCEL_RECORD_SLATE\" as dispatched, is not named in this dispatch's in-scope or out-of-scope lists, and is a scope decision for the planner, not a unilateral in-lane call (DEV_PROCESS 5.4)."
+  },
+
+  "completionPredicateStatus": {
+    "predicate": "Every (county, rail) pair among the nine written rails carries a reported verdict, and every pair with a pass verdict is either slated or carries a named reason it was not.",
+    "status": "First half MET: all 45/45 pairs carry a reported verdict (grid above). Second half: the 41 failing pairs carry their named reason (real data gap, 3,376-parcel zoningDistrict-dependent residual, already known to the program). The 4 passing pairs (parcelAreaSqFt x 4 counties) carry a DIFFERENT named reason they are not slated: no consuming code path exists in legacy-design-tools for this rail key, so slating would be vacuous rather than a deliberate reviewed cutover. Awaiting planner direction on whether building the missing ServeCutover wrapper is in scope for this lane, a follow-on row, or a backlog item, before this checkpoint's decision is treated as final."
+  },
+
+  "openQuestionForPlanner": "Is building a net-new parcelAreaSqFtFactServeCutover.ts (mirroring the established per-rail wrapper pattern, wired into the response-assembly path) in scope for S4, or should this be filed as a new backlog row and S4 close with '4 pairs eligible, 0 slated, blocked on missing serve infrastructure' as its honest, predicate-meeting result?",
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: a rail can pass its gate verdict while having no legacy path AND no record-serve path in the consuming repo at all -- L1's three-way classification (legacy-absent/-unreachable/-reachable) implicitly assumed a legacy path always exists to classify; parcelAreaSqFt is a fourth case that classification didn't anticipate.",
+      "LESSON: before adding any (county,rail) pair to PARCEL_RECORD_SLATE, grep for a resolveAllowlist call site keyed to that exact rail_key first -- slate membership with no consumer is indistinguishable from a correct cutover by every test in parcelRecordAllowlist.test.ts (which tests the pure decision function, not whether anything calls it)."
+    ],
+    "groundTruths": [
+      "GROUND-TRUTH (2026-09-11 live, FACTORY host ep-round-base-au0jofwp/neondb): parcel_gate_verdict has all 45/45 expected rows for the 9 written rails x 5 in-scope counties; only parcelAreaSqFt x {48021,48055,48309,48491} pass.",
+      "GROUND-TRUTH (2026-09-11, legacy-design-tools @ cebd041d): resolveAllowlist has exactly 13 call sites (the *ServeCutover.ts wrappers L1 already counted) plus its own definition/test files; parcelAreaSqFt/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt are not among them."
+    ],
+    "open": [
+      "OPEN: whether to build the missing ServeCutover wrapper for parcelAreaSqFt (and eventually its siblings once they pass) -- planner decision requested above.",
+      "OPEN: setbackRules has zero references anywhere in legacy-design-tools; whether it is meant to have an LDT-side consumer at all is unresolved and out of this checkpoint's scope to answer."
+    ]
+  }
+}
