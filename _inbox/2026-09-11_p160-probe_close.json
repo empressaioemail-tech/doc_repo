@@ -26,8 +26,9 @@
   "violationRuns": [
     "surface-probe --self-test: P-151 FAILS on the 2026-09-11 fixture of 48453:113408 (point route 504, sheet observed not sealed); P-153 FAILS on 48021:34049 (overlay observed not drawn, figure observed printed); P-152 FAILS on 48021:34049 (panel 25/5/25/15 vs MCP 30/10/30/20); every row refuses to PASS on an empty payload; every row CAN pass on a good world; P-153 fails on differing polygon vertex counts and on a printed figure. 18 checks, 0 failures.",
     "probe-close-gate --self-test: no probe -> block; missing artifact -> block; non-probe artifact -> block; UNMEASURED row -> block; PASS row -> allow; instrument row with parseable artifact -> allow; unparseable close -> block; non-OPS-23 close -> allow; deleted close -> allow. 12 checks, 0 failures.",
-    "live trigger: this close was first staged WITHOUT a probe field and committed through the harness; the hook refused it (recorded below under liveViolation once observed). Then the probe field was added and the commit allowed."
+    "live trigger, FAILED TO FIRE: this close was first staged WITHOUT a probe field and committed through the harness as 1e174bcc; the hook did NOT refuse it. Direct invocation of .claude/hooks/probe-close-gate.mjs with the harness payload shape against the same staged set blocked with exit 2 in both the cwd form and the -C form, and passed a non-commit command. Mechanism believed: the harness snapshots hook registrations at session start, so a hook registered mid-session is not armed in that session. Second mechanism considered and rejected: a payload-shape mismatch; rejected because the direct invocation used the same tool_input.command and cwd fields the existing PowerShell gates read and it blocked. The live-trigger verification is OWED on the next session's first OPS-23 close commit; until then this control is armed in the file and not observed working in the process that calls it."
   ],
+  "liveViolation": { "commit": "1e174bcc", "observed": "commit accepted with no probe field", "verdict": "control not live in this session; verified only by direct invocation", "owed": "first OPS-23 close commit of the next session must be refused when the probe field is removed, then allowed when restored" },
   "liveRuns": [
     "_inbox/2026-09-11_175938_surface_probe.json: five parcels, PASS 0 FAIL 0 UNMEASURED 9; the 48453:113408 point route that returned 504 at 16:39Z returned 200 declined in 1950 ms at 17:59Z, so that hang is intermittent and now measured rather than remembered",
     "_inbox/2026-09-11_180241_surface_probe.json: same, plus findings WRONG-PARCEL (48021:33223 address form answered ok for 48491:R419407, a Williamson parcel) and FIGURE-IN-PAYLOAD on both Bastrop parcels"
@@ -43,7 +44,7 @@
   "whatRemainsOpen": [
     "P-151's flip: the instrument must PASS P-151 after P-151 deploys; that is P-151's close, not this one",
     "the four other-county parcels of the probe set (48055, 48209, 48309, 48491) are not yet chosen; needs a FACTORY_DATABASE_URL_RO read the integration seat does not hold",
-    "Bastrop gis-ring match returned false on the first live run for 48021:34049 and 48021:33223 while Travis matched; the ring is present in the layer, so the matcher or the property name differs for Bastrop; fix is small and is recorded here rather than claimed done",
+    "RESOLVED at close, after one wrong reading: the Bastrop gis-ring false match was first read as an id-scheme mismatch (feature apn 8741972); that was wrong. Cortex's cached county-gis layer returns 44 features around the record point and none contains it (nearest 911 Farm St at 64 m), while Bastrop County's own FeatureServer queried directly at the point returns prop_id 34049, 1109 PECAN ST, 0.686 ac, and the point lies inside the parcel's envelope polygon. The layer copy has a hole; the record point is right. The probe now matches by point as well as id and raises NO-CONTAINING-POLYGON with the nearest feature and distance (OPS-23 F15, owner P-152: rings come from the ledger's parcelGeometry rail, not a cached fetch).",
     "the cortex node leg has never run: no seat has declared CORTEX_API_KEY_HEADER to this instrument"
   ],
   "leave_behind": [
@@ -54,6 +55,8 @@
     "A hang observed once is a rate, not a state; the second run of the same probe minutes later answered in 2 s. Record both, quote neither as 'the' behaviour.",
     "An address-keyed read that returns ok is not evidence it answered about the parcel you asked for. Compare node ids or do not use the answer."
   ],
+  "probe": { "artifact": "_inbox/2026-09-11_180559_surface_probe.json", "note": "P-160 has no predicate of its own in the instrument; the artifact proves the instrument ran live and wrote its snapshot. Later artifacts from the same day carry the NO-CONTAINING-POLYGON finding." },
+  "falsifier": "Pre-registered: if the self-test passed P-151 on the known-bad 113408 fixture, or if any predicate returned PASS on an empty payload, the instrument would be vacuous and this close wrong. Observed: 18 of 18 self-test checks in the expected direction. Also pre-registered for the gate: if the harness accepted an OPS-23 close with no probe field, the control is not live. Observed: it accepted 1e174bcc. Recorded, not hidden.",
   "docRepoEdits": "committed by the integration seat in the commit that carries this close",
   "commits": "see the doc_repo commit that carries this file"
 }

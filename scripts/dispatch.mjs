@@ -37,7 +37,8 @@ const repo = getArg('repo');
 const missionFile = getArg('mission-file');
 // Program-scoped context. ADDITIVE ONLY: it never touches the CANON-PREAMBLE hash the
 // canon gate validates, so compiler and gate cannot diverge (the CTRL-1 defect class).
-// Auto-resolves _catalog/program_preambles/<PLAN>.md when present; --program-preamble overrides.
+// Resolved in 3d: --program-preamble > the program whose registered row range contains the
+// PLAN-ROW (plan_registry.json `programs`) > _catalog/program_preambles/<PLAN>.md > none.
 const programPreambleArg = getArg('program-preamble');
 const planRows = planRowArg.split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -164,17 +165,44 @@ if (!m0Block.startsWith('FLEET MEMORY (M0):')) {
 }
 
 // --- 3d. Program-scoped context (additive; not part of any hashed marker). ---
+// A row inside a registered program CANNOT compile without that program's preamble file: a
+// lane dispatched without its program law is the defect this block exists to prevent. Measured
+// 2026-09-10 and 2026-09-11: nineteen of twenty-six shared-preamble lines a Property Explorer
+// lane received were another program's law, and the program preamble that would have replaced
+// them was optional. It is not optional now.
+const programsReg = registry.programs ?? {};
+const rowNum = (r) => Number(String(r).split('-')[1]);
+const programsHit = new Set();
+for (const row of planRows) {
+  for (const [pid, p] of Object.entries(programsReg)) {
+    if (pid.startsWith('_') || !p || p.plan !== planId) continue;
+    if ((p.rows ?? []).some((rg) => rowNum(row) >= rg.from && rowNum(row) <= rg.to)) programsHit.add(pid);
+  }
+}
+if (programsHit.size > 1) {
+  console.error(`PLAN-ROWs ${planRows.join(', ')} span two programs (${[...programsHit].join(', ')}). One dispatch carries one program's law; split it.`);
+  process.exit(1);
+}
+const programId = programsHit.size === 1 ? [...programsHit][0] : null;
 const programPreamblePath =
-  programPreambleArg || join(root, '_catalog', 'program_preambles', planId + '.md');
+  programPreambleArg ||
+  join(root, '_catalog', 'program_preambles', (programId ?? planId) + '.md');
 let programPreamble = '';
 try {
   programPreamble = readFileSync(programPreamblePath, 'utf8').trim();
 } catch {
-  if (programPreambleArg) {
-    console.error('--program-preamble ' + programPreambleArg + ' not readable. Refusing rather than compiling without it.');
+  if (programPreambleArg || programId) {
+    console.error(
+      `program preamble ${programPreamblePath} not readable (` +
+        (programId ? `PLAN-ROW is inside program ${programId}` : '--program-preamble given') +
+        '). Refusing rather than compiling without it.'
+    );
     process.exit(1);
   }
 }
+console.error(
+  `[dispatch.mjs] program preamble: ${programPreamble ? programPreamblePath.replace(/\\/g, '/') + (programId ? ` (by row membership: ${programId})` : programPreambleArg ? ' (explicit)' : ' (plan-level)') : 'none (no program registered for these rows and no plan-level file)'}`
+);
 
 // --- 4. Mission section. ---
 const mission = missionFile

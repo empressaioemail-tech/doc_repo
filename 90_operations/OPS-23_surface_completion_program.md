@@ -101,6 +101,9 @@ Every row was verified live or at `origin/main` on the date above. Re-run before
 | F9 | City zoning coverage in Travis is better than the roster says and worse than the panel shows. `_catalog/texas_roster_v1.json` marks 4 of 24 Travis-touching cities LAYER-FOUND. hauska-factory `src/config/zoning-layer-completeness.mjs` declares 22 cities complete against measured live layers, including Austin, Lakeway, Pflugerville, Cedar Park, Leander and Round Rock, which the roster marks NOT-FOUND. The roster is stale as an instrument. Seventeen Travis cities have no staged layer, West Lake Hills and Bee Cave among them. `2601 Sterling Panorama Ct` (`48453:474034`) is unincorporated Travis in Lake Pointe MUD: zoning legitimately does not apply there and the panel says "this area is not zoned or not stamped", a disjunction that hides which. | Roster parse; factory file at `217b7dd`; facets `cityLimitsFact`. |
 | F10 | Two confidently wrong strings on customer surfaces: `get_smart_site` prints "Withheld, setbacks unruled" in the draw block beside a `present` setbacks section for the same parcel; the feasibility PDF narrative (sheet 2) says "No mapped structures appear on the parcel, so any new construction can proceed without demolition" beside sheets 3 and 11 that say treat the site as improved. | `get_smart_site 48021:34049`; PDF FS-48021-34049. |
 | F11 | Three cortex reads on Travis hung in one hour: the PE facets endpoint for `48453:474034` hung 60 s then answered in 1.9 s; the envelope point route returned 504 at 10.2 s; PE's own situs search returned 502 "cortex timed out after 5000ms" for "414 SPILLER LN" in 48453. Intermittent, unmeasured, and the same class as the radius-search hang (2026-08-31) and the read-under-writer-load findings already on file. P-151's LDT half owns the point route; the class is deferred with a trigger in section 11. | `curl -m 60/90` twice; `POST buildable-envelope {lat,lng}`; `GET /api/pe-situs-search`. |
+| F13 | The envelope endpoint's address form can answer for another parcel. Asked with the gold parcel's composed situs, it returned `status: ok` and a polygon for `48491:R419407`, a Williamson parcel, when the record was `48021:33223`. The panel's resolver compares node ids and discards it; any consumer that does not will serve another lot. The reader in step 5 resolves by node id only; an address never enters it. | `scripts/surface-probe.mjs` live run 18:02Z, finding WRONG-PARCEL; artifact `_inbox/2026-09-11_180241_surface_probe.json`. |
+| F14 | The point-route hang is intermittent, not a state. The same `POST buildable-envelope {lat,lng}` for `48453:113408` returned 504 at 16:39Z and 200 `declined` in 1.9 s at 17:59Z and 18:02Z. F5 and F11 are corrected to say so; the probe records it on every run so it becomes a rate. | two live probe artifacts. |
+| F15 | Cortex's cached copy of the Bastrop County parcel layer has holes at both Bastrop probe parcels. `map-data/gis-layer` (provider "Bastrop County GIS parcels", features stamped `retrievedAt 2026-08-17`) returned 44 features around 1109 Pecan St's record point and none contains it (nearest 911 Farm St at 64 m), and 42 around the gold parcel 927 Main St with none containing it (nearest 925 Main St at 24 m). The county's own service, queried directly at the same point, returns `prop_id 34049, 1109 PECAN ST, 0.686 ac`; the point also lies inside the parcel's envelope polygon, so the point is right. The same layer answers correctly for Travis (TxGIO/StratMap, matched by id). Mechanism believed: the cached county-gis fetch missed or dropped this parcel; alternative considered, a county geometry edit after 2026-08-17, is weaker because the county returns the same prop_id and acreage the record carries. Consequence: the resolver's ring probe cannot find a county-exact ring for this parcel, so the sheet's geometry is centroid-only and the panel's lot figure is CAD acreage. First recorded as an id-scheme mismatch; corrected the same hour by the authoritative read. Owner: P-152's reader must read parcel rings from the ledger's `parcelGeometry` rail (TxGIO), not from a cached county-gis fetch. | probe live run 18:02Z and 18:05Z; direct `FeatureServer/0/query` at the point; fixture `envelope-address_48021-34049.json` containment check. |
 | F12 | Geocoding was already demoted by ruling and the panel still ends on it. Invariant I5 (`fact-sheet-resolver.ts:2512`): "geometry is the navigation authority; the situs address is only a way to ask for a coordinate when nothing geometric is on hand." P-27 (`_decisions/2026-08-13_p27_address_to_parcel_post_gate.md`): "Do NOT build a geocoder." The cortex envelope route orders resolution correctly (explicit point, then situs-to-parcel, then geocode last) and still lands on Nominatim when the situs pre-pass misses; the panel is the caller that reaches it because it ignores the record's own point. Operator's read: "I thought we had done away with geocoding; maybe that cortex function is not caught up." Caught up in order, not in outcome. | Code read of both files; the four probes in F5. |
 
 ## 3. Standing rulings for this program (operator, 2026-09-11)
@@ -244,11 +247,29 @@ into the close.
 node scripts/surface-probe.mjs                    the predicate (P-160; refuses with exit 2 without creds for the cortex leg)
 node scripts/surface-probe.mjs --self-test        both directions, known-bad fixture, not-vacuous check
 node scripts/ops23-lane-status.mjs                lane board: worktree, registered, branch, ahead, artifacts
-node scripts/dispatch.mjs --lane <ID> --plan-row <P-15x> --mission-file <f> --program-preamble _catalog/program_preambles/OPS-23.md
+node scripts/dispatch.mjs --lane <ID> --plan-row <P-15x|P-16x> --mission-file <f>
 ```
 
-Until P-160 lands, the probe is the five hand calls recorded in F1, F5, F7 above, and a lane
-close must paste their raw output.
+**Preambles, since 2026-09-11 (P-168, A-131).** The compiler attaches
+`_catalog/program_preambles/OPS-23.md` to any row 151 to 167 by itself (registry `programs`); no
+flag. It refuses to compile an OPS-23 row if that file is missing. The shared CANON-PREAMBLE is
+ten fleet-wide bullets; Dashboards law lives in `OPS-17.md`, Factory status in `OPS-19.md`, and
+`generate-combined.mjs` refuses to regenerate `_STATE.md` while a shared bullet names a plan row
+(`scripts/enforcement/standing-decisions-scope.mjs`). A lane reading a dispatch with G-rows in its
+preamble is reading a stale compile; recompile.
+
+The close gate: `.claude/hooks/probe-close-gate.mjs` (rules and self-test in
+`scripts/enforcement/probe-close-gate.mjs`) refuses a doc_repo commit whose staged set carries an
+OPS-23 close with no passing probe citation. **Registered 2026-09-11 mid-session; it did not fire
+on its first live trigger (commit `1e174bcc` went through) because the harness snapshots hooks at
+session start. Verified by direct invocation only. The first OPS-23 close commit of the next
+session is its live verification: remove the probe field, expect refusal; restore it, expect
+acceptance. Until that is observed, do not call this control live.**
+
+Probe artifacts to date: `_inbox/2026-09-11_175938_surface_probe.json`,
+`_inbox/2026-09-11_180241_surface_probe.json`, `_inbox/2026-09-11_180559_surface_probe.json`
+(the 2026-09-11 baseline: PASS 0, FAIL 0, UNMEASURED 9; the observed legs for that day are in
+the fixture manifest, and with them folded in the fixture evaluation reads FAIL 3).
 
 ## 9. Blast radius of Ruling B, enumerated at origin/main
 

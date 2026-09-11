@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSeatRegister } from '../enforcement/seat-register.mjs';
+import { check as scopeCheck, render as renderScope } from '../enforcement/standing-decisions-scope.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const STATE_DIR = join(ROOT, '_state');
@@ -57,6 +58,17 @@ export function renderCombined(root = ROOT) {
 }
 
 function main() {
+  // SCOPE GATE (2026-09-11): the shared preamble carries fleet-wide rulings only. Program law
+  // (anything that needs a plan row id) lives in _catalog/program_preambles/<PROGRAM>.md. Refuse
+  // to regenerate _STATE.md, and therefore every CANON-PREAMBLE compiled from it, while a shared
+  // bullet names a row. Rules and self-test: scripts/enforcement/standing-decisions-scope.mjs.
+  const shared = readIfExists(join(ROOT, '_state/shared/STANDING_DECISIONS.md'));
+  const violations = shared ? scopeCheck(shared) : [];
+  if (violations.length) {
+    process.stderr.write(renderScope(violations));
+    process.stderr.write('generate-combined: REFUSED to write _STATE.md while the shared preamble carries program law.\n');
+    process.exit(1);
+  }
   mkdirSync(STATE_DIR, { recursive: true });
   const combined = renderCombined();
   writeFileSync(OUT, combined, 'utf8');
