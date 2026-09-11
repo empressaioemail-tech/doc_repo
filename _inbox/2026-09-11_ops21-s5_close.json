@@ -1,0 +1,122 @@
+{
+  "lane": "OPS21-S5",
+  "planRow": "P-148",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ops21-s5",
+  "branch": "feat/ops21-s5-serve-wrappers",
+  "baseCommit": "cebd041d7ddf102f29ab60eeb9feb04946888125 (origin/main, matches dispatch's stated base)",
+  "headSha": "63fda0408a73ffc0945d70f0695393fb1173b08c (squash-merge commit on main)",
+
+  "pr": { "number": 655, "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/655" },
+  "merged": true,
+  "mergeSha": "63fda0408a73ffc0945d70f0695393fb1173b08c",
+  "ciConclusionStrings": {
+    "note": "Raw GitHub check-run conclusion strings (gh pr view --json statusCheckRollup), not gh pr checks' 'pass' bucket label, per AGENT_CONTRACT section 5's explicit warning.",
+    "Typecheck": "SUCCESS",
+    "Test": "SUCCESS",
+    "L5 SF-30 Cotality warm grep": "SUCCESS",
+    "L5 SF-24/SF-25 score greps": "SUCCESS",
+    "L5 silent-fallback greps": "SUCCESS",
+    "L5 SF-26 hand hasWriter grep": "SUCCESS",
+    "SS-W16 tier2 flood not served": "SUCCESS",
+    "SS-W18 api-server boots": "SUCCESS",
+    "L17 ci-vintage-predicate": "SUCCESS",
+    "PR base is main": "SUCCESS",
+    "cortex daily limit bake": "SUCCESS"
+  },
+
+  "missionPremise": "OPS-21 P-148: S4/P-135 measured a clean inverse -- parcelAreaSqFt passes the gate on all 5 in-scope counties with zero consuming wrapper (a slate entry with no resolveAllowlist call site is textually compliant and functionally inert, per S4's own close); setbackRules/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt have no wrapper either and fail the gate everywhere, blocked on the 3,376-parcel zoningDistrict residual Z1/P-147 is characterising. This lane's job: build all 5 wrappers, wire them into the shared response-assembly path, slate only parcelAreaSqFt for its 5 passing counties, and prove a live end-to-end probe.",
+
+  "completionPredicate": "All 5 *ServeCutover.ts wrappers exist, are wired into both brokerageNodeFacets.ts and propertyExplorer.ts's shared response-assembly Promise.all/response-object blocks (not just written -- grep-confirmed real resolveAllowlist call sites), parcelAreaSqFt is slated for exactly its 5 passing non-Hays counties, and a live HTTP probe against the DEPLOYED production surface shows a real parcel_record-sourced parcelAreaSqFt value for a gate-passing parcel. MET -- see liveEndToEndProof below. The other 4 wrappers are built, tested, and wired, but deliberately never slated (their gate still fails everywhere as of this close's own final re-verification).",
+
+  "scopeBasis": "Slating anything but parcelAreaSqFt was explicit dispatch prohibition (the other 4 rails' gate never passed at any point this lane observed it, across 4 independent live reads spanning the whole session). Waiting on or second-guessing Z1/P-147 was out of scope -- this lane treated the 3,376-parcel residual as a given, not an investigation target. Writing any cell was out of scope -- every DB session opened parcel_record_ro (SELECT-only) with SET default_transaction_read_only=on. Retiring a legacy path was moot -- none of these 5 rails has one (confirmed by repo-wide grep before building). Hays (48209) excluded from every query and from the slate, per the dispatch's own standing fact (P-145 not landed).",
+
+  "checkpoints": [
+    "_inbox/2026-09-11_ops21-s5_cp1.json (design/pre-build: snapshot, inherited L1/S4 findings, live-verified the critical structural finding that setbackRules is a companion-row rail unlike its Ft-suffixed siblings, design decisions for all 5 wrapper triads)",
+    "_inbox/2026-09-11_ops21-s5_cp2.json (pilot/mid-work adversarial re-verification: self-caught and fixed a real TS error via typecheck -- 5 missing `let` pre-declarations -- confirmed zero net-new typecheck errors via git-stash diff, re-verified the gate grid a second time with no drift, confirmed all 20 resolveAllowlist call sites are real)"
+  ],
+
+  "whatWasBuilt": {
+    "newFiles": "15 source files (3 per rail: <rail>FactRead.ts, <rail>FactFromParcelRecord.ts, <rail>ServeCutover.ts) x 5 rails (setbackRules, parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt) + 10 test files (2 per rail) = 25 new files.",
+    "structuralFinding": "Live-verified at source (direct SQL against parcel_record_cell / parcel_record_companion_row on the FACTORY host, not inferred from sibling naming): setbackRules is structurally DIFFERENT from its Ft-suffixed siblings (setbackFrontFt/SideFt/RearFt/CornerFt). Those are plain scalar `value` cells; setbackRules' 'value' cell_state carries no scalar value field at all (cell_state->'value' is JSON null on all 351,872 present rows) -- its real content (matchKind, citationUrl, districtCode, districtName, jurisdictionKey, resolvedTableKey, note) lives entirely on a companion row (rowIndex 0). setbackRulesFactFromParcelRecord.ts is built on the utilityService companion-row pattern, not the maxImperviousCoverPct scalar pattern its four siblings and the other 3 new rails use. Building it as a scalar (the naturally-assumed shape) would have been a live, source-contradicted defect caught only by querying the real data before writing code.",
+    "wiring": "Both consumer routes' shared response-assembly blocks now import and Promise.all-fetch all 5 loaders and attach all 5 facts: brokerageNodeFacets.ts (GET /api/brokerage/v1/place/node/:parcelNodeId/facets, public/anonymous) and propertyExplorer.ts's assembleNodeBriefBody (POST /property-explorer/v1/research/brief, node depth).",
+    "slating": "parcelRecordAllowlist.ts PARCEL_RECORD_SLATE gained exactly 5 entries: 48021/48055/48309/48453/48491:parcelAreaSqFt. Zero entries for the other 4 rails -- they ship wired but permanently inert (resolve to a typed not-cut-over refusal for every county) until a future lane slates them.",
+    "selfCaughtBug": "First typecheck pass found 10 real TS errors: the 5 new destructured Promise.all variables in brokerageNodeFacets.ts were never pre-declared with `let` in the enclosing function scope, which this file's own established pattern requires for a plain (non-const) destructuring reassignment. Fixed; re-verified zero net-new errors via git-stash diff against baseline (1119 = 1119 errors, byte-identical modulo line-number drift from this lane's own added lines)."
+  },
+
+  "liveEndToEndProof": {
+    "claim": "The first end-to-end proof this rail family has ever had: write (hauska-factory, S1/S2) -> gate (parcel_gate_verdict) -> slate (this lane's PARCEL_RECORD_SLATE edit) -> serve (this lane's wrapper, live on the deployed production surface).",
+    "deploySequence": "push to main -> build-and-push (image tag 63fda040...) -> workflow_dispatch deploy-canary (image_tag pinned to the exact merge SHA, not 'latest') -> canary smoke (/api/healthz 200) -> workflow_dispatch shift-traffic (100% to revision cortex-api-00766-sep) -> production smoke (/api/healthz 200). All deploy steps run by this lane (deploys are planner-owned, never escalated).",
+    "probe1": {
+      "parcelNodeId": "48491:R638791",
+      "county": "Williamson (48491)",
+      "urlProbed": "https://cortex-api-tds7av26va-uc.a.run.app/api/brokerage/v1/place/node/48491:R638791/facets (production default URL, AFTER the 100% traffic shift -- not just the 0%-traffic canary tag)",
+      "result": "parcelAreaSqFtFact.state = 'present', sqFt = 7239.42, sourceAdapter = 'parcel_record' -- the real, live, gate-passing, slated value."
+    },
+    "probe2_differentDataSpecimen": {
+      "parcelNodeId": "48021:103255",
+      "county": "Bastrop (48021)",
+      "why": "Fleet-memory practice: identical results across specimens would be a fixture masquerade, not live verification. This specimen has a genuinely different real value in a different county.",
+      "result": "parcelAreaSqFtFact.state = 'present', sqFt = 13988.45, sourceAdapter = 'parcel_record' -- confirms the wrapper genuinely reads per-parcel data, not a cached or hardcoded response."
+    },
+    "negativeControl_sameProbe1_otherFourRails": {
+      "what": "On the SAME probe1 parcel (48491:R638791, a real gate-passing/slated parcelAreaSqFt parcel), the other 4 new facts correctly resolve to the typed not-cut-over refusal, not a fabricated present -- proving the slate boundary is real and the wrappers do not leak across rails.",
+      "maxHeightFtFact": "{state: 'refused', code: 'not-cut-over', ...}",
+      "setbackRulesFact": "{state: 'refused', code: 'not-cut-over', ...}"
+    }
+  },
+
+  "finalCounts": {
+    "gateVerdictReVerification_closeTime_2026-09-11T12:48:47Z": {
+      "countingRule": "SELECT county_fips, verdict, unaccounted_count, evaluated_at FROM parcel_gate_verdict WHERE county_fips IN (48021,48055,48309,48453,48491) AND rail_key='parcelAreaSqFt', live, read-only, FACTORY host ep-round-base-au0jofwp/neondb.",
+      "result": "5 of 5 pass, unaccounted_count 0 on every row. This is the FOURTH independent live read across the session (S4's original 11:52Z, this lane's CP1 12:20:42Z, CP2 12:26:34Z, this close 12:48:47Z) and the outcome has never flipped, though run_ids/evaluated_at timestamps advanced on every read -- the scheduler is actively re-evaluating, the verdict is stably passing."
+    },
+    "newTests": { "n": 109, "countingRule": "vitest test count across the 10 new *.test.ts files plus the updated parcelRecordAllowlist.test.ts's net-new assertions, all passing (DATABASE_URL supplied as a placeholder to clear an unrelated module-load-time guard; confirmed via git-stash that this guard fires identically on untouched sibling files, so it gates nothing this lane's tests actually exercise)." },
+    "typecheckDelta": { "n": 0, "countingRule": "git-stash-diffed tsc --noEmit error count, before vs. after this lane's full changeset: 1119 = 1119, confirmed byte-identical modulo line-number shift from this lane's own added lines." },
+    "resolveAllowlistCallSites": { "n": 20, "countingRule": "grep -rl 'resolveAllowlist(' lib/*.ts excluding .test.ts, live-verified twice (CP1 and CP2): 13 pre-existing wrapper files + parcelRecordAllowlist.ts + parcelGateVerdictRead.ts (both self-referencing) + this lane's 5 new wrapper files." },
+    "slateSize": { "n": 102, "countingRule": "PARCEL_RECORD_SLATE.size, up from L1's measured 97 (97 + this lane's 5 parcelAreaSqFt entries)." }
+  },
+
+  "constraintsHonored": [
+    "Slated only parcelAreaSqFt -- zero entries added for setbackRules/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt, confirmed by a dedicated test asserting all 24 (4 rails x 6 counties) never-slated pairs.",
+    "Did not wait on or second-guess Z1/P-147 -- the 3,376-parcel residual was read as a given throughout.",
+    "Wrote no cell -- every DB session used the parcel_record_ro SELECT-only credential with SET default_transaction_read_only=on issued first, structurally verified by the shared reader module, not just by intent.",
+    "Retired no legacy path -- none of these 5 rails has one (grep-confirmed before building).",
+    "Hays (48209) excluded from every query and from the slate.",
+    "hauska-factory untouched -- read-only cross-repo reads only (S1/S2 closes, one live SQL verification session), zero writes attempted there.",
+    "Deploys were planner-owned throughout: build-and-push, deploy-canary (pinned to the exact merge SHA), and shift-traffic were all dispatched and watched by this lane, never escalated to the operator.",
+    "MERGE gated on the raw CI check-run conclusion STRING 'SUCCESS' on all 11 checks (not gh pr checks' 'pass' bucket label), per AGENT_CONTRACT section 5.",
+    "Re-verified the gate grid immediately before the slate edit, again at CP2, and a fourth time at this close -- no drift in outcome across any of the four reads.",
+    "Two adversarial checkpoints filed (CP1, CP2), per AGENT_CONTRACT section 1."
+  ],
+
+  "whatRemainsOpen": [
+    "OPEN: the 3,376-parcel zoningDistrict residual (Z1/P-147's own subject) still blocks setbackRules/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt from ever passing the gate. This lane did not touch that work and does not know its outcome (explicitly instructed not to wait on or assume it).",
+    "OPEN: once Z1/P-147 resolves the residual (or a future lane decides these 4 rails should slate on a partial-pass basis), the wrappers this lane built are ready to consume a slate entry immediately -- no further code change needed, only a PARCEL_RECORD_SLATE edit plus the same immediate-before re-verification discipline this lane demonstrated.",
+    "OPEN: the propertyExplorer.ts wiring (assembleNodeBriefBody) was verified via the existing mocked parity test suite (propertyExplorerBriefNodeFacetParity.test.ts, unmodified precedent of leaving a newly-added ServeCutover module unmocked, matching valueHistoryFactServeCutover's own established precedent in that file) but the LIVE probe in this close was performed against brokerageNodeFacetsRouter only, not propertyExplorerRouter -- the dispatch's own 'and/or' wording is satisfied by one clean live proof, but a future lane wanting proof on the PE-authenticated path specifically would need to mint a session token first.",
+    "OPEN: setbackRules' companion-row adapter shape (matchKind/citationUrl/districtCode/districtName/effectiveDate/jurisdictionKey/resolvedTableKey/note) has never been exercised against a real 'present' response on the deployed surface, since the rail is never slated -- only unit-tested against a live-sampled fixture. Low risk (the fixture was drawn from a real live row, not invented), but worth a live probe once this rail is ever slated."
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "LESSON: before building a serve-layer adapter for a rail whose naming resembles an existing sibling group (setbackRules alongside setbackFrontFt/SideFt/RearFt/CornerFt), query the LIVE cell shape directly -- do not infer the shape from the sibling files' pattern. setbackRules turned out to be a companion-row rail while all four of its Ft-suffixed siblings are plain scalars; the naming proximity would have led straight to a wrong, silently-broken adapter (reading a permanently-null cell.value) that every one of its own unit tests could still have been written to pass, had the fixtures been hand-invented instead of live-sampled.",
+      "LESSON: a file's established `let`-then-Promise.all-destructuring-reassignment pattern (used so a catch block can still see partially-resolved variables) requires every destructured name to be pre-declared above the try block -- adding a name to the destructuring array and the response object without also adding its `let` declaration is a real, typecheck-catchable bug, not a style nit. Caught here only because tsc --noEmit was run before considering the lane done, not from visual review of a 1000+-line file.",
+      "LESSON: gh pr checks --watch (not a hand-rolled polling loop against gh pr checks' text output) is the correct tool for waiting on PR CI -- gh pr checks exits non-zero (code 8) while any check is still pending, which breaks naive `until <cmd>; do sleep; done` polling patterns built around the command's own exit code or grep on its output."
+    ],
+    "deadEnds": [
+      "DEAD-END: a hand-rolled `until gh pr checks 655 | grep -qv 'pending\\|queued\\|in_progress'; do sleep 20; done` loop is wrong -- it exits as soon as ANY single check stops being pending, not when ALL checks conclude, because grep -v matches on any line that lacks those substrings regardless of the other lines' state. Replaced with `gh pr checks --watch`, built for exactly this."
+    ],
+    "groundTruths": [
+      "GROUND-TRUTH (2026-09-11T12:48:47Z live, FACTORY host ep-round-base-au0jofwp/neondb): parcelAreaSqFt passes the gate on all 5 in-scope counties (48021/48055/48309/48453/48491), unaccounted_count 0, stable across 4 independent reads spanning the session.",
+      "GROUND-TRUTH (2026-09-11T12:48Z, deployed production, revision cortex-api-00766-sep, 100% traffic): a real HTTP GET against /api/brokerage/v1/place/node/{parcelNodeId}/facets for two different gate-passing parcels in two different counties returns a genuine parcel_record-sourced parcelAreaSqFt value -- the first live proof of write -> gate -> slate -> serve this rail family has ever had.",
+      "GROUND-TRUTH (2026-09-11, legacy-design-tools @ 63fda040): 20 real resolveAllowlist call sites exist (18 wrapper files + the 2 files that define/re-export it), up from L1's/S4's measured 15 (13 wrapper files + the same 2)."
+    ],
+    "open": [
+      "OPEN: whether setbackRules/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt will ever slate depends entirely on Z1/P-147's resolution of the 3,376-parcel zoningDistrict residual -- this lane's wrappers are ready the moment that lands."
+    ]
+  },
+
+  "close_contract_extra": {
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's three _inbox/ writes: 2026-09-11_ops21-s5_cp1.json, 2026-09-11_ops21-s5_cp2.json, this close.json."
+  }
+}

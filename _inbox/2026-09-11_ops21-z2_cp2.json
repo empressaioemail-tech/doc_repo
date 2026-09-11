@@ -1,0 +1,63 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "lane": "OPS-21-Z2",
+  "planRow": "P-149",
+  "repo": "hauska-factory",
+  "snapshot": "branch fix/ops21-z2-not-applicable-propagation, still cut from origin/main 711cc06 (confirmed unmoved). Working tree has: src/jobs/parcel-setback-cells.mjs, src/jobs/parcel-envelope-cells.mjs (modified); test/parcel-setback-cells.test.mjs, test/parcel-envelope-cells.test.mjs (modified, 4 new tests). No new files, no CLI/allowlist wiring needed -- both jobs already registered.",
+
+  "adversarialReviewOutcome": {
+    "reviewer": "in-process sub-agent (general-purpose), one level deep, read-only, no code changes",
+    "findingsIncorporated": [
+      "Finding 1 (moderate): CP1 mischaracterized S2's SQL gate as 'untouched, unaccounted-only' -- actually UPDATE_ENVELOPE_CELLS_SQL carries two OR-widened remediation terms from OPS-21-R1, and gateFieldWrite/gateFootprintWrite's remediation-revisit branch only admits a value/refused target, not not-applicable. The invariant (this population is always currently 'unaccounted', so only the isFirstWrite fast path is ever exercised) holds, live-confirmed, but was previously asserted rather than documented as a reliance. FIXED: both new module-doc blocks (S1 and S2) now state this explicitly, and notApplicableFromUpstreamCells's own doc comment in S2 names the reliance directly.",
+      "Finding 2 (moderate): S1 counts notApplicable per-PARCEL (all-rails-together write model); S2 counts it per-CELL (up to 3x per parcel, matching S2's existing value/refused/absentVerified counting convention). CP1's verification plan did not flag this asymmetry. FIXED: this checkpoint's pilot results below report both counting conventions explicitly and reconcile them (132 = 44 x 3), rather than treating a mismatch as an error.",
+      "Finding 3 (minor): pushIfPresent's kind-switch needed an explicit 'not-applicable' branch ahead of the absent-verified catch-all, or every not-applicable cell would have silently miscounted as absentVerified (write itself unaffected, only the self-reported total). FIXED in implementation: parcel-envelope-cells.mjs's pushIfPresent now has `else if (state.kind === \"not-applicable\") counts.notApplicable += 1;` before the catch-all.",
+      "Finding 4 (low/advisory): notApplicable needed manual addition to counts-init/totals-init/console.error in both files (not derived from a constant). Done in all six locations; verified via the live pilot run below that the totals aggregation and console.error line both report the real number, not a silent zero."
+    ],
+    "noProblemsFoundIn": "Q1 (SQL-gate-is-inert-by-construction), Q3 (reason-quoting convention), Q4 (8-rail arithmetic matches the actual RAIL_KEYS/TARGET_RAIL_KEYS constants), COMPANION_RAIL_KEY handling, parcelAreaSqFt's structural unreachability by the new branch, and no OPS-21-R1 remediation-gating interaction breaks."
+  },
+
+  "localTestRun": {
+    "command": "node --test test/parcel-setback-cells.test.mjs test/parcel-envelope-cells.test.mjs",
+    "result": "44/44 passing, including 4 new tests (2 per file: the core not-applicable-propagation case with a real completenessDeclaration fixture, plus a defensive no-completenessDeclaration case for S1).",
+    "fullSuite": "node --test test/*.test.mjs: 3 pre-existing failures (test/ctx-b3-store-census.test.mjs's LDT-pin drift check; two test/p3-absence.test.mjs OPS-21-S3 non-vacuity findings, both explicitly marked out-of-scope in their own assertion messages), confirmed unrelated via git stash -- identical failures reproduce on a clean stash of this lane's own changes."
+  },
+
+  "liveDryRunPilot": {
+    "command": "node's own runParcelSetbackCells/runParcelEnvelopeCells invoked directly (equivalent to `factory parcel-setback-cells --city=Bastrop` / `factory parcel-envelope-cells --city=Bastrop`, apply=false)",
+    "against": "live production data: PRODUCTION_NEONDB_URL (real, read-only queries only -- this job never writes to cortex) and FACTORY_DATABASE_URL set to the parcel_record_ro read-only role's connection string (defense-in-depth: apply=false issues no write query at all per the existing, passing 'apply=false issues no write query' unit test, but the RO role means even a hypothetical write would be rejected at the DB permission level, not just by application logic). A local process making real read queries against the actual production Neon databases -- NOT run through the deployed Cloud Run image yet, and no --apply (zero writes).",
+    "results": {
+      "s1Setback": {
+        "city": "Bastrop",
+        "totalParcels": 5819,
+        "value": 2731,
+        "absentVerified": 3044,
+        "refused": 0,
+        "notApplicable": 44,
+        "skippedNotYetResolved": 0,
+        "matchesCP1Baseline": "44 exactly matches CP1's live-verified Bastrop-county stuck count. skippedNotYetResolved=0 confirms the previously-permanently-deferred population is now fully classified (it was 44 before this lane's code existed, by construction -- not re-measured pre-fix in this same run since the code IS the fix, but CP1's baseline measurement IS that pre-fix number)."
+      },
+      "s2Envelope": {
+        "city": "Bastrop",
+        "totalParcels": 5819,
+        "areaValue": 5819,
+        "notApplicable": 132,
+        "skippedNotYetResolved": 0,
+        "remediationLeftUntouched": 5462,
+        "reconciliation": "132 = 44 x 3 (maxHeightFt + maxLotCoveragePct + maxFootprintSqFt), exact -- confirms adversarial review Finding 2's predicted per-cell-vs-per-parcel counting asymmetry, not a bug. remediationLeftUntouched=5462 is OPS-21-R1's own unrelated SENTINEL_UNIFORM population, untouched by this lane as designed (5462 has no relationship to the 44/132 figures; reported here only to show it did not move)."
+      }
+    }
+  },
+
+  "nextSteps": [
+    "Commit, push branch, open PR (self-merge norm).",
+    "Wait for CI check-run conclusion string 'success' (gate8, test, ldt-sha-comment-presence per prior OPS-21 lanes' own precedent) before merge.",
+    "Deploy: verify/trigger Cloud Build for cloudbuild.parcel-setback-cells.yaml and cloudbuild.parcel-envelope-cells.yaml, confirm gcloud run jobs describe's recorded image digest matches the build output digest (not inferred from build status alone).",
+    "Pilot --apply on Bastrop only (both jobs), SQL-verify predicted counts (44 / 44x3=132) against the live store before the full apply.",
+    "Full --apply across all 5 in-scope counties (no --city filter), both jobs.",
+    "Post-apply: measure unaccounted=0 for the 8 rails x 5 counties (live query, not assumed). Wait for or trigger the next publish-gate-sched scheduled evaluation; re-verify all 40 (county,rail) parcel_gate_verdict pairs flip to pass.",
+    "File close."
+  ],
+
+  "status": "Code complete, unit-tested, adversarially reviewed, live-dry-run-piloted against real production data with zero writes. No production writes have occurred yet anywhere in this lane."
+}

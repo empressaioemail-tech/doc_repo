@@ -1,0 +1,83 @@
+{
+  "lane": "OPS-21-Z2",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRow": "P-149",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-z2",
+  "branch": "fix/ops21-z2-not-applicable-propagation",
+  "baseCommit": "711cc06a94bb3aad379016017070bf4ed9663490",
+  "seat": "property",
+
+  "missionPremise": "Z1 (P-147) proved live, twice (primary+replica, zero drift), that the 3,376-parcel residual blocking eight rails' gate is NOT an unresolved zoningDistrict -- it is legitimate, permanent not-applicable (unzoned land inside a declared-complete city's limits). The real defect: parcel-setback-cells.mjs (S1) and parcel-envelope-cells.mjs (S2) only advance a parcel when zoningDistrict reaches value or refused -- there is no branch for not-applicable, so these 3,376 x 8 dependent cells can never leave unaccounted under current logic. This lane adds exactly that branch to both writers.",
+
+  "verifiedFacts": [
+    {
+      "claim": "3,376 parcels across 44/26/1014/1021/1271 (Bastrop/Caldwell/McLennan/Travis/Williamson) is the exact, current, live residual.",
+      "method": "Live read (parcel_record_ro role, FACTORY_DATABASE_URL_RO, direct host ep-round-base-au0jofwp, never -pooler) against parcel_record_cell: filtered zoningDistrict cells to kind='not-applicable' AND cell_state ? 'completenessDeclaration' (the marker that distinguishes the completeness-sweep write from the unincorporated instantiate-time not-applicable, which carries no completenessDeclaration field -- confirmed by reading src/lib/parcel-record-engine/instantiate.js's scalarNotApplicable, which stores only {kind, reason}). Grouped by county (place_key prefix).",
+      "result": "155/40/1056/1078/1271 total per county across all six counties (48021/48055/48309/48453/48491 + Hays 48209=570), of which a further split by the 8 dependent rails' OWN current kind shows 111/14/42/57/0 of each county's population is already 'absent-verified' (parcels in a city with NO ruled setback table -- buildNoRuledTableCells fires unconditionally for those, never even reading zoningDistrict, so they were never stuck) and the remainder -- 44/26/1014/1021/1271 -- is 'unaccounted', i.e. genuinely stuck. Sums to exactly 3,376. Hays' 570 are 100% unaccounted too but structurally unreachable by this job (IN_SCOPE_COUNTIES excludes 48209)."
+    },
+    {
+      "claim": "The 3,376 are exactly and only blocking their (county, rail) gate verdicts.",
+      "method": "Live read of parcel_gate_verdict for the 8 dependent rails x 5 in-scope counties (40 pairs).",
+      "result": "All 40 pairs currently verdict='refuse', and unaccounted_count on every row matches the per-county stuck total exactly (e.g. 48021 x every one of the 8 rails: unaccounted_count=44). No other source of unaccounted is mixed in for these pairs."
+    },
+    {
+      "claim": "Cross-validation against an independent prior lane.",
+      "method": "OPS-21-R1's own close (_inbox/2026-09-11_ops21-r1_close.json), a completely different lane working a different pair of rails (maxHeightFt/maxLotCoveragePct not_specified remediation), independently measured and reported 'unaccounted: 3376' for maxHeightFt and maxLotCoveragePct in its own five-county sum-check, explicitly noting 'this lane resolved zero of S1's own deferred population, as designed.'",
+      "result": "Exact match to this checkpoint's own live measurement, from an unrelated lane's independent instrument. Two independent live measurements, zero drift."
+    },
+    {
+      "claim": "The zoningDistrict not-applicable cell's payload carries everything needed to build the pointer the mission asks for.",
+      "method": "Read a live sample row.",
+      "result": "cell_state = {kind:'not-applicable', reason:'<prose>', completenessDeclaration:{cityName, cityKey, layerVintage, cellPct, arealPct, measuredAt, establishedBy}}. ZONING_DISTRICT_CELLS_SQL (already used by both writers) selects place_key, cell_state directly, and both writers already read zd.kind/zd.value/zd.reason as plain object properties (pg auto-deserializes jsonb) -- zd.completenessDeclaration is available for free, no new query."
+    }
+  ],
+
+  "design": {
+    "sharedShape": "Both writers already have this exact three-way structure per ruled city: `if (!zd || zd.kind==='unaccounted' || zd.kind==='not-applicable') { deferred }` then `if (zd.kind==='refused') { propagate refused }` then `if (zd.kind==='value') { resolve }`. The fix removes 'not-applicable' from the defer condition and inserts a new branch between defer and refused: `if (zd.kind==='not-applicable') { propagate not-applicable }`, mirroring the existing refused-propagation branch's shape exactly (same place in the branch order, same all-rails-together write, same reuse of the upstream cell's own reason).",
+
+    "cellStateShape": "{kind:'not-applicable', reason: '<own reason string, references the upstream zoningDistrict determination>', completenessDeclaration: zd.completenessDeclaration}. The reason is a NEW string (not zd.reason verbatim) so a reader lands on THIS cell's own explanation first ('setbackFrontFt is not-applicable because its zoningDistrict is not-applicable: <zd.reason>'), then completenessDeclaration is the exact same object already attached to zoningDistrict's own cell -- the literal pointer to the completeness declaration's evidence (layerVintage, cellPct, arealPct, measuredAt, establishedBy) the mission requires, copied by reference/value, not re-derived. Matches the existing convention exactly (buildRefusedFromUpstreamCells already builds a NEW reason string that quotes the upstream one; buildCompletenessCells already copies the completenessDeclaration object verbatim onto every rail it writes).",
+
+    "s1Setback": {
+      "file": "src/jobs/parcel-setback-cells.mjs",
+      "newFunction": "buildNotApplicableFromUpstreamCells(placeKey, zd) -- same signature/shape as the adjacent buildRefusedFromUpstreamCells(placeKey, zoningReason), but takes the whole zd cell (not just its reason) since it also needs completenessDeclaration. Returns cells for all 4 RAIL_KEYS + COMPANION_RAIL_KEY (setbackRules), companionRows: [] -- identical shape to the refused and no-ruled-table builders (no companion detail rows for a non-value disposition).",
+      "processCityPageChange": "Insert `if (zd.kind === 'not-applicable') { push built cells; counts.notApplicable += 1; continue; }` between the defer check (now only unaccounted/missing) and the existing refused branch. counts gains a `notApplicable` field, threaded through runParcelSetbackCells' totals and its console.error summary line, same as every other count.",
+      "sqlGateUnchanged": "UPDATE_SETBACK_CELLS_SQL's WHERE clause (kind='unaccounted' only) is untouched and sufficient: every one of the 3,376 target cells is confirmed live to currently be exactly 'unaccounted' (verifiedFacts above), so this is a first-time write in every real case. No SQL change, unlike R1's remediation-revisit case which needed a widened OR-gate for a population that started absent-verified."
+    },
+
+    "s2Envelope": {
+      "file": "src/jobs/parcel-envelope-cells.mjs",
+      "newFunction": "notApplicableFromUpstreamCells(zdCellState, currentStates) -- mirrors refusedFromUpstreamCells's existing shape (same gateFieldWrite/gateFootprintWrite calls, same three-key return {maxHeightFt, maxLotCoveragePct, maxFootprintSqFt}), building one shared {kind:'not-applicable', reason, completenessDeclaration} target and routing it through the SAME per-field gates already used by every other branch -- no new gating logic needed, gateFieldWrite/gateFootprintWrite are agnostic to the target kind.",
+      "processCityPageChange": "Insert the not-applicable branch between the defer check and the refused branch inside the `if (city.ruled)` per-parcel loop, same position as S1. counts gains `notApplicable`, incremented inside pushIfPresent's kind switch (parallel to the existing value/refused branches) -- NOT counted as a 'remediation' (isRemediationCandidate only ever matches the not_specified/blockedOn absent-verified shapes from OPS-21-R1's own widening; a not-applicable target is a first-time write in every real case here too, confirmed by the same live measurement S1 relies on).",
+      "footprintFollowsCoverage": "maxFootprintSqFt gets the SAME not-applicable target as maxHeightFt/maxLotCoveragePct (not derived via footprintTargetState's area x pct formula) -- correct because when zoningDistrict itself is not-applicable, maxLotCoveragePct's disposition is not-applicable too, and a footprint computed from a not-applicable coverage input would be nonsensical; the dispatch's own rail list names maxFootprintSqFt as one of the eight that becomes not-applicable directly, not one that stays computed. gateFootprintWrite is reused unchanged (its isFirstWrite branch fires exactly like the other two fields).",
+      "sqlGateUnchanged": "UPDATE_ENVELOPE_CELLS_SQL already admits kind='unaccounted' unconditionally (its first OR-term, untouched by R1's later widening) -- sufficient, same live-confirmed-unaccounted argument as S1."
+    },
+
+    "explicitlyOutOfScope": [
+      "parcelAreaSqFt -- never reads zoningDistrict at all in S2 (computed from txgio_parcel geometry only); untouched by this change, confirmed by construction (the new branch lives entirely inside the `if (city.ruled)` zoningDistrict-dependent block, which parcelAreaSqFt's own per-parcel loop never enters).",
+      "zoning-layer-completeness.mjs and parcel-r5-zoning.mjs -- not edited. This lane only READS the already-written zoningDistrict not-applicable cell and its completenessDeclaration; it does not touch how or when that cell gets written.",
+      "SETBACK_APPLY_HELD / the atom setback writer -- not touched, not routed through.",
+      "Hays (48209) -- IN_SCOPE_COUNTIES is inherited verbatim by both files (S2 imports it from S1); no flag or branch in this change can reach it.",
+      "Slating (parcelRecordAllowlist.ts / PARCEL_RECORD_SLATE) -- S5/P-148 and successor own this; this lane only affects parcel_record_cell and, indirectly via the existing scheduled gate, parcel_gate_verdict.",
+      "Any cell not currently exactly 'unaccounted' -- the SQL gates are untouched and remain unaccounted-only for both writers' relevant clauses; a cell in any other state (value/refused/absent-verified/not-applicable already) cannot be moved by this change even if the JS branch runs, which is the existing 'never regress an earned cell' guarantee, unmodified."
+    ]
+  },
+
+  "verificationPlan": [
+    "Unit tests, both files: a new zd.kind='not-applicable' case alongside the existing refused/unaccounted/value cases, asserting (a) all dependent cells+companion get kind='not-applicable', (b) reason references the upstream determination, (c) completenessDeclaration is carried through verbatim, (d) counts.notApplicable increments correctly, (e) the existing 'unaccounted defers' test is updated to also cover a bare not-applicable zd with no completenessDeclaration is not expected in practice but the code must not crash if completenessDeclaration is ever absent on a not-applicable zd (defensive: ?? null).",
+    "Full local suite (node --test test/*.test.mjs) -- must stay green except any pre-existing unrelated failures, confirmed via git stash same as prior OPS-21 lanes' own discipline.",
+    "Live dry-run (apply=false) against a real city known to carry residual: --city=Bastrop for S1 and S2, both against live PRODUCTION_NEONDB_URL/FACTORY_DATABASE_URL_RO, comparing the reported notApplicable count to the pre-verified 44 (Bastrop county, though note --city filters by CITY not county -- Bastrop county's 44 may span more than one declared-complete city; will reconcile per-city vs per-county at CP2, not assumed 1:1).",
+    "CP2 pilot --apply on one city/county slice, SQL-verify predicted vs actual cellsMoved and cell_state shape (including completenessDeclaration presence) before the full apply.",
+    "Full apply across all 5 in-scope counties (no --city filter).",
+    "Post-apply: unaccounted count for the 8 rails, 5 counties, reaches exactly 0 (measured, not assumed). Re-verify parcel_gate_verdict flips to pass for all 40 pairs on the next scheduled publish-gate-sched evaluation (or trigger it once manually if the schedule window is inconvenient -- to be decided at CP2 depending on observed schedule cadence)."
+  ],
+
+  "openQuestionsForAdversarialReview": [
+    "Is 'not-applicable' ever a valid target for a cell that is currently something other than unaccounted, given the live-measured population? If any edge case exists where a dependent cell already carries a value/refused/absent-verified disposition for a place_key whose zoningDistrict is not-applicable, the unaccounted-only SQL gate silently protects it (correct, matches 'never regress an earned cell') -- but confirm this is actually inert-by-construction the way OPS-21-R1's CP1 explicitly verified its own OR-widening was inert for an unrelated rail, rather than merely assumed.",
+    "Does propagating maxFootprintSqFt directly to not-applicable (rather than routing it through footprintTargetState) ever produce a DIFFERENT answer than what footprintTargetState would compute if maxLotCoveragePct were literally not-applicable? footprintTargetState has no not-applicable branch at all today (its three branches are value/refused/absent-verified only) -- confirm this is a genuine gap being closed, not a case footprintTargetState was already silently handling some other way.",
+    "Confirm the reason string convention: should the propagated reason quote zd.reason verbatim (like buildRefusedFromUpstreamCells does) or paraphrase it? Chose to quote it (consistent with the refused precedent) -- flag if a paraphrase is preferred for readability given the completeness reason string is already long prose.",
+    "The two writers' RAIL_KEYS scalar counts differ (S1: 4 scalars + 1 companion = 5; S2: 3 of its 4 RAIL_KEYS are zoning-dependent, parcelAns is not) -- confirm the dispatch's '8 dependent rails' arithmetic (4+1 from S1, 3 from S2) is exactly what these two files' own RAIL_KEYS/TARGET_RAIL_KEYS already enumerate, not a hand-count that could drift from the actual constants."
+  ],
+
+  "status": "AWAITING adversarial review before implementation. No production writes have occurred; all queries so far are read-only (parcel_record_ro role, FACTORY_DATABASE_URL_RO)."
+}

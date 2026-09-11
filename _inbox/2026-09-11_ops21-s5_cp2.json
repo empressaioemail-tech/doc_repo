@@ -1,0 +1,40 @@
+{
+  "lane": "OPS21-S5",
+  "planRow": "P-148",
+  "checkpoint": "CP2 (pilot/mid-work adversarial re-verification, AGENT_CONTRACT section 1)",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ops21-s5",
+  "branch": "feat/ops21-s5-serve-wrappers",
+  "baseCommit": "cebd041d7ddf102f29ab60eeb9feb04946888125",
+
+  "whatWasBuilt": {
+    "wrapperTriads": "5 new (rail)FactRead.ts + (rail)FactFromParcelRecord.ts + (rail)ServeCutover.ts file sets: setbackRules, parcelAreaSqFt, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt. Four are the maxImperviousCoverPct scalar pattern; setbackRules is the utilityService companion-row pattern (CP1's live-verified structural finding).",
+    "wiring": "Both consumer routes now import and Promise.all-fetch all 5 loaders and attach all 5 facts to their response objects: brokerageNodeFacets.ts (GET node-facets route) and propertyExplorer.ts's assembleNodeBriefBody (POST research/brief node depth).",
+    "slating": "parcelRecordAllowlist.ts PARCEL_RECORD_SLATE gained exactly 5 entries: 48021/48055/48309/48453/48491:parcelAreaSqFt. Zero entries added for the other 4 rails.",
+    "tests": "10 new test files (FromParcelRecord.test.ts + ServeCutover.test.ts per rail), 61 new test cases. parcelRecordAllowlist.test.ts updated: slate-size assertion 97->102, the exhaustive unslated-pairs falsifier's rail list gained parcelAreaSqFt, a new dedicated parcelAreaSqFt FALSIFIER block, a Hays-exclusion assertion, and a never-slated assertion for the other 4 rails."
+  },
+
+  "selfCaughtBug": {
+    "what": "First typecheck pass found 10 real TS errors in brokerageNodeFacets.ts: the 5 new destructured variables (setbackRulesFact, parcelAreaSqFtFact, maxHeightFtFact, maxLotCoveragePctFact, maxFootprintSqFtFact) were added to the Promise.all destructuring assignment and the response object, but never pre-declared with `let` in the enclosing function scope -- this file's own established pattern (snapshot/floodHazardFact/etc. are all `let`-declared above the try block so the catch block can still see them) requires that pre-declaration for a plain `[x, y] = await Promise.all([...])` reassignment, not a `const [x, y] = ...` declaration.",
+    "howCaught": "npx tsc -p tsconfig.json --noEmit, not a hand review -- exactly what AGENT_CONTRACT section 5's verification rules exist for.",
+    "fix": "Added the 5 missing `let` declarations. Re-ran typecheck: error count identical before/after this lane's full changeset (1119 = 1119), and a git-stash diff confirmed the remaining errors are byte-identical pre-existing repo-wide 'workspace packages not built' (TS6305) and 'implicit any' (TS7006) noise, just shifted by this lane's own added line count -- zero net-new errors from this lane."
+  },
+
+  "liveReVerification_2026-09-11T12:26:34Z": {
+    "host": "FACTORY_DATABASE_URL_RO, ep-round-base-au0jofwp/neondb, read-only.",
+    "gateGrid": "parcelAreaSqFt still passes all 5 in-scope counties (48021/48055/48309/48453/48491), unaccounted_count 0 on every row. 48453 advanced to a newer run (evaluated_at 12:22:30Z, run be03baa7, same run_id now shared with 48021/48055/48309 -- the scheduler appears to be converging these onto one batch run) with the SAME pass/0 outcome as the two earlier reads (CP1's 12:20:42Z read and S4's original 11:52Z read). No drift in OUTCOME across three independent live reads spanning ~35 minutes, despite the underlying run_ids changing -- matches S4's own documented behavior on this exact rail (a verdict CAN flip between reads; this one has not, three times running).",
+    "callSiteCount": "grep -rl 'resolveAllowlist(' lib/*.ts (excluding .test.ts) now returns 20 files: the original 13 wrapper files + parcelRecordAllowlist.ts + parcelGateVerdictRead.ts (both self-referencing, not wrapper call sites, per S4's own CP2 methodology) + this card's 5 new wrapper files. Confirms all 5 wrappers are real, live call sites, not dead code -- directly answering S4's own LESSON #1 (grep for a resolveAllowlist call site keyed to the exact rail_key before trusting a slate entry)."
+  },
+
+  "testingSummary": {
+    "newRailUnitTests": "109/109 pass (parcelAreaSqFtFact x16, maxHeightFtFact x11, maxLotCoveragePctFact x10, maxFootprintSqFtFact x11, setbackRulesFact x12, parcelRecordAllowlist.test.ts x46, propertyExplorerBriefNodeFacetParity.test.ts x3, plus overlap). Every branch of every new adapter (present/absent/refused/malformed/unaccounted/no-such-cell/store-not-configured) exercised against fixtures mirroring live-sampled cell shapes.",
+    "typecheck": "Zero net-new errors (1119 = 1119, git-stash-diffed, confirmed byte-identical modulo line-number drift).",
+    "environmentalGapNotThisLane": "4 pre-existing test files (reportRunState.test.ts, parcelConstraintSearch.test.ts, recordsRequestRoutes.test.ts, brokerageTxParcels.test.ts) and the full src/__tests__/brokerageNodeFacets.test.ts integration suite all require a REAL local Postgres (createTestSchema against 127.0.0.1:5432) that this sandbox does not have running -- confirmed pre-existing and unrelated to this lane via git stash: identical 14/14 failures with this lane's entire changeset stashed out. Not fixed here (provisioning a local test Postgres is infrastructure, not this lane's mission); CI is authoritative per AGENT_CONTRACT section 5 and is expected to run these against a real database."
+  },
+
+  "stillOpenBeforeClose": [
+    "PR not yet opened / CI not yet run at CP2 time.",
+    "Live end-to-end probe (write -> gate -> slate -> serve) not yet performed -- requires a merged, deployed revision.",
+    "Final gate re-verification at close, per the dispatch's own repeated instruction, not yet done (this is the SECOND of what will be a third live read)."
+  ]
+}

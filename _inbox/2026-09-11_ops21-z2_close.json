@@ -1,0 +1,153 @@
+{
+  "lane": "OPS-21-Z2",
+  "title": "Taught parcel-setback-cells (S1) and parcel-envelope-cells (S2) to propagate zoningDistrict not-applicable to their 8 dependent rails -- the 3,376-parcel residual (5 in-scope counties) that was the ONLY thing blocking those 8 rails' gate now reaches unaccounted=0 everywhere, and all 40 (county,rail) parcel_gate_verdict pairs flip to pass, live-verified",
+  "planRows": ["P-149"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (via 90_operations/OPS-21_serve_completion_program.md)",
+  "dispatch": "_dispatches/2026-09-11_ops21-z2_dispatch.md",
+  "closedAt": "2026-09-11T14:15:00Z",
+  "status": "CLEAN CLOSE. Completion predicate proven live, at source, before and after. Zero errors across both pilot and full applies. All 40 gate-verdict pairs confirmed pass.",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ops21-z2",
+  "branch": "fix/ops21-z2-not-applicable-propagation",
+  "baseCommit": "711cc06a94bb3aad379016017070bf4ed9663490",
+  "headSha": "837802e5f209a875ab519d6042c48e2530a7da47",
+  "pr": 139,
+  "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/139",
+  "merged": true,
+  "mergeSha": "217b7dd7eb3a1b2f72f3a72d333008079f71fcaf",
+
+  "checkpoints": [
+    "_inbox/2026-09-11_ops21-z2_cp1.json",
+    "_inbox/2026-09-11_ops21-z2_cp2.json"
+  ],
+
+  "snapshotDeclared": "code: hauska-factory, branch fix/ops21-z2-not-applicable-propagation, cut from origin/main 711cc06 before any file edit (per dispatch requirement, declared to the operator before starting), head 837802e (confirmed byte-identical to merged origin/main via git diff on the four changed files before deploy), merged 217b7dd7 (squash merge, PR #139). data: FACTORY_DATABASE_URL host ep-round-base-au0jofwp (hauska-factory Neon project withered-surf-26870298, parcel_record_cell + parcel_gate_verdict) -- all verification reads used the read-only role (parcel_record_ro, FACTORY_DATABASE_URL_RO secret), direct host, never -pooler; the write-capable secret was fetched but used only to confirm hostnames matched the dispatch's declared host, never for a query. PRODUCTION_NEONDB_URL host ep-lucky-truth-apodo8hr (cortex-prod project fancy-fire-06136146, landing_parcel_jurisdiction/txgio_parcel) -- used read-only by the writers themselves (their own module contract), no write capability exists on this job's code path to that host. Cloud Run project hauska-prod-497015, region us-east4. Work spanned 2026-09-11T~12:50Z (dispatch read) to 2026-09-11T14:15Z.",
+
+  "missionPremise": "Z1 (P-147) proved live, twice (primary+replica, zero drift), that the 3,376-parcel residual blocking eight rails' gate across five in-scope counties was NOT an unresolved zoningDistrict -- it is legitimate, permanent not-applicable (unzoned land inside a city whose staged zoning layer is declared complete, per src/config/zoning-layer-completeness.mjs). The actual defect: parcel-setback-cells.mjs and parcel-envelope-cells.mjs only ever advanced a parcel's dependent rails when zoningDistrict reached value or refused -- there was no branch for not-applicable, so it was silently lumped in with unaccounted and deferred forever. This is the program's own vacuous-write-path defect class (a code path that runs perfectly and cannot succeed for a population, because no branch exists to move it) pointed at itself.",
+
+  "completionPredicate": "unaccounted count for the eight dependent rails (setbackFrontFt/Side/Rear/Corner, setbackRules, maxHeightFt, maxLotCoveragePct, maxFootprintSqFt) on in-city parcels in the five in-scope counties reaches zero, AND the parcel_gate_verdict for each of those 40 (county,rail) pairs flips to pass on the next evaluation. BOTH measured live, independently, after the full apply: (1) a direct query of the completeness-sweep not-applicable population (zoningDistrict cell_state carrying a completenessDeclaration payload) joined against all 8 dependent rails, summed across 5 counties, returns unaccounted=0 -- exact zero, not inferred. (2) A broader sanity check on setbackFrontFt (representative of all 8, since every branch in both writers moves its rails together) shows ZERO 'unaccounted' rows anywhere in the full county-wide population (not just the 3,376 subset) for any of the 5 in-scope counties -- the fix closed the ONLY remaining unaccounted source for these rails, confirming the dispatch's own claim that this population was the entire blocker. (3) parcel_gate_verdict re-evaluated live (targeted trigger of factory-publish-gate-sched covering exactly these 40 pairs, not waiting for the hourly scheduler): all 40 rows now read verdict=pass, unaccounted_count=0, evaluated_at within the trigger's execution window (2026-09-11T13:41-14:10Z). Both predicate halves pass, live, at the cell level and the gate-verdict level.",
+
+  "scopeBasis": "hauska-factory only, same two jobs the dispatch named (parcel-setback-cells.mjs / f11-setback, parcel-envelope-cells.mjs / parcel-envelope-cells) -- no new job, no new CLI command, no writer-allowlist change (both ids already registered). Out of scope, all confirmed untouched: parcelAreaSqFt (never reads zoningDistrict at all; the new branch lives entirely inside the zoningDistrict-dependent code path, structurally unreachable from parcelAreaSqFt's own loop -- confirmed by an adversarial sub-agent review reading the loop boundaries directly, not merely asserted); zoning-layer-completeness.mjs and parcel-r5-zoning.mjs (read-only inputs to this lane, not edited -- this lane consumes the already-written zoningDistrict not-applicable cell and its completenessDeclaration, it does not change how or when that cell gets written); SETBACK_APPLY_HELD / the atom setback writer (never routed through); Hays 48209 (IN_SCOPE_COUNTIES inherited verbatim by both files, S2 imports it from S1; structurally unreachable, zero rows touched -- confirmed 0 by construction, and Hays's own 570-parcel version of this same population remains untouched and unaccounted, exactly as it should per the P-145 gate); slating / parcelRecordAllowlist.ts's PARCEL_RECORD_SLATE (S5/P-148 and successor own this; this lane only affects parcel_record_cell and, via the existing scheduled gate, parcel_gate_verdict); the stale Elgin '1,680 held' prose figure Z1 flagged (registered separately per the dispatch, not this lane's file to edit).",
+
+  "adversarialReview": {
+    "method": "CP1 design reviewed by an in-process sub-agent (general-purpose, one level deep, read-only, no code changes) before any implementation began, per AGENT_CONTRACT section 1's mandatory adversarial checkpoint.",
+    "findingsIncorporated": [
+      "CP1 mischaracterized S2's SQL gate as fully untouched/unaccounted-only; corrected the module-doc wording and made explicit the reliance on the live-confirmed invariant that this population is always currently 'unaccounted' (so only gateFieldWrite's isFirstWrite fast path is ever exercised, never the OPS-21-R1 remediation-revisit branch, which only admits a value/refused target).",
+      "Flagged that S1 counts notApplicable per-PARCEL while S2 counts it per-CELL (up to 3x per parcel) -- CP2's live pilot reports and reconciles both conventions explicitly (44 vs 132=44x3) rather than treating the asymmetry as an error.",
+      "Caught that parcel-envelope-cells.mjs's pushIfPresent needed an explicit not-applicable branch ahead of its absent-verified catch-all, or every not-applicable cell would silently miscount as absentVerified in the self-reported totals (the DB write itself was never at risk -- only the operational-log numbers). Implemented before any code ran live.",
+      "Flagged that notApplicable needed manual (non-derived) addition to 6 separate counts-init/totals-init/console.error locations across the two files -- all six confirmed present and correct via the live pilot's own printed summary lines."
+    ],
+    "noProblemsFoundIn": "whether the SQL gate is inert-by-construction for this population (traced the full one-way transition chain: zoningDistrict cannot reach not-applicable after ever being value/refused, so neither writer has ever written these rails for this population before); the reason-quoting convention; the 8-rail arithmetic against the actual RAIL_KEYS/TARGET_RAIL_KEYS constants (not a hand-count); COMPANION_RAIL_KEY handling; and every OPS-21-R1 remediation-gating interaction."
+  },
+
+  "whatWasBuilt": {
+    "parcelSetbackCells": "src/jobs/parcel-setback-cells.mjs -- new buildNotApplicableFromUpstreamCells(placeKey, zd), inserted as a new branch between the (now unaccounted-only) defer check and the existing refused-propagation branch. Writes {kind:'not-applicable', reason, completenessDeclaration} across all 4 scalar rails + the setbackRules companion, companionRows:[] (mirrors the existing refused/no-ruled-table builders -- no companion detail row for a non-value disposition). No SQL change: UPDATE_SETBACK_CELLS_SQL's existing unaccounted-only gate is sufficient, live-confirmed sufficient before any code ran.",
+    "parcelEnvelopeCells": "src/jobs/parcel-envelope-cells.mjs -- new notApplicableFromUpstreamCells(zdCellState, currentStates), mirroring refusedFromUpstreamCells's shape, routed through the existing gateFieldWrite/gateFootprintWrite per-field gates unchanged. maxFootprintSqFt gets the SAME not-applicable target directly (never footprintTargetState's area x pct formula, which has no not-applicable branch). pushIfPresent gained an explicit not-applicable counting branch. No SQL change: UPDATE_ENVELOPE_CELLS_SQL's existing unaccounted OR-term is sufficient for this population.",
+    "tests": "4 new unit tests (test/parcel-setback-cells.test.mjs x2, test/parcel-envelope-cells.test.mjs x2): the core not-applicable-propagation case for each writer (asserting cell kind, reason references the upstream determination, completenessDeclaration carried through verbatim, counts increment correctly), plus a defensive no-completenessDeclaration-on-upstream-cell case for S1 (never crashes, writes null)."
+  },
+
+  "liveVerification": {
+    "preApply": {
+      "method": "Live read (parcel_record_ro role) against parcel_record_cell, filtering zoningDistrict cells to kind='not-applicable' AND cell_state ? 'completenessDeclaration' (the marker distinguishing the completeness-sweep write from the unincorporated instantiate-time not-applicable, which carries no completenessDeclaration field).",
+      "perCountyStuckTotals": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271, "sum": 3376 },
+      "crossValidation": "Exactly matches OPS-21-R1's own independent close (_inbox/2026-09-11_ops21-r1_close.json), a completely different lane working different rails, which measured 'unaccounted: 3376' for maxHeightFt/maxLotCoveragePct in its own five-county sum-check and explicitly noted this population as untouched by its own work.",
+      "parcelGateVerdictPreApply": "All 40 (county,rail) pairs at verdict=refuse, unaccounted_count matching the per-county totals above exactly (e.g. 48021 x every one of the 8 rails: unaccounted_count=44), evaluated_at ~2026-09-11T12:03-12:35Z (a prior scheduled run)."
+    },
+    "deploy": {
+      "parcelSetbackCells": { "cloudBuildId": "77a93b20-1b7e-4c79-a717-4713e3eba24d", "status": "SUCCESS", "deployedImageDigest": "sha256:6a87443f3e56b565f95405dc345e927d79b81c45fd1252af3b43349e4e52be6e", "confirmedLive": "build log's own 'pinning factory-parcel-setback-cells to <digest>' line matches gcloud run jobs describe's recorded image exactly -- not inferred from build status alone. Prior digest sha256:b61a1001... superseded." },
+      "parcelEnvelopeCells": { "cloudBuildId": "1579ef15-c14c-4deb-ad15-7302b2385775", "status": "SUCCESS", "deployedImageDigest": "sha256:069addc6fed78fe72534833f6739d7098b14ac77368678283e8b19123cf95e1c", "confirmedLive": "build log's own 'pinning factory-parcel-envelope-cells to <digest>' line matches gcloud run jobs describe's recorded image exactly. Prior digest sha256:c2f676195f... (OPS-21-R1's own deploy) superseded." }
+    },
+    "ciChecks": {
+      "readFrom": "gh api repos/empressaioemail-tech/hauska-factory/commits/837802e5f209a875ab519d6042c48e2530a7da47/check-runs, the .conclusion field (not gh pr checks' 'pass' bucket label, per AGENT_CONTRACT section 5's merge rule)",
+      "runs": [
+        { "name": "gate8", "conclusion": "success" },
+        { "name": "gate8", "conclusion": "success" },
+        { "name": "test", "conclusion": "success" },
+        { "name": "test", "conclusion": "success" },
+        { "name": "ldt-sha-comment-presence", "conclusion": "success" },
+        { "name": "ldt-sha-comment-presence", "conclusion": "success" }
+      ],
+      "allSuccess": true
+    },
+    "executions": [
+      { "id": "factory-parcel-setback-cells-9zn7v", "args": "--city=Bastrop --apply", "kind": "CP2 pilot", "result": "Succeeded in 36.5s. SQL-verified after: Bastrop county (48021) setbackFrontFt (representative of all 8) shows 111 absent-verified (pre-existing, unrelated no-ruled-table population) + 44 not-applicable (newly propagated), 0 unaccounted." },
+      { "id": "factory-parcel-envelope-cells-rzt7k", "args": "--city=Bastrop --apply", "kind": "CP2 pilot", "result": "Succeeded in 14.6s." },
+      { "id": "factory-parcel-setback-cells-klmnw", "args": "--apply (all in-scope cities, no filter)", "kind": "full apply", "result": "Succeeded in 18m46.6s. All 64 in-city cities across the 5 counties, zero errors." },
+      { "id": "factory-parcel-envelope-cells-tn8vr", "args": "--apply (all in-scope cities, no filter)", "kind": "full apply", "result": "Succeeded in 11m44.6s. Zero errors." },
+      { "id": "factory-publish-gate-sched-tnd8t", "args": "--county=48021 --county=48055 --county=48309 --county=48453 --county=48491 --rail=<8 dependent rails> --apply", "kind": "targeted gate re-evaluation (triggered manually rather than waiting up to 60 min for the hourly factory-publish-gate-sched-hourly Cloud Scheduler job, which runs the identical Cloud Run job against the full 6-county x 65-rail matrix)", "result": "Succeeded in 30m54.6s. All 40 targeted (county,rail) pairs written." }
+    ],
+    "spotChecks": [
+      "48021:117672 maxHeightFt: kind=not-applicable, reason references the upstream zoningDistrict determination verbatim ('...Bastrop's layer is declared complete for arcgis-live:bastrop-tx:2026-08-12 at 99.24 percent parcel coverage and 69.53 percent areal coverage...'), completenessDeclaration={cellPct:99.24, cityKey:'bastrop-tx', arealPct:69.53, cityName:'Bastrop', measuredAt:'2026-09-08', establishedBy:'integration seat doc-repo-79, operator ruling 2026-09-08'}, updated_at=2026-09-11T13:15:24Z -- inside the pilot's own execution window, not a stale/pre-existing row.",
+      "Same place_key's setbackFrontFt and setbackRules cells: identical kind/reason/completenessDeclaration shape, confirming all 8 rails move together as one determination, exactly as designed."
+    ],
+    "postApply": {
+      "eightRailFiveCountyGrandTotal": { "instrument": "live query joining the completeness-sweep not-applicable population against all 8 dependent rails, 5 counties", "unaccounted": 0, "note": "exact zero, every rail x every county." },
+      "broaderSanityCheck": {
+        "instrument": "full-population reconciliation of setbackFrontFt (representative of all 8, since every branch in both writers moves its rails together) across ALL in-city + unincorporated parcels in the 5 counties, not just the 3,376 subset",
+        "perCounty": {
+          "48021": { "absentVerified": 5518, "notApplicable": 50308, "refused": 9, "value": 6421, "sum": 62256 },
+          "48055": { "absentVerified": 5116, "notApplicable": 14387, "refused": 0, "value": 5485, "sum": 24988 },
+          "48309": { "absentVerified": 43305, "notApplicable": 33436, "refused": 0, "value": 37513, "sum": 114254 },
+          "48453": { "absentVerified": 103283, "notApplicable": 104935, "refused": 456, "value": 172243, "sum": 380917 },
+          "48491": { "absentVerified": 43346, "notApplicable": 109014, "refused": 0, "value": 130210, "sum": 282570 }
+        },
+        "grandSum": 864985,
+        "crossValidation": "864,985 is the EXACT same five-county denominator OPS-21-R1's own close independently reported for maxHeightFt/maxLotCoveragePct/maxFootprintSqFt (a different rail set, same underlying population) -- third independent measurement, zero drift.",
+        "zeroUnaccountedAnywhere": "No county shows an 'unaccounted' bucket at all for setbackFrontFt -- confirms this lane's fix closed the ONLY remaining unaccounted source for these 8 rails, matching the dispatch's own claim exactly."
+      }
+    },
+    "parcelGateVerdictPostReEval": {
+      "instrument": "targeted trigger of factory-publish-gate-sched (same Cloud Run job the hourly scheduler calls), --county x5 --rail x8 --apply, then a live read of parcel_gate_verdict",
+      "result": "all 40 of 40 pairs: verdict=pass, unaccounted_count=0, evaluated_at within 2026-09-11T13:41:06Z-14:10:25Z (the trigger's own execution window). Zero rows still at refuse/excluded/missing."
+    }
+  },
+
+  "finalCounts": {
+    "countingRule": "Live queries against FACTORY_DATABASE_URL (parcel_record_ro role), five in-scope counties (48021,48055,48309,48453,48491), post full-apply.",
+    "eightRailUnaccountedBefore": 3376,
+    "eightRailUnaccountedAfter": 0,
+    "propagatedToNotApplicable": { "48021": 44, "48055": 26, "48309": 1014, "48453": 1021, "48491": 1271, "sum": 3376, "note": "per-place_key count (S1's own convention); S2's own per-cell counting reports 3x this for its 3 rails (e.g. Bastrop's live pilot: S1 notApplicable=44, S2 notApplicable=132=44x3) -- both conventions cross-checked at CP2, not a discrepancy." },
+    "gateVerdictPairsFlippedToPass": { "count": 40, "of": 40 }
+  },
+
+  "constraintsHonored": [
+    "No SQL gate widened beyond what was already there -- both writers' existing unaccounted-only gates were sufficient; confirmed live before any code ran that every target cell in this population was currently exactly 'unaccounted'.",
+    "parcelAreaSqFt untouched -- structurally unreachable by the new branch (confirmed by an independent adversarial review, not merely asserted).",
+    "zoning-layer-completeness.mjs and parcel-r5-zoning.mjs not edited -- this lane only reads the already-written zoningDistrict not-applicable cell and its completenessDeclaration.",
+    "SETBACK_APPLY_HELD / the atom setback writer never touched, never routed through.",
+    "Hays (48209) structurally excluded, zero rows touched -- confirmed 0 by construction (IN_SCOPE_COUNTIES inherited verbatim), and its own 570-parcel analog of this population remains correctly unaccounted, untouched.",
+    "Slating (parcelRecordAllowlist.ts / PARCEL_RECORD_SLATE) not touched -- this lane only affects parcel_record_cell and, via the existing scheduled gate, parcel_gate_verdict.",
+    "The Elgin '1,680 held' stale-prose finding Z1 flagged was not edited by this lane, per the dispatch's explicit instruction.",
+    "Write-slot law: both writer-allowlist ids (f11-setback, parcel-envelope-cells) are the recorded holders for their own scopes; no second writer ran concurrently against the same rails during either apply.",
+    "MERGE only on the CI check-run conclusion string 'success' -- verified via gh api, not gh pr checks' 'pass' bucket label alone.",
+    "Deploy confirmed live via the build log's own recorded digest matching gcloud run jobs describe's recorded image, not inferred from Cloud Build status alone.",
+    "Doc_repo edits (CP1, CP2, this close) left UNCOMMITTED per AGENT_CONTRACT section 6, listed below."
+  ],
+
+  "whatRemainsOpen": [
+    "S5/P-148 and successor own slating this rail set onto parcelRecordAllowlist.ts's PARCEL_RECORD_SLATE -- a passing gate verdict does not auto-slate a rail; that is a deliberate, separate control this lane does not touch.",
+    "Hays (48209)'s own 570-parcel version of this exact population (all currently unaccounted, live-confirmed) remains blocked on P-145 (Hays identity reconciliation), which has not landed. When it does, this lane's same code will correctly pick it up with zero further changes, since IN_SCOPE_COUNTIES is the only gate.",
+    "The Elgin '1,680 held' stale prose figure (zoning-layer-completeness.mjs) Z1 flagged remains open, registered separately, not this lane's file to edit.",
+    "OPS-21-R1's own SENTINEL_UNIFORM absent-verified population (209,483 cells on maxHeightFt/maxLotCoveragePct) and this lane's no-ruled-table absent-verified population (224 place_keys x 5 rails) are unrelated, unaffected, and correctly untouched by this lane's applies -- both are legitimate, permanent absences, not unaccounted."
+  ],
+
+  "docRepoEdits": {
+    "note": "doc_repo commits are planner-owned (AGENT_CONTRACT section 6); this lane's own artifacts are left UNCOMMITTED.",
+    "stillUncommittedByThisLane": [
+      "_inbox/2026-09-11_ops21-z2_cp1.json",
+      "_inbox/2026-09-11_ops21-z2_cp2.json",
+      "_inbox/2026-09-11_ops21-z2_close.json"
+    ]
+  },
+
+  "fleetMemoryScratch": [
+    { "kind": "LESSON", "text": "When two writers share the same upstream-propagation shape (refused-propagation already existed in both S1 and S2 before this lane), adding a sibling branch (not-applicable-propagation) is safest done by mirroring the existing branch's exact structure (same position in the if-chain, same all-rails-together write, same reuse of the upstream cell's own reason) rather than inventing a new shape -- minimizes the surface an adversarial review has to check from scratch." },
+    { "kind": "LESSON", "text": "A per-parcel counting convention (S1) and a per-cell counting convention (S2) can coexist correctly in two sibling writers for the same logical event -- do not assume a count mismatch across two writers processing the same parcels is a bug before checking each writer's own established counting convention for its OTHER branches (S2's value/refused/absentVerified counts were already per-cell before this lane touched anything)." },
+    { "kind": "LESSON", "text": "A kind-based counts switch/if-chain with a catch-all 'else' bucket silently absorbs any new kind you forget to add an explicit branch for -- the write path is unaffected (JSON.stringify preserves the real kind) but the self-reported operational totals lie. Caught this lane's own instance at CP1 adversarial review, before any code ran; worth a standing checklist item whenever a job gains a new disposition kind: grep for every counts-bucketing switch, not just the ones near the new write logic." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-11T13:41-14:10Z, live, hauska-factory Neon project (ep-round-base-au0jofwp): all 40 (county,rail) pairs for setbackFrontFt/Side/Rear/Corner/setbackRules/maxHeightFt/maxLotCoveragePct/maxFootprintSqFt across 48021/48055/48309/48453/48491 read verdict=pass, unaccounted_count=0 in parcel_gate_verdict. Pre-fix (2026-09-11T12:03-12:35Z) all 40 read refuse with unaccounted_count matching 44/26/1014/1021/1271 exactly." },
+    { "kind": "GROUND-TRUTH", "text": "The five-county denominator for any one of the 8 rails this lane touched (and, per OPS-21-R1's own close, for maxHeightFt/maxLotCoveragePct/maxFootprintSqFt independently) is 864,985 -- three independent lanes (S1, R1, Z2) have now each measured this exact number live, zero drift across all three." },
+    { "kind": "GROUND-TRUTH", "text": "factory-publish-gate-sched-hourly (Cloud Scheduler, us-east4, schedule '0 * * * *') triggers the identical Cloud Run job (factory-publish-gate-sched) a manual `gcloud run jobs execute ... --args=publish-gate-sched,--county=...,--rail=...,--apply` invocation does -- a lane needing an immediate gate re-evaluation for a specific (county,rail) subset does not need to wait up to 60 minutes for the scheduled run; triggering the same job manually with a narrower --county/--rail set is faster and equally authoritative." },
+    { "kind": "OPEN", "text": "Hays (48209) carries the identical shape of this exact defect (570 parcels, zoningDistrict not-applicable, all 8 dependent rails unaccounted) but is structurally unreachable until P-145 lands. No code change will be needed here when it does -- IN_SCOPE_COUNTIES is the only gate, already inherited correctly by both writers." }
+  ]
+}
