@@ -250,10 +250,15 @@ export const ROWS = {
       const fx = legs.facets;
       if (!pt?.measured && !pt?.http) return { verdict: "UNMEASURED", basis: "point route leg did not run" };
       if (!fx?.measured) return { verdict: "UNMEASURED", basis: "facets leg did not run" };
-      const pointAnswers = pt.http >= 200 && pt.http < 500 && !pt.error;
+      // "Answer or refuse inside the budget." A declared refusal is a JSON body with a status or
+      // errorClass, whatever its HTTP code (P-151's LDT half returns 503 resolution_timeout at
+      // 8 s by design); a bare gateway 504, a non-JSON body, or anything past the budget fails.
+      const POINT_BUDGET_MS = 10_000;
+      const declared = pt.measured && (pt.status != null);
+      const pointAnswers = declared && !pt.error && pt.ms <= POINT_BUDGET_MS && pt.http !== 504;
       const sealed = obs?.[id]?.sheetSealed;
       const parts = [
-        `point route http ${pt.http}${pt.error ? " " + pt.error : ""} in ${pt.ms} ms (must answer or refuse, never 5xx/timeout)`,
+        `point route http ${pt.http} ${pt.status ?? "(no declared status)"}${pt.error ? " " + pt.error : ""} in ${pt.ms} ms (must answer or declare a refusal inside ${POINT_BUDGET_MS} ms; a bare 504 or a non-JSON body fails)`,
         `record point ${fx.recordPoint ? "present" : "ABSENT"}`,
         `ring probe ${legs.gisRing?.measured ? (legs.gisRing.matchesParcel ? "matches parcel" : "NO MATCH") : "not run"}`,
         `sheet sealed: ${sealed === true ? "OBSERVED yes" : sealed === false ? "OBSERVED no" : "not observed"}`,
