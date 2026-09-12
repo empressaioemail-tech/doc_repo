@@ -262,6 +262,34 @@ merge; it closes on the operator's screenshot of the amber inset, the lane's MCP
 and one probe run. P-167 is unblocked now, not after a resumption lane. P-173 (lease history)
 was rowed under A-133.
 
+## Wave 3 prepared, and a second mechanism correction (2026-09-12 evening)
+
+Two verifiers read the code for the last two wave-3 missions. P-154: the five setback
+producers for `48021:34049` and their dates read at source. The ordinance (effective
+2026-04-14) and the city's Revisions layer (edited 2026-07-23) both say 30/10/30/20; the
+city's OneClick layer carries the newest layer edit stamp (2026-08-24) but its row cites
+Ordinance 2019-51 and prints 25/5/25/15; no producer reads any date; LDT ranks by tier with
+date as tiebreaker and treats atom emit time as a date; the engine cites a dead layer-83 URL
+and requests an outField the layer lacks. The mission makes the rule date-first in one module
+with the per-parcel row dated by the ordinance it cites, and records the three dates as the
+decision's evidence.
+
+P-152 lane 3: the report composer does not read cortex facets at all. It reads the engine
+substrate atoms store plus four live layers; the values print UNAVAILABLE because that store
+holds no roll atom for the parcel; city limits and ETJ are hard-coded `unresolved` with a
+literal sentence on every PDF in every county; school district is not on the report path;
+special districts are every TCEQ-membership atom with no picker, against the record's cell on
+the card; a reader outage on the panel falls silently to the atom chain with HTTP 200; no
+entitlement reaches the engine (static `public-paid` headers from both clients). The
+overseer's F17 to F19 mechanism, "reads cortex facets with the service key", was the panel's
+cadRoll collapse transposed onto the PDF from one read: planner error, corrected in the plan,
+the card, the snapshot and the wave-3 mission the same hour. The fix direction stands.
+
+Wave 3 compiled for a successor planner: P-152 lane 3 (the last panel rails and the report
+composer read the reader, entitlement travels with the rule unchanged, a reader outage is
+declared), P-154, P-157 resumption 2, P-158 phase 3, P-167 steps 2 to 5, P-173. The probe
+carries P-154 and P-173 predicates. P-153 closes on the operator's two legs when they arrive.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not

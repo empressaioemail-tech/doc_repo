@@ -128,9 +128,9 @@ and run beside the steps.
 | F13 address-form envelope answered for a Williamson parcel when asked about a Bastrop one | P-152 (reader resolves by node id only) |
 | F14 point-route hang is a rate, not a state | measured by every probe run |
 | F15 cortex's cached Bastrop county-gis layer has holes at both Bastrop probe parcels; the county's own service has them | P-152 (rings from the ledger's `parcelGeometry`, never a cached fetch) |
-| F17 the PDF and the card name different special districts for `48453:474034` (Lake Pointe MUD vs West Travis County MUD 3) | P-152 lane 3 (reports consume the reader); P-165 (edges list every district) |
-| F18 the PDF cannot see session-gated values and calls an improved parcel unimproved (values UNAVAILABLE beside a $857,737 improvement on the card; the P-159 guard starved) | P-152 lane 3 (report composer reads the reader with the requester's entitlement); P-158 phase 3 |
-| F19 the PDF says no city-limits source is wired while the card prints the record's cityLimits; raw tokens on the PDF; school and water absent | P-152 lane 3; P-167 |
+| F17 the PDF and the card name different special districts for `48453:474034` (Lake Pointe MUD on the record's cell; West Travis County MUD 3 in the engine's TCEQ-membership atoms; two stores, no reconciliation, no one-district picker) | P-152 lane 3 (reports consume the reader); P-165 (edges list every district) |
+| F18 the PDF prints values UNAVAILABLE beside a $857,737 improvement on the card and calls the parcel unimproved: the report composer reads the engine substrate atoms store, which holds no roll atom for the parcel (corrected 2026-09-12; not session gating: no entitlement reaches the engine); the P-159 guard starved | P-152 lane 3 (report composer reads the reader; entitlement travels, rule unchanged); P-158 phase 3 |
+| F19 city limits and ETJ are hard-coded `unresolved` on every PDF in every county (`report-model.ts:791-796`) while the card prints the record's cityLimits; school district is not on the report path; raw tokens on the PDF | P-152 lane 3; P-167 |
 | F16 the Find box on smartsite.cloud does not resolve `414 SPILLER LN` (operator, 2026-09-11 21:05Z, after the P-151 deploy); address search is a geocoder path separate from the sheet resolver P-151 changed, and P-27 ruled the situs index over any geocoder | P-151 close must say whether the lane touched it; if not, a new row (Find box reads the situs index) is proposed at the next amendment |
 
 ## Owed by the operator, each named so it does not silently expire

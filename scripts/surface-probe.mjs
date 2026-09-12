@@ -473,6 +473,41 @@ export const ROWS = {
       return { verdict: "PASS", basis: parts.join("; ") };
     },
   },
+  // ------------------------------------------------------------------ OPS-23 wave 3 (2026-09-12)
+  "P-154": {
+    title: "most-current source wins: panel, envelope endpoint, MCP and PDF print the same setbacks and date, or all show the conflict row",
+    parcels: ["48021:34049", "48021:33223"],
+    evaluate(id, legs, obs) {
+      const fx = legs.facets;
+      const env = legs.envelopeByAddress;
+      const o = obs?.[id] ?? {};
+      if (!fx?.measured) return { verdict: "UNMEASURED", basis: "facets leg did not run" };
+      const cands = [["panel", fx.setbacks], ["endpoint", env?.measured && env.status === "ok" ? env.setbacks : null], ["MCP", o.mcpSetbacks ?? null], ["PDF", o.pdfSetbacks ?? null]];
+      const present = cands.filter(([, s]) => s && (s.front != null || s.side != null || s.rear != null));
+      const conflictDeclared = o.conflictRow === true;
+      const date = str(o.setbackSourceDate);
+      const basis = cands.map(([n, s]) => `${n} ${s ? fmtSb(s) : "none"}`).join("; ") + `; sourceDate ${date ?? "not observed"}; conflict row ${conflictDeclared ? "OBSERVED" : "no"}`;
+      // Any two measured or observed producers that disagree, absent a declared conflict row, fail.
+      for (let i = 0; i < present.length; i++) for (let k = i + 1; k < present.length; k++) {
+        if (!sameSetbacks(present[i][1], present[k][1]) && !conflictDeclared) return { verdict: "FAIL", basis: basis + ` -- ${present[i][0]} and ${present[k][0]} DISAGREE` };
+      }
+      if (present.length < 4 && !conflictDeclared) return { verdict: "UNMEASURED", basis: basis + " -- not every producer observed" };
+      if (!date && !conflictDeclared) return { verdict: "UNMEASURED", basis: basis + " -- no source date observed" };
+      return { verdict: "PASS", basis };
+    },
+  },
+  "P-173": {
+    title: "a writer's lease leaves a history row that survives release; the audit reads it by run id",
+    parcels: ["48021:34049"],
+    evaluate(id, legs, obs) {
+      const o = obs?.[id] ?? rec(obs?._lease) ?? {};
+      const a = o.leaseHistoryRowSurvivesRelease, b = o.auditReturnsByRunId;
+      const basis = `history row survives release ${a === true ? "OBSERVED yes" : a === false ? "OBSERVED no" : "not observed"}; audit returns by run id ${b === true ? "OBSERVED yes" : b === false ? "OBSERVED no" : "not observed"}; run ${o.runId ?? "not observed"}`;
+      if (a === false || b === false) return { verdict: "FAIL", basis };
+      if (a !== true || b !== true || !str(o.runId)) return { verdict: "UNMEASURED", basis };
+      return { verdict: "PASS", basis };
+    },
+  },
 };
 
 // --------------------------------------------------------------------------- live run
@@ -706,6 +741,20 @@ function selfTest() {
   check("P-171 can PASS on outcome a with a record", ROWS["P-171"].evaluate("48021:34049", goodWave2, goodWave2Obs).verdict === "PASS");
   check("P-171 FAILS on outcome c (not attributable)", ROWS["P-171"].evaluate("48021:34049", goodWave2, { "48021:34049": { outcome: "c" } }).verdict === "FAIL");
   check("P-171 is UNMEASURED on outcome a with no record reference", ROWS["P-171"].evaluate("48021:34049", goodWave2, { "48021:34049": { outcome: "a" } }).verdict === "UNMEASURED");
+
+  // OPS-23 wave 3 rows (2026-09-12).
+  const r154 = ROWS["P-154"].evaluate("48021:34049", legsById["48021:34049"], obs);
+  check("P-154 fails on the 2026-09-11 state of 48021:34049 (panel 25/5/25/15 vs endpoint and MCP 30/10/30/20)", r154.verdict === "FAIL", r154.basis);
+  const sb = { front: 30, side: 10, rear: 30, corner: 20 };
+  const good154 = { ...good, facets: { ...good.facets, setbacks: sb }, envelopeByAddress: { ...good.envelopeByAddress, setbacks: sb } };
+  const obs154 = { "48021:34049": { mcpSetbacks: sb, pdfSetbacks: sb, setbackSourceDate: "2026-04-14" } };
+  check("P-154 can PASS when all four producers agree and carry a date", ROWS["P-154"].evaluate("48021:34049", good154, obs154).verdict === "PASS");
+  check("P-154 is UNMEASURED without a source date", ROWS["P-154"].evaluate("48021:34049", good154, { "48021:34049": { mcpSetbacks: sb, pdfSetbacks: sb } }).verdict === "UNMEASURED");
+  check("P-154 FAILS when the PDF disagrees", ROWS["P-154"].evaluate("48021:34049", good154, { "48021:34049": { ...obs154["48021:34049"], pdfSetbacks: { front: 25, side: 5, rear: 25, corner: 15 } } }).verdict === "FAIL");
+  check("P-154 can PASS on a declared conflict row (no silent pick)", ROWS["P-154"].evaluate("48021:34049", good, { "48021:34049": { mcpSetbacks: sb, conflictRow: true } }).verdict === "PASS");
+  check("P-173 can PASS with both legs and a run id", ROWS["P-173"].evaluate("48021:34049", good, { "48021:34049": { leaseHistoryRowSurvivesRelease: true, auditReturnsByRunId: true, runId: "bfoot-apply-48021-x" } }).verdict === "PASS");
+  check("P-173 FAILS when the row does not survive release", ROWS["P-173"].evaluate("48021:34049", good, { "48021:34049": { leaseHistoryRowSurvivesRelease: false, auditReturnsByRunId: true, runId: "x" } }).verdict === "FAIL");
+  check("P-173 is UNMEASURED without a run id", ROWS["P-173"].evaluate("48021:34049", good, { "48021:34049": { leaseHistoryRowSurvivesRelease: true, auditReturnsByRunId: true } }).verdict === "UNMEASURED");
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;
