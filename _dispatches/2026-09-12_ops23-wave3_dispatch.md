@@ -280,9 +280,11 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
   CP1: _inbox/2026-09-12_ops23-wave3_cp1.json
   CP2: _inbox/2026-09-12_ops23-wave3_cp2.json
   CLOSE: _inbox/2026-09-12_ops23-wave3_close.json
-  These paths are relative to the doc_repo worktree this dispatch was COMPILED IN (P:/doc_repo).
-  Write them there, never into another seat's doc worktree or P:/doc_repo (two lanes in each of
-  waves 1 and 2 wrote into the property seat's worktree and their artifacts had to be found by hand).
+  These paths are relative to the doc_repo worktree the session RUNNING YOU is rooted in: for a
+  lane spawned by the dispatch planner that is the planner's worktree; for the dispatch planner
+  itself it is its own seat worktree (never P:/doc_repo, the integration seat's checkout). This
+  dispatch was compiled in P:/doc_repo. Two lanes in each of waves 1 and 2 wrote
+  into the property seat's worktree instead and their artifacts had to be found by hand.
   No notification arrives when a background command finishes: poll with a bounded loop and a
   timeout; a lane that ends its turn waiting for a wake-up stalls (two lanes did, wave 2).
 
