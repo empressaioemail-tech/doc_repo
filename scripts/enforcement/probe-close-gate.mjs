@@ -36,7 +36,7 @@ export const DOC_REPO = process.env.EMPRESSA_DOC_REPO?.replace(/\\/g, "/") || re
 
 export const GATED_ROW = /^P-1(5[1-9]|6[0-7])$/;
 /** Instrument rows: no predicate in surface-probe.mjs; an existing, parseable artifact suffices. */
-export const ROWS_WITHOUT_PREDICATE = new Set(["P-160", "P-162"]);
+export const ROWS_WITHOUT_PREDICATE = new Set(["P-160", "P-162", "P-170"]);
 
 export function isGitCommit(command) {
   return /(^|[;&|]\s*)git\s+(-C\s+\S+\s+)?commit\b/.test(String(command ?? ""));

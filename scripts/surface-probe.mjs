@@ -261,6 +261,19 @@ export function extractFootprintNear(resp) {
   return { measured: true, http: resp.http, ms: resp.ms, count, returned: fps ? fps.length : null };
 }
 
+// The situs-search route through the PE proxy (the Find box's address path). Shape read live
+// 2026-09-12: 200 { hits: [{ parcelNodeId, situsAddress, countyFips, latitude, longitude }] } or
+// 502 { error: "situs_search_unreachable", message } when cortex times out (P-172).
+export function extractSitusSearch(resp, expectedId) {
+  const j = rec(resp?.json);
+  if (!j) return { measured: false, http: resp?.http ?? 0, ms: resp?.ms ?? null, error: resp?.error ?? resp?.text ?? "no JSON body" };
+  if (str(j.error)) return { measured: true, http: resp.http, ms: resp.ms, hitCount: null, firstParcelNodeId: null, error: `${j.error}: ${j.message ?? ""}`.trim() };
+  const hits = Array.isArray(j.hits) ? j.hits : null;
+  if (!hits) return { measured: true, http: resp.http, ms: resp.ms, hitCount: null, firstParcelNodeId: null, shapeUnknown: true, keys: Object.keys(j).slice(0, 12) };
+  const first = rec(hits[0]);
+  return { measured: true, http: resp.http, ms: resp.ms, hitCount: hits.length, firstParcelNodeId: str(first?.parcelNodeId), firstSitusAddress: str(first?.situsAddress), matchesParcel: hits.some((h) => str(rec(h)?.parcelNodeId) === expectedId) };
+}
+
 export const ROWS = {
   "P-151": {
     title: "placement never depends on geocoding",
@@ -327,6 +340,9 @@ export const ROWS = {
       if (!fx?.measured) return { verdict: "UNMEASURED", basis: "facets leg did not run" };
       const m = obs?.[id]?.mcpSetbacks ?? null;
       const basis = `panel ${fmtSb(fx.setbacks)} (readPath ${fx.readPath}, bakedAt ${fx.bakedAt}); MCP ${m ? fmtSb(m) + " OBSERVED" : "not observed"}`;
+      // P152-PANEL (2026-09-12): the panel must read the one reader; any other readPath is the
+      // adapter this row retires, so it fails before the MCP comparison is even consulted.
+      if (fx.readPath != null && fx.readPath !== "record") return { verdict: "FAIL", basis: basis + " -- readPath is not the reader's (P152-PANEL)" };
       if (!m) return { verdict: "UNMEASURED", basis };
       if (!fx.setbacks && !m.front && !m.side && !m.rear) return { verdict: "PASS", basis: basis + " -- both absent" };
       return sameSetbacks(fx.setbacks, m) ? { verdict: "PASS", basis } : { verdict: "FAIL", basis: basis + " -- DISAGREE" };
@@ -409,6 +425,52 @@ export const ROWS = {
       return { verdict: "PASS", basis };
     },
   },
+  // ------------------------------------------------------------------ OPS-23 wave 2 (2026-09-12)
+  "P-169": {
+    title: "the CAD loader and the footprint writer have Cloud Run jobs; a laptop apply is refused by code",
+    parcels: ["48453:113408"],
+    evaluate(id, legs, obs) {
+      // Observed row: the job list, the staging run records and the refusals are pasted by the
+      // planner from gcloud output read by field. No surface leg exists for infrastructure.
+      const o = obs?.[id] ?? rec(obs?._infra) ?? {};
+      const jobs = Array.isArray(o.jobsListed) ? o.jobsListed : null;
+      const recs = Array.isArray(o.stagingDryRunRecords) ? o.stagingDryRunRecords : null;
+      const refused = o.laptopApplyRefused;
+      const basis = `jobs listed ${jobs ? jobs.length + " (" + jobs.join(", ") + ")" : "not observed"}; staging run records ${recs ? recs.length : "not observed"}; laptop apply refused ${refused === true ? "OBSERVED yes" : refused === false ? "OBSERVED no" : "not observed"}`;
+      if ((jobs && jobs.length < 2) || (recs && recs.length < 2) || refused === false) return { verdict: "FAIL", basis };
+      if (!jobs || !recs || refused !== true) return { verdict: "UNMEASURED", basis };
+      return { verdict: "PASS", basis };
+    },
+  },
+  "P-171": {
+    title: "the 2026-09-07 building-footprint atoms write has a named writer or a run record",
+    parcels: ["48021:34049"],
+    evaluate(id, legs, obs) {
+      const o = obs?.[id] ?? rec(obs?._audit) ?? {};
+      const outcome = str(o.outcome);
+      const ref = str(o.recordRef);
+      const basis = `outcome ${outcome ?? "not observed"}; record ${ref ?? "none"}`;
+      if (outcome === "c") return { verdict: "FAIL", basis: basis + " -- not attributable from any listed source; the row stays open on its recommendation" };
+      if ((outcome === "a" || outcome === "b") && ref) return { verdict: "PASS", basis };
+      return { verdict: "UNMEASURED", basis };
+    },
+  },
+  "P-172": {
+    title: "the Find box resolves a split-situs Travis address from the situs index, geocoder labelled",
+    parcels: ["48453:113408"],
+    evaluate(id, legs, obs) {
+      const b = legs.situsSearchBare;
+      const c = legs.situsSearchCity;
+      const o = obs?.[id] ?? {};
+      const legOk = (l) => l?.measured && l.http === 200 && l.matchesParcel === true;
+      const legBad = (l) => l?.measured && (l.http !== 200 || l.matchesParcel === false || l.error);
+      const fmt = (l, name) => `${name} ${l?.measured ? `http ${l.http} ${l.error ? l.error : `hits ${l.hitCount} first ${l.firstParcelNodeId ?? "-"}`} in ${l.ms} ms` : `not run (${l?.error ?? "no leg"})`}`;
+      const parts = [fmt(b, "bare"), fmt(c, "city-qualified"), `Find box resolves: ${o.findBoxResolves === true ? "OBSERVED yes" : o.findBoxResolves === false ? "OBSERVED no" : "not observed"}`, `resolved via: ${o.resolvedVia ?? "not observed"}`];
+      if (legBad(b) || legBad(c) || o.findBoxResolves === false || o.resolvedVia === "geocoded") return { verdict: "FAIL", basis: parts.join("; ") };
+      if (!legOk(b) || !legOk(c) || o.findBoxResolves !== true || o.resolvedVia !== "situs") return { verdict: "UNMEASURED", basis: parts.join("; ") };
+      return { verdict: "PASS", basis: parts.join("; ") };
+    },
+  },
 };
 
 // --------------------------------------------------------------------------- live run
@@ -430,6 +492,14 @@ async function runLegs(parcel, opts) {
   legs.footprintNear = pt
     ? extractFootprintNear(await call("GET", `${PE_BASE}/api/spine/retrieval/building-footprints/near-bbox?countyFips=${parcel.fips}&${nearBboxQuery(bboxAround(pt, FOOTPRINT_NEAR_METRES))}&limit=50`, null, LEG_TIMEOUT_MS.gisRing))
     : { measured: false, error: "no record point; near-bbox leg not attempted" };
+  // The Find box's address path, bare and city-qualified (P-172). Only for parcels with a situs.
+  const bare = legs.facets.situsAddress;
+  legs.situsSearchBare = bare
+    ? extractSitusSearch(await call("GET", `${PE_BASE}/api/pe-situs-search?q=${encodeURIComponent(bare)}&limit=7`, null, 12_000), parcel.id)
+    : { measured: false, error: "no situs on the record; bare situs-search leg not attempted" };
+  legs.situsSearchCity = addr && addr !== bare
+    ? extractSitusSearch(await call("GET", `${PE_BASE}/api/pe-situs-search?q=${encodeURIComponent(addr)}&limit=7`, null, 12_000), parcel.id)
+    : { measured: false, error: "no composed address distinct from the bare situs; city-qualified leg not attempted" };
   if (opts.cortex) {
     const r = await call("GET", `${opts.cortex.base}/api/brokerage/v1/place/node/${encodeURIComponent(parcel.id)}`, null, LEG_TIMEOUT_MS.cortexNode, { [opts.cortex.header]: opts.cortex.key });
     legs.cortexNode = { measured: !!r.json, http: r.http, ms: r.ms, error: r.error ?? r.text ?? null, keys: r.json ? Object.keys(r.json).slice(0, 12) : null };
@@ -504,6 +574,9 @@ function printReport(results, legsById) {
     console.log(`    gis ring     ${g.measured ? `http ${g.http} features ${g.featureCount} matches ${g.matchesParcel}${g.matchedBy ? " by " + g.matchedBy : ""}${g.idSchemeMismatch ? " ID-SCHEME-MISMATCH (" + g.containingFeatureId + ")" : ""}${g.noContainingPolygon ? " NO-CONTAINING-POLYGON (nearest " + (g.nearest ? g.nearest.id + " " + g.nearest.metres + " m" : "none") + ")" : ""}` : `NOT MEASURED ${g.error ?? ""}`}`);
     const n = legs.footprintNear;
     if (n) console.log(`    near-bbox    ${n.measured ? `http ${n.http} count ${n.count ?? "?"}${n.shapeUnknown ? " SHAPE-UNKNOWN keys " + n.keys?.join(",") : ""} ${n.ms} ms` : `NOT MEASURED ${n.error ?? ""}`}`);
+    for (const [label, s] of [["situs bare  ", legs.situsSearchBare], ["situs city  ", legs.situsSearchCity]]) {
+      if (s) console.log(`    ${label} ${s.measured ? `http ${s.http} ${s.error ? s.error : `hits ${s.hitCount ?? "?"} first ${s.firstParcelNodeId ?? "-"} matches ${s.matchesParcel ?? "?"}`} ${s.ms} ms` : `NOT MEASURED ${s.error ?? ""}`}`);
+    }
     const c = legs.cortexNode;
     console.log(`    cortex node  ${c.measured ? `http ${c.http} keys ${c.keys?.join(",")}` : `NOT MEASURED ${c.error ?? ""}`}`);
   }
@@ -533,6 +606,8 @@ function loadFixtureLegs() {
       gisRing: f.gisRing ? extractGisRing(read(f.gisRing), id.split(":")[1], facets.recordPoint) : { measured: false, error: "no fixture" },
       cortexNode: { measured: false, error: "fixtures carry no cortex leg" },
       footprintNear: { measured: false, error: "fixtures carry no near-bbox leg (read live 2026-09-11: count 0 for both P-158 parcels)" },
+      situsSearchBare: f.situsSearchBare ? extractSitusSearch(read(f.situsSearchBare), id) : { measured: false, error: "no fixture" },
+      situsSearchCity: f.situsSearchCity ? extractSitusSearch(read(f.situsSearchCity), id) : { measured: false, error: "no fixture" },
     };
   }
   return { manifest, legsById };
@@ -613,6 +688,22 @@ function selfTest() {
   check("P-159 can PASS on a good world (no figure, no percent, no empty-lot claim)", ROWS["P-159"].evaluate("48021:34049", goodWave, goodWaveObs).verdict === "PASS");
   check("P-159 can PASS with exactly one figure", ROWS["P-159"].evaluate("48021:34049", goodWave, { ...goodWaveObs, "48021:34049": { ...goodWaveObs["48021:34049"], pdfBuildableFigures: [16386, 16386] } }).verdict === "PASS");
   check("P-167 can PASS on a good world", ROWS["P-167"].evaluate("48021:34049", goodWave, goodWaveObs).verdict === "PASS");
+
+  // OPS-23 wave 2 rows (2026-09-12).
+  check("P-152 FAILS when readPath is not the reader's, even with agreeing setbacks", ROWS["P-152"].evaluate("48021:34049", { ...good, facets: { ...good.facets, readPath: "atom-chain-warm" } }, goodObs).verdict === "FAIL");
+  const r172 = ROWS["P-172"].evaluate("48453:113408", legsById["48453:113408"], obs);
+  check("P-172 fails on the 2026-09-12 state of 48453:113408 (bare form 502, city form no hits)", r172.verdict === "FAIL", r172.basis);
+  const goodWave2 = { ...goodWave, situsSearchBare: { measured: true, http: 200, ms: 300, hitCount: 1, firstParcelNodeId: "48453:113408", matchesParcel: true }, situsSearchCity: { measured: true, http: 200, ms: 300, hitCount: 1, firstParcelNodeId: "48453:113408", matchesParcel: true } };
+  const goodWave2Obs = { "48453:113408": { findBoxResolves: true, resolvedVia: "situs", jobsListed: ["factory-cad-ingest", "factory-footprint-writer"], stagingDryRunRecords: ["run-1", "run-2"], laptopApplyRefused: true }, "48021:34049": { outcome: "a", recordRef: "exec-123" } };
+  check("P-172 can PASS on a good world", ROWS["P-172"].evaluate("48453:113408", goodWave2, goodWave2Obs).verdict === "PASS");
+  check("P-172 FAILS when the Find box resolved through the geocoder", ROWS["P-172"].evaluate("48453:113408", goodWave2, { "48453:113408": { ...goodWave2Obs["48453:113408"], resolvedVia: "geocoded" } }).verdict === "FAIL");
+  check("P-172 is UNMEASURED when the legs pass but nobody observed the Find box", ROWS["P-172"].evaluate("48453:113408", goodWave2, {}).verdict === "UNMEASURED");
+  check("P-169 can PASS on a good world", ROWS["P-169"].evaluate("48453:113408", goodWave2, goodWave2Obs).verdict === "PASS");
+  check("P-169 FAILS when only one job is listed", ROWS["P-169"].evaluate("48453:113408", goodWave2, { "48453:113408": { ...goodWave2Obs["48453:113408"], jobsListed: ["factory-cad-ingest"] } }).verdict === "FAIL");
+  check("P-169 FAILS when a laptop apply was not refused", ROWS["P-169"].evaluate("48453:113408", goodWave2, { "48453:113408": { ...goodWave2Obs["48453:113408"], laptopApplyRefused: false } }).verdict === "FAIL");
+  check("P-171 can PASS on outcome a with a record", ROWS["P-171"].evaluate("48021:34049", goodWave2, goodWave2Obs).verdict === "PASS");
+  check("P-171 FAILS on outcome c (not attributable)", ROWS["P-171"].evaluate("48021:34049", goodWave2, { "48021:34049": { outcome: "c" } }).verdict === "FAIL");
+  check("P-171 is UNMEASURED on outcome a with no record reference", ROWS["P-171"].evaluate("48021:34049", goodWave2, { "48021:34049": { outcome: "a" } }).verdict === "UNMEASURED");
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;

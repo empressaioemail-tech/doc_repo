@@ -177,6 +177,41 @@ further gate defects the wave exposed were fixed with self-tests: closes carryin
 (singular) were silently skipped, and an honest partial close could never be committed. The
 compiler now prints the close skeleton the gate reads.
 
+## The rulings and wave 2 (2026-09-12 03:00Z to 03:40Z)
+
+The operator ruled yes to all seven recommendations. Recorded as five decision records under
+`_decisions/2026-09-12_*`, rowed as OPS-16 A-132 (P-169 infra, P-170 traffic lease, P-171
+provenance, P-172 Find box; rulings on P-157 and P-158), the OPS-23 program range extended to
+P-172, the card and OPS-23 section 4 carrying the rows in the same commit. The agent contract
+gained the deploy-traffic lease clause. P-170 was built the same hour: `traffic-lease-gate`
+(rules module with seventeen self-test checks, hook on the Bash matcher, `_catalog/leases/`
+ignored by git), verified by direct invocation in both directions; live firing through the
+harness is owed the next session because a hook registered mid-session does not arm.
+
+Wave 2 was prepared for a successor dispatch planner: missions for P-169, P-171, P-152 lane 2
+(the panel consumes the reader) and P-172 (the Find box), phase sections appended to P-158
+(merge #421, count the staged layer before any source is bought) and P-157 (resume after
+P-169 with the certified 07182026 export), six lane worktrees registered, the probe extended
+with a `readPath` check on P-152 and predicates for P-169, P-171 and P-172, and the wave-2
+dispatch compiled across seven rows.
+
+**A correction to this record's own review section.** The tax-assessed values are not
+composed from a second path. The verifier read the code: cortex gates the four cadRoll fields
+Studio, Team or Property Unlock and emits a typed `studio-gated` refusal to everyone else, and
+the Property Explorer BFF's `isCadRollValueWire` guard admits only present, zero or absent, so
+the refusal collapses to `null`. An anonymous probe therefore reads `null` where a signed-in
+browser reads dollars. The earlier sentence, "composed from a path other than the facets
+endpoint", was a mechanism named from one read; the second mechanism was the right one. The
+collapse itself is a defect (a typed refusal turned into an absence) and is fixed in P-152
+lane 2's mission.
+
+**Live reads for P-172 before it shipped.** The situs-search route returns HTTP 502 after a
+five-second cortex timeout for the bare `414 SPILLER LN`, zero hits for the city-qualified
+form, and, for the parcel id, one hit whose street line is `", TX"`: the index row exists and
+is empty for the anchor parcel. The operator's earlier successful Find for the Sterling
+address therefore landed through the geocoder, unlabelled, which is finding F12 exactly. The
+mission carries all three measurements and the fixtures hold the known-bad.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
