@@ -508,6 +508,19 @@ export const ROWS = {
       return { verdict: "PASS", basis };
     },
   },
+  "P-174": {
+    title: "one placement path: a search-landed subject shows setbacks without a second click",
+    parcels: ["48021:34049"],
+    evaluate(id, legs, obs) {
+      // Both legs are the operator's, on smartsite.cloud: search-landed, then clicked.
+      const o = obs?.[id] ?? {};
+      const s = o.searchLandedSetbacksShown, c = o.clickSetbacksShown;
+      const basis = `search-landed setbacks shown ${s === true ? "OBSERVED yes" : s === false ? "OBSERVED no" : "not observed"}; click setbacks shown ${c === true ? "OBSERVED yes" : c === false ? "OBSERVED no" : "not observed"}`;
+      if (s === false || c === false) return { verdict: "FAIL", basis };
+      if (s !== true || c !== true) return { verdict: "UNMEASURED", basis };
+      return { verdict: "PASS", basis };
+    },
+  },
 };
 
 // --------------------------------------------------------------------------- live run
@@ -755,6 +768,9 @@ function selfTest() {
   check("P-173 can PASS with both legs and a run id", ROWS["P-173"].evaluate("48021:34049", good, { "48021:34049": { leaseHistoryRowSurvivesRelease: true, auditReturnsByRunId: true, runId: "bfoot-apply-48021-x" } }).verdict === "PASS");
   check("P-173 FAILS when the row does not survive release", ROWS["P-173"].evaluate("48021:34049", good, { "48021:34049": { leaseHistoryRowSurvivesRelease: false, auditReturnsByRunId: true, runId: "x" } }).verdict === "FAIL");
   check("P-173 is UNMEASURED without a run id", ROWS["P-173"].evaluate("48021:34049", good, { "48021:34049": { leaseHistoryRowSurvivesRelease: true, auditReturnsByRunId: true } }).verdict === "UNMEASURED");
+  check("P-174 FAILS on the 2026-09-12 operator observation (search-landed: no setbacks; click: setbacks)", ROWS["P-174"].evaluate("48021:34049", good, { "48021:34049": { searchLandedSetbacksShown: false, clickSetbacksShown: true } }).verdict === "FAIL");
+  check("P-174 can PASS when both paths show setbacks", ROWS["P-174"].evaluate("48021:34049", good, { "48021:34049": { searchLandedSetbacksShown: true, clickSetbacksShown: true } }).verdict === "PASS");
+  check("P-174 is UNMEASURED with only the click observed", ROWS["P-174"].evaluate("48021:34049", good, { "48021:34049": { clickSetbacksShown: true } }).verdict === "UNMEASURED");
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;

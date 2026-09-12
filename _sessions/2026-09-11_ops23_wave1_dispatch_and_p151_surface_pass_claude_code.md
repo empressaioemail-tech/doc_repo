@@ -290,6 +290,20 @@ composer read the reader, entitlement travels with the rule unchanged, a reader 
 declared), P-154, P-157 resumption 2, P-158 phase 3, P-167 steps 2 to 5, P-173. The probe
 carries P-154 and P-173 predicates. P-153 closes on the operator's two legs when they arrive.
 
+## P-153 closed, and F20 rowed (2026-09-12, 18:00Z)
+
+The operator's screenshot of 1109 Pecan St shows the amber inset envelope drawn, the
+Buildable row reading "modelled from setbacks, area withheld pending an atom", and no figure.
+With the lane's own MCP observation (six vertices, the endpoint's count) and the Sterling
+refusal, the probe reads PASS on both parcels (`_inbox/2026-09-12_180231_surface_probe.json`)
+and the overseer wrote the close from the lane's two checkpoints, the PRs verified by
+conclusion string and the revisions read by field. The tier that sees the drawing is Studio
+or Team. In the same message the operator reported a bug: a subject reached by search shows
+no setbacks until the user clicks another parcel and back, while a clicked subject shows them.
+Two placement paths seal two sheets for one parcel. Recorded as F20, rowed as P-174 (A-134)
+with a mission and a probe predicate, and handed to the wave-3 planner as an addendum. The
+probe now carries P-174.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
