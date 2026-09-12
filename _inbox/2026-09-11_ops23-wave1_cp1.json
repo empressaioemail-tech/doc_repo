@@ -1,0 +1,38 @@
+{
+  "kind": "checkpoint",
+  "checkpoint": "CP1",
+  "wave": "OPS-23 wave 1",
+  "planRows": ["P-155", "P-157", "P-158", "P-159", "P-167"],
+  "dispatchPlannerSeat": "dispatch-planner",
+  "worktree": "P:/seat-worktrees/dispatch-planner/doc_repo",
+  "date": "2026-09-11",
+
+  "initialBlockingFinding": "At session start, the wave was NOT dispatchable: all five mission files named in the dispatch (_catalog/dispatch_missions/mission_p155_feasibility_async.md etc.), all five rows' seat_register.json entries, and all five rows' surface-probe.mjs predicates were absent at doc_repo HEAD 0cacf4c5 (confirmed by attempting `node scripts/dispatch.mjs` for all five rows -- all failed ENOENT -- and by `node scripts/ops23-lane-status.mjs` showing all five as 'NOT REGISTERED'). A second `git fetch` + `git merge --ff-only origin/main` picked up commit a90adbb5, pushed moments after the first sync, which added exactly what was missing (the operator's own commit, authored empressaioemail-tech, message 'topology active; probe predicates for P-155/157/158/159/167'). This is recorded because the swap protocol says a checkpoint is owed 'the moment you catch yourself asserting the state of a repo you have not opened' -- this was the opposite case, a repo state that changed under the planner mid-session, and it is exactly the kind of seam DEV_PROCESS asks to be logged rather than smoothed over.",
+
+  "compiledDispatches": [
+    "_dispatches/2026-09-11_p155-feasibility_dispatch.md",
+    "_dispatches/2026-09-11_p157-structural_dispatch.md",
+    "_dispatches/2026-09-11_p158-footprint_dispatch.md",
+    "_dispatches/2026-09-11_p159-pdf_dispatch.md",
+    "_dispatches/2026-09-11_p167-vocab_dispatch.md"
+  ],
+  "compilationMethod": "node scripts/dispatch.mjs --lane <id> --plan-row <row> --repo <repo> --mission-file <mission file>, one call per row, after the a90adbb5 sync. No hand-assembled dispatch was used.",
+
+  "sequencingDecisionsAtDispatchTime": [
+    "P-167: verified via `gh pr list --repo empressaioemail-tech/hauska-map --state merged --search p153` and the same for legacy-design-tools (both empty) and `ls _inbox/*p153-draw_close.json` (absent) that P-153 DRAW had not merged in either repo. Per the compiled dispatch's own worktree table, instructed the P-167 sub-agent (as an explicit sequencing note prepended to its prompt, outside the compiled dispatch text) to start ONLY the hauska-atom-contract package half and hold the three consumer worktrees, re-checking the merge status itself before attempting step 2/3.",
+    "hauska-engine-api sequencing: three lanes (P-155, P-159, P-167) touch the same Cloud Run service. No live coordination mechanism was available to serialize their deploys in real time (all three ran as concurrent background sub-agents); this is flagged here as a real gap rather than assumed solved, and is the direct cause of the P-155/P-159 deploy collision recorded in the wave close.",
+    "P-157 and P-158 both run (or attempt to run) hauska-factory jobs; both lanes were told to serialize factory data runs between themselves. Both independently discovered the underlying execution path does not exist at all (see findings below), so serialization was never actually exercised."
+  ],
+
+  "preRegisteredFalsifiers": {
+    "P-155": "If export_instrument feasibility 48453:474034 still returns no PDF, or the app needs a manual retry for the same parcel, the row is not done, whatever the engine logs say. (Verbatim from the wave dispatch, restated here before any lane wrote code.)",
+    "P-157": "If structuralFact is not present with living area and year built for BOTH 48453:113408 and 48453:474034 on the Property Explorer facets, the row is not done.",
+    "P-158": "If buildingFootprintFact is not present for 48021:34049 AND 48453:113408, or near-bbox returns no footprint around either, the row is not done; and if the fix is a denominator change, the before and after counts travel with the denominator.",
+    "P-159": "If the feasibility PDF for 48021:34049 prints two different buildable figures, or sheet 2 claims an empty lot while the footprint fact is present, the row is not done.",
+    "P-167": "If any display string for any probe-set parcel differs between the panel, the MCP and the PDF after the consumers import the package, or the engine parity lock still exists, the row is not done."
+  },
+
+  "adversarialQuestionAskedOfEachLaneAtItsOwnCP1": "What did you violate to establish your claim, and what is the second mechanism that would produce the same observation? Answered per-row in each lane's own CP1 file (_inbox/2026-09-11_<lane>_cp1.json), reviewed by the planner against source (gh, gcloud, npm, direct SQL/MCP calls) before being accepted, not taken on the lane's word. Concretely: P-157's CP1 was checked against a live gcloud run jobs list and a live TCAD HTTP Range fetch, not just the lane's narrative; P-158's 'the writer already ran' claim was checked against the planner's own live surface-probe run; P-159's PR/CI/deploy claims were checked against gh/gcloud directly; P-167's PR/tag/publish claims were checked against gh and npm directly.",
+
+  "status": "Wave dispatched; all five sub-agents spawned in parallel per the fan-one-level rule, each with the compiled dispatch verbatim plus the 'do not spawn sub-agents' line as literal line 1."
+}

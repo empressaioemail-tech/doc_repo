@@ -1,0 +1,55 @@
+{
+  "lane": "P152-READER",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work",
+  "planRows": ["P-152"],
+  "dispatch": "_dispatches/2026-09-11_p152-reader_dispatch.md",
+  "timestamp": "2026-09-11T21:05:00Z",
+  "seat": "property",
+  "status": "hauska-engine half (lane 1, steps 1-6) built, tested, self-merged, live-verified via a 0%-traffic canary; legacy-design-tools half (lane 2, steps 7-9) built and passing CI-equivalent local checks, not yet merged/deployed as of this checkpoint",
+  "hauskaEnginePRs": [
+    { "pr": 417, "title": "retrieval-api parcel_record reader", "mergeSha": "6f1b7ffe75379f467c1ff3d2ba3b34de6782603a", "ciConclusion": "success" },
+    { "pr": 418, "title": "fix: resolvePlaceKey ANY(array) fails at the database", "mergeSha": "419ae8c89fd047595edcdfed0a0f25f8e3ad0587", "ciConclusion": "success" },
+    { "pr": 419, "title": "dedicated gate-verdict endpoint for lane 2", "mergeSha": "1d624cde7dae041523f52aa52f6b0dca0ca7cd69", "ciConclusion": "success" }
+  ],
+  "operatorApprovals": [
+    "Secret mount (FACTORY_DATABASE_URL_RO -> hauska-retrieval-api, hauska-prod-497015): approved explicitly, run 2026-09-11 via gcloud run services update --update-secrets. This is the exact STOP-and-report gate the dispatch names in step 1.",
+    "Proceeding into the legacy-design-tools consumer half at all: approved explicitly.",
+    "Surgical-swap approach vs. literal delete-and-rebuild of all 39 files: approved explicitly, after being presented as a real fork with the regression-risk tradeoff stated."
+  ],
+  "liveVerificationFindings": [
+    {
+      "finding": "resolvePlaceKey's `place_key = ANY(${sql.array(candidates)})` failed at the database on every call: \"op ANY/ALL (array) requires array on right side\".",
+      "howCaught": "Live-verified against a 0%-traffic canary BEFORE any traffic shift (code-done is not customer-done). Unit tests (in-memory fake store) could not catch this -- they never exercise real postgres.js SQL binding.",
+      "fix": "PR #418: `place_key IN ${sql(candidates)}` (postgres.js's literal-list-binding form). Re-verified against live FACTORY_DATABASE_URL_RO for resolved, not-found, and (already unit-tested) ambiguous cases.",
+      "classOfDefect": "same shape DEV_PROCESS 2.2 names: a test that cannot fail for the right reason (here, a fake store that cannot exercise real SQL syntax) is a defect."
+    },
+    {
+      "finding": "parcel_gate_verdict has no parcel in scope -- legacy-design-tools' resolveAllowlist call sites decide serve state (record/refused/legacy-transitional) before committing to any one parcel's /record fetch.",
+      "howCaught": "Discovered while designing the cortex-side adapter, before writing it -- not a live incident.",
+      "fix": "hauska-engine PR #419 adds GET /parcel-record-gate-verdict/:county/:rail, reusing the same loadGateVerdict the /record route already calls per rail."
+    },
+    {
+      "finding": "parcelRecordFactRead.ts (legacy-design-tools) is a THIRD, previously-undiscovered direct connection to FACTORY_DATABASE_URL_RO -- its own module doc even called it 'a third store' -- separate from parcelRecordCellRead.ts, serving the flood rail into the GTM brief generator (r1BriefCompose.ts).",
+      "howCaught": "`grep -rl FACTORY_DATABASE_URL_RO artifacts/api-server` after the first swap, checking the dispatch's own required verification step, rather than assuming the swap was complete.",
+      "fix": "Same surgical-swap treatment: factoryQueryableFromEnv() repointed to the same parcelRecordReaderClient.ts, interpretFloodCellRow's logic and loadParcelRecordFloodFact's contract unchanged, its own 15 existing tests pass unchanged."
+    }
+  ],
+  "liveProbeResults": {
+    "canaryRevision": "hauska-retrieval-api-00086-nur (0 percent traffic)",
+    "probeParcels": ["48021:34049", "48021:33223", "48453:113408", "48453:474034", "48453:367134"],
+    "recordRouteAllFive": "HTTP 200 for all five",
+    "goldParcelSample": "48021:34049: 65 rails present, 21 resolve serve=record, 44 legacy-transitional, cityLimits cell value 'Bastrop' matches the live direct-psql read byte-for-byte, setbackRules carries its real 1 companion row",
+    "gateVerdictEndpointSample": "48021/cityLimits -> pass; 48021/pipelines -> excluded (both matching live parcel_gate_verdict rows)"
+  },
+  "testTotals": {
+    "hauskaEngineRetrievalApi": "95/95 passing (12 new: 8 /record route + 4 gate-verdict route)",
+    "legacyDesignToolsApiServer": "388/388 passing across the 41 parcel-record-touching test files (287 unchanged in the 18 rail pairs, 101 in the 3 repointed shared-plumbing files + the new client's own 12)"
+  },
+  "openBeforeClose": [
+    "legacy-design-tools PR #658 CI still running as of this checkpoint",
+    "cortex deploy (canary via .github/workflows/cloud-run-deploy.yml deploy-canary, then a diff of the 5 probe parcels' pre-captured facets baseline against the canary) not yet run",
+    "traffic shift on both services (hauska-retrieval-api canary, cortex canary) deliberately not yet requested -- treating it as the one step needing explicit operator sign-off, per this program's own established convention",
+    "P152-PANEL (lane 2 of 2 per the plan-doc's own numbering, i.e. the Property Explorer panel repoint) is out of this dispatch's scope by its own text and not started"
+  ]
+}

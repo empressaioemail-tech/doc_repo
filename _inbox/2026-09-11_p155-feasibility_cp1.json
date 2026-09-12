@@ -1,0 +1,58 @@
+{
+  "checkpoint": "CP1",
+  "planRow": "P-155",
+  "lane": "FEASIBILITY",
+  "filedAt": "2026-09-11T23:55:00Z",
+  "note": "Filed retrospectively alongside CP2/close: this single-pass agent invocation had no synchronous channel to a live dispatch planner to gate on before continuing past design. The content below reflects the actual design decisions made and the live reads that grounded them, in the order they happened, before any route code was written. Treat the absence of an external planner sign-off before implementation began as an open item, not as \"reviewed.\"",
+
+  "startCommitsDeclared": {
+    "hauska-engine": { "worktree": "P:/seat-worktrees/property/hauska-engine-p155-feasibility-async", "branch": "feat/p155-feasibility-async", "startCommit": "1d624cde7dae041523f52aa52f6b0dca0ca7cd69" },
+    "hauska-map": { "worktree": "P:/seat-worktrees/property/hauska-map-p155-feasibility-poll", "branch": "feat/p155-feasibility-poll", "startCommit": "6ab691476872eb88af0f059efa2aae2b7b70e8ad" },
+    "legacy-design-tools": { "worktree": "P:/seat-worktrees/property/legacy-design-tools-p155-feasibility-poll", "branch": "feat/p155-mcp-feasibility-poll", "startCommit": "55c4ad443c115fca62345299ffd001db8faf4c83" }
+  },
+
+  "contradictedAtStart": [
+    "The dispatch's cited verification record `_inbox/2026-09-11_ops23_wave1_verify_p155.md` does not exist anywhere in doc_repo (grep -ril across the whole repo, zero hits). Facts were re-verified at source instead of trusting that record.",
+    "Dispatch start-commit facts were already stale: hauska-engine origin/main was 1d624cde (dispatch said 79fa573; three merged PRs ahead — P-151/419, P-152/418, P-152/417) and legacy-design-tools origin/main was 55c4ad44 (dispatch said 3950ce9b; P-152/658 ahead). hauska-map's 6ab6914 matched exactly.",
+    "scripts/surface-probe.mjs carries no P-155-specific predicate yet (grep for feasibilityRefreshHttp/feasibilityMcpPdf/feasibilityAppPdfWithoutRetry: zero hits) — that predicate is P-160/PROBE's to build, not yet landed. Used R-4's explicit fallback (hand probes, pasted verbatim in the close) instead of the automated instrument."
+  ],
+
+  "liveReadsBeforeDesign": {
+    "cloudRunServiceDescribe": "gcloud run services describe hauska-engine-api --region us-central1 --project hauska-prod-497015, read 2026-09-11 ~22:30Z against serving revision hauska-engine-api-00198-cir (100% traffic at read time)",
+    "requestTimeoutSeconds": { "field": "spec.template.spec.timeoutSeconds", "value": 300, "reading": "NOT the bottleneck — 300s comfortably covers the observed 85-154s composition window. The two CLIENT budgets (PE 55s, smartsite-mcp 55s, both under a 60s Vercel cap) are the entire cause of F7, exactly as F7 states." },
+    "cpuThrottlingAnnotation": { "field": "metadata.annotations['run.googleapis.com/cpu-throttling']", "value": "ABSENT", "reading": "Default behavior applies: CPU is allocated only while an HTTP request is actively being processed by the instance; a detached (un-awaited) background promise started after a response has been sent can be starved of CPU between requests." },
+    "gateAuthModel": "server.ts's global middleware requires gate-front headers (x-hauska-product/tenant-id/package-id/access-tier/gate-credential-id/request-id, parsed by parseGateFrontHeaders — plain descriptive headers, not cryptographically signed) on every non-health route, PLUS an optional Authorization: Bearer <ENGINE_API_GATE_TOKEN> check that only runs `if (config.gateServiceToken)` is truthy. Live finding: ENGINE_API_GATE_TOKEN is NOT set as an env var on the production hauska-engine-api service (grepped the full service JSON, zero matches) — the bearer-token check is presently a no-op in production; only the descriptive gate-front headers are actually enforced."
+  },
+
+  "designDecision": {
+    "question": "How does the accepted job survive past the HTTP response that accepted it, given CPU throttling defaults to on?",
+    "optionsConsidered": [
+      {
+        "option": "Enable --no-cpu-throttling (CPU always allocated) on the hauska-engine-api Cloud Run service via the deploy.",
+        "verdict": "rejected for this iteration",
+        "why": "Changes billing/CPU-allocation behavior for ALL traffic on a shared, heavily-used production service (many other lanes' routes run on it), not just this one async job path — a global side effect for a narrow need. Does not by itself solve instance reclamation during a genuinely idle period either (CPU-always-allocated keeps CPU available WHILE the instance lives; it does not by itself prevent the autoscaler from later deciding the instance is idle)."
+      },
+      {
+        "option": "Self-call: /refresh writes queued/running, then fires an un-awaited HTTPS request to the service's OWN public URL to run composition inside a genuine second inbound request (Cloud Run keeps CPU allocated and will not reclaim an instance actively processing a request).",
+        "verdict": "rejected for this iteration",
+        "why": "Technically the most robust against instance reclamation, and the gate-front headers turned out to be unsigned plain strings the service could reconstruct on itself trivially. Rejected anyway because it adds a new network hop and a new self-referential trust-boundary code path on a shared auth gate that other lanes also depend on, for a benefit (surviving a corner case of instance reclamation) that a cheaper mitigation (below) also covers. Flagged as the next lever if live observation shows real reclamation-driven failures."
+      },
+      {
+        "option": "CHOSEN: leave CPU-throttling as the service default; kick off the detached authoring promise BEFORE writing the 202 response (so the transition to `running` is visible immediately); add a staleness/orphan reclassification (a `running` job older than FEASIBILITY_JOB_STALL_CEILING_MS = 10 minutes is reported `failed` with errorClass `stalled` on the next read) as a safety net against the residual risk of throttling or instance reclamation silently wedging a job forever.",
+        "verdict": "chosen",
+        "why": "Lowest blast radius (no service-wide setting change, no new network/trust-boundary code), and in practice most poll traffic (from PE and MCP) arrives every few seconds during the exact window the job is authoring, which keeps the instance actively processing SOME request and therefore un-throttled in the common case. The staleness ceiling turns the failure mode from 'wedged forever, silently deferred' into 'reported failed with a reason', which satisfies the non-vacuity requirement (never ready, never silently deferred) even in the worst case."
+      }
+    ],
+    "jobStateStorage": {
+      "question": "Where does queued/running/ready/failed live?",
+      "constraintFound": "packages/atoms/src/property-instances.ts's ParcelTerrainModelAtomInstance.artifacts is documented in-repo (feasibility-author.ts, comment above the atom.artifacts['pdf-feasibility'] write) as a CLOSED type: 'TerrainExportArtifact is a closed type in the atom schema, and widening it is the substrate seat's call.' This is a program-law-level fact the dispatch did not mention but that rules out the dispatch's first-listed storage option.",
+      "chosen": "A new, dedicated Postgres table feasibility_export_jobs (packages/storage/migrations/013_feasibility_export_jobs.sql, plus 014 adding seven result-summary columns), one row per parcelNodeId, read/written through two new OPTIONAL StoragePort methods (getFeasibilityExportJob/upsertFeasibilityExportJob) — a small job row BESIDE the artifact record, never inside the closed type, and not a new write path against the OPS-19 atoms store (this table holds operational job bookkeeping, never a parcel fact)."
+    }
+  },
+
+  "preRegisteredFalsifiers": [
+    "Disconnect falsifier (mission step 2, verbatim): start a job, disconnect immediately, poll three minutes later; if the state is not ready or failed, the design is wrong.",
+    "MCP falsifier (mission's own words): if `export_instrument feasibility 48453:474034` still returns no PDF after the deploy, or the app needs a manual retry for the same parcel, the row is not done, whatever the engine logs say.",
+    "Non-vacuity falsifier (self-imposed, from DEV_PROCESS): a job that throws must land in `failed` with an errorClass, never in `ready` and never silently `deferred` forever — tested directly against the staleness ceiling and against a mocked composition throw."
+  ]
+}

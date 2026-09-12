@@ -1,0 +1,159 @@
+{
+  "lane": "P152-READER",
+  "title": "the one reader, live in production, on both sides of the seam -- with a genuine mid-flight credential and crash finding along the way",
+  "planRows": [
+    "P-152"
+  ],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "programPlan": "90_operations/OPS-23_surface_completion_program.md",
+  "dispatch": "_dispatches/2026-09-11_p152-reader_dispatch.md",
+  "closedAt": "2026-09-11T23:45:00Z",
+  "status": "complete for this lane's named scope; one deferred item named explicitly below",
+  "seat": "property",
+  "repos": [
+    {
+      "name": "hauska-engine",
+      "worktree": "P:/seat-worktrees/property/hauska-engine-p152-reader",
+      "branch": "feat/p152-record-reader",
+      "baseCommit": "79fa5737096cba09fda328a6b79ea598ba5e9b2b",
+      "prs": [
+        {
+          "pr": 417,
+          "title": "retrieval-api parcel_record reader",
+          "mergeSha": "6f1b7ffe75379f467c1ff3d2ba3b34de6782603a",
+          "ciConclusion": "success"
+        },
+        {
+          "pr": 418,
+          "title": "fix: resolvePlaceKey ANY(array) fails at the database",
+          "mergeSha": "419ae8c89fd047595edcdfed0a0f25f8e3ad0587",
+          "ciConclusion": "success"
+        },
+        {
+          "pr": 419,
+          "title": "dedicated gate-verdict endpoint for lane 2",
+          "mergeSha": "1d624cde7dae041523f52aa52f6b0dca0ca7cd69",
+          "ciConclusion": "success"
+        }
+      ],
+      "headSha": "1d624cde7dae041523f52aa52f6b0dca0ca7cd69",
+      "deploy": "hauska-retrieval-api, hauska-prod-497015, us-central1. Canary hauska-retrieval-api-00086-nur live-verified at 0% traffic, then shifted to 100% (gcloud run services update-traffic).",
+      "servingRevision": "hauska-retrieval-api-00086-nur, 100 percent traffic, confirmed via gcloud run services describe post-shift"
+    },
+    {
+      "name": "legacy-design-tools",
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p152-cortex-consumer",
+      "branch": "feat/p152-cortex-consumes-reader (plus three follow-on fix branches, listed below)",
+      "baseCommit": "3950ce9bc5d7ef83a7fae7303328d8e467a1fdd6",
+      "prs": [
+        {
+          "pr": 658,
+          "title": "cortex consumes the one reader (lane 2 of 2)",
+          "mergeSha": "55c4ad443c115fca62345299ffd001db8faf4c83",
+          "ciConclusion": "success"
+        },
+        {
+          "pr": 659,
+          "title": "fix: cortex never had a working retrieval-api credential in prod",
+          "mergeSha": "d3f6d198f76ad6d2701c35bec58da542b4fda0b0",
+          "ciConclusion": "success"
+        },
+        {
+          "pr": 663,
+          "title": "fix: loadParcelRecordCell/loadParcelRecordFloodFact never throw",
+          "mergeSha": "63a5d641b7c508789d7466bb8ce9ca757b6e1c7d",
+          "ciConclusion": "success"
+        }
+      ],
+      "headSha": "63a5d641b7c508789d7466bb8ce9ca757b6e1c7d",
+      "deploy": "cortex-api, legacy-design-tools-prod, us-central1, via .github/workflows/cloud-run-deploy.yml deploy-canary then shift-traffic (not a hand gcloud command -- this repo's own established path).",
+      "servingRevision": "cortex-api-00773-vej class (post never-throw fix, rebuilt+redeployed), 100 percent traffic, confirmed via gcloud run services describe post-shift"
+    }
+  ],
+  "missionPremise": "OPS-23 R-6/R-8 (`_decisions/2026-09-11_ledger_as_serving_path_seven_steps.md`): one reader in hauska-engine/services/retrieval-api walks gated cells and dereferences atoms; every surface consumes it; a cell is accounting, never a copied canonical value; cortex holds no factory credential. This dispatch is step 5 of OPS-23's seven, lane 1 of 2 (P152-PANEL, the Property Explorer panel repoint, is lane 2 and explicitly out of this dispatch's scope).",
+  "completionPredicate": "A stranger can evaluate this close by: (1) GET https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app/property-nodes/48021:34049/record with a Bearer key returns 200, 65 rails, cityLimits.serve=='record' with the real Bastrop value; (2) GET https://smartsite.cloud/api/brokerage/v1/place/node/48021:34049/facets returns cityLimitsFact.basis citing parcel_record/landing_parcel_jurisdiction (not the legacy point-in-polygon basis) and setbackRulesFact.state=='present'; (3) the five-parcel facets diff pasted below, re-run at any later time, should differ from the frozen pre-capture ONLY in live request-timestamp fields (facets.livingAreaSqft.asOf, structuralFact.asOf, facets.provenance.zoningSource.asOf) that are unrelated to parcel_record and would differ between any two calls regardless of this change; (4) `grep -rn FACTORY_DATABASE_URL_RO` in legacy-design-tools/artifacts/api-server/src returns only historical comments and one test-isolation assertion in files this lane did not touch, never a live functional read.",
+  "scopeBasis": "hauska-engine (the reader) and legacy-design-tools (cortex, the first consumer) only, per the dispatch. P152-PANEL (the Property Explorer panel repoint) is a named, separate lane and was not started. Dispatch step 7's 'carry atomBacked and serve through onto each fact' is a deliberate, named deferral -- see deferredWork below, not a silent omission.",
+  "probe": {
+    "instrument": "Manual live diff (scripts/surface-probe.mjs was not yet extended for this row as of dispatch time; this lane captured and diffed the five OPS-23 probe parcels' facets responses by hand, before and after every deploy in this close's history)",
+    "preCapture": "Captured 2026-09-11T21:25Z-ish (exact per-parcel timestamps in facets.livingAreaSqft.asOf below), from production smartsite.cloud, before any code from this lane was deployed.",
+    "finalPostCapture": "Captured 2026-09-11T23:40Z, from the cortex canary (pre-traffic-shift verification), immediately before shifting cortex's own traffic to 100 percent.",
+    "diff": {
+      "48021:34049": "IDENTICAL, byte for byte.",
+      "48021:33223": "IDENTICAL, byte for byte.",
+      "48453:113408": "2 fields changed: facets.livingAreaSqft.asOf ('2026-09-11T21:25:37.424Z' -> '2026-09-11T23:40:25.551Z'), structuralFact.asOf (same values, same field pair) -- both are structuralFactRead.ts's own live-request timestamp, an entirely separate read path from parcel_record, unrelated to this lane's change.",
+      "48453:474034": "3 fields changed: the same two asOf fields as above, plus facets.provenance.zoningSource.asOf ('2026-09-11T21:25:40.350Z' -> '2026-09-11T23:40:26.382Z') -- same class, a live-request timestamp on an unrelated zoning-provenance read.",
+      "48453:367134": "2 fields changed: the same two asOf fields as 48453:113408.",
+      "verdict": "No field carrying a value, source, or state changed for any parcel. The only deltas across all five parcels are three distinct 'asOf' timestamp fields on two facts that do not read from parcel_record at all -- exactly the kind of noise any two live calls separated by two hours would show, not evidence of this change. Stronger than the pre-registered bar (no atomBacked/serve labels were added this round, so the honest expectation was zero delta, and that is what was observed modulo unrelated live timestamps)."
+    },
+    "postTrafficShiftLiveCheck": "curl https://smartsite.cloud/api/brokerage/v1/place/node/48021:34049/facets (production, 100 percent traffic, both services) after both shifts: cityLimitsFact.basis == \"parcel_record cityLimits: incorporated, city 'Bastrop' (source: landing_parcel_jurisdiction, vintage: 2026-09-02T18:13:56.751Z).\" (parcel_record-sourced, matching pre-capture and matching a live direct-psql read of the same cell taken 2026-09-11T20:xx); setbackRulesFact.state == 'present' (the representative no-legacy-path rail, correctly NOT refused).",
+    "artifact": "_inbox/2026-09-12_024338_surface_probe.json"
+  },
+  "falsifier": "Pre-registered before any deploy: if for any parcel in the OPS-23 probe set the cortex node-facets response differs from the pre-change response on any slated rail's value, source, or vintage, the port is wrong; if any cortex file still opens the factory store after retirement, the retirement is fake. Observed: no slated rail's value/source/vintage differs (see probe.diff above); `grep -rn FACTORY_DATABASE_URL_RO artifacts/api-server/src` returns zero functional reads (comments and one test-isolation assertion only, in files outside this lane's touch set) and `FACTORY_DATABASE_URL_RO` is removed from cloud-run-deploy.yml. The falsifier did not fire. It also caught two things it was not explicitly written for and should have: the credential-name mismatch (#659) and the uncaught-throw crash (#663) both surfaced BECAUSE this lane insisted on running the real diff against a real deploy before shifting traffic, rather than trusting the passing unit-test suite alone.",
+  "contradicted": [
+    "The dispatch's literal step 8 instruction ('delete parcelRecordCellRead.ts, parcelRecordAllowlist.ts, parcelGateVerdictRead.ts and the eighteen rail-pair files') was not followed. A surgical swap of the three shared plumbing files' internals was substituted, after presenting the tradeoff explicitly and getting explicit operator approval for that specific approach -- see 'Deliberate deviation' in PR #658. All 18 rail-pair files, and their 287 tests, are byte-for-byte unchanged.",
+    "A second, previously-undiscovered direct connection to FACTORY_DATABASE_URL_RO existed in parcelRecordFactRead.ts (the flood-rail reader feeding the GTM brief generator) -- its own module doc called it 'a third store'. Not named anywhere in the dispatch or in prior OPS-23 findings. Found by grepping for the credential after the first swap, per the dispatch's own required verification step, rather than assuming the swap was complete.",
+    "The dispatch assumed cortex already had a working path to the retrieval service ('the same client fetchPropertyAtomChain.ts uses'). It did not: cortex's deploy workflow mounts BRIEF_RETRIEVAL_API_URL/BRIEF_RETRIEVAL_API_KEY, a name neither this lane's new client nor the pre-existing fetchPropertyAtomChain.ts ever checked, and BRIEF_RETRIEVAL_API_KEY's own value is separately stale. This means fetchPropertyAtomChain.ts's own, pre-existing, unrelated calls have likely never reached the retrieval service in production before this lane's fix (PR #659) -- flagged for the operator, not otherwise touched.",
+    "Step 7's premise that carrying atomBacked/serve onto each fact is a small addition alongside the source repoint undercounted the work: doing it well means separately touching 18 files' own returned-fact shapes. Deferred, named below, not silently dropped."
+  ],
+  "operatorApprovals": [
+    "Secret mount (FACTORY_DATABASE_URL_RO onto hauska-retrieval-api) -- the dispatch's own explicit STOP gate, approved explicitly before running it.",
+    "Proceeding into the legacy-design-tools consumer half at all -- approved explicitly.",
+    "Surgical-swap vs. literal delete-and-rebuild of all 39 files -- approved explicitly, presented as a real fork with the regression-risk tradeoff stated before building either way.",
+    "Traffic shift on both hauska-retrieval-api and cortex, conditioned explicitly on a clean five-parcel diff -- approved in advance; exercised only after the diff came back clean per probe.diff above, and after two live-found defects (credential mismatch, uncaught-throw crash) were fixed and each re-verified against a fresh canary before that condition was considered met."
+  ],
+  "liveFindingsThisSession": [
+    {
+      "id": "F-P152-1",
+      "summary": "resolvePlaceKey's `place_key = ANY(${sql.array(candidates)})` fails at the database (\"op ANY/ALL (array) requires array on right side\") on every call.",
+      "caughtBy": "Live-verified against a 0%-traffic hauska-retrieval-api canary before any traffic shift.",
+      "fix": "hauska-engine PR #418: `place_key IN ${sql(candidates)}`.",
+      "classOfDefect": "A test that cannot fail for the right reason is a defect (DEV_PROCESS 2.2) -- the in-memory fake store never exercised real postgres.js SQL binding."
+    },
+    {
+      "id": "F-P152-2",
+      "summary": "parcel_gate_verdict has no parcel in scope; legacy-design-tools' resolveAllowlist call sites need a verdict before committing to any one parcel's /record fetch.",
+      "caughtBy": "Design-time, before writing the cortex-side adapter.",
+      "fix": "hauska-engine PR #419: GET /parcel-record-gate-verdict/:county/:rail."
+    },
+    {
+      "id": "F-P152-3",
+      "summary": "parcelRecordFactRead.ts is a second, previously-undiscovered direct connection to FACTORY_DATABASE_URL_RO (flood rail, GTM brief generator).",
+      "caughtBy": "grep -rl FACTORY_DATABASE_URL_RO artifacts/api-server after the first swap, per the dispatch's own required verification step.",
+      "fix": "legacy-design-tools PR #658: same surgical-swap treatment, interpretFloodCellRow and loadParcelRecordFloodFact's contract unchanged, its own 15 tests pass unchanged."
+    },
+    {
+      "id": "F-P152-4",
+      "summary": "cortex has never had a working retrieval-api credential in production. Deploy workflow mounts BRIEF_RETRIEVAL_API_URL/BRIEF_RETRIEVAL_API_KEY; neither this lane's client nor the pre-existing fetchPropertyAtomChain.ts checks those names, and BRIEF_RETRIEVAL_API_KEY's value is itself a stale truncated prefix of the real key.",
+      "caughtBy": "Diffing PR #658's canary against the pre-capture baseline BEFORE any traffic shift -- the diff was not clean (7 rails flipped present->refused, cityLimits silently fell back to legacy) despite 388 passing unit tests.",
+      "fix": "legacy-design-tools PR #659: client falls back to BRIEF_RETRIEVAL_API_URL/KEY last; cloud-run-deploy.yml gains RETRIEVAL_API_KEY=HAUSKA_ENGINE_API_KEY:latest (legacy-design-tools-prod already held a byte-identical mirror of the real key, confirmed by direct Secret Manager comparison, simply never wired to a name any client checked). Side effect: also fixes fetchPropertyAtomChain.ts's identical latent dead path.",
+      "notFixed": "BRIEF_RETRIEVAL_API_KEY's own stale value -- a shared credential outside this dispatch's scope, flagged for whoever owns its lifecycle."
+    },
+    {
+      "id": "F-P152-5",
+      "summary": "loadParcelRecordCell / loadParcelRecordFloodFact were never wrapped in a try/catch (a live Postgres connection essentially never threw mid-query); an HTTP call to another service fails far more routinely, and cadRollServeCutover.ts's resolveValueBasisFromParcelRecord calls loadParcelRecordCell unconditionally with no try/catch of its own. During the exact window between the credential fix landing and hauska-retrieval-api's traffic shift, every gate-verdict lookup started succeeding but every cell fetch still 404'd (canary URL not yet live), and the uncaught exception turned every probe parcel's facets response into a 500.",
+      "caughtBy": "Re-running the same live diff immediately after deploying the credential fix -- found 500s instead of the expected clean diff, traced via gcloud logging read to the exact stack trace.",
+      "fix": "legacy-design-tools PR #663: both functions now wrap their read in a try/catch, returning the existing store-not-configured/factory-store-not-configured refusal on any failure -- honest about 'the read failed', never silently reinterpreted as 'no such row', never left to crash the route."
+    }
+  ],
+  "leaveBehind": {
+    "retirementBacklogPerServeState": "For 48021:34049 (Bastrop gold parcel), 2026-09-11: 21 of 65 rails resolve serve=='record', 44 resolve serve=='legacy-transitional', 0 resolve 'refused' for this specific parcel. This ratio will vary by county/parcel since it tracks PARCEL_RECORD_SLATE membership, not a fixed constant -- re-run GET /property-nodes/<id>/record and count `rails[*].serve` for any other parcel's real backlog.",
+    "legacyImportsNotDeleted": "All 18 <rail>FactFromParcelRecord.ts / <rail>ServeCutover.ts pairs, and parcelRecordAllowlist.ts / parcelGateVerdictRead.ts themselves, still exist and still import from parcelRecordCellRead.ts -- by design, per the surgical-swap deviation. They no longer touch the factory store directly (confirmed: FACTORY_DATABASE_URL_RO has zero functional reads left in the repo), but their FILES are not retired. A future lane doing the literal file-level retirement the dispatch named would need to reimplement each rail's fact-shaping logic against the new /record response shape directly -- this close's surgical-swap files (parcelRecordCellRead.ts's adapter, parcelRecordReaderClient.ts) are exactly the seam such a lane would remove.",
+    "cachedRenderingSlot": "The `rendering` field in every rail of the /record response is null for every cell today. It stays null until P-163 (one writer) and P-167 (vocabulary module) land.",
+    "atomBackedDeferred": "Every rail's atomBacked is false in production today (no live cell carries an atomDid; the field and its dereference path are built and proven with a fixture, per dispatch step 3's own instruction to build ahead of P-163). Carrying atomBacked/serve through onto each of the 18 rails' own cortex-side wire fact shapes (cityLimitsFact, etc.) is NOT done in this close -- see contradicted[4].",
+    "unrelatedFlaggedFinding": "fetchPropertyAtomChain.ts (pre-existing, unrelated to P-152's own mission) had the identical env-var-naming gap this lane's own client inherited and then found live. PR #659's fix is a side-effect fix for it too (RETRIEVAL_API_KEY is now a name both clients check, backed by a working credential) but its OWN behavior before this fix -- silently returning null on every call, for however long it has existed -- was not otherwise investigated or audited in this close.",
+    "factoryDatabaseUrlWriterCredentialStillMounted": "cortex's cloud-run-deploy.yml still mounts FACTORY_DATABASE_URL (the Factory WRITER credential, not the RO one this dispatch named) under the same --set-secrets line this lane edited. No functional read of it was found in artifacts/api-server/src during this close's work, but a full audit was not performed and it is out of this dispatch's named scope. Flagged, not touched.",
+    "cadRollServeCutoverUnconditionalReadPattern": "resolveValueBasisFromParcelRecord's design (call loadParcelRecordCell unconditionally, before any allowlist check, to determine value basis for all four dollar rails from one read) is now resilient to a failed read (F-P152-5), but still issues that unconditional read on every facets request regardless of whether any dollar rail is even slated for that county. Not a bug -- matches PARCEL-B-SLATE2's original documented design -- but worth knowing if a future lane is chasing request latency on this route."
+  },
+  "checkpoints": [
+    "_inbox/2026-09-11_p152-reader_cp1.json",
+    "_inbox/2026-09-11_p152-reader_cp2.json"
+  ],
+  "partial": true,
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-12T02:45:53.083Z",
+      "by": "integration seat (overseer)",
+      "note": "partial: true added at the ROW level: this close completes lane 1 of 2 (reader + cortex consumer; retrieval-api 00086-nur and cortex-api 00776-wov at 100 percent by field read 2026-09-12 02:40Z); the P-152 row predicate (panel and MCP agree) is UNMEASURED until P152-PANEL lands and the MCP setbacks are observed. probe.artifact cites the overseer run of 2026-09-12 02:43Z (all five parcels UNMEASURED, MCP not observed); the lane's manual five-parcel facets diff stays under probe as its own evidence."
+    }
+  ]
+}

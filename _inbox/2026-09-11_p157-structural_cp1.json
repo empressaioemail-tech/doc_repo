@@ -1,0 +1,141 @@
+{
+  "kind": "checkpoint",
+  "checkpoint": "CP1",
+  "lane": "P157-STRUCTURAL",
+  "planRow": "P-157",
+  "date": "2026-09-11",
+  "status": "STOPPED_AT_CP1_PER_MISSION_ESCAPE_HATCH",
+
+  "snapshot": {
+    "hauska-factory": {
+      "declaredStartCommit": "217b7dd7eb3a1b2f72f3a72d333008079f71fcaf",
+      "matchesMissionSnapshot": true,
+      "worktree": "P:/seat-worktrees/property/hauska-factory-p157-structural",
+      "branch": "feat/p157-tcad-improvement-detail"
+    },
+    "legacy-design-tools": {
+      "declaredStartCommit": "55c4ad443c115fca62345299ffd001db8faf4c83",
+      "matchesMissionSnapshot": false,
+      "missionSnapshot": "3950ce9b",
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p157-cad-ingest",
+      "branch": "feat/p157-tcad-improvement-detail",
+      "driftNote": "origin/main moved 1 commit since the verify doc: 55c4ad4 'feat(P-152): cortex consumes the one reader (lane 2 of 2) (#658)'. Diff --stat touches only parcelRecordCellRead.ts/parcelRecordFactRead.ts/parcelRecordReaderClient.ts/parcelGateVerdictRead.test.ts/cloud-run-deploy.yml -- none of lib/cad-ingest, structuralFactResolve.ts, or structuralFactRead.ts. Re-verify of every cited file/line in the P-157 verify doc against this commit found no further drift."
+    }
+  },
+
+  "missionPremise": "OPS-23 finding (plan section 2, and the wave-1 verify record _inbox/2026-09-11_ops23_wave1_verify_p157.md): Travis (48453) cad_property rows carry present market/land/improvement values but null living_area_sqft and year_built, and both the factory writer (ingest-existing.js applyCadScalar/stampAbsent) and cortex (structuralFactResolve.ts) stamp that null as absent-verified, which asserts a detail file was consulted and found nothing. ENFORCEMENT.md: converting unaccounted to absent-verified when nothing looked is a lie that passes every check. The named fix is to load the improvement-detail file the roll export omits and re-run the fill so genuinely-present rows move from absent-verified/unaccounted to present, honestly narrowing the set that stays absent-verified.",
+
+  "completionPredicate": "Property Explorer facets (and get_smart_site) show structuralFact.state present with non-null livingAreaSqft and yearBuilt for BOTH 48453:113408 and 48453:474034, AND the county-wide null count on improved cad_property rows (improvement_value > 0) measurably falls between a before and after county-rail-coverage-report reading. Per the mission's own pre-registered falsifier, anything short of both legs is not done regardless of what any job reports.",
+
+  "scopeBasis": "Mission and OPS-23 program law both restrict this lane to: (1) acquiring the public detail file, (2) loading it through the cloud loader (never a laptop), (3) running the existing fill job, (4) measuring with the existing/triggered coverage instrument, (5) confirming the served surface, explicitly forbidding writer-rule changes, filename renames, regex widening, entitlement/pricing changes, and factory data runs before the planner serialises P-157 against P-158. Two independent findings below (no cloud loader exists for this ingest path; the live export's filenames do not match the code's discovery pattern) each independently trigger the mission's own explicit clause: 'If the cloud loader cannot take the second file, STOP at CP1 and report the gap; do not run from a laptop and do not widen the freeze.' Renaming files or widening the discoverFiles regex to route around the mismatch is also explicitly out of scope per OPS-23's program-wide rule ('Do not fix a naming mismatch by renaming; report it.'). That leaves nothing in this lane's authority to execute past design/investigation, so CP1 is where this lane stops pending the planner/overseer's ruling.",
+
+  "falsifierPreRegistered": {
+    "primary": "If after a fill, structuralFact is not present with a living area and a year built for BOTH 48453:113408 and 48453:474034 on the Property Explorer facets, the row is not done; and if the county-wide null count on improved parcels does not fall between the before and after readings, nothing was loaded, whatever the job said.",
+    "secondMechanismConsidered": "A load could succeed at the database layer and the panel could still look unchanged for three independent reasons, each checked separately rather than assumed away: (1) baked facets -- the probe fixtures show bakedAt 2026-07-24/2026-09-10 for these parcels' snapshots, so a DB-only fill would not move the served facet until the existing LDT bake path re-runs for these parcel ids; the close must name that bake invocation explicitly, never hand-edit the served value. (2) an overlay reading a different rail -- routes/propertyExplorer.ts:298-301 overlays parcel_record's own livingAreaSqft on top of the cortex cad_property read via cadRollFactFromParcelRecord.ts; a fill that only updates the factory's parcel_record_cell without cad_property itself getting the value (or vice versa) can leave one of the two paths stale while the other reports present -- both must be checked, not just structuralFactResolve.ts's cad_property source. (3) a cache -- parcelRecordReaderClient.ts (landed today in commit 55c4ad4, per the LDT snapshot drift above) added a 'coalescing, short-TTL cache' in front of the new one-reader HTTP path; this is now live on origin/main at the LDT start commit and was not in the mission's verify snapshot. It is a short-TTL cache per its own PR description, so it is unlikely to explain a stale read taken minutes apart, but a close that shows unchanged facets immediately after a load must re-probe after the TTL window before concluding the load failed, not before.",
+    "verifiedAtThisCheckpoint": "Live get_smart_site (depth=node) run 2026-09-11 for both probe parcels confirms the mission's premise exactly, not just the code trail: 48453:113408 and 48453:474034 both currently show structuralFact.status absent, verdict absent-verified, basis 'CAD row present but structural fields (living_area_sqft, year_built) are null', scopeSearched 'cad_property tax_year=2026 tier=cad-export'. onRecord.cadRoll shows improvementValue/marketValue/landValue/assessedValue all present with source cad_property for both parcels -- consistent with the roll's base PROP.TXT-equivalent having loaded fine and only the improvement-detail-derived fields being null. This is today's actual 'before' baseline for the falsifier, not an assumption."
+  },
+
+  "findings": [
+    {
+      "id": "F-CP1-1",
+      "severity": "blocking",
+      "title": "No cloud-hosted execution path exists for lib/cad-ingest at all -- not merely one that cannot take a second file",
+      "evidence": [
+        "gcloud run jobs list --project hauska-prod-497015 --region us-east4 (the region the 2026-08-26 cloud-loader design uses, live-queried 2026-09-11): 36 jobs, all named factory-<jobname>, every one a hauska-factory src/jobs/*.mjs script (factory-parcel-record-fill, factory-atoms-cad, factory-f10-cad-loop, factory-landing-import, etc). None wraps legacy-design-tools' lib/cad-ingest.",
+        "gcloud run jobs list --region us-central1: empty (only long-running Services, not Jobs, run there).",
+        "legacy-design-tools has no Dockerfile, cloudbuild*.yaml, or CI deploy step anywhere under lib/cad-ingest/; its own package.json defines only a local script: \"cad-ingest\": \"tsx src/cli.ts\" (lib/cad-ingest/package.json:17), invoked per its own usage header as `pnpm --filter @workspace/cad-ingest cad-ingest -- --county=... --file=...`, reading a plain DATABASE_URL env var (cli.ts:254-256) with no staging/production target selector of the kind hauska-factory's own publish-target-env.mjs implements for its bakes.",
+        "sources.ts's own documented usage for the sibling PACS county Hays (48209, manual-download like Travis) instructs a human to download the ZIP and run the CLI locally -- confirming this tool's designed operating mode is local, not cloud."
+      ],
+      "conclusion": "The 2026-08-26 ingest-freeze decision's 'Cloud Run Job' re-engineering is scoped to the atoms-county-loader (the atoms/atom_links tables, hauska-engine's write-*-county.mjs scripts) -- a different pipeline, different repo, different store than cad_property. That decision never mentions lib/cad-ingest or cad_property. The mission's step 2 premise ('the load runs where that decision says loads run... If the cloud loader cannot take the second file, STOP') presupposes a cloud loader for this specific path exists and just might be missing one feature; the actual gap is one level up -- there is no cloud loader for this path to be missing a feature from. This triggers the mission's stop clause a fortiori."
+    },
+    {
+      "id": "F-CP1-2",
+      "severity": "blocking-independent",
+      "title": "The live Travis 2026 certified export's internal filenames do not match cad-ingest's PACS file-discovery pattern -- a naming mismatch, not a data-format incompatibility",
+      "evidence": [
+        "cli.ts discoverFiles for format=pacs (cli.ts:123-135): requires a filename matching /APPRAISAL_INFO\\.TXT$/i, optionally /APPRAISAL_IMPROVEMENT_DETAIL\\.TXT$/i.",
+        "Public record, no credential: fetched https://traviscad.org/publicinformation/ (2026-09-11), found and confirmed via HTTP HEAD the current '2026 Certified Appraisal Export Supp 0_07182026.zip' (Content-Length 557,228,168 bytes) at https://traviscad.org/wp-content/largefiles/2026%20Certified%20Appraisal%20Export%20Supp%200_07182026.zip.",
+        "Read only the zip's central directory via an HTTP Range request for the trailing ~3MB (no full download) and listed its 21 entries: PROP.TXT (4,895,747,376 B), IMP_INFO.TXT (52,778,376 B), IMP_DET.TXT (2,065,539,840 B), LAND_DET.TXT, IMP_ATR.TXT, APPR_HDR.TXT, etc -- an entirely different naming convention (True Automation/PACS 'legacy 8.0.33' layout per the page's own 'Website_Legacy8.0.33-AppraisalExportLayout' export-layout file) than /APPRAISAL_INFO\\.TXT$/ or /APPRAISAL_IMPROVEMENT_DETAIL\\.TXT$/. None of the 21 entries match either regex.",
+        "Fetched IMP_DET.TXT's local-header byte range directly (a second targeted Range request, ~300KB, no full download) and decompressed a live sample. The fixed-width byte spans layout.ts declares (propId 1-12, propValYr 13-16, typeCd 41-50, typeDesc 51-75, yrBuilt 86-89, area 94-108) were sliced against the real decoded record and align exactly: propId '000000100008', propValYr '2026', typeCd '551', typeDesc 'PAVED AREA' (trimmed), yrBuilt '1984', area '00017100.000000'. CRLF-terminated fixed-width records, as the parser expects.",
+        "grep across lib/cad-ingest for IMP_DET, IMP_INFO, PROP.TXT, LAND_DET, or any Travis-specific rename/alias table: no matches. No mechanism in the code maps these literal Travis filenames onto the roles discoverFiles looks for."
+      ],
+      "conclusion": "The byte layout is correct for this file; only the outer filename fails the match. Historically-loaded cad_property values for Travis (present improvementValue/marketValue/landValue, confirmed live above) mean some earlier load succeeded despite this -- most plausibly via an undocumented manual rename before invoking the CLI, consistent with the wave-1 verify doc's finding that 'whether the Travis load ever carried the detail file is recorded nowhere in either repo.' OPS-23's program law is explicit: 'Do not fix a naming mismatch by renaming; report it. Do not widen a check to admit a value it does not satisfy; report it.' Both apply here verbatim. This finding is reported, not fixed, and stands independently of F-CP1-1 -- even if a cloud execution surface existed today, feeding it this real export as-is would still fail discoverFiles."
+    },
+    {
+      "id": "F-CP1-3",
+      "severity": "informational",
+      "title": "The roll vintage has moved since the original Travis load; which base file to pair with the improvement-detail file is undecided",
+      "evidence": [
+        "Live get_smart_site output for both probe parcels stamps ownerFact/landUseFact sourceVintage as the URL-decoded string '2026 preliminary appraisal export supp 0_07072026' -- an earlier, 'preliminary' vintage than the currently published '2026 Certified Appraisal Export Supp 0_07182026.zip'."
+      ],
+      "conclusion": "Per R-1 (most-current source wins) the certified 07182026 export is the fresher, more authoritative roll, but re-loading against it would also refresh market/land/improvement values already marked present from the preliminary roll -- a wider change than 'add the missing structural fields' and not something this lane should decide unilaterally. Flagged for the overseer/planner: pair the improvement-detail file with a repeat of the original preliminary roll (narrowest change, only fills the two null fields) or adopt the current certified roll wholesale (larger, R-1-consistent change). Not decided here."
+    },
+    {
+      "id": "F-CP1-4",
+      "severity": "informational",
+      "title": "county-rail-coverage-report is still not wired to any trigger at the LDT/factory start commits verified above",
+      "evidence": [
+        "src/cli.mjs (hauska-factory, 217b7dd) has no 'county-rail-coverage-report' branch; the job's own module doc-comment claims 'Triggers: factory CLI' but that claim does not match the file -- its only caller in the tree remains test/county-rail-coverage-report.test.mjs."
+      ],
+      "conclusion": "Confirms the wave-1 verify doc's 'dormant' finding still holds. Design for the mission's required src/cli.mjs entry is below; not yet written to disk pending CP1 clearance to write code."
+    }
+  ],
+
+  "designForStep4Instrument": {
+    "summary": "Not yet implemented -- design only, per 'before any code' at CP1. Add a branch to hauska-factory src/cli.mjs following the file's existing pattern (dynamic import + JSON.stringify(out) + return), e.g. `if (cmd === \"county-rail-coverage-report\") { const { parseCoverageReportFlags, runCountyRailCoverageReport } = await import(\"./jobs/county-rail-coverage-report.mjs\"); const flags = parseCoverageReportFlags(process.argv.slice(3)); const out = await runCountyRailCoverageReport(process.env, { flags }); console.log(JSON.stringify(out)); return; }` -- no change to the job module itself, which is already read-only and correctly shaped. Self-test: a call with --county=<fips with zero cad_property rows> must return rows with cadPopulation 0 and every cell-state bucket 0 rather than throwing, exercised as a new case in test/county-rail-coverage-report.test.mjs.",
+    "notYetApplied": true
+  },
+
+  "openQuestionsForPlannerOverseer": [
+    "Does a cloud execution surface for legacy-design-tools' lib/cad-ingest exist anywhere outside what this lane could find, or is building one genuinely out of P-157's scope (its own infra card, closer to P-81..P-84's shape but for a different store)?",
+    "If no such surface exists and none will be built in this wave, is the sanctioned path a documented break-glass laptop run per the ingest-freeze decision's reversal criteria ('the operator names a return to laptop applies for a specific emergency; that is a recorded break-glass run row, not a reversal of this decision')? That authorization is the operator's to give, not this lane's to assume.",
+    "Which base roll vintage should accompany the improvement-detail file (F-CP1-3): repeat the original preliminary 07072026 export, or move to the current certified 07182026 export?",
+    "Is fixing the PACS filename-discovery mismatch (F-CP1-2) in scope for a different, explicitly-authorized lane, given it blocks every PACS county loaded from a differently-named CAD export, not just Travis?"
+  ],
+
+  "worktreesCreated": [
+    {"repo": "legacy-design-tools", "path": "P:/seat-worktrees/property/legacy-design-tools-p157-cad-ingest", "branch": "feat/p157-tcad-improvement-detail", "startCommit": "55c4ad443c115fca62345299ffd001db8faf4c83", "codeChangesMade": false},
+    {"repo": "hauska-factory", "path": "P:/seat-worktrees/property/hauska-factory-p157-structural", "branch": "feat/p157-tcad-improvement-detail", "startCommit": "217b7dd7eb3a1b2f72f3a72d333008079f71fcaf", "codeChangesMade": false}
+  ],
+
+  "constraintsHonored": [
+    "No factory data run executed (staging or production); P-158 serialisation never became relevant because the load never reached that step.",
+    "No file renamed, no discoverFiles regex widened, no writer/ingest-existing.ts rule touched.",
+    "No laptop --apply / DB write of any kind attempted against cad_property or parcel_record_cell.",
+    "TCAD file fetches were read-only, public-record, no-credential, and used HTTP Range requests plus one small full download (67MB CSV export, since deleted from scratch) rather than the full 557MB certified export, to verify format compatibility without pulling an unnecessary ~600MB.",
+    "All downloaded/derived scratch artifacts (improvement_detail_2026.zip, cert_sparse.zip, cert_tail.bin, impdet_chunk.bin) deleted after their metadata (URL, size, sha256, entry listing, sample decode) was recorded here; nothing retained outside this checkpoint's evidence."
+  ],
+
+  "leave_behind": {
+    "tcadFileMetadata": {
+      "certifiedExport": {
+        "url": "https://traviscad.org/wp-content/largefiles/2026%20Certified%20Appraisal%20Export%20Supp%200_07182026.zip",
+        "byteSize": 557228168,
+        "declaredTaxYear": 2026,
+        "confirmedInternalPropValYr": "2026 (read directly from a live IMP_DET.TXT record's byte span 13-16)",
+        "relevantInternalEntries": {
+          "PROP.TXT": 4895747376,
+          "IMP_INFO.TXT": 52778376,
+          "IMP_DET.TXT": 2065539840,
+          "LAND_DET.TXT": 89535450,
+          "IMP_ATR.TXT": 232206251
+        },
+        "notDownloadedInFull": true,
+        "downloadMethod": "HTTP Range requests only (central directory tail + one entry's local-header byte range), to confirm format without a ~557MB pull"
+      },
+      "improvementDetailsReportProduct": {
+        "url": "https://traviscad.org/wp-content/largefiles/improvement_detail_2026.zip",
+        "byteSize": 69367317,
+        "sha256": "771977aca72fe87d778191046e510dd99ff4e97c275dabc837b3375ce9575430",
+        "format": "4 CSV files (improvement_detail_2026_1.csv..._4.csv, 595,648,011 bytes uncompressed total, internal file dates 2026-03-27) -- NOT the PACS fixed-width IMP_DET.TXT format; a different, human-report product. Downloaded in full, sha256'd, inspected, then deleted -- irrelevant to the actual ingest path and not needed further."
+      }
+    },
+    "liveBaselineProbe": {
+      "tool": "Smart Site MCP get_smart_site, depth=node",
+      "ranAt": "2026-09-11T21:46:57Z (server-reported asOf)",
+      "result48453_113408": {"structuralFact.status": "absent", "verdict": "absent-verified", "cadRoll.improvementValue.state": "present"},
+      "result48453_474034": {"structuralFact.status": "absent", "verdict": "absent-verified", "cadRoll.improvementValue.state": "present"}
+    },
+    "classFindingForOverseer": "Unchanged from the mission's own framing, now doubly confirmed: ingest-existing.ts's stampAbsent/cadNullVerified path (and cortex's structuralFactResolve.ts mirror of it) cannot distinguish 'the detail file was loaded and this parcel genuinely has no MAIN AREA segment' from 'the detail file was never in this county's load' for ANY PACS county loaded without the improvement-detail file -- and, per F-CP1-1/F-CP1-2, there is currently no verified mechanism (cloud or otherwise, compliant with current file-discovery code) by which any PACS county's detail file gets loaded at all going forward without either new infrastructure or an operator-authorized break-glass exception. Fix location per the mission: hauska-engine packages/engine-core/src/parcel-record/ingest-existing.ts first, the hauska-factory pin second. Not fixed in this lane."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "checkpoint": "CP2",
+  "planRow": "P-155",
+  "lane": "FEASIBILITY",
+  "filedAt": "2026-09-11T23:56:00Z",
+  "note": "Filed retrospectively alongside CP1/close, same single-pass-session caveat as CP1: no synchronous planner review gate was available before continuing to the client legs and deploy. This records the pilot state — engine-side implementation and its own build/test/migration verification — before the client (hauska-map, smartsite-mcp) legs were written.",
+
+  "pilotScope": "hauska-engine only: packages/storage (migrations 013+014, port.ts, pg-storage.ts, in-memory-storage.ts) and services/engine-api/src/routes/parcel-terrain.ts's three feasibility-export routes.",
+
+  "migrationsAppliedLive": [
+    { "file": "013_feasibility_export_jobs.sql", "appliedAt": "2026-09-11T21:49:18.389Z", "against": "the Neon DB backing the DATABASE_URL secret mounted on the live hauska-engine-api Cloud Run service (verified by reading the secret name off the live service JSON, not assumed)", "result": "feasibility_export_jobs table created; idempotent CREATE TABLE IF NOT EXISTS confirmed safe to re-run" },
+    { "file": "014_feasibility_export_jobs_result.sql", "appliedAt": "2026-09-11T21:52:34.563Z", "against": "same DB", "result": "seven result_* columns added via ALTER TABLE ... ADD COLUMN IF NOT EXISTS" }
+  ],
+
+  "localVerification": {
+    "storageTypecheck": "pnpm --filter @hauska-engine/storage exec tsc --noEmit -- clean",
+    "engineApiBuild": "pnpm --filter engine-api build -- clean (tsc -b)",
+    "engineApiTests": "pnpm --filter engine-api exec vitest run -- 103/103 passing, including 9 new/rewritten tests in feasibility-export-route.test.ts (202 contract; job settles to ready carrying the result summary; a second refresh while running returns the SAME jobRef and never starts a second author call; 404 never-requested; 404 declared-wait while queued/running; 200 PDF round-trip once ready; a mocked composition throw settles to failed with an errorClass and 422s on download; never-requested status shape)",
+    "storageTests": "pnpm --filter @hauska-engine/storage exec vitest run -- 67/67 passing (1 pre-existing skip, unrelated)",
+    "wholeRepoBuild": "pnpm -r run build -- clean across all 19 workspace projects",
+    "wholeRepoTestCaveat": "pnpm -r run test surfaces 4 pre-existing, UNRELATED failures in packages/engine-core/scripts/__tests__/*.test.ts (SyntaxError importing .mjs scripts under vitest — a vitest/tsconfig interaction present on origin/main before this change). Confirmed out of scope: `git diff --stat` against origin/main touches only packages/storage and services/engine-api."
+  },
+
+  "firstLiveCanarySmokeTest": {
+    "revision": "hauska-engine-api-00200-kon (built from merge commit 81ec7b0986eba9f35116136a300025954b91aad9, PR hauska-engine#420)",
+    "canaryUrl": "https://p155-feasibility-async---hauska-engine-api-h7gvu7rgcq-uc.a.run.app",
+    "trafficAtTestTime": "0%",
+    "parcel": "48453:474034",
+    "observed": [
+      "GET status before any new request found a PRE-EXISTING ready atom from before P-155 existed (no job row) and correctly reported it ready via the atom-artifact fallback path, not deferred.",
+      "POST refresh returned 202 {state:queued, jobRef:2488f7c7-2f37-4f38-8f33-51cc47f026df, pollAfterMs:5000, statusUrl, downloadUrl} in real time.",
+      "GET download while running returned 404 {error:export_in_progress, state:running, jobRef, pollAfterMs} — the declared wait, not a bare absence.",
+      "Bounded poll (10s interval, 240s cap) observed queued/running transitions and settled to ready at 22:43:37Z.",
+      "GET download once ready returned 200, content-type application/pdf, 785224 bytes, a genuinely valid 13-page PDF (confirmed with `file`).",
+      "startedAt 22:40:59.975Z, completedAt 22:43:29.096Z -> 149.1s wall time for this Travis parcel, inside the documented 85-154s range."
+    ],
+    "dedupTest": {
+      "parcel": "48021:34049",
+      "observed": "Two POST refresh calls seconds apart both returned the SAME jobRef (a9f0331c-cf6e-45ac-94cb-b0d0f328bb29) — the second call never started a second composition."
+    },
+    "verdict": "Pilot validated the core design (job creation, dedup, declared-wait download, staleness-safe completion under default CPU throttling with periodic polling) against real production data before the canary took any production traffic."
+  }
+}

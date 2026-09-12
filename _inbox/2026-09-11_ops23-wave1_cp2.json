@@ -1,0 +1,52 @@
+{
+  "kind": "checkpoint",
+  "checkpoint": "CP2",
+  "wave": "OPS-23 wave 1",
+  "date": "2026-09-11",
+
+  "perRowFirstPilotReview": {
+    "P-155": {
+      "laneClaim": "Row done: async refresh shipped across all three repos, live jobs completed up to 629.6s wall time, MCP returned a real PDF.",
+      "plannerViolationCheck": "Independently re-verified all four PRs (420, 385, 660, 662) via `gh pr view`/`gh pr checks` -- all merged at the claimed SHAs, all CI green. Independently called mcp__claude_ai_Smart_Site__export_instrument myself for BOTH required probe parcels (48453:474034 and 48021:34049): both returned real PDFs (%PDF-1.7 magic bytes) on the first call. Independently re-confirmed the CURRENT live Cloud Run traffic (hauska-engine-api-00205-san at 100%, by field name, not a CLI summary line) and decoded my own freshly-fetched PDF through pdftotext to confirm P-159's one-buildable-figure fix survived this lane's later rebuild.",
+      "secondMechanismConsidered": "Could the lane's four 'successful' async jobs have actually been served from a cache or a pre-existing ready record rather than a genuine fresh async run? Ruled out: the close's profile table cites distinct jobRefs with startedAt/completedAt deltas matching the wall-clock durations claimed (149.1s-629.6s), and the planner's own two live calls (made independently, minutes after this lane closed) each returned in well under those windows by hitting an already-`ready` job record, which is the CORRECT behavior for a second call on a completed job, not evidence the first call was faked.",
+      "correction": "This lane's claim that scripts/surface-probe.mjs has no P-155 predicate was FALSE (a real evaluator exists at line 336, part of the same commit that unblocked the wave). Rebuilt the observation file in the shape the real evaluator needs and ran it: UNMEASURED, not PASS, because the third leg (browser click-through) is genuinely unobservable in this environment. Corrected the close's planRows from an implicit full claim to []."
+    },
+    "P-157": {
+      "laneClaim": "Blocked at CP1 by design: no cloud execution path for the CAD loader, and a real filename mismatch on the live TCAD export.",
+      "plannerViolationCheck": "Did not independently re-run the lane's gcloud/HTTP-Range checks (would have required re-touching a production CAD export unnecessarily for a claim already evidenced with byte-level detail: an exact byte-span decode of a live IMP_DET.TXT record matching layout.ts's declared spans). Accepted on the strength of the evidence chain itself, which names its own method at every step -- a live gcloud query, a live HTTP HEAD, two small live Range fetches, one small decode -- rather than asserting a conclusion without a method.",
+      "secondMechanismConsidered": "Could a cloud execution path exist that this lane's gcloud query missed (wrong project, wrong region, a generic task-runner)? The lane's static grep for any Dockerfile/cloudbuild config under lib/cad-ingest/ (zero hits) is a repo-level signal independent of which project/region a runner might target, and corroborates the live query rather than resting on it alone.",
+      "correction": "None needed to the finding itself. Copied the lane's CP1 into this worktree (it had landed in the shared P:/doc_repo checkout, a gap in how this wave's dispatch was compiled -- no doc_repo worktree was ever named for lanes without one of their own)."
+    },
+    "P-158": {
+      "laneClaim": "Diagnostic re-measurement plus a tested, CI-green label-split fix (PR #421), left unmerged for a scope ruling; both probe parcels remain absent for a genuine data-coverage reason, not a join defect.",
+      "plannerViolationCheck": "Independently verified PR #421 via `gh pr view`/`gh pr checks` (open, CI pass, matches claimed diff stats). Independently ran the live surface probe myself (not trusting the lane's prediction): FAIL for both parcels, exactly as the lane said it would be.",
+      "secondMechanismConsidered": "Could the persistent absence be a stale-read/cache problem rather than a genuine data gap, the same class of thing P-157's CP1 flagged for itself? The lane's own SQL reads were against the live atoms/cortex stores directly (not a served/baked path), and the near-bbox leg the planner's own probe ran is a live HTTP call to smartsite.cloud, not a cached read -- two independent live reads agreeing is stronger than either alone.",
+      "correction": "Fixed the close's schema (planRow-singular + prose-probe -> planRows:[] + probe object) so the gate actually evaluates this close instead of silently skipping it, and set its status explicitly to closed-partial with the FAIL artifact cited."
+    },
+    "P-159": {
+      "laneClaim": "Row fully done: one buildable figure everywhere, narrative check proven non-vacuous, deployed and live-verified.",
+      "plannerViolationCheck": "Independently verified PR #422 (merged, CI pass) and the CURRENT live traffic split via gcloud (confirmed no lingering collision). Independently re-derived the R-4 verdict by actually running the probe script, which the lane's own close explicitly deferred to the planner for.",
+      "secondMechanismConsidered": "Could the single observed figure be a coincidence of this one PDF generation rather than a structural fix (e.g., a lucky race where the un-atom-backed local figure happened to not be reached this one time)? Ruled out by the lane's own test suite (17 new tests including two dedicated falsifier fixtures: a warm/local-mismatch fixture forced to render one figure, and a planted-wrong-figure narrative fixture proven to be refused) plus the planner's own second independent PDF fetch after this lane closed, which reproduced the same single figure on a DIFFERENT, later Cloud Run revision.",
+      "correction": "This lane's own observations.json used a nested {value,basis,observedBy,observedAt} shape; the actual surface-probe.mjs evaluator needs flat values. Built the flat form, re-ran the probe, got a genuine PASS artifact, and fixed the close's schema (added planRows:['P-159'], restructured probe into an object citing the PASS artifact) so the gate will actually recognize and accept it."
+    },
+    "P-167": {
+      "laneClaim": "Package half (step 1 of 5) done and live-verified; steps 2-5 correctly held on the P-153 merge gate.",
+      "plannerViolationCheck": "Independently verified PR #28 (merged, CI green on all 3 Node versions), the git tag v1.32.0 at that SHA, and the live npm registry export via `npm view` -- all matched exactly.",
+      "secondMechanismConsidered": "Could `npm view` be reading a stale registry cache rather than the actual live package? The lane's own verification used a FRESH isolated `npm install` (not a local link) and executed the installed code, which is a stronger check than a registry metadata read alone; the planner's `npm view` corroborates the same version/exports independently.",
+      "correction": "This lane's close claimed planRows:['P-167'] while its own probe field said the R-4 predicate is not yet applicable -- an internal contradiction the gate would have caught (a GATED row with no valid probe.artifact blocks the commit). Corrected planRows to [] with an explicit note, since this row has not earned a PASS."
+    }
+  },
+
+  "crossLaneFindings": [
+    "Deploy-traffic collision (P-155 vs P-159, both against hauska-engine-api): investigated in real time while P-155 was still running -- messaged the P-155 agent directly with the collision details and instructions to rebuild from a post-merge origin/main before its final deploy. P-155's own close independently reports having diagnosed and resolved the same collision (rebuilding from ce6a75a, the common ancestor containing both PRs) before receiving the planner's message, so the two corrective actions coincided rather than one causing the other; the planner's live gcloud check after P-155 closed confirms the resolution held.",
+    "Three separate lane closes (P-155, P-158, P-167 as originally drafted) used a close-file schema (planRow singular, a bare-string probe field) that the actual probe-close-gate.mjs script does not recognize, causing it to silently skip evaluating them rather than block or pass them. This is a real gap between the program's prose (which describes probe.artifact and planRows informally) and its enforcement code, now corrected on every close this wave produced, and named here for whoever owns the gate script or the dispatch compiler next.",
+    "Two independent lanes (P-157, P-158) each independently discovered that a writer/loader their mission assumed had a cloud execution path in fact has none -- a systemic infrastructure gap across at least two rails (TCAD structural detail, building-footprint atoms), not a one-off.",
+    "One lane (P-159) disclosed, unprompted, a violation of the 'do not spawn sub-agents' instruction (one background Explore agent, caught immediately, not relied upon). No corrective action needed beyond the disclosure already in its close.",
+    "The planner independently confirmed (own MCP calls, own pdftotext decode) that P-159's fix survives P-155's later rebuild of the shared service -- both fixes are live together on the current serving revision.",
+    "An unrelated finding surfaced by the planner's own combined probe run, outside this wave's five rows: 48021:33223 (the P-91 gold probe parcel) returns data for a DIFFERENT parcel (48491:R419407) from at least one endpoint -- a wrong-parcel data bug. Not chased further; named here for the overseer, since it is not any of this wave's rows' scope."
+  ],
+
+  "gateVerification": "node scripts/enforcement/probe-close-gate.mjs --self-test: all checks pass. Directly invoked the gate's own exported evaluate() function against all four completed-lane close files together (P-155, P-158, P-159, P-167) after the schema corrections above: { block: false, message: '' } -- P-159 correctly passes because it cites a genuine PASS artifact; P-155/P-158/P-167 correctly pass through unblocked because none of them claims a row in planRows it has not earned.",
+
+  "status": "All five sub-agents supervised to completion. Proceeding to the wave-level close."
+}

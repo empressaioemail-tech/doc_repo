@@ -151,6 +151,32 @@ rest of the session ("or whenever you need to"); each was reported after.
 - Uncommitted at close: the card's P-152 status row (from its CP2) and this session file; they
   ride with the P-151 close commit.
 
+## Review of the closes (2026-09-12 02:20Z to 03:00Z)
+
+The operator reported every lane landed and the last traffic shift running. The overseer read
+the closes, the checkpoints and the probe artifacts, verified every cited merge by conclusion
+string with `gh` (thirteen PRs, all SUCCESS; engine #421 open as stated) and every serving
+revision by field from the Cloud Run JSON (`hauska-engine-api-00205-san`,
+`hauska-retrieval-api-00086-nur`, `cortex-api-00776-wov`, `smartsite-mcp-00109-zip`, each at
+100 percent), re-ran the probe from doc_repo HEAD for the rows that closed, and copied the
+artifacts from the two other doc_repo worktrees the lanes had written into (the planner's and
+the property seat's), keeping lane-original copies where the planner had corrected a close.
+Verdicts: P-151 closed; P-159 closed PASS; P-152 lane 1 closed with the row partial; P-155,
+P-158 and P-167 closed-partial with the open leg named; P-157 blocked at CP1 with three
+operator questions; P-153 still in flight with two merged hauska-map PRs and an unmerged LDT
+half. The dispatch planner's checkpoint 1 and wave close are the swap artifact and the
+summary; its four-entry error log stands, including that finding F8 was stale on the day it
+was written.
+
+**The gate, verified through the harness.** The first live attempt, a throwaway close
+claiming closed on an UNMEASURED artifact staged and committed in one Bash call, went through
+as `213f5369`: the hook reads the index when the call starts, before the add has run. Reverted,
+the file left staged, and the commit attempted alone: the harness fired the hook and refused
+it. A same-command add-and-commit rule was added and observed refusing the second shape. Two
+further gate defects the wave exposed were fixed with self-tests: closes carrying `planRow`
+(singular) were silently skipped, and an honest partial close could never be committed. The
+compiler now prints the close skeleton the gate reads.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not

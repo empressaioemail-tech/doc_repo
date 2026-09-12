@@ -1,0 +1,42 @@
+{
+  "lane": "P-153-DRAW",
+  "checkpoint": "CP1-design-pre-build",
+  "filedAt": "2026-09-11T16:55:00Z",
+  "planRow": "P-153",
+  "missionFile": "dispatch text (inline in the session, not a separate _catalog/dispatch_missions/ file at filing time)",
+  "startCommits": {
+    "hauska-map": "6ab6914 (origin/main; confirmed via git merge-base --is-ancestor that this contains the P-151 merge, PR #383, per the dispatch's stated prerequisite)",
+    "legacy-design-tools": "3950ce9b (origin/main)"
+  },
+  "worktrees": {
+    "hauska-map": {
+      "path": "P:/seat-worktrees/property/hauska-map-p153-draw",
+      "branch": "feat/p153-envelope-polygon-draw",
+      "createdFrom": "origin/main 6ab6914"
+    },
+    "legacy-design-tools": {
+      "path": "P:/seat-worktrees/property/legacy-design-tools-p153-draw",
+      "branch": "feat/p153-mcp-draw-polygon",
+      "createdFrom": "origin/main 3950ce9b"
+    }
+  },
+  "falsifier": "Pre-registered before writing any code, per the mission: (1) if for 48021:34049 the polygon the MCP draw block carries and the polygon the map draws differ in vertex count, or in area by more than one percent, there are two implementations and the change is wrong; (2) if any surface prints a buildable figure or percent for this parcel after the change, the change is wrong.",
+  "codeReadFindings": {
+    "hauska-map": {
+      "the contract": "packages/parcel-fact-sheet/src/index.ts BuildableEnvelope is a discriminated union with exactly three variants today (derived/consumed/not-derived), each consumed via `env.kind ===` narrowing in fact-sheet-resolver.ts, sheet-to-card-model.ts (bakedCardModelFromSheet AND envelopeStateFromSheet), and the verdict composer's envelopeSegment(). Adding a fourth `modelled` variant and letting TypeScript's exhaustiveness checking surface every non-updated call site (via tsc --noEmit) was the plan, rather than grepping for every consumer by hand.",
+      "sheetEnvelopeIsAtomPathPending": "fact-sheet-resolver.ts:238-254. Detects live-derive geometry (disclosure contains 'live derive', or a geojson feature carries properties.source==='live-derive'). envelopeValue() (line ~1927) currently returns kind:'not-derived' unconditionally whenever this is true -- Ruling B's original mechanism (P-91 O1). Plan: when true AND ringsFromGeoJson(env.geojson) is non-empty AND setbacksUsed exists, return the new 'modelled' kind instead; otherwise (no geometry at all -- the negative-control shape) keep returning 'not-derived' exactly as today. This leaves the no-district negative control (48453:474034) provably untouched, since it never has geometry to begin with.",
+      "map draw mechanism": "envelope-overlay.ts's normalizeEnvelope() only inspects `status` and geometry presence on the CardEnvelopeState the card hands ExplorerMap.handleEnvelope -- it does not look at buildableAreaSqFt/Pct at all. Confirmed by reading normalizeEnvelope() in full: kind:'ok' requires status!=='declined', not empty, and a real Polygon under geometry/geojson. So making envelopeStateFromSheet() return status:'ok' + geometry (mirroring the existing 'derived' branch) for the new 'modelled' kind, while omitting `summary` entirely (no field to read a figure from), is sufficient to make the map draw -- no change needed to envelope-overlay.ts or ExplorerMap.tsx itself.",
+      "entitlement gate": "ExplorerMap.tsx handleEnvelope: `const mayDraw = snap != null && isEntitled(snap)` gates the actual setEnvelopeOverlays call, independent of normalizeEnvelope's kind. isEntitled = isPro(s) || s.propertyUnlocked || s.devRole (entitlementClient.ts:97-99). NOT touched. Recording for the close: the modelled polygon will be visible to Pro / property-unlocked / dev-role sessions, suppressed for Free, exactly the same gate the existing 'derived' envelope already uses -- this ruling does not change who sees a drawing, only what an entitled session sees for an atom-pending parcel.",
+      "Buildable row text": "bakedCardModelFromSheet's buildablePct ternary (sheet-to-card-model.ts ~line 750) currently falls through to a bare `absent()` (no message) for the not-derived/atom_path_pending case when setbacks are present, and InspectCard.tsx's toFactPresentation (line ~493-497) prints the fallback 'Not stamped here' whenever an absent CardFacet carries no message. Plan: for the new 'modelled' kind, call mapBuildableDisplay from buildable-display-vocab.ts (the module's own stated invariant is that surfaces MUST call it rather than re-deriving copy -- bakedCardModelFromSheet currently does NOT follow that invariant for any of its branches, a pre-existing gap not in this mission's scope to fully close, but the new branch will follow it) and use its cardLabel as a present() value, not absent() -- consistent with how the existing 'consumed' (0%) case already uses present('0%') for a definite-but-non-standard outcome.",
+      "buildable-display-vocab.ts": "mapBuildableDisplay's FIRST check is `if (decline === 'atom_path_pending') return kind:'loading'` unconditionally -- this must not regress for the true loading case (no geometry yet). Plan: add a new check immediately BEFORE it, `if (decline === 'atom_path_pending' && input.hasGeometry === true)`, returning a new 'modelled-figure-withheld' token. This is additive; the existing loading-shell test coverage for the no-geometry case is unaffected because hasGeometry defaults to undefined/false for every existing caller.",
+      "brief/X-ray PDF path -- FINDING, not in the mission's named blast-radius list": "brief-view-model.ts's deriveSetbacksEnvelope() reads `section.data`, which api/_lib/pe-share-brief.ts's buildShareBriefPayload() populates as `root.envelope` -- the RAW baked facets.envelope wire, fetched independently of the sealed sheet / sheetEnvelopeIsAtomPathPending entirely (a de facto sixth read path, pre-existing, outside this mission's scope to fully reconcile with invariant I1). It only refuses to print a figure when status==='declined'; for the live-derive 'ok'-status case it already prints raw buildableAreaSqFt/buildableAreaPct with NO awareness of the live-derive disclosure at all. Read the current fixture-free code path directly (not a fixture) to confirm this before concluding it was a live defect, not a stale assumption. The mission's step 4 explicitly requires 'the X-ray/brief print path must print no percent for this variant' -- satisfying that literally requires adding the SAME live-derive detection here as sheetEnvelopeIsAtomPathPending uses, independently (this file has no access to BakedFacetPayload's typed shape; it works on `unknown`), since it does not consume the sheet."
+    }
+  },
+  "planForSubAgents": "hauska-map: implemented directly by me (the coordinating lane), not fanned -- the contract change (packages/parcel-fact-sheet) required careful reasoning about a shared type used by both repos' vocab-parity fixture, and I judged reading+writing it myself faster and lower-risk than writing a sub-agent brief precise enough to get it right blind. legacy-design-tools: fanned to exactly one sub-agent (AGENT_CONTRACT 1) with a complete, pre-researched spec (the exact functions to reuse -- deriveBuildableEnvelope, reconcileWithAtomEnvelope, resolveAuthoritativeSetbacks, labelEdges -- their real signatures read from source before writing the brief, the exact coordinate-projection formula to use, and the falsifier). Sub-agent produces a diff only, does not commit; I read every hunk, run every check, and handle commit/PR/deploy myself.",
+  "doNotTouch": [
+    "the entitlement gate (isEntitled) in ExplorerMap.tsx -- F2, operator-owned",
+    "any pricing surface",
+    "hauska-engine's own copy of buildable-display-vocab.ts or its parity lock -- different repo/seat; the hauska-map-side peer fixture is refreshed to match hauska-map's new source, and the engine-side sync is named in leave_behind for the owning seat",
+    "minting or backfilling any envelope atom (P-152's program, not this one)"
+  ]
+}

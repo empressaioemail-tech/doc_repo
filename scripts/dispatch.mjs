@@ -245,6 +245,21 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
   CP1: ${cp1}
   CP2: ${cp2}
   CLOSE: ${close}
+
+CLOSE SKELETON (the fields the enforcement gate reads; spell them exactly, or the gate refuses
+the commit rather than guessing what you meant):
+  {
+    "lane": "${lane}",
+    "planRows": [${planRows.map((r) => `"${r}"`).join(", ")}],
+    "status": "closed | closed-partial | blocked",
+    "probe": { "artifact": "_inbox/<date>_<HHMMSS>_surface_probe.json" },
+    "falsifier": "...", "contradicted": "...", "leave_behind": [...],
+    "missionPremise": "...", "completionPredicate": "...", "scopeBasis": "..."
+  }
+  A close that says "closed" must be PASS for every parcel of every row in planRows on the cited
+  artifact. A close that says "closed-partial" or "blocked" must still cite an artifact that
+  measured its rows; the verdicts may be FAIL or UNMEASURED. planRows is an array, never a
+  string; probe.artifact is a path under _inbox/ produced by scripts/surface-probe.mjs.
 `;
 
 mkdirSync(join(root, '_dispatches'), { recursive: true });

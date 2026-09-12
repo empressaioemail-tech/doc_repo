@@ -10,7 +10,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { evaluate, isGitCommit, targetsDocRepo, stagedFiles, DOC_REPO } from "../../scripts/enforcement/probe-close-gate.mjs";
+import { evaluate, isGitCommit, targetsDocRepo, stagedFiles, stagesInSameCommand, DOC_REPO } from "../../scripts/enforcement/probe-close-gate.mjs";
 
 let raw = "";
 process.stdin.setEncoding("utf8");
@@ -21,6 +21,10 @@ process.stdin.on("end", () => {
     const command = payload?.tool_input?.command ?? payload?.toolInput?.command ?? payload?.command ?? "";
     const cwd = payload?.cwd ?? payload?.tool_input?.working_directory ?? process.cwd();
     if (!isGitCommit(command) || !targetsDocRepo(command, cwd)) process.exit(0);
+    if (stagesInSameCommand(command)) {
+      process.stderr.write(`{"block": true, "message": "PROBE CLOSE GATE (OPS-23 R-4) refused the commit: this command stages and commits in one string (git add ... && git commit, or commit -a/--all), so the gate cannot read the index it is about to commit. Stage in one call, commit in the next. Found live 2026-09-12 (213f5369, reverted)."}`);
+      process.exit(2);
+    }
     const staged = stagedFiles(DOC_REPO);
     if (staged === null) {
       process.stderr.write("PROBE-CLOSE-GATE could not run git; not blocking. This line exists so a dead control is visible.\n");

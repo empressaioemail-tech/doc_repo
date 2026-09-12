@@ -172,11 +172,15 @@ whose results for that row are all PASS). The overseer will commit the close thr
 a close the gate refuses comes back to you.
 
 The compiled wave dispatch also names a wave-level close, `_inbox/<date>_ops23-wave1_close.json`.
-That file is your summary, written last. Its `planRows` lists ONLY the rows whose per-row close
-cites a PASS artifact; every other row appears under `open` with its state (`closed-partial`,
-`blocked`, `not started`) and the reason. Never list a row in `planRows` that is not PASS; the
-gate reads `planRows`, and a row listed there without a PASS is a close the overseer cannot
-commit. Its `probe.artifact` is one combined run,
+That file is your summary, written last. Its `planRows` lists every row the wave touched, and
+its `status` says `closed` only if every listed row is PASS on the cited artifact; otherwise
+`closed-partial`, with each non-PASS row under `open` with its state (`closed-partial`,
+`blocked`, `not started`) and the reason. The same rule applies to every per-row close: name
+the row in `planRows` (an array, never a string) and let `status` carry `closed-partial` or
+`blocked` when the row is not PASS; the gate accepts a partial close that cites an artifact
+measuring its rows and refuses a close that says `closed` on anything but PASS. (Amended
+2026-09-12 after wave 1: the earlier rule to leave non-PASS rows out of `planRows` made the
+gate skip those closes instead of reading them.) Its `probe.artifact` is one combined run,
 `node scripts/surface-probe.mjs --rows P-155,P-157,P-158,P-159,P-167 --observations <file> --allow-unmeasured`,
 so the artifact also records what stayed unmeasured.
 

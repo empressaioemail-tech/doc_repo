@@ -1,0 +1,56 @@
+{
+  "lane": "P158-FOOTPRINT",
+  "checkpoint": "CP2-pilot-mid-work",
+  "filedAt": "2026-09-11T23:20:00Z",
+  "planRow": "P-158",
+  "implementation": {
+    "filesChanged": [
+      "packages/engine-core/src/building-footprint/types.ts (+21) -- new StagedFootprintJoinOutcome union; PlannedPerParcelFootprintAbsence gains optional joinOutcome",
+      "packages/engine-core/src/building-footprint/staged-footprint-join.ts (+175/-11) -- computeStagedJoinDiagnostics, describeStagedFootprintAbsence, planCountyFromStagedGeometryTrueJoin's 4th optional diagnostics param, planCountyStagedFootprints wired to compute+pass diagnostics",
+      "packages/engine-core/src/building-footprint/__tests__/staged-footprint-join.test.ts (+155) -- existing bleed test extended with an explicit back-compat assertion (no diagnostics -> exact old string, joinOutcome undefined); new describe block with a 5-parcel fixture (A/B unchanged, +C/D/E) proving all three branches including the non-vacuous straddle-both-sides case",
+      "packages/engine-core/scripts/write-building-footprint-county.mjs (+15) -- dry-run/apply summary gains plan.wouldWriteAbsentPerParcelByJoinOutcome"
+    ],
+    "backCompatDesign": "diagnostics is optional on planCountyFromStagedGeometryTrueJoin specifically so every caller written before this lane (the pre-existing bleed test) is provably unaffected -- verified by an explicit assertion, not just by omission.",
+    "contractBoundaryHonored": "absenceKind left as 'no-footprint-feature' (atom-contract package, substrate-owned, not touched). Only the engine-local reason string and new engine-local joinOutcome field carry the split.",
+    "thresholdsUnchanged": "PRIMARY_OVERLAP_MIN and STRADDLE_OVERLAP_MIN read from constants.ts, not modified, not re-imported with different values anywhere."
+  },
+  "testResults": {
+    "engine-core building-footprint suite": "pnpm --filter @hauska-engine/engine-core exec vitest run src/building-footprint -- 6 files, 34 passed, 1 skipped (pre-existing skip, unrelated). Includes the new not-vacuous branch-3 test.",
+    "engine-core typecheck": "pnpm --filter @hauska-engine/engine-core exec tsc --noEmit -- clean, no output.",
+    "atoms package suite": "pnpm --filter @hauska-engine/atoms exec vitest run -- 15 files, 250 passed. building-footprint-writer.test.ts (the absence-atom builder that consumes entry.reason/entry.absenceKind) unaffected since it only asserts on the fields it always asserted on."
+  },
+  "pilotDryRun": {
+    "method": "BUILDING_FOOTPRINT_PATH=1 pnpm exec tsx scripts/write-building-footprint-county.mjs -- --county=<fips> --limit=<n>, NO --apply, against live production CORTEX_DATABASE_URL. Read-only: reads txgio_parcel + tx_building_footprint, builds atoms in memory, never opens the atoms store, never takes a write lease.",
+    "48021 (Bastrop), limit=3000, wallMs=17222-29130 across two runs": {
+      "wouldWritePresent": 1892,
+      "wouldWriteAbsentPerParcel": 1618,
+      "byJoinOutcome": { "no-candidate-in-envelope": 1387, "overlap-below-threshold": 225, "attached-to-neighbour": 6, "unsplit": 0 },
+      "denominator": "1618 absent-per-parcel entries out of 3510 total planned (3000 parcels requested, 138 skippedUnusableKey, 3510 planned because a parcel can carry >1 present entry for accessory structures)",
+      "reading": "85.7% of this sample's absences are no-candidate-in-envelope (a real coverage gap), 13.9% are genuine sub-threshold overlaps, and only 0.4% are the attached-to-neighbour mechanism the original P-158 row's parcel-area-denominator theory pointed at. unsplit=0 confirms diagnostics is populated on every absence entry via the real production code path, not just in unit tests."
+    },
+    "48453 (Travis), limit=500, wallMs=71220": {
+      "wouldWritePresent": 0,
+      "wouldWriteAbsentPerParcel": 419,
+      "byJoinOutcome": { "no-candidate-in-envelope": 419, "unsplit": 0 },
+      "reading": "This sample (first 500 by feature_index, i.e. spatially clustered, not a random county-wide sample) landed entirely inside a zero-coverage region: 0 of 65973 staged Travis footprints touched any of these 500 parcels' envelopes. Not claimed as county-representative on its own, but directly corroborates the atoms-store finding (81.6% of Travis's existing 396462 building-footprint atoms are absence) and the per-parcel finding for 48453:113408 (nearest footprint 7.5km away).",
+      "performanceNote": "71s for 500 Travis parcels vs 17-29s for 3000 Bastrop parcels -- Travis is markedly slower per parcel (denser candidate matching in the Austin metro). A full-county Travis dry run was not attempted within this session's time budget; flagged in leave_behind, not silently skipped."
+    }
+  },
+  "probeParcelConfirmation": {
+    "48021:34049": "Exact atom fetched by full entity_id (48021:34049:footprint:none): absence, kind=no-footprint-feature, reason is the OLD unsplit string, created_at 2026-09-07T06:16:35Z. Given nearest staged footprint is 1615m away, this parcel would classify as no-candidate-in-envelope under the new split.",
+    "48453:113408": "Exact atom fetched by full entity_id (48453:113408:footprint:none): same shape, created_at 2026-09-07T05:56:59Z. Nearest staged footprint 7464m away -> also no-candidate-in-envelope under the new split.",
+    "note": "These are the EXISTING atoms from the 2026-09-07 run, still carrying the OLD string -- they will only carry the new split reason after the writer is RE-RUN with --apply, which this lane has not done (see ingest-freeze finding, CP1 and close). This is why falsifier (1) is expected to fire: buildingFootprintFact will read absent for 48021:34049 today and will keep reading absent after a hypothetical re-run, because the underlying claim (no nearby footprint) does not change -- only its legibility does."
+  },
+  "githubPr": {
+    "repo": "empressaioemail-tech/hauska-engine",
+    "number": 421,
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/421",
+    "headSha": "2d7d814",
+    "ciStatusAtCheckpoint": "pending (checked ~15s after push; not waited out further at this checkpoint per exit-bounded verification -- final status recorded at close)"
+  },
+  "remainingWork": [
+    "Record final CI conclusion at close (poll once, exit-bounded, do not tail).",
+    "Write the CLOSE artifact with the ingest-freeze blocker, the scope finding, and full leave_behind per AGENT_CONTRACT section 6 and the OPS-23 four fields.",
+    "Confirm hauska-factory-p158-footprint worktree needs no commit (already established at CP1) and hauska-map was correctly left untouched (already established at CP1) -- restate at close rather than re-investigate."
+  ]
+}

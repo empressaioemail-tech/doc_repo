@@ -1,0 +1,57 @@
+{
+  "lane": "P-151-SEAM",
+  "checkpoint": "CP1-design-pre-build",
+  "filedAt": "2026-09-11T19:10:00Z",
+  "planRow": "P-151",
+  "missionFile": "_catalog/dispatch_missions/mission_p151_placement_seam.md",
+  "startCommits": {
+    "hauska-map": "fb41c05",
+    "legacy-design-tools": "489f428c",
+    "doc_repo": "4c8d18ef (fast-forwarded property seat's stale doc_repo worktree from 0b8c095f before reading the plan; it was 459 files / 54648 insertions behind and predated OPS-23 entirely)"
+  },
+  "worktrees": {
+    "hauska-map": {
+      "path": "P:/seat-worktrees/property/hauska-map-p151-seam",
+      "branch": "fix/p151-placement-seam",
+      "createdFrom": "origin/main fb41c05"
+    },
+    "legacy-design-tools": {
+      "path": "P:/seat-worktrees/property/legacy-design-tools-p151-point-route",
+      "branch": "fix/p151-envelope-point-route",
+      "createdFrom": "origin/main 489f428c"
+    }
+  },
+  "falsifier": "If after the hauska-map change 48453:113408 still resolves unplaceable, or if the ring probe returns a ring for a parcel other than 113408 (a wrong-parcel seed leaking through the identity guard), the fix is wrong.",
+  "preBuildLiveVerification": [
+    "GET facets 48453:113408 -> cityLimitsFact.queryPoint = {longitude:-97.81149, latitude:30.29002} CONFIRMED live, matches mission exactly.",
+    "GET facets 48453:113408 -> envelope.declineReason = 'no-zoning-stamp' CONFIRMED.",
+    "POST buildable-envelope {address:'414 SPILLER LN'} -> 422 geocode_miss CONFIRMED.",
+    "POST buildable-envelope {address:'414 SPILLER LN, WEST LAKE HILLS, TX'} -> 422 geocode_miss CONFIRMED.",
+    "CONTRADICTION vs mission/F5/F11: POST buildable-envelope {lat:30.29002,lng:-97.81149} returned HTTP 200 in 1.6s, then three more consecutive runs at 1.4-1.6s. The mission's cited 504-at-10.2s did NOT reproduce (4/4 clean). F11 itself already flags this class as 'Intermittent, unmeasured' with a P-160 trigger to measure it on three consecutive runs -- treating my 4 clean runs as evidence it is intermittent/load-dependent, not evidence the mission's original 504 observation was wrong. Proceeding with the mission's item 6 (bounded resolution + declared refusal) as a hardening fix rather than a reproduction-driven fix, and saying so explicitly in the close."
+  ],
+  "codeReadFindings": {
+    "hauska-map": {
+      "resolveGeometry": "apps/property-explorer/src/lib/fact-sheet-resolver.ts:2521-2661 (origin/main fb41c05). Seed order confirmed exactly as mission states: 0) this.seeds.get(parcelNodeId) hint, 1) hint ring or facets.envelope.geojson ring, 2) fetchBuildableEnvelope({address: identity.situsAddress.value}) -- address is base.situsAddress ONLY (identityFacts, line 357), 2b) last-resort geocode (fetchGeocodeSuggestions), 3) ring probe via map-data/gis-layer around whatever seeded. No step reads cityLimitsFact today.",
+      "cityLimitsFact plumbing": "resolveUncached (line 2321) already extracts cityLimitsFact at line 2357-2358 and converts it via cityLimitsFromInspectWire at line 2423 -- AFTER resolveGeometry is called at line 2387. Plan: extract cityLimitsFact BEFORE the resolveGeometry call, derive a recordPoint {lat,lng} from cityLimitsFact.queryPoint {longitude,latitude}, pass it into resolveGeometry as a new parameter, seed step 1.5 (after hint/envelope-ring, before the address-derive step).",
+      "hint() identity safety": "hint(parcelNodeId, seed) at line 2308 already keys by parcelNodeId and no-ops once that parcel has resolved (line 2310: `if (!id || this.byParcel.has(id)) return`). A click hint for parcel A structurally cannot seed parcel B's resolution -- the identity-guard test the mission asks for should already pass against current code; write it anyway as a regression lock, not because a fix is needed here.",
+      "adoptSubject": "ExplorerMap.tsx:947-994. Confirmed calls factSheetResolver.hint(parcelNodeId, { geometry }) at line 960 with NO centroid today. Three call sites: handleParcelSelect:1465 (sel.lat/sel.lng available), the non-live-overlay branch:1483 (sel.lat/sel.lng available), handleParcelClick (PMTiles):1522 (props.lat/props.lng, may be absent). Plan: add 4th param `centroid?: {lat,lng}|null` to adoptSubject, thread into hint(), pass from all three call sites where a point is available.",
+      "InspectCard Zone label": "InspectCard.tsx:1342 `label=\"Zone\"` value={card.landUseDescription} CONFIRMED verbatim. One-line change to \"Land use\".",
+      "zoningFact unincorporated branch": "fact-sheet-resolver.ts:1686-1734. declineReason 'no-zoning-stamp'|'zoning-absent' -> absentUncovered('this area is not zoned or not stamped', ...) CONFIRMED at line 1724-1728. zoningFact(facets, countyFips) is called at line 2413, BEFORE cityLimits is computed at line 2423 in the same function. Plan: reorder so cityLimits (or at least the raw cityLimitsFact status + countyName) is available before the zoningFact call, thread status into zoningFact as a new parameter, branch: status==='unincorporated' -> 'unincorporated <countyName> County: no municipal zoning applies'; in-city no-stamp case reworded to 'inside <cityName> limits; no zoning layer on file for <cityName>' per mission item 5.",
+      "address composition": "identityFacts (line 340-371) derives situsAddress from base.situsAddress only; base.situsCity/base.situsState exist on the wire (confirmed live: situsCity='WEST LAKE HILLS', situsState='TX') but are never read in this file. Plan: new helper composedSitusAddress(facets) appending city/state when present and not already substring-contained, used only at the two network-resolution call sites (derive-address step 2, and live-envelope-augment.ts's own address build), never changing the displayed identity.situsAddress fact.",
+      "situs search route": "apps/property-explorer/api/pe-situs-search.ts proxies cortex GET /api/brokerage/v1/place/situs-search server-side (5s upstream timeout, CORTEX_SERVICE_API_KEY-gated) and apps/property-explorer/api/_lib/pe-situs-search-core.ts's SitusSearchHit already carries parcelNodeId + lat/lng. Plan: new private resolver method callable from step 2, hits /api/pe-situs-search?q=<composedAddress>&countyFips=<fips from parcelNodeId>, accepts a hit ONLY when hit.parcelNodeId === this parcel's id, seeds from hit.latitude/longitude; falls through to the existing envelope-route address form on no qualifying hit. Will record in the close whether this resolves 48453:113408 (mission explicitly wants this reported, not silently absorbed)."
+    },
+    "legacy-design-tools": {
+      "pointResolutionPath": "For a bare {lat,lng} POST (no address): brokeragePlaceBuildableEnvelope.ts handleBuildableEnvelope (line 604) -> situsFirstPreResolve returns {situs:null} immediately since address is null (line 554) -> resolveContext (line 212) takes the explicit-coords branch, no network call, pointConfidence='coordinates' -> queryGisLayerGeoJson({layer:'parcels', latitude, longitude}) at line 769 -> brokerageGisLayers.ts:641 txParcelProviderMode()==='county-gis' branch -> resolvePointCountyByPip (brokerageTxParcels.ts:554, bounded: static bbox candidate filter then one indexed DB query per candidate county via countyStoreContainsPoint, Promise.all) -> queryTxCountyParcelsGeoJson -> for Travis (txgio-store-backed, confirmed by adapterKey txgio:parcels:48453 in the live probe) -> queryTxgioParcelsGeoJson (txgioParcelStore.ts:410), a single indexed (countyFips,tileKey) query plus bbox pre-filter, feature-capped, then one batched CAD land-use join.",
+      "mechanism read": "Every query in this path is indexed and bounded (tile-key partitioning, feature caps, static bbox pre-filtering) -- structurally NOT the same defect class as the pre-fix radius-search hang (which was an unbounded statewide county IN-list seq-scan over 16M rows, fixed in PR #572 by bounding to overlapping counties + tile cells). No unbounded query was found on this path.",
+      "rejected mechanism": "Considered: the point-pin path itself is slow by construction (e.g. a missing index). Rejected: read the schema access pattern -- every filter (countyFips, tileKey, then the 4 bbox columns) is exactly the radius-search precedent's own indexed shape, and my 4 live re-probes all completed in 1.4-1.6s, consistent with a fast, correctly-bounded query, not a structurally slow one.",
+      "accepted mechanism": "DB connection pool contention / transient upstream slowness under concurrent writer load elsewhere in the shared Neon store (consistent with F11's other two hangs that same hour on unrelated routes -- PE facets 60s-then-1.9s, situs-search 502-cortex-timed-out-5000ms -- and with the project's own documented 'read-under-writer-load' precedent). Not something a query-shape fix (the radius-search remedy) addresses, because the query shape here is already sound.",
+      "scoped fix": "Per mission item 6's explicit size cap ('if larger than a bounded timeout plus a refusal, stop and report'): wrap the point-resolution sequence (resolvePointCountyByPip + queryGisLayerGeoJson) in handleBuildableEnvelope's explicit-coords branch with a bounded race against a declared timeout (target ~8s, under the ~10s gateway ceiling that is currently surfacing as a bare 504), returning a typed 503 {errorClass:'resolution_timeout', message} instead of letting the platform kill the connection. Will note as a known limitation in the close: a Promise.race timeout does not cancel the underlying DB query, so it stops the bare-504 symptom but does not by itself relieve pool pressure if the root cause is contention -- flagging this as leave_behind for a possible statement_timeout-level fix rather than silently presenting the HTTP-level guard as a complete fix."
+    }
+  },
+  "planForSubAgents": "Fan exactly one level: one sub-agent per repo, each given this CP1's exact file:line findings plus the mission's verification/test list. Each sub-agent writes code + tests only, in its assigned worktree, and does NOT commit. I read every diff, run the tests myself, and only then commit, deploy, and probe.",
+  "doNotTouch": [
+    "sheetEnvelopeIsAtomPathPending and anything Ruling B/P-153 touches (mission explicit)",
+    "entitlement gate (isEntitled) in ExplorerMap.tsx (F2, operator-owned)",
+    "geocoder itself (P-27 ruling) -- only the panel's reliance on it changes"
+  ]
+}

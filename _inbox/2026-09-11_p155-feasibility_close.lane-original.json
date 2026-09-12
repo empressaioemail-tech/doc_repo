@@ -1,0 +1,171 @@
+{
+  "lane": "P-155 FEASIBILITY",
+  "planRow": "P-155",
+  "program": "OPS-23 surface completion, wave 1",
+  "closedAt": "2026-09-12T00:05:00Z",
+
+  "missionPremise": "F7 (OPS-23 section 2 / OPS-16 A-128, 2026-09-11): the engine completes feasibility composition in tens of seconds to several minutes (originally documented as 85-154s for Travis, 38-85s for Bastrop) while Property Explorer's BFF and smartsite-mcp both aborted at 55s under a 60s Vercel function cap, so a report that actually succeeded reached the customer as a fabricated 'cold start, try again' failure. Ruling: refresh becomes asynchronous (202 + job reference); both clients poll instead of holding the socket open.",
+
+  "completionPredicate": "A stranger can evaluate this as done if: (1) POST .../feasibility-export/refresh returns 202 with a job reference instead of blocking; (2) a poller (PE's BFF, or smartsite-mcp's own internal poll) that checks back later gets the PDF for a job that kept running after the poller's own connection ended, with no failure ever shown for a job that later succeeds; (3) export_instrument feasibility returns a PDF for a probe parcel, either immediately (job already ready) or via a declared, non-error in-progress envelope followed by a PDF on a later call; (4) a job that genuinely fails lands in a `failed` state with a machine-readable errorClass, never silently `ready` and never silently deferred forever.",
+
+  "scopeBasis": "Exactly the three repos and the one code path P-155 names (hauska-engine's feasibility-export routes; hauska-map's PE BFF + browser poll loop; legacy-design-tools/smartsite-mcp's export_instrument feasibility leg). P-159 (PDF content correctness) and P-152 (one-reader cutover) are adjacent, depended-on-by, or depend-on this row but are explicitly out of scope; the only P-159 interaction was a shared-service deploy collision (below), resolved without touching P-159's own code. The atom's closed `artifacts` type was deliberately not widened (substrate seat's call, found in-repo, not in the dispatch). No envelope-atom minting, no entitlement-gate change, no pricing-surface change, per the program's explicit prohibitions.",
+
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/hauska-engine",
+      "pr": 420,
+      "title": "feat(P-155): feasibility-export refresh becomes asynchronous",
+      "startCommit": "1d624cde7dae041523f52aa52f6b0dca0ca7cd69",
+      "mergeSha": "81ec7b0986eba9f35116136a300025954b91aad9",
+      "ciConclusion": "SUCCESS (\"typecheck + test\")",
+      "diffStat": "7 files changed, 769 insertions(+), 121 deletions(-)"
+    },
+    {
+      "repo": "empressaioemail-tech/hauska-map",
+      "pr": 385,
+      "title": "feat(P-155): Property Explorer polls the feasibility-export job",
+      "startCommit": "6ab691476872eb88af0f059efa2aae2b7b70e8ad",
+      "mergeSha": "91990741b3b85aa0507b4373f86f1eb795efea30",
+      "ciConclusion": "SUCCESS (\"test\", \"Typecheck\", \"No double-encoded source\")",
+      "diffStat": "6 files changed, 788 insertions(+), 84 deletions(-)"
+    },
+    {
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "pr": 660,
+      "title": "feat(P-155): smartsite-mcp export_instrument polls the async feasibility job",
+      "startCommit": "55c4ad443c115fca62345299ffd001db8faf4c83",
+      "mergeSha": "70e2fa5b47bb1858aedc1a30f2c72cade45b2c17",
+      "ciConclusion": "SUCCESS (11 required checks incl. Typecheck, Test)",
+      "diffStat": "2 files changed, 528 insertions(+), 219 deletions(-)"
+    },
+    {
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "pr": 662,
+      "title": "fix(P-155): shrink feasibility poll budget below a calling host's own tool timeout",
+      "note": "Follow-up found via my own live probe against my own #660 deploy, before this close.",
+      "mergeSha": "d58a033b90794d96d76eaf8e114b662bfc0e1cb4",
+      "ciConclusion": "SUCCESS (11 required checks)",
+      "diffStat": "1 file changed, 25 insertions(+), 8 deletions(-)"
+    }
+  ],
+
+  "migrationsAppliedLive": [
+    { "file": "packages/storage/migrations/013_feasibility_export_jobs.sql", "appliedAt": "2026-09-11T21:49:18.389Z" },
+    { "file": "packages/storage/migrations/014_feasibility_export_jobs_result.sql", "appliedAt": "2026-09-11T21:52:34.563Z" }
+  ],
+
+  "deploys": [
+    {
+      "service": "hauska-engine-api (Cloud Run, project hauska-prod-497015, region us-central1)",
+      "path": "gcloud builds submit --config cloudbuild.engine-api.yaml, then gcloud run deploy --tag --no-traffic (canary), smoke, then gcloud run services update-traffic --to-tags=100",
+      "firstDeploy": "revision hauska-engine-api-00200-kon, built from 81ec7b0 (P-155 only), shifted to 100% at ~22:44Z",
+      "collision": "Superseded ~35 minutes later after a coordinator alert: P-159 (hauska-engine PR #422, merged ce6a75a, built directly on top of 81ec7b0) deployed and traffic-shifted its own revision (hauska-engine-api-00201-nat) around the same window; a transient re-assertion reverted P-159's fix for several minutes before P-159 caught it and re-shifted traffic themselves. Neither lane's traffic-shift command was wrong in isolation — there is no lock/lease on Cloud Run traffic updates the way OPS-19's atoms writer-lease exists for the atoms store, so two lanes' update-traffic calls against the SAME shared service raced.",
+      "resolution": "Rebuilt from a fresh pull of origin/main at ce6a75a (verified by `git merge-base --is-ancestor 81ec7b0 ce6a75a` before building — ce6a75a contains BOTH #420 and #422), deployed as a new canary tag p155-p159-main, smoke-tested both a pre-existing ready job (48453:474034) and a fresh refresh (48453:113408) against it, then shifted 100% traffic to it.",
+      "finalServingRevision": "hauska-engine-api-00205-san",
+      "finalServingRevisionVerifiedBy": "gcloud run services describe --format=json, reading status.traffic[].percent/revisionName by field name, not the CLI's printed summary line (which showed a stale/wrong tag URL twice during this session — verified via JSON both times instead of trusting it)",
+      "backupTags": [
+        "hauska-engine backup/post-p155-feasibility-async-hauska-engine-api-00200-kon -> 81ec7b0986eba9f35116136a300025954b91aad9",
+        "hauska-engine backup/post-p155-p159-main-hauska-engine-api-00205-san -> ce6a75a (merge SHA for hauska-engine PR #422)"
+      ]
+    },
+    {
+      "service": "property-explorer (Vercel project prj_vcZGXbqdffk5C20WzaplEpzFynK3)",
+      "path": "npx vercel --prod --yes from the repo root (origin/main checkout, commit 8b44f68 at deploy time)",
+      "result": "Deployment dpl_5GcorMQKpxAtGEG9WYPAgtTX14hh, aliased to https://smartsite.cloud and https://www.smartsite.cloud",
+      "caveat": "The Vercel remote build log printed a number of TypeScript errors in files this PR never touched (pe-terrain-export.ts, pe-who-serves.ts, pe-property-atoms.ts, pe-bastrop-per-parcel-setback.ts, verdict-layer-merge.ts) that did not appear when I ran `npx tsc --noEmit` locally after building the map-renderer package. The deployment still succeeded (Vite/esbuild bundling does not hard-fail on these). Not investigated further — out of this lane's scope since none of the flagged files are ones this PR changed — but flagged here since it is a live, reproducible discrepancy between local and Vercel-remote type-checking.",
+      "bundleVerification": "curl'd the live smartsite.cloud index.html, resolved its asset script (assets/index-DvXLi2sN.js, 2,041,343 bytes), grepped it directly: zero occurrences of the retired cold-start strings ('usually means a cold start', 'it may be restarting'); one occurrence each of the new poll markers ('still_processing'/'still being generated', 'pollAfterMs')."
+    },
+    {
+      "service": "smartsite-mcp (Cloud Run, legacy-design-tools-prod project, region us-central1)",
+      "path": "gh workflow run cloud-run-deploy-smartsite-mcp.yml -f action=deploy-canary -f image_tag=<merge sha>, smoke, then -f action=shift-traffic",
+      "firstDeploy": "revision smartsite-mcp-00105-zer (PR #660's image, merge SHA 70e2fa5b), shifted to 100% and smoke-verified",
+      "followUpDeploy": "revision smartsite-mcp-00107-puw (PR #662's image, merge SHA d58a033b), shifted to 100% and smoke-verified",
+      "finalHealthCheck": "GET https://mcp.smartsite.cloud/health -> {\"status\":\"ok\",...,\"revision\":\"smartsite-mcp-00107-puw\"}; GET .../health/dependencies -> {\"hauska_mcp\":{\"state\":\"ok\",\"latency_ms\":253,\"detail\":\"HTTP 200\"}}"
+    }
+  ],
+
+  "probe": "No scripts/surface-probe.mjs P-155 predicate exists yet (verified: grep for the three named observation keys returns zero hits; P-160/PROBE has not built it). Per R-4's explicit fallback, raw hand-probe output is pasted verbatim below, gathered AFTER every deploy above (engine-api's second, superseding deploy included).",
+
+  "handProbes": {
+    "feasibilityRefreshHttp": {
+      "48453:474034": {
+        "observedBy": "this lane (curl, gate-front headers, production URL post-collision-fix)",
+        "observedAt": "2026-09-11T23:27:10Z",
+        "raw": "HTTP/1.1 202 Accepted (body) {\"state\":\"ready\",\"jobRef\":\"2488f7c7-2f37-4f38-8f33-51cc47f026df\",\"queuedAt\":\"2026-09-11T22:40:59.896Z\",\"startedAt\":\"2026-09-11T22:40:59.975Z\",\"completedAt\":\"2026-09-11T22:43:29.096Z\", ...} -- read via GET status (job already ready from the canary smoke test; state persisted correctly across the engine's full revision replacement)"
+      },
+      "48021:34049": {
+        "observedBy": "this lane (curl, gate-front headers, canary URL hauska-engine-api-00200-kon)",
+        "observedAt": "2026-09-11T22:44:02Z",
+        "raw": "HTTP 202 {\"state\":\"running\",\"jobRef\":\"a9f0331c-cf6e-45ac-94cb-b0d0f328bb29\",\"pollAfterMs\":5000,\"statusUrl\":\"/v1/property-nodes/48021%3A34049/feasibility-export\",\"downloadUrl\":\"/v1/property-nodes/48021%3A34049/feasibility-export/download\"} -- identical jobRef returned on two back-to-back POST refresh calls, confirming the dedup guard (never a second composition while one is running)."
+      }
+    },
+    "feasibilityMcpPdf": {
+      "value": true,
+      "observedBy": "this lane, via the live mcp__claude_ai_Smart_Site__export_instrument connector (the real production Smart Site MCP, not a local function call)",
+      "observedAt": "2026-09-11T22:56:37Z",
+      "raw": "export_instrument({parcelNodeId:\"48453:474034\", kind:\"feasibility\"}) -> {\"status\":\"ok\",\"tool\":\"export_instrument\",\"kind\":\"feasibility\",\"parcelNodeId\":\"48453:474034\",\"format\":\"pdf-feasibility\",\"download\":{\"format\":\"pdf-feasibility\",\"contentType\":\"application/pdf\",\"base64\":\"<1046968 chars>\",\"byteCount\":785224},\"pageCount\":13,\"feasibilityPageCount\":10,\"sitePlanAppended\":true,\"sectionCount\":15,\"openItemCount\":3,\"narrativeIsDeterministicSkeleton\":false}",
+      "secondObservation": {
+        "parcel": "48453:367134",
+        "observedAt": "2026-09-11T23:44Z-23:46Z",
+        "firstCall": "{\"status\":\"error\",\"tool\":\"export_instrument\",\"kind\":\"feasibility\",\"reason\":\"engine_unreachable\",\"message\":\"This operation was aborted\"} -- a DECLARED envelope, not the retired bare abort text; most likely a cold ACK on a freshly-deployed engine revision exceeding the new 10s ACK_TIMEOUT_MS",
+        "secondCall": "{\"status\":\"in_progress\",\"tool\":\"export_instrument\",\"kind\":\"feasibility\",\"state\":\"running\",\"jobRef\":\"45c95518-ce33-4241-9719-ca798f5d2947\",\"pollAfterMs\":5000,\"message\":\"Feasibility Study is still being generated. Call export_instrument again with the same parcelNodeId to check.\"} -- confirms the refresh from the first (client-aborted) call reached the server and started a real job despite the client-side timeout; this is the design surviving exactly the kind of disconnect the falsifier tests for."
+      }
+    },
+    "feasibilityAppPdfWithoutRetry": {
+      "value": "not directly click-through tested",
+      "honestCaveat": "This session has no authenticated Property Explorer browser session (no pe_session cookie), so the literal 'one click in Reports produces the PDF with no manual retry' check was NOT performed live end-to-end through the UI. What WAS verified: (1) the live production bundle at smartsite.cloud carries the poll loop and none of the retired cold-start strings (grep counts above); (2) requestFeasibilityExport's poll loop is covered by 8 vitest cases exercising accept->ready, accept->running->ready, accept->failed, and network-error-on-accept-or-mid-poll, all asserting the SAME single-await contract ReportsTool.tsx depends on; (3) the underlying BFF leg (handleRefresh/handleStatus/handleDownload) that the browser calls is the SAME code path proven against the live engine by the hand probes above. This is strong indirect evidence, not the same class of evidence as the MCP check, which WAS a real live end-user-equivalent call."
+    }
+  },
+
+  "falsifier": {
+    "preRegistered": "Disconnect falsifier (mission step 2): start a job, disconnect immediately, poll three minutes later; if the state is not ready or failed, the design is wrong. MCP falsifier: if export_instrument feasibility 48453:474034 still returns no PDF after the deploy, or the app needs a manual retry for the same parcel, the row is not done. Non-vacuity falsifier: a job that throws must land in failed with an errorClass, never ready, never silently deferred.",
+    "observed": "Disconnect falsifier PASSED four separate times with real curl clients that moved on to poll rather than holding a connection open (149.1s, 213.8s, 54.0s, 629.6s wall times — see profile below); none stuck, all settled to ready. MCP falsifier PASSED via the real production connector (raw output above) with no manual retry required — a job whose accept the CLIENT aborted still completed server-side and was picked up on the next call. Non-vacuity falsifier PASSED in the unit suite (a mocked composition throw settles to failed with errorClass geometry_unavailable and 422s on download) but was NOT observed on a genuine live composition failure — none of the four live jobs actually failed, so this specific claim rests on test coverage, not a live occurrence, and should be said as such rather than implied to be live-proven."
+  },
+
+  "contradicted": [
+    "The dispatch's cited verification record `_inbox/2026-09-11_ops23_wave1_verify_p155.md` does not exist in doc_repo (grep -ril, zero hits).",
+    "Dispatch start-commit facts were stale by the time I started (hauska-engine and legacy-design-tools were each several merged PRs ahead of the cited SHAs; hauska-map matched).",
+    "scripts/surface-probe.mjs has no P-155 predicate yet; used R-4's explicit hand-probe fallback.",
+    "The atom's artifacts type being a substrate-seat-owned closed type (which ruled out one of the dispatch's storage options) is documented only in an in-repo code comment, not in the dispatch or any doc_repo file I found — a real, load-bearing constraint the dispatch did not carry.",
+    "ENGINE_API_GATE_TOKEN is unset in production hauska-engine-api today, so the Authorization: Bearer check both PE and MCP send is presently unverified server-side; only the descriptive gate-front headers are actually enforced. Not this lane's to fix, but the dispatch's framing of a token-checked boundary was not accurate to the live state.",
+    "A genuine cross-lane collision not anticipated by the dispatch: this lane and P-159 both ran gcloud run services update-traffic against the SAME shared hauska-engine-api service in the same ~30-minute window, and P-159 reported (via the coordinator) that a re-assertion reverted their fix for several minutes before they caught and corrected it. No lock/lease exists for Cloud Run traffic updates comparable to OPS-19's atoms writer-lease. Resolved by rebuilding from a verified-ancestor commit (ce6a75a, containing both #420 and #422) and shifting to that unambiguous superset revision; recommend this gap be raised to the overseer for a future AGENT_CONTRACT addition."
+  ],
+
+  "leaveBehind": {
+    "cloudRunRequestTimeoutSeconds": { "value": 300, "field": "spec.template.spec.timeoutSeconds", "readAt": "2026-09-11 ~22:30Z against hauska-engine-api-00198-cir", "changed": false, "note": "Not the bottleneck; comfortably covers the 54-630s range actually observed." },
+    "cpuThrottlingAnnotation": { "value": "absent (default: throttled between requests)", "changed": false, "note": "Chosen mitigation instead: kick off the detached job before responding, rely on incoming poll traffic to keep the instance active, and a 10-minute (FEASIBILITY_JOB_STALL_CEILING_MS in services/engine-api/src/routes/parcel-terrain.ts) staleness reclassification as a safety net. RISK: the slowest live job observed (48453:113408, 629.6s) came within ~30s of that 600s ceiling. If longer-tail jobs recur, raise the ceiling or revisit CPU-always-allocated." },
+    "stateStoreChosen": "New dedicated Postgres table feasibility_export_jobs (packages/storage/migrations/013_feasibility_export_jobs.sql, 014_feasibility_export_jobs_result.sql), not inside the atom's closed artifacts type.",
+    "profileNumbersWithRequestIds": [
+      { "parcel": "48453:474034", "county": "Travis, unincorporated (Lake Pointe MUD)", "jobRef": "2488f7c7-2f37-4f38-8f33-51cc47f026df", "startedAt": "2026-09-11T22:40:59.975Z", "completedAt": "2026-09-11T22:43:29.096Z", "wallSeconds": 149.1 },
+      { "parcel": "48021:34049", "county": "Bastrop, corner lot 1109 Pecan St", "jobRef": "a9f0331c-cf6e-45ac-94cb-b0d0f328bb29", "startedAt": "2026-09-11T22:43:33.003Z", "completedAt": "2026-09-11T22:47:06.770Z", "wallSeconds": 213.8 },
+      { "parcel": "48021:33223", "county": "Bastrop, P-91 gold parcel", "jobRef": "f798dc35-fdd0-48c3-b073-1128ce324c96", "startedAt": "2026-09-11T22:56:54.699Z", "completedAt": "2026-09-11T22:57:48.734Z", "wallSeconds": 54.0 },
+      { "parcel": "48453:113408", "county": "Travis, West Lake Hills, 414 Spiller Ln (split situs)", "jobRef": "c6f32972-d374-486f-8c01-eeb73b47f942", "startedAt": "2026-09-11T23:26:54.359Z", "completedAt": "2026-09-11T23:37:23.952Z", "wallSeconds": 629.6 }
+    ],
+    "profileMechanism": "This fresh data REVERSES the previously-documented simple framing (Bastrop 38-85s < Travis 85-154s): observed Bastrop ranged 54-213.8s and Travis ranged 149.1-629.6s, with intra-county variance swamping any clean county-level effect. Mechanism believed for the 629.6s Travis outlier specifically: 48453:113408 has a documented history of intermittent cortex-dependent resolver hangs (F5/F11/F14 in OPS-23 section 2 — the same parcel's point-route and situs-search calls have been observed to hang 10-60s+ before), and feasibility composition calls into some of the same fact-family resolvers; this is the stronger candidate for THAT parcel. A second, weaker mechanism observed directly in logs: narrative generation occasionally falls back from in-process to the LDT narrative-section hop, costing an extra ~11s (seen for 48453:474034 via structured log lines feasibility.narrative_inprocess.outcome / feasibility.narrative_section.call, durationMs 11299) — real but too small to explain the 629.6s case. Not disentangled further: the codebase logs narrative-generation duration but not per-fact-family (flood, drainage, special-district, etc.) duration, so a precise breakdown of the 629.6s run is not possible from existing instrumentation.",
+    "crossLaneDeployCollision": "See `contradicted` above and `deploys[0].collision` — recommend a Cloud-Run-traffic-shift discipline (verify current serving revision by field name immediately before AND after every update-traffic call; never assume a prior split still holds) be written up as a runbook addition or AGENT_CONTRACT amendment for lanes sharing a Cloud Run service, analogous to OPS-19's write-slot lease.",
+    "engineApiGateTokenUnset": "ENGINE_API_GATE_TOKEN is not set in the production hauska-engine-api environment; the Authorization: Bearer check in server.ts's global middleware is presently a no-op (`if (config.gateServiceToken)` is false). Flagging for whichever seat owns engine-api auth hardening — not changed by this lane.",
+    "vercelRemoteTypecheckDiscrepancy": "The Vercel remote build for property-explorer printed TypeScript errors in files this PR never touched, not reproduced by a local `npx tsc --noEmit` after building the renderer package. Not investigated (out of scope), but a real, reproducible local/remote discrepancy worth another lane's attention.",
+    "backupTags": [
+      "hauska-engine: backup/post-p155-feasibility-async-hauska-engine-api-00200-kon, backup/post-p155-p159-main-hauska-engine-api-00205-san"
+    ],
+    "docRepoEdits": "None. This close and its CP1/CP2 siblings are the only doc_repo writes; per AGENT_CONTRACT section 6 they are left uncommitted for the overseer/dispatch planner to commit."
+  },
+
+  "constraintsHonored": [
+    "No envelope atom minted or backfilled.",
+    "No entitlement gate or pricing surface touched.",
+    "No naming mismatch fixed by renaming; the one code-level naming ambiguity found (ENGINE_API_GATE_TOKEN unset) was reported, not silently worked around.",
+    "No check widened to admit a value it did not satisfy.",
+    "Deploys verified by reading the serving revision by field name from live service JSON, never by reading a working tree or trusting a CLI's printed summary line.",
+    "Never wrote to a repository outside this lane's three (hauska-engine, hauska-map, legacy-design-tools) and never touched another concurrent lane's files (P-151/P-152/P-153/P-159's own diffs were never edited by this lane; the P-159 collision was resolved by rebuilding from their merged commit, not by editing their code).",
+    "Fanned zero sub-agents (did the work directly, per this dispatch's explicit instruction)."
+  ],
+
+  "whatRemainsOpen": [
+    "feasibilityAppPdfWithoutRetry was not click-through verified in a real authenticated browser session (see handProbes caveat) — recommend the dispatch planner or a future lane with a live PE session cookie complete this specific check.",
+    "The non-vacuity falsifier (failed job -> errorClass, never silently deferred) has not been observed on a genuine live failure yet, only in the unit suite.",
+    "scripts/surface-probe.mjs still has no automated P-155 predicate; P-160/PROBE owns building it against the observation keys named in this dispatch.",
+    "FEASIBILITY_JOB_STALL_CEILING_MS (10 minutes) sits uncomfortably close to the slowest observed real job (629.6s); worth revisiting if longer-tail jobs recur.",
+    "The Cloud-Run traffic-shift collision class (this lane vs. P-159) has no process fix yet, only a one-off resolution; worth raising to the overseer."
+  ]
+}

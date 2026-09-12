@@ -1,0 +1,57 @@
+{
+  "lane": "P152-READER",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build",
+  "planRows": ["P-152"],
+  "dispatch": "_dispatches/2026-09-11_p152-reader_dispatch.md",
+  "timestamp": "2026-09-11T20:20:00Z",
+  "seat": "property",
+  "repos": [
+    {
+      "name": "hauska-engine",
+      "worktree": "P:/seat-worktrees/property/hauska-engine-p152-reader",
+      "branch": "feat/p152-record-reader",
+      "startCommit": "79fa5737096cba09fda328a6b79ea598ba5e9b2b"
+    },
+    {
+      "name": "legacy-design-tools",
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p152-cortex-consumer",
+      "branch": "feat/p152-cortex-consumes-reader",
+      "startCommit": "3950ce9bc5d7ef83a7fae7303328d8e467a1fdd6"
+    }
+  ],
+  "contradicted": [
+    "Dispatch's stated LDT start commit was 489f428c; origin/main had moved to 3950ce9b (one intervening commit, PR #657, `brokeragePlaceBuildableEnvelope.ts` only). Checked the diff before treating origin/main as safe to branch from -- unrelated to this mission's files, proceeded from 3950ce9b, not 489f428c."
+  ],
+  "designRead": {
+    "requiredReading": [
+      "90_runbooks/AGENT_CONTRACT.md",
+      "90_runbooks/DEV_PROCESS.md",
+      "90_operations/OPS-23_surface_completion_program.md sections 0, 1, 2, 3, 4, 6, 7, 9",
+      "_inbox/2026-09-11_MIDSESSION_ops23_checkpoint_1.md (found as 2026-09-11_MIDSESSION_ops23_capture.md) -- superseded the plan-doc lane board; showed P-151 merged and serving but close-pending, and this dispatch's own secret-mount approval listed under 'owed by the operator', not yet given at read time"
+    ],
+    "codeRead": [
+      "hauska-engine services/retrieval-api/src/server.ts (route pattern: Hono, global Bearer middleware except health paths, id-validation regex, buildApp(options) DI convention)",
+      "hauska-engine services/retrieval-api/src/pg-calibration-overlay.ts (postgres.js connection pattern precedent)",
+      "hauska-engine services/retrieval-api/src/index.ts (env-var resolution / boot wiring convention)",
+      "hauska-factory src/lib/parcel-record-engine/rail-keys.js at origin/main 217b7dd7eb3a1b2f72f3a72d333008079f71fcaf (the closed 65-rail registry -- vendored verbatim, per dispatch step 2)",
+      "legacy-design-tools artifacts/api-server/src/lib/parcelRecordCellRead.ts, parcelRecordAllowlist.ts, parcelGateVerdictRead.ts (the existing cortex-side reader/allowlist/verdict trio the dispatch names for retirement)",
+      "legacy-design-tools artifacts/api-server/src/lib/buildableEnvelope/fetchPropertyAtomChain.ts (the established server-to-server retrieval-api client convention: HAUSKA_RETRIEVAL_API_URL/KEY env fallback names, fail-to-null on any error)"
+    ],
+    "liveVerification": [
+      "gcloud secrets list confirmed FACTORY_DATABASE_URL_RO exists in hauska-prod-497015 before touching anything (dispatch step 1 requirement)",
+      "Live read-only psql against FACTORY_DATABASE_URL_RO: parcel_record's schema has PK(place_key) and a county_fips index only, NO prop_id index -- confirmed the crosswalk resolver must use bounded exact-key lookups, never a per-county scan, matching this store's own documented 101.5s-per-county cost",
+      "Live read of 48021:34049's real cityLimits cell, gate verdict, and setbackRules companion row -- used as non-hand-invented test fixtures with real timestamps, per dispatch step 6"
+    ]
+  },
+  "keyDesignDecisions": [
+    {
+      "decision": "Crosswalk resolution (place_key raw vs parcelNodeId normalized) via a bounded set of exact PK-lookup candidates (direct key + up to 6 zero-padded variants), never a county scan.",
+      "why": "parcel_record has no prop_id index; a per-county scan is the exact cost class this store's own sibling reader module doc names as measured-expensive (101.5s minimum)."
+    },
+    {
+      "decision": "parcel_gate_verdict (keyed by county+rail only, no parcel in scope) needs its OWN dedicated retrieval-api endpoint (GET /parcel-record-gate-verdict/:county/:rail), separate from /record.",
+      "why": "Discovered mid-build: legacy-design-tools' resolveAllowlist call sites decide serve state before committing to any one parcel's /record fetch. Not anticipated at CP1; added as hauska-engine PR #419."
+    }
+  ]
+}

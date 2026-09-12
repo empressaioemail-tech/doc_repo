@@ -1,0 +1,53 @@
+{
+  "lane": "P-153-DRAW",
+  "checkpoint": "CP2-pilot-mid-work",
+  "filedAt": "2026-09-11T17:40:00Z",
+  "planRow": "P-153",
+  "statusSummary": "hauska-map: two PRs merged and deployed live to smartsite.cloud. legacy-design-tools: one PR open, CI running (includes a real CI-provisioned Postgres+PostGIS, longer-running per P-151 precedent). Live surface probe, MCP-leg observations, and the operator screenshot are the remaining work before close.",
+  "pullRequests": [
+    {
+      "repo": "empressaioemail-tech/hauska-map",
+      "number": 384,
+      "title": "feat(P-153/DRAW): Ruling B reversed for the polygon only",
+      "mergeCommitSha": "1aef5dd500c16f215713dee2fe1bfc76ef32d8b2",
+      "mergeMethod": "squash",
+      "ciConclusion": "success (verified via gh api check-runs at the exact head sha 8ab4579: Typecheck=success, test=success, \"No double-encoded source\"=success)",
+      "note": "This PR alone was later found (by live-probing the deploy) to be functionally inert -- see the CONTRADICTED finding below and PR #386."
+    },
+    {
+      "repo": "empressaioemail-tech/hauska-map",
+      "number": 386,
+      "title": "fix(P-153/DRAW): wire the live envelope augmentation so `modelled` is reachable",
+      "mergeCommitSha": "8b44f68db96d11624ed08631e01baa3d7b6b9814",
+      "mergeMethod": "squash",
+      "ciConclusion": "success (verified via gh api check-runs at the exact head sha 891473c: Typecheck=success, test=success, \"No double-encoded source\"=success)",
+      "note": "The actual functional fix -- wires augmentFacetsWithLiveEnvelope (pre-existing, already-tested, zero prior production callers) into resolveSheet so envelopeValue() actually sees live-derive geometry for 48021:34049's real production shape (recordPoint-seeded via P-151, meaning resolveGeometry's own placement-seeking live-derive fetch never fires for this parcel)."
+    },
+    {
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "number": 661,
+      "title": "feat(P-153/MCP): draw block carries the modelled buildable-envelope polygon",
+      "headShaAtOpen": "d78c4024",
+      "ciConclusion": "PENDING at filing time -- CI running (this repo's suite includes a real Postgres+PostGIS service container; P-151's close cited ~12 min for a comparable run)",
+      "implementedBy": "Fanned to one sub-agent (AGENT_CONTRACT 1) with a complete, pre-researched spec. Sub-agent produced a diff only, did not commit. I read every hunk myself, independently re-ran typecheck (clean, both artifacts/api-server and artifacts/smartsite-mcp) and every directly-relevant test file myself (177 + 94 tests, all passing) before committing -- did not just trust the sub-agent's self-report. Verified its two most consequential claims independently: (1) that the ~189 DB-dependent test-file failures are pre-existing, via git stash/re-run/stash-pop on brokeragePlaceBuildableEnvelope.test.ts, identical failure before and after; (2) the flagged ring-closing-convention discrepancy (I told it the top-level `ring` field is a closed ring; it is not -- assembleParcelDraw explicitly .pop()s the duplicate before assigning `draw.ring`), confirmed by reading the source myself. Both held up."
+    }
+  ],
+  "deploys": {
+    "hauska-map": {
+      "mechanism": "Vercel CLI, vercel deploy --prod --yes, from repo root after fast-forwarding the worktree to the merged main state each time (two deploys, one per PR merge -- main moved twice from other lanes' concurrent merges, PR #385 and #385-adjacent P-155 work, both fast-forward/no-conflict merges into this branch before each push)",
+      "deploymentIds": [
+        "dpl_EA7zC22N75ntvsBtd2fSRMVfYfap (PR #384's deploy)",
+        "dpl_5XLp1v9LpftaBWjzpXyQDxn4rjt4 (PR #386's deploy -- the functional one)"
+      ],
+      "verification": "vercel inspect on both deployment ids independently confirmed smartsite.cloud and www.smartsite.cloud aliased, status Ready, target production."
+    },
+    "legacy-design-tools": "not yet reached -- waiting on PR #661's CI before deploy-canary."
+  },
+  "contradictedSoFar": "PR #384 alone was live-verified WRONG about being sufficient: I curled the live GET .../property-atoms/48021%3A34049/facets endpoint post-deploy and found envelope.disclosure DOES mention 'live derive' (so sheetEnvelopeIsAtomPathPending was already true) but envelope.geojson was completely ABSENT from the payload -- meaning ringsFromGeoJson always returned empty and envelopeValue() always fell through to the old full-refusal branch, regardless of the new `modelled` variant. Root cause: augmentFacetsWithLiveEnvelope (live-envelope-augment.ts) was already fully implemented and unit-tested but had ZERO production callers (confirmed via repo-wide grep -- this matches a prior lane's (P-151's) own close leaveBehind note about this exact function, which I had NOT re-verified before relying on my own change working; I only caught this by live-probing my own deploy rather than trusting the merged/CI-green state). resolveGeometry does fetch live envelope geometry, but only as a placement-seed side effect gated on `!seed`, and P-151's own recordPoint fallback satisfies `seed` for exactly the parcels this mission targets (48021:34049's live facets confirmed carrying a cityLimitsFact.queryPoint) before that fetch ever runs. Filed PR #386 same-session to fix this before treating hauska-map as done. This is the mission's own R-4 (surface probe is the predicate) working exactly as designed -- a merge and a green CI run were NOT sufficient, and I did not treat them as sufficient.",
+  "remainingWork": [
+    "legacy-design-tools PR #661: wait for CI, merge, deploy-canary + smoke cortex-api and smartsite-mcp via their Cloud Run workflows, then (separately, with the user's go-ahead per this fleet's own established norm that a traffic shift is the one deploy step needing explicit sign-off) shift-traffic.",
+    "Run scripts/surface-probe.mjs --rows P-153 against production for the live legs (facets, envelopeByAddress) once both deploys are live.",
+    "Call get_smart_site (I have live authenticated MCP access to smartsite.cloud in this session) for 48021:34049 and 48453:474034 to fill the MCP-side --observations leg (mcpEnvelopeGeomVertices, figurePrinted).",
+    "The overlayDrawn observation (did the map actually paint the amber inset polygon) and the operator's screenshot cannot be produced by me in this environment -- no browser/Playwright tool is available in this session (checked via ToolSearch, confirmed absent). This will be requested from the user/operator directly before close, flagged early in this session rather than discovered at the end."
+  ]
+}

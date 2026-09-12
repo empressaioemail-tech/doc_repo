@@ -1,0 +1,54 @@
+{
+  "lane": "P159-PDF",
+  "checkpoint": "CP2-pilot-mid-work",
+  "filedAt": "2026-09-11T22:20:00Z",
+  "planRow": "P-159",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-p159-pdf, branch feat/p159-one-buildable-figure",
+  "filesChanged": [
+    "packages/engine-core/src/site-plan/site-model.ts (EnvelopeOutcomeInput.atomDid; new PrintedBuildable type; printedBuildable computed and added to SitePlanSummaryModel)",
+    "packages/engine-core/src/site-plan/author.ts (resolveEnvelopeOutcome threads the atom's own atomDid through on the 'buildable' branch)",
+    "packages/engine-core/src/site-plan/report-model.ts (composeVerdict reads printedBuildable; footprintContradictsAppraisal/improvementEvidence moved here from pdf/feasibility.ts; new footprintContradictionConsequence; composeNarrativeSkeleton gains a structures sentence through the same guard)",
+    "packages/engine-core/src/site-plan/pdf/feasibility.ts (re-exports the moved functions; buildableAnswer() and the Facts-page zoning-envelope row read printedBuildable; attachConsequences uses the shared footprintContradictionConsequence; emitPdfFeasibility gains narrativeWithheldNote)",
+    "packages/engine-core/src/site-plan/pdf/render.ts (buildableHeaderStat and buildSummaryGroups' buildable row read printedBuildable; the provisional fine-print note is gated on printedBuildable.kind==='atom')",
+    "packages/engine-core/src/site-plan/pdf/layout.ts (the BUILDABLE ENVELOPE callout's qualifier text -- sq ft + percent -- reads printedBuildable; the polygon itself still draws unconditionally per R-2)",
+    "packages/engine-core/src/site-plan/narrative-section-client.ts (buildLdtNarrativeFacts applies the footprint-contradiction guard; buildFullNarrativeFacts sends geometry.printedBuildable instead of raw buildableAreaSqFt/buildableAreaNote)",
+    "packages/engine-core/src/site-plan/narrative-generator.ts (new findUnauthorizedBuildableFigures + printed-figure-mismatch refusal reason; deleted the prompt's unenforced 'will be discarded' sentence; added prompt rule 10 naming geometry.printedBuildable as the one signal)",
+    "packages/engine-core/src/site-plan/feasibility-author.ts (passes narrativeWithheldNote into emitPdfFeasibility only for printed-figure-mismatch)",
+    "Tests updated: __tests__/author.test.ts, __tests__/narrative-generator.test.ts, __tests__/narrative-section-client.test.ts, pdf/__tests__/render.test.ts, pdf/__tests__/feasibility.test.ts"
+  ],
+  "preExistingTestsCorrected": [
+    {
+      "file": "pdf/__tests__/render.test.ts:188",
+      "was": "\"centers a BUILDABLE ENVELOPE callout with the buildable sq ft + percent-of-lot qualifier\" -- asserted decoded PDF matched /% of lot/ for a fixture with NO envelopeOutcome at all (pure local resolution).",
+      "why": "This test literally encoded the pre-Ruling-B defect this lane exists to fix: a resolved LOCAL offset-ring area, never atom-backed, printing a figure+percent. Renamed to assert the callout title still draws (R-2's polygon allowance) but NO percent/figure prints; a new adjacent test proves the positive case (an atomDid-backed override DOES print)."
+    },
+    {
+      "file": "pdf/__tests__/render.test.ts (was ~line 239) and __tests__/author.test.ts:242",
+      "was": "Both asserted a 'provisional-front-edge' warm outcome (no atomDid possible by construction) printed a numeric figure with a 'provisional planning estimate' qualifier and a fine-print sentence.",
+      "why": "provisional-front-edge is never kind:\"buildable\" and can never be atom-backed in printedBuildable's sense -- Ruling B refuses it exactly like no outcome at all. Rewritten to assert the refusal and its UNAVAILABLE chip text instead of the removed qualifier/fine-print."
+    },
+    {
+      "file": "__tests__/author.test.ts:295 (envelopeOutcomeOverride seam test)",
+      "was": "Compared PDF byteCount with vs without a provisional-front-edge override, asserting the override version was strictly larger (the honesty-note paragraph it used to add).",
+      "why": "That paragraph no longer prints for a non-atom-backed outcome (same reasoning as above), so both PDFs are now byte-identical and the comparison is vacuous. Rewritten to use an atomDid-backed override instead, asserting the override's figure IS printed and the no-override case is NOT -- a stronger, still-meaningful end-to-end proof of the seam."
+    }
+  ],
+  "regressionFromMyOwnFirstDraft": "The refused reason string I first wrote ('pending — a buildable-envelope atom has not been derived for this parcel; the figure is refused until one backs it', ~118 chars) broke pdf/__tests__/vertical-rhythm.test.ts's exact-metrics row-height invariant on the gold fixture -- it wrapped to more lines than the existing REASON constants (all ~50-60 chars) budget for in that column. Root-caused via git stash/pop (confirmed the test passes on unmodified origin/main, fails only with my change) rather than assumed. Fixed by shortening the reason to 'pending — buildable-envelope atom not yet on file' (~51 chars, in the same size class as REASON.setbacksConsumeLot/frontEdgeUnresolved), which fits the same column budget. Recorded here because it is exactly the class of two-numbers-disagree / silent-regression finding AGENT_CONTRACT section 5 asks to surface, not round off.",
+  "newTestsAddedByMissionItem": {
+    "a_warm_and_local_differ_renders_one_figure": "pdf/__tests__/feasibility.test.ts 'P-159: one buildable figure per document or none > (a)' -- atomDid-backed outcome with areaSqFt deliberately 4,000 sq ft from the local figure; asserts the atom figure appears >=3 times across cover/facts/site-plan-sheet, the local figure appears ZERO times, and the percent everywhere is computed from the atom figure. This is also the mission's non-vacuity fixture (e): a real parcel producing printedBuildable.kind==='atom'.",
+    "b_no_atom_renders_nothing": "same describe block, test (b) -- no envelopeOutcome at all; asserts no '% of ... lot' anywhere in the document, 'Buildable area is refused' on the cover, 'NONE' on the site-plan header stat, and the refused reason text on the sheet-2 chip.",
+    "c_narrative_second_figure_refused_plus_sheet2_note": "narrative-generator.test.ts's new describe blocks (unit-level, both on the pure findUnauthorizedBuildableFigures scanner and on generateFeasibilityNarrative end-to-end with a stub LLM client) prove the FALSIFIER directly: a planted wrong figure -> ok:false/printed-figure-mismatch; the correct figure -> ok:true. feasibility.test.ts's (c) proves the sheet-2 'Withheld —' note renders when emitPdfFeasibility is given narrativeWithheldNote. authorParcelFeasibilityExport's own wiring of narrativeFallbackReason==='printed-figure-mismatch' into that option is NOT separately end-to-end tested (see leave_behind) -- feasibility-narrative-wiring.test.ts's existing infrastructure cannot inject a client into the in-process generateFeasibilityNarrative path (no such option is exposed on AuthorParcelFeasibilityExportOptions), only into the retired cross-repo fetchFeasibilityNarrative path, so this specific wire is proven at the two endpoints (the check itself, and the PDF option) but not across the connecting line in one test.",
+    "d_footprint_contradiction_to_narrative": "__tests__/narrative-section-client.test.ts's new describe block: asserts the payload's footprint.consequence is overridden (never contains 'unimproved', contains 'Sources disagree' and the roll's actual year/sq-ft) when parcelOwnership carries yearBuilt/livingAreaSqft and footprint reads absent/clear; asserts it is UNCHANGED (still says 'unimproved') on a genuinely vacant fixture (the falsifier for this specific guard); asserts the same override applies on the narrow LDT payload too, not only the wide in-process one.",
+    "e_non_vacuity_real_atom_fixture": "covered by (a) above, plus a dedicated pdf/__tests__/render.test.ts test and an __tests__/author.test.ts end-to-end test (through authorParcelSitePlanExport, not just composeSitePlanModel directly) that both feed an atomDid-backed envelopeOutcomeOverride and assert the resulting PDF actually contains the figure."
+  },
+  "testCounts": {
+    "site-plan suite": "414 passed / 414 total (was 397 before this lane's 17 new tests), self-run via npx vitest run src/site-plan --reporter=dot inside packages/engine-core, verified directly by this session (not sub-agent-reported).",
+    "full engine-core package": "1555 passed / 1566 total (11 skipped, pre-existing and unrelated), 4 test FILES fail to even load (scripts/__tests__/cert-grade-and-report.test.ts, detect-placeholder-setback-citation.test.ts, preflight-and-report.test.ts, retire-road-class-setback-table.test.ts -- all SyntaxError on an .mjs import, nothing to do with site-plan). CONFIRMED pre-existing via git stash/pop: identical 4 files fail identically on unmodified origin/main HEAD (1d624cd) with zero code changes applied.",
+    "typecheck": "npx tsc --noEmit inside packages/engine-core -- clean, zero errors. Note: this package's tsconfig.json excludes src/**/__tests__/** from typecheck entirely, so test-file type mistakes (an existing pattern already present before this lane, e.g. absentFact(...) called with fewer args than its declared signature in the pre-existing narrative-section-client.test.ts) are NOT caught by tsc and were checked by hand for this lane's own new test code instead."
+  },
+  "notYetDone": [
+    "Not committed, not pushed, no PR opened yet as of this checkpoint.",
+    "Not deployed. Serving revision at CP1 time was hauska-engine-api-00198-cir; re-verify before and after this lane's deploy.",
+    "No live surface-probe run yet (R-4). Next actions: commit, push, open PR, verify CI, merge (self-merge per this fleet's established precedent for a green, low-risk, well-scoped diff -- see multiple prior 'Merged #NN' entries in _catalog/seat_register.json for this same repo/seat), deploy engine-api from origin/main via its Cloud Build path, then produce and read a real FS-48021-34049 feasibility PDF from the deployed service and paste its extracted text into the close."
+  ]
+}
