@@ -2,7 +2,7 @@
 decision_id: 2026-09-07_footprint_writer_breakglass_five_counties
 date: 2026-09-07 (drafted retroactively 2026-09-12 by the P-171 audit; filed as proposed by the integration seat the same day)
 owner: Nick (operator); recorded by the integration seat
-status: proposed (the operator accepts, amends or rejects; see "What the operator decides")
+status: active (ACCEPTED AS WRITTEN by the operator 2026-09-12: a retroactive record of a directed run, with no advance greenlight on file; the contested tier stays contested)
 related_canonical:
   - _decisions/2026-08-26_ingest_freeze_and_cloud_loader
   - _decisions/2026-09-06_boundary_envelope_atom_program_scope

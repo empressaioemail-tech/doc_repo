@@ -24,6 +24,16 @@ other people's checkouts; never build there. P-153 edits `buildable-display-voca
 hauska-engine and hauska-map in this wave. Rebase before every PR, re-green on the current
 base, deploy from `origin/main` after merge.
 
+### State on 2026-09-12 (read before the ruling)
+
+Step 1 is done: `@empressaio/atom-contract@1.32.0` is live with `./display` (PR #28
+`995df513`; `_inbox/2026-09-11_p167-vocab_close.json`). P-153 DRAW has MERGED in both repos:
+hauska-map #384 `1aef5dd5` and #386 `8b44f68d`; legacy-design-tools #661 `6b579020` at
+2026-09-12T00:00:04Z. Check by number (`gh pr view 661 --repo empressaioemail-tech/legacy-design-tools`),
+never by a title search: `--search p153` does not match a title written "P-153/MCP" and misled
+two planners. Steps 2 to 5 start now: fold P-153's token into 1.33.0, then the three consumer
+halves.
+
 ### The ruling you are implementing
 
 R-6, the vocabulary clause: one vocabulary module, shipped in the atom-contract package,

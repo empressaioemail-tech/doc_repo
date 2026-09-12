@@ -351,7 +351,9 @@ export const ROWS = {
   // ------------------------------------------------------------------ OPS-23 wave 1 (2026-09-11)
   "P-155": {
     title: "feasibility refresh is asynchronous; both clients get the PDF without a retry",
-    parcels: ["48453:474034", "48021:34049"],
+    // The card's predicate names the Travis parcel (the 154 s refresh that opened the row); the
+    // instrument had listed the Bastrop parcel too and was corrected to the card on 2026-09-12.
+    parcels: ["48453:474034"],
     evaluate(id, legs, obs) {
       // export_instrument and the app are operator-run legs; the BFF status is pasted from the
       // lane's raw response. All three enter via --observations. Nothing here is inferred.

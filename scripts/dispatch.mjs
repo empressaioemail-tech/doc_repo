@@ -245,6 +245,11 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
   CP1: ${cp1}
   CP2: ${cp2}
   CLOSE: ${close}
+  These paths are relative to the doc_repo worktree this dispatch was COMPILED IN (${root.replace(/\\/g, "/")}).
+  Write them there, never into another seat's doc worktree or P:/doc_repo (two lanes in each of
+  waves 1 and 2 wrote into the property seat's worktree and their artifacts had to be found by hand).
+  No notification arrives when a background command finishes: poll with a bounded loop and a
+  timeout; a lane that ends its turn waiting for a wake-up stalls (two lanes did, wave 2).
 
 CLOSE SKELETON (the fields the enforcement gate reads; spell them exactly, or the gate refuses
 the commit rather than guessing what you meant):

@@ -189,3 +189,41 @@ The planner runs `node scripts/surface-probe.mjs --rows P-158 --observations <fi
 observation keys `footprintStagedCountInCityLimits`, `footprintStagedCountNear34049`,
 `footprintGapReading` (`load` or `source`), each with `observedBy` and `observedAt`; the row's
 machine legs stay FAIL until phase 3, and the close says closed-partial.
+
+---
+
+## Phase 3 (wave 3) — retag by containment, then write, then reconcile
+
+Read `_inbox/2026-09-12_p158-footprint_close.json` first. Phase 2 merged #421 (`fcd77075`)
+and the count decided the question with a mechanism neither reading named:
+`tx_building_footprint.county_fips` is MISTAGGED near county lines. Inside Bastrop city limits
+3,987 footprints exist and 1,182 (29.6 percent) carry 48021; the rest are tagged Lee 48287 or
+Caldwell 48055. West Lake Hills' footprints inside Travis are tagged Hays 48209, all of them.
+Eighty footprints lie within 200 m of `48021:34049`, the nearest at 1.63 m, none under the
+writer's own county filter. Neither a source gap nor a sparse load; no second source. The
+county tag was assigned by a coarse method (likely a bounding box) in the loader on the
+unmerged engine branch `feat/p2-4-tx-building-footprint-staging`.
+
+1. **Retag by true containment.** A one-shot, idempotent job on the cortex store that sets
+   `county_fips` for every `tx_building_footprint` row by point-in-polygon (the footprint's
+   centroid, or the polygon's largest-overlap county when it straddles) against
+   `tx_county_boundary`, the same class of method `landing_parcel_jurisdiction` already applies
+   on the parcel side. It runs through a Cloud Run job (P-169's pattern; never a laptop
+   `--apply`), staging first, then the identical job on production, and leaves a run record:
+   rows examined, rows retagged, per-county before and after counts. Fix the loader on the
+   unmerged branch the same way, or record why that branch stays unmerged, so the next reload
+   does not reproduce the bug.
+2. **Prove the retag on the anchors** before any writer runs: the count inside Bastrop city
+   limits carrying 48021 must rise to within an order of magnitude of the 3,987 geometric
+   total; the 80 footprints near `48021:34049` must carry 48021; West Lake Hills' must carry
+   48453. Paste the queries and the counts.
+3. **Write, then reconcile.** The staged-geometry county writer for 48021 and 48453 through
+   `hauska-engine-atoms-writer` under the write-slot lease (staging, then production), then
+   `factory-parcel-building-footprint-reconcile` for both counties. The absence atoms the
+   2026-09-07 run minted for parcels that now have candidates are superseded, not left beside
+   the new present atoms; say how (supersededBy or delete-and-mint) and why.
+4. **The predicate** is the original one: `buildingFootprintFact` present for `48021:34049`
+   and `48453:113408` on the facets, and near-bbox returning at least one footprint around
+   each. Pre-registered falsifier: *if after the retag and the writer run the anchor parcels
+   still read absent, the join is wrong (the ratio and the branch the split label carries say
+   how), and the row stops there.*

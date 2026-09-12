@@ -155,3 +155,37 @@ steps 3 to 6 of the mission above unchanged (fill for 48453, the coverage report
 after with its denominator, the served surface, no relabelling). The falsifier and the probe
 row are unchanged: `structuralFact` present with living area and year built for both Travis
 probe parcels on the facets, or the row is not done.
+
+---
+
+## Resumption 2 (wave 3, ruled 2026-09-12) — the parser learns TCAD's segment vocabulary
+
+Read `_inbox/2026-09-12_p157-structural_close.json` first. Wave 2 loaded the certified export
+through `ldt-cad-ingest` on staging and production (real files with hashes, `cad_ingest_run`
+rows; the job needed `--memory=16Gi --cpu=4`, applied by hand) and the improved-parcel null
+count did not move: 397,065 improved parcels before, 396,743 after, 100 percent null living
+area and year built both times. Mechanism, verified against the real 2 GB `IMP_DET.TXT`:
+`lib/cad-ingest/src/pacs/parser.ts readImprovementRollups()` matches segments on the literal
+`typeDesc.startsWith("MAIN AREA")`, which never appears in TCAD's file; TCAD types living-area
+segments `1st Floor` / `2nd Floor` / `3rd Floor` (typeCd `1ST`/`2ND`/`3RD`), roughly 438k /
+177k / 8k rows. The operator ruled 2026-09-12 that this lane owns the fix (A-133).
+
+1. **A per-county segment vocabulary, declared, not hardcoded.** The living-area rollup reads
+   the set of segment types that count as living area from the same per-county source
+   declaration `sources.ts` gained in P-169 (TCAD: `1ST`, `2ND`, `3RD` summed; the default for
+   counties with no declaration stays `MAIN AREA`, so Bastrop and Caldwell do not move). Year
+   built comes from the same segments (the earliest `yrBuilt` among them, or the rule the
+   layout documents; say which and why). A county whose file carries neither its declared
+   types nor `MAIN AREA` refuses with the types it did find, never a silent zero. Tests: a
+   TCAD fixture sums the floors; a Bastrop fixture is unchanged; an unknown-vocabulary fixture
+   refuses and names what it saw.
+2. **Fold the job sizing into the spec.** `ldt-cad-ingest` carries 16Gi and 4 CPU in its
+   declared spec (the Cloud Build or job YAML P-169 created), so the next county does not
+   depend on a hand bump; note it for P-169's owner in `leave_behind`.
+3. **Re-run the load** for 48453 through the job on staging, read the run record by field,
+   confirm the improved-parcel null count falls (paste before and after with the denominator),
+   then the identical run on production; then steps 3 to 6 of the original mission (the fill,
+   the coverage report by CLI name, which hauska-factory #140 gave it, the served surface).
+4. **The falsifier** is the original one plus: *if after the re-load the improved-parcel null
+   count on `cad_property` does not fall for 48453, the vocabulary is still wrong and the row
+   is not done.*

@@ -246,6 +246,22 @@ budget mismatch. Two lanes wrote their artifacts into the property seat's doc wo
 of the planner's, for the second wave running; the dispatch template should name the
 worktree. The planner left its cortex-api lease file in place after the wave; removed.
 
+## Correction on P-153, and the operator's five answers (2026-09-12 afternoon)
+
+The operator answered: the break-glass row is accepted as written; the P-157 lane owns the
+parser fix as a per-county segment vocabulary; the Sterling study ran on the first click (P-155
+CLOSED, artifact `_inbox/2026-09-12_173553_surface_probe.json`, the probe's P-155 row aligned
+to the card's predicate parcel); the Find box landed on the Spiller card first try (P-172's
+observed leg); and nothing is in flight. The overseer then read LDT PR #661 by number: it
+merged at 2026-09-12T00:00:04Z with SUCCESS. The wave-2 planner's "P-153 still unmerged" and
+the overseer's own repeat of it rested on `gh pr list --search p153`, which does not match a
+title written "P-153/MCP". Planner error, section 10 shape: a claim of absence from a search
+whose tokenisation was never checked; the authoritative read is the PR by number. P-153 is
+both halves merged, hauska-map deployed by its lane, cortex-api `00778-peq` built after the
+merge; it closes on the operator's screenshot of the amber inset, the lane's MCP observation
+and one probe run. P-167 is unblocked now, not after a resumption lane. P-173 (lease history)
+was rowed under A-133.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
