@@ -145,3 +145,47 @@ smartsite.cloud, which must return at least one footprint. No observation file i
 run ids for staging and production; per-kind absence counts after the split for both
 counties; the attachment-policy question if any probe parcel lost a best-parcel contest; and
 the unmerged loader branch, named, for the overseer to row or retire.
+
+---
+
+## Phase 2 (wave 2, ruled 2026-09-12) — merge the split, count before anyone buys a source
+
+Read the wave-1 close first (`_inbox/2026-09-11_p158-footprint_close.json`) and the ruling
+(`_decisions/2026-09-12_footprint_merge_421_count_before_acquiring.md`). What phase 1 found:
+finding F8 was stale on the day it was written (atoms for 48021 and 48453 were minted
+2026-09-07: 24,861 present / 46,640 absence and 72,919 / 323,543); the nearest staged
+footprint to `48021:34049`, a downtown Bastrop house built in 1906, is 1,615 m away; 85.7
+percent of a 3,000-parcel Bastrop sample has no candidate in its envelope; PR #421 (the label
+split, CI SUCCESS) was left open for scope; the footprint writer has no sanctioned execution
+path (now P-169). Phase 1's reading, a source coverage gap, and the overseer's reading, a
+partial load of the staged layer, are the two mechanisms; the count decides.
+
+1. **Merge PR #421** after rebasing on `origin/main` and re-greening on the current base
+   (conclusion string `success`, not the `pass` text). The split labels are correct on either
+   answer.
+2. **Count, on the cortex store, by field.** (a) `tx_building_footprint` rows whose geometry
+   intersects the Bastrop city limits polygon (`tx_city_boundary` or the layer the factory's
+   `landing_parcel_jurisdiction` derives from; name it) and the same count for a comparison
+   town the layer is known to cover; (b) rows within 200 m of the `48021:34049` record point;
+   (c) rows per county for 48021 and 48453 against the 2026-08-19 reading (10,674,975
+   statewide). Paste every query with its result. Then, separately, the Microsoft dataset's own
+   count for a bounding box around Bastrop if it is reachable without a credential (the
+   release is public); if it is not reachable, say so.
+3. **Decide and say which.** If the layer is sparse inside Bastrop city limits while the
+   source is dense there, it is a LOAD gap: the row's next step is a reload through P-169's job
+   from the same dataset, and no second source is bought. If the layer is dense inside the
+   limits and still empty within 200 m of the anchor, it is a SOURCE gap: report it with the
+   counts and stop; a second-source acquisition is the operator's decision, not this lane's.
+   Either way the anchor parcels stay FAIL on the probe until a writer run lands; say so in the
+   close as closed-partial with the count as the deliverable.
+4. **Do not run the writer.** The writer run is phase 3, after P-169's job exists; a laptop
+   `--apply` is the thing P-169 exists to make impossible.
+
+Pre-registered falsifier for phase 2: *if the count inside Bastrop city limits is within an
+order of magnitude of the town's building count and the anchor still has no polygon within
+200 m, the load-gap reading is wrong and the source-gap reading stands.*
+
+The planner runs `node scripts/surface-probe.mjs --rows P-158 --observations <file>` with the
+observation keys `footprintStagedCountInCityLimits`, `footprintStagedCountNear34049`,
+`footprintGapReading` (`load` or `source`), each with `observedBy` and `observedAt`; the row's
+machine legs stay FAIL until phase 3, and the close says closed-partial.

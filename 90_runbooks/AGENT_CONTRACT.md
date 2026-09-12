@@ -50,9 +50,10 @@ serving revision has been read by field name from the traffic JSON and the lane'
 against it. Two lanes never hold the same service. A shift without a lease is rogue: revert to the
 leased revision, record the revert. Incident: 2026-09-11, P-155 and P-159 shifted `hauska-engine-api`
 within minutes of each other and served each other's revision in production. The doc_repo hook
-`traffic-lease-gate` (P-170; until it lands, the planner's sequencing is the only control and this
-sentence says so) refuses the command without a lease in sessions rooted in doc_repo; a lane run
-outside such a session is the named bypass, which is why the planner sequences shifts explicitly.
+`traffic-lease-gate` (P-170; built 2026-09-12, verified by direct invocation in both directions;
+live firing through the harness owed the next session, since a hook registered mid-session does not
+arm) refuses the command without a lease in sessions rooted in doc_repo; a lane run outside such a
+session is the named bypass, which is why the planner sequences shifts explicitly.
 
 ## 4. Heavy-scan serialization
 

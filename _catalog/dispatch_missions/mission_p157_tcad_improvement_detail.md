@@ -133,3 +133,25 @@ to row: the writer and cortex both emit `absent-verified` for structural fields 
 knowing whether the detail file was in the load, in every PACS county loaded without it. Name
 the fix location (hauska-engine `ingest-existing.ts` first, then the factory pin) and do not
 fix it in this lane.
+
+---
+
+## Resumption (wave 2, ruled 2026-09-12) — after P-169's job exists
+
+Read your own CP1 first (`_inbox/2026-09-11_p157-structural_cp1.json`) and the ruling
+(`_decisions/2026-09-12_loaders_get_cloud_jobs_no_break_glass.md`). The three questions you
+stopped on are answered: (a) no break-glass; the CAD loader runs as the Cloud Run job P-169
+builds; (b) the TCAD file-name shape (`PROP.TXT`, `IMP_DET.TXT`) is a per-county source
+declaration in `lib/cad-ingest/src/sources.ts`, which P-169 lands, never a rename or a regex
+widening; (c) the certified export `2026 Certified Appraisal Export Supp 0_07182026.zip`
+(557,228,168 bytes, declared tax year 2026) supplies BOTH the base roll and the improvement
+detail, so the two pair; the preliminary 07072026 roll is not reloaded.
+
+You do not start until P-169's close names the job and the GCS bucket path it reads from.
+Then: upload the certified export to that path (public record, no credential), run the job on
+staging with both entries declared, read the run record by field (files consumed with their
+hashes, tax year read from the file, row counts), run the identical job on production, then
+steps 3 to 6 of the mission above unchanged (fill for 48453, the coverage report before and
+after with its denominator, the served surface, no relabelling). The falsifier and the probe
+row are unchanged: `structuralFact` present with living area and year built for both Travis
+probe parcels on the facets, or the row is not done.
