@@ -212,6 +212,40 @@ is empty for the anchor parcel. The operator's earlier successful Find for the S
 address therefore landed through the geocoder, unlabelled, which is finding F12 exactly. The
 mission carries all three measurements and the fixtures hold the known-bad.
 
+## Wave 2 reviewed (2026-09-12, afternoon)
+
+The successor dispatch planner ran seven rows and reported back with checkpoint 2. The
+overseer verified every cited PR by conclusion string (ten, all SUCCESS), cortex-api at
+`00778-peq` by field, both Cloud Run jobs by field, and `X-Pe-Read-Path: record` live on the
+panel. Verdicts: P-169 CLOSED (the two loader jobs); P-171 CLOSED, outcome (b): the
+2026-09-07 footprint write was the engine lane `cente-67` running `--apply` from a P:/
+worktree under the operator's contemporaneous direction with no break-glass row, now filed as
+a proposed decision for the operator to accept, amend or reject; P-172 CLOSED (the situs index
+backfilled from the roll, both query forms resolve in under 50 ms, the geocoder labelled; the
+502 was a five-second proxy budget against a twenty-second route, not a slow scan); P-152
+lane 2 CLOSED-PARTIAL (the panel reads the reader; the setback and zoning rails still ride the
+atom chain, so the F3 disagreement persists on two Bastrop parcels); P-157 BLOCKED (the load
+ran through the new job on staging and production and moved nothing, because the shared PACS
+parser rolls living area up from "MAIN AREA" segments and TCAD types them "1st/2nd/3rd
+Floor"); P-158 CLOSED-PARTIAL with the finding that settles the footprint question:
+`tx_building_footprint.county_fips` is mistagged near county lines (29.6 percent of the
+footprints inside Bastrop city limits carry Bastrop's code; West Lake Hills' are all tagged
+Hays; the anchor parcel has a footprint 1.63 m away), so neither a source gap nor a sparse
+load, and no second source; P-167 not started, P-153 still unmerged.
+
+The operator's own comparison of FS-48453-474034 with the card produced three findings (F17
+to F19): the PDF names a different special district, cannot see session-gated values and so
+calls an improved parcel unimproved with the P-159 guard starved, and says no city-limits
+source is wired where the card prints the record's rail. All three are the report composer
+reading cortex facets with the service key instead of the reader, and go to P-152 lane 3.
+
+Three contradictions of the overseer's own missions, carried: `Dockerfile.atoms-writer` lives
+in hauska-engine, not the factory; the footprint mechanism was mistagging, not the load gap
+the overseer favoured nor the source gap the lane favoured; the bare-search timeout was a
+budget mismatch. Two lanes wrote their artifacts into the property seat's doc worktree instead
+of the planner's, for the second wave running; the dispatch template should name the
+worktree. The planner left its cortex-api lease file in place after the wave; removed.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not

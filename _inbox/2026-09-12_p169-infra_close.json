@@ -1,0 +1,118 @@
+{
+  "lane": "p169-infra",
+  "planRows": [
+    "P-169"
+  ],
+  "status": "closed",
+  "probe": {
+    "artifact": "_inbox/2026-09-12_162633_surface_probe.json",
+    "note": "Per the P-169 mission text, the dispatch planner runs `node scripts/surface-probe.mjs --rows P-169 --observations _inbox/2026-09-12_p169-infra_observations.json` to produce the formal probe artifact; this lane's own live-verified observations (each field with observedBy/observedAt) are in that file per R-4's fallback clause (hand-probe output pasted verbatim, since P-169 is an infra row with no scripts/surface-probe.mjs P-169 predicate implemented yet as of this close).",
+    "observationsFile": "_inbox/2026-09-12_p169-infra_observations.json"
+  },
+  "prs": {
+    "legacy-design-tools": {
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/665",
+      "branch": "feat/p169-cad-ingest-cloud-job",
+      "headSha": "b7042f58cd6ff6035f476c644a6ab48b266679ab",
+      "mergeSha": "08de93dcbf915df1c0780e6007c7529d2b75fbb4",
+      "ciConclusion": "success (11 of 11 check-runs, exact conclusion string via gh api)",
+      "mergedAt": "2026-09-12T15:40:06Z",
+      "mergeMethod": "squash"
+    },
+    "hauska-engine": {
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/423",
+      "branch": "feat/p169-footprint-writer-cloud-job",
+      "headSha": "b41446f9dafa4abd178e830bdd02fbd0af7afc90",
+      "mergeSha": "99f9146fa5fc0b172cd77a122487b8dddc2502e4",
+      "ciConclusion": "success (1 of 1 check-run, exact conclusion string via gh api; see contradicted for the transient flake on the first CI attempt, resolved by re-run + local + main-history verification, not by waiving it off)",
+      "mergedAt": "2026-09-12T15:44:11Z",
+      "mergeMethod": "squash"
+    }
+  },
+  "deployedImageProvenance": {
+    "verifiedAgainstMergedMain": true,
+    "method": "After merging both PRs, fetched origin/main and ran `git diff origin/main <branch-tip-the-deployed-image-was-built-from> --stat` in both repos. Both diffs were EMPTY (legacy-design-tools: 08de93dc vs b7042f58; hauska-engine: 99f9146f vs b41446f9), proving the already-deployed Cloud Run job images' source trees are byte-identical to what is now on main -- the squash-merge commits are new commit objects (different SHAs, flattened history) but no other change landed on either main between the last verified-green build and the merge. A rebuild-and-redeploy was therefore judged unnecessary and skipped, per this evidence rather than by assertion.",
+    "hauska_engine_note": "hauska-engine's main advanced by one unrelated commit (fcd7707, PR #421) between this lane's branch creation and its merge attempt; the branch was updated with `git merge origin/main` before the diff-empty check above, and that merge commit (b41446f9) is what was already built, deployed, and tested -- not the original pre-catch-up tip (19ab266)."
+  },
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-12_p169-infra_cp1.json",
+    "cp2": "_inbox/2026-09-12_p169-infra_cp2.json"
+  },
+  "startCommits": {
+    "legacy-design-tools": "6b57902035d3bcd583ff01e6a6f06eb6aa738895",
+    "hauska-engine": "ce6a75af66aa4f606a348d86089b83b817957296"
+  },
+  "gcpResourcesCreated": {
+    "cloudRunJobs": [
+      {
+        "name": "ldt-cad-ingest",
+        "project": "hauska-prod-497015",
+        "region": "us-east4",
+        "image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/cad-ingest@sha256:3db92f9ee147e05c63159c1fc5e321d7b0a97b35aa5a6515ab406ac1e93d7278"
+      },
+      {
+        "name": "hauska-engine-atoms-writer",
+        "project": "hauska-prod-497015",
+        "region": "us-east4",
+        "image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/atoms-writer@sha256:1ecfa2fdc1fcb1b1a1a497791e25dbb103cdaf11b3353cb00edad823b39752fe",
+        "note": "A new job, deliberately separate from the pre-existing factory-atoms-cad (untouched by this lane; see contradicted)."
+      }
+    ],
+    "gcsBucket": "gs://hauska-prod-497015-cad-ingest-drops (us-east4, uniform bucket-level access, compute SA granted roles/storage.objectAdmin)",
+    "secretsCreated": [],
+    "serviceAccountsCreated": []
+  },
+  "p169Observations": {
+    "jobsListed": {
+      "value": true,
+      "observedBy": "p169-infra lane",
+      "observedAt": "2026-09-12T15:22:00Z"
+    },
+    "stagingDryRunRecords": {
+      "value": [
+        "38a41d57-070b-4c13-8301-71e495f909ff (ldt-cad-ingest, cad_ingest_run row, target=staging, county=48055, 5 rows upserted)",
+        "f6233d0b-7e2b-4e4c-8b53-b0670822e18e (hauska-engine-atoms-writer, atoms_writer_lease_v2 holder_token, target=staging, county=48021, run_id=p169-staging-proof-1, 6 atoms built/written/verified via a --limit=5 bounded apply)"
+      ],
+      "observedBy": "p169-infra lane",
+      "observedAt": "2026-09-12T15:25:30Z"
+    },
+    "laptopApplyRefused": {
+      "value": true,
+      "observedBy": "p169-infra lane",
+      "observedAt": "2026-09-12T15:26:00Z"
+    }
+  },
+  "falsifier": "Pre-registered at CP1: if gcloud run jobs list in hauska-prod-497015 does not show both job names after deploy, or a staging execution of either leaves no run record, or a laptop --apply of either is not refused by code, the row is not done. Observed: both jobs listed; both staging executions left real, queryable records (a cad_ingest_run row for LDT, an atoms_writer_lease_v2 row for hauska-engine); both laptop attempts refused with exit 2 and a structured LAPTOP_WRITE_FROZEN payload, before any file download or lease acquisition. The falsifier did not fire in either direction -- nothing here forced a redesign.",
+  "contradicted": [
+    "Dispatch said the factory job pattern to mirror was 'Dockerfile.atoms-writer in hauska-factory'. FALSE: Dockerfile.atoms-writer lives in hauska-engine (confirmed reading both repos at origin/main); hauska-factory's own Dockerfiles are named Dockerfile and Dockerfile.publish.",
+    "Dispatch's premise 'Neither has any Cloud Run job, Dockerfile or CI deploy step' was accurate for legacy-design-tools but FALSE for hauska-engine: Dockerfile.atoms-writer, cloudbuild.atoms-writer.yaml, and the generic atoms-writer-job.mjs/atoms-writer-allowlist.mjs entrypoint already existed at origin/main, already included building-footprint in a 5-writer allowlist, and a job built from exactly this pattern was ALREADY DEPLOYED as factory-atoms-cad (confirmed live in the 36-job listing, baked to --writer=cad-parcel-roll, production secrets only). The real gap for hauska-engine was narrower than advertised: a staging/production target selector and a real CLOUD_RUN_JOB-checked LAPTOP_WRITE_FROZEN refusal (the existing refuseApplyWithoutRunId only required a caller-supplied --run-id string, which is exactly the gap P171 is investigating for the 2026-09-07 write with no execution log).",
+    "The dispatch's 'each job leaves a run record naming every input file with its hash (a load manifest)' applies literally to the CAD loader (which has discrete input files) but not to the footprint writer's normal path, which reads directly from Postgres (txgio_parcel, tx_building_footprint) with no discrete input file to hash. The footprint writer's equivalent run record is its atoms_writer_lease_v2 row plus its structured stdout summary; documented explicitly rather than forcing a file-hash shape onto a writer that has no files.",
+    "My own prior-turn assumption that a spawned sub-agent receives an automatic wake-on-completion notification for background bash tasks was wrong (corrected by the dispatch planner mid-task); the actual gcloud build failures/successes were independently confirmed by direct log reads before and after that correction, and the fix (bounded polling loops) was applied for the remainder of the row.",
+    "Numbers reconciliation (DEV_PROCESS 1.4): the dispatch, P-157's CP1, and my own CP1 all stated 'exactly 36 jobs, all factory-*' in hauska-prod-497015/us-east4 pre-deploy. A precise recount (`gcloud run jobs list ... | grep -c '^factory-'`) both before and after this lane's deploys shows 37 factory-* jobs, not 36 -- an off-by-one miscount that predates this lane (repeated, not independently re-verified, in my own CP1). Nothing was added or removed from the factory-* set by this lane; post-deploy the project has 37 factory-* jobs plus the 2 new non-factory-* jobs (ldt-cad-ingest, hauska-engine-atoms-writer) = 39 total, confirmed by direct enumeration.",
+    "My first Dockerfile.cad-ingest-job included a `RUN pnpm run typecheck:libs` step (a whole-monorepo `tsc --build`) that is unnecessary for a tsx-based runtime image (lib/db and every workspace lib cad-ingest touches export raw .ts source, no dist/ build required) and surfaced ~150 pre-existing, unrelated strict-mode errors across the monorepo when run from a clean container (no incremental cache, since .gcloudignore strips dist/). Removed; the correct scope of type verification is lib/cad-ingest's own package-level typecheck, which passes cleanly and is unaffected by this diff.",
+    "Adversarial checkpoint review (dispatch planner, mid-task) caught that my first close said status=closed while both PRs were still open and one (hauska-engine#423) had a failing CI check -- a real process defect in how I sequenced this row, not a data-fact error. Corrected: investigated the failing check (a manifest byte-identity control unrelated to this diff) by re-running CI (went green), running the same test locally 3x (3/3 pass), and checking main's own CI history (no evidence of a chronic flake) rather than asserting unrelatedness; merged both PRs only once every check-run's conclusion field read the literal string success; then discovered hauska-engine's main had moved one commit in the interim, merged it into the branch, re-verified tests/typecheck locally, re-ran CI to green on the updated commit, and only then merged; finally proved (via an empty `git diff origin/main <branch-tip>`) that the already-deployed images' source is byte-identical to merged main, so no redeploy was needed -- shown, not asserted."
+  ],
+  "leave_behind": [
+    "Two job names: ldt-cad-ingest (legacy-design-tools) and hauska-engine-atoms-writer (hauska-engine), both in hauska-prod-497015/us-east4.",
+    "Images by digest: ldt-cad-ingest -> us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/cad-ingest@sha256:3db92f9ee147e05c63159c1fc5e321d7b0a97b35aa5a6515ab406ac1e93d7278; hauska-engine-atoms-writer -> us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/atoms-writer@sha256:1ecfa2fdc1fcb1b1a1a497791e25dbb103cdaf11b3353cb00edad823b39752fe.",
+    "Target selector env contract: LDT (lib/cad-ingest/src/targetEnv.ts) reads STAGING_NEONDB_URL / PRODUCTION_NEONDB_URL via --target=staging|production, required for any non-dry-run write. hauska-engine (packages/engine-core/scripts/writer-target-env.mjs) reads STAGING_HAUSKA_MCP_URL/PRODUCTION_HAUSKA_MCP_URL (atoms store) + STAGING_NEONDB_URL/PRODUCTION_NEONDB_URL (source store) via an OPTIONAL --target on atoms-writer-job.mjs (absent = pre-existing direct-env behavior, unchanged). All four secrets already existed project-wide; none were created.",
+    "GCS bucket the CAD loader reads from: gs://hauska-prod-497015-cad-ingest-drops (uniform bucket-level access; compute SA 172690833726-compute@developer.gserviceaccount.com granted roles/storage.objectAdmin). P-157 uploads the real TCAD certified export here for its own real load; a test object already sits at p169-test/caldwell_appraisal_info_sample.txt from this lane's staging proof and can be deleted once P-157 no longer needs it as a reference.",
+    "ldt-cad-ingest execute form: gcloud run jobs execute ldt-cad-ingest --project=hauska-prod-497015 --region=us-east4 --args=--county=<fips>,--target=staging|production,--file=gs://hauska-prod-497015-cad-ingest-drops/<object>[,--tax-year=NNNN]. Non-dry-run without --target refuses TARGET_REQUIRED; without CLOUD_RUN_JOB refuses LAPTOP_WRITE_FROZEN (only meaningful from a laptop -- Cloud Run always sets it).",
+    "hauska-engine-atoms-writer execute form: gcloud run jobs execute hauska-engine-atoms-writer --project=hauska-prod-497015 --region=us-east4 --args=--writer=building-footprint,--county=<fips>,--target=staging|production[,--apply,--run-id=<id>,--limit=N]. No --writer is baked into the template -- every execution must name one of the five allowlisted writers (cad-parcel-roll, well-fact, building-footprint, utility-easement, setback).",
+    "PACS per-county source declaration: lib/cad-ingest/src/sources.ts PACS_EXPORT_DECLARATIONS, currently only TCAD (48453: PROP.TXT / IMP_DET.TXT). A future county with a non-generic PACS export shape adds one entry there; discoverFiles and the zip-extraction filter both already consult it.",
+    "cad_ingest_run is a self-migrating table (CREATE TABLE IF NOT EXISTS at job start in lib/cad-ingest/src/runRecord.ts), not yet a numbered drizzle migration under lib/db/drizzle/ -- deliberately, to avoid a migration-number collision with the many concurrently active LDT lanes bumping that sequence right now. Formalize into a numbered migration if the planner wants it in the shared ledger.",
+    "refuseApplyOutsideCloudRunJob (hauska-engine packages/engine-core/scripts/writer-apply-lease.mjs) is exported but wired only into write-building-footprint-county.mjs. well-fact, utility-easement and setback writers should adopt the same call (one line, same pattern) by their owning lanes -- they share the exact 2026-09-07-class gap this closes for footprint.",
+    "Both PRs are merged (see prs above, mergeSha for each); the deployed Cloud Run job images' source is proven byte-identical to the merged main commits (see deployedImageProvenance) -- P-157 and P-158 can execute against the jobs today, and any future rebuild should branch from the mergeSha commits above (08de93dc for legacy-design-tools, 99f9146f for hauska-engine), which are now the source of truth on origin/main.",
+    "Test object gs://hauska-prod-497015-cad-ingest-drops/p169-test/caldwell_appraisal_info_sample.txt and the 5 test rows it wrote into STAGING cad_property (county 48055, source_vintage tier:cad-export;adapter:pacs;drop:p169-staging-proof) and the 6 test atoms it wrote into STAGING hauska_mcp (county 48021, entity_type building-footprint, run_id p169-staging-proof-1) are harmless staging-only proof artifacts, clearly labeled, safe to leave or clean up at the planner's discretion."
+  ],
+  "missionPremise": "P-169 / A-132 (2026-09-12 operator ruling, _decisions/2026-09-12_loaders_get_cloud_jobs_no_break_glass.md): no break-glass laptop run for either loader; both get a Cloud Run job mirroring the factory job pattern, each leaving a run record naming its inputs, each carrying a code-level laptop refusal; the TCAD file-name shape is a per-county source declaration, never a rename.",
+  "completionPredicate": "gcloud run jobs list in hauska-prod-497015/us-east4 shows both ldt-cad-ingest and hauska-engine-atoms-writer; a staging execution of each leaves a real, queryable record (cad_ingest_run row / atoms_writer_lease_v2 row); a laptop (CLOUD_RUN_JOB unset) write/apply attempt on each refuses by code with a structured LAPTOP_WRITE_FROZEN payload before any download or lease acquisition. All three are true, live-verified 2026-09-12.",
+  "scopeBasis": "Scoped to the two named loaders and their cloud execution path only, per the dispatch's explicit exclusions: no real Travis CAD import, no real footprint write for any real county (the staging apply was deliberately bounded to --limit=5, 6 atoms, staging-only, clearly labeled -- P-157 and P-158 own the real loads in a later step); no change to the entitlement gate or any pricing surface; no naming-mismatch renames (TCAD's entry names are a registry declaration, not a rename); no retroactive wiring of the new LAPTOP_WRITE_FROZEN check into the other three hauska-engine writers (well-fact, utility-easement, setback), left to their owning lanes; factory-atoms-cad deliberately left untouched (P-171's open investigation).",
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-12T17:06:49.769Z",
+      "by": "integration seat (overseer)",
+      "note": "probe.artifact re-pointed from the observations file to the planner's final combined run, where P-169 is PASS (jobs ldt-cad-ingest and hauska-engine-atoms-writer listed, two staging run records, laptop apply refused by code); the observations file the lane cited is kept under probe.observationsFile. The overseer read both jobs by field from gcloud run jobs list on 2026-09-12 (created 15:09Z and 15:15Z) and PRs LDT #665 08de93dc and engine #423 99f9146f merged with SUCCESS. Contradiction carried: the mission named Dockerfile.atoms-writer in hauska-factory; it lives in hauska-engine. Leave-behind carried: P-157 raised ldt-cad-ingest to 16Gi/4cpu by hand; fold into the job spec."
+    }
+  ]
+}

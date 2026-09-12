@@ -1,0 +1,44 @@
+{
+  "lane": "p158-footprint",
+  "phase": "2 (wave 2, ruled 2026-09-12)",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "at": "2026-09-12T15:15:00Z",
+  "mergeDone": {
+    "repo": "empressaioemail-tech/hauska-engine",
+    "pr": 421,
+    "rebasedOnto": "origin/main ce6a75af66aa4f606a348d86089b83b817957296",
+    "rebasedHeadSha": "1960ba3f470479391537bb304040946c748a7f92",
+    "localTestsAfterRebase": "34 passed, 1 skipped / 35 total (unchanged from phase 1)",
+    "ciConclusionStringAfterRebase": "SUCCESS (check-run 'typecheck + test', run 34700097382, completed 2026-09-12T14:46:02Z)",
+    "mergeMethod": "gh pr merge 421 --squash",
+    "mergeCommitSha": "fcd77075bb9a82c9d59ec595cb2b91b73877745e",
+    "mergedAt": "2026-09-12T14:46:26Z",
+    "state": "MERGED"
+  },
+  "MAJOR_FINDING_supersedes_phase1_diagnosis": {
+    "headline": "The anchor absence is NEITHER a source gap NOR a sparse/incomplete load. It is a county_fips MISTAGGING bug at staging: real, correctly-geolocated Microsoft ML footprint rows for both probe counties are already loaded into tx_building_footprint, but tagged with a NEIGHBORING county's FIPS code, which the writer's own county-scoped query (staged-footprint-join.ts:244, `fp.county_fips = $6`) silently excludes.",
+    "evidence_48021_bastrop": [
+      "Phase 1 reported nearest staged footprint to 48021:34049 (1109 Pecan St) as 1615m -- that query was scoped WHERE county_fips='48021'. Re-run with NO county_fips filter: true nearest is footprint ml:ml-4336967 at 1.63 METERS, tagged county_fips='48287' (Lee County), not '48021' (Bastrop).",
+      "Within 200m of the anchor, any-tag count = 80, ALL tagged 48287. Within 200m, county_fips='48021'-only count = 0 (this is exactly what the writer sees -- reproduces the FAIL).",
+      "County-wide: footprints geometrically inside Bastrop COUNTY's own polygon (tx_county_boundary, ST_Intersects), grouped by their own tag: 48021 (correct)=24970, 48287 (Lee, wrong)=17200, 48055 (Caldwell, wrong)=7735. Only 50.0% of Bastrop's true building stock is correctly tagged.",
+      "Inside Bastrop CITY LIMITS specifically (tx_city_boundary polygon): any-tag=3987, county_fips='48021'-only=1182 (29.6% correctly tagged, 70.4% invisible to the writer).",
+      "Independently verified against the live public Microsoft Global ML Building Footprints source (no credential; https://minedbuildings.z5.web.core.windows.net/global-buildings/dataset-links.csv manifest, tile RegionName=UnitedStates quadkey=023130123, downloaded and parsed directly, 82777 features): centroid-based nearest-to-anchor = 13.77m, within-200m count = 78, centroids inside Bastrop's city bbox = 8356. All consistent with what's already loaded in cortex -- the SOURCE is dense here; nothing needs to be bought."
+    ],
+    "evidence_48453_travis_west_lake_hills": [
+      "Probe parcel 48453:113408 (414 Spiller Ln, West Lake Hills): true nearest footprint (any tag) is 0m (contains the point), tagged county_fips='48209' (Hays County), not '48453' (Travis). County_fips='48453'-only nearest is 7463-7480m -- matches phase 1's cited 7464.2m exactly, confirming that figure was itself an artifact of the same bug.",
+      "West Lake Hills city limits (tx_city_boundary): ALL 1693 footprints geometrically inside the city are tagged 48209 (Hays), ZERO are tagged 48453 (Travis) -- a complete (100%), not partial, mistagging for this town.",
+      "This is the same class of bug as Bastrop/Lee/Caldwell, in the opposite direction (Hays instead of Lee/Caldwell) -- confirms a systemic staging defect, not a one-off data error."
+    ],
+    "why_this_is_a_LOAD_defect_not_a_source_gap": [
+      "Total staged row counts per county (48021=65974, 48453=73394) and statewide (10674975, 254 counties) match the 2026-08-19 reading exactly -- the load's VOLUME has not changed and is not partial in the sense of 'rows missing'.",
+      "The already-loaded rows ARE the correct geometry at the correct location (confirmed independently against Microsoft's own live public tile for Bastrop) -- the source captured these buildings.",
+      "The only defect is the county_fips VALUE attached to each row at staging time, which appears to use a coarse (likely bounding-box) method rather than true point/polygon containment -- landing_parcel_jurisdiction (a different, parcel-side table) already does correct ring/point-in-polygon jurisdiction assignment elsewhere in this same program, which is evidence this is a fixable loader defect, not a source-side limitation.",
+      "This falls on the LOAD side of the ruling's binary (reload via P-169's job from the SAME dataset, no second source), but is a narrower and more precise mechanism than 'partial/incomplete load volume': it is a MISTAGGING defect. P-169's job must assign county_fips by true geometry containment against tx_county_boundary (or equivalent), not reproduce whatever method produced this result, or the same bug recurs verbatim."
+    ]
+  },
+  "falsifierResult": "Pre-registered: 'if the count inside Bastrop city limits is within an order of magnitude of the town's building count AND the anchor still has no polygon within 200m, the load-gap reading is wrong and the source-gap reading stands.' OBSERVED: city-limits count (3987 any-tag, cross-checked at 8356 centroids via the independent live Microsoft tile) IS a plausible, town-appropriate order of magnitude -- AND the anchor DOES have a polygon within 200m (1.63m nearest) once measured without the county_fips-filter bug. The falsifier's own trigger condition ('still no polygon within 200m') is FALSE, so it does not fire against the load-gap reading. Source-gap is decisively ruled out for both probe parcels.",
+  "remainingWork": [
+    "Write the phase-2 close as closed-partial per the mission (writer not run; phase 3 blocked on P-169).",
+    "Carry the mistagging finding, with exact counts and the loader-branch pointer, as the leading leave_behind item -- this is materially different from and more actionable than phase 1's 'buy a second source' framing that this finding retires."
+  ]
+}

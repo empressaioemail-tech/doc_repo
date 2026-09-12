@@ -1,0 +1,100 @@
+{
+  "lane": "p172-findbox",
+  "checkpoint": "CP1",
+  "planRows": ["P-172"],
+  "worktrees": {
+    "hauska-map": {
+      "path": "P:/seat-worktrees/property/hauska-map-p172-findbox",
+      "branch": "feat/p172-findbox-situs-first",
+      "startCommit": "8b44f68db96d11624ed08631e01baa3d7b6b9814",
+      "note": "matches the SHA the dispatch cited as verified 2026-09-12; no drift at worktree creation"
+    },
+    "legacy-design-tools": {
+      "path": "P:/seat-worktrees/property/legacy-design-tools-p172-situs-search",
+      "branch": "feat/p172-situs-search-route",
+      "startCommit": "6b57902035d3bcd583ff01e6a6f06eb6aa738895",
+      "note": "matches the SHA the dispatch cited as verified 2026-09-12; no drift at worktree creation"
+    }
+  },
+  "falsifierPreregistered": "If after the deploy the Find box on smartsite.cloud does not resolve '414 SPILLER LN' and '414 SPILLER LN, WEST LAKE HILLS, TX' to 48453:113408, or resolves either through the geocoder without labelling it, the row is not done. AND: if step-1 measurement shows the situs index has NO ROW AT ALL for 48453:113408, the fix is acquisition, not search; stop and report.",
+  "stopConditionResult": "NOT TRIGGERED. The row exists (see measurements.txgio_parcel_anchor below) with a blank street line, not an absent row. Proceeding with the search/backfill design below, not stopping.",
+  "measurements": {
+    "liveApiCalls": [
+      {
+        "query": "414 SPILLER LN",
+        "endpoint": "GET https://smartsite.cloud/api/pe-situs-search?q=414%20SPILLER%20LN&limit=7",
+        "httpStatus": 502,
+        "elapsedMs": 5281,
+        "body": {"error": "situs_search_unreachable", "message": "cortex timed out after 5000ms"}
+      },
+      {
+        "query": "414 SPILLER LN, WEST LAKE HILLS, TX",
+        "endpoint": "GET https://smartsite.cloud/api/pe-situs-search?q=414%20SPILLER%20LN%2C%20WEST%20LAKE%20HILLS%2C%20TX&limit=7",
+        "httpStatus": 200,
+        "elapsedMs": 1473,
+        "body": {"hits": []}
+      },
+      {
+        "query": "48453:113408",
+        "endpoint": "GET https://smartsite.cloud/api/pe-situs-search?q=48453%3A113408&limit=7",
+        "httpStatus": 200,
+        "elapsedMs": 498,
+        "body": {"hits": [{"parcelNodeId": "48453:113408", "situsAddress": ", TX", "countyFips": "48453", "latitude": null, "longitude": null}]}
+      },
+      {
+        "query": "2601 STERLING PANORAMA CT (control)",
+        "endpoint": "GET https://smartsite.cloud/api/pe-situs-search?q=2601%20STERLING%20PANORAMA%20CT&limit=7",
+        "httpStatus": 502,
+        "elapsedMs": 5250,
+        "body": {"error": "situs_search_unreachable", "message": "cortex timed out after 5000ms"}
+      }
+    ],
+    "reproducesOverseerFindings": "Yes, exactly (2026-09-12 03:25Z fixtures cross-checked against my own 2026-09-12 live curl run). Not fabricated in the dispatch.",
+    "codeVsProdDiscrepancyNote": "origin/main LDT already has SITUS_SEARCH_BUDGET_MS=20_000, a SET LOCAL statement_timeout, and a store-county-bound functional index (migration 0058) -- code that SHOULD answer within 20s using an index scan. The live 502 arrives at 5.0-5.4s, which matches a caller-side timeout in hauska-map's pe-situs-search proxy racing a slow cortex response, not cortex's own 20s budget expiring. Need to confirm the exact proxy-side timeout literal (grep for 'situs_search_unreachable' turned up nothing yet in hauska-map/api -- likely lives in a differently-named file or a shared fetch helper; not yet located, flagged as open for design).",
+    "txgio_parcel_anchor": {
+      "query": "SELECT * FROM txgio_parcel WHERE county_fips='48453' AND prop_id='113408' (indexed on txgio_parcel_prop_idx, single row, cheap)",
+      "row": {"county_fips": "48453", "tile_key": "g0.02:-97.82000,30.28000", "feature_index": 12571, "prop_id": "113408", "situs_address": ", TX", "situs_city": null, "situs_state": "TX", "situs_zip": null}
+    },
+    "txgio_parcel_control_474034": {
+      "row": {"county_fips": "48453", "prop_id": "474034", "situs_address": ", TX 78738", "situs_city": null, "situs_state": "TX", "situs_zip": "78738"}
+    },
+    "txgio_parcel_working_sample_367134": {
+      "note": "5833 Taylor Draper Cv, a parcel the probe set says already works -- checked for comparison of shape",
+      "row": {"county_fips": "48453", "prop_id": "367134", "situs_address": "5833 TAYLOR DRAPER CV , TX 78759", "situs_city": null, "situs_state": "TX", "situs_zip": "78759"}
+    },
+    "situs_city_finding": "situs_city is NULL on all three sampled Travis rows, including a row whose street line IS populated (367134). Confirms nodeFacetBakeTier1Conformant.ts's comment that Travis leaves situs_city null on most of its roll. Denominator for a full null-rate count NOT measured this session (see below) -- sampling only, n=3.",
+    "cad_property_backfill_source_check": {
+      "anchor_113408": [
+        {"tax_year": 2026, "situs_address": "414 SPILLER LN", "situs_city": "WEST LAKE HILLS", "situs_zip": "78746"},
+        {"tax_year": 2025, "situs_address": ", TX", "situs_city": null, "situs_zip": null}
+      ],
+      "control_474034": [
+        {"tax_year": 2026, "situs_address": "2601 STERLING PANORAMA CT", "situs_city": null, "situs_zip": "78738"},
+        {"tax_year": 2025, "situs_address": ", TX 78738", "situs_city": null, "situs_zip": "78738"}
+      ],
+      "conclusion": "CONFIRMED VIABLE. cad_property tax_year 2026 carries the full street+city for the anchor and the full street (city still blank in the CAD's own export) for the control. This is the same roll source the panel's header already trusts (per the mission's step 2). The backfill is a join on (county_fips, prop_id), most recent tax_year, only where txgio_parcel's street line is blank -- exactly as scoped."
+    },
+    "scale_findings_catalog_stats_only_no_scan": {
+      "txgio_parcel_total_rows": 16492692,
+      "txgio_parcel_total_size": "29 GB",
+      "source": "pg_class.reltuples / pg_total_relation_size -- catalog read, zero table scan cost",
+      "travis_total_rows_estimate": 868615,
+      "travis_total_rows_estimate_source": "EXPLAIN (planner estimate only, not a live count) on `SELECT * FROM txgio_parcel WHERE county_fips='48453'`",
+      "travis_blank_street_rows_estimate": 131421,
+      "travis_blank_street_rows_estimate_source": "EXPLAIN on an index-condition query matching the exact functional-index normalization expression (migration 0058) equal to '' -- confirmed Index Scan in the plan, not Seq Scan",
+      "travis_blank_street_live_count_attempted": "TIMED OUT twice at a 20s statement_timeout, both as a plain count(*) and count(DISTINCT prop_id), despite the index-scan plan. NOT MEASURED as a live count this session. Likely genuine volume (rows are tile-duplicated, ~868k physical rows for the county) rather than a stuck query, but concurrent fleet write load on this shared 16.5M-row table cannot be ruled out from this vantage. Did not retry with a longer timeout: an unannounced multi-minute hold against the shared production connection violates AGENT_CONTRACT section 4 (heavy-scan serialization) and I have no live channel to announce/request a lease within this single-shot lane invocation.",
+      "implication_for_the_ratio": "roughly 131,421 / 868,615 =~ 15% of Travis's txgio_parcel rows (tile-duplicated denominator, NOT distinct parcels) carry a blank street line, BOTH NUMBERS ARE PLANNER ESTIMATES, not measured counts. Report this ratio only with that caveat attached; do not round it into a clean 15% claim in the close without repeating the estimate caveat, per DEV_PROCESS (coverage figures travel with their denominator; never round off a measurement you didn't take)."
+    },
+    "heavyScanAvoidance": "Killed one background psql task (blt4xoll5) that was running an unbounded/un-timed-out county-wide count(*) past 3+ minutes, before it was clear whether it would ever return, rather than let an unannounced heavy read sit on the shared production connection indefinitely."
+  },
+  "designPlan_forCP2review": {
+    "step2_backfill": "One-shot idempotent UPDATE/migration (not laptop-applied): for Travis (48453) txgio_parcel rows whose normalized street expression = '' (same expr as migration 0058, confirmed index-scannable), join to cad_property on (county_fips, prop_id) at MAX(tax_year), and set situs_address/situs_city from the CAD row only when the CAD row itself has a non-blank street. Never overwrite a non-blank TxGIO street line (the mission's explicit guard). Ships in the LDT PR as a drizzle migration file (matching the pattern of 0058), runs via the normal migration runner on staging first, then production, under the deploy path -- not run ad hoc from this lane's psql session. The job records rows examined / rows filled / rows still blank, with the denominator, as its own output (not a laptop side-effect).",
+    "step3_boundBareSearch": "Need to locate the actual 5s proxy-side timeout (open item above) before this is a real fix rather than a guess; if it is the hauska-map proxy's own fetch-timeout constant, raising or restructuring it (e.g. return a declared 'add a city or county' refusal after a bounded first pass rather than hold the connection) is a hauska-map change, not an LDT change, contrary to the mission's location assumption that this lives in LDT's search route. Will confirm exact file before touching it and report if the mission's assumed location is wrong (contradicted field in close).",
+    "step4_localityMatchesRecord": "txgioAddressResolve.ts's storedSitusLocalitySql/searchSitusByPrefixWithLocality currently filter on `strpos(upper(situs_address), city) > 0` only -- confirmed by code read. Will add a situs_city-first branch (use the column when non-null/non-blank, fall back to the substring only when it is not) and make a locality that matches nothing fail open (never discard a unique street-key hit) rather than filtering it out.",
+    "step5_step6": "parcel-lookup.ts (hauska-map) numbered ladder confirmed by code read matches the dispatch's description exactly (verified at 8b44f68, same commit). Will implement per the mission: situs search before the bare house+street refusal; geocoder labelled source:'geocoded' vs situs source:'situs'.",
+    "openItemsForPlannerCP1Review": [
+      "Locating the exact caller-side 5000ms timeout constant that produces 'cortex timed out after 5000ms' -- not found yet in hauska-map/api by grep for the literal error string; will widen the search (may be a shared fetch-with-timeout helper, or the message may be synthesized by a Vercel edge/serverless function timeout wrapper rather than a named constant).",
+      "Whether step 3 (bound the bare search) is actually an LDT change (per mission's file assumption) or a hauska-map proxy change (per what I've read so far) -- resolving before CP2."
+    ]
+  }
+}

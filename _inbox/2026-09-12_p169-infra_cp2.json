@@ -1,0 +1,94 @@
+{
+  "lane": "p169-infra",
+  "planRows": ["P-169"],
+  "checkpoint": "CP2 (revised after adversarial review; full pilot record retained)",
+  "buildFixes": [
+    "First LDT cloudbuild attempt failed at gcloud parse time: `_IMAGE_TAG: \"cad-ingest-$BUILD_ID\"` tried to embed the built-in $BUILD_ID substitution inside a user substitution's own default value, which Cloud Build cannot resolve at config-parse time. Fixed by keeping _IMAGE_TAG static and appending -$BUILD_ID directly in the steps/images list (the exact pattern hauska-factory's own cloudbuild.parcel-setback-cells.yaml uses). Same latent bug fixed pre-submit in the hauska-engine cloudbuild file.",
+    "Second LDT build attempt failed for a real, deeper reason: Dockerfile.cad-ingest-job's `RUN pnpm run typecheck:libs` ran a whole-monorepo `tsc --build` inside a from-scratch container with no incremental dist/ cache (.gcloudignore strips dist/**/dist from the build context), surfacing ~150 pre-existing strict-mode TypeScript errors across unrelated packages that have nothing to do with cad-ingest. Root-caused: lib/db's package.json exports raw .ts source directly, so tsx needs no dist/ build at runtime. Step removed; lib/cad-ingest's own package-level typecheck (which passes cleanly) is the correct scope."
+  ],
+  "pilot": {
+    "ldt_cad_ingest": {
+      "jobListed": true,
+      "image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/cad-ingest@sha256:3db92f9ee147e05c63159c1fc5e321d7b0a97b35aa5a6515ab406ac1e93d7278",
+      "stagingExecution": {
+        "command": "gcloud run jobs execute ldt-cad-ingest --project=hauska-prod-497015 --region=us-east4 --wait --args=--county=48055,--target=staging,--vintage=p169-staging-proof,--file=gs://hauska-prod-497015-cad-ingest-drops/p169-test/caldwell_appraisal_info_sample.txt",
+        "execution": "ldt-cad-ingest-7w7vz",
+        "statusFields": { "succeededCount": 1, "failedCount": 0, "startTime": "2026-09-12T15:18:22.080231Z", "completionTime": "2026-09-12T15:18:39.997957Z" },
+        "runRecordId": "38a41d57-070b-4c13-8301-71e495f909ff",
+        "rowsUpserted": 5,
+        "sourceVintage": "tier:cad-export;adapter:pacs;drop:p169-staging-proof",
+        "observedBy": "p169-infra lane, direct gcloud run jobs execute + gcloud logging read",
+        "observedAt": "2026-09-12T15:18:40Z"
+      },
+      "laptopRefusal": {
+        "command": "cd lib/cad-ingest && unset CLOUD_RUN_JOB && pnpm exec tsx src/cli.ts -- --county=48055 --target=staging --file=/dev/null",
+        "exitCode": 2,
+        "stderr": "{\"event\":\"cad-ingest.refused\",\"code\":\"LAPTOP_WRITE_FROZEN\",\"message\":\"cad-ingest writes are Cloud Run (us-east4, job ldt-cad-ingest) only — no break-glass (2026-09-12 ruling, _decisions/2026-09-12_loaders_get_cloud_jobs_no_break_glass.md). CLOUD_RUN_JOB is unset: this process is not running inside the job. Pass --dry-run to parse locally, or run this from the Cloud Run job.\"}",
+        "observedBy": "p169-infra lane, direct local invocation",
+        "observedAt": "2026-09-12T15:19Z"
+      }
+    },
+    "hauska_engine_atoms_writer": {
+      "jobListed": true,
+      "factoryAtomsCadUntouched": true,
+      "image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/atoms-writer@sha256:1ecfa2fdc1fcb1b1a1a497791e25dbb103cdaf11b3353cb00edad823b39752fe",
+      "stagingDryRun": {
+        "command": "gcloud run jobs execute hauska-engine-atoms-writer --project=hauska-prod-497015 --region=us-east4 --wait --args=--writer=building-footprint,--county=48021,--target=staging",
+        "execution": "hauska-engine-atoms-writer-bpn8j",
+        "result": "mode=dry-run, parcelRows=74729, atomsWouldWrite=71501, atomsWritten=0 -- real staged data read from the staging target, zero writes",
+        "observedBy": "p169-infra lane, direct gcloud run jobs execute + gcloud logging read",
+        "observedAt": "2026-09-12T15:23:36Z"
+      },
+      "stagingBoundedApply": {
+        "command": "gcloud run jobs execute hauska-engine-atoms-writer --project=hauska-prod-497015 --region=us-east4 --wait --args=--writer=building-footprint,--county=48021,--target=staging,--apply,--limit=5,--run-id=p169-staging-proof-1",
+        "execution": "hauska-engine-atoms-writer-scfqs",
+        "result": "mode=apply, atomsBuilt=6, atomsWritten=6, verified=6, verifyFailures=[], errors=0",
+        "runRecord": {
+          "mechanism": "atoms_writer_lease_v2 (packages/storage/src/atoms-writer-lease.ts), taken via takeScopedLease and released via releaseScopedLease -- this IS the footprint writer's run record; it has no discrete input FILE to hash on its normal staged-county path (unlike cad-ingest), so the dispatch's 'load manifest naming input files with hashes' framing does not literally apply here (see close.contradicted)",
+          "holder_token": "f6233d0b-7e2b-4e4c-8b53-b0670822e18e",
+          "scope": { "scope_type": "write", "entity_type": "building-footprint", "county_fips": "48021" },
+          "run_id": "p169-staging-proof-1"
+        },
+        "boundedBy": "--limit=5 (5 parcels read, 6 atoms total) -- deliberately not the full county's 71,501-atom load, per the dispatch's own instruction not to run the real load in this row",
+        "observedBy": "p169-infra lane, direct gcloud run jobs execute + gcloud logging read",
+        "observedAt": "2026-09-12T15:25:10Z"
+      },
+      "laptopRefusal": {
+        "command": "cd packages/engine-core && unset CLOUD_RUN_JOB && BUILDING_FOOTPRINT_PATH=1 pnpm exec tsx scripts/write-building-footprint-county.mjs --apply --county=48021 --run-id=laptop-proof-row",
+        "exitCode": 2,
+        "stderr": "{\"event\":\"building-footprint-county.refused\",\"code\":\"LAPTOP_WRITE_FROZEN\",\"message\":\"--apply is Cloud Run Job only (no break-glass, 2026-09-12 ruling: _decisions/2026-09-12_loaders_get_cloud_jobs_no_break_glass.md, P-169). CLOUD_RUN_JOB is unset — this process is not running inside a Cloud Run Job execution.\"}",
+        "observedBy": "p169-infra lane, direct local invocation",
+        "observedAt": "2026-09-12T15:26Z"
+      }
+    }
+  },
+  "adversarialReviewResponse": {
+    "finding1_neitherPrMerged": "Correct as flagged: this lane's first CP2/close said 'closed' before either PR was merged, premature under AGENT_CONTRACT section 5 (merge only on CI conclusion string success). Both PRs are now merged: legacy-design-tools#665 -> mergeCommit 08de93dcbf915df1c0780e6007c7529d2b75fbb4 (squash), hauska-engine#423 -> mergeCommit 99f9146fa5fc0b172cd77a122487b8dddc2502e4 (squash). Verified via `gh pr view --json state,mergedAt,mergeCommit` on both, state=MERGED.",
+    "finding2_failingCiOn423": {
+      "investigation": "hauska-engine PR #423's first CI run (34702284360) failed one test: src/site-plan/__tests__/manifest-is-load-bearing.test.ts > CONTROL (not vacuous): two renders of the SAME manifest are byte-identical -- expected 493265, got 493263 (a 2-byte difference in a PDF render-determinism control). This lane's diff touches only cloudbuild.atoms-writer-p169.yaml and five packages/engine-core/scripts/*writer*.mjs files -- zero overlap with site-plan/PDF code, confirmed via `gh pr diff 423 --name-only`.",
+      "verification": [
+        "Re-ran the exact same commit's CI job via `gh run rerun 34702284360 --failed`: went green (conclusion=success) with no code change.",
+        "Ran the same test file locally 3 times in a row against the identical branch state: 3/3 pass, no byte-count variance observed.",
+        "Checked main's last 10 CI runs (all success) -- no evidence of a chronic on-main flake either, consistent with a rare, low-frequency nondeterminism (most likely a timestamp or similar non-reproducible value embedded during PDF generation) rather than something my diff introduced or something permanently broken on main."
+      ],
+      "conclusion": "Confirmed transient, pre-existing, unrelated flake -- not a regression from this lane's changes. Not waved off by assertion; verified at source per AGENT_CONTRACT section 5."
+    },
+    "finding3_deployedFromBranchNotMain": {
+      "acknowledgement": "Correct: both Cloud Run jobs were originally built and deployed from the feature-branch tips (legacy-design-tools b7042f58, hauska-engine b41446f9 -- itself already a merge of origin/main into the branch to catch up on PR #421, which landed on hauska-engine's main between this lane's branch creation and its merge attempt), not from a merged main commit.",
+      "resolution": "After merging both PRs, fetched origin/main fresh in both worktrees and diffed the merged main HEAD against the exact branch tip each deployed image was built from: `git diff origin/main <branch-tip> --stat` returned EMPTY for both repos (legacy-design-tools: 08de93dc vs b7042f58; hauska-engine: 99f9146f vs b41446f9). The squash-merge commits are new commit objects (different SHAs, flattened history) but their trees are byte-for-byte identical to what was already built and deployed -- no other change landed on either main between the last green CI run and the merge. Per the adversarial reviewer's own stated exception ('if you judge a rebuild-and-redeploy is unnecessary because the branch tip and post-merge main are guaranteed byte-identical..., say so explicitly and show the diff is empty'), a rebuild-and-redeploy was judged unnecessary and skipped, with the empty diffs shown above as the evidence, rather than silently skipped."
+    }
+  },
+  "mainCatchUp": {
+    "hauska_engine_only": "hauska-engine's main advanced by one commit (fcd7707, PR #421 P-158 footprint-absence-label split) between this lane's branch creation and its first merge attempt, which GitHub refused as 'not up to date with base'. Merged origin/main into the feature branch (git merge origin/main --no-edit): auto-merged cleanly, touching write-building-footprint-county.mjs (the exact file my LAPTOP_WRITE_FROZEN gate lives in) plus staged-footprint-join.ts/types.ts/tests -- no textual conflict. Verified by hand that both apply-gate call sites (refuseApplyWithoutRunId, refuseApplyOutsideCloudRunJob) and their ordering relative to `const poolUrl` survived the merge intact (grep -n confirms lines 123/129/133 in the expected order). Re-ran typecheck (clean) and the full affected test set (71 passed, 1 skipped, 0 failed) locally before pushing the merge commit; pushed, waited for the resulting CI run (34702984573, headSha b41446f9) to complete (conclusion=success) before merging the PR. legacy-design-tools's main had not moved and needed no catch-up."
+  },
+  "finalCiConclusions": {
+    "legacy-design-tools_665": { "headSha": "b7042f58cd6ff6035f476c644a6ab48b266679ab", "checkRuns": "11 of 11 conclusion=success (read via gh api .../check-runs, exact string, not the CLI's 'pass' display)" },
+    "hauska-engine_423": { "headSha": "b41446f9dafa4abd178e830bdd02fbd0af7afc90", "checkRuns": "1 of 1 (typecheck + test) conclusion=success" }
+  },
+  "predicateStatus": {
+    "jobsListed": true,
+    "stagingDryRunRecords": ["38a41d57-070b-4c13-8301-71e495f909ff (ldt-cad-ingest)", "f6233d0b-7e2b-4e4c-8b53-b0670822e18e (hauska-engine-atoms-writer lease)"],
+    "laptopApplyRefused": true,
+    "prsMerged": true
+  }
+}

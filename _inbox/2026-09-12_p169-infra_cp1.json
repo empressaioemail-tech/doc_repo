@@ -1,0 +1,55 @@
+{
+  "lane": "p169-infra",
+  "planRows": ["P-169"],
+  "checkpoint": "CP1",
+  "startCommits": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p169-cad-ingest-job",
+      "branch": "feat/p169-cad-ingest-cloud-job",
+      "fromOriginMain": "6b57902035d3bcd583ff01e6a6f06eb6aa738895"
+    },
+    "hauska-engine": {
+      "worktree": "P:/seat-worktrees/property/hauska-engine-p169-footprint-job",
+      "branch": "feat/p169-footprint-writer-cloud-job",
+      "fromOriginMain": "ce6a75af66aa4f606a348d86089b83b817957296"
+    }
+  },
+  "falsifier": "If gcloud run jobs list in hauska-prod-497015 does not show both new job names after deploy, or a staging dry run of either leaves no run record, or a laptop --apply of either is not refused by code, the row is not done.",
+  "verifiedFacts": {
+    "gcloudRunJobsListUsEast4_36jobs_allFactoryPrefixed": "CONFIRMED live 2026-09-12: exactly 36 jobs, all `factory-*`. Matches P-157/P-158 CP1/close claim.",
+    "reposExist": "CONFIRMED: empressaioemail-tech/legacy-design-tools and /hauska-engine both exist, gh-authenticated, worktrees created from origin/main.",
+    "secretsAlreadyExist_noNewSecretNeeded": "CONFIRMED by reading hauska-factory's publish-target-env.mjs and its live callers (cad-txgio-alias-persist.mjs, verify-walk.mjs): STAGING_NEONDB_URL/PRODUCTION_NEONDB_URL already point at the cortex/LDT database (holds cad_property, txgio_parcel, landing_parcel_jurisdiction) and STAGING_HAUSKA_MCP_URL/PRODUCTION_HAUSKA_MCP_URL already point at the atoms database (same one hauska-engine's writers call ATOMS_DATABASE_URL/DATABASE_URL). Both pairs already exist as project secrets. Both new jobs' staging/production target selectors will reuse these four EXISTING secrets. No new secret is required for either job -- contrary to the dispatch's expectation that this lane was the most likely to hit a STOP condition."
+  },
+  "contradicted": [
+    "Dispatch says 'the factory's job pattern to mirror: Dockerfile.atoms-writer in hauska-factory'. FALSE: Dockerfile.atoms-writer lives in hauska-engine, not hauska-factory (verified by reading both repos at origin/main; hauska-factory's own Dockerfiles are named Dockerfile and Dockerfile.publish, no Dockerfile.atoms-writer anywhere in its git history).",
+    "Dispatch's P-158-close-derived premise 'the footprint writer has no code-level LAPTOP_WRITE_FROZEN gate of its own' is true, but the stronger framing 'neither [loader] has any Cloud Run job, Dockerfile or CI deploy step' is FALSE for hauska-engine specifically: Dockerfile.atoms-writer, cloudbuild.atoms-writer.yaml, packages/engine-core/scripts/atoms-writer-job.mjs and atoms-writer-allowlist.mjs already exist at origin/main, already include `building-footprint` in a 5-writer allowlist (script: scripts/write-building-footprint-county.mjs), and a Cloud Run job built from exactly this pattern is ALREADY DEPLOYED in hauska-prod-497015/us-east4 as `factory-atoms-cad` (confirmed live in the 36-job listing) -- just baked with --args=--writer=cad-parcel-roll and no staging/production target selector and no CLOUD_RUN_JOB-gated LAPTOP_WRITE_FROZEN check. The gap P-169 actually closes for hauska-engine is narrower than advertised: add a target selector + a real environment-marker refusal, and deploy a NEW job (not overwrite factory-atoms-cad, to avoid disturbing whatever P-171 is still investigating about that job's 2026-09-07 history) that can run --writer=building-footprint with those two additions.",
+    "LDT premise (no Dockerfile/cloudbuild/job for cad-ingest) is CONFIRMED TRUE -- no contradiction there.",
+    "A second, deeper defect found beyond the dispatch's own framing: cli.ts's zipEntryFilter() picks a hardcoded PACS_ENTRY_FILTER regex (APPRAISAL_INFO.TXT / APPRAISAL_IMPROVEMENT_DETAIL.TXT) INSIDE zip.ts, before discoverFiles ever runs. A per-county source declaration wired only into discoverFiles (as the dispatch's item 1 literally describes) would still have the zip extraction step silently discard TCAD's PROP.TXT / IMP_DET.TXT entries before discoverFiles sees them. The fix must be threaded through the entry filter too, county-aware, not format-aware alone."
+  ],
+  "design": {
+    "ldt_cad_ingest": {
+      "sourceDeclaration": "lib/cad-ingest/src/sources.ts gains PacsExportDeclaration + PACS_EXPORT_DECLARATIONS (TCAD 48453: infoEntry=PROP.TXT, improvementDetailEntry=IMP_DET.TXT) + resolvePacsExportDeclaration + resolvePacsEntries(files, fips) (throws PacsEntryNotFoundError naming the missing declared entry; returns null when no declaration exists so callers fall back to the generic pattern unchanged).",
+      "zipFilterFix": "zip.ts gains pacsEntryFilterFor(fips?) which uses the declared entry basenames when a declaration exists, else returns the existing PACS_ENTRY_FILTER unchanged. cli.ts's zipEntryFilter() and both extractCadDrop call sites pass county.fips through.",
+      "discoverFilesFix": "cli.ts's discoverFiles(format, files, fips) tries resolvePacsEntries first for pacs format; on declared-but-missing entry it fails naming the entry (never a silent fallback); on no declaration it keeps today's generic regex exactly as before.",
+      "targetSelector": "new lib/cad-ingest/src/targetEnv.ts, mirrors hauska-factory's publish-target-env.mjs: PUBLISH_TARGETS=[staging,production], reads STAGING_NEONDB_URL / PRODUCTION_NEONDB_URL (both already exist as project secrets), refuses TARGET_ENV_MISSING naming the variable.",
+      "laptopFrozenGate": "cli.ts: a non-dry-run write now requires --target=staging|production AND process.env.CLOUD_RUN_JOB to be set (GCP's own Cloud Run Jobs env marker, never a caller-supplied flag). Missing --target -> TARGET_REQUIRED (exit 1). --target present but CLOUD_RUN_JOB unset -> LAPTOP_WRITE_FROZEN (exit 2), structured JSON to stderr.",
+      "runRecord": "new lib/cad-ingest/src/runRecord.ts: sha256+byte-size every resolved input file; CREATE TABLE IF NOT EXISTS cad_ingest_run (idempotent, not routed through the shared numbered drizzle migration ledger to avoid collision with the many concurrently-active LDT lanes bumping migration numbers right now -- flagged in leave_behind for the planner to formalize into a numbered migration later if wanted); row written at start (status=running) and updated at finish (status=success|error, counts, error).",
+      "gcsInput": "download.ts gains isGcsUri/downloadFromGcs using @google-cloud/storage (new dependency; Cloud Run's attached service account already has ADC, no new secret) so --file=gs://<bucket>/<object> works from the job; laptop http(s)/local-path/--file behavior is unchanged.",
+      "jobName": "ldt-cad-ingest (not factory-cad-ingest: this image is built from legacy-design-tools, not hauska-factory; naming it factory-* would misattribute the owning repo). Image pushed to the EXISTING us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory Artifact Registry repo (established precedent: hauska-engine's own atoms-writer image already lives there too) as .../hauska-factory/cad-ingest.",
+      "gcsBucket": "new bucket hauska-prod-497015-cad-ingest-drops for the operator/lane to upload PACS export zips to; not a secret, a plain resource create."
+    },
+    "hauska_engine_footprint": {
+      "reuseExistingAllowlist": "No new writer script or Dockerfile needed -- packages/engine-core/scripts/atoms-writer-job.mjs + atoms-writer-allowlist.mjs + Dockerfile.atoms-writer already support --writer=building-footprint generically.",
+      "laptopFrozenGate": "new exported refuseApplyOutsideCloudRunJob(event, apply) in writer-apply-lease.mjs, checking process.env.CLOUD_RUN_JOB non-empty (GCP's native Cloud Run Jobs marker). Wired ONLY into write-building-footprint-county.mjs (my scoped file), alongside the existing refuseApplyWithoutRunId call -- NOT retroactively wired into well-fact/utility-easement/setback (other lanes' scope; noted in leave_behind for their owners to adopt).",
+      "targetSelector": "new packages/engine-core/scripts/writer-target-env.mjs mirroring the factory's publish-target-env.mjs shape, reading STAGING_HAUSKA_MCP_URL/PRODUCTION_HAUSKA_MCP_URL (atoms store) and STAGING_NEONDB_URL/PRODUCTION_NEONDB_URL (source/cortex store) -- all four already exist as project secrets. atoms-writer-job.mjs gains an OPTIONAL --target=staging|production; when present it resolves env via the new module before requireWriterEnv; when ABSENT, behavior is byte-for-byte unchanged (so the already-deployed factory-atoms-cad job, which never passes --target, keeps working exactly as before if it is ever rebuilt from a future main).",
+      "jobName": "hauska-engine-atoms-writer -- a NEW job, deliberately not overwriting the already-deployed factory-atoms-cad (P-171 is still investigating that job's 2026-09-07 history; redeploying over it here would be exactly the kind of collision AGENT_CONTRACT section 5 warns about). Same image family (Dockerfile.atoms-writer), rebuilt from this branch once target-env + LAPTOP_WRITE_FROZEN land, pushed to us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/atoms-writer (same AR repo the existing image already uses) under a new tag.",
+      "leaseUnaffected": "write-building-footprint-county.mjs already takes the atoms_writer_lease_v2 scoped lease via takeScopedLease/releaseScopedLease (packages/storage/src/atoms-writer-lease.ts) -- no change needed there, AGENT_CONTRACT section 3 is already satisfied by existing code."
+    }
+  },
+  "stopConditionCheck": "No new secret or service account required for either job (see verifiedFacts.secretsAlreadyExist_noNewSecretNeeded). New GCS bucket (hauska-prod-497015-cad-ingest-drops) is a plain resource create under the already-authenticated account, not a credential/secret mount, so it does not trigger the dispatch's STOP condition; proceeding without escalation.",
+  "leave_behind_preview": [
+    "LAPTOP_WRITE_FROZEN via CLOUD_RUN_JOB is spoofable by a laptop that deliberately exports CLOUD_RUN_JOB=x, same caveat the factory's own FACTORY_CLOUD=1 gate already accepts (documented in hauska-factory's control/runs.mjs) -- accepted as the standard level of protection this program already uses elsewhere, not a gap unique to this lane.",
+    "refuseApplyOutsideCloudRunJob exists as a shared, reusable export in writer-apply-lease.mjs but is only WIRED into write-building-footprint-county.mjs; well-fact/utility-easement/setback writers should adopt it too, by their owning lanes.",
+    "cad_ingest_run is a self-migrating table (CREATE TABLE IF NOT EXISTS at job startup), not yet a numbered drizzle migration -- formalize if the planner wants it in the shared migration ledger."
+  ]
+}

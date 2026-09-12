@@ -1,0 +1,84 @@
+{
+  "kind": "checkpoint",
+  "checkpoint": "CP1",
+  "lane": "p157-structural",
+  "planRow": "P-157",
+  "date": "2026-09-12",
+  "status": "PROCEEDING_PAST_WAVE1_STOP_PER_RESUMPTION",
+
+  "priorState": {
+    "wave1Cp1": "_inbox/2026-09-11_p157-structural_cp1.json (three open questions: no cloud loader existed; TCAD filenames mismatch discoverFiles; which roll vintage to pair)",
+    "ruling": "_decisions/2026-09-12_loaders_get_cloud_jobs_no_break_glass.md -- no break-glass; Cloud Run job under P-169; TCAD filenames are a per-county source declaration in sources.ts, never a rename; certified 07182026 export supplies BOTH base roll and improvement detail so the two pair (answers all three wave-1 questions)."
+  },
+
+  "p169CloseVerified": {
+    "path": "_inbox/2026-09-12_p169-infra_close.json",
+    "status": "closed",
+    "jobName": "ldt-cad-ingest",
+    "project": "hauska-prod-497015",
+    "region": "us-east4",
+    "gcsBucket": "gs://hauska-prod-497015-cad-ingest-drops",
+    "executeForm": "gcloud run jobs execute ldt-cad-ingest --project=hauska-prod-497015 --region=us-east4 --args=--county=<fips>,--target=staging|production,--file=gs://hauska-prod-497015-cad-ingest-drops/<object>[,--tax-year=NNNN]",
+    "liveConfirmed": "gcloud run jobs describe ldt-cad-ingest --region=us-east4 run 2026-09-12: job exists, image matches P-169's cited digest, Ready=True, one prior execution (ldt-cad-ingest-7w7vz, EXECUTION_SUCCEEDED, P-169's own small-sample staging proof)."
+  },
+
+  "mechanismConfirmedFromLdtSourceAtBranchTip": {
+    "branchNowAt": "08de93dc (fast-forwarded feat/p157-tcad-improvement-detail from 55c4ad44 -- 6 commits, no local changes, ff-only merge; hauska-factory branch already at origin/main tip 217b7dd, no rebase needed)",
+    "singleFileSuffices": "lib/cad-ingest/src/sources.ts PACS_EXPORT_DECLARATIONS['48453'] = {infoEntry: 'PROP.TXT', improvementDetailEntry: 'IMP_DET.TXT'} (landed by P-169). zip.ts pacsEntryFilterFor(fips) and cli.ts discoverFiles both consult it before falling back to the generic *APPRAISAL_INFO.TXT pattern. This means uploading the ONE certified-export zip and passing --file=gs://.../<zip> is sufficient -- the job extracts and resolves BOTH PROP.TXT (property) and IMP_DET.TXT (improvement detail) from that single archive automatically. No --improvement-file override needed; that flag exists only for a two-file manual case this county no longer needs.",
+    "runManifest": "runRecord.ts's startCadIngestRun/finishCadIngestRun writes a cad_ingest_run row naming every input file's role/basename/sha256/bytes (cli.ts:505-531) -- this is the load manifest R-4/the mission requires, queryable, not asserted."
+  },
+
+  "newFindingsThisCheckpoint": [
+    {
+      "id": "F-CP1R-1",
+      "severity": "blocking-unless-fixed-before-run",
+      "title": "ldt-cad-ingest is provisioned with cpu=1/memory=2Gi; the real certified export's working set on disk is ~7.4GB, and Cloud Run's writable filesystem (incl. os.tmpdir()) is memory-backed",
+      "evidence": [
+        "gcloud run jobs describe ldt-cad-ingest --region=us-east4: spec.template...resources.limits = {cpu: '1', memory: '2Gi'}, timeoutSeconds=21600.",
+        "download.ts downloadFromGcs and zip.ts extractCadDrop both write to a plain fs path under node:os tmpdir() (cli.ts:315 mkdtemp(tmpdir(), ...)) -- no GCS-FUSE or external volume is mounted at that path per the Dockerfile/job spec.",
+        "Wave-1 CP1's own live-verified zip central-directory listing: PROP.TXT 4,895,747,376 B, IMP_DET.TXT 2,065,539,840 B uncompressed (plus the 557,228,168 B zip itself staying on disk during extraction) = ~7.4GB peak local-disk footprint for one run.",
+        "Cloud Run (both gen1 and gen2 execution environments) documents its default local/writable filesystem as backed by the instance's allocated memory -- confirmed via `gcloud run jobs update --help`'s own --add-volume text ('in-memory: an ephemeral volume that stores data in the instance's memory... maximum size will be half the total memory limit'), consistent with Cloud Run's long-standing default-filesystem behavior for any path not backed by an explicit non-memory volume type (cloud-storage FUSE is the only such alternative offered, and none is configured here)."
+      ],
+      "action": "Before executing against the real export, bump the job's resources via `gcloud run jobs update ldt-cad-ingest --region=us-east4 --memory=16Gi --cpu=4` (reversible, no code change, no repo write -- a Cloud Run job resource limit, not a deploy). This is judged in-scope as 'the agent deploys and fixes failed deploys' (OPS-23 program law) applied to the executor's own run of an infra-owned job, not a change to P-169's Dockerfile/cloudbuild/job-creation code. Recorded here rather than discovered by a failed multi-GB run."
+    },
+    {
+      "id": "F-CP1R-2",
+      "severity": "informational-scope-correction",
+      "title": "'staging, then production' is literal for cad-ingest (two real Neon DB targets) but does not apply the same way to factory-parcel-record-fill (mission step 3) -- there is no staging Factory store",
+      "evidence": [
+        "cad-ingest: targetEnv.ts CAD_INGEST_TARGETS=['staging','production'] maps to two distinct secrets, STAGING_NEONDB_URL and PRODUCTION_NEONDB_URL -- a real second database. Executing twice with --target=staging then --target=production is a literal, meaningful two-step per the ingest-freeze decision's own text ('every publish lands on staging before the identical job runs on production').",
+        "factory-parcel-record-fill (hauska-factory src/jobs/parcel-record-fill.mjs): reads CAD data via p2-juris-store.mjs neonUrlFromEnv(env), which is HARD-CODED to env.PRODUCTION_NEONDB_URL regardless of any flag (no --target parameter exists on this job at all); writes parcel_record/parcel_record_cell via connectFactory(env) against the single FACTORY_DATABASE_URL secret -- there is no STAGING_FACTORY_DATABASE_URL and no --target flag on this job's parseParcelRecordFillFlags. gcloud run jobs list shows exactly one job, factory-parcel-record-fill -- no staging variant.",
+        "Consequence: a cad-ingest --target=staging write does not change anything factory-parcel-record-fill will ever read (it always reads PRODUCTION cad_property). The 'staging' half of the freeze decision's two-step pattern is real and load-bearing for cad-ingest (proves the loader/parser against the real 557MB export without touching the row cad_property serves from); it does not carry over to the fill job, which has exactly one execution target."
+      ],
+      "resolution": "Interpreting the mission's 'staging, then production' for parcel-record-fill as AGENT_CONTRACT's own checkpoint model instead: a bounded pilot (CP2, --county=48453 with the job's own targeted-sample mechanism, or a small --per-county/--page-size bound) reviewed before the real full-county --apply run, not a second database target that does not exist for this job. Recorded as a mission-premise correction, not silently substituted -- see contradicted in the close."
+    }
+  ],
+
+  "falsifierPreRegistered": {
+    "unchanged": true,
+    "primary": "If after the fill structuralFact is not present with a living area and a year built for BOTH 48453:113408 and 48453:474034 on the Property Explorer facets, the row is not done; and if the county-wide null count on improved parcels (cad_property.improvement_value > 0) does not fall between the before and after county-rail-coverage-report readings, nothing was loaded, whatever the job said.",
+    "secondMechanismsToRuleOut": [
+      "Baked facets (bakedAt 2026-07-24 in prior probe fixtures) -- re-bake and name the invocation, or confirm the served path reads live and say so explicitly.",
+      "An overlay reading a different rail (routes/propertyExplorer.ts:298-301 cadRollFactFromParcelRecord.ts overlay) -- check both parcel_record_cell and cad_property-backed cortex reads, not just one.",
+      "A short-TTL cache in parcelRecordReaderClient.ts (landed 2026-09-11, PR merged into main since wave-1's snapshot) -- re-probe after its TTL window before concluding a load failed."
+    ]
+  },
+
+  "planForThisCheckpoint": [
+    "1. Bump ldt-cad-ingest to memory=16Gi cpu=4 (F-CP1R-1).",
+    "2. Download the live '2026 Certified Appraisal Export Supp 0_07182026.zip' from traviscad.org in full (public record, no credential), verify byte size matches wave-1's HEAD-confirmed 557,228,168 B, compute sha256.",
+    "3. Upload to gs://hauska-prod-497015-cad-ingest-drops/p157/ (a lane-labeled path, distinct from p169-test/).",
+    "4. Execute ldt-cad-ingest --county=48453 --target=staging --tax-year=2026 --file=gs://.../p157/<zip>, wait for completion, read the cad_ingest_run row it wrote on STAGING_NEONDB_URL by field (files+hashes+tax year+row counts) -- this is CP2 for the loader half.",
+    "5. Execute the identical args with --target=production; read its cad_ingest_run row on PRODUCTION_NEONDB_URL the same way.",
+    "6. Run county-rail-coverage-report (BEFORE reading, taken before step 4/5 touch anything -- already captured as part of this checkpoint's baseline query, see leave_behind) and again AFTER the fill (step 8).",
+    "7. Add the county-rail-coverage-report src/cli.mjs trigger + self-test (hauska-factory PR), per wave-1 CP1's already-designed patch.",
+    "8. Run factory-parcel-record-fill --county=48453 --apply (bounded pilot reviewed as CP2, then full county run) -- single production Factory store, per F-CP1R-2.",
+    "9. Re-run county-rail-coverage-report AFTER; confirm both Travis probe parcels present via Smart Site MCP get_smart_site / property-atoms facets; determine and name whether a re-bake is needed.",
+    "10. Close."
+  ],
+
+  "worktrees": {
+    "legacy-design-tools": {"path": "P:/seat-worktrees/property/legacy-design-tools-p157-cad-ingest", "branch": "feat/p157-tcad-improvement-detail", "nowAt": "08de93dc (ff-merged onto origin/main)"},
+    "hauska-factory": {"path": "P:/seat-worktrees/property/hauska-factory-p157-structural", "branch": "feat/p157-tcad-improvement-detail", "nowAt": "217b7dd (already == origin/main)"}
+  }
+}

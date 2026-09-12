@@ -1,0 +1,52 @@
+{
+  "artifactKind": "hand-probe (scripts/surface-probe.mjs not yet landed per OPS-23 P-160)",
+  "runAt": "2026-09-12T15:32:29Z",
+  "runBy": "p172-findbox lane, after the hauska-map (Property Explorer) production deploy",
+  "context": "This probe runs AFTER the hauska-map deploy (Vercel dpl_ApK3FefQPbmUjYF58NtFS3mSRrxM, aliased to smartsite.cloud at 2026-09-12T15:30:58Z) but BEFORE any cortex-api (legacy-design-tools PR #664) deploy. The client-side labelling fix (source: situs/geocoded, SearchBar advisory) is live. The server-side situs-search fix and the Travis backfill migration are NOT live in production yet -- LDT PR #664 is open, CI-green, and deliberately not merged/deployed by this lane per AGENT_CONTRACT section 3 (the deploy-traffic lease for cortex-api is the planner's to grant, not this lane's). This artifact therefore measures the machine-leg predicate as FAIL, honestly, because the fix it depends on has not reached production.",
+  "planRow": "P-172",
+  "probes": [
+    {
+      "label": "bare '414 SPILLER LN'",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=414%20SPILLER%20LN&limit=7",
+      "httpStatus": 502,
+      "elapsedMs": 5384,
+      "body": { "error": "situs_search_unreachable", "message": "cortex timed out after 5000ms" },
+      "predicateExpected": "a hit whose parcelNodeId is 48453:113408",
+      "verdict": "FAIL",
+      "why": "cortex-api (legacy-design-tools) has not deployed the P-172 fix (PR #664, open); production txgio_parcel still carries a blank street line for this parcel and the route still uses the 20s budget for a bare query, which the PE proxy's 5000ms abort still cuts off."
+    },
+    {
+      "label": "city-qualified '414 SPILLER LN, WEST LAKE HILLS, TX'",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=414%20SPILLER%20LN%2C%20WEST%20LAKE%20HILLS%2C%20TX&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 801,
+      "body": { "hits": [] },
+      "predicateExpected": "a hit whose parcelNodeId is 48453:113408",
+      "verdict": "FAIL",
+      "why": "Same root cause: production has not deployed the LDT fix or the backfill migration."
+    },
+    {
+      "label": "parcel-id '48453:113408' (control: id form is untouched, should always work)",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=48453%3A113408&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 401,
+      "body": { "hits": [{ "parcelNodeId": "48453:113408", "situsAddress": ", TX", "countyFips": "48453", "latitude": null, "longitude": null }] },
+      "verdict": "PASS (id form resolves, as it always did)",
+      "note": "situsAddress is still the blank pre-backfill sentinel, confirming production has not run migration 0100 yet."
+    },
+    {
+      "label": "control '2601 STERLING PANORAMA CT' (48453:474034)",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=2601%20STERLING%20PANORAMA%20CT&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 4856,
+      "body": { "hits": [{ "parcelNodeId": null, "situsAddress": "2601 STERLING PANORAMA CT, Austin, TX, 78738", "countyFips": "48453", "latitude": 30.31360361732487, "longitude": -97.91956601690322, "source": "address-point" }] },
+      "verdict": "UNMEASURED against the P-172 predicate (this query targets 113408, not 474034; kept per the probe-set rule that a lane may add but never remove a parcel)",
+      "note": "Previously (pre-deploy, same session) this same query 502'd after ~5.1s; here it returned 200 in 4.856s with an address-point hit (parcelNodeId null). This is NOT attributable to any change this lane shipped (no server-side change is live yet) -- most likely ordinary cortex/Neon latency variance. Flagged, not explained away."
+    }
+  ],
+  "overallVerdict": "FAIL on the P-172 machine-leg predicate as of this run. Both hauska-map (client label/advisory) and legacy-design-tools (server fix + migration) code are complete, tested, and PR'd; only the hauska-map half is deployed. The close for this lane is closed-partial / blocked-on-lease, not closed.",
+  "observedLeg": {
+    "findBoxResolves": "NOT MEASURED BY THIS LANE -- reserved for the dispatch planner / operator per the dispatch's explicit instruction that this leg is not the lane's to fabricate.",
+    "resolvedVia": "NOT MEASURED BY THIS LANE"
+  }
+}

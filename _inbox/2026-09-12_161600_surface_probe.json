@@ -1,0 +1,59 @@
+{
+  "artifactKind": "hand-probe (scripts/surface-probe.mjs not yet landed per OPS-23 P-160)",
+  "runAt": "2026-09-12T16:16:00Z",
+  "runBy": "p172-findbox lane, immediately after cortex-api traffic shift under the dispatch-planner's granted lease",
+  "context": "This probe runs AFTER: (1) legacy-design-tools PR #664 merged (SHA 78ad8a51f36cb363de9c6e6f0f65b1386696a1cb), (2) cortex-api deploy-canary from that merged commit, (3) run-migrations (migration 0100 applied to production, confirmed via the workflow's own log: applied 2026-09-12T16:06:09Z-16:14:44Z, 'ok'), (4) shift-traffic to 100% on the canary revision. New serving revision cortex-api-00778-peq confirmed via `gcloud run services describe cortex-api --format=value(status.latestReadyRevisionName)`, carrying 100% traffic.",
+  "planRow": "P-172",
+  "probes": [
+    {
+      "label": "bare '414 SPILLER LN'",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=414%20SPILLER%20LN&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 1708,
+      "body": { "hits": [
+        { "parcelNodeId": "48453:113408", "situsAddress": "414 SPILLER LN", "countyFips": "48453", "latitude": null, "longitude": null, "source": "parcel-situs" },
+        { "parcelNodeId": null, "situsAddress": "414 SPILLER LN, Austin, TX, 78746", "countyFips": "48453", "latitude": 30.289904240288756, "longitude": -97.81126892881836, "source": "address-point" }
+      ]},
+      "predicateExpected": "a hit whose parcelNodeId is 48453:113408",
+      "verdict": "PASS -- first/primary hit is the correct situs-index match with the correct parcelNodeId.",
+      "note": "A second, lower-priority address-point hit also appears (from txgio_address, a different table) labelling the city 'Austin' rather than 'West Lake Hills' -- a pre-existing data-quality nuance in that separate table, not introduced by this lane's change, and not disqualifying: the situs-index hit is first and carries the correct node id."
+    },
+    {
+      "label": "city-qualified '414 SPILLER LN, WEST LAKE HILLS, TX'",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=414%20SPILLER%20LN%2C%20WEST%20LAKE%20HILLS%2C%20TX&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 491,
+      "body": { "hits": [{ "parcelNodeId": "48453:113408", "situsAddress": "414 SPILLER LN", "countyFips": "48453", "latitude": null, "longitude": null, "source": "parcel-situs" }] },
+      "predicateExpected": "a hit whose parcelNodeId is 48453:113408",
+      "verdict": "PASS -- single, unambiguous hit, correct parcelNodeId."
+    },
+    {
+      "label": "parcel-id '48453:113408' (control: id form)",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=48453%3A113408&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 277,
+      "body": { "hits": [{ "parcelNodeId": "48453:113408", "situsAddress": "414 SPILLER LN", "countyFips": "48453", "latitude": null, "longitude": null }] },
+      "verdict": "PASS -- and now shows the real backfilled address instead of the pre-migration ', TX' sentinel, confirming migration 0100 is live in production."
+    },
+    {
+      "label": "control '2601 STERLING PANORAMA CT' (48453:474034)",
+      "call": "GET https://smartsite.cloud/api/pe-situs-search?q=2601%20STERLING%20PANORAMA%20CT&limit=7",
+      "httpStatus": 200,
+      "elapsedMs": 1479,
+      "body": { "hits": [
+        { "parcelNodeId": "48453:474034", "situsAddress": "2601 STERLING PANORAMA CT", "countyFips": "48453", "latitude": null, "longitude": null, "source": "parcel-situs" },
+        { "parcelNodeId": null, "situsAddress": "2601 STERLING PANORAMA CT, Austin, TX, 78738", "countyFips": "48453", "latitude": 30.31360361732487, "longitude": -97.91956601690322, "source": "address-point" }
+      ]},
+      "verdict": "PASS (probe-set parcel, backfill also confirmed live for it) -- previously 502'd before this deploy; now resolves correctly with the real address as the first hit."
+    }
+  ],
+  "overallVerdict": "PASS on the P-172 machine-leg predicate. Both query forms resolve to 48453:113408 as the primary hit; the geocoder fallback was not needed for either (both resolved via the situs index directly).",
+  "deploySummary": {
+    "hauska-map": "PR #391 merged (SHA 4350ab957a5b2a64faba5b39b32575ac4c2a8668), deployed to production via Vercel (dpl_ApK3FefQPbmUjYF58NtFS3mSRrxM), live prior to this probe.",
+    "legacy-design-tools": "PR #664 merged (SHA 78ad8a51f36cb363de9c6e6f0f65b1386696a1cb) under the dispatch-planner's traffic lease. Canary sequence: deploy-canary (image 78ad8a51...) -> run-migrations (0100 applied 2026-09-12T16:06:09Z-16:14:44Z) -> shift-traffic (100% to cortex-api-00778-peq, workflow's own healthz smoke passed). Prior serving revision cortex-api-00776-wov preserved and addressable for rollback."
+  },
+  "observedLeg": {
+    "findBoxResolves": "NOT MEASURED BY THIS LANE -- reserved for the dispatch planner / operator per the dispatch's explicit instruction that this leg is not the lane's to fabricate. The machine leg above is now PASS, so the observed leg (an operator typing both forms into the live Find box) should be expected to succeed, but that observation itself belongs to the planner/operator.",
+    "resolvedVia": "NOT MEASURED BY THIS LANE"
+  }
+}

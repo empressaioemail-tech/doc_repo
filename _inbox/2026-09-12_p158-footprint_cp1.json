@@ -1,0 +1,38 @@
+{
+  "lane": "p158-footprint",
+  "phase": "2 (wave 2, ruled 2026-09-12)",
+  "checkpoint": "CP1 (design/pre-build)",
+  "at": "2026-09-12T00:00:00Z",
+  "readBeforeStarting": [
+    "_inbox/2026-09-11_p158-footprint_close.json (phase 1 close, status closed-partial)",
+    "_decisions/2026-09-12_footprint_merge_421_count_before_acquiring.md (the ruling)"
+  ],
+  "startingState": {
+    "worktree": "P:/seat-worktrees/property/hauska-engine-p158-footprint (reused from phase 1, not recreated)",
+    "branchAtStart": "feat/p158-footprint-absence-split @ 2d7d814f56e8aa1dfd0a35bb2c8eef9bea97363f",
+    "originMainAtStart": "ce6a75af66aa4f606a348d86089b83b817957296",
+    "mergeBase": "1d624cde7dae041523f52aa52f6b0dca0ca7cd69",
+    "branchBehindMainBy": "2 commits (#420 P-155, #422 P-159) -- neither touches building-footprint files per phase-1 scope; needs a rebase before merge per dispatch instruction",
+    "pr421Status": "OPEN, mergeStateStatus UNKNOWN (GH not yet computed), one check 'typecheck + test' conclusion SUCCESS at head 2d7d814 (stale relative to origin/main, will re-run after rebase)"
+  },
+  "plan": [
+    "1. git fetch + git rebase origin/main on the feat/p158-footprint-absence-split branch in this worktree (no other lane's checkout touched).",
+    "2. Run local typecheck+test for engine-core building-footprint suite as a pre-push sanity check (not a substitute for CI).",
+    "3. Push the rebased branch (force-with-lease, own PR branch only) and poll gh pr checks 421 to completion (exit-bounded, bounded poll, no watch/tail).",
+    "4. Merge ONLY on check-run conclusion string 'success' (gh api / gh pr checks JSON conclusion field), not the human-readable 'pass' text, per AGENT_CONTRACT section 5.",
+    "5. After merge, run the phase-2 counting queries against the CORTEX store by field: (a) tx_building_footprint rows intersecting Bastrop city limits vs a comparison town known-covered by the layer; (b) rows within 200m of 48021:34049's record point; (c) rows per county for 48021/48453 against the 2026-08-19 statewide reading (10,674,975). Then attempt the Microsoft dataset's own public count for a Bastrop bbox if reachable without credential.",
+    "6. Decide LOAD gap vs SOURCE gap per the pre-registered falsifier below and the ruling's reversal criteria.",
+    "7. Do NOT run the writer or the factory reconcile job -- phase 3, blocked on P-169.",
+    "8. Write close as closed-partial; anchor parcels stay FAIL on the probe."
+  ],
+  "falsifier": "Pre-registered verbatim from the dispatch: if the count inside Bastrop city limits is within an order of magnitude of the town's building count and the anchor still has no polygon within 200 m, the load-gap reading is wrong and the source-gap reading stands.",
+  "secondFalsifierCarriedFromPhase1": "Ruling's reversal criteria: if the count shows the staged layer dense inside Bastrop city limits and still no polygon within 200 m of the anchor parcel, the source gap is real and a second-source acquisition row is opened; the label split stays either way.",
+  "constraintsToHonor": [
+    "No --apply writer run of any kind (writer is phase 3, blocked on P-169).",
+    "No factory reconcile run.",
+    "No threshold retuning (PRIMARY_OVERLAP_MIN / STRADDLE_OVERLAP_MIN untouched -- not touching engine code at all this phase beyond the rebase merge commit already authored in phase 1).",
+    "Merge decided on CI conclusion string 'success' only.",
+    "Every count query pasted with its result, denominator named.",
+    "Report by field name, not by re-reading a working tree."
+  ]
+}

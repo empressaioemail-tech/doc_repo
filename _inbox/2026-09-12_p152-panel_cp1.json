@@ -1,0 +1,41 @@
+{
+  "lane": "p152-panel",
+  "checkpoint": "CP1-design-pre-build",
+  "filedAt": "2026-09-12T09:40:00Z",
+  "planRow": "P-152",
+  "startCommit": {
+    "hauska-map": "8b44f68db96d11624ed08631e01baa3d7b6b9814 (origin/main, matches the 2026-09-12 wave-2 verify snapshot)"
+  },
+  "worktree": {
+    "path": "P:/seat-worktrees/property/hauska-map-p152-panel",
+    "branch": "feat/p152-panel-consumes-reader",
+    "createdFrom": "origin/main 8b44f68"
+  },
+  "falsifier": "If for any probe-set parcel any record-rail's value, source, or vintage on the Property Explorer facets differs from the pre-change capture, or an anonymous read shows a studio-gated cadRoll value, or the BFF still calls /atom-chain for a rail the reader served, the port is wrong.",
+  "referenceReading": [
+    "hauska-engine-p152-reader worktree (read-only, lane 1's own build): services/retrieval-api/src/parcel-record-reader.ts (the /record route: rails keyed by the 65-rail registry, each {cell, gate, serve, atom, atomBacked, rendering, companions}), parcel-record-rail-registry.ts (vendored copy of hauska-factory's 65-rail PARCEL_RECORD_RAIL_META), parcel-record-slate.json (which (county,rail) pairs are actually slated -- 21 for Bastrop, 23 for Travis in the probe set).",
+    "legacy-design-tools-p152-cortex-consumer worktree (read-only cross-repo reference): parcelRecordCellRead.ts's interpretParcelRecordCell (the six-kind cell_state interpreter: value/absent-verified/not-applicable/refused/unaccounted/malformed -> present/absent/refused) and 8 of the 18 <rail>FactFromParcelRecord.ts adapters (flood/specialDistricts/wells/schoolDistrict/utilityService/overlayDistricts/agValuation/maxImperviousCoverPct) plus cadRollFactFromParcelRecord.ts and cityLimitsFactFromParcelRecord.ts, and cadRollValue.ts's studioGatedCadRollValuationRefusal shape.",
+    "hauska-map's own apps/property-explorer/api/_lib/pe-property-atoms.ts (the BFF, 714 lines) and atom-chain-to-facets.ts (2038 lines, 62 exports) -- confirmed the doc_repo 2026-09-12 wave-2 verify's file:line claims accurately describe the current tree: atom-chain call at line 348, mergeBakedBaseFacts at 1539/1573, PeBakedFacetsResponse type at 682-769, one *FactFromCortexRoot copier per family at 909-1487, CadRollValueWire/isCadRollValueWire at 210-222."
+  ],
+  "designDecisions": [
+    "COMPOSE, DO NOT REINVENT: build pe-record-cell-interpret.ts (a verbatim port of interpretParcelRecordCell, adapted to read the already-fetched /record response's per-rail {cell, companions} instead of issuing its own SQL) and pe-record-to-facets.ts (nine composer functions, ported field-for-field from the LDT reference adapters), so byte parity with what cortex already serves for these rails is a property of copying the same logic, not a coincidence of independently re-deriving it.",
+    "SCOPE CUT 1 -- zoning/envelope/setbacks stay atom-chain-owned. The dispatch's architecture section already states 'zoning and envelope from the retrieval atom chain' as the CURRENT, correct, R-2-protected design; P-153/DRAW and P-154/MOST-CURRENT separately own that surface. Composing these from /record would duplicate a working, ruled path and risk conflicting with R-2's polygon-drawn/figure-refused mechanism this lane has no mandate to touch.",
+    "SCOPE CUT 2 -- cadRoll (marketValue/assessedValue/landValue/improvementValue) and ownerFact stay cortex-sourced. Both rails ARE slated 'record' in the reader for the probe counties, but serving them from /record directly would bypass the Studio/Team/Property-Unlock entitlement gate entirely (the reader has no session concept at all) -- an explicit dispatch prohibition ('the entitlement gate is not yours to change'). Building a correct cross-service entitlement check within this lane's own scope was judged higher-risk than the value of moving these four rails' SOURCE this pass; the dispatch's own item 3 second half (fix the null-collapse-on-refusal bug) is completed instead, which is real, valuable, and does not touch the gate.",
+    "SCOPE CUT 3 -- apn/situsAddress/situsCity/situsState/landUse stay on the existing path. P-151/SEAM already shipped this wave re-seeding situs placement from the record's own point, and P-172/FIND BOX is active on the same address/situs family this same wave (per the dispatch's own warning). landUse was already flagged 'may remain on cortex temporarily' in this file's own pre-existing module doc, predating this lane.",
+    "Target rail set for this pass: cityLimits, flood, specialDistricts, wells, schoolDistrict, utilityService, overlayDistricts, agValuation, maxImperviousCoverPct (all nine have PE wire types already declared in atom-chain-to-facets.ts and an existing *FactFromParcelRecord.ts reference in LDT), plus baseFacts.acreage (acreageAcres/acreageSqft/acreageMethod, composed together only when all resolve) and livingAreaSqft/yearBuilt (present-only override -- absent/refused states on these two scalar fields are left to the existing structuralFact/verdict-layer path rather than inventing a LayerAbsenceWire-shaped absence this lane has no source data to construct correctly).",
+    "readPath becomes 'record' whenever the /record fetch succeeds, applied as a final override step AFTER the existing atom-chain+cortex-merge composition -- record wins per-field for any rail it slates 'record'; every other field is untouched. A failed /record fetch is a no-op (existing payload unchanged, readPath unchanged) -- never a crash, never a silent fallback dressed as success.",
+    "Fix the cadRoll null-collapse bug in the same pass: widen CadRollValueWire/isCadRollValueWire to admit cortex's existing {state:'refused', code:'studio-gated'} shape and pass it through mergeBakedBaseFacts's cadRollField helper, which currently drops any non-present/zero/absent shape to null. The client (fact-sheet-resolver.ts's cadRollFieldState/taxValuationFromCadRoll) already has a kind==='refused' branch that renders the correct upgrade cue -- confirmed by reading the client code before writing the fix, not assumed."
+  ],
+  "testPlan": [
+    "Unit: pe-record-cell-interpret.test.ts covers all six OPS-21 cell kinds plus malformed/unrecognized-kind refusal.",
+    "Unit: pe-record-to-facets.test.ts covers composeRecordPatch for all nine rail families across present/absent/refused/legacy-transitional-is-a-no-op, plus acreage non-vacuity and the whole-parcel-refused (crosswalk-ambiguous) shell.",
+    "Unit: atom-chain-to-facets.cadroll.test.ts -- the refusal-passthrough fix plus regression guards for present/zero/malformed cadRoll shapes.",
+    "Unit: pe-property-atoms.test.ts -- fetchParcelRecordOnce/applyRecordPatch: missing-key refusal, correct URL/Bearer, record-rail overrides a stale pre-existing value, legacy-transitional rail is left untouched, failed fetch is a no-op.",
+    "Live, post-deploy: five-parcel anonymous facets diff (this repo's own capture, not a fixture) against a pre-deploy production baseline captured before any code from this lane runs; X-PE-Read-Path: record header confirmed on the live response."
+  ],
+  "doNotTouch": [
+    "sheetEnvelopeIsAtomPathPending / anything Ruling B or P-153 owns",
+    "the entitlement gate (isCadRollValueWire's studio-gated DECISION -- only the wire's ability to carry that decision through is touched, never who is entitled)",
+    "the address/situs family (apn/situsAddress/situsCity/situsState) and landUse -- P-151/P-172 territory this wave"
+  ]
+}

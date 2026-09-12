@@ -1,0 +1,37 @@
+{
+  "lane": "p152-panel",
+  "checkpoint": "CP2-pilot-mid-work",
+  "filedAt": "2026-09-12T10:20:00Z",
+  "planRow": "P-152",
+  "pilotState": "First implementation pass complete: pe-record-cell-interpret.ts, pe-record-to-facets.ts (nine composers), pe-property-atoms.ts wiring (fetchParcelRecordOnce/applyRecordPatch), and the cadRoll refusal-passthrough fix in atom-chain-to-facets.ts. 39 new/changed unit tests written and passing; full property-explorer suite (204 files / 2966 tests) green; PR #387 opened, CI green (test/Typecheck/No-double-encoded-source all SUCCESS), merged to origin/main (d6ddd3d).",
+  "liveFindingsThisCheckpoint": [
+    {
+      "id": "F-P152PANEL-1",
+      "summary": "CI's own Typecheck job (`pnpm --filter property-explorer exec tsc --noEmit`) only checks the root tsconfig.json's `include: ['src']` -- it never actually type-checks apps/property-explorer/api/**, which has its own api/tsconfig.json (same strict settings) that job never targets. PR #387's green CI therefore never exercised api/'s type-checking at all.",
+      "caughtBy": "Running `vercel deploy` locally after the PR-387 merge (its per-function build does type-check api/) surfaced 4 real errors in this lane's new files that CI's own gate had missed.",
+      "fix": "PR #388: two excess-property errors (FloodHazardFactWire/SpecialDistrictFactWire declare no top-level `reason` field), one unused function, one overly-loose test fixture type. `npx tsc --noEmit -p api` now reports only 3 pre-existing, unrelated errors (verdict-layer-merge.ts x2, pe-share-grant.ts x1 -- confirmed not introduced by this lane, not fixed here, named for whoever owns CI config next).",
+      "classOfDefect": "A gate that cannot fail for the right reason (DEV_PROCESS) -- the Typecheck job's own scope silently excludes the directory this lane's entire mission lives in."
+    },
+    {
+      "id": "F-P152PANEL-2",
+      "summary": "First production deploy's five-parcel anonymous pre/post diff showed every composed fact's VALUE identical to the pre-change baseline on four of five probe parcels, but the `source` field differed on every present/absent composed fact: this lane's composers hardcoded a generic 'parcel_record' string where cortex's own parcel_record-fed adapters (already live, already correct, per lane 1) stamp a fact-family-specific constant (e.g. 'flood-hazard-fact', not 'parcel_record').",
+      "caughtBy": "The mandated live pre/post diff itself, run before declaring success -- not by any unit test, since the unit tests asserted the same (wrong) generic string the implementation used.",
+      "fix": "PR #389: vendored the exact source-constant strings from legacy-design-tools' <rail>FactRead.ts modules for all eight companion families. cityLimitsFact was already correct (tx_city_boundary) and needed no change.",
+      "classOfDefect": "Falsifier violated on its own explicit terms ('value, source, or vintage') -- caught because the falsifier was actually run against production, not assumed satisfied because the code looked right and unit tests passed."
+    },
+    {
+      "id": "F-P152PANEL-3",
+      "summary": "Same live diff, re-run after F-P152PANEL-2's fix: floodHazardFact.floodZone was missing entirely on every present flood fact (present pre-change as 'X'/'AE'). Root cause: flood is a COMPANION rail (parcel-record-rail-registry.ts grain 'companion') -- a 'value' cell's zone lives on the companion row's payload.zone, never on the cell_state itself. This lane's first pass read cell.raw.floodZone, a field that does not exist on this rail's cell_state, and silently produced a present fact with an absent zone rather than refusing.",
+      "caughtBy": "The same mandated live diff, a second pass after the source-label fix -- confirms the diff-then-fix-then-re-diff loop is load-bearing, not a one-shot check.",
+      "fix": "PR #390: read the companion row (mirrors legacy-design-tools' parcelRecordFactRead.ts loadParcelRecordFloodFact exactly); a malformed/missing companion row now refuses rather than silently omitting the zone. Also restored agValuationFact.entries' full vendored field set (an earlier unforced simplification) and normalized absent-branch sourceVintage to null (matching cortex's wire byte-for-byte) instead of undefined.",
+      "classOfDefect": "Vacuous-looking success -- the code ran, returned 200, and LOOKED like a present fact; only a live value diff against the real store revealed the value itself was silently incomplete."
+    }
+  ],
+  "verificationSoFar": "Live: readPath=record confirmed on smartsite.cloud for all 5 probe parcels after each deploy (with one observed transient miss on 48021:34049, resolved on retry -- 3/3 subsequent attempts record, consistent with this codebase's own documented intermittent-upstream class, F11/F14). Not yet done at this checkpoint: the final full five-parcel value/source diff after PR #390's fixes, and the P-152 row predicate (panel vs MCP setbacks) via a real Smart Site MCP read.",
+  "nextSteps": [
+    "Deploy PR #390 to production.",
+    "Re-run the five-parcel anonymous diff; confirm zero unexplained value/source differences.",
+    "Pull live MCP setbacks via mcp__claude_ai_Smart_Site__get_smart_site for the five probe parcels and run doc_repo's scripts/surface-probe.mjs --rows P-152 --observations <file> to get a DECIDED (not UNMEASURED) P-152 predicate.",
+    "Write the close, reporting the P-152 row-level predicate honestly even if it surfaces the pre-existing F3 setback disagreement (Bastrop atom-chain layer-23 vs MCP codified-ordinance value) -- a P-154/MOST-CURRENT concern this lane does not own or touch."
+  ]
+}

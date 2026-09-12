@@ -1,0 +1,71 @@
+{
+  "kind": "checkpoint",
+  "checkpoint": "CP2",
+  "lane": "p157-structural",
+  "planRow": "P-157",
+  "date": "2026-09-12",
+  "status": "STAGING_PILOT_VERIFIED_PROCEEDING_TO_PRODUCTION",
+
+  "resourceFix": {
+    "action": "gcloud run jobs update ldt-cad-ingest --region=us-east4 --memory=16Gi --cpu=4 (from the P-169 default cpu=1/memory=2Gi)",
+    "reasonConfirmed": "F-CP1R-1 (this lane's own CP1): the certified export's extracted working set (PROP.TXT 4,895,747,376 B + IMP_DET.TXT 2,065,539,840 B + the 557,228,168 B zip itself) sits on Cloud Run's memory-backed writable filesystem simultaneously during extraction. The staging execution below completed cleanly at 16Gi/4cpu with no OOM; not re-tested at the original 2Gi to avoid burning a second ~2.5-minute run against production data risk for a negative-control that CP1 already reasoned through from documented Cloud Run filesystem behavior."
+  },
+
+  "loadManifest": {
+    "fileAcquired": {
+      "url": "https://traviscad.org/wp-content/largefiles/2026%20Certified%20Appraisal%20Export%20Supp%200_07182026.zip",
+      "byteSize": 557228168,
+      "sha256OfZip": "62d0d1cd22b03f31db8d3986160eb181c5d00044df98a303fce9e17a44e9aa02",
+      "httpConfirmed": "curl -sI 2026-09-12T16:02:29Z: Content-Length 557228168, Last-Modified 2026-07-22 -- byte-identical to wave-1 CP1's HEAD check.",
+      "internalEntries": {
+        "PROP.TXT": {"bytes": 4895747376, "sha256": "81e33a3c3f824833d37cf8ece51dc2d19bb3ec28ce511aca287b2e4dd7df62a7"},
+        "IMP_DET.TXT": {"bytes": 2065539840, "sha256": "6d15c2dd14fefee5e9153c0c93c4bb03e2e73cfdd35cbfc2e4984036e6c4df85"}
+      },
+      "uploadedTo": "gs://hauska-prod-497015-cad-ingest-drops/p157/2026_Certified_Appraisal_Export_Supp_0_07182026.zip"
+    },
+    "stagingRun": {
+      "execution": "ldt-cad-ingest-bqqxz",
+      "cloudRunStatus": "Execution completed successfully in 2m36s (gcloud run jobs executions describe, condition Completed=True)",
+      "cadIngestRunRow": {
+        "table": "cad_ingest_run (STAGING_NEONDB_URL)",
+        "id": "0a00a42a-3438-4fcf-af3f-f4a2851c1851",
+        "county_fips": "48453",
+        "target": "staging",
+        "tax_year": 2026,
+        "source_vintage": "tier:cad-export;adapter:pacs;drop:2026_certified_appraisal_export_supp_0_07182026",
+        "files": [
+          {"name": "PROP.TXT", "role": "property", "bytes": 4895747376, "sha256": "81e33a3c3f824833d37cf8ece51dc2d19bb3ec28ce511aca287b2e4dd7df62a7"},
+          {"name": "IMP_DET.TXT", "role": "improvement-detail", "bytes": 2065539840, "sha256": "6d15c2dd14fefee5e9153c0c93c4bb03e2e73cfdd35cbfc2e4984036e6c4df85"}
+        ],
+        "status": "success",
+        "rows_read": 493324,
+        "rows_parsed": 493246,
+        "rows_upserted": 493246,
+        "rows_skipped": 0,
+        "started_at": "2026-09-12T16:06:08.533283Z",
+        "finished_at": "2026-09-12T16:07:54.0051Z"
+      },
+      "logConfirmation": "Cloud Logging for this execution shows 'property file: /tmp/.../PROP.TXT' and 'improvement detail: /tmp/.../IMP_DET.TXT' both logged -- the single-zip PACS_EXPORT_DECLARATIONS resolution worked exactly as designed at CP1, no --improvement-file override needed."
+    }
+  },
+
+  "beforeCoverageBaseline": {
+    "instrument": "hauska-factory county-rail-coverage-report (CLI trigger added this lane, src/cli.mjs + test/county-rail-coverage-report.test.mjs, 8/8 tests pass -- not yet committed/PR'd, will accompany the close)",
+    "capturedAt": "2026-09-12T16:00:51.984Z",
+    "command": "node src/cli.mjs county-rail-coverage-report --county=48453 --rail=livingAreaSqft --rail=yearBuilt",
+    "raw": {
+      "livingAreaSqft": {"countyFips": "48453", "cadPopulation": 500307, "inLedger": 380917, "notInLedger": 119390, "value": 0, "absentVerified": 380917, "notApplicable": 0, "refused": 0, "unaccounted": 0, "status": "measured", "pct": 76.14},
+      "yearBuilt": {"countyFips": "48453", "cadPopulation": 500307, "inLedger": 380917, "notInLedger": 119390, "value": 0, "absentVerified": 380917, "notApplicable": 0, "refused": 0, "unaccounted": 0, "status": "measured", "pct": 76.14}
+    },
+    "note": "This instrument's denominator is cadPopulation (all cad_property distinct prop_id, 500,307), not the mission's own explicitly-required improved-only denominator. A separate direct query against PRODUCTION cad_property (pre-load) gives the mission's exact counting rule: improved (improvement_value>0) = 397,065; of those, living_area_sqft IS NULL = 397,065 (100%); year_built IS NULL = 397,065 (100%). Both readings will be re-taken after the production load and after the fill."
+  },
+
+  "next": [
+    "Execute the identical ldt-cad-ingest args with --target=production against the same uploaded object (no re-upload, no re-hash needed -- same file).",
+    "Read the production cad_ingest_run row by field the same way.",
+    "Open the hauska-factory PR for the county-rail-coverage-report CLI trigger + self-test.",
+    "Run factory-parcel-record-fill for 48453 (bounded pilot review, then full county --apply per F-CP1R-2's corrected reading of 'staging then production' for this single-store job).",
+    "Re-run county-rail-coverage-report AFTER; re-run the direct improved-only query AFTER.",
+    "Verify served surface (Smart Site MCP) for both Travis probe parcels; determine bake-vs-live."
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "lane": "p158-footprint",
+  "planRows": ["P-158"],
+  "status": "closed-partial",
+  "closedAt": "2026-09-12T15:20:00Z",
+  "phase": "2 of 3 (wave 2, ruled 2026-09-12 _decisions/2026-09-12_footprint_merge_421_count_before_acquiring.md). Phase 3 (the writer run) remains blocked on P-169 and was NOT run.",
+  "missionPremise": "The 2026-09-12 ruling: merge PR #421 (the label split, correct on either answer), then one direct count decides whether the anchor absence is a load gap in the staged layer or a coverage gap in the Microsoft source, before anyone buys a second source. Phase 1's own close (_inbox/2026-09-11_p158-footprint_close.json) had read the 1615m/7464m nearest-staged-footprint distances as a source coverage gap; that reading is the premise this phase was built to test, not to assume.",
+  "completionPredicate": "As stated in the ruling and this dispatch's phase 2 section: PR #421 merged; the counting queries run and pasted with their denominators; a load-vs-source decision stated with its evidence. The row's machine legs (buildingFootprintFact present + near-bbox non-empty for both anchor parcels) stay FAIL until phase 3 runs a writer; this phase does not attempt to flip them, so 'closed-partial' is the only honest status, per the dispatch's own instruction.",
+  "scopeBasis": "Exactly phase 2's four numbered steps: merge #421; count on the cortex store by field; decide and say which; do not run the writer. Went one query deeper than literally asked (a per-tag breakdown of the city-limits and 200m counts, and an independent live pull of the public Microsoft source tile) because the first pass at the literal queries produced an internally-contradictory pair of numbers (nearest-footprint distance disagreeing by three orders of magnitude depending on whether county_fips was filtered) that AGENT_CONTRACT section 5 requires reconciling, not rounding off. Did not touch engine/factory/map code beyond the already-authored, already-reviewed PR #421 rebase; did not run the writer or the factory reconcile job; did not acquire or price a second source.",
+
+  "pullRequests": [
+    {
+      "repo": "empressaioemail-tech/hauska-engine",
+      "number": 421,
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/421",
+      "rebasedOntoOriginMain": "ce6a75af66aa4f606a348d86089b83b817957296",
+      "rebasedHeadSha": "1960ba3f470479391537bb304040946c748a7f92",
+      "ciConclusionString": "SUCCESS (check-run 'typecheck + test', GitHub Actions run 34700097382, completed 2026-09-12T14:46:02Z -- the machine conclusion field, not the human-readable 'pass' text, per AGENT_CONTRACT section 5)",
+      "localTestsAfterRebase": "34 passed, 1 skipped / 35 total (pnpm --filter @hauska-engine/engine-core exec vitest run src/building-footprint), unchanged from phase 1",
+      "mergeMethod": "gh pr merge 421 --squash --delete-branch=false",
+      "mergeCommitSha": "fcd77075bb9a82c9d59ec595cb2b91b73877745e",
+      "mergedAt": "2026-09-12T14:46:26Z",
+      "state": "MERGED"
+    }
+  ],
+
+  "worktreesUsed": {
+    "hauska-engine": "P:/seat-worktrees/property/hauska-engine-p158-footprint, branch feat/p158-footprint-absence-split, reused from phase 1 (not recreated); rebased onto origin/main and pushed (force-with-lease, own PR branch only) to re-green CI before merge.",
+    "hauska-factory": "not opened this phase -- no reconcile run.",
+    "hauska-map": "not opened this phase -- no change indicated or made.",
+    "legacy-design-tools": "not opened this phase."
+  },
+
+  "counts": {
+    "step2a_bastropCityLimits_anyCountyTag": "3987 (ST_Intersects of tx_building_footprint.geom against tx_city_boundary's Bastrop polygon geo_id=4805864, geometry cast via ST_GeomFromGeoJSON, no county_fips filter -- the geometric truth of what the staged layer holds inside the city regardless of its own tag). Denominator: count of tx_building_footprint rows whose polygon intersects the city boundary polygon.",
+    "step2a_bastropCityLimits_correctlyTaggedOnly": "1182 (same query, AND fp.county_fips='48021'). Only 29.6% of the geometrically-present rows inside Bastrop city limits carry Bastrop's own county_fips -- this is the set the county-scoped writer actually sees.",
+    "step2a_comparisonTown_elgin": "3966 (same city-limits query against Elgin, geo_id=4823044, also in Bastrop County -- chosen because it is a real, similarly-sized incorporated town in the same county, so cross-county-tagging artifacts are directly comparable). Bastrop (3987, any-tag) and Elgin (3966) read as comparable town-scale densities -- the layer is NOT sparse in either town by this measure.",
+    "step2a_comparisonTown_westLakeHills_context": "1693 (same query against West Lake Hills, geo_id=4877632, the second probe county's own city -- see the county_fips finding below: ALL 1693 are mistagged, ZERO carry county_fips='48453').",
+    "step2b_within200mOf48021_34049_anyTag": "80, all tagged county_fips='48287' (Lee County, not Bastrop's 48021). Nearest single footprint: ml:ml-4336967 at 1.63 metres (essentially on the parcel).",
+    "step2b_within200mOf48021_34049_countyFips48021Only": "0 -- reproduces exactly what the writer's own query (staged-footprint-join.ts:244, `fp.county_fips = $6`) would see. Nearest under this filter: 1615.29m (ml:ml-6561126) -- matches phase 1's cited figure exactly, confirming that figure was itself an artifact of the same county_fips filter, not a true measure of source coverage.",
+    "step2c_perCountyVs20260819Reading": "48021=65974, 48453=73394 (unchanged from phase 1's identical read). Statewide total=10674975 across 254 distinct county_fips values -- matches the 2026-08-19 reading (rail-scoring-spec/specs.ts) exactly; no drift since that dated reading or since phase 1.",
+    "step2_microsoftSourceDirectPull": "Reachable without a credential: the public manifest https://minedbuildings.z5.web.core.windows.net/global-buildings/dataset-links.csv (7.17MB, HTTP 200, no auth) lists per-quadkey CSV.GZ files for RegionName=UnitedStates. Computed the Bing quadkey for the 48021:34049 record point at zoom 9 (023130123) and downloaded that tile directly (7.6MB gz -> 82777 GeoJSON-line features, 8.0MB decompressed). Independent (non-cortex) count: 8356 feature centroids fall inside Bastrop's city bbox; 78 centroids within 200m of the anchor; nearest centroid 13.77m. All three numbers corroborate the cortex store's own any-tag counts (3987 city-limits [note: centroid-in-bbox is a looser test than true polygon ST_Intersects, hence 8356>3987], 80 within 200m, 1.63m nearest) -- the live Microsoft source is dense at and around the anchor. No second source is indicated by anything measured.",
+    "secondProbeParcel_48453_113408_crossCheck": "Nearest footprint any-tag = 0m (the polygon contains the record point), tagged county_fips='48209' (Hays County, not Travis's 48453). County_fips='48453'-only nearest = 7463.9m -- matches phase 1's cited 7464.2m exactly, same artifact. West Lake Hills city limits: 1693 footprints present geometrically, 0 tagged 48453 -- a complete (100%) mistagging for this town, not partial like Bastrop's."
+  },
+
+  "MAJOR_FINDING": "The anchor absence is neither the source coverage gap phase 1 diagnosed nor a simple sparse/incomplete load. It is a county_fips MISTAGGING defect in the staged tx_building_footprint table: real, correctly-located Microsoft ML footprint rows for both probe parcels are already loaded, sitting 1.63m and 0m from the two anchors respectively, but tagged with an adjacent county's FIPS code (Lee County 48287 for the Bastrop anchor and its surrounding city; Hays County 48209 for the entire West Lake Hills city, a 100% mistagging rate there). The writer's own county-scoped candidate query (packages/engine-core/src/building-footprint/staged-footprint-join.ts:244, `ON fp.county_fips = $6`) is written correctly against the schema as documented but is blind to these rows because the STAGING step, not the join logic, assigned the wrong county. Total row volume matches the 2026-08-19 reading exactly (no drift), and the live public Microsoft source (pulled directly, no credential, this session) is dense at both anchors -- so this is not a source gap and not a volume-incomplete load. It reads as LOAD-side under the ruling's binary (fix belongs in a reload/re-tag through P-169's job against the SAME dataset; no second source), but the mechanism is narrower and more actionable than 'partial load': the county assignment must be corrected to true point/polygon containment (e.g. against tx_county_boundary, the same kind of ring/point-in-polygon method landing_parcel_jurisdiction already uses correctly on the parcel side of this program), not merely re-run with more rows.",
+
+  "footprintGapReadingDecision": "load",
+  "footprintGapReadingRationale": "Per the ruling's own reversal criteria and this phase's pre-registered falsifier, both keyed on 'the anchor still has no polygon within 200m': that premise is FALSE (1.63m nearest at the Bastrop anchor; 0m/contains at the West Lake Hills anchor) once measured without the county_fips-filter artifact both this phase and phase 1 initially fell into. The city-limits counts are town-appropriate in scale (Bastrop 3987, comparable Elgin 3966; independently cross-checked at 8356 via the live Microsoft tile) -- the layer is not sparse by volume. The specific, evidenced mechanism is a county_fips mistagging bug at staging, which is a load/tagging defect eligible for a corrected reload under P-169, not a case for a second-source acquisition.",
+
+  "falsifier": "Pre-registered verbatim at CP1: 'if the count inside Bastrop city limits is within an order of magnitude of the town's building count and the anchor still has no polygon within 200 m, the load-gap reading is wrong and the source-gap reading stands.' OBSERVED: the city-limits count is town-appropriate in scale (see counts above) AND the anchor DOES have a polygon within 200m (1.63m) once the county_fips filter artifact is removed. The falsifier's trigger condition did not hold, so it did not overturn the load-gap reading; instead it surfaced the mechanism (mistagging, not mere sparsity) that phase 1's and this phase's own first-pass queries had both silently assumed away by filtering on county_fips before checking whether that filter itself was truthful.",
+
+  "contradicted": "Phase 1's leading conclusion -- 'the dominant cause ... is a genuine ML-source coverage gap ... no code fix in this lane's scope can manufacture a nearby footprint the Microsoft Global ML Building Footprints dataset never captured' -- is FALSE for both anchor parcels, and phase 1's own headline distances (1615m for 48021:34049, 7464m for 48453:113408) were artifacts of an unstated county_fips filter, not true nearest-footprint measurements. Neither this dispatch's phase 2 text nor the 2026-09-12 ruling anticipated the specific mechanism found (cross-county mistagging of already-loaded rows); both correctly anticipated that SOME count would decide load vs source, and the count did decide it, just via a sharper mechanism than either 'sparse load' or 'source gap' as originally framed.",
+
+  "constraintsHonored": [
+    "Did not run the building-footprint writer or the factory reconcile job -- phase 3, blocked on P-169, per explicit instruction.",
+    "Did not retune PRIMARY_OVERLAP_MIN / STRADDLE_OVERLAP_MIN or touch any join threshold.",
+    "Did not acquire, price, or recommend purchasing a second footprint source -- the finding rules that out as unnecessary, not merely as out of scope.",
+    "Did not widen any check or rename anything to paper over the mistagging; reported it as a finding for the owner of the (unmerged) loader branch.",
+    "Merged only on the CI check-run conclusion string 'SUCCESS' after rebasing onto current origin/main, per AGENT_CONTRACT section 5.",
+    "All counts verified at source (direct SQL against CORTEX_DATABASE_URL, and a direct, uncredentialed pull of the live public Microsoft dataset tile) rather than reasoned from a prior artifact.",
+    "Worked only in the already-registered, phase-1-created worktree; did not touch any other lane's checkout (P-157-STRUCTURAL's hauska-factory worktree was not opened)."
+  ],
+
+  "probe": {
+    "artifact": "_inbox/2026-09-12_150432_surface_probe.json",
+    "result": "FAIL",
+    "narrative": "Run by this lane (node scripts/surface-probe.mjs, default full-row invocation against production smartsite.cloud, docRepoHead 3070515a, ranAt 2026-09-12T15:04:32.182Z -- after PR #421's merge at 14:46:26Z) as evidence per R-4; the planner's own run is the actual predicate per R-4/R-5. P-158 verdict: FAIL for both 48021:34049 and 48453:113408, basis 'buildingFootprintFact absent' for both -- exactly the pre-registered expectation, since this phase merged only the label-split code and ran no writer or reconcile job, so no atom was rewritten and the live facets are unchanged from phase 1's FAIL. The row's machine legs stay FAIL until a corrected writer/reconcile run lands in phase 3."
+  },
+
+  "surfaceProbeObservationInputs": {
+    "note": "For the planner's own `node scripts/surface-probe.mjs --rows P-158 --observations <file>` pass, per the dispatch's named observation keys.",
+    "footprintStagedCountInCityLimits": {
+      "value": 3987,
+      "definition": "tx_building_footprint rows whose geometry intersects Bastrop's tx_city_boundary polygon, any county_fips tag (the geometric truth of what the staged layer holds in the city). For context, only 1182 of these (29.6%) carry the correct county_fips='48021' tag the writer's query requires.",
+      "observedBy": "p158-footprint lane (phase 2)",
+      "observedAt": "2026-09-12T15:00:00Z"
+    },
+    "footprintStagedCountNear34049": {
+      "value": 80,
+      "definition": "tx_building_footprint rows within 200m of 48021:34049's record point, any county_fips tag. Under the writer's own county_fips='48021' filter this count is 0 -- that 0 is what reproduces the live FAIL; the 80 is what is genuinely staged and geolocated there.",
+      "observedBy": "p158-footprint lane (phase 2)",
+      "observedAt": "2026-09-12T15:00:00Z"
+    },
+    "footprintGapReading": {
+      "value": "load",
+      "definition": "County_fips mistagging at staging (rows exist, correctly geolocated, wrongly tagged to an adjacent county), not a source coverage gap and not a bare row-volume shortfall. See MAJOR_FINDING and footprintGapReadingRationale above.",
+      "observedBy": "p158-footprint lane (phase 2)",
+      "observedAt": "2026-09-12T15:00:00Z"
+    }
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-12_p158-footprint_cp1.json",
+    "_inbox/2026-09-12_p158-footprint_cp2.json"
+  ],
+
+  "leave_behind": [
+    "PRIMARY FINDING FOR P-169: tx_building_footprint's county_fips column is mistagged for a large share of rows near county boundaries -- confirmed for Bastrop County (48021, 50.0% of the county's true building stock correctly tagged, the rest attributed to Lee 48287 or Caldwell 48055) and total (100%) for West Lake Hills' footprints inside Travis County (48453), which are entirely attributed to Hays County (48209) instead. P-169's writer job must assign/correct county_fips by true point-or-polygon containment against tx_county_boundary (the same class of method landing_parcel_jurisdiction already applies correctly, via its 'ring' method, on the parcel side of this program) -- not whatever coarse (likely bounding-box) method produced this result, or a straight reload from the same dataset will reproduce the identical bug and both anchor parcels will remain FAIL.",
+    "Both P-158 probe parcels are extremely likely to flip from absent to present once county_fips is corrected and the writer/reconcile re-run: the Bastrop anchor's nearest true footprint is 1.63m away (would almost certainly classify as a primary attach, ratio near 1.0) and the West Lake Hills anchor's nearest footprint has distance 0 (contains the point). This is a prediction for phase 3 to verify, not a claim made from a writer run in this phase -- no writer or reconcile job was executed.",
+    "The unmerged loader branch named in phase 1 (hauska-engine feat/p2-4-tx-building-footprint-staging, e7145a3) is the most likely place the mistagging bug lives, since the mainline main-branch writer code (staged-footprint-join.ts) only ever reads county_fips, never assigns it -- assignment happens at staging/ingest time, which is that unmerged branch's job. Not opened or read this phase (out of the 'do not run the writer' scope), but flagged again for whoever builds P-169's job to inspect before reusing any of its logic.",
+    "The Microsoft dataset-links.csv manifest and the per-quadkey tile the Bastrop anchor falls in (RegionName=UnitedStates, quadkey=023130123, ~7.6MB gzipped, ~82777 features) are reachable live with no credential -- useful as a fast, free cross-check for any future county's coverage question before anyone considers buying a second source. Files were downloaded to this session's scratch temp directory only and are not committed anywhere.",
+    "PR #421 merge SHA fcd77075bb9a82c9d59ec595cb2b91b73877745e is on hauska-engine main as of 2026-09-12T14:46:26Z. The branch feat/p158-footprint-absence-split was left un-deleted (--delete-branch=false) in case phase 3 wants to build on it directly; it is now fully contained in main.",
+    "This phase did not touch hauska-factory, hauska-map, or legacy-design-tools -- no reconcile run, no map gate change, no LDT read-path change. All three remain exactly as phase 1 left them.",
+    "The row's machine legs (buildingFootprintFact present + near-bbox non-empty, both anchors) remain FAIL on the live surface (confirmed at 2026-09-12T15:04:32Z, after this phase's merge) and will remain FAIL until a phase-3 writer/reconcile run lands on the corrected county_fips."
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "lane": "ops23-wave2",
+  "planRows": ["P-152", "P-157", "P-158", "P-167", "P-169", "P-171", "P-172"],
+  "status": "closed-partial",
+  "closedAt": "2026-09-12T16:35:00Z",
+
+  "rowStatuses": {
+    "P-152": "closed-partial (lane's own mission complete and verified PASS on all 5 parcels' record-rail values; row-level predicate FAILs on 2/5 parcels for the pre-existing F3 setback disagreement, assigned to P-154, not a regression this lane caused)",
+    "P-157": "blocked (real, independently-verified parser gap: the loaded TCAD improvement-detail file uses '1st/2nd/3rd Floor' type descriptors, never 'MAIN AREA', which the shared LDT parser hardcodes; correctly not touched by this lane, no relabelling performed)",
+    "P-158": "closed-partial (phase 2 only: PR #421 merged, count run, load-gap mechanism identified and independently reproduced by this planner as a county_fips mistagging bug, not a source coverage gap; phase 3 writer run explicitly out of this wave's scope)",
+    "P-167": "not started this wave (held): P-153 DRAW has not merged in hauska-map or legacy-design-tools as of close",
+    "P-169": "closed (both Cloud Run jobs real and verified; both PRs merged on CI conclusion success after an adversarial round caught an initial false 'closed' claim)",
+    "P-171": "closed (audit reached outcome (b), a named writer with no formal execution record; an initial citation error was caught and corrected to an honest two-tier confidence statement)",
+    "P-172": "closed (both repo halves merged and deployed; live Find box verified resolving the target address via the situs index, independently confirmed by this planner)"
+  },
+
+  "probe": { "artifact": "_inbox/2026-09-12_162633_surface_probe.json", "tally": "PASS 6, FAIL 6, UNMEASURED 5" },
+
+  "falsifier": "Pre-registered per-row falsifiers (OPS-23 wave-2 dispatch): none were silently waved off. P-152's falsifier (readPath/value/source disagreement) did not fire on the record-rail conversion itself but the row's own MCP-comparison predicate independently failed on 2 parcels for a pre-existing, out-of-scope reason -- distinguished, not conflated. P-158's falsifier ('anchor still has no polygon within 200m' would overturn the load-gap reading) fired in the sense that it disproved BOTH phase 1's source-gap reading AND a naive load-gap reading, surfacing a sharper mistagging mechanism instead -- independently reproduced by this planner via direct SQL (80 footprints within 200m, all tagged an adjacent county; 0 under the writer's own county_fips filter). P-157's falsifier ('structuralFact not present for both Travis parcels' proves the row not done) fired exactly as predicted, and the lane correctly stopped rather than force a relabel -- independently reproduced by this planner via a real download and unzip of the certified export (0 'MAIN AREA' occurrences; 438,314/177,043/7,816 '1st/2nd/3rd Floor' occurrences). P-169 and P-171's falsifiers did not fire. P-172's falsifier did not fire after the fix deployed; the live surface independently confirmed by this planner via direct curl and a fresh scripts/surface-probe.mjs run.",
+
+  "contradicted": "See checkpoint _inbox/2026-09-12_ops23_checkpoint_2.md's error-log table for the five entries this wave produced, including this planner's own initially-vacuous verification attempt on P-157 (caught and redone properly on a second pass) and two lanes' mistaken assumption that a spawned sub-agent receives automatic wake-on-completion notifications (it does not).",
+
+  "leave_behind": [
+    "P-167 remains blocked on P-153 DRAW merging in hauska-map and legacy-design-tools; check again before the next wave starts.",
+    "P-157's blocker: lib/cad-ingest/src/pacs/parser.ts readImprovementRollups() hardcodes 'MAIN AREA' as the improvement-type match; the real certified 07182026 Travis export uses '1st Floor'/'2nd Floor'/'3rd Floor' instead (typeCd 1ST/2ND/3RD). This is shared parser code also used by Bastrop and Caldwell; needs an owner and a fix, not a relabel or a rename. Full evidence in _inbox/2026-09-12_p157-structural_close.json.",
+    "P-158's phase 3 (the actual writer/reconcile run against corrected county_fips) is now unblocked infrastructure-wise (P-169's job exists) but still needs the county_fips assignment bug fixed in the unmerged hauska-engine branch feat/p2-4-tx-building-footprint-staging before a reload will help; confirmed independently by this planner (80 real, correctly-geolocated footprints within 200m of the Bastrop anchor, all mistagged to Lee County 48287; West Lake Hills' footprints 100% mistagged to Hays County 48209). Do not buy a second data source -- the finding rules that out.",
+    "P-171 drafted a break-glass decision record for the 2026-09-07 footprint-atom write (naming the hauska-engine session 'cente-67', operator-directed with contemporaneous but not cleanly advance-authorized documentation) -- not filed, since the lane cannot write to _decisions/. The operator or overseer should file, amend, or reject it: _inbox/2026-09-12_p171-provenance_close.json#breakGlassRowDraft. It also surfaced an unresolved internal inconsistency between two same-night 2026-09-06 doc_repo records that only the operator or the writing lane can resolve.",
+    "P-171 also named three concrete logging gaps in the atoms-writer lease/provenance chain (lease table is delete-on-release with no history; atoms never carry their own writer's run_id; the run-id-validates-against-a-real-Factory-run check the code comments promise was never wired) -- recommend folding into P-169's follow-on work.",
+    "P-152's leave_behind names two cortex-facets call sites still unconverted for the next card (pe-property-atoms.ts's own cortex merge for legacy-transitional rails, and pe-share-view-compose.ts:77, untouched this wave) and the exact per-parcel rail-state counts (record vs legacy-transitional vs refused) as the retirement backlog.",
+    "Process note for the overseer: multiple lanes wrote their close/CP artifacts to P:/seat-worktrees/property/doc_repo/_inbox/ instead of this planner's worktree (P-152 did this); this is a recurring cross-wave pattern (also noted in wave 1's checkpoint). Worth a standing instruction fix in the dispatch template naming the exact write path unambiguously.",
+    "Traffic lease for cortex-api (_catalog/leases/cortex-api.json) was granted, used for one deploy (cortex-api-00776-wov -> cortex-api-00778-peq), and released by this planner after verifying the new revision by field and re-running the probe. No other service's lease was needed this wave (P-169's jobs are jobs, not traffic-shifted services; P-152's retrieval-api and hauska-engine-api needed no shift this wave)."
+  ],
+
+  "missionPremise": "OPS-23 wave 2 (successor dispatch planner): compile and supervise seven rows toward the program's one predicate -- the Property Explorer panel, the map, the PDFs and the Smart Site MCP connector show the same facts for the same parcel, from one reader, with honest absences. Five rows started immediately in parallel (P-152 lane 2, P-169, P-171, P-172, P-158 phase 2); P-157 waited on P-169's close; P-167 waited on P-153's merge.",
+
+  "completionPredicate": "A stranger can evaluate this close by reading _inbox/2026-09-12_162633_surface_probe.json: 6 PASS, 6 FAIL, 5 UNMEASURED across the seven rows, each verdict traceable to a live HTTP call, a live gcloud/gh read, or a live SQL read this planner ran personally (not a lane's self-report accepted at face value) -- per-row detail and the specific mechanism behind each FAIL/UNMEASURED is in the per-row close files named in rowStatuses above.",
+
+  "scopeBasis": "Did not touch: the entitlement gate, any pricing surface, the zoning/envelope atom-chain path (P-153/P-154's), or the shared LDT parser P-157 found broken. Did not run P-158's phase 3 writer (explicitly deferred). Did not start P-167 (explicitly gated on a dependency outside this wave's control). Every row this planner verified was checked against a live production system (GitHub, GCP, the cortex/atoms Postgres stores, or smartsite.cloud itself), never against a lane's self-report or a re-read working tree, per AGENT_CONTRACT's verification rules and this program's own R-4.",
+
+  "operatorOwedItems": [
+    "File, amend, or reject the drafted break-glass row for the 2026-09-07 footprint-atom write (_inbox/2026-09-12_p171-provenance_close.json#breakGlassRowDraft).",
+    "Resolve the internal inconsistency between the two same-night 2026-09-06 doc_repo records on whether the footprint-writer re-run was advance-authorized (P-171 close, operatorAcknowledgement field).",
+    "Name an owner for the P-157 parser fix (lib/cad-ingest/src/pacs/parser.ts readImprovementRollups()) -- shared code, not this wave's to fix.",
+    "The observed leg of P-172's predicate (an operator typing '414 SPILLER LN' into the live Find box on smartsite.cloud and confirming it lands on the card) was not independently performed by a human this wave -- the machine leg is independently verified PASS by this planner via direct API calls; a human click-through would close the observed leg fully."
+  ],
+
+  "checkpointArtifacts": ["_inbox/2026-09-12_ops23-wave2_cp1.json (not filed separately; see individual per-row CP1s)", "_inbox/2026-09-12_ops23_checkpoint_2.md"],
+
+  "filesWrittenThisWave": [
+    "_dispatches/2026-09-12_p152-panel_dispatch.md",
+    "_dispatches/2026-09-12_p169-infra_dispatch.md",
+    "_dispatches/2026-09-12_p171-provenance_dispatch.md",
+    "_dispatches/2026-09-12_p172-findbox_dispatch.md",
+    "_dispatches/2026-09-12_p158-footprint_dispatch.md",
+    "_dispatches/2026-09-12_p157-structural_dispatch.md",
+    "_catalog/leases/cortex-api.json",
+    "_inbox/2026-09-12_p171-provenance_cp1.json",
+    "_inbox/2026-09-12_p171-provenance_cp2.json",
+    "_inbox/2026-09-12_p171-provenance_close.json",
+    "_inbox/2026-09-12_p171-provenance_observations.json",
+    "_inbox/2026-09-12_145126_surface_probe.json",
+    "_inbox/2026-09-12_p158-footprint_cp1.json",
+    "_inbox/2026-09-12_p158-footprint_cp2.json",
+    "_inbox/2026-09-12_p158-footprint_close.json",
+    "_inbox/2026-09-12_150432_surface_probe.json",
+    "_inbox/2026-09-12_p169-infra_cp1.json",
+    "_inbox/2026-09-12_p169-infra_cp2.json",
+    "_inbox/2026-09-12_p169-infra_close.json",
+    "_inbox/2026-09-12_p169-infra_observations.json",
+    "_inbox/2026-09-12_p172-findbox_cp1.json",
+    "_inbox/2026-09-12_p172-findbox_cp2.json",
+    "_inbox/2026-09-12_p172-findbox_close.json",
+    "_inbox/2026-09-12_153229_surface_probe.json",
+    "_inbox/2026-09-12_161600_surface_probe.json",
+    "_inbox/2026-09-12_p157-structural_cp1.json",
+    "_inbox/2026-09-12_p157-structural_cp2.json",
+    "_inbox/2026-09-12_p157-structural_close.json",
+    "_inbox/2026-09-12_161935_surface_probe.json",
+    "_inbox/2026-09-12_152945_surface_probe.json (this planner's independent P-152 probe run)",
+    "_inbox/2026-09-12_162314_surface_probe.json (this planner's independent P-172 probe run)",
+    "_inbox/2026-09-12_162633_surface_probe.json (this planner's final combined wave probe -- the authoritative artifact)",
+    "_inbox/2026-09-12_ops23_checkpoint_2.md",
+    "_inbox/2026-09-12_ops23-wave2_close.json (this file)",
+    "P:/seat-worktrees/property/doc_repo/_inbox/2026-09-12_p152-panel_{cp1,cp2,close}.json (P-152 lane wrote here instead of this worktree; see leave_behind process note)"
+  ]
+}
