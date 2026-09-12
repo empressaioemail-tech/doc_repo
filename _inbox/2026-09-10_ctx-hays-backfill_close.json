@@ -1,0 +1,516 @@
+{
+  "lane": "CTX-HAYS-BACKFILL",
+  "title": "the two-column backfill exists, it refuses six ways, and the check that was supposed to prove it safe was blind until a mutation run said so",
+  "planRows": [
+    "P-124"
+  ],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ctx-hays-backfill_dispatch.md",
+  "closedAt": "2026-09-10T23:05:00Z",
+  "status": "complete",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays-backfill",
+  "branch": "feat/ctx-hays-backfill-published-identifiers",
+  "baseCommit": "c43e24369b7e47d867a9465ae2528066e3416ddd",
+  "headSha": "183ecc9d6c01e30868dd33fb3997f389dba4bfe0",
+  "pr": 654,
+  "prUrl": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/654",
+  "merged": false,
+  "mergeSha": "not applicable: the dispatch instructed not to merge",
+  "ciConclusion": "SUCCESS on all 11 checks at head 183ecc9d. Conclusion STRINGS read from statusCheckRollup, not `gh pr checks` words.",
+  "checkpoints": [
+    "_inbox/2026-09-10_ctx-hays-backfill_cp1.json",
+    "_inbox/2026-09-10_ctx-hays-backfill_cp2.json"
+  ],
+  "missionPremise": "CTX-HAYS-REBIND (#653, merged c43e2436) added cad_property.quick_ref_id and property_number in migration 0099 and nothing populates them, because upsertCadProperties builds a WHOLE row. The rebind lane's own addendum (_inbox/2026-09-10_ctx-hays-rebind_addendum_source_reconciliation.json) measured what running the 8-26-2026 export through the existing cad-ingest CLI would cost: 45,524 of 134,216 Hays market values changed, about 5.8 billion dollars of absolute movement, source_file overwritten on every touched row. Identity columns and valuation columns have different blast radii and must not ride the same write. Which drop should be Hays' declared 2026 roll is an OPEN OPERATOR QUESTION and this lane does not answer it.",
+  "completionPredicate": "A stranger can, without me: (1) check out feat/ctx-hays-backfill-published-identifiers and run `pnpm --filter @workspace/cad-ingest exec vitest run src/__tests__/publishedIdentifierBackfill.test.ts` and see 48 tests pass, every refusal asserted by rule name; (2) run the CLI with --dry-run against production read-only and see roll 134,606 / matched 134,216 / skipped-no-roll-row 375 / not-in-export 390; (3) run it with --dry-run against f06-staging-neondb and see it REFUSE with rule target-columns naming migration 0099; (4) hand it the IMPROVEMENT member and see it refuse by name; (5) add a column to BACKFILL_WRITABLE_COLUMNS and see the run refuse before issuing a statement. If any of those five does something else, this close is wrong.",
+  "scopeBasis": "legacy-design-tools only, per the dispatch. The tool is BUILT and HANDED BACK; it has not been run against any store, because the integration seat owns execution and staging goes first. The re-derivation stops at the boundary of this lane's credentials: neondb is in scope, the atoms store (HAUSKA_MCP_DATABASE_URL) is not, which is why two of the five figures the dispatch listed could not be re-derived and are reported as not-re-derivable rather than agreed with. No tier gate was added to the declared-vintage refusal, deliberately: identity columns describe the account rather than the drop, so refusing on tier would be a control broader than its claim.",
+  "snapshotDeclared": {
+    "repo": "legacy-design-tools",
+    "branch": "feat/ctx-hays-backfill-published-identifiers",
+    "baseCommit": "c43e2436 (CTX-HAYS-REBIND, PR #653)",
+    "headSha": "183ecc9d6c01e30868dd33fb3997f389dba4bfe0",
+    "worktreeRegisteredBeforeAnyRepoRead": true,
+    "dataSnapshots": [
+      "neon fancy-fire-06136146 branch production db neondb, READ-ONLY, 2026-09-10T21:30Z onward",
+      "neon fancy-fire-06136146 branch f06-staging-neondb db neondb, READ-ONLY, 2026-09-10T22:45Z onward",
+      "local archive hays.zip sha256 7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193, re-hashed this session and again by the CLI on every run",
+      "a throwaway local PostgreSQL 18 cluster in the session scratchpad, created and destroyed within this lane. NOT a store."
+    ]
+  },
+  "theMemberDiscriminationRule": {
+    "problem": "every member of a Hays drop is named PropertyDataExport<n>.txt, the numbering is not mnemonic, and extractCadDrop flattens to basenames so even the enclosing zip's name is gone by the time a reader sees the file. All six members share their first four columns (RecordType, PropertyID, QuickRefID, PropertyNumber), so a check for the identifier columns passes on every one of them. That is how the integration seat previously read the IMPROVEMENT member (103,490 rows) believing it was the roll (134,592).",
+    "decision": "BEAT header width rather than take it. Width is recorded in the durable record and is NOT the gate.",
+    "whyNotWidth": "width uniquely identifies PROPERTY (40) among these six, but OWNER, LAND and SEGMENT are ALL 21 columns, so it cannot name the sibling it refused; and an equality on 40 would refuse a valid future drop that adds a column, which is a refusal for a reason unrelated to the file's meaning.",
+    "rules": {
+      "R1 identifier-columns-present": "propertyid + quickrefid + propertynumber. NECESSARY AND NOT SUFFICIENT. Kept only so a non-Orion file fails with the right message; its insufficiency is the documented reason R2 and R3 exist.",
+      "R2 sibling-marker-absent": "refuse when a column that positively identifies a sibling is present, and NAME the sibling. actyrbuilt -> SEGMENT, instanceid -> IMPROVEMENT, ownername/fullname -> OWNER, landtype -> LAND, saledate -> SALES. Order matters: SEGMENT and IMPROVEMENT both carry instanceid and only SEGMENT carries actyrbuilt.",
+      "R3 property-columns-present": "legaldesc + situs + marketvalue + squarefootage + legalacres. No sibling in a Hays drop carries any of these.",
+      "R4 account-cardinality": "duplicate PropertyID rows at most 0.1 percent of rows read, and it reads ROWS rather than the header. DECLARES ITSELF NOT APPLICABLE below 100 rows rather than firing on arithmetic noise, and says so in the durable record."
+    },
+    "whyR4IsTheMeaningShapedHalf": "R1-R3 all read one payload's header, which is internal consistency: a single malformed header satisfies all three. R4 reads the body. Header and body are produced by different parts of the publisher's export job, so no single bad header can satisfy the whole gate.",
+    "howItWasTested": [
+      "unit: the four SHARED columns alone pass R1 and the file is still refused (R3). The trap stated as a test.",
+      "unit: IMPROVEMENT, SEGMENT, OWNER, LAND and SALES headers each refused by R2 with identifiedAs set to the right member.",
+      "unit: a PROPERTY header with an EXTRA column is still ACCEPTED, which is what says width is not the gate.",
+      "unit, file-level: the IMPROVEMENT fixture and the pre-existing hays_owner / hays_land / hays_segment fixtures each refused by name through readPublishedIdentifiers.",
+      "unit: a 200-row PROPERTY-SHAPED file with four rows per account passes R1-R3 on its header and is refused by R4. Not vacuous: the real PROPERTY member is 0.00074 percent duplicates against a 0.1 percent ceiling, three orders of magnitude clear, and the improvement member is 5.2 percent.",
+      "END TO END ON THE REAL ARCHIVE: five siblings refused by name, exactly one member accepted, printed per candidate."
+    ],
+    "realArchiveResult": [
+      "PropertyDataExport1404452.txt (11 cols): refused by R2 — identified as IMPROVEMENT",
+      "PropertyDataExport1404451.txt (21 cols): refused by R2 — identified as LAND",
+      "PropertyDataExport1404450.txt (21 cols): refused by R2 — identified as OWNER",
+      "PropertyDataExport1404449.txt (40 cols): ACCEPTED by R3 property-columns-present",
+      "PropertyDataExport1404454.txt (13 cols): refused by R2 — identified as SALES",
+      "PropertyDataExport1404453.txt (21 cols): refused by R2 — identified as SEGMENT"
+    ],
+    "declaredExposure": "a PROPERTY-shaped file under 100 rows gets R1-R3 only, and R4 reports applicable:false into the record rather than passing silently. That is the declared-degradation rule, not a hidden hole. A sub-100-row file is not a Texas county roll."
+  },
+  "rederivedCounts": {
+    "countingRule": "production neondb READ-ONLY 2026-09-10. cad_property 48209 tax_year 2026 joined on prop_id to the 8-26-2026 PROPERTY member of hays.zip (sha256 7a4bd56d...), first row wins per prop_id, leading zeros stripped as stripLeadingZeros does. txgio_parcel 48209 indexed by FIRST feature_index per geo_id and per prop_id, mirroring DISTINCT ON (feature_index) ORDER BY feature_index. Crosswalk key is property_number with ambiguity REFUSED; corroboration is the quickrefid numeric stem against txgio_parcel.prop_id per cadAccountNumberStem and crosswalkBindCorroborated.",
+    "producedTwice": "once by an independent Python re-derivation from the sha-verified archive bytes and my own pulls of the roll and the parcel table, and once BY THE TOOL ITSELF in a --dry-run against production. They agree.",
+    "figures": {
+      "rollRowsAtDeclaredVintage": 134606,
+      "exportDataRows": 134592,
+      "exportDistinctAccounts": 134591,
+      "exportDuplicateRows": 1,
+      "exportDuplicateWasConflicting": false,
+      "wouldReceiveBothIdentifiers": 134216,
+      "exportAccountsNotOnRoll_neverInserted": 375,
+      "rollRowsThatStayNULL": 390,
+      "rollRowsThatStayNULL_becauseNotInExport": 390,
+      "rollRowsThatStayNULL_becauseExportPublishesNeither": 0,
+      "rollRowsThatStayNULL_becauseConflictingDuplicate": 0,
+      "blankQuickRefIdInFile": 0,
+      "blankPropertyNumberInFile": 0,
+      "txgioParcelRows48209": 131734,
+      "txgioNonBlankGeoIdRows": 130246,
+      "crosswalkAmbiguousKeys": 0,
+      "corroborationRefusals": 0,
+      "usableCrosswalkKeys": 115033
+    },
+    "verdict": "134,216 / 390 / 115,033 / 0 ambiguous / 0 refusals all land on the dispatch's figures EXACTLY."
+  },
+  "countsNotRederivable": {
+    "which": [
+      "REBIND 30,861",
+      "GAIN 19,901"
+    ],
+    "why": "both are computed over the TIER-1 ATOM population (173,050 rows) in the atoms store reached by HAUSKA_MCP_DATABASE_URL. The bake's work list is `SELECT entity_id, body FROM atoms` in nodeFacetBakeTier1ConformantCli.ts, not a cad_property read. This lane's credential set is neondb only.",
+    "whatIDidInstead": "computed the same split over the ROLL population (134,606 rows, 115,033 keyed) under two candidate current-bind rules. Presented as a DIFFERENT measurement, not as agreement or disagreement.",
+    "rollPopulationResults": {
+      "currentBindAsPropIdJoin": {
+        "same": 0,
+        "REBIND": 65633,
+        "GAIN": 49400
+      },
+      "currentBindAsSitusRecovery_multiFeatureKeysExcluded": {
+        "same": 88493,
+        "REBIND": 98,
+        "GAIN": 26442
+      },
+      "currentBindAsSitusRecovery_firstFeatureWins": {
+        "same": 99042,
+        "REBIND": 8844,
+        "GAIN": 7147
+      }
+    },
+    "mechanismIBelieve": "different population AND different current-bind derivation. Hays is a gate-BLOCKED county, so the current bind is the situs recovery rather than the prop_id join, which is why the prop_id model returns same=0. The addendum's split is over atoms whose parcelNodeId and situs come from the atom body; mine is over cad_property rows whose situs_address was itself overwritten by the parcel store, which the migration comment says outright.",
+    "secondMechanismConsideredAndRejected": "that the addendum's 30,861 / 19,901 are wrong. Rejected because the addendum's own 115,033 -- the figure its split sums to (64,271 + 30,861 + 19,901 = 115,033) -- reproduces EXACTLY under my independent derivation. A split summing to a figure I independently confirmed, differing only on the half living in a store I cannot read, is far better explained by the population difference.",
+    "whatWouldSettleIt": "one read of the atoms store with the HAUSKA_MCP credential. In leave_behind."
+  },
+  "theFindingThatMatteredMost": {
+    "what": "CP1 called the untouched-columns digest the money control and claimed no single party could satisfy both sides of it. That was WRONG.",
+    "mechanism": "the digest built its column list from information_schema MINUS BACKFILL_WRITABLE_COLUMNS. Adding market_value to that allowlist and to the SET clause is ONE conceptual edit, and it both moved a dollar on every row and removed market_value from the digest, which then reported VERIFIED. The list came from the catalog; the SUBTRACTION came from the thing being checked.",
+    "howItWasFound": "by MUTATING the writer and re-running the controls. Not by reading the code -- the code reads correctly. 'Enumerate from the catalog, exclude what we write, digest the rest' is the sentence you would write down as the right design.",
+    "fix": "DIGEST_EXCLUDED_COLUMNS stated independently; assertDigestScopeIntact() refusing on divergence in either direction; DIGEST_MUST_COVER as a positive list of money columns the digest must be watching.",
+    "bothLayersProvenByTheirOwnMutation": [
+      "widen the writer's allowlist only -> REFUSED before any write, rule digest-scope, message names both sets",
+      "widen the allowlist AND DIGEST_EXCLUDED_COLUMNS so the first assertion agrees -> REFUSED before any write, rule digest-scope, 'the digest would not be watching market_value'"
+    ],
+    "honestResidual": "two deliberate edits in two named places still get past both. Nothing survives an author trying to defeat it. What it now survives is the realistic failure: one edit that widens the writer and quietly blinds the check."
+  },
+  "aSecondFindingDeliveredAsAControl": {
+    "what": "MIGRATION 0099 IS NOT APPLIED TO STAGING.",
+    "evidence": "information_schema.columns, read-only 2026-09-10: production cad_property carries 23 columns including quick_ref_id and property_number; f06-staging-neondb carries 21 and has NEITHER. Both branches carry 134,606 rows at 48209 tax_year 2026. Read from the catalog, not inferred from a failed query.",
+    "whyItMatters": "the dispatch's own sequence sends the integration seat to staging FIRST. Without a preflight the run still fails closed, but at the first UPDATE, after the plan and the first digest, with a Postgres error that names no migration and no branch.",
+    "whatWasBuilt": "assertTargetColumnsPresent, running before anything else touches the store, on the DRY RUN path too. Verified against the real staging branch: 'REFUSED (target-columns): cad_property on this store has no quick_ref_id, property_number column. Migration 0099_cad_property_published_identifiers has not been applied here.'",
+    "actionRequired": "apply migration 0099 to f06-staging-neondb before the staging run. This is a prerequisite, not a nice-to-have."
+  },
+  "everyViolationRun": [
+    {
+      "control": "production read-only guard, in-session SET",
+      "violation": "UPDATE cad_property SET quick_ref_id='VIOLATION-PROBE' ...",
+      "result": "ERROR: cannot execute UPDATE in a read-only transaction",
+      "fired": true
+    },
+    {
+      "control": "production read-only guard, connection-option path (the one the CLI uses)",
+      "violation": "same UPDATE through options=-c default_transaction_read_only=on",
+      "result": "ERROR: cannot execute UPDATE in a read-only transaction",
+      "fired": true
+    },
+    {
+      "control": "R1 sufficiency",
+      "violation": "a header of only the four SHARED columns",
+      "result": "R1 passes and the file is refused by R3",
+      "fired": true
+    },
+    {
+      "control": "R2 sibling-marker-absent",
+      "violation": "IMPROVEMENT, SEGMENT, OWNER, LAND, SALES headers and four real fixture files",
+      "result": "refused, sibling NAMED in each case",
+      "fired": true
+    },
+    {
+      "control": "R2, non-vacuity",
+      "violation": "a PROPERTY header with an extra column",
+      "result": "ACCEPTED — the gate is meaning, not width",
+      "fired": false,
+      "expected": false
+    },
+    {
+      "control": "R4 account-cardinality",
+      "violation": "a 200-row PROPERTY-shaped file with four rows per account",
+      "result": "refused, rule R4",
+      "fired": true
+    },
+    {
+      "control": "R4, non-vacuity",
+      "violation": "the real 134,592-row PROPERTY member at 0.00074 percent duplicates",
+      "result": "ACCEPTED",
+      "fired": false,
+      "expected": false
+    },
+    {
+      "control": "declared-vintage refusal",
+      "violation": "--tax-year=2025 against Hays' declared 2026",
+      "result": "throws naming BOTH years",
+      "fired": true
+    },
+    {
+      "control": "declared-vintage refusal",
+      "violation": "county 48999, no declared vintage",
+      "result": "throws FAIL CLOSED",
+      "fired": true
+    },
+    {
+      "control": "SET-clause allowlist",
+      "violation": "SET clauses touching market_value and source_file, and a statement carrying INSERT INTO",
+      "result": "refused in all three",
+      "fired": true
+    },
+    {
+      "control": "digest SQL builder",
+      "violation": "an empty column list, and a catalog name that is not a plain identifier",
+      "result": "refused in both",
+      "fired": true
+    },
+    {
+      "control": "untouched-columns digest",
+      "violation": "a saboteur executor moving market_value mid-run, on a REAL Postgres",
+      "result": "run REFUSED, rule untouched-digest, violation entry in the record",
+      "fired": true
+    },
+    {
+      "control": "untouched-columns digest, non-vacuity",
+      "violation": "two clean runs and an idempotent re-run",
+      "result": "VERIFIED, no violation entry",
+      "fired": false,
+      "expected": false
+    },
+    {
+      "control": "digest scope, layer 1",
+      "violation": "MUTATION: widen BACKFILL_WRITABLE_COLUMNS and the SET clause to move market_value",
+      "result": "REFUSED before any statement, rule digest-scope",
+      "fired": true
+    },
+    {
+      "control": "digest scope, layer 2",
+      "violation": "MUTATION: widen DIGEST_EXCLUDED_COLUMNS as well",
+      "result": "REFUSED before any statement, 'would not be watching market_value'",
+      "fired": true
+    },
+    {
+      "control": "DIGEST_MUST_COVER",
+      "violation": "a catalog read returning only prop_id",
+      "result": "refused, rule digest-scope",
+      "fired": true
+    },
+    {
+      "control": "target-columns preflight",
+      "violation": "a store with neither column, and a store with one; plus the REAL staging branch",
+      "result": "refused in all three, naming migration 0099 and both branches",
+      "fired": true
+    },
+    {
+      "control": "never INSERT",
+      "violation": "an export account (999999) with no roll row, on a REAL Postgres",
+      "result": "row count unchanged 7 -> 7, account absent, counted as skipped",
+      "fired": true
+    },
+    {
+      "control": "never an empty string",
+      "violation": "a row publishing neither identifier and a row publishing one, on a REAL Postgres",
+      "result": "both untouched halves NULL; zero empty-string identifiers in the table",
+      "fired": true
+    },
+    {
+      "control": "non-declared tax_year not touched",
+      "violation": "the same prop_id seeded at 2025 alongside 2026",
+      "result": "the 2025 row stays NULL",
+      "fired": true
+    },
+    {
+      "control": "durable record precondition",
+      "violation": "createFileRecordWriter on an unwritable path, and on a path already holding a previous run's record",
+      "result": "throws ENOENT at open, before any Pool exists; and truncates on open so a stale record cannot be read as this run",
+      "fired": true
+    },
+    {
+      "control": "transaction rollback on a digest mismatch",
+      "violation": "a forced digest mismatch on a real Postgres, driven through the actual CLI",
+      "result": "ROLLBACK; the table ends with 0 of 5 rows carrying either identifier, and the record carries a rolled-back line naming the reason",
+      "fired": true
+    },
+    {
+      "control": "transaction rollback, non-vacuity",
+      "violation": "the same CLI, same table, no forced mismatch",
+      "result": "COMMIT; the identifiers land, market_value unchanged, 0 empty strings",
+      "fired": false,
+      "expected": false
+    }
+  ],
+  "verificationCommands": {
+    "typecheck": "pnpm run typecheck:libs && pnpm --filter @workspace/cad-ingest run typecheck — clean",
+    "unitSuite": "pnpm --filter @workspace/cad-ingest exec vitest run src/__tests__/publishedIdentifierBackfill.test.ts - 48 passed",
+    "fullPackageSuite": "pnpm --filter @workspace/cad-ingest exec vitest run — 344 passed, 18 skipped (the integration files, which have no local DB)",
+    "realPostgres": "a throwaway local PostgreSQL 18 cluster, cad_property built from the checked-in schema fixture's own DDL plus a second table built to the STAGING shape — 20 of 20 checks pass including the saboteur refusal and the pre-0099 refusal. Harness was scratch and is NOT committed; its committed equivalent is publishedIdentifierBackfill.integration.test.ts.",
+    "endToEndDryRunProduction": "roll 134,606 / offered 134,591 / matched 134,216 / skipped-no-roll-row 375 / skipped-null-identifier 0 / not-written 390, all 390 because not in export",
+    "endToEndDryRunStaging": "REFUSED (target-columns), naming migration 0099"
+  },
+  "ciChecks": {
+    "head": "183ecc9d6c01e30868dd33fb3997f389dba4bfe0",
+    "workflowRun": 34522440138,
+    "readAt": "2026-09-10T20:00Z",
+    "countingRule": "gh pr view 654 --json statusCheckRollup, .conclusion field per check. Not `gh pr checks` output words.",
+    "conclusions": {
+      "Typecheck": "SUCCESS",
+      "Test": "SUCCESS",
+      "L17 ci-vintage-predicate": "SUCCESS",
+      "L5 SF-30 Cotality warm grep": "SUCCESS",
+      "L5 SF-24/SF-25 score greps": "SUCCESS",
+      "L5 silent-fallback greps": "SUCCESS",
+      "L5 SF-26 hand hasWriter grep": "SUCCESS",
+      "SS-W16 tier2 flood not served": "SUCCESS",
+      "SS-W18 api-server boots": "SUCCESS",
+      "PR base is main": "SUCCESS",
+      "cortex daily limit bake": "SUCCESS"
+    },
+    "theIntegrationSuiteACTUALLYRAN": "read from the Test job log rather than inferred from a green tick: `src/__tests__/publishedIdentifierBackfill.integration.test.ts (4 tests) 15161ms` and `src/__tests__/publishedIdentifierBackfill.test.ts (48 tests) 323ms`. 15 seconds is a suite that connected to the Postgres service and built four throwaway schemas; a skipped suite reports 0ms and `4 skipped`. This mattered enough to check because a suite that runs in no workflow is dormant and a dormant suite reports as success.",
+    "schemaFixtureDrift": "the `Check schema fixture drift` step passed, which is the positive confirmation that no schema change rode along with this card."
+  },
+  "theInvocation": {
+    "prerequisite": "apply migration 0099_cad_property_published_identifiers to the f06-staging-neondb branch. The tool refuses that branch by name until then, on the dry-run path too.",
+    "runFrom": "a checkout of feat/ctx-hays-backfill-published-identifiers (PR 654, unmerged). `pnpm install` first.",
+    "source": "the 8-26-2026 Hays drop, sha256 7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193, currently at C:/Users/cente/AppData/Local/Temp/claude/p--doc-repo/043aecde-f641-4daa-871b-79d8fd10d0fe/scratchpad/hays.zip. Re-acquirable from hayscad.com/data-downloads with a browser User-Agent (403 without one). The CLI re-hashes it on every run and prints the hash into the record.",
+    "staging": {
+      "dryRun": "DATABASE_URL=\"$(neonctl connection-string --project-id fancy-fire-06136146 --branch f06-staging-neondb --database-name neondb --role-name neondb_owner)\" pnpm --filter @workspace/cad-ingest cad-backfill-published-identifiers -- --county=48209 --file=<path>/hays.zip --tax-year=2026 --dry-run --record=./ctx-hays-backfill_staging_dryrun.jsonl",
+      "apply": "DATABASE_URL=\"$(neonctl connection-string --project-id fancy-fire-06136146 --branch f06-staging-neondb --database-name neondb --role-name neondb_owner)\" pnpm --filter @workspace/cad-ingest cad-backfill-published-identifiers -- --county=48209 --file=<path>/hays.zip --tax-year=2026 --record=./ctx-hays-backfill_staging_apply.jsonl",
+      "expectFromTheDryRun": "roll rows 134,606 (measured on staging read-only 2026-09-10); matched, skipped and not-written figures depend on staging's own roll and should be READ, not assumed to equal production's."
+    },
+    "production": {
+      "dryRun": "DATABASE_URL=\"$(neonctl connection-string --project-id fancy-fire-06136146 --branch production --database-name neondb --role-name neondb_owner)\" pnpm --filter @workspace/cad-ingest cad-backfill-published-identifiers -- --county=48209 --file=<path>/hays.zip --tax-year=2026 --dry-run --record=./ctx-hays-backfill_prod_dryrun.jsonl",
+      "apply": "DATABASE_URL=\"$(neonctl connection-string --project-id fancy-fire-06136146 --branch production --database-name neondb --role-name neondb_owner)\" pnpm --filter @workspace/cad-ingest cad-backfill-published-identifiers -- --county=48209 --file=<path>/hays.zip --tax-year=2026 --record=./ctx-hays-backfill_prod_apply.jsonl",
+      "preRegisteredExpectation": "roll rows 134,606; accounts offered 134,591; rows matched 134,216; rows updated 134,216 on the first run and 0 on any re-run; skipped no roll row 375; skipped null identifier 0; roll rows not written 390, all 390 because not in export; untouched-columns digest VERIFIED. Anything else is a finding, in either direction."
+    },
+    "whatToCheckAfterwards": [
+      "the summary line `untouched-columns digest:  VERIFIED unchanged over N columns`. If it says CHANGED the process exits non-zero and the record carries a violation entry.",
+      "THE RECORD MUST END WITH `committed` OR WITH `rolled-back`. If it ends at `run-end`, the process died between the two and the store is UNVERIFIED. If it ends with a rolled-back line whose rollbackOutcome is not 'rolled back', verify the store directly before assuming anything.",
+      "the record file: one run-start, one plan naming every skipped and untouched prop_id, one untouched-digest before, one batch line per 1000 rows carrying its updated prop_ids, one untouched-digest after, one run-end.",
+      "SELECT count(*) FROM cad_property WHERE county_fips='48209' AND tax_year=2026 AND quick_ref_id IS NOT NULL — expect 134,216 on production.",
+      "SELECT count(*) FROM cad_property WHERE county_fips='48209' AND (quick_ref_id='' OR property_number='') — expect 0. Ever.",
+      "keep the record file. It is the durable record for a state-changing operation and it names the items."
+    ],
+    "notAvailableOnPurpose": "there is no --limit and no --skip-verify. A partial run would leave a county half-populated with a count that reads as complete, and an escape hatch on the digest would teach the next operator to use it. Staging IS the pilot."
+  },
+  "filesAdded": [
+    "lib/cad-ingest/src/publishedIdentifierBackfill.ts — the pure core: member discrimination, file read, plan, statement builder, allowlist guard, digest scope, target-column preflight, the run",
+    "lib/cad-ingest/src/published-identifier-backfill-cli.ts — the CLI",
+    "lib/cad-ingest/src/__tests__/publishedIdentifierBackfill.test.ts - 48 unit tests",
+    "lib/cad-ingest/src/__tests__/publishedIdentifierBackfill.integration.test.ts — 4 withTestSchema tests, run under `pnpm test` in CI",
+    "lib/cad-ingest/src/__tests__/__fixtures__/hays_property_backfill_sample.txt",
+    "lib/cad-ingest/src/__tests__/__fixtures__/hays_property_duplicate_accounts_sample.txt",
+    "lib/cad-ingest/src/__tests__/__fixtures__/hays_property_per_instance_sample.txt",
+    "lib/cad-ingest/src/__tests__/__fixtures__/hays_improvement_sample.txt",
+    "lib/cad-ingest/package.json — the cad-backfill-published-identifiers script"
+  ],
+  "constraintsHonored": [
+    "THE BACKFILL WAS NOT RUN AGAINST ANY STORE. Every production and staging call was a SELECT under a read-only guard that was verified by violation on both the in-session SET path and the connection-option path. The only real writes anywhere in this lane were to a throwaway local PostgreSQL cluster in the session scratchpad, now stopped.",
+    "worktree created from origin/main and registered in _catalog/seat_register.json BEFORE any repo file was read",
+    "legacy-design-tools only; no hauska-factory, hauska-engine or hauska-map write",
+    "no deploy, no Cloud Build, no Cloud Run job, no bake, no publish, no walk",
+    "PR opened, NOT merged",
+    "committed by explicit pathspec, never `git add -A`; staged content verified before each commit",
+    "commit and push issued in separate calls",
+    "every verification command exit-bounded",
+    "no vintage-predicate violation: publishedIdentifierBackfill.ts queries cad_property and imports resolveDeclaredCadVintage; CI's L17 check passed"
+  ],
+  "mistakesMade": [
+    "I overwrote a TRACKED fixture (hays_property_sample.txt, used by orion.test.ts) while generating my own. Caught by a routine `git status`, restored with `git checkout --`, mine renamed to hays_property_backfill_sample.txt. The check that caught it was routine; the damage would not have been.",
+    "My first mutation run reported ALL CHECKS PASSED and I nearly recorded 'the controls hold'. The patch script had raised AssertionError and exited before writing, so the mutation never landed and I had re-run unmutated code. Caught because the result was convenient and I grepped the file to confirm. Root cause: in this environment `python - <<'PY'` does not deliver a doubled backslash verbatim, so every string patch anchored on a TypeScript template literal containing an escaped newline silently failed to match.",
+    "CP1 asserted the untouched-columns digest was meaning-shaped and that no single party could satisfy both sides. It was wrong. Corrected in CP2 and in the code."
+  ],
+  "leave_behind": [
+    {
+      "item": "migration 0099 is NOT applied to the f06-staging-neondb branch. The staging-first sequence cannot run until it is.",
+      "owner": "integration seat",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "the backfill itself: build and hand-back is done, EXECUTION is not. Staging first, then production, per theInvocation above.",
+      "owner": "integration seat",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "PR 654 is open and unmerged on branch feat/ctx-hays-backfill-published-identifiers, head 46b4ee0a.",
+      "owner": "P-124 driver",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "REBIND 30,861 and GAIN 19,901 remain un-re-derived. They live in the atoms store (HAUSKA_MCP_DATABASE_URL) which this lane had no credential for. One read settles it.",
+      "owner": "whoever holds the HAUSKA_MCP credential",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "which drop is Hays' declared 2026 roll — the PRELIMINARY one the store carries or the 8-26-2026 one on disk — is STILL open. They disagree on 45,524 market values, 509 situs strings, 390 roll rows and 375 export accounts. This lane deliberately did not touch it and the tool structurally cannot.",
+      "owner": "operator",
+      "plan_row": "P-124"
+    },
+    {
+      "item": "the reader loads the whole PROPERTY member into memory to make R4 a true pre-write gate. About 10 MB at Hays, roughly 120 MB at 1.5M accounts. Beyond that it needs a two-pass read.",
+      "owner": "property seat",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "the conflicting-duplicate branch has ZERO live population in this drop and is proven by fixture only. If a future drop produces one, the affected account is refused and named in the record rather than resolved.",
+      "owner": "property seat",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "one uncommitted doc_repo edit: my worktree entry in _catalog/seat_register.json. Doc_repo commits are planner-owned.",
+      "owner": "planner",
+      "plan_row": "P-124"
+    }
+  ],
+  "fleetMemory": [
+    {
+      "kind": "LESSON",
+      "text": "A CHECKER WHOSE EXCLUSION SET IS DERIVED FROM THE THING IT CHECKS IS INTERNAL CONSISTENCY WEARING A MEANING-SHAPED COSTUME. My untouched-columns digest read its column list from information_schema (a genuinely independent source) and then subtracted the WRITER'S OWN ALLOWLIST. Widening the writer therefore widened the blind spot in the same edit, and the digest reported VERIFIED over a run that moved market_value on every row. The catalog half was independent; the subtraction half was not, and the subtraction is where the defect lived. When judging whether a check is meaning-shaped, check BOTH of its inputs, including the one that looks like a parameter rather than a source."
+    },
+    {
+      "kind": "LESSON",
+      "text": "MUTATION IS THE ONLY THING THAT FOUND IT. I read that digest code three times and it reads correctly: 'enumerate from the catalog, exclude what we write, digest the rest' is the sentence you would write down as the right design. It took editing the writer to move a dollar and re-running the controls. For any control claimed to protect something valuable, break the protected thing on purpose and confirm the control fires. Reading the conclusion again is not a verification."
+    },
+    {
+      "kind": "LESSON",
+      "text": "IN THIS ENVIRONMENT `python - <<'PY'` DOES NOT DELIVER A DOUBLED BACKSLASH VERBATIM: a `\\\\n` in the heredoc arrives at Python as a real newline. Every string patch anchored on a TypeScript template literal containing an escaped newline silently fails to match, and a patch script that asserts-and-exits leaves the file UNCHANGED while the test output that follows reads as a pass. Build the escape with chr(92) and anchor by line index, or use the Write tool. This cost me a false 'ALL CHECKS PASSED' that I nearly recorded."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A CONVENIENT RESULT IS A REASON TO DISTRUST THE INSTRUMENT. The first mutation run reported every check passing, which was the answer that would have been most comfortable, and it was produced by a mutation that never landed. One grep of the file changed the answer completely. Cost: ten seconds."
+    },
+    {
+      "kind": "LESSON",
+      "text": "GENERATING A TEST FIXTURE CAN OVERWRITE A TRACKED ONE. I wrote hays_property_sample.txt, which orion.test.ts already uses, while generating my own samples. `git status` caught it before any commit. When scripting fixture generation into an existing __fixtures__ directory, list the directory first or namespace the filename."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A RATIO-BASED GATE NEEDS A DECLARED APPLICABILITY FLOOR OR IT FIRES ON TINY FIXTURES. My duplicate-ratio rule (0.1 percent ceiling) is right for a 134,592-row roll and meaningless on a 9-row fixture where one duplicate is 11 percent. The fix is not to weaken the ceiling: it is to declare the rule NOT APPLICABLE below a floor and say so in the output, which is the declared-degradation rule. A rule that silently skips itself on small inputs is the starved class."
+    },
+    {
+      "kind": "LESSON",
+      "text": "AN UPDATE ... FROM (VALUES ...) MAKES 'NEVER INSERT' STRUCTURAL. There is no branch to forget and no check to go missing: the statement type cannot create a row. Where a constraint can be carried by the shape of the thing rather than by a guard around it, carry it there and let the test document the property rather than enforce it."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, information_schema read-only on neon fancy-fire-06136146: PRODUCTION cad_property has 23 columns including quick_ref_id and property_number (migration 0099 applied). The f06-staging-neondb branch has 21 columns and NEITHER (0099 NOT applied). Both branches carry 134,606 rows at county_fips 48209 tax_year 2026. Production has 0 non-null quick_ref_id and 0 non-null property_number for that county-year, so nothing has populated them."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, hays.zip sha256 7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193. The 2026-08-26 drop's six members and their header widths: 1404449 PROPERTY 40 cols, 1404450 OWNER 21, 1404451 LAND 21, 1404452 IMPROVEMENT 11, 1404453 SEGMENT 21, 1404454 SALES 13. ALL SIX share the first four columns RecordType, PropertyID, QuickRefID, PropertyNumber. Width identifies PROPERTY uniquely and does NOT distinguish OWNER, LAND and SEGMENT from each other. The PROPERTY member has 134,592 data rows over 134,591 distinct PropertyID; the single duplicate is prop_id 172572 and BOTH of its rows carry the identical pair (P134814, 13-L200-0000-00764-4). ZERO blank QuickRefID and ZERO blank PropertyNumber in the whole file."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, production read-only: a two-column backfill of Hays 48209 tax_year 2026 from the 8-26-2026 PROPERTY member reaches 134,216 of 134,606 roll rows; 390 stay NULL and ALL 390 are because the export carries no such account (0 because it publishes neither identifier, 0 because of a conflicting duplicate); 375 export accounts have no roll row and are never inserted; the result is 115,033 usable crosswalk keys with 0 ambiguous and 0 corroboration refusals. txgio_parcel 48209 is 131,734 rows with 130,246 non-blank geo_id. Produced twice: an independent Python derivation and the tool's own --dry-run."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10: running the 8-26-2026 Hays export through the EXISTING cad-ingest CLI is a re-ingest, not a backfill, and would change 45,524 of 134,216 market values (about 5.8 billion dollars of absolute movement) and overwrite source_file on every touched row. upsertCadProperties has no delete and merges marketValue as COALESCE(excluded, existing), so incoming wins. Read from the write path, not inferred."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Migration 0099 must be applied to f06-staging-neondb before the staging run of the backfill. The tool refuses that branch by name until then, dry run included."
+    },
+    {
+      "kind": "OPEN",
+      "text": "The backfill has been BUILT and HANDED BACK, not executed. PR 654, branch feat/ctx-hays-backfill-published-identifiers, head 46b4ee0a, unmerged. The integration seat runs staging then production."
+    },
+    {
+      "kind": "OPEN",
+      "text": "REBIND 30,861 and GAIN 19,901 are still un-re-derived: they live in the atoms store (HAUSKA_MCP_DATABASE_URL), which the property seat's CTX lanes have not been given. The roll-population analogues under three candidate current-bind rules are recorded in this close and none of them is the same measurement."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Which drop is Hays' declared 2026 roll is STILL an open operator question. The PRELIMINARY drop in the store and the 8-26-2026 drop on disk disagree on 45,524 market values, 509 situs strings, 390 roll rows and 375 export accounts. The backfill is structurally incapable of importing a value from the newer drop, which is the point."
+    }
+  ],
+  "commits": [
+    {
+      "sha": "8064a651",
+      "subject": "feat(P-124/CTX-HAYS-BACKFILL): write two identifier columns and nothing else, and the check that proves it was blind until a mutation run said so"
+    },
+    {
+      "sha": "46b4ee0a",
+      "subject": "fix(P-124/CTX-HAYS-BACKFILL): refuse a store where migration 0099 is not applied, because staging is one"
+    },
+    {
+      "sha": "23958aaa",
+      "subject": "test(P-124/CTX-HAYS-BACKFILL): violate the record-writer precondition instead of asserting it"
+    },
+    {
+      "sha": "ca3a8734",
+      "subject": "fix(P-124/CTX-HAYS-BACKFILL): one transaction, so the digest PREVENTS a bad write instead of reporting one"
+    },
+    {
+      "sha": "183ecc9d",
+      "subject": "fix(P-124/CTX-HAYS-BACKFILL): record a FAILED rollback instead of letting it replace the error"
+    }
+  ],
+  "theTransaction": {
+    "why": "the dispatch asked that a run be PROVABLY UNABLE to alter a market value. What the first commit shipped was provably able to TELL YOU it had altered one: the untouched-columns digest runs after the batches, so a mismatch left the run committed and raised afterwards. For a money column that is a report, not a control.",
+    "what": "the whole run is one transaction on one pg.Client. BEGIN, SET LOCAL statement_timeout='900s', digest-before, batches, digest-after; a mismatch throws, the catch ROLLBACKs, and nothing this tool wrote survives. A Pool would have spread the run across connections and made BEGIN meaningless.",
+    "sideEffect": "the partial-run state is gone. 135 separate statements could fail at 130 and leave a county two-thirds written; one transaction either lands or does not, and the operation is idempotent so re-running after a rollback costs nothing.",
+    "theRollbackIsRecorded": "a `rolled-back` line naming the reason and stating that every prop_id in the batch lines above was undone. A refusal that leaves no name is how an unattributed mutation becomes unanswerable.",
+    "verifiedBothDirectionsThroughTheRealCLI": {
+      "forcedDigestMismatch": "BEGIN, 4 rows updated, violation entry, ROLLBACK, and the table left with 0 of 5 rows carrying either identifier",
+      "cleanRun": "BEGIN, 4 matched, 4 updated, VERIFIED unchanged over 21 columns, COMMIT, and the table carrying the identifiers with 0 empty strings, 1 honest NULL quick_ref_id, 2 honest NULL property_number, and one distinct market_value"
+    },
+    "howTheMismatchWasForced": "a SCRATCH mutation appending a suffix to the after-digest, applied and reverted, never committed. The digest logic itself was not changed.",
+    "failedRollbackIsRecordedToo": "if ROLLBACK itself throws, its error used to REPLACE the original refusal and the rolled-back line was never written, so the record ended at run-end and a reader could take that for a commit. Absent and failed looked the same, in the record of a tool built to stop exactly that. The rollback now runs in its own try and both outcomes are recorded; a failed one says plainly that the server aborting an open transaction on a dead connection is an INFERENCE, not an observation."
+  },
+  "scopeOfTheClaims": {
+    "whatProvablyUnableToAlterAMarketValueMEANS": "the UPDATE's WHERE pins county_fips and tax_year, so the statement structurally cannot reach a row outside the county-year it was given; the digest is scoped to that SAME county-year; and the whole run is one transaction that rolls back on a digest mismatch. Inside that scope the claim is earned. Outside it the tool cannot reach, so there is nothing to claim.",
+    "whatItDoesNotDo": "it never CREATES an empty-string identifier -- textOrNull turns a published blank into null at read time and COALESCE leaves the cell alone -- but it does not CLEAN UP an empty string that predates it. On production that population is zero today (0 non-null quick_ref_id and 0 non-null property_number at 48209/2026), so the distinction is currently theoretical. Stated because a later reader should not infer a repair the tool does not perform.",
+    "theDigestIsScopedNotGlobal": "it digests cad_property at (county_fips, declared tax_year), not the whole table. A write to another county during the run is neither detected nor rolled back, and is also not something this tool can cause. Naming the exclusion because an instrument's exclusion set is part of its contract."
+  },
+  "diffShape": {
+    "filesChanged": 9,
+    "insertions": 2672,
+    "deletions": 0,
+    "read": "PURELY ADDITIVE. Not one line of existing code changed; the only edit to a pre-existing file is a single script line in lib/cad-ingest/package.json. upsertCadProperties, the Orion parser, the vintage resolver and every existing caller are untouched, so this writer cannot regress the ingest path. It also means the only way this ships a defect is through code nothing calls yet, which is why the verification is weighted toward running the tool rather than reading it.",
+    "commits": 5
+  }
+}

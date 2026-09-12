@@ -1,0 +1,512 @@
+{
+  "lane": "CTX-HAYS-KEY",
+  "title": "the Hays key is not broken; it is the wrong column, and the county publishes the right one",
+  "planRows": ["P-124"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ctx-hays-key_dispatch.md",
+  "closedAt": "2026-09-10T17:30:00Z",
+  "status": "complete",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays-key",
+  "branch": "explore/ctx-hays-key",
+  "baseCommit": "591f5efe14aab6efda6d79e15aa7357751975655",
+  "headSha": "591f5efe14aab6efda6d79e15aa7357751975655",
+  "codeDiff": "NONE. git status on this worktree is empty at close; git log -1 is the same 591f5efe it was cut from. This lane is read-only research and produced no code, deliberately. See whyNoCode.",
+  "pr": null,
+  "prUrl": null,
+  "merged": false,
+  "mergeSha": "not applicable: no code, no PR",
+  "ciConclusionStrings": "not applicable: no commit, so no check-run was triggered by this lane",
+  "checkpoints": [
+    "_inbox/2026-09-10_ctx-hays-key_cp1.json",
+    "_inbox/2026-09-10_ctx-hays-key_cp2.json"
+  ],
+
+  "missionPremise": "Operator ruling 2026-09-10 (carried in the dispatch): Hays 48209 is OUT of the current CTX wave; the other five counties go to production without it. CTX-B7 measured cross-vintage prop_id ZIP stability at Travis 99.73 percent, Caldwell 99.21 percent and Hays 53.86 percent, and found 29,404 Hays parcels already serving another parcel's cadRoll dollars on production since the August bake. The dispatch's question is WHY the key is unstable -- a renumbering, two source conventions merged into one column, or a genuine resplit -- because those three do not have the same fix, and then what acquisition makes a Hays parcel node's geometry, address and money describe the same physical parcel. A second item, the CTX-B5 retirement basis, was assigned on the stated grounds that CTX-B5 never ran.",
+
+  "completionPredicate": "A stranger can evaluate this close by: (1) running `python hays_key_probe.py --self-test` (12 cases, 0 failures, exit 0), then the corpus score, then `--violate` (exit 1, 2 mismatches) against the public Hays CAD export and a txgio_parcel dump -- the instrument refuses to score if its own self-test fails; (2) re-running the SQL in heavyScans against the declared read-only snapshots and reproducing every count under its stated counting rule; (3) checking the two reconciliations that had to hold and do -- CTX-B7's 126,808 / 68,305 / 53.86 percent reproduced exactly by an instrument written before reading theirs, and CTX-B7's 29,404 reproduced exactly as this lane's 29,395 plus 9; (4) confirming that CAD PropertyID 40138 carries QuickRefID R26199 in Hays CAD's own export while txgio_parcel 48209 prop_id 26199 carries geo_id 11-2520-0000-03100-2, the same string that export publishes as account 40138's PropertyNumber. If any of those disagrees with what is written here, this close is wrong.",
+
+  "scopeBasis": "legacy-design-tools only, per the dispatch, and READ-ONLY throughout -- no code was written in any repo. hauska-factory, hauska-engine and hauska-map were not touched or read from a worktree. Deliberate exclusions, each with a reason rather than an omission: (a) CTX-B5's worktree and file set were NOT touched, because that lane is live with 1,083 uncommitted insertions across exactly the files item 2 would require, and two writers on one file is the collision the contract exists to prevent; (b) the dollar-path gate CTX-B7 named as its own boundary was not implemented, because it changes what cadRoll reports for Travis 429 and Caldwell 92 rows in the five counties currently moving through production; (c) the ZONING_LAYERS and walk-mirror items inherited from CTX-B6/B7 were not touched, being factory-side; (d) the disposition of whether to pull Hays from production is reported and NOT made, per the dispatch. Every database session on both stores ran with default_transaction_read_only=on, verified by violation before any scan was trusted.",
+
+  "theQuestionThisCardExistedToAnswer": {
+    "question": "Why is the Hays prop_id key unstable across cad_property vintages, and what acquisition makes a Hays parcel node's geometry, address and money describe the same physical parcel?",
+    "answer": "The key is not unstable. The Hays CAD PropertyID is one of the most stable keys in the corpus -- 99.95 percent across roll years on the rows nothing has touched. What is unstable is that cad_property's `prop_id` column holds TWO DIFFERENT PUBLISHED IDENTIFIERS at once. TxGIO publishes Hays parcels under the county's QuickRefID (R-account) number with the R already stripped; cad_property is keyed on the county's PropertyID; and the 2026-08-25 P-78 StratMap merge unioned the two into one primary key. The acquisition that fixes it needs no new source: the crosswalk is already in the export we download, in two columns the parser drops."
+  },
+
+  "theMechanism": {
+    "name": "two published identifiers unioned into one primary key, with the geometry source's cells overwriting the appraisal source's",
+    "statedInOneSentence": "For Hays, `txgio_parcel.prop_id` is the CAD `QuickRefID` R-account stem and `cad_property.prop_id` is the CAD `PropertyID`; these are two different numbers for the same parcel, both bare-numeric, and `p78Merge.applyPathAMerge` upserted the TxGIO-keyed rows into `cad_property` on `(county_fips, prop_id, tax_year)` using `coalesce(incoming, existing)` with `situsAddress`, `situsCity`, `situsZip` and `ownerName` in `COALESCE_FIELDS`, so wherever the two numbers collided the TxGIO row's address and owner overwrote the CAD account's while `assessed_value` survived (StratMap hardcodes it null, so the coalesce fell through to the existing CAD value).",
+    "theProof": {
+      "fromTheSourceFile": "Hays CAD's own property export carries `PropertyID`, `QuickRefID` and `PropertyNumber` in adjacent columns. CAD account 40138 = QuickRefID R26199 = PropertyNumber 11-2520-0000-03100-2 = 340 WINDMILL WAY BUDA, market 172,700. txgio_parcel 48209 prop_id 26199 carries geo_id 11-2520-0000-03100-2 and situs 340 WINDMILL WAY BUDA. CAD account 26199 = QuickRefID R117015 = 134 LEAR AVE BUDA, market 426,950. TxGIO parcel 26199 IS CAD account 40138.",
+      "fromTheStore": "116,421 of 116,421 Hays cad_property tax_year 2025 rows that join txgio_parcel on prop_id carry txgio_parcel's situs_address byte-identically after normalisation. 100.00 percent, in both the CAD-dollar-bearing partition (75,551) and the pure-geometry partition (40,870).",
+      "fromTheCode": "lib/cad-ingest/src/p78Merge.ts:105-107 `coalesce(incoming, existing)` returns incoming whenever it is non-null; :148-162 COALESCE_FIELDS includes ownerName, situsAddress, situsCity, situsZip; :196-197 sourceFile and sourceVintage are overwritten unconditionally, which is why the provenance column cannot even show you it happened.",
+      "theNegativeControlThatMakesItStick": "Caldwell 48055's 2026 CAD export joined to txgio_parcel on prop_id is a KNOWN-GOOD join (owner agrees on 21,616 of 24,722, 87.4 percent) and its exact-normalised situs strings agree on 15. A correct cross-source join gives near-zero exact-string address agreement because two publishers format differently. 100.00 percent is therefore not agreement, it is a copy."
+    }
+  },
+
+  "mechanismsRejectedWithEvidence": [
+    {
+      "id": "H2",
+      "name": "a renumbering between roll years",
+      "verdict": "REJECTED",
+      "evidence": "cross-vintage situs-ZIP agreement for Hays, partitioned by the 2025 row's lineage: rows still tagged hays-export2.zip, which P-78 never touched, agree on 52,251 of 52,276 pairs = 99.95 percent, ABOVE the Travis 99.73 and Caldwell 99.21 baselines. Rows P-78 overwrote agree on 15,172 of 71,822 = 21.12 percent. A renumbering acts on the county's accounts, not on the subset one merge happened to touch.",
+      "whatWouldHaveToldMeItWasThis": "if the untouched hays-export2 partition had also come in near 50 percent."
+    },
+    {
+      "id": "H3",
+      "name": "a genuine parcel resplit",
+      "verdict": "REJECTED",
+      "evidence": "a resplit changes geometry and mints new accounts. It cannot produce byte-identical situs strings on 116,421 of 116,421 rows; it cannot produce CTX-B7's near-symmetric all-pairs city permutation (SAN MARCOS to KYLE 2,268 beside KYLE to SAN MARCOS 1,641); and it leaves the untouched partition alone, which is not what a resplit does. Also, the accounts are not gone: 38,200 of the 38,444 prop_ids absent from the declared roll are ON that roll under their published R-number.",
+      "whatWouldHaveToldMeItWasThis": "successor accounts appearing in cad_property with new prop_ids and matching legal descriptions, and a crosswalk table with real entries. cad_property_vintage_crosswalk holds 671 rows, all Dallas and Tarrant whitespace-and-case normalisation, ZERO for Hays and ZERO for Williamson."
+    },
+    {
+      "id": "H4",
+      "name": "the coverage ledger had flipped the integrity gate open (my own hypothesis)",
+      "verdict": "REJECTED by reading the write path, not by measuring output",
+      "evidence": "joinIntegrityGate.ts pins every read to tryResolveDeclaredCadVintage(fips) with an explicit AND tax_year = $2, never a max(tax_year) fallback, and all three bake call sites pass effectiveBlockedFips(ledger) which UNIONs LANDUSE_JOIN_DISABLED_FIPS_SEED. The gate holds.",
+      "butSee": "theLedgerSaysPass below. The hypothesis was wrong about the consequence and right about the state."
+    }
+  ],
+
+  "theAcquisitionThatFixesIt": {
+    "headline": "No new acquisition is required. The crosswalk has been in every Hays export this program has downloaded, in two columns the Orion parser does not read.",
+    "theKey": "`PropertyNumber` (the county's Geographic ID) joined to `txgio_parcel.geo_id`, corroborated by the `QuickRefID` R-stem joined to `txgio_parcel.prop_id`.",
+    "measured": {
+      "snapshot": "2026-PROPERTY-DATA-EXPORT-FILES-AS-OF-8-26-2026.zip, 134,592 rows, fetched 2026-09-10; txgio_parcel 48209 has 116,422 distinct prop_id and 115,533 distinct geo_id, staging read-only",
+      "countingRule": "for each CAD row, take the key, look it up in the stated txgio index, and score agreement as an exact match of the situs strings after uppercasing and stripping every non-alphanumeric character",
+      "PropertyID_to_prop_id_TODAYS_KEY": {"matched": 78107, "matchedPctOfRoll": 58.03, "situsAgree": 53, "pctOfMatched": 0.07},
+      "QuickRefID_stem_to_prop_id": {"matched": 121320, "matchedPctOfRoll": 90.14, "situsAgree": 108759, "pctOfMatched": 89.65},
+      "PropertyNumber_to_geo_id": {"matched": 115035, "matchedPctOfRoll": 85.47, "situsAgree": 108532, "pctOfMatched": 94.35},
+      "crossCheck": "the two candidate keys pick the SAME txgio parcel on 115,035 rows and DIFFERENT parcels on 0. QuickRefID reaches 6,285 rows geo_id misses; geo_id reaches 0 that QuickRefID misses.",
+      "byAccountClass": "R real property 123,433 rows, 116,077 matched, 93.7 percent situs agreement, 99.1 percent geo_id-corroborated. P personal property 8,670 rows, 4,212 matched, 0.4 percent. M mobile home 2,479 rows, 1,031 matched, 0.0 percent. N 10 rows, 0 matched."
+    },
+    "whyPropertyNumberAndNotQuickRefID": "geo_id names a PARCEL, so it cannot collide across account classes. The QuickRefID stem is bare-numeric and its P and M matches are pure numeric collisions -- 5,243 of them, agreeing on situs 18 times. Restricting QuickRefID to R accounts recovers its 6,285-row advantage safely; using it unrestricted re-imports the exact class of collision it was brought in to fix.",
+    "coverageThisBuys": "116,077 of Hays' 123,433 real-property accounts (94.0 percent) can be bound to a TxGIO parcel by a published identifier. Today the program binds 78,107 by a key that is right 0.07 percent of the time. The residual ~7,356 R accounts have no TxGIO parcel under either key -- construction or subdivision since the 2025-03 StratMap vintage -- and are honest geometry absences, not fabrications."
+  },
+
+  "theDispatchsFiveCandidates": [
+    {
+      "candidate": "re-declare 48209's vintage, if some other vintage is internally coherent",
+      "verdict": "REJECT, and it is the most dangerous of the five",
+      "why": "2025 IS the contaminated vintage -- its situs and owner cells are TxGIO's on 116,421 rows. Worse, the integrity gate's threshold is a 0.5 owner-match rate: scored against the declared 2026 vintage Hays measures 9 of 78,117 (0.012 percent) and blocks; scored against 2025 it measures 74,917 of 75,551 plus 40,870 of 40,870 (over 99 percent) and would write `pass`, lifting the block and turning the fabricating prop_id land-use and geometry join back on for the whole county. Re-declaring the vintage would feed the gate the contamination it exists to detect."
+    },
+    {
+      "candidate": "re-acquire Hays with an explicit crosswalk, which is what cad_property_vintage_crosswalk exists for",
+      "verdict": "RIGHT DIRECTION, WRONG TABLE, AND NO RE-ACQUISITION NEEDED",
+      "why": "cad_property_vintage_crosswalk holds 671 rows: 48113 Dallas 121 and 48439 Tarrant 550, every one method `gis-link-normalize-ws-case`, evidence_class `source-key-normalize` -- whitespace and letter-case fixes. ZERO rows for Hays; zero for Williamson. It is also the wrong shape: this is not a from_tax_year-to-to_tax_year vintage crosswalk, it is a cross-IDENTIFIER crosswalk WITHIN one vintage. And the data needs no acquisition, only a parser that reads two columns it currently skips."
+    },
+    {
+      "candidate": "extend CTX-B7's same-parcel ZIP gate to the dollar path",
+      "verdict": "REJECT AS THE FIX; it is a tourniquet, and it is the operator's call whether to apply one",
+      "why": "it would suppress or refuse money on the 29,404-to-37,479 detectable rows while leaving the address, the polygon, the acreage and the land-use code still describing another parcel, and while leaving 25,446 parcels drawn by more than one money-serving node. It converts a wrong number into a refusal without making the record describe one parcel. It is a legitimate CONTAINMENT option and is priced in the operator packet; it is not the fix."
+    },
+    {
+      "candidate": "key Hays on something other than prop_id, if the source offers a stable identifier",
+      "verdict": "THIS IS THE ANSWER, and the source offers two",
+      "why": "see theAcquisitionThatFixesIt. Note the shape of the miss: joinNormalize.ts's module header says Williamson's TxGIO ids are the R-account form and concludes that `Only Williamson carries R-prefixed TxGIO ids in the whole corpus`. That is true of the PREFIX and false of the NUMBERING. Hays' TxGIO ids are the same R-account numbers with the R already stripped at the source, which is precisely why removing the R-strip cost nothing and why nobody went looking for a crosswalk."
+    },
+    {
+      "candidate": "serve nothing for the contaminated population until the key is fixed",
+      "verdict": "a containment option, priced for the operator, not recommended as a resting state",
+      "why": "it is honest and it is large: the detectably-wrong set is 37,479, the full suspect set (any node whose claim came from the contaminated vintage) is 67,341, and the phantom-node set is 38,444. Withdrawing them is defensible; leaving Hays in that state indefinitely is not, because the fix is a parser change and a re-bake rather than a research programme."
+    }
+  ],
+
+  "operatorPacket": {
+    "note": "The disposition -- whether to pull Hays back from production -- is the operator's call and is NOT made here. These are the four things the dispatch said he needs to make it. All figures are PRODUCTION, Neon branch production, database neondb, read-only, 2026-09-10.",
+
+    "howManyCustomerVisibleParcelsAreWrong": {
+      "countingRule": "one row per place_layer_snapshots row with adapter_key='node-facets:tier1' and place_key LIKE 'node:48209:%'. served_street = the normalised segment before the first comma of baseFacts.situsAddress when it is a STRING. roll_street = the same normalisation of cad_property.situs_address at the DECLARED vintage 2026 for that prop_id. Contradiction = both present and different.",
+      "haysTier1RowsOnProduction": 173050,
+      "serveMoney": 134606,
+      "servedAddressCONTRADICTStheAccountsOwnAddress": 37479,
+      "ofThoseServingMoney": 37479,
+      "ofThoseDrawnOnTheMap": 37143,
+      "ofThoseAlsoServingAnAddressRecoveredLandUseCode": 31987,
+      "servedAddressAgrees": 92563,
+      "noRowOnTheDeclaredRollAtAll": 38444,
+      "ofThoseServingMoney": 0,
+      "recordRetirementObjectsOnProduction": 0,
+      "theCleanPartitionIsPerfect": "every one of the 37,479 contradictions sits on a claim whose vintage is 2025. Of the 64,820 rows whose claim came from the clean 2026 roll and which have both streets to compare, ZERO contradict. The defect is entirely confined to the contaminated vintage.",
+      "reconciliationWithCTX_B7": "CTX-B7 reported 29,404 Hays rows serving money on a claim-ZIP-vs-roll-ZIP conflict. This lane reproduces it exactly: 29,395 of the 37,479 street-contradicting rows also conflict on ZIP, plus 9 rows where the street agrees and only the ZIP differs (a genuine ZIP correction on the same street) = 29,404. The 8,084 difference is not a disagreement between the lanes: ZIP is a coarser discriminator than street, and two different parcels frequently share a ZIP. 37,479 is the number; 29,404 was a floor.",
+      "duplicateNodes": {
+        "countingRule": "provenance.parcelJoin.featureIndex on the stored production payload",
+        "nodesBoundToATxgioParcel": 130663,
+        "distinctParcelsThoseNodesDraw": 80502,
+        "parcelsDrawnByMoreThanOneNode": 43671,
+        "nodesSittingOnASharedParcel": 93832,
+        "parcelsCarryingMoreThanOneMONEYSERVINGnode": 25446,
+        "nodesBoundToNoParcelAtAll": 42387,
+        "read": "on 25,446 Hays parcels the map draws one polygon that two or more records claim, each with its own appraised value. Which value a customer sees depends on which record they land on."
+      }
+    },
+
+    "whatACustomerSeesOnOneToday": {
+      "parcel": "node:48209:26199, read verbatim from production 2026-09-10",
+      "servedSitusAddress": "340 WINDMILL WAY, BUDA, TX 78610",
+      "servedCityZip": "BUDA / 78610",
+      "servedCoordinates": "30.07120, -97.84007",
+      "servedAcreage": "0.4553 acres, method shoelace-wgs84, sqft 19831",
+      "servedMarketValue": "426,950 (source cad_property, vintage 2026, valueBasis county-assessed); assessed 426,950; land 102,660; improvement 324,290; livingAreaSqft 2,216",
+      "servedProvenance": "parcelJoin.state joined-situs, basis `txgio_parcel row feature_index 57725 matched on normalizeSitusAddress (situs-address recovery for county 48209)`, parcelVintage 2025, landUseSource cad-roll-address-join, landUseGateBlocked false",
+      "whatIsActuallyTrue": "Hays CAD account 26199 is 134 LEAR AVE, BUDA, and its market value IS 426,950. The address, the polygon, the coordinates, the acreage and the land-use code all belong to TxGIO parcel 26199, which is Hays CAD account 40138 at 340 WINDMILL WAY, whose own market value is 172,700. So the customer is shown 340 Windmill Way with 134 Lear Ave's money.",
+      "andTheOtherHalf": "node:48209:40138 serves the SAME address, the SAME polygon and the SAME coordinates, with market value 172,700. Two records, one parcel on screen, two different values. Meanwhile 134 Lear Ave has no record serving it under its own address."
+    },
+
+    "isTheWrongnessDetectableFromThePayloadItself": {
+      "answer": "NO.",
+      "why": "no field on the payload states the account's own address, so nothing on it can be compared against the served address. The one field that correlates perfectly is `provenance.parcelVintage`, which reads 2025 on all 37,479 wrong rows -- but it also reads 2025 on 27,743 rows that are correct, so it identifies a 67,341-row SUSPECT set and not the wrong ones. It is also mis-named (it is the claim's taxYear, per CTX-B6's own correction), so a consumer using it as a tell is relying on a field whose name lies. `parcelJoin.state = joined-situs` says the geometry was recovered by address; it does not say the address was another parcel's. Detection requires a second source -- the declared roll, or the county's crosswalk column.",
+      "consequence": "a downstream consumer, an MCP caller, or a customer cannot self-serve this. If Hays stays up, the disclosure has to come from us."
+    },
+
+    "whatPullingItBackWouldCostInCoverage": {
+      "countingRule": "place_layer_snapshots rows with adapter_key='node-facets:tier1' and place_key LIKE 'node:48%', grouped by the FIPS segment. Full scan, production, 2026-09-10.",
+      "productionTier1RowsAllCounties": 5141450,
+      "countiesServed": 19,
+      "hays48209": 173050,
+      "haysShareOfProductionTier1": "3.37 percent",
+      "sixCountyCTXTotal": 1516109,
+      "haysShareOfTheCTXSix": "11.41 percent",
+      "whatIsActuallyLost": "of Hays' 173,050 rows, 92,563 serve an address that agrees with the account's own roll address and 64,820 of those came from a clean 2026-vintage claim. A full county withdrawal discards roughly 92,000 correct records to suppress 37,479 wrong ones. A withdrawal scoped to the contaminated claim vintage costs 67,341 rows and removes all 37,479 wrong ones; a withdrawal scoped to the detectable contradictions costs 37,479 and removes all of them, but leaves the 29,862 undetected 2025-vintage rows whose correctness this lane established only by comparison with the roll.",
+      "theCheaperOption": "none of the three withdrawal scopes is as cheap as the fix. Reading two columns the export already contains, re-ingesting Hays, and re-baking removes the defect rather than hiding it, and it is a parser change plus an execution -- not a research programme."
+    }
+  },
+
+  "theSecondThingThisLaneOwned": {
+    "item": "the CTX-B5 retirement basis",
+    "firstFinding": "THE DISPATCH'S PREMISE IS FALSE AT SOURCE. CTX-B5 ran. Its worktree P:/seat-worktrees/property/legacy-design-tools-ctx-b5 is registered in _catalog/seat_register.json, sits on fix/ctx-b5-retirement-basis at base fa7b9b67, and carries 1,083 uncommitted insertions across six files including recordRetirement.ts and nodeFacetBakeTier1Conformant.ts. _inbox/2026-09-10_ctx-b5_cp1.json is substantive: it rejects the dispatch's own first mechanism as measurably vacuous, takes a three-field StratMap-impossible discriminator, and proposes a four-value `priorRollEvidence` union. Its base is two merges stale (CTX-B6 9ae49246 and CTX-B7 591f5efe both edited the same file heavily), so it needs a rebase before it can merge.",
+    "consequenceForThisLane": "this lane did NOT re-implement it and did not enter that worktree. Instead it answered the question with evidence CTX-B5 did not have.",
+
+    "theQuestion": "can a record that was NEVER on a roll be distinguished at bake time from one that LEFT it?",
+    "answer": "Yes -- but neither the dispatch's discriminator nor CTX-B5's is the one that does it, because for Hays the premise of both is wrong. The overwhelming majority of records `buildRecordRetirement` would call retired neither left a roll nor were never on one: they are ON the current roll, under the county's other published number.",
+    "measured": {
+      "countingRule": "Hays prop_ids present in cad_property at tax_year 2025 with no row at tax_year 2026 (live anti-join, staging), then each looked up in the 2026 CAD export by BOTH the QuickRefID R-stem and the PropertyNumber-to-geo_id path",
+      "absentFromTheDeclaredVintage": 38444,
+      "onThe2026RollUnderTheirPublishedRNumber": 38200,
+      "ofThoseCorroboratedByBOTHkeysNamingTheSameAccount": 37727,
+      "ofThoseWhereTheFoundAccountsSitusAlsoMatches": 33634,
+      "noAccountFoundByEitherKey": 244,
+      "pctThatAreNotRetirements": "99.37 percent"
+    },
+    "consequence": "CTX-B5's improvement is real and its mechanism is sound, but its proposed `no-appraisal-record-in-any-vintage` value would be emitted for a population that is 99 percent PRESENT. That basis text -- rows exist at other vintages but not one carries an appraisal-only field -- is literally true about the COLUMN and materially false about the PARCEL. It is the same shape CTX-B7 named for claimLeafAbsence: an absence whose scope is narrower than the claim it appears to make.",
+    "theHonestThreeStates": [
+      "PRESENT UNDER ANOTHER PUBLISHED IDENTIFIER -- not a retirement; a duplicate key, and the node should not exist. Hays: 38,200.",
+      "ABSENT UNDER EVERY IDENTIFIER THE COUNTY PUBLISHES -- a candidate retirement. Still not a proven CAUSE: split, merged, renumbered and removed remain four different things and nothing distinguishes them. Hays: 244.",
+      "THE CROSS-IDENTIFIER WAS NEVER ACQUIRED FOR THIS COUNTY -- unmeasured. This is the honest state for the ENTIRE corpus today, because no county's crosswalk column is ingested. Absent, zero and unmeasured are three different states, and today the bake emits state 1's population as a causal claim about state 2."
+    ],
+    "recommendationForCTX_B5": "keep the four-value union and its asymmetry; add the cross-identifier evidence as its input, and default the whole corpus to the unmeasured value until a county's crosswalk column is actually ingested rather than inferring never-on-a-roll from a column that only ever held one of two numbers. Implementation stays CTX-B5's; this lane wrote none of it.",
+
+    "theControlIsNotAControl": {
+      "dispatchClaim": "Caldwell 48055:1 is a genuine retirement and must keep working as your control",
+      "measuredAtSource": "cad_property 48055 prop_id 1 exists at tax_year 2025 ONLY, source_file stratmap25-landparcels_48055_lp.zip, situs_address ', ,', owner_name NULL, market/assessed/land/improvement all NULL, land_acres 7.0250. txgio_parcel 48055 prop_id '1' is 203 rows spanning roughly 120 distinct feature_index values, every one with blank geo_id, blank situs and blank owner.",
+      "verdict": "48055:1 is not a retired appraisal account. It is an aggregation of ~120 unattributed StratMap polygons collapsed onto a placeholder key, which entered cad_property as one row and became one parcel node. Caldwell has exactly ONE appraisal vintage (2026); its 2025 is entirely geometry. A prop_id present only in a geometry drop and absent from the single appraisal roll has never been observed on any roll.",
+      "whatItIsStillGoodFor": "it remains a VALID regression control for the thing CTX-B1, CTX-B6 and CTX-B7 actually used it for -- that the retired branch is reached first, that isEarnedRecordRetirement still returns true, and that refusePayloadAtServe still exempts it. That is a control on the BRANCH. It was never a control on the MEANING, and three consecutive closes have cited it as though it were. CTX-B5's CP1 reported this first; this lane confirms it independently and with a sharper reason.",
+      "andCaldwellsWholeAbsentPopulation": "267 rows. 63 have a 2026 account at the same normalised address; 176 have a 2026 account under the same owner. Even in a county whose numbering is sound, the causal basis is unearned for a majority of the population."
+    }
+  },
+
+  "theSpilloverTheOperatorNeedsToKnowAbout": {
+    "finding": "the mechanism is not Hays-only. Williamson 48491 -- one of the five counties moving to production -- carries the same two-namespace structure, with a different and milder consequence.",
+    "measuredProduction": {
+      "countingRule": "identical instrument to the Hays census, place_key LIKE 'node:48491:%'",
+      "rows": 602049,
+      "noRowOnTheDeclaredRoll": 282569,
+      "serveMoney": 319480,
+      "servedAddressAgreesWithTheAccountsOwn": 319466,
+      "servedAddressCONTRADICTS": 0,
+      "distinctParcelsDrawn": 245869,
+      "nodesBoundToNoParcel": 91020,
+      "recordRetirementObjects": 0
+    },
+    "read": "ZERO contradictions, because Williamson's two id spaces are LEXICALLY DISJOINT -- TxGIO publishes R-prefixed accounts and the CAD roll is six-digit, so the vintages share not one prop_id and no row was ever merged onto another. Williamson's money is not contaminated. What it does have is DUPLICATION: roughly 282,569 phantom nodes carrying an address and a polygon and no money, alongside 319,480 real accounts, for a county with one set of parcels. Collision requires lexical compatibility; Hays' R-prefix having been stripped at the source is the entire difference between the two counties' outcomes.",
+    "notActedOn": "no write, no dispatch, no change. Reported because it is one of the five counties in flight and because an operator deciding about Hays should know the class is not singular."
+  },
+
+  "twoOtherLiveStatesFoundWhileLooking": [
+    {
+      "id": "L1",
+      "name": "the coverage ledger records the two gate-blocked counties as PASS, on both stores",
+      "measured": "county_facet_coverage on staging AND on production carries `48209 | land-use | pass` and `48491 | land-use | pass`. Neither county has a `block` verdict at any facet. loadLedgerBlockedFips returns a set containing neither.",
+      "whyItIsNotAnOutageToday": "all three bake call sites call effectiveBlockedFips(ledger), which UNIONs LANDUSE_JOIN_DISABLED_FIPS_SEED, so the seed alone is holding the gate shut. Verified by enumerating every call site of landUseJoinKey and loadLedgerBlockedFips, not by grepping for the constant.",
+      "whyItIsStillADefect": "joinNormalize.ts's module header states that the ledger is the AUTHORITATIVE source and the seed is only a bootstrap for a never-scored database, and that the design exists so `county #100 gets checked automatically without anyone editing this constant`. The authoritative source currently disagrees with the seed on exactly the two counties the gate was built for. Any consumer that trusts the documented contract -- ledger authoritative, seed a fallback -- and does not union the seed gets an open gate for Hays and Williamson. The mechanism is not dormant and not starved; it is CONTRADICTED by its own declared source of truth, and only a hardcoded fallback is keeping it correct.",
+      "secondMechanismConsideredAndRejected": "the ledger rows could be stale from before the gate existed. Rejected as sufficient: staleness would explain a `n/a` or a missing row, and these rows carry an affirmative `pass`. Whether the scorer ever wrote `block` and something overwrote it, or `pass` was written by a different scoring path, is not established by this lane and is named as open rather than guessed."
+    },
+    {
+      "id": "L2",
+      "name": "the conformant bake hardcodes provenance.landUseGateBlocked = false and a consumer keys a refusal off it",
+      "measured": "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts:1221 writes `landUseGateBlocked: false` unconditionally, with a comment saying the prop_id gate is recorded on provenance.parcelJoin instead. artifacts/api-server/src/lib/parcelConstraintProjection.ts:288 reads `provenance?.landUseGateBlocked === true` and, only then, emits refused('bake-land-use-gate-blocked'); otherwise it emits unknown('bake-land-use-absent'). On production Hays: 130,663 rows carry a landUse value (every single one sourced cad-roll-address-join), 41,619 carry a BARE NULL landUse with the flag false, and 768 legacy-bake rows carry the flag true.",
+      "consequence": "for 41,619 Hays parcels the constraint projection reports `never looked` where the truth is `the county's prop_id join is refused as a proven fabrication`. That is a refusal being downgraded to an unmeasured state -- the same collapse in the opposite direction from the one CTX-B7 named for acreage. The signal moved to provenance.parcelJoin and the consumer was never repointed.",
+      "notFixedHere": "it is a live serve-path read affecting all six counties, so it is a card with its own regression control, not something to slip into a Hays research lane while five counties move through production."
+    }
+  ],
+
+  "whyNoCode": {
+    "decision": "no code written, no PR opened, in any repo. git status on this worktree is empty at close and git log -1 is the 591f5efe it was cut from.",
+    "reasoning": [
+      "The fix is an ACQUISITION plus a re-key: read two columns the Orion parser skips, add two nullable columns to cad_property with a migration, re-ingest Hays, re-key the parcel join, re-bake, re-publish. Every step after the parser is an execution the integration seat owns, and the operator has put Hays outside the current wave.",
+      "The two changes that could have landed here without new data both fail their own test. Gating the dollar path changes what cadRoll reports for Travis 429 and Caldwell 92 rows in counties currently moving through production, and CTX-B7 already drew that boundary and declared it a separate card with its own operator sign-off. Correcting joinNormalize.ts's module header executes nothing -- by the three-question gate it is not a control -- and would put a PR into the same CI five counties are moving through, to change a comment.",
+      "The one fail-closed guard I intended to write turned out to be unnecessary: I hypothesised that the integrity scorer might read an unpinned vintage and could be flipped by re-declaring Hays to 2025. Reading the write path showed it already pins to tryResolveDeclaredCadVintage everywhere. Writing a test for a control that is already correct would have produced a dormant artifact, which is the pattern CTX-B6 and CTX-B7 have each already left behind once.",
+      "CTX-B5 is live and uncommitted in exactly the file set item 2 would require."
+    ],
+    "dispatchAuthority": "the dispatch pre-authorises this outcome: `If the right answer is that Hays needs an acquisition this repo cannot perform, that is a successful close.`"
+  },
+
+  "theDispatchableSpec": {
+    "note": "written to be dispatched, not implemented. Every item names its file and its repo. Nothing here was built.",
+    "repo_legacy_design_tools": [
+      "lib/cad-ingest/src/orion/parser.ts -- readOrionProperties reads `QuickRefID` and `PropertyNumber` alongside `PropertyID`. Both are present in every Hays drop this program has downloaded. classifyOrionHeader is unchanged. WCAD's Socrata shape has neither, so both fields must be nullable and their absence must be an honest null, never a defaulted empty string.",
+      "lib/db/src/schema/cadProperty.ts plus a migration -- two nullable text columns, `quick_ref_id` and `property_number`. They are EVIDENCE, not keys: the primary key stays (county_fips, prop_id, tax_year) so no existing consumer moves.",
+      "lib/cad-ingest/src/p78Merge.ts -- THE ROOT DEFECT, and it is not Hays-specific. COALESCE_FIELDS puts situsAddress, situsCity, situsZip and ownerName under coalesce(incoming, existing), which lets a geometry-only source overwrite an appraisal source's situs and owner. A source that is not an appraisal roll must not win those cells. Whatever shape the fix takes, it needs a violation test that a StratMap apply over an existing CAD row leaves that row's situs and owner unchanged, and it needs a retirement item for the 116,421 Hays rows and every other county's equivalent already written that way.",
+      "artifacts/api-server/src/lib/joinNormalize.ts -- for a gate-blocked county the join key becomes a crosswalk lookup (property_number to txgio_parcel.geo_id, with the QuickRefID R-stem restricted to R accounts as the corroborator) rather than a flat null. The module header also needs correcting: `Only Williamson carries R-prefixed TxGIO ids in the whole corpus` is true of the prefix and false of the numbering, and it is the sentence that stopped anyone looking for a crosswalk.",
+      "parcel node minting -- a Hays node must be minted on the CAD PropertyID only. The 38,444 nodes currently minted on TxGIO ids are duplicates of nodes that already exist under the account number, and 38,200 of them resolve to a live 2026 account."
+    ],
+    "repo_hauska_factory": "NOTHING. No factory-side change is implied by this finding. Stated explicitly so a reader does not infer one.",
+    "executions_integration_seat": [
+      "re-ingest Hays 48209 with the crosswalk columns captured, into a vintage that is NOT overwritten by a StratMap apply",
+      "re-bake and re-publish 48209 tier-1 after the re-key, staging first",
+      "the same question asked of every other county whose cad_property vintage was touched by P-78: which of them had their situs and owner overwritten, and does their numbering collide"
+    ],
+    "orderingConstraint": "the parser and schema change first, then the merge fix, then the re-ingest, then the re-key, then the re-bake. Re-keying before re-ingesting has nothing to key on; re-ingesting before fixing the merge re-applies the overwrite."
+  },
+
+  "violationRuns": [
+    {
+      "what": "the read-only database guard",
+      "how": "CREATE TEMP TABLE ctx_hays_key_violation_probe against the staging session before any scan was trusted",
+      "result": "ERROR: cannot execute CREATE TABLE in a read-only transaction, psql exit 3",
+      "note": "run FIRST, so no measurement in this close was taken through an unverified guard"
+    },
+    {
+      "what": "hays_key_probe.py self-test, both directions",
+      "how": "12 cases including two explicit non-vacuity assertions (the stem function must actually strip a prefix; the address normaliser must NOT collapse two different addresses) and three scorer cases proving a miss reads as a miss, a matched-but-disagreeing row as a disagreement, and an agreeing row as agreement",
+      "result": "failures 0, exit 0. main() refuses to score any corpus if the self-test fails."
+    },
+    {
+      "what": "hays_key_probe.py --violate",
+      "how": "every pre-registered expectation inverted",
+      "result": "2 mismatches, exit 1. A pass here would mean the instrument certifies nothing."
+    },
+    {
+      "what": "the scoring run against my own pre-registered expectations",
+      "result": "exit 1, because the QuickRefID key measured 89.65 percent against a pre-registered 90 percent threshold. Reported, decomposed by account class, and the threshold NOT moved."
+    }
+  ],
+
+  "reconciliations": [
+    "CTX-B7's Hays cross-vintage figures reproduced EXACTLY by an instrument written before reading theirs: 126,808 pairs, 68,305 ZIP-same, 53.86 percent. Same for Travis (333,937 / 333,032 / 99.73) and Caldwell (24,549 / 24,356 / 99.21).",
+    "CTX-B7's 29,404 reproduced exactly as 29,395 street-contradicting rows that also conflict on ZIP, plus 9 street-agreeing rows that conflict only on ZIP. The two instruments agree; this lane's street-based rule is finer and returns 37,479.",
+    "CTX-HAYS-SPLIT's 75,551 stratmap-tagged-with-CAD-signal rows reproduced exactly, from a different direction (a three-field appraisal-only union rather than assessed_value alone).",
+    "The gate's own recorded figure -- roughly 78k Hays prop_id matches with 10 agreeing owners -- reproduced live as 78,117 matches with 9 agreeing owners, and separately as 78,107 matches with 53 agreeing SITUS values against the raw export. Three instruments, three sources, one verdict.",
+    "txgio_parcel 48209 has 116,422 distinct prop_id; cad_property 48209 tax_year 2025 has exactly 116,421 stratmap-tagged rows. One-row difference, consistent with a single unmatched sentinel; recorded rather than rounded.",
+    "Production tier1 summed across 19 counties is 5,141,450; CTX-B5 measured 5,141,451 on staging. One row apart, and my filter was place_key LIKE 'node:48%' so a non-Texas or malformed place_key would account for it. Named rather than presented as agreement."
+  ],
+
+  "heavyScans": [
+    {"id": "scanA", "target": "cross-vintage ZIP stability partitioned by 2025 lineage, four counties", "store": "staging", "at": "2026-09-10T16:32Z", "seconds": 9.5},
+    {"id": "scanA2", "target": "situs population per county-vintage; Williamson pair count; crosswalk contents", "store": "staging", "at": "2026-09-10T16:35Z", "seconds": 7},
+    {"id": "scanB", "target": "cad_property 2025 situs vs txgio_parcel situs on the same prop_id, Hays", "store": "staging", "at": "2026-09-10T16:38Z", "seconds": 7},
+    {"id": "scanF", "target": "owner agreement, both vintages, Hays and Caldwell control", "store": "staging", "at": "2026-09-10T16:44Z", "seconds": 3.5},
+    {"id": "scanG", "target": "clean 2026 roll to txgio by normalised situs address, Hays and Caldwell", "store": "staging", "at": "2026-09-10T16:47Z", "seconds": 2},
+    {"id": "scanH", "target": "PRODUCTION Hays served-address vs declared-roll census, 173,050 rows", "store": "production", "at": "2026-09-10T16:52Z", "seconds": 32.7},
+    {"id": "scanI", "target": "PRODUCTION Hays disposition census by claim vintage and detectability", "store": "production", "at": "2026-09-10T16:55Z", "seconds": 10.7},
+    {"id": "scanJ", "target": "PRODUCTION Hays duplicate-node count by parcelJoin.featureIndex", "store": "production", "at": "2026-09-10T16:57Z", "seconds": 4.5},
+    {"id": "scanK", "target": "PRODUCTION tier1 rows per county, full scan of 5,141,450 rows", "store": "production", "at": "2026-09-10T16:59Z", "seconds": 115.3},
+    {"id": "scanL", "target": "PRODUCTION Williamson census, same instrument", "store": "production", "at": "2026-09-10T17:02Z", "seconds": 59},
+    {"id": "scanO", "target": "PRODUCTION Hays landUse disposition against landUseGateBlocked", "store": "production", "at": "2026-09-10T17:05Z", "seconds": 5.5}
+  ],
+
+  "constraintsHonored": [
+    "legacy-design-tools only. hauska-factory, hauska-engine and hauska-map were not written and were not read from a worktree.",
+    "No deploy, no Cloud Build, no Cloud Run job, no bake, no publish, no walk. Not one byte was written to any store.",
+    "Every database session on BOTH stores ran with default_transaction_read_only=on and an explicit statement_timeout, and the guard was verified by violating it before any scan was trusted.",
+    "Every verification command exit-bounded. No watch, tail, dev server or unbounded process. The one network fetch carried an explicit 240-second timeout.",
+    "The five counties moving through production were not touched. Williamson and Caldwell were READ as controls and as a spillover check; nothing about their path changed.",
+    "CTX-B5's live worktree was inspected read-only (git status, git log, git diff) and never written to.",
+    "Heavy scans serialised: pg_stat_activity checked before the first scan, zero other non-idle backends.",
+    "NO PRIVILEGED DATA. The Hays CAD export was fetched from the county's public downloads page over plain HTTPS with a browser User-Agent, no credential, no cookie, no relationship. Any jurisdiction could be acquired the same way.",
+    "The worktree was registered in _catalog/seat_register.json BEFORE any file was read or written, and seat, worktree, branch and commit were declared in the first output.",
+    "The production-pull disposition was reported and NOT made.",
+    "doc_repo commits are planner-owned: this lane's edits are left uncommitted and listed below."
+  ],
+
+  "whatRemainsOpen": [
+    "The fix is unbuilt. Nothing in this close changes a stored row, a served payload, or a line of code. Hays serves 37,479 wrong records today exactly as it did before this lane ran.",
+    "Whether Hays comes off production is the operator's, and this close exists to price it.",
+    "Why county_facet_coverage records `pass` for the two gate-blocked counties on both stores is not established. This lane proved the bakes are still gated by the seed and did not chase the ledger's provenance.",
+    "Which OTHER counties had their cad_property situs and owner overwritten by the P-78 StratMap apply. This lane measured Hays (116,421 rows) and read the merge code, which is county-agnostic. Bastrop 48021 is already known to carry two source_files at one vintage (CTX-HAYS-SPLIT), and Travis 48453 and Caldwell 48055 both hold stratmap-sourced 2025 vintages. Whether the overwrite mattered for them depends on whether their numbering collides, which for Travis and Caldwell it does not.",
+    "CTX-B5 is live, uncommitted, and two merges stale. It needs a rebase, and its retirement-state design needs the cross-identifier evidence added before it lands, or it will ship an honest-sounding basis for a population that is 99 percent present."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "the Hays re-key and re-acquisition",
+      "owner": "integration / operator ruling",
+      "plan_row": "P-124 follow-up",
+      "detail": "the full dispatchable spec is in theDispatchableSpec above: parser reads QuickRefID and PropertyNumber, two nullable cad_property columns plus migration, p78Merge stops letting a geometry source overwrite an appraisal source's situs and owner, joinNormalize's blocked-county path becomes a crosswalk lookup, Hays nodes minted on PropertyID only. Then re-ingest, re-bake, re-publish. Nothing factory-side."
+    },
+    {
+      "item": "p78Merge lets a geometry-only source overwrite an appraisal source's situs and owner, in every county",
+      "owner": "property",
+      "plan_row": "P-124 follow-up",
+      "detail": "lib/cad-ingest/src/p78Merge.ts COALESCE_FIELDS + coalesce(incoming, existing). It cost Hays 116,421 rows their real address and owner and cost the lineage question its own provenance column (sourceFile is overwritten unconditionally at :196-197). This is the root defect and it is county-agnostic; Hays is only where the numbering made it visible. Carries a retirement item for the rows already written that way."
+    },
+    {
+      "item": "county_facet_coverage records 48209 and 48491 land-use as PASS on both stores",
+      "owner": "integration",
+      "plan_row": "P-124 follow-up",
+      "detail": "loadLedgerBlockedFips returns neither county. Only the hardcoded LANDUSE_JOIN_DISABLED_FIPS_SEED union in effectiveBlockedFips keeps the gate shut, while the module header calls the ledger authoritative and the seed a bootstrap fallback. Either the ledger is wrong and should be re-scored, or the header is wrong and the seed is the real control; today they disagree about the only two counties the gate exists for."
+    },
+    {
+      "item": "provenance.landUseGateBlocked is hardcoded false by the conformant bake and a consumer keys a refusal off it",
+      "owner": "property",
+      "plan_row": "P-124 follow-up",
+      "detail": "nodeFacetBakeTier1Conformant.ts:1221 writes false unconditionally; parcelConstraintProjection.ts:288 emits refused() only when it is true. 41,619 production Hays rows report `never looked` where the truth is `refused as a proven fabrication`. The signal moved to provenance.parcelJoin and the consumer was never repointed. Affects all six counties, so it needs its own regression control."
+    },
+    {
+      "item": "joinNormalize.ts module header states a fact that is false and stopped the search",
+      "owner": "property",
+      "plan_row": "P-124 follow-up",
+      "detail": "`Only Williamson carries R-prefixed TxGIO ids in the whole corpus` -- true of the prefix, false of the numbering. Hays' TxGIO ids ARE the R-account numbers with the R stripped at the source, which is exactly why removing the R-strip cost nothing and why the Hays diagnosis stopped at `different numbering systems that coincidentally collide` instead of naming which numbering. Not corrected here because a comment executes nothing and this lane wrote no code; it should ride along with the re-key."
+    },
+    {
+      "item": "Caldwell 48055:1 is not a genuine retirement and is cited as one in four artifacts",
+      "owner": "integration",
+      "plan_row": "P-124 follow-up",
+      "detail": "it is ~120 unattributed StratMap polygons collapsed onto a placeholder key. It remains a valid control for the retired BRANCH and the serve-guard exemption, which is what CTX-B1, CTX-B6 and CTX-B7 actually tested with it. It is not a control for the MEANING. The distinction should be written into whichever card lands the retirement basis, so the next lane does not inherit it a fifth time."
+    },
+    {
+      "item": "Williamson 48491 carries roughly 282,569 phantom nodes",
+      "owner": "integration / operator",
+      "plan_row": "P-124 follow-up",
+      "detail": "same two-namespace structure as Hays, but lexically disjoint so nothing collided and nothing is contaminated: zero address contradictions, money intact. What it has is duplication -- 602,049 nodes drawing 245,869 parcels, 91,020 nodes bound to no parcel. It is going to production in this wave. Reported, not acted on."
+    },
+    {
+      "item": "CTX-B5 is live, uncommitted, and two merges stale",
+      "owner": "property / integration",
+      "plan_row": "P-124",
+      "detail": "fix/ctx-b5-retirement-basis at base fa7b9b67, 1,083 uncommitted insertions across six files, needs a rebase onto 591f5efe (CTX-B6 and CTX-B7 both edited nodeFacetBakeTier1Conformant.ts heavily). Its design should take the cross-identifier evidence measured here before it lands."
+    },
+    {
+      "item": "the instruments this lane built live only in a session scratchpad",
+      "owner": "property",
+      "plan_row": "P-124",
+      "detail": "hays_key_probe.py (self-testing, --violate), hays_key_agree.py, hays_pm.py and eleven .sql scans are in the session scratchpad, not in any repo. Deliberate: adding a third dormant instrument to a repo that already carries CTX-B6's is not a contribution. Every one is reproducible from the counting rules in this close, and the export it reads is a public download."
+    }
+  ],
+
+  "lessonsForFleetMemory": [
+    {
+      "kind": "LESSON",
+      "text": "A KEY THAT DISAGREES WITH ITSELF ACROSS VINTAGES MAY BE TWO KEYS, NOT ONE BROKEN KEY. Hays cross-vintage prop_id agreement is 53.86 percent overall and 99.95 percent on the rows one merge never touched. Partition a disagreement by LINEAGE before concluding anything about the key. The headline was hiding two populations with opposite verdicts."
+    },
+    {
+      "kind": "LESSON",
+      "text": "TXGIO'S prop_id FOR HAYS 48209 IS THE CAD QuickRefID R-ACCOUNT STEM, NOT THE CAD PropertyID. CAD account 40138 is QuickRefID R26199, and txgio_parcel 48209 prop_id 26199 is that parcel. The R was stripped at the source, which is why the corpus-wide claim that only Williamson carries R-account TxGIO ids reads as true and is false in the way that matters."
+    },
+    {
+      "kind": "LESSON",
+      "text": "THE CROSSWALK WAS IN THE FILE ALL ALONG. The Hays CAD property export publishes PropertyID, QuickRefID and PropertyNumber in adjacent columns; the Orion parser reads the first and drops the other two, and cad_property has no column for either. Before proposing an acquisition to obtain a crosswalk, read the header of the file already being downloaded."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A 100 PERCENT CROSS-SOURCE MATCH IS A COPY, NOT AN AGREEMENT -- AND THE NEGATIVE CONTROL IS WHAT PROVES IT. 116,421 of 116,421 Hays cad_property 2025 rows carry txgio_parcel's situs byte-identically. Caldwell, whose join is known-good by a separate owner-match instrument, agrees on exactly 15 of 24,722 exact-string situs comparisons. Two publishers format differently; identical bytes mean one of them wrote both."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A MERGE THAT COALESCES incoming-FIRST LETS A GEOMETRY SOURCE OVERWRITE AN APPRAISAL SOURCE. p78Merge COALESCE_FIELDS carries ownerName, situsAddress, situsCity and situsZip under coalesce(incoming, existing), and sourceFile is overwritten unconditionally so the row cannot even tell you. assessed_value survived only because the StratMap loader hardcodes it null. What survives a bad merge is an accident of which fields the intruder happens not to populate."
+    },
+    {
+      "kind": "LESSON",
+      "text": "AN ADDRESS-RECOVERY JOIN CALIBRATED ON CONTAMINATED DATA AGREES WITH ITSELF. Hays' situs-address recovery finds the TxGIO parcel whose address was copied into the CAD row, so it succeeds perfectly and returns the wrong parcel. Every one of the 130,663 Hays land-use codes on production came from that join. When a recovery path is measured against a store a merge has already written into, the measurement is circular."
+    },
+    {
+      "kind": "LESSON",
+      "text": "AN INTEGRITY GATE'S VERDICT CAN DEPEND ON WHICH VINTAGE IT SCORES. Hays owner agreement against the declared 2026 roll is 9 of 78,117 (blocks at a 0.5 threshold); against the contaminated 2025 vintage it is over 99 percent (would pass). Re-declaring a county's vintage is not a neutral configuration change -- it can silently lift the control that was catching the problem."
+    },
+    {
+      "kind": "LESSON",
+      "text": "PARTITION A CANDIDATE KEY BY ACCOUNT CLASS BEFORE TRUSTING ITS HEADLINE. The Hays QuickRefID stem scores 89.65 percent overall, which decomposes into 93.7 percent on R (real property) and 0.0 / 0.4 percent on M (mobile home) and P (personal property), which have no parcel and match only by numeric collision. A parcel identifier (geo_id) cannot collide across classes; a bare-numeric account stem can."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A DISPATCH'S STATEMENT THAT A CARD NEVER RAN IS A CLAIM, NOT A PREMISE. CTX-B5 was described as never having run; it has a registered worktree, a substantive CP1, and 1,083 uncommitted insertions in exactly the files the assignment would have required. Check the worktree register and the _inbox before starting a card someone else may already be holding."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A REGRESSION CONTROL CAN BE VALID FOR THE BRANCH AND INVALID FOR THE MEANING. Caldwell 48055:1 has been the named genuine-retirement control in four artifacts. It is ~120 unattributed StratMap polygons on a placeholder key, with no owner, no value and no situs. It correctly proves the retired branch is reached and the serve guard exempts it; it proves nothing about whether an account left a roll."
+    },
+    {
+      "kind": "LESSON",
+      "text": "PRE-REGISTER THE THRESHOLD, NOT JUST THE DIRECTION. My instrument scored one of my three pre-registered expectations as failed (89.65 against a 90 threshold) and exited 1. Decomposing the miss produced the most useful finding of that scan -- the R/P/M split. Moving the threshold would have produced a passing run and no finding."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, staging f06-staging-neondb, read-only: Hays 48209 cross-vintage situs-ZIP agreement is 53.86 percent overall (68,305 of 126,808) and decomposes to 99.95 percent on rows still tagged hays-export2.zip (52,251 of 52,276), 21.12 percent on stratmap-tagged rows carrying CAD dollars (15,172 of 71,822), and 32.55 percent on pure geometry rows (882 of 2,710). Travis 99.73, Caldwell 99.21. Williamson 48491 shares ZERO prop_ids between its 2025 and 2026 vintages."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, staging: all 116,421 Hays cad_property tax_year 2025 rows that join txgio_parcel on prop_id carry txgio_parcel's situs_address byte-identically (100.00 percent), and owner_name on 115,787 of 116,421. Against the declared 2026 vintage the same join gives owner agreement on 9 of 78,117 (0.012 percent), reproducing the joinNormalize gate figure."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, Hays CAD public export 2026-PROPERTY-DATA-EXPORT-FILES-AS-OF-8-26-2026.zip, 134,592 rows: PropertyID to txgio.prop_id matches 78,107 with 53 agreeing situs (0.07 percent); QuickRefID R-stem to txgio.prop_id matches 121,320 with 108,759 (89.65 percent); PropertyNumber to txgio.geo_id matches 115,035 with 108,532 (94.35 percent). The two candidate keys pick the same parcel on 115,035 and different parcels on 0."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, PRODUCTION Neon branch production, read-only: Hays 48209 has 173,050 node-facets:tier1 rows; 134,606 serve money; 37,479 serve an address that contradicts the account's own declared-roll address and ALL of them serve money, 37,143 are drawn, 31,987 also serve an address-recovered land-use code; 92,563 agree; 38,444 have no declared-roll row and serve no money; ZERO rows carry a recordRetirement object. Every contradiction sits on a 2025-vintage claim; zero of the 64,820 comparable 2026-vintage claims contradict."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, PRODUCTION: Hays' 130,663 parcel-bound nodes draw only 80,502 distinct txgio parcels; 43,671 parcels are drawn by more than one node and 25,446 carry more than one MONEY-SERVING node; 42,387 nodes are bound to no parcel at all. Williamson 48491: 602,049 nodes, 282,569 with no declared-roll row, 319,480 serving money, ZERO address contradictions, 245,869 distinct parcels drawn, 91,020 nodes bound to no parcel."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10, staging AND production: county_facet_coverage records `48209 land-use pass` and `48491 land-use pass`. Neither gate-blocked county carries a `block` verdict, so loadLedgerBlockedFips returns neither; only the LANDUSE_JOIN_DISABLED_FIPS_SEED union inside effectiveBlockedFips keeps the join gated. cad_property_vintage_crosswalk holds 671 rows, all Dallas (121) and Tarrant (550) whitespace-and-case normalisation, zero for Hays or Williamson."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10: production place_layer_snapshots node-facets:tier1 covers 19 Texas counties and 5,141,450 rows. Hays is 173,050 of them (3.37 percent) and 11.41 percent of the 1,516,109-row six-county CTX set."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-10: of the 38,444 Hays prop_ids absent from the declared 2026 vintage, 38,200 (99.37 percent) are ON that roll under their published R-number; 37,727 are corroborated by BOTH the QuickRefID and PropertyNumber paths naming the same account, and 33,634 of those also match on situs. Only 244 find no 2026 account by either key."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Comparing situs addresses across two publishers by exact string, normalised or not, measures FORMATTING and not identity. Caldwell's known-good CAD-to-TxGIO join scores 15 of 24,722. It is useful only in the inverted direction: a 100 percent exact-string match across nominally different sources proves one copied the other."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "cad_property_vintage_crosswalk is not the table for this. It is keyed (county_fips, from_tax_year, from_prop_id, to_tax_year) and holds 671 whitespace-and-case rows for Dallas and Tarrant. The Hays problem is a cross-IDENTIFIER mapping within one vintage, not a vintage-to-vintage renumbering, and no row of that table would express it."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Hypothesising that the coverage-ledger `pass` verdicts had opened the integrity gate. Reading the write path settled it: the scorer pins to tryResolveDeclaredCadVintage and all three bake call sites union the seed via effectiveBlockedFips. The ledger really does say pass, and the gate really is still closed. Measuring the ledger alone would have produced a false alarm; measuring the bakes alone would have produced a false all-clear."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Nothing is fixed. Hays serves 37,479 records with one parcel's address and another's money today, exactly as before this lane ran, and whether it stays up is the operator's call."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Which other counties had cad_property situs and owner overwritten by the P-78 StratMap apply. The merge is county-agnostic; only the collision is Hays-specific. Bastrop, Travis and Caldwell all carry stratmap-sourced 2025 vintages."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Why county_facet_coverage carries an affirmative `pass` for the two counties the integrity gate exists to block, on both stores."
+    }
+  ],
+
+  "docRepoEdits": {
+    "note": "doc_repo commits are planner-owned (AGENT_CONTRACT section 6). Left UNCOMMITTED and listed here.",
+    "modified": [
+      "_catalog/seat_register.json -- registered the property seat's legacy-design-tools-ctx-hays-key worktree BEFORE any file was read or written (one 14-line entry appended; no other line changed)"
+    ],
+    "added": [
+      "_inbox/2026-09-10_ctx-hays-key_cp1.json",
+      "_inbox/2026-09-10_ctx-hays-key_cp2.json",
+      "_inbox/2026-09-10_ctx-hays-key_close.json"
+    ]
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "lane": "CTX-HAYS-REBIND",
+  "artifact": "ADDENDUM — source reconciliation and the operation the close got wrong",
+  "planRow": "P-124",
+  "raisedBy": "coordinator, executing the re-ingest, who stopped rather than loading",
+  "at": "2026-09-10T20:30:00Z",
+  "store": "READ-ONLY throughout. Nothing written. The read-only guard was already verified by violation on both stores earlier in this lane.",
+  "prMergedAs": "c43e2436 (PR #653)",
+
+  "verdict": "The coordinator was right to stop, and right about the operation. My source is reproducible and my 115,035 is correct for what it measured, but the close's leave_behind ordering said RE-INGEST where it should have said TARGETED BACKFILL, and a re-ingest of what is on disk would move market_value on 45,524 Hays accounts. That is my error, not theirs.",
+
+  "answer1_theExactSource": {
+    "archive": "C:/Users/cente/AppData/Local/Temp/claude/p--doc-repo/043aecde-f641-4daa-871b-79d8fd10d0fe/scratchpad/hays.zip",
+    "bytes": 40471721,
+    "sha256": "7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193",
+    "outerMember": "2026 PROPERTY DATA EXPORT FILES AS OF 8-26-2026/2026-PROPERTY-DATA-EXPORT-FILE-PROPERTY-8.26.2026.zip",
+    "innerMember": "PropertyDataExport1404449.txt",
+    "innerBytes": 66198484,
+    "physicalLinesInclHeader": 134593,
+    "csvDataRecords": 134592,
+    "distinctPropertyID": 134591,
+    "headerFirstSix": ["RecordType", "PropertyID", "QuickRefID", "PropertyNumber", "LegalDesc", "LegalLocationCode"],
+    "headerColumnCount": 40,
+    "fetchedLiveOrLocal": "READ FROM THE LOCAL COPY, not fetched live. The live probe I ran against hayscad.com was a RANGED GET of 1,025 bytes to establish that the file is re-acquirable (403 with no User-Agent, 206 with a browser one). It downloaded no corpus and no measurement in the close came from it.",
+    "unionOfMembers": "NO. One file, one member, one pass. No union, no second PROPERTY file."
+  },
+
+  "answer2_theReconciliation": {
+    "headline": "115,035 reconciles against 134,592, not against 103,490. You read a DIFFERENT MEMBER of the same archive.",
+    "whatYouRead": {
+      "innerMember": "PropertyDataExport1404452.txt",
+      "enclosingZip": "2026-PROPERTY-DATA-EXPORT-FILE-IMPROVEMENT-8.26.2026.zip",
+      "bytes": 11651740,
+      "physicalLinesInclHeader": 103491,
+      "csvDataRecords": 103490,
+      "distinctPropertyID": 98148,
+      "headerFirstSix": ["RecordType", "PropertyID", "QuickRefID", "PropertyNumber", "InstanceID", "Type"],
+      "headerColumnCount": 11
+    },
+    "whyThisWasAlmostImpossibleToCatch": "EVERY member of every inner zip is named `PropertyDataExport<n>.txt`. The filename does not say which record type it is; only the enclosing zip's name does, and the numbers are sequential and non-mnemonic: 1404449 PROPERTY, 1404450 OWNER, 1404451 LAND, 1404452 IMPROVEMENT, 1404453 SEGMENT, 1404454 SALES. Worse, the FIRST FOUR COLUMNS ARE IDENTICAL between the property and improvement files -- RecordType, PropertyID, QuickRefID, PropertyNumber -- so your check that 'header columns 2,3,4 are exactly as described' PASSED on the wrong file. The first divergence is column 5 (LegalDesc vs InstanceID) and the header width (40 vs 11).",
+    "yourNumbersReproduceEXACTLY": "103,491 lines and 103,490 records are the improvement file to the row. Nothing about your measurement was sloppy; the discriminator you used could not tell the two apart.",
+    "theCheapDiscriminatorForNextTime": "record count of the property file equals the account count (one row per account); the improvement file has 103,490 rows over 98,148 distinct accounts, so ITS PropertyID column is not unique. Header width, 40 vs 11, is the one-glance check."
+  },
+
+  "answer3_backfillOrReIngest": {
+    "answer": "TARGETED BACKFILL of the two identifier columns onto the EXISTING tax_year 2026 rows. NOT a re-ingest, and NOT a roll replacement. Your reading of the migration was correct and my close's ordering was wrong.",
+    "whatTheCloseSaid": "'re-ingest Hays 48209 with the crosswalk columns captured, then re-bake'. That sentence was inherited from CTX-HAYS-KEY's dispatchable spec and I carried it without pricing it. Correcting it here and in the close's leave_behind rather than leaving the correction in a message.",
+
+    "measuredBlastRadiusOfARE_INGEST": {
+      "countingRule": "the store's 134,606 cad_property rows at 48209 tax_year 2026 (source_file 2026-PRELIMINARY-DATA-EXPORT-FILES.zip, production, read-only) joined on prop_id to the 134,591 distinct accounts in the 8-26-2026 PROPERTY export; market_value compared as whole dollars, CurrMarketValue preferred with MarketValue as fallback, which is exactly what the Orion parser does.",
+      "rowsInBoth": 134216,
+      "marketValueIdentical": 88692,
+      "marketValueWOULDCHANGE": 45524,
+      "notComparable": 0,
+      "sumAbsoluteDelta": "5,804,233,014 dollars",
+      "largestExamples": [
+        "prop_id 166234: 498,332 -> 546,546,026",
+        "prop_id 167545: 9,023,943 -> 164,365,308",
+        "prop_id 28279: 63,521,030 -> 20,961,940"
+      ],
+      "situsAddressWouldChange": 509,
+      "read": "a third of the county revalued. The 8-26 drop is a LATER and probably more correct drop than the preliminary one the store carries, but adopting it is a valuation decision with its own card and its own operator sign-off. It is emphatically not the geometry rebind."
+    },
+
+    "andItWouldNOTdropRows_whichIsADIFFERENTproblem": {
+      "why": "upsertCadProperties has no delete. A re-ingest UPSERTS; it never removes a row absent from the new drop.",
+      "consequence": "the roll would not fall to 103,490 (that count was the improvement file anyway) and would not fall to 134,592 either. It would go to roughly 134,981 -- the 134,606 existing rows plus the 375 export accounts not on the current roll -- with source_file overwritten to the 8-26 drop on the 134,216 rows it touched and left as PRELIMINARY on the 390 it did not. That is the split-across-two-drops state you were worried about, reached by a different mechanism than the one you feared.",
+      "verifiedByReadingTheWritePath": "lib/cad-ingest/src/ingest.ts onConflictDoUpdate: marketValue is `COALESCE(excluded.market_value, existing)`, so a non-null incoming value WINS; sourceFile and sourceVintage are `excluded.*`, overwritten unconditionally. Read, not inferred from output."
+    },
+
+    "theBACKFILLpriced": {
+      "operation": "UPDATE cad_property SET quick_ref_id = ..., property_number = ... WHERE county_fips='48209' AND tax_year=2026 AND prop_id = <account>. Two columns. No dollar column, no situs column, no owner column, no source_file, no source_vintage.",
+      "sourceForTheMapping": "PropertyID -> (QuickRefID, PropertyNumber) from the 8-26-2026 PROPERTY member named above. Identity columns, not valuation columns: they describe the account, not the drop, which is why a later drop can supply them for a roll loaded from an earlier one.",
+      "coverage": {
+        "rollRowsAtTaxYear2026": 134606,
+        "wouldReceiveBothIdentifiers": 134216,
+        "wouldStayNULL": 390,
+        "whyThe390AreFine": "the 8-26 drop carries no account for them. They get no crosswalk key, `parcelCrosswalkJoinKey` returns null, and they fall back to today's situs recovery. That is the fail-closed design working, not a gap to paper over. Never write a defaulted value for them."
+      },
+      "whatTheBAKEWillActuallySeeAfterABackfill": {
+        "note": "RE-MEASURED for the backfill population specifically, because the close's figures were computed over the whole export rather than over the rows a backfill can reach. The difference is two accounts.",
+        "accountsWithAUsableCrosswalkKey": 115033,
+        "closeReported": 115035,
+        "whyTheGapIsTwo": "two keyed accounts exist in the 8-26 export but not on the store's 2026 roll, so a backfill cannot reach them.",
+        "productionTier1Impact": {
+          "rows": 173050,
+          "haveAKey": 115033,
+          "alreadyBindTheSameFeature": 64271,
+          "REBIND": 30861,
+          "GAIN": 19901,
+          "noKey": 58017
+        },
+        "closeReported_forComparison": { "REBIND": 30862, "GAIN": 19902, "noKey": 58015 },
+        "ambiguousKeysInTheBackfillPopulation": 0,
+        "corroborationRefusalsInTheBackfillPopulation": 0
+      }
+    },
+
+    "theToolDoesNotEXIST_andThatIsTheRealBLOCKER": {
+      "finding": "there is no backfill path in this repo. `upsertCadProperties` is the only writer and it builds a WHOLE row (`toInsertRow`), so running the 8-26 export through the existing cad-ingest CLI IS the re-ingest, with the 45,524-row valuation move attached. There is no flag that writes only the two columns.",
+      "whatIsNeeded": "a small, single-purpose backfill CLI: read the PROPERTY member, emit (prop_id, quick_ref_id, property_number), UPDATE only those two columns at (county_fips, tax_year) scope, refuse to touch any other column, and refuse to INSERT a row that does not already exist. It should print rows-updated, rows-skipped-no-existing-row, and rows-skipped-no-identifier, and it should have a dry-run.",
+      "fail_closed_requirements": [
+        "never INSERT -- an account in the export with no roll row must be skipped and counted, never created",
+        "never write an empty string -- a blank identifier is a skip, not a value",
+        "refuse to run against a tax_year that is not the county's DECLARED vintage, since the bake only reads the declared vintage and writing identifiers onto 2025 would populate a column nothing reads while looking like progress",
+        "a state-changing operation leaves a durable record naming the county, the tax_year, the source file, the row count and the invocation"
+      ],
+      "whoOwnsIt": "property seat, legacy-design-tools. I did not build it in this lane: the dispatch scoped me to the parser, the column, the migration and the join, and a writer is a different change with a different review surface. It is now the top leave_behind item."
+    }
+  },
+
+  "whatIGotWRONGandWhereItCameFrom": {
+    "theError": "the close's leave_behind said 're-ingest Hays 48209 with the crosswalk columns captured, THEN re-bake'. It named an operation I never priced.",
+    "howItHappened": "CTX-HAYS-KEY's dispatchable spec said 're-ingest', my dispatch repeated it, and I carried the word into my own close without measuring what a re-ingest would move. Every OTHER number in that close was re-derived from source; this one was inherited. It is the exact failure mode ENFORCEMENT names -- a claim that travelled because nobody ran the instrument on it -- and it sat next to a migration whose own comment says the columns are evidence and that nothing is backfilled by it.",
+    "whyItDidNotSHOWup": "the close's completion predicate lists four things a stranger should re-run. Not one of them exercises the EXECUTION ordering, because everything I built and tested was read-only or unit-level. A leave_behind that names an operation is a claim like any other and nothing in this lane was pointed at it.",
+    "correctionApplied": "the close's leave_behind item has been rewritten in place rather than corrected only in this message. A recorded correction that does not regenerate its artifact is the documented recurring failure here."
+  },
+
+  "twoThingsIAmNOTclaiming": [
+    "I am NOT claiming the 8-26 drop is wrong and the preliminary drop right, or the reverse. The two disagree on 45,524 market values, 509 situs strings, 390 roll rows the export lacks and 375 export accounts the roll lacks. Which drop should be the declared 2026 roll for Hays is an open question with real customer consequences and it belongs to whoever owns the vintage declaration, not to this lane.",
+    "I am NOT claiming CTX-HAYS-DEEP's 134,606 is wrong. My export has 134,591 distinct accounts, which is 15 fewer, and the two figures come from different drops of the same roll year. They are not the same measurement and I am not presenting them as agreeing."
+  ],
+
+  "lessonsForFleetMemory": [
+    { "kind": "LESSON", "text": "A HAYS CAD ARCHIVE NAMES EVERY MEMBER `PropertyDataExport<n>.txt` AND ONLY THE ENCLOSING ZIP SAYS WHICH RECORD TYPE IT IS. 2026-08-26 numbering: 1404449 PROPERTY, 1404450 OWNER, 1404451 LAND, 1404452 IMPROVEMENT, 1404453 SEGMENT, 1404454 SALES. The PROPERTY and IMPROVEMENT files share their FIRST FOUR COLUMNS (RecordType, PropertyID, QuickRefID, PropertyNumber), so a header spot-check on those four passes on the wrong file. Discriminate on header WIDTH (40 vs 11) or on PropertyID uniqueness (unique in property, 103,490 rows over 98,148 accounts in improvement)." },
+    { "kind": "LESSON", "text": "A `leave_behind` THAT NAMES AN OPERATION IS A CLAIM AND NEEDS THE SAME INSTRUMENT AS EVERY OTHER NUMBER. I re-derived every measurement in my close from source and let the word 're-ingest' travel three artifacts unpriced. Measuring it took twenty minutes and found that it would move market_value on 45,524 of 134,216 Hays accounts, 5.8 billion dollars of absolute movement. The completion predicate covered the code and not the execution ordering, which is why nothing caught it." },
+    { "kind": "LESSON", "text": "IDENTITY COLUMNS AND VALUATION COLUMNS HAVE DIFFERENT BLAST RADII AND MUST NOT RIDE THE SAME WRITE. QuickRefID and PropertyNumber describe the ACCOUNT, so a later drop can supply them for a roll loaded from an earlier one. Market value describes the DROP. `upsertCadProperties` writes a whole row, so there is no way to get the first without the second -- which makes a single-purpose two-column backfill CLI a prerequisite, not a nicety." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-10, production read-only: cad_property 48209 holds 55,695 rows at tax_year 2025 from hays-export2.zip, 116,421 at 2025 from stratmap25-landparcels_48209_lp.zip, and 134,606 at 2026 from 2026-PRELIMINARY-DATA-EXPORT-FILES.zip. DECLARED_CAD_VINTAGES has 48209 at taxYear 2026, tier cad-export. The 8-26-2026 PROPERTY export on disk has 134,592 records / 134,591 distinct accounts and is a DIFFERENT drop from the declared one: 134,216 accounts in both, 390 roll rows the export lacks, 375 export accounts the roll lacks, 45,524 market values different, 509 situs strings different." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-10: a BACKFILL of quick_ref_id/property_number onto the existing 48209 tax_year 2026 rows reaches 134,216 of 134,606 rows (390 stay honestly NULL) and yields 115,033 usable crosswalk keys, 0 ambiguous, 0 corroboration refusals. Production tier1 impact under that population: 64,271 unchanged, 30,861 rebind, 19,901 gain, 58,017 no key. Two accounts fewer than the close's whole-export figure of 115,035 because two keyed accounts are not on the store's 2026 roll." },
+    { "kind": "OPEN", "text": "No backfill tool exists. `upsertCadProperties` writes whole rows, so the only path today IS the re-ingest with its 45,524-row valuation move. A two-column backfill CLI is a prerequisite for the Hays rebind and does not exist." },
+    { "kind": "OPEN", "text": "Which Hays 2026 drop should be the declared roll -- the PRELIMINARY one the store carries or the 8-26-2026 one on disk -- is unanswered and has real customer consequences. Not this lane's call." }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "lane": "CTX-HAYS-BACKFILL",
+  "checkpoint": "CP2 - pilot / mid-work adversarial review. The money control was wrong and a mutation run is what found it.",
+  "planRows": ["P-124"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ctx-hays-backfill_dispatch.md",
+  "at": "2026-09-10T22:35:00Z",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays-backfill",
+  "branch": "feat/ctx-hays-backfill-published-identifiers",
+  "baseCommit": "c43e24369b7e47d867a9465ae2528066e3416ddd",
+
+  "headline": "CP1 called the untouched-columns digest the money control and said no single party could satisfy both sides of it. That was WRONG, in one specific way, and I only found out because I mutated the writer and re-ran the controls instead of reading the code again.",
+
+  "theDefectFoundByMutation": {
+    "mutation": "add \"market_value\" to BACKFILL_WRITABLE_COLUMNS and add `market_value = t.market_value + 1` to the SET clause. ONE conceptual edit: a writer that moves money, permitted by its own allowlist.",
+    "whatTheControlsDid": {
+      "unitSuite": "FAILED 3 tests (allowlist widened, SET clause names market_value). Correct.",
+      "fieldByFieldComparison": "FAILED, moved=4. Correct.",
+      "untouchedColumnsDigest": "REPORTED VERIFIED. WRONG."
+    },
+    "mechanism": "the digest built its column list from the catalog MINUS `BACKFILL_WRITABLE_COLUMNS`. Widening the writer's allowlist therefore removed market_value from the digest in the same edit that let the writer move it. The list came from the catalog; the SUBTRACTION came from the thing being checked. One party acting alone satisfied both sides, which is the exact test ENFORCEMENT sets for telling a meaning-shaped check from internal consistency, and it failed it.",
+    "whyReadingTheCodeWouldNotHaveCaughtIt": "it reads correctly. 'Enumerate the columns from the catalog, exclude the ones we write, digest the rest' is the sentence you would write down as the right design. The defect is not in any line; it is in where one of the two inputs comes from.",
+    "fix": [
+      "DIGEST_EXCLUDED_COLUMNS - the digest's blind spot is now its own literal, stated independently of the writer's allowlist",
+      "assertDigestScopeIntact() - REFUSES the run when the two diverge in EITHER direction, before any statement is issued",
+      "DIGEST_MUST_COVER - a positive list of money columns the digest must be watching; the run refuses if any is missing from the catalog-derived list, which also catches a short catalog read, a renamed column, or a wrong schema"
+    ],
+    "bothLayersProvenByTheirOwnMutation": [
+      {
+        "mutation": "widen the writer's allowlist only",
+        "result": "REFUSED before any write: 'the writer's allowlist and the digest's exclusion set have diverged (writable={market_value, property_number, quick_ref_id}, digest-excluded={property_number, quick_ref_id})'",
+        "rule": "digest-scope"
+      },
+      {
+        "mutation": "widen the writer's allowlist AND DIGEST_EXCLUDED_COLUMNS, so the first assertion agrees again",
+        "result": "REFUSED before any write: 'the untouched-columns digest would not be watching market_value. A digest that does not cover the money columns proves nothing about them.'",
+        "rule": "digest-scope"
+      }
+    ],
+    "honestResidual": "two deliberate edits in two named places still get past both. There is no version of this that survives an author who is trying to defeat it. What it now survives is the realistic failure -- one edit that widens the writer and quietly blinds the check -- which is the one that would actually ship."
+  },
+
+  "aSecondInstrumentFailureWorthRecording": {
+    "what": "the FIRST mutation run reported ALL CHECKS PASSED, and I nearly wrote that down as 'the controls hold'.",
+    "whatActuallyHappened": "the patch script raised AssertionError on its second replacement and exited BEFORE writing the file, so the mutation never landed and I had re-run the unmutated code. The AssertionError was above the test output in the same buffer and read as noise.",
+    "howItWasCaught": "the result was convenient, so I grepped the file to confirm the mutation was actually present. It was not.",
+    "rootCause": "in this environment `python - <<'PY'` does NOT deliver a doubled backslash to Python verbatim; a `\\n` in the heredoc arrives as a real newline. Every string patch anchored on a TypeScript template literal containing an escaped newline silently failed to match. The fix was to build the escape with chr(92) and anchor by line index instead of by content.",
+    "rule": "a convenient result is a reason to distrust the instrument, not a result. It cost one grep to check and it changed the answer completely."
+  },
+
+  "verificationRuns": {
+    "typecheck": "pnpm --filter @workspace/cad-ingest run typecheck - clean (after `pnpm run typecheck:libs` builds lib/db, whose absence produces unrelated TS6305 noise)",
+    "unitSuite": "pnpm --filter @workspace/cad-ingest exec vitest run src/__tests__/publishedIdentifierBackfill.test.ts - 44 passed",
+    "realPostgres": {
+      "how": "a throwaway local PostgreSQL 18 cluster (initdb into the scratchpad, port 54329), with cad_property created from the checked-in schema fixture's own DDL. NOT a store: no Neon branch was written at any point.",
+      "why": "the committed integration suite needs the full schema template, which needs pgvector and postgis; CI has both and this laptop has neither. Deferring the only violation that matters to CI was not acceptable, so the harness proves it here first.",
+      "checks": 19,
+      "result": "19 of 19 PASS, including 'VIOLATION: guard REFUSED the run rule=untouched-digest' where a saboteur moves a dollar mid-run",
+      "harnessIsScratch": "lib/cad-ingest/scratch_local_integration.ts, deleted before the commit. The committed equivalent is publishedIdentifierBackfill.integration.test.ts, which runs under `pnpm test` in CI where DATABASE_URL and a live Postgres service are provided at job level (pr-checks.yml line 59)."
+    },
+    "endToEndDryRunAgainstProduction": {
+      "invocation": "DATABASE_URL=<production + options=-c default_transaction_read_only=on> tsx src/published-identifier-backfill-cli.ts --county=48209 --file=hays.zip --tax-year=2026 --dry-run --record=...",
+      "readOnlyGuardVerifiedByViolation": "an UPDATE through that exact connection string returns 'ERROR: cannot execute UPDATE in a read-only transaction'. Verified on the connection-option path specifically, which is a different mechanism from the in-session SET verified at CP1.",
+      "memberDiscriminationOnTheREALArchive": [
+        "PropertyDataExport1404452.txt (11 cols): refused by R2 - identified as IMPROVEMENT",
+        "PropertyDataExport1404451.txt (21 cols): refused by R2 - identified as LAND",
+        "PropertyDataExport1404450.txt (21 cols): refused by R2 - identified as OWNER",
+        "PropertyDataExport1404449.txt (40 cols): ACCEPTED by R3 property-columns-present",
+        "PropertyDataExport1404454.txt (13 cols): refused by R2 - identified as SALES",
+        "PropertyDataExport1404453.txt (21 cols): refused by R2 - identified as SEGMENT"
+      ],
+      "note": "this is the false start, refused by name, on the real archive. The tool never saw a file name it could have trusted: extractCadDrop flattens to basenames and every member is PropertyDataExport<n>.txt.",
+      "fileCounters": {
+        "rowsRead": 134592,
+        "blankPropIdRows": 0,
+        "duplicateRowsExact": 1,
+        "duplicateRowsConflicting": 0,
+        "rowsWithNoIdentifier": 0,
+        "accountsOffered": 134591
+      },
+      "r4": {
+        "applicable": true,
+        "duplicateRows": 1,
+        "duplicateRatio": 0.0000074298621017593916,
+        "ceiling": 0.001,
+        "read": "0.00074 percent against a 0.1 percent ceiling, three orders of magnitude clear. The improvement member is 5.2 percent."
+      },
+      "planAgainstTheREALproductionRoll": {
+        "rollRows": 134606,
+        "accountsOffered": 134591,
+        "rowsMatched": 134216,
+        "rowsSkippedNoRollRow": 375,
+        "rowsSkippedNullIdentifier": 0,
+        "rowsSkippedConflictingDuplicate": 0,
+        "rollRowsNoWrite": 390,
+        "rollRowsNotInExport": 390,
+        "rollRowsInExportWithNoIdentifier": 0,
+        "rollRowsInExportRefusedAsConflicting": 0
+      },
+      "verdict": "134,216 and 390 are not re-derived by a script that agrees with the dispatch. They are produced by the TOOL, against the real archive and the real production roll, and they land on the dispatch's figures exactly."
+    }
+  },
+
+  "aCountingAmbiguityFoundAndFixed": {
+    "what": "the first version reported a single `rollRowsUntouched`, which double-counted a roll row that IS in the export but publishes no identifier.",
+    "howItSurfaced": "the local harness expected 1 and got 2.",
+    "whyItMatters": "'the export does not carry this account' and 'the export carries it and publishes nothing' are DIFFERENT states, and this is a tool whose entire premise is that absent and blank are not the same thing. Reporting one number for both would have been the collapse it exists to prevent, in its own record.",
+    "fix": "split into rollRowsNotInExport / rollRowsInExportWithNoIdentifier / rollRowsInExportRefusedAsConflicting, with rollRowsNoWrite as their sum. On production the split is 390 / 0 / 0, so the dispatch's 390 is unaffected -- but the shape is now right for a drop where it is not."
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "check": "R4 account-cardinality",
+      "wouldProveItWrong": "if the per-instance fixture and the real PROPERTY member landed on the SAME side of the ceiling, the rule would be measuring nothing",
+      "outcome": "per-instance fixture 75 percent REFUSED; real PROPERTY member 0.00074 percent ACCEPTED. Not vacuous."
+    },
+    {
+      "check": "untouched-columns digest",
+      "wouldProveItWrong": "if it refused a clean run, it would be refusing everything rather than detecting anything",
+      "outcome": "VERIFIED on two clean runs and on an idempotent re-run; REFUSED on the saboteur run. Fires in exactly one direction."
+    },
+    {
+      "check": "member discrimination",
+      "wouldProveItWrong": "if it accepted more than one member of the real archive, or refused the PROPERTY member",
+      "outcome": "exactly one accepted out of six, and it is the 40-column one."
+    },
+    {
+      "check": "my own claim in CP1 that the digest is meaning shaped",
+      "wouldProveItWrong": "a single edit that both moves a protected column and stops the digest watching it",
+      "outcome": "FOUND ONE. CP1 was wrong. Fixed and re-proven."
+    }
+  ],
+
+  "adversarialReviewOfTheBuild": {
+    "objection1": "the local harness is not the committed test, so what CI runs is unproven.",
+    "answer1": "half conceded. The committed integration suite asserts the same things through withTestSchema, and I have read it against the harness case by case, but it has not executed anywhere yet: this laptop cannot build the schema template without pgvector and postgis. CI is where it first runs, and the close will report the CI conclusion string rather than claiming it passes.",
+    "objection2": "the R4 floor of 100 rows leaves a hole.",
+    "answer2": "conceded and declared in the code and in the record. A PROPERTY-shaped file under 100 rows gets R1-R3 only. R4 says `applicable: false` in the durable record rather than passing silently, which is the declared-degradation rule; the exposure is a sub-100-row file that is per-instance underneath and whose header lies, which is not a Texas county roll.",
+    "objection3": "reading the whole file into memory.",
+    "answer3": "unchanged from CP1: about 10 MB for Hays, and it buys a pre-write gate for the one rule that reads rows. Named as a leave_behind at roughly 1.5M accounts.",
+    "objection4": "you added a control (assertDigestScopeIntact) whose only trigger is a code edit, which sounds like the dormant class.",
+    "answer4": "it is not dormant: it executes on every non-dry-run before the first statement, and both of its branches are proven reachable by unit test with explicit arguments and by two mutation runs end to end. What it guards against IS a code edit, which is different from having no trigger."
+  },
+
+  "constraintsHonored": [
+    "NO write to any store. Every production and staging query ran read-only, and the read-only guard was verified by violation on both the in-session SET path and the connection-option path.",
+    "the backfill has NOT been run against any store. The only real writes anywhere were to a throwaway local PostgreSQL cluster in the scratchpad.",
+    "legacy-design-tools only",
+    "no deploy, Cloud Build, Cloud Run job, bake, publish or walk",
+    "no merge",
+    "every verification command exit-bounded",
+    "I overwrote a TRACKED fixture (hays_property_sample.txt, used by orion.test.ts) while generating my own, caught it with git status, restored it with git checkout, and renamed mine to hays_property_backfill_sample.txt. Recorded because the check that caught it was routine and the damage would not have been."
+  ]
+}

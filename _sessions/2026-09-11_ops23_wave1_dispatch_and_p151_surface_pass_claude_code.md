@@ -304,6 +304,29 @@ Two placement paths seal two sheets for one parcel. Recorded as F20, rowed as P-
 with a mission and a probe predicate, and handed to the wave-3 planner as an addendum. The
 probe now carries P-174.
 
+## Hays online for a customer (2026-09-12, 19:30Z): P-175
+
+The operator brought a live customer need: a City of San Marcos engineer asked a builder for 2D
+hydraulic modelling on one of five proposed houses on Sturgeon Dr, and the operator needs Smart
+Site's flood read on the five. A connector session had already found four of the five unbound
+and the fifth carrying a Mesa Verde Dr label. Read at source: the fifth (629) is node
+`48209:97658`, whose polygon and every geometry-derived facet, the flood read included, are the
+Sturgeon lot's, while the label, anchor, dollars and structure belong to CAD account 97658 at
+13669 Mesa Verde Dr. That is CTX-HAYS-KEY's collision made visible on one card: the tier-1 bake
+joined the TxGIO parcel and the CAD account on the same bare number. I had first told the
+operator the flood read sat on the wrong polygon; it does not. The polygon is right and the
+attributes are another parcel's, which is the correction recorded here. The other four are
+vacant lots on the roll with no house number in either export, and the CAPCOG address points
+for all five fall inside exactly the parcels the export names, by containment, read live.
+
+Every fix the CTX-HAYS lanes built is merged (LDT #653 rebind, #654 backfill CLI, factory #129
+vintage scope) and pinned into the publish job, migration 0099 is on both Neon branches, and
+nothing has executed: the identifier columns are filled on zero rows and the bake has not
+re-run. The OPS-21 H1 instrument is built and held on exactly that backfill. P-175 (A-135) runs
+the chain in order and closes through the customer's path: an address-keyed probe predicate
+that fails on all five today. The three untracked CTX-HAYS closes the row cites were committed
+with it, since cited-and-untracked is the worst state.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not

@@ -1,0 +1,189 @@
+{
+  "lane": "CTX-HAYS-BACKFILL",
+  "checkpoint": "CP1 - design / pre-build adversarial review",
+  "planRows": ["P-124"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ctx-hays-backfill_dispatch.md",
+  "at": "2026-09-10T22:05:00Z",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays-backfill",
+  "branch": "feat/ctx-hays-backfill-published-identifiers",
+  "baseCommit": "c43e24369b7e47d867a9465ae2528066e3416ddd",
+  "worktreeRegisteredBeforeAnyRepoRead": true,
+
+  "snapshotDeclared": {
+    "repo": "legacy-design-tools",
+    "branch": "feat/ctx-hays-backfill-published-identifiers",
+    "commit": "c43e24369b7e47d867a9465ae2528066e3416ddd (CTX-HAYS-REBIND, PR #653)",
+    "dataSnapshots": [
+      "neon fancy-fire-06136146 branch production db neondb, READ-ONLY, 2026-09-10T21:30Z onward",
+      "local archive hays.zip sha256 7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193, hash re-verified this session"
+    ],
+    "storesNotAccessible": "the atoms store (HAUSKA_MCP_DATABASE_URL, hauska_mcp) is NOT in this lane's credential set. It is where the tier-1 work list lives. See countsNotRederivable."
+  },
+
+  "readOnlyGuardVerifiedByViolation": {
+    "command": "psql <prod> -c 'SET default_transaction_read_only=on;' -c 'UPDATE cad_property SET quick_ref_id=... WHERE county_fips=48209 AND tax_year=2026 AND prop_id=40138;'",
+    "result": "ERROR:  cannot execute UPDATE in a read-only transaction",
+    "psqlExit": 1,
+    "read": "the guard is armed and fires. Nothing was written. Excluded from any count of writes: this is a control-verification event, not a mutation."
+  },
+
+  "premiseVerifiedAtSource": {
+    "claim": "migration 0099 is applied to production and nothing populates the two columns",
+    "query": "SELECT count(*) FROM cad_property WHERE county_fips='48209' AND tax_year=2026 AND quick_ref_id IS NOT NULL / AND property_number IS NOT NULL",
+    "result": "0 and 0, over 134,606 rows. The columns resolved, so 0099 is applied and the population is empty.",
+    "at": "2026-09-10T21:35Z, production, read-only"
+  },
+
+  "archiveEnumeration": {
+    "countingRule": "python zipfile over hays.zip, one level of nested zips, first physical line of each member parsed as CSV",
+    "members": [
+      { "enclosingZip": "...-PROPERTY-8.26.2026.zip", "member": "PropertyDataExport1404449.txt", "bytes": 66198484, "headerColumns": 40 },
+      { "enclosingZip": "...-OWNER-8.26.2026.zip", "member": "PropertyDataExport1404450.txt", "bytes": 29719086, "headerColumns": 21 },
+      { "enclosingZip": "...-LAND-8.26.2026.zip", "member": "PropertyDataExport1404451.txt", "bytes": 21347562, "headerColumns": 21 },
+      { "enclosingZip": "...-IMPROVEMENT-8.26.2026.zip", "member": "PropertyDataExport1404452.txt", "bytes": 11651740, "headerColumns": 11 },
+      { "enclosingZip": "...-SEGMENT-8.26.2026.zip", "member": "PropertyDataExport1404453.txt", "bytes": 73515444, "headerColumns": 21 },
+      { "enclosingZip": "...-SALES-8.26.2026.zip", "member": "PropertyDataExport1404454.txt", "bytes": 40912390, "headerColumns": 13 }
+    ],
+    "confirmedTrap": "ALL SIX members share the first four columns RecordType, PropertyID, QuickRefID, PropertyNumber. A header check for the identifier columns passes on every one of them.",
+    "widthIsNotUnique": "OWNER, LAND and SEGMENT are ALL 21 columns. Width uniquely identifies PROPERTY (40) among these six, but it cannot identify the others, and it is an equality on a number a legitimate layout addition would break."
+  },
+
+  "memberDiscriminationRule_proposed": {
+    "decision": "BEAT header width rather than take it. Width is RECORDED but is not the gate.",
+    "why": "an exact-40 equality refuses a valid future PROPERTY drop that adds a column, and it can only say 'not 40'. It cannot say WHICH sibling it was handed, which is the thing the false start needed to hear.",
+    "gatingRules": [
+      "R1 identifier-columns-present: propertyid + quickrefid + propertynumber. NECESSARY AND NOT SUFFICIENT. This is exactly the check that passed on the improvement file; it is kept only so a member missing them fails with the right message.",
+      "R2 sibling-marker-absent: refuse if any of instanceid (IMPROVEMENT/SEGMENT), ownername (OWNER), landtype (LAND), saledate (SALES) is present. Names the sibling in the refusal.",
+      "R3 property-columns-present: legaldesc + situs + marketvalue + squarefootage + legalacres. None of these appears in any sibling header in this archive.",
+      "R4 account-cardinality (DATA-DERIVED, runs after a full read and BEFORE any write): duplicate PropertyID rows must be at most 0.1 percent of rows read. Measured: PROPERTY 1 of 134,592 = 0.0007 percent; IMPROVEMENT 5,342 of 103,490 = 5.2 percent. Three orders of magnitude apart."
+    ],
+    "whyR4IsTheMeaningShapedHalf": "R1-R3 all read the header. R4 reads the ROWS. Header and body are two derivations by two different parts of the publisher's export job, so no single malformed header can satisfy both. R1-R3 alone are internal consistency on one payload.",
+    "conflictingDuplicateHandling": "a duplicated PropertyID whose (QuickRefID, PropertyNumber) DISAGREES with the first occurrence is refused for that account and named in the record: fail closed on the account, not on the file. Measured on this drop, the single duplicate (prop_id 172572) carries an IDENTICAL identifier pair on both rows, so the conflicting branch has ZERO live population here and is proven by fixture only. Stated rather than hidden."
+  },
+
+  "rederivedCounts": {
+    "countingRule": "production neondb READ-ONLY 2026-09-10; cad_property 48209 tax_year 2026 (134,606 rows) joined on prop_id to the 8-26-2026 PROPERTY member (134,592 data rows, first row wins per prop_id, leading zeros stripped as stripLeadingZeros does); txgio_parcel 48209 (131,734 rows) indexed by FIRST feature_index per geo_id and per prop_id, mirroring DISTINCT ON (feature_index) ORDER BY feature_index",
+    "rollRows": 134606,
+    "exportDataRows": 134592,
+    "exportDistinctAccounts": 134591,
+    "exportDuplicateRows": 1,
+    "matchedBoth_wouldReceiveBothIdentifiers": 134216,
+    "rollRowsExportLacks_stayNULL": 390,
+    "exportAccountsNotOnRoll_neverInserted": 375,
+    "skippedNullIdentifier": 0,
+    "blankQuickRefIdInFile": 0,
+    "blankPropertyNumberInFile": 0,
+    "txgioNonBlankGeoIdRows": 130246,
+    "crosswalkAmbiguousKeys": 0,
+    "corroborationRefusals": 0,
+    "usableCrosswalkKeys": 115033,
+    "verdict": "134,216 / 390 / 115,033 / 0 ambiguous / 0 refusals ALL re-derive EXACTLY against the dispatch's figures."
+  },
+
+  "countsNotRederivable": {
+    "which": ["REBIND 30,861", "GAIN 19,901"],
+    "why": "both are computed over the TIER-1 ATOM population (173,050 rows) in the atoms store reached by HAUSKA_MCP_DATABASE_URL. This lane's credential set is neondb only. The bake's work list comes from SELECT entity_id, body FROM atoms in nodeFacetBakeTier1ConformantCli.ts, not from cad_property.",
+    "whatIDidInstead": "computed the same split over the ROLL population (134,606 rows, 115,033 keyed), which is a DIFFERENT measurement and is presented as one.",
+    "rollPopulationResults": {
+      "currentBindModelledAsPropIdJoin": { "same": 0, "REBIND": 65633, "GAIN": 49400 },
+      "currentBindModelledAsSitusRecovery_multiFeatureKeysExcluded": { "same": 88493, "REBIND": 98, "GAIN": 26442 },
+      "currentBindModelledAsSitusRecovery_firstFeatureWins": { "same": 99042, "REBIND": 8844, "GAIN": 7147 }
+    },
+    "mechanismIBelieve": "different population AND different current-bind derivation. The addendum's split is over atoms whose parcelNodeId and situs come from the atom body; mine is over cad_property rows whose situs_address was itself overwritten by the parcel store (the migration says so). Hays is a gate-BLOCKED county, so the current bind is the situs recovery, not the prop_id join, which is why the prop_id model returns same=0.",
+    "secondMechanismConsidered": "that the addendum's 30,861 / 19,901 are simply wrong.",
+    "whyIRejectIt": "the addendum's own 115,033, the figure its split sums to (64,271 + 30,861 + 19,901 = 115,033), reproduces EXACTLY under my independent derivation from the file and the store. A split that sums to a figure I independently confirmed, differing only on the half that lives in a store I cannot read, is far better explained by the population difference than by an arithmetic error.",
+    "whatWouldSettleIt": "one read of the atoms store with the HAUSKA_MCP credential. Named as a leave_behind, not papered over."
+  },
+
+  "buildPlan": {
+    "files": [
+      "lib/cad-ingest/src/publishedIdentifierBackfill.ts - pure core: member discrimination, file read, plan computation, statement builder, allowlist guard, untouched-columns digest SQL",
+      "lib/cad-ingest/src/published-identifier-backfill-cli.ts - the CLI",
+      "lib/cad-ingest/src/__tests__/publishedIdentifierBackfill.test.ts - unit + fake-executor tests",
+      "lib/cad-ingest/src/__tests__/publishedIdentifierBackfill.integration.test.ts - withTestSchema, real Postgres, runs under pnpm test in CI which sets DATABASE_URL and provides a pgvector/postgis service",
+      "lib/cad-ingest/src/__tests__/__fixtures__/hays_property_sample.txt and hays_improvement_sample.txt"
+    ],
+    "twoPhases": "READ THE WHOLE FILE AND VALIDATE, THEN WRITE. 134k rows of three short strings is about 10 MB; buying a true pre-write gate for R4 with that is the right trade. Nothing reaches the store before the file has passed every rule.",
+    "statement": "UPDATE cad_property AS t SET quick_ref_id = COALESCE(v.quick_ref_id, t.quick_ref_id), property_number = COALESCE(v.property_number, t.property_number) FROM (VALUES ...) AS v(prop_id, quick_ref_id, property_number) WHERE t.county_fips=$1 AND t.tax_year=$2::int AND t.prop_id=v.prop_id AND (t.quick_ref_id IS DISTINCT FROM COALESCE(v.quick_ref_id,t.quick_ref_id) OR t.property_number IS DISTINCT FROM COALESCE(v.property_number,t.property_number)) RETURNING t.prop_id",
+    "whyUPDATE_FROM_VALUES": "an UPDATE cannot INSERT. 'Never INSERT' is therefore structural rather than a check that could be missing: there is no branch to forget. The dispatch asks for a test and it gets one, but the type of the statement is what actually carries the constraint.",
+    "whyCOALESCE": "a blank identifier must leave the cell alone rather than blank it. COALESCE(incoming, existing) is the same direction upsertCadProperties already uses for these two columns and for the same stated reason: the only non-appraisal writer emits null for both, so it can never erase an identifier a real export established.",
+    "whyTheNoOpSuppressingWHERE": "it makes rowsUpdated mean 'the cell actually changed' rather than 'the statement matched a row', which is what makes a second run report 0 and makes idempotence observable instead of asserted."
+  },
+
+  "controls_threeQuestionGate": [
+    {
+      "control": "member discrimination R1-R4",
+      "executes": "readPublishedIdentifiers() in the CLI, before any connection is opened",
+      "triggers": "every run, on the file it was handed",
+      "failsWith": "a thrown refusal naming the failed rule and the sibling it identified; process exit 1; zero statements issued",
+      "bypassedBy": "the real bypass is not using this tool: running the export through cad-ingest instead, which is the 45,524-market-value re-ingest this card exists to prevent. Named, not solved here."
+    },
+    {
+      "control": "declared-vintage tax-year refusal",
+      "executes": "resolveDeclaredCadVintage(county) from lib/cad-ingest/src/vintage.ts",
+      "triggers": "every run",
+      "failsWith": "throw for an unknown county; throw naming BOTH years when --tax-year disagrees with the declared vintage; exit 1",
+      "bypassedBy": "editing DECLARED_CAD_VINTAGES. That is the same constant the bake reads, so a divergence there is a divergence for every reader at once and is not silent."
+    },
+    {
+      "control": "SET-clause column allowlist",
+      "executes": "assertBackfillStatementSafe() on every statement before it is issued",
+      "triggers": "every batch",
+      "failsWith": "throw; exit 1; no further statements",
+      "honestClassification": "INTERNAL CONSISTENCY - the module inspecting a string the module built. It catches a future edit that widens the SET clause without updating the allowlist. It does NOT catch a wrong source, and it is not the money control."
+    },
+    {
+      "control": "untouched-columns digest (THE money control)",
+      "executes": "a digest query taken before and after the run",
+      "triggers": "every non-dry-run",
+      "failsWith": "a violation line in the durable record and a non-zero exit",
+      "whyItIsMeaningShaped": "the column list is read from information_schema.columns, the catalog rather than my source file, as every column of cad_property EXCEPT the two allowlisted ones. The digest is computed by Postgres over rows it owns. The tool cannot satisfy both sides: it would have to write the store AND forge the store's own aggregate.",
+      "coversAColumnAddedLater": "yes, automatically, because the list is enumerated from the catalog at run time rather than typed here",
+      "noBypassFlag": "DELIBERATE. There is no --skip-verify. If the digest query fails the run refuses rather than proceeding. An escape hatch would teach the next operator to use it."
+    },
+    {
+      "control": "durable record",
+      "executes": "the CLI writes the record header BEFORE opening a connection",
+      "triggers": "every non-dry-run",
+      "failsWith": "if the record path cannot be written the process exits 1 and the mutation never runs",
+      "record": "JSONL naming the invocation, the archive plus member plus its sha, the discrimination decision, and then the ITEMS: every updated prop_id, every prop_id skipped for no roll row, every prop_id skipped for a null identifier, and all 390 roll prop_ids the export lacks. A count alone is not a record."
+    }
+  ],
+
+  "violationsToRun": [
+    "an export row with no roll row must not create one (integration, real Postgres): row count unchanged and the account absent",
+    "a blank identifier leaves NULL, never '' (integration): assert IS NULL and separately assert the cell is not the empty string",
+    "a wrong --tax-year refuses (unit): 2025 against declared 2026 throws naming both",
+    "an unknown county refuses (unit)",
+    "the IMPROVEMENT-shaped fixture is REFUSED and names IMPROVEMENT (unit) - the exact false start",
+    "the OWNER / LAND / SALES / SEGMENT shapes are each refused and named (unit)",
+    "market value is provably unchanged (integration): digest identical across a full run",
+    "THE DIGEST GUARD FIRES: run a deliberately widened UPDATE that touches market_value directly against the executor, between the two digests, and assert the guard reports a violation and the run fails. A digest observed only agreeing has not been observed working.",
+    "the allowlist guard refuses a widened SET clause (unit)",
+    "a second identical run reports rowsUpdated 0 (integration idempotence)"
+  ],
+
+  "adversarialReview_ofMyOwnPlan": {
+    "objection1": "the allowlist guard is a ceremony.",
+    "answer1": "conceded and labelled as such above. It is internal consistency. It stays because it is free and it catches an edit, but the close will not present it as the money control.",
+    "objection2": "R4's 0.1 percent is a tuned threshold, which is the thing this program hunts.",
+    "answer2": "partly conceded. It is a threshold and thresholds rot. Two mitigations: it sits three orders of magnitude from both observed values so it is fitted to neither, and it is a BACKSTOP behind three header rules that already refuse every sibling in this archive on their own. If R4 ever becomes the rule that fires, that is a finding, and the record says which rule refused.",
+    "objection3": "reading the whole file into memory will not survive a bigger county.",
+    "answer3": "accepted as a scope limit, declared rather than hidden. 134,592 rows of three short strings is about 10 MB. Harris at roughly 1.5M accounts would be about 120 MB, which still fits; beyond that the pre-write gate would have to move to a two-pass read. Named in leave_behind.",
+    "objection4": "the digest scans the county twice per run.",
+    "answer4": "accepted. Two sorts of 134,606 short rows is the price of the only control here that a wrong write cannot satisfy.",
+    "objection5": "you re-derived 115,033 with the SAME rule the rebind lane used, so it is not independent.",
+    "answer5": "half conceded. The RULE is the same by necessity: a different rule would measure a different thing. What is independent is every input. I re-read the archive from its sha-verified bytes, re-pulled the roll and the parcel table from production myself, and re-implemented the ambiguity refusal, the account-number stem regex and the corroboration in a separate language. Agreement to the row across two implementations of one rule is worth something; it is not proof the rule is right, and I do not claim that."
+  },
+
+  "constraintsHonored": [
+    "no write to any store: the only DB traffic behind this checkpoint is SELECT under default_transaction_read_only=on, plus one deliberate violation probe that was refused",
+    "worktree registered in _catalog/seat_register.json before any repo file was read",
+    "legacy-design-tools only; no hauska-factory, hauska-engine or hauska-map",
+    "no deploy, Cloud Build, Cloud Run job, bake, publish or walk",
+    "every command exit-bounded"
+  ]
+}

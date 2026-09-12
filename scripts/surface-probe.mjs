@@ -70,6 +70,18 @@ export const PARCELS = [
   { id: "48453:367134", fips: "48453", label: "5833 Taylor Draper Cv, Austin SF-2; declared-complete city" },
 ];
 
+// P-175 (Hays online): address-keyed subjects. A customer reaches a parcel through the Find box, so the
+// predicate starts from the address, not from a node id the fix is expected to change. Points are the
+// CAPCOG address points in txgio_address (production, read 2026-09-12); each falls inside exactly the
+// TxGIO parcel named beside it by ST_Contains. These legs run only when --rows names P-175.
+export const ADDRESSES = [
+  { key: "48209:addr:615-sturgeon", fips: "48209", address: "615 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "615", street: "STURGEON", ids: ["84632", "97651", "11-2011-0001-00400-3"], point: { lat: 29.87113, lng: -97.92674 }, label: "Conway Addition Sec IV blk 1 lot 4; CAD 84632 / R97651 / TxGIO 97651; vacant, no house number on the roll" },
+  { key: "48209:addr:617-sturgeon", fips: "48209", address: "617 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "617", street: "STURGEON", ids: ["84633", "97652", "11-2011-0001-00500-3"], point: { lat: 29.87124, lng: -97.92662 }, label: "lot 5; CAD 84633 / R97652 / TxGIO 97652; vacant" },
+  { key: "48209:addr:619-sturgeon", fips: "48209", address: "619 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "619", street: "STURGEON", ids: ["84634", "97653", "11-2011-0001-00600-3"], point: { lat: 29.87135, lng: -97.92649 }, label: "lot 6; CAD 84634 / R97653 / TxGIO 97653; vacant" },
+  { key: "48209:addr:627-sturgeon", fips: "48209", address: "627 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "627", street: "STURGEON", ids: ["84638", "97657", "11-2011-0001-01000-3"], point: { lat: 29.87177, lng: -97.92600 }, label: "lot 10; CAD 84638 / R97657 / TxGIO 97657; vacant" },
+  { key: "48209:addr:629-sturgeon", fips: "48209", address: "629 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "629", street: "STURGEON", ids: ["84639", "97658", "11-2011-0001-01100-3"], point: { lat: 29.87188, lng: -97.92588 }, label: "lot 11; CAD 84639 / R97658 / TxGIO 97658; resolves today to node 48209:97658, a chimera carrying CAD account 97658's label (13669 Mesa Verde Dr) on the Sturgeon polygon" },
+];
+
 // --------------------------------------------------------------------------- small helpers
 const str = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -155,6 +167,10 @@ export function extractFacets(resp) {
     structuralYearBuilt: num(rec(j.structuralFact)?.yearBuilt),
     footprintState: str(rec(j.buildingFootprintFact)?.state),
     boundaryState: str(rec(j.boundaryEdgeFact)?.state),
+    // P-175: the flood fact as served (LDT floodHazardFact). A null zone means not present, never a default.
+    floodState: str(rec(j.floodHazardFact)?.state),
+    floodZone: str(rec(j.floodHazardFact)?.floodZone),
+    floodSfha: typeof rec(j.floodHazardFact)?.inSpecialFloodHazardArea === "boolean" ? j.floodHazardFact.inSpecialFloodHazardArea : null,
   };
 }
 
@@ -173,6 +189,14 @@ export function extractEnvelope(resp) {
     buildableAreaSqFtInPayload: num(rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties)?.buildableAreaSqFt),
     message: str(j.message ?? j.reason),
   };
+}
+
+/** Great-circle distance in metres between two {lat,lng} points (P-175 record-point check). */
+export function haversineM(a, b) {
+  const R = 6371000, toR = (d) => (d * Math.PI) / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
 }
 
 /** Ray-casting point-in-ring test on [lng,lat] pairs; outer ring only, which is enough for a probe. */
@@ -521,9 +545,53 @@ export const ROWS = {
       return { verdict: "PASS", basis };
     },
   },
+  "P-175": {
+    title: "Hays online: each Sturgeon Dr address resolves to a node whose label, record point and flood fact are that lot's",
+    parcels: ADDRESSES.map((a) => a.key),
+    evaluate(key, legs, _obs) {
+      const a = ADDRESSES.find((x) => x.key === key);
+      const s = legs.situsSearchCity;
+      const f = legs.facets;
+      if (!s?.measured) return { verdict: "UNMEASURED", basis: `situs-search leg did not run for "${a?.address ?? key}" (run with --rows P-175)` };
+      if (s.error || !(s.hitCount >= 1) || !s.firstParcelNodeId) return { verdict: "FAIL", basis: `situs search for "${a.address}" returned no parcel hit (${s.error ?? "hits " + (s.hitCount ?? 0) + ", none carrying a parcel node id; a located address point is not a parcel"})` };
+      if (!f?.measured) return { verdict: "UNMEASURED", basis: `node ${s.firstParcelNodeId} resolved but its facets leg did not run (${f?.error ?? "no leg"})` };
+      // Three derivations against the lot's published identifiers (CAD PropertyID, TxGIO prop_id, geo_id):
+      // the node the search resolved, the card label, and the county layer's polygon at the CAPCOG point.
+      // The node's own served polygon is not readable through the surface (the map assembles it
+      // client-side), so a right label on a wrong ring is the residual; the lane pastes get_smart_site's draw block.
+      const nodePropId = s.firstParcelNodeId.split(":")[1];
+      const nodeOk = a.ids.includes(nodePropId);
+      const label = f.composedAddress ?? f.situsAddress ?? "";
+      const labelOk = new RegExp("^" + a.houseNumber + "\\s+" + a.street + "\\b", "i").test(label);
+      const distM = f.recordPoint ? Math.round(haversineM(f.recordPoint, a.point)) : null;
+      const g = legs.gisRing;
+      const ringId = g?.measured ? (g.containingFeatureId ?? null) : null;
+      const ringOk = ringId != null && a.ids.some((id) => String(ringId).endsWith(id));
+      const floodOk = f.floodState === "present" && f.floodZone != null;
+      const basis = `node ${s.firstParcelNodeId} ${nodeOk ? "is" : "IS NOT"} one of the lot's identifiers; label "${label}" ${labelOk ? "matches" : "DOES NOT match"}; record point ${distM == null ? "absent on this path" : distM + " m from the address point"}; county polygon at the address point ${g?.measured ? (ringId == null ? "NONE (hole in the layer" + (g.nearest ? ", nearest " + g.nearest.id + " " + g.nearest.metres + " m" : "") + ")" : ringId + (ringOk ? " (the lot)" : " (NOT the lot)")) : "not read"}; flood ${f.floodState ?? "-"} zone ${f.floodZone ?? "-"}`;
+      if (!nodeOk || !labelOk || (distM != null && distM > 150)) return { verdict: "FAIL", basis: basis + " -- the node that answers to the address is, or carries, another parcel" };
+      if (g?.measured && ringId != null && !ringOk) return { verdict: "FAIL", basis: basis + " -- the county layer names a different parcel at the address point" };
+      if (!(g?.measured && ringId != null) && distM == null) return { verdict: "UNMEASURED", basis: basis + " -- neither an anchor nor a containing polygon was readable" };
+      if (!floodOk) return { verdict: "FAIL", basis: basis + " -- flood fact not present on the record" };
+      return { verdict: "PASS", basis };
+    },
+  },
 };
 
 // --------------------------------------------------------------------------- live run
+/** P-175: the customer's path. Situs search by the full address, then the facets of the first hit. */
+async function runAddressLegs(a) {
+  const ph = { measured: false, error: "address-keyed leg (P-175): not attempted" };
+  const s = extractSitusSearch(await call("GET", `${PE_BASE}/api/pe-situs-search?q=${encodeURIComponent(a.address)}&limit=7`, null, 12_000), null);
+  let facets = { measured: false, error: "no situs hit to read facets for" };
+  if (s.measured && !s.error && s.firstParcelNodeId) {
+    facets = extractFacets(await call("GET", `${PE_BASE}/api/spine/property-atoms/${encodeURIComponent(s.firstParcelNodeId)}/facets`, null, LEG_TIMEOUT_MS.facets));
+  }
+  const nodePropId = s.firstParcelNodeId ? s.firstParcelNodeId.split(":")[1] : "-";
+  const gisRing = extractGisRing(await call("POST", `${CORTEX_PROXY}/brokerage/v1/map-data/gis-layer`, { layer: "parcels", bbox: bboxAround(a.point, RING_PROBE_METRES) }, LEG_TIMEOUT_MS.gisRing), nodePropId, a.point);
+  return { facets, situsSearchCity: s, situsSearchBare: { measured: false, error: "address-keyed leg: one situs form only" }, envelopeByAddress: ph, envelopeByPoint: ph, gisRing, cortexNode: ph };
+}
+
 async function runLegs(parcel, opts) {
   const legs = {};
   const propId = parcel.id.split(":")[1];
@@ -771,6 +839,27 @@ function selfTest() {
   check("P-174 FAILS on the 2026-09-12 operator observation (search-landed: no setbacks; click: setbacks)", ROWS["P-174"].evaluate("48021:34049", good, { "48021:34049": { searchLandedSetbacksShown: false, clickSetbacksShown: true } }).verdict === "FAIL");
   check("P-174 can PASS when both paths show setbacks", ROWS["P-174"].evaluate("48021:34049", good, { "48021:34049": { searchLandedSetbacksShown: true, clickSetbacksShown: true } }).verdict === "PASS");
   check("P-174 is UNMEASURED with only the click observed", ROWS["P-174"].evaluate("48021:34049", good, { "48021:34049": { clickSetbacksShown: true } }).verdict === "UNMEASURED");
+  // P-175, from the 2026-09-12 production reads: 629 resolves to a chimera; 615 resolves to nothing.
+  const k629 = "48209:addr:629-sturgeon", k615 = "48209:addr:615-sturgeon";
+  const hit629 = { measured: true, http: 200, ms: 400, hitCount: 1, firstParcelNodeId: "48209:97658", matchesParcel: false };
+  // The PE facets path carries no query point for Hays (read live 2026-09-12), so recordPoint is null in every live case.
+  const chimera = { measured: true, http: 200, composedAddress: "13669 MESA VERDE DR, AUSTIN, TX 78737", recordPoint: null, floodState: "present", floodZone: "AO" };
+  const fixed629 = { measured: true, http: 200, composedAddress: "629 STURGEON DR, SAN MARCOS, TX 78666", recordPoint: null, floodState: "present", floodZone: "AO" };
+  const ringLot = { measured: true, http: 200, featureCount: 12, matchesParcel: true, matchedBy: "point", containingFeatureId: "97658", noContainingPolygon: false, nearest: null };
+  const ringOther = { ...ringLot, containingFeatureId: "128076" };
+  const hit84639 = { ...hit629, firstParcelNodeId: "48209:84639" };
+  check("P-175 FAILS on the 2026-09-12 chimera (the lot's polygon, Mesa Verde label)", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit629, facets: chimera, gisRing: ringLot }, null).verdict === "FAIL");
+  check("P-175 FAILS when the address is located but unbound (an address-point hit with no node id)", ROWS["P-175"].evaluate(k615, { situsSearchCity: { measured: true, http: 200, hitCount: 1, firstParcelNodeId: null }, facets: { measured: false } }, null).verdict === "FAIL");
+  check("P-175 PASSES when the CAD-account node carries the lot's label, the county polygon at the point is the lot, and flood is present", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: ringLot }, null).verdict === "PASS");
+  check("P-175 PASSES on the TxGIO-id node too when its label is the lot's (either published identifier is the lot)", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit629, facets: fixed629, gisRing: ringLot }, null).verdict === "PASS");
+  check("P-175 FAILS when the search resolves to a node that is none of the lot's identifiers", ROWS["P-175"].evaluate(k629, { situsSearchCity: { ...hit629, firstParcelNodeId: "48209:128076" }, facets: fixed629, gisRing: ringLot }, null).verdict === "FAIL");
+  check("P-175 FAILS when the county layer names another parcel at the address point", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: ringOther }, null).verdict === "FAIL");
+  check("P-175 FAILS when the right node has no flood fact", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: { ...fixed629, floodState: "absent", floodZone: null }, gisRing: ringLot }, null).verdict === "FAIL");
+  check("P-175 FAILS when a record point is present but 35 miles away", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: { ...fixed629, recordPoint: { lat: 30.18232, lng: -97.97703 } }, gisRing: ringLot }, null).verdict === "FAIL");
+  check("P-175 is UNMEASURED when the situs leg did not run", ROWS["P-175"].evaluate(k629, { facets: fixed629, gisRing: ringLot }, null).verdict === "UNMEASURED");
+  check("P-175 is UNMEASURED when neither an anchor nor a containing polygon was readable", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: { measured: false } }, null).verdict === "UNMEASURED");
+  check("P-175 is UNMEASURED on a hole in the county layer with no anchor", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: { ...ringLot, containingFeatureId: null, noContainingPolygon: true, nearest: { id: "97657", metres: 9 } } }, null).verdict === "UNMEASURED");
+  check("haversine: the Mesa Verde anchor is about 56 km from the Sturgeon point", Math.abs(haversineM({ lat: 30.18232, lng: -97.97703 }, { lat: 29.87188, lng: -97.92588 }) - 34900) < 2000);
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;
@@ -816,6 +905,13 @@ async function main() {
       process.stdout.write(`probing ${p.id} ... `);
       legsById[p.id] = await runLegs(p, { cortex });
       console.log("done");
+    }
+    if (rowFilter && rowFilter.includes("P-175")) {
+      for (const a of ADDRESSES) {
+        process.stdout.write(`probing ${a.key} (${a.address}) ... `);
+        legsById[a.key] = await runAddressLegs(a);
+        console.log("done");
+      }
     }
     source = "live";
   }

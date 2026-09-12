@@ -1,0 +1,109 @@
+{
+  "lane": "CTX-HAYS-REBIND",
+  "checkpoint": "CP2",
+  "planRow": "P-124",
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ctx-hays-rebind_dispatch.md",
+  "repo": "legacy-design-tools",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays-rebind",
+  "branch": "fix/ctx-hays-rebind-geometry-key",
+  "baseCommit": "591f5efe14aab6efda6d79e15aa7357751975655",
+  "at": "2026-09-10T19:20:00Z",
+
+  "whatIsBuilt": {
+    "schema": "lib/db/src/schema/cadProperty.ts gains `quickRefId` and `propertyNumber`, both nullable text, DECLARED LAST so a fresh `drizzle-kit push` and migration 0099's ALTER TABLE produce the same physical column order. Migration lib/db/drizzle/0099_cad_property_published_identifiers.sql. Primary key unchanged.",
+    "fixture": "lib/db/src/__tests__/__fixtures__/schema.sql.template updated with the two columns at the end of cad_property, matching what CI's `drizzle-kit push` + pg_dump will emit.",
+    "parser": "lib/cad-ingest/src/orion/parser.ts reads QuickRefID and PropertyNumber via textOrNull. classifyOrionHeader unchanged.",
+    "recordType": "lib/cad-ingest/src/types.ts CadPropertyRecord gains both fields as REQUIRED, which is what forced every other producer to declare an explicit value rather than silently omitting one.",
+    "otherProducers": "pacs/parser.ts, txgio/landuse.ts, williamsonAgValuation.ts, vendors/dcad-certified/parser.ts and vendors/tad-propertydata/parser.ts each declare explicit nulls with a stated reason. The last two were found BY THE TYPE CHECKER, not by grep.",
+    "writePath": "lib/cad-ingest/src/ingest.ts writes both columns and coalesces them incoming-first on conflict; lib/cad-ingest/src/p78Merge.ts carries both in COALESCE_FIELDS.",
+    "joinKey": "artifacts/api-server/src/lib/joinNormalize.ts gains parcelCrosswalkJoinKey (inverted-scoped exactly like addressJoinKey), cadAccountNumberStem, and crosswalkBindCorroborated. The false module-header sentence is corrected in the same file.",
+    "fetch": "artifacts/api-server/src/lib/nodeFacetTier1ParcelJoin.ts gains fetchParcelRowsByGeoIds and selects geo_id on every parcel read.",
+    "roll": "artifacts/api-server/src/lib/joinIntegrityGate.ts PropIdCadPropertyEntry gains propertyNumber and quickRefId from the SAME SELECT. No new query.",
+    "builder": "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts gains a fifth ParcelJoinRecord state `joined-crosswalk`, accepts a crosswalkRow, and prefers it for GEOMETRY ONLY.",
+    "cli": "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts builds the crosswalk index, refuses ambiguous keys, corroborates per row, prefers the crosswalk row over the situs row, and prints five counters plus a JSON summary."
+  },
+
+  "theDefectTheVIOLATIONPROBEFOUND": {
+    "what": "The first implementation derived `provenance.parcelJoin.state` and `featureIndex` from the OFFERED crosswalk row while every geometry consumer read a separate `row` variable. Disabling the `row = crosswalkRow` assignment left the payload claiming `joined-crosswalk` at feature 40337 while drawing feature 57725 -- a provenance record describing a bind that did not happen, which is worse than either outcome alone.",
+    "howItWasFound": "by violating the change, not by reading it. The first probe made only ONE test fail and the shape of that single failure is what exposed it.",
+    "fix": "the record is now derived from `crosswalkBound = crosswalkRow != null && row === crosswalkRow`, so the state can only claim a bind the geometry actually took.",
+    "regressionControl": "a test that reads the geometry side (the zoning stamp, which exists on only one of the two features) and the provenance side and asserts they agree. Re-running the same violation now fails 5 tests instead of 1."
+  },
+
+  "theSecondDefectTheVIOLATIONPROBEFOUND": {
+    "what": "The parser test for the honest-null case asserted only that `HeaderIndex.get` returns \"\" for a missing column. That is a presence-shaped check on the wrong layer: replacing `textOrNull(header.get(...))` with the raw `header.get(...)` in the parser left the test PASSING while every row of such a county acquired an empty-string identifier -- a sentinel that satisfies a not-null check, identifies nothing, and would become a join key every row in the county shared.",
+    "fix": "a real fixture (lib/cad-ingest/src/__tests__/__fixtures__/orion_no_identifier_columns_sample.csv, a property-classified header with neither column) run THROUGH the parser, asserting null on both. The same violation now fails."
+  },
+
+  "violationRuns": [
+    { "id": "V0", "what": "the read-only DB guard, run FIRST", "how": "CREATE TEMP TABLE against both stores before any measurement", "result": "ERROR: cannot execute CREATE TABLE in a read-only transaction, psql exit 1, on staging AND production" },
+    { "id": "V1", "what": "disable the crosswalk geometry preference (`if (false && crosswalkRow)`)", "result": "5 tests failed, exit 1 (before the state fix it was 1, which is how the state/geometry divergence was found)" },
+    { "id": "V2", "what": "widen crosswalkBindCorroborated to always accept when a geo_id bind exists", "result": "2 tests failed, exit 1 -- the REFUSES-on-disagreement case and the feature-index-0 case" },
+    { "id": "V3", "what": "remove the gate-blocked scoping from parcelCrosswalkJoinKey", "result": "2 tests failed, exit 1 -- Travis/Bastrop acquire a key they must not have, and the caller-supplied-set case" },
+    { "id": "V4", "what": "drop quickRefId/propertyNumber from p78Merge COALESCE_FIELDS", "result": "2 tests failed, exit 1 -- a StratMap re-apply blanks the crosswalk" },
+    { "id": "V5", "what": "parser writes the raw header value instead of textOrNull", "result": "PASSED at first, which was the finding. After the fixture-based rewrite it fails, exit 1" },
+    { "id": "V6", "what": "the probe's own pre-registered expectations inverted (--violate)", "result": "2 mismatches, exit 1" },
+    { "id": "V7", "what": "the probe's self-test, 18 cases including 4 explicit non-vacuity assertions; main() refuses to score if it fails", "result": "0 failures, exit 0" }
+  ],
+
+  "divergenceTestBetweenTheTWOImplementations": {
+    "why": "the Python probe measured the corpus and the shipped TypeScript will run in the bake. Two implementations of one meaning with no divergence test is the shape ENFORCEMENT names as a defect.",
+    "how": "a scratchpad tsx script IMPORTS the shipped joinNormalize functions (never restates them) and runs the CLI's index-build rule over the same two real files: the county's 2026-08-26 public export and a read-only dump of txgio_parcel 48209.",
+    "result": "EXACT AGREEMENT on every figure. bound 115,035; ambiguous Geographic IDs refused 1; corroboration refused 0; distinct features bound 115,035; features claimed by more than one account 0. Worked examples identical: 26199 -> 40337, 40138 -> 57725, 23925 -> 2008, 24296 -> 35471, 24768 -> 2861, 24959 -> 875, 25651 -> 1262.",
+    "denominatorNoteSoTheseAreNotMISREAD": "this run's denominator is the 134,592 EXPORT rows (115,035 bound + 19,555 key-with-no-parcel + 2 ambiguous). The production census's denominator is the 173,050 NODE rows. They reconcile by arithmetic: 173,050 nodes minus 38,533 nodes that are not accounts at all = 134,517 nodes that are accounts, and 134,592 export accounts minus 134,517 = 75 accounts that have no production node. Stated as arithmetic, not presented as an independent agreement."
+  },
+
+  "tests": {
+    "typecheck": "pnpm run typecheck -- exit 0, all 9 projects Done",
+    "new": "15 in artifacts/api-server/src/lib/__tests__/joinNormalizeCrosswalk.test.ts (NEW file), 9 appended to nodeFacetBakeTier1Conformant.test.ts, 3 appended to lib/cad-ingest/src/__tests__/orion.test.ts, 3 appended to lib/cad-ingest/src/__tests__/p78-merge.test.ts",
+    "targeted": "api-server conformant + crosswalk: 146 passed, exit 0. cad-ingest orion + p78: 29 passed, exit 0.",
+    "baselineCompareBecauseLOCALISNOTGREEN": {
+      "why": "no Postgres is listening on localhost:5432 (pg_isready exit 2, an independent instrument), so every DB-integration suite fails locally on main as well. CI is authoritative.",
+      "apiServerOnMain591f5efe": "133 files failed, 46 tests failed, 239 files passed, 2657 tests passed",
+      "apiServerOnThisBranch": "133 files failed, 46 tests failed, 240 files passed, 2681 tests passed",
+      "cadIngestOnMain": "14 tests failed, 292 passed",
+      "cadIngestOnThisBranch": "14 tests failed, 298 passed",
+      "libDbBothSides": "50 failed, 82 passed -- identical",
+      "read": "identical failure counts on both sides; the branch adds only passing tests. The baseline worktree was created at 591f5efe, measured, and removed."
+    }
+  },
+
+  "twoDesignDECISIONSthatChangedUnderMeasurement": [
+    {
+      "what": "the migration originally carried a partial index on (county_fips, property_number). REMOVED.",
+      "why": "two reasons, and the second is the one that matters. Nothing queries cad_property by property_number -- the bake loads the county's declared-vintage rows by (county_fips, tax_year) and reads the column off rows it already has, so the index is an artifact that exists, is correct, and does nothing. And this repo's schema fixture is a pg_dump of what `drizzle-kit push` builds from the DRIZZLE SCHEMA, not of what the migrations build. Proven, not assumed: migration 0095's txgio_parcel.geom column AND txgio_parcel_geom_gist_idx are in that migration and live in production and appear NOWHERE in schema.sql.template. A migration-only index would therefore have drifted the fixture and failed CI's own drift check."
+    },
+    {
+      "what": "the geo_id fetch originally compared `btrim(geo_id) = ANY(...)`. Now compares the raw column.",
+      "why": "measured: ZERO of Hays' 130,246 non-null geo_ids carry surrounding whitespace, so trimming the comparand changes no result and would permanently prevent a plain (county_fips, geo_id) index from being used. txgio_parcel has no geo_id index today and the situs join already pays that price -- it needed a 34-call functional index to escape it. The blank guard stays. If a publisher ever pads a geo_id the failure is a MISS, which is an honest geometry absence, never a wrong bind.",
+      "cost": "measured on staging: one 5,000-key chunk takes 4.3 seconds without an index, so Hays' 115,035 keys are roughly 24 chunks and about 100 seconds of the bake. Named so the integration seat is not surprised."
+    }
+  ],
+
+  "aClaimIWROTEandThenFALSIFIED": {
+    "what": "CP1 and three code comments said the WCAD Socrata shape carries neither identifier column, so Williamson would have no crosswalk key.",
+    "measuredAgainstTheFIXTURE": "FALSE. lib/cad-ingest/src/__tests__/__fixtures__/wcad_property_sample.csv, a real Socrata row, carries `quickrefid` R002338 and `propertynumber` R-17-W338-401P-0013-0006 for propertyid 63514. A Williamson re-ingest WOULD populate the key.",
+    "whatActuallyHoldsWilliamsonUnchanged": "txgio_parcel 48491 carries ZERO non-blank geo_id across 304,298 rows, on BOTH staging and production (re-verified on production for this checkpoint). The index the key would be looked up in is empty, so the bind cannot happen. The CLI also skips the corroborator fetch entirely when the geo_id index comes back empty, so the inertness is cheap as well as correct.",
+    "andItIsNowATEST": "the corrected claim is asserted in orion.test.ts against the real fixture, so the next reader inherits the measured version rather than the convenient one.",
+    "whyThisIsWorthWriting": "the false half of a module header is exactly what this lane was sent to correct in joinNormalize.ts. Writing a fresh one in the same change would have been the same defect with a newer date."
+  },
+
+  "productionColumnAbsenceCONFIRMED": "information_schema.columns for cad_property on the PRODUCTION Neon branch, read-only 2026-09-10: quick_ref_id 0, property_number 0, 21 columns total. Same on staging. The migration's own comment asserts this and the assertion was checked before it was written.",
+
+  "scopeHeld": [
+    "legacy-design-tools only. No write to hauska-factory, hauska-engine or hauska-map.",
+    "No deploy, no Cloud Build, no Cloud Run job, no bake, no publish, no walk. Not one byte written to any store.",
+    "Every DB session on both stores ran default_transaction_read_only=on with an explicit statement_timeout, verified by violation FIRST.",
+    "Every verification command exit-bounded. No watch, tail or dev server; vitest run, tsc --noEmit, and timeout-wrapped psql and curl throughout.",
+    "The five counties moving through production were not touched. Land use is deliberately untouched by the crosswalk path, so a gate-blocked county cannot move a land-use code through it.",
+    "CTX-B5's live worktree was read (git status, git log, git diff) and never written to.",
+    "The worktree was registered in _catalog/seat_register.json BEFORE any repo file was read or written."
+  ],
+
+  "remaining": [
+    "commit, push, open a PR, do NOT merge",
+    "write the close with the re-derived crosswalk numbers, the Hays-only-versus-general argument, the CTX-B5 take/discard, the violation runs and leave_behind"
+  ]
+}
