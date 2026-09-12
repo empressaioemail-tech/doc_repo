@@ -37,6 +37,11 @@ const LANES = [
   { row: "P-165", slug: "p165-edges", what: "edges as atoms; hop1/subgraph", worktrees: [/p165/] },
   { row: "P-166", slug: "p166-succession", what: "node succession", worktrees: [/p166/] },
   { row: "P-167", slug: "p167-vocabulary", what: "one vocabulary package", worktrees: [/p167/] },
+  // Added 2026-09-12 (OPS-16 A-132) after the wave-1 review.
+  { row: "P-169", slug: "p169-infra", what: "cloud jobs for the CAD loader and the footprint writer", worktrees: [/p169/] },
+  { row: "P-170", slug: "p170-traffic-lease", what: "one traffic shift at a time per service (doc_repo)", worktrees: [/p170/] },
+  { row: "P-171", slug: "p171-provenance", what: "who wrote the 2026-09-07 footprint atoms", worktrees: [/p171/] },
+  { row: "P-172", slug: "p172-findbox", what: "Find box reads the situs index", worktrees: [/p172/] },
 ];
 
 function git(cwd, args) {

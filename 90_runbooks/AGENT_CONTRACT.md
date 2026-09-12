@@ -1,4 +1,4 @@
-<!-- AGENT-CONTRACT v1890f0bb — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- AGENT-CONTRACT v1a1d754d — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # AGENT CONTRACT — the operative law for every dispatched lane
 
@@ -41,6 +41,18 @@ in the Factory `runs` table. A write without a live scoped `HeldLease`, or whose
 its scope, FAILS CLOSED. The v1 env-var holder and the single-row `atoms_bulk_writer_lease` take
 are retired by refuse. Any writer that is not the recorded holder of its scope is rogue: kill on
 sight, record the kill.
+
+**Deploy-traffic lease (operator ruling 2026-09-12, OPS-16 P-170).** ONE traffic shift at a time per
+Cloud Run service. A `gcloud run services update-traffic`, a deploy that shifts traffic, or a workflow
+run that does, is taken under a per-service lease the dispatch planner grants and records
+(`_catalog/leases/<service>.json`: lane, revision, takenAt, expiresAt) and releases only after the
+serving revision has been read by field name from the traffic JSON and the lane's probe has run
+against it. Two lanes never hold the same service. A shift without a lease is rogue: revert to the
+leased revision, record the revert. Incident: 2026-09-11, P-155 and P-159 shifted `hauska-engine-api`
+within minutes of each other and served each other's revision in production. The doc_repo hook
+`traffic-lease-gate` (P-170; until it lands, the planner's sequencing is the only control and this
+sentence says so) refuses the command without a lease in sessions rooted in doc_repo; a lane run
+outside such a session is the named bypass, which is why the planner sequences shifts explicitly.
 
 ## 4. Heavy-scan serialization
 
