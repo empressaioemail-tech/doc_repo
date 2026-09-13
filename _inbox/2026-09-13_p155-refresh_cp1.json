@@ -1,0 +1,93 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p155-refresh",
+  "planRows": ["P-155"],
+  "filedAt": "2026-09-13T23:15:00Z",
+  "startCommitsDeclared": {
+    "hauska-engine": {
+      "worktree": "P:/seat-worktrees/property/hauska-engine-p155-refresh",
+      "branch": "fix/p155-refresh-produces-new-document",
+      "startCommit": "3a4874a8aceec09cb313cf23fbc333802efa2af1",
+      "note": "origin/main HEAD at worktree creation. This IS hauska-engine PR #440's merge commit (p167-strings' PDF-label fix) -- confirms main already carries #440."
+    },
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p155-refresh",
+      "branch": "fix/p155-mcp-refresh-hop",
+      "startCommit": "66fedc3ef2fb3e13c1a7f7422c00337e19511b44"
+    }
+  },
+
+  "pathTraced": "export_instrument (legacy-design-tools artifacts/smartsite-mcp/src/tools.ts -> src/feasibility-export.ts's executeFeasibilityExport) --HTTP--> hauska-engine-api services/engine-api/src/routes/parcel-terrain.ts (GET .../feasibility-export status, POST .../feasibility-export/refresh, GET .../feasibility-export/download) --calls--> packages/engine-core/src/site-plan/feasibility-author.ts's authorParcelFeasibilityExport (composeParcelReport + emitPdfFeasibility) --persists--> ReadableArtifactStore (GCS/memory/disk, keyed by a fresh ref per composition) + Postgres table feasibility_export_jobs (packages/storage/migrations/013,014; one row per parcelNodeId, columns state/queued_at/started_at/completed_at/failed_at/error_class/artifact_ref, NO ttl/expiry column) + the parcel-terrain-model atom's artifacts['pdf-feasibility'] record (packages/atoms -- a CLOSED type, cannot be widened).",
+
+  "whatRefreshReturnsToday": "Read directly from parcel-terrain.ts (lines ~780-844). POST refresh's ONLY dedup check is `if (existingJob && existingJob.state === 'running')` -- it hands back the SAME jobRef with no new work. For EVERY other existing state (no job / 'queued' momentarily / 'ready' / 'failed'), it mints a brand-new jobRef, upserts state queued->running, and fires `void runFeasibilityJob(...)` (detached, not awaited) which re-runs the FULL composition and, on success, upserts the job to ready with a fresh completedAt and a fresh artifact_ref pointing at NEW bytes just written to the artifact store. This is CORRECT and was verified by direct code read plus the wave-1 close's own test 'POST refresh: a second refresh while running returns the SAME jobRef, never starts a second job' -- there is no test (and no code path) suggesting a 'ready' job is ever silently re-served by the REFRESH route itself. The engine's refresh route is not the bug.",
+
+  "whatTheJobDoes": "runFeasibilityJob (parcel-terrain.ts ~683-778) resolves the setback atom, calls authorParcelFeasibilityExport (full composeParcelReport + PDF assembly + narrative generation), writes the PDF to the artifact store, then upsertFeasibilityExportJob(parcelNodeId, {state:'ready', completedAt: new Date().toISOString(), artifactRef, resultSummary}). authorParcelFeasibilityExport itself (feasibility-author.ts) always: composes fresh, generates a fresh narrative (or skeleton), puts NEW bytes at a NEW artifact-store ref, and calls storage.writePropertyAtom with the atom's artifacts['pdf-feasibility'] pointed at that new ref. There is no internal memoization/cache-hit shortcut inside this function -- every invocation genuinely recomposes.",
+
+  "whereItLogs": "Structured JSON console.log/console.error to Cloud Run stdout/stderr, read via `gcloud logging read` against resource.type=cloud_run_revision, resource.labels.service_name=hauska-engine-api, project hauska-prod-497015. Two named events observed: `feasibility.narrative_inprocess.outcome` (engine-core, logged on every real composition attempt, success or fallback) and `feasibility_export.job_failed` (route level, only on a thrown composition). No 'job started' or 'refresh accepted' log line exists separately from the HTTP access log itself.",
+
+  "cacheKeyAndTtl": "Cache key: parcelNodeId alone (feasibility_export_jobs.parcel_node_id is the PRIMARY KEY -- one row per parcel, full stop). TTL: NONE. A 'ready' row is permanent until a NEW refresh call supersedes it; nothing in the schema or route code ever expires or invalidates a ready job on its own. The only staleness logic that exists (FEASIBILITY_JOB_STALL_CEILING_MS, 10 min) reclassifies a stuck RUNNING job to failed -- it has no effect on a job that already reached ready.",
+
+  "logLinesForOneRefreshCall": [
+    {
+      "note": "The LAST successful POST refresh ever recorded for the mission's own probe parcel 48021:34049, pulled live via gcloud logging read (freshness=2d) moments before this checkpoint was filed.",
+      "timestamp": "2026-09-13T19:11:03.314814Z",
+      "insertId": "6aa6f5470007352cc4cd4937",
+      "revision": "hauska-engine-api-00215-niv",
+      "requestMethod": "POST",
+      "requestUrl": "https://p152canary---hauska-engine-api-h7gvu7rgcq-uc.a.run.app/v1/property-nodes/48021:34049/feasibility-export/refresh",
+      "status": 202,
+      "userAgent": "curl/8.19.0",
+      "trace": "projects/hauska-prod-497015/traces/b9bdfc629bde3c8d3c1895d6e9f034cb",
+      "outcome": "accepted (202); composition ran and settled ready at 19:12:15.304827Z per the paired job-completion log line below"
+    },
+    {
+      "note": "The composition this refresh triggered actually completing -- the SAME timestamp (to the second) as the stale PDF's own /CreationDate, confirming this is the exact job whose bytes are still being served hours later.",
+      "timestamp": "2026-09-13T19:12:15.304827Z",
+      "event": "feasibility.narrative_inprocess.outcome",
+      "parcelNodeId": "48021:34049",
+      "outcome": "ok"
+    },
+    {
+      "note": "One further refresh attempt 43s later, but it 401'd against a since-superseded canary tag URL -- a separate, secondary auth/routing finding (stale canary tag, unrelated to the MCP root cause below), left as leave_behind, not chased further.",
+      "timestamp": "2026-09-13T19:12:58.977311Z",
+      "insertId": "6aa6f5ba000effd224e3c530",
+      "revision": "hauska-engine-api-00215-niv",
+      "requestMethod": "POST",
+      "requestUrl": "https://p152canary---hauska-engine-api-h7gvu7rgcq-uc.a.run.app/v1/property-nodes/48021:34049/feasibility-export/refresh",
+      "status": 401
+    }
+  ],
+
+  "liveHttpTimelineAfterThat": "gcloud logging read for httpRequest.requestUrl containing both 'feasibility-export' and '34049' across the following 2 days shows: from 2026-09-13T19:16:52Z through 2026-09-13T23:10:01Z (my own two live falsifier calls), at least 7 distinct GET status + GET download call pairs (19:16:52, 19:23:xx x4, 21:46:57, 22:51:24, 22:52:01, 23:09:37, 23:10:00) -- EVERY one of them a bare GET .../feasibility-export immediately followed by GET .../feasibility-export/download, ALL status 200. In that entire ~4-hour, 7-call-pair window there is not one single POST .../refresh call. The job has sat in state=ready since 19:12:15Z and nothing has ever asked the engine to redo it.",
+
+  "liveReproductionBeforeAnyFix": {
+    "method": "Two mcp__claude_ai_Smart_Site__export_instrument({parcelNodeId:'48021:34049', kind:'feasibility'}) calls, this session, ~23s apart, against the LIVE production Smart Site MCP connector (not a local function call) -- the exact call named in F23.",
+    "call1": { "sha256": "84eab70721e3d91f99e9a7b915acbca0a6475bc7ac20c8791007ea68bb22fc6f", "byteCount": 1172470, "creationDate": "D:20260913191215Z" },
+    "call2": { "sha256": "84eab70721e3d91f99e9a7b915acbca0a6475bc7ac20c8791007ea68bb22fc6f", "byteCount": 1172470, "creationDate": "D:20260913191215Z" },
+    "cmp": "byte-for-byte identical (cmp exit 0)",
+    "significance": "This is HOURS after hauska-engine PR #440 deployed (main HEAD / this lane's own hauska-engine start commit is #440's merge SHA 3a4874a8) and confirms F23 is still live, unresolved, and exactly reproducible right now -- not a transient or already-fixed condition."
+  },
+
+  "mechanismIdentified": "The root cause is entirely CLIENT-SIDE, in legacy-design-tools/artifacts/smartsite-mcp/src/feasibility-export.ts's executeFeasibilityExport (lines ~389-443). It reads GET status FIRST, then only calls POST refresh when `current.state === 'never-requested' || current.state === 'failed'`. When state is 'ready' -- true forever once a job first completes, since the job row has no TTL -- it falls straight through to downloadReady with NO refresh call, no matter how old that ready job is. The docstring at the top of the file states the DESIGN INTENT correctly ('a job already ready from a prior call must be served straight from that job, not recomposed from scratch on every poll') for the legitimate case of a caller re-invoking to continue polling a job it JUST started seconds/tens-of-seconds earlier -- but the code has no way to distinguish that from 'this ready job is 3 days old and unrelated to anything this caller is doing right now', because MCP tool calls are stateless (no job ticket is threaded by the calling agent between separate invocations) and the job row itself carries no expiry. The result: once ANY job for a parcel reaches ready, export_instrument can never again produce a new document for that parcel, regardless of new engine deploys, new source data, or elapsed time -- exactly F23.",
+
+  "engineRefreshRouteIsNotTheBug": "Confirmed by direct code read (see whatRefreshReturnsToday above): the engine's own dedup logic only short-circuits on state==='running'. Ready and failed jobs both correctly trigger a full new composition when POST refresh is actually called. The bug is that the MCP client, for a 'ready' job of any age, simply never makes that call.",
+
+  "peAppSurfaceCheckedAndIsClean": "Read hauska-map-p155-feasibility-poll's apps/property-explorer/src/workbench/tools/feasibility-export.ts (requestFeasibilityExport) and api/_lib/pe-feasibility-export-handler.ts (handleRefresh). The browser's 'Generate' action calls POST /api/pe-site-plan-export?kind=feasibility UNCONDITIONALLY on every click -- there is no pre-check of status that could skip the refresh call. The BFF's handleRefresh forwards straight to the engine's POST .../refresh with no caching of its own. This consumer does NOT have the bug; per the wave-5 dispatch's own allowance ('the existing hauska-map-p155-feasibility-poll worktree ... if you need it'), it is NOT needed -- confirmed read-only, worktree left untouched (clean, still detached at 8b44f68).",
+
+  "contradictedAgainstTheDispatch": [
+    "Of the dispatch's three named hypotheses ('the refresh hop returns a cached artifact, or the background job fails silently, or the MCP path skips the refresh hop'), the THIRD is exactly and precisely what is happening -- confirmed by code read, by production logs, and by live reproduction. The first two are not occurring: there is exactly one job per parcel and it succeeded; the engine's refresh hop itself does not cache anything -- it is simply never invoked by this client for a ready job.",
+    "The dispatch names 'pe-feasibility-export-handler.ts' as if it were in hauska-engine ('Read the path... through the engine's refresh route (pe-feasibility-export-handler.ts...)'). That file does not exist in hauska-engine -- it is hauska-map's BFF handler (apps/property-explorer/api/_lib/pe-feasibility-export-handler.ts). The engine's own route file is services/engine-api/src/routes/parcel-terrain.ts. Read both to be sure; the PE BFF path was checked and found clean (see above).",
+    "No Cloud Run job named for feasibility exists in either project, as the mission states, and this CP1 confirms why: composition genuinely runs in-process inside hauska-engine-api's own Cloud Run instance via a detached (un-awaited) promise, exactly as P-155 wave 1 documented; there is no separate job-runner service to find."
+  ],
+
+  "designDecisionAndOneRejectedAlternative": {
+    "chosen": "Fix executeFeasibilityExport to also call POST refresh when the existing job's state is 'ready' AND it is STALE -- its completedAt is older than a bounded freshness window (proposed: 15 minutes, comfortably above the slowest historically observed composition, 629.6s / ~10.5 min from the wave-1 close's own profiling, so a caller genuinely continuing to poll a job it just triggered is never mistaken for stale). A 'ready' job with NO completedAt at all (the only path that can produce this: a pre-P-155 atom with an artifact on file and no job row ever created) is treated as NOT stale -- i.e., current behavior is preserved for that vanishing legacy case, matching this same file's own established philosophy elsewhere ('a ready job with NO entitlement marker at all ... downloads normally -- backward compatible, never a crash'). Also add `generatedAt` on the wire: an `X-Feasibility-Generated-At` response header on the engine's GET .../download route (sourced fresh from job.completedAt at download time -- the most authoritative point, not threaded from an earlier separate status call), surfaced by the MCP as a `generatedAt` field beside the base64 bytes in its final JSON envelope.",
+    "rejectedAlternative": "An engine-side TTL/expiry on the feasibility_export_jobs row itself (auto-reclassify a ready job as if never-requested once it passes some age, symmetric to the existing FEASIBILITY_JOB_STALL_CEILING_MS staleness check for running jobs). Rejected because: (1) the Property Explorer app's own BFF path was independently verified in this CP1 to have NO version of this bug -- it unconditionally calls refresh on every click, so an engine-side TTL would be solving a problem that consumer does not have, purely to compensate for the OTHER consumer's client-side logic; (2) it is a wider, shared-schema change (feasibility_export_jobs is read by both hauska-map and legacy-design-tools) for a defect that is isolated to one client's decision logic; (3) per this dispatch's own instruction not to widen a check to admit a value it does not satisfy -- the engine's existing checks are not wrong, so changing them is not warranted; a narrower, client-side fix at the actual defect site is lower blast radius and does not touch a route/table shared with a lane this wave does not include (hauska-map)."
+  },
+
+  "preRegisteredFalsifiers": [
+    "If, after the fix, two export_instrument(48021:34049, feasibility) calls made with enough time between them for a full composition (Bastrop parcels observed 54-213.8s in wave 1) still return byte-identical PDFs with the SAME /CreationDate, the fix did not engage -- the design is wrong or the deploy did not take.",
+    "If, after the fix, the SECOND call's document content still shows PRE-#440 strings/labels (the literal hardcoded PDF text #440 replaced with vocabulary-driven text), the job is reading a stale cached input rather than genuinely recomposing -- the mechanism is not what CP1 claims.",
+    "If a refresh triggered by this fix's staleness check ever returns a stale 200 (old bytes) instead of either a fresh document or a declared in_progress/failed state, the fix widened nothing and the mission's 'never a stale 200 presented as fresh' requirement is violated."
+  ]
+}

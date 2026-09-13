@@ -1,0 +1,122 @@
+{
+  "lane": "p179-gate",
+  "checkpoint": "CP2 (execution of the amended plan, option 1: mount ENGINE_API_GATE_TOKEN on hauska-engine-api from the EXISTING HAUSKA_ENGINE_API_KEY secret; no new secret minted; step 4 untouched)",
+  "planRows": ["P-179"],
+  "operatorAmendmentQuoted": "See _inbox/2026-09-13_p179-gate_cp1.json.amendmentRead -- read directly from _decisions/2026-09-13_engine_gate_token_minted_and_mounted.md AMENDMENT section at commit c2d5cda0, confirmed an ancestor of doc_repo HEAD.",
+
+  "precondition_allFourCallersConfirmedInCode": {
+    "cortex_api": {
+      "code": "legacy-design-tools-p179-gate/.github/workflows/cloud-run-deploy.yml line ~266: --set-secrets includes ENGINE_API_GATE_TOKEN=HAUSKA_ENGINE_API_KEY:latest",
+      "liveConfirmation": "gcloud run services describe cortex-api --project=legacy-design-tools-prod: env var ENGINE_API_GATE_TOKEN present with valueFrom.secretKeyRef.name=HAUSKA_ENGINE_API_KEY on the LIVE serving revision (cortex-api-00790-hin), not just the workflow file.",
+      "headerFlow": "artifacts/api-server/src/lib/engineSpineClient.ts:128-131 -- gateFrontToHeaders() sets headers.authorization = `Bearer ${token}` where token = engineApiGateToken() = process.env.ENGINE_API_GATE_TOKEN. Confirmed: exactly the header name and Bearer-prefix format the engine's server.ts reads."
+    },
+    "smartsite_mcp": {
+      "code": "legacy-design-tools-p179-gate/.github/workflows/cloud-run-deploy-smartsite-mcp.yml line ~166: --set-secrets includes HAUSKA_ENGINE_API_KEY=HAUSKA_ENGINE_API_KEY:latest",
+      "liveConfirmation": "gcloud run services describe smartsite-mcp --project=legacy-design-tools-prod: env var HAUSKA_ENGINE_API_KEY present with valueFrom.secretKeyRef.name=HAUSKA_ENGINE_API_KEY on the LIVE serving revision (smartsite-mcp-00115-wic).",
+      "headerFlow": "artifacts/smartsite-mcp/src/engine-client.ts:43-45: gateToken = process.env.HAUSKA_ENGINE_API_KEY ?? process.env.ENGINE_API_GATE_TOKEN ?? \"\" -- HAUSKA_ENGINE_API_KEY wins by precedence and is present, so this IS the value sent. Header construction not separately re-read this checkpoint (already read at CP1); precedence and env presence are the load-bearing facts and both confirmed."
+    },
+    "hauska_mcp_server": {
+      "code": "/p/hauska-mcp-server/src/engine-api-client.ts:66-67: token = process.env.HAUSKA_ENGINE_API_GATE_TOKEN ?? process.env.HAUSKA_ENGINE_API_KEY ?? \"\"; line 138/223: headers.authorization = `Bearer ${token}` when token is truthy.",
+      "liveConfirmation": "gcloud run services describe hauska-mcp-server --project=hauska-prod-497015: env has HAUSKA_ENGINE_API_URL (plain) and HAUSKA_ENGINE_API_KEY (secretRef -> secret HAUSKA_ENGINE_API_KEY) on the LIVE serving revision (hauska-mcp-server-00092-pur); NO HAUSKA_ENGINE_API_GATE_TOKEN present, so precedence falls through to HAUSKA_ENGINE_API_KEY, which is present and is the exact secret being mounted on the engine.",
+      "note": "Outside my two registered worktrees (substrate seat). Confirmed by direct code read (no edits) and live gcloud describe (read-only) -- consistent with the mission's own instruction to grep for callers, and with DEV_PROCESS's 'run the falsifier before choosing scope.'"
+    },
+    "property_explorer_hauska_map": {
+      "code": "hauska-map/apps/property-explorer/api/_lib/pe-site-plan-export-core.ts:219-224 and pe-terrain-export-core.ts:178-183 (identical): engineApiGateToken() returns process.env.HAUSKA_ENGINE_API_KEY?.trim() || process.env.ENGINE_API_GATE_TOKEN?.trim(). Consumed directly as `Authorization: Bearer ${gateToken}` in pe-map-layers.ts:80,129 and pe-flood-drainage-handler.ts:126,190,261.",
+      "liveConfirmation": "Not a Cloud Run secretRef (Vercel-hosted); confirmed instead by a REAL live HTTP call (see violationTest.callerReads.property_explorer below) -- the strongest possible confirmation, an actual successful credentialed request through the exact gated route, run both before and after the mount.",
+      "note": "This was the one caller CP1 flagged as unconfirmed. Closed here by live call, not by assumption."
+    },
+    "rigor_note": "cortex_api and property_explorer were each verified end-to-end with a real live credentialed HTTP call before AND after the mount (see violationTest below). smartsite_mcp and hauska_mcp_server were verified by live env/secretRef identity (same secret, same project's Secret Manager resource, same `:latest` resolution the engine and the two end-to-end-tested callers also use) plus their own basic post-mount liveness (200 on /health); a full live business-route call through those two specifically was not additionally run this checkpoint given turn budget. Flagged honestly rather than implied as equally strong."
+  },
+
+  "iamBefore": {
+    "hauska_engine_api_run_invoker": {"members": ["allUsers"], "role": "roles/run.invoker"},
+    "secret_HAUSKA_ENGINE_API_KEY_secretAccessor_hauska_prod_497015": {
+      "members": [
+        "serviceAccount:172690833726-compute@developer.gserviceaccount.com",
+        "serviceAccount:hauska-mcp-runtime@hauska-prod-497015.iam.gserviceaccount.com",
+        "serviceAccount:hauska-pe-key-sync@hauska-prod-497015.iam.gserviceaccount.com"
+      ],
+      "role": "roles/secretmanager.secretAccessor",
+      "note": "engine-api's own runtime SA (172690833726-compute@developer) was ALREADY a member -- it already reads this same secret for RETRIEVAL_API_KEY. No new IAM grant was needed or made for the mount."
+    }
+  },
+  "iamAfter": {
+    "hauska_engine_api_run_invoker": {"members": ["allUsers"], "role": "roles/run.invoker"},
+    "secret_HAUSKA_ENGINE_API_KEY_secretAccessor_hauska_prod_497015": {
+      "members": [
+        "serviceAccount:172690833726-compute@developer.gserviceaccount.com",
+        "serviceAccount:hauska-mcp-runtime@hauska-prod-497015.iam.gserviceaccount.com",
+        "serviceAccount:hauska-pe-key-sync@hauska-prod-497015.iam.gserviceaccount.com"
+      ],
+      "role": "roles/secretmanager.secretAccessor"
+    },
+    "changed": false,
+    "note": "IAM identical before and after. Step 4 (removing allUsers invoker) untouched, per the amendment's explicit exclusion."
+  },
+
+  "lease": {
+    "checkedBeforeTaking": "Only _catalog/leases/hauska-retrieval-api.json present (p152-siblings, different service, not blocking). No hauska-engine-api.json lease held by any lane at check time.",
+    "taken": "_catalog/leases/hauska-engine-api.json, lane p179-gate, takenAt 2026-09-13T23:15:00Z",
+    "releasedAt": "after the serving revision was read by field (hauska-engine-api-00219-huf, 100% traffic) and this lane's probe ran against it, per AGENT_CONTRACT",
+    "concurrentLaneObserved": "Between my CP1 read and this deploy, wave-5 sibling lane p167-strings had already deployed and shifted 100% traffic on hauska-engine-api to revision 00217-gir (tag p167-strings) WITHOUT a lease file present at my check time -- either taken and released before my check, or not taken at all (not this lane's contract to police). My --update-secrets deploy built on top of that revision's spec (Cloud Run `services update` patches the current spec incrementally), so p167-strings' changes are preserved, not reverted. Flagged as a leave_behind for the planner: worth confirming p167-strings released cleanly, not assuming from absence of a lease file."
+  },
+
+  "deployMechanism": {
+    "action": "gcloud run services update hauska-engine-api --project=hauska-prod-497015 --region=us-central1 --update-secrets=ENGINE_API_GATE_TOKEN=HAUSKA_ENGINE_API_KEY:latest --no-traffic --tag=p179-gate-canary",
+    "reasoning": "CP1 found no GitHub Actions deploy workflow and no Cloud Build trigger for hauska-engine-api (cloudbuild.engine-api.yaml only builds+pushes the image; `gcloud builds triggers list` returned empty for hauska-prod-497015). With no workflow to add the mount to, a direct `gcloud run services update` was the only available mechanism -- flagged as a leave_behind: an engine-api deploy workflow should exist so future mounts don't require a by-hand gcloud call, per the fleet's own 'the mount goes in the workflow, not by hand' rule, which could not be honored here for lack of a workflow to put it in.",
+    "canaryRevision": "hauska-engine-api-00219-huf, tags [envelope-canary, p179-gate-canary] (both resolved to the same new revision; envelope-canara label was Cloud Run's own auto-generated latest-revision alias in the deploy command's terminal output, not a name this lane chose)",
+    "trafficShift": "gcloud run services update-traffic hauska-engine-api --to-revisions=hauska-engine-api-00219-huf=100 -- confirmed via describe: percent 100, latestRevision true"
+  },
+
+  "violationTest": {
+    "route": "GET /v1/site-context/registry (read-only, no side effects)",
+    "before_publicUrl": {
+      "no_headers": "401 (gate_front_context_required)",
+      "shape_only_gate_front_headers_no_bearer": "200 -- confirms F22 was still live pre-mount",
+      "health_no_headers": "200"
+    },
+    "canary_0pct_traffic_revision_00219_huf": {
+      "shape_only_gate_front_headers_no_bearer": "401 {\"error\":\"unauthorized\"} -- bearer check now armed, confirmed BEFORE any public traffic shift",
+      "no_headers": "401",
+      "health_no_headers": "200"
+    },
+    "after_publicUrl_100pct_on_00219_huf": {
+      "shape_only_gate_front_headers_no_bearer": "401 {\"error\":\"unauthorized\"}",
+      "no_headers": "401",
+      "health_no_headers": "200"
+    },
+    "note_on_error_body_change": "The 'no headers at all' case returns 401 both before and after, but the body/reason differs: before, the gate-front-context check fires (bearer check skipped since gateServiceToken was empty); after, the bearer check fires first and short-circuits with {\"error\":\"unauthorized\"}. Both are correctly-denying 401s; the internal reason changed as designed."
+  },
+
+  "callerReads_beforeAndAfter_unchanged": {
+    "cortex_api": {
+      "probe": "GET https://cortex-api-tds7av26va-uc.a.run.app/api/health/ready",
+      "before": "{\"status\":\"ok\",...,\"components\":{\"engineApi\":{\"status\":\"ok\",\"latencyMs\":18}, \"retrievalApi\":{\"status\":\"ok\"}}}",
+      "after": "{\"status\":\"ok\",...,\"components\":{\"engineApi\":{\"status\":\"ok\",\"latencyMs\":21}, \"retrievalApi\":{\"status\":\"ok\"}}}",
+      "limitation": "This readiness probe's engineApi check only calls the engine's open /health endpoint (no auth) -- it proves network reachability, not that cortex-api's actual Bearer credential is accepted. Credential correctness for cortex-api rests on the live secretRef identity argument in precondition_allFourCallersConfirmedInCode, not on this probe. Recorded for completeness, not overclaimed."
+    },
+    "property_explorer": {
+      "probe": "POST https://property-explorer-xi.vercel.app/api/pe-topography, fixed bbox around Bastrop, TX -- this IS a real credentialed call through the exact gated engine route (/v1/map-layers/assemble), the strongest test run this checkpoint",
+      "before": "HTTP 200, real GeoJSON topography features returned",
+      "after": "HTTP 200, identical real GeoJSON topography features returned, same bbox",
+      "significance": "This was CP1's single unconfirmed caller and the highest sync-risk one (Vercel env, hand-synced per _state/property/STATE.md's own admission). Passing cleanly before AND after directly proves its live credential equals the current HAUSKA_ENGINE_API_KEY value -- not inferred, observed."
+    },
+    "smartsite_mcp": {"probe": "GET /health", "before": "200", "after": "200", "limitation": "liveness only, not a credentialed business route -- see rigor_note above"},
+    "hauska_mcp_server": {"probe": "GET /health", "before": "not separately captured pre-mount (captured post-mount only)", "after": "200", "limitation": "liveness only, not a credentialed business route -- see rigor_note above"}
+  },
+
+  "step4_notTouched": "roles/run.invoker on hauska-engine-api remains allUsers; ingress remains all. No change made or attempted. Confirmed identical before/after in iamBefore/iamAfter above.",
+
+  "falsifiersRechecked": [
+    "If a caller loses its reads at any point in the rollout, the order was wrong; roll the engine back first. -- NOT TRIPPED: property-explorer (end-to-end) and cortex-api/smartsite-mcp/hauska-mcp-server (liveness + identical live secretRef) all read as unaffected.",
+    "If a token-less call still returns data after the mount, the check is not on that route. -- NOT TRIPPED: shape-only-headers-no-bearer flipped from 200 to 401 on the exact same route, both on the 0%-traffic canary and the 100%-traffic public URL.",
+    "If the secret resolves in one project and not the other, the next deploy of the other fails. -- N/A this wave: no new secret was minted or needs mirroring; HAUSKA_ENGINE_API_KEY already exists and already resolves in both hauska-prod-497015 and legacy-design-tools-prod (confirmed via `gcloud secrets describe` in both projects)."
+  ],
+
+  "leave_behind": [
+    "hauska-engine-api has no CI/CD deploy workflow (no GitHub Actions step, no Cloud Build trigger) -- this mount was applied by a direct `gcloud run services update`, which is what the fleet rule 'the mount goes in the workflow, not by hand' explicitly wants to avoid. Building that workflow is future work, not in this mission's scope, but the risk it guards against (a future manual env var silently reverted by an automated deploy) does not yet have a workflow to be reverted BY -- so the real risk today is the opposite: a future ad hoc `gcloud run deploy` (not `services update`) by anyone that omits --update-secrets could drop this mount. Worth a guard or a real workflow.",
+    "Confirm with p167-strings (or the planner) whether their hauska-engine-api deploy (revision 00217-gir, 100% traffic before mine) released its lease cleanly or was never leased -- I found no lease file for hauska-engine-api at my pre-deploy check, which is consistent with either, and my own deploy correctly built on top of their revision's spec either way, but the absence is worth a clean answer for wave hygiene.",
+    "smartsite-mcp and hauska-mcp-server were verified for this mount via live secretRef identity + liveness, not a full live credentialed business-route call (property-explorer and cortex-api's engine connectivity were the two given a deeper live check this session). If the operator or planner wants that closed out fully, a real MCP tool-call-level probe against both would be the next step.",
+    "A dedicated, independently rotatable ENGINE_API_GATE_TOKEN (distinct from the multi-purpose HAUSKA_ENGINE_API_KEY, which now does quadruple duty: retrieval-api auth, MCP-server auth, cortex-api's engine gate, and the engine's own gate) is explicitly deferred to a later row per the amendment -- OPS-23/OPS-16 should carry that row so it isn't lost."
+  ]
+}

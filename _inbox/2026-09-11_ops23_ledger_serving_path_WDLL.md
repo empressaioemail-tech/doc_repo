@@ -2,8 +2,9 @@
 id: 2026-09-11_ops23_ledger_serving_path_WDLL
 title: OPS-23 — The ledger as the serving path — WDLL (the durable card)
 date: 2026-09-11
+last_updated: 2026-09-13 (session-close reconciliation; see the status block immediately below the title — read it before anything else on this card)
 status: approved 2026-09-11 (every ruling below was taken by the operator in the session that produced this card; nothing here is proposed except where marked)
-plan_rows: P-151, P-152, P-153, P-154, P-155, P-156, P-157, P-158, P-159, P-160, P-161, P-162, P-163, P-164, P-165, P-166, P-167, P-168 (OPS-16 A-128, A-129, A-130, A-131)
+plan_rows: P-151 through P-180 (OPS-16 A-128 through A-144; program range in _catalog/plan_registry.json extends to 180)
 owner: integration seat (overseer), coordinating hauska-map, legacy-design-tools, hauska-engine, hauska-factory, the atom-contract package
 snapshot: doc_repo main 627e5853. Findings trace to live probes of production on 2026-09-11 (smartsite.cloud, cortex-api through the PE proxy, hauska-engine-api-00198-cir logs, Bastrop County FeatureServer) and to origin/main reads of hauska-map fb41c05, legacy-design-tools 489f428c, hauska-engine 79fa573, hauska-factory 217b7dd. Re-run the instruments in section 8 before trusting any status column.
 related:
@@ -20,6 +21,72 @@ related:
 ---
 
 # OPS-23 — The ledger as the serving path — WDLL
+
+## STATUS AS OF 2026-09-13T23:55Z — session-close reconciliation, read this first
+
+Written at a model/session switch so a cold agent can pick up without re-deriving anything
+below. doc_repo main is at `ea3a7fd2`. Rows below marked CLOSED are re-verified at source by
+the overseer (PRs by number, conclusion strings, revisions by field, a probe artifact under
+`_inbox/`); rows marked closed-partial have a named, real remaining gap, not a rounded-off one.
+
+**Closed:** P-151, P-153, P-155, P-157, P-158, P-159, P-169, P-171, P-172, P-173, P-174,
+P-145, P-152 lane 5 (entitlement), P-179 (closed-partial, see below).
+**Closed-partial, real gaps:** P-152 (panel axis override + five allowlist siblings, wave 5 in
+progress), P-154 (panel override, same seam as P-152), P-167 (LDT lockfile lagging + one
+zoning-provenance dependency + PDF leg blocked by F23), P-175 (Hays MCP path fixed, Property
+Explorer record path still wrong, see P-180), P-177 (same).
+**Reopened:** P-155 — F23 (2026-09-13): the feasibility refresh stopped producing new
+documents; two `export_instrument` calls a minute apart returned byte-identical PDFs created
+before the day's engine deploy. Wave-5 lane `p155-refresh` has the confirmed root cause
+(client-side, `smartsite-mcp/src/feasibility-export.ts` never refreshes a `ready` job
+regardless of age) and a chosen fix, not yet landed.
+**Not yet dispatched:** P-156, P-160 (built), P-161 to P-166, P-168 (built), P-170 (built).
+**New rows added this session, not yet worked:** P-176 (Cotality bake-off, another session),
+P-181 (assumption registers / dead-controls audit), P-182 (sub-county coverage audit) — these
+three landed on main via commit `ea3a7fd2` from outside this thread's review loop; **the
+overseer has not source-verified P-181/P-182's claims**. Treat their numbers as reported, not
+confirmed, until read against source the way every other row on this card has been.
+
+**Wave 4** (P-152 lane 5, P-154 share, P-167 first pass): closed-partial, verified at source,
+commit `b8e7863b`. **Wave 5** (P-152 siblings + panel, P-180 Hays cells, P-179 engine gate,
+P-167 LDT catch-up, P-155 refresh — added mid-wave) is **IN PROGRESS RIGHT NOW** in
+`P:/seat-worktrees/dispatch-planner/doc_repo` (branch `seat/dispatch-planner`). All four
+running lane sub-agents were killed simultaneously by a `429 monthly spend limit` mid-task;
+the planner wrote a full mid-wave checkpoint,
+`_inbox/2026-09-13_ops23_checkpoint_5.md` (in that worktree, not yet committed to main), and a
+successor planner session has already resumed as of this reconciliation (lease renewals at
+23:46–23:55Z confirm it is live). **Read that checkpoint in full before touching wave 5** — it
+is the load-bearing document, not this paragraph. Highlights: p179-gate is done
+(engine bearer check armed from the existing `HAUSKA_ENGINE_API_KEY`, no new secret, verified
+live by the planner with a 401 violation test); p180-hays-cells is **paused on a real go/no-go
+the planner correctly withheld** — a lane asked to `--apply` a 116,420-row production write
+having shown only a dry run, no confirmed staging execution, and was killed before answering;
+**do not approve that production apply until the staging-target question in the checkpoint is
+answered**; p152-siblings and p167-strings each have an open PR (#678, #679 — both OPEN, 10
+checks SUCCESS, 1 pending, as read live by the overseer at 23:50Z) and a renewed lease
+(`cortex-api`, `smartsite-mcp`, both in the planner's own worktree, expiring 2026-09-14T02:00Z).
+
+**Hays program (P-124/P-145/P-175/P-177/P-178/P-180), independent of the wave numbering:**
+node identity and the declared-2026-roll rulings are both filed
+(`_decisions/2026-09-13_hays_node_identity_is_the_parcel_map_id.md`,
+`_decisions/2026-09-13_hays_declared_2026_roll_is_the_8_26_export.md`). **P-178 (the re-ingest)
+is at step 4 of 6, done on staging, verified at source by the overseer**: 134,591 rows from the
+certified 8-26-2026 export, 0 missing identifiers, 390 correctly marked
+`absent-from-declared-drop` (but by a hand SQL `UPDATE`, not a scripted/recorded step — flagged
+to the lane, not yet fixed), vintage-label mapping merged (PR #677). **Step 5 (production load)
+is NOT RUN, waiting on the operator's go quoted back in that lane's own thread** — the operator
+signed off the *shape* of the run (staging-then-production, watched, migrations handled) but
+has not yet been shown the staging dry-run counts to give the literal go for production.
+**P-180** (Hays cells in the Property Explorer's own record-path store, the reason P-175/P-177
+still fail on the customer's actual card) is the paused lane above — this is the single most
+consequential open item across both programs and needs a human decision before any successor
+lets it proceed to production.
+
+Decision records filed this session, all active: node identity (P-177/P-161), declared roll
+(P-178), resolver-sharing (P-154, corpus `./resolve` 1.2.0, live), engine gate token (P-179,
+amended twice — mint-and-mount then amended to mount-from-existing-key). Findings F20 through
+F23 are rowed with owners (F20→P-174 closed, F21→fixed, F22→P-179 closed-partial, F23→P-155
+reopened).
 
 ## Origin
 

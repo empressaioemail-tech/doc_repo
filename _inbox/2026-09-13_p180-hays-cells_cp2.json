@@ -1,0 +1,95 @@
+{
+  "lane": "p180-hays-cells",
+  "planRows": ["P-180"],
+  "checkpoint": "CP2",
+  "kind": "writer-fix/pre-rerun",
+  "at": "2026-09-14T00:10:00Z",
+  "coordinatorApprovalActedOn": "CP1 review message: writer redirection confirmed (hauska-factory parcel-record-fill.mjs, not hauska-engine); open hauska-factory-p180-hays-cells + legacy-design-tools-p180-hays-cells only; new local module, not extending ops21-h1-crosswalk.mjs; reuse SEED_BLOCKED_FIPS from cad-txgio-alias-counts.mjs. All four followed.",
+  "worktreesCreated": [
+    {
+      "name": "hauska-factory-p180-hays-cells",
+      "path": "P:/seat-worktrees/property/hauska-factory-p180-hays-cells",
+      "branch": "fix/p180-hays-cells-crosswalk",
+      "startCommit": "97b93877c1dbb5598942821a553e50d0d677a006 (origin/main, contains P-177's PR #144)",
+      "seatRegisterUpdated": true
+    },
+    {
+      "name": "legacy-design-tools-p180-hays-cells",
+      "path": "P:/seat-worktrees/property/legacy-design-tools-p180-hays-cells",
+      "branch": "fix/p180-structural-fact-crosswalk",
+      "startCommit": "18704d8aeba922c1f75cad0d548c3de8b4065968 (origin/main, contains P-178's PR #676)",
+      "seatRegisterUpdated": false,
+      "note": "Not yet touched -- step 5 (structuralFactRead.ts/cadPropertyLookup.ts) has not been started. Worktree exists and is ready."
+    },
+    {
+      "name": "hauska-engine-p180-hays-cells",
+      "skipped": true,
+      "note": "Per coordinator decision: skipped, not created. Register entry's note updated to record why (CP1's writer-redirection finding) rather than left silently stale."
+    }
+  ],
+  "williamsonLiveRemeasurement": {
+    "instruction": "coordinator: 're-measure the Williamson geo_id blank-rate live before writing anything'",
+    "result": "48491: 0 non-blank geo_id out of 304,298 txgio_parcel rows (0.000%), measured live 2026-09-13 against PRODUCTION_NEONDB_URL. 48209 (control): 130,246 of 131,734 non-blank (98.870%). Matches the week-old LDT-cited figure exactly -- no drift, the crosswalk is genuinely inert for Williamson today via THIS mechanism specifically."
+  },
+  "theFix": {
+    "file": "hauska-factory/src/jobs/parcel-record-fill.mjs",
+    "diffSummary": "123 lines added, 3 changed, in loadLandingAndCad and three new exports (ACCOUNT_CROSSWALK_ROWS_SQL, quickRefIdNumericStem, loadAccountCrosswalk); CAD_ROWS_SQL gains two SELECT columns (property_number, quick_ref_id). No other file touched. New local module as coordinator directed -- ops21-h1-crosswalk.mjs untouched.",
+    "mechanism": "loadLandingAndCad now branches on SEED_BLOCKED_FIPS.includes(county) (imported from src/lib/cad-txgio-alias-counts.mjs, not a parallel constant). Non-blocked: byte-identical to before (same CAD_ROWS_SQL call, same Map construction). Gate-blocked: cadByProp is built ENTIRELY by loadAccountCrosswalk, which runs ACCOUNT_CROSSWALK_ROWS_SQL (a JOIN on txgio_parcel.geo_id = cad_property.property_number, ambiguity-guarded by NOT EXISTS, DISTINCT ON node prop_id + latest tax_year -- the same shape as this repo's own PR #144 CADROLL_EXPECTATION_SQL_GATE_BLOCKED, extended to select the full CAD row instead of just checking existence), then applies an app-level quick_ref_id-stem corroboration (quickRefIdNumericStem) mirroring LDT's accountCrosswalkForNode/crosswalkBindCorroborated fail-open-on-absent, fail-closed-on-disagreement rule. A resolved row is stored keyed by the NODE's own prop_id (so every existing cadByProp.get(propId) call site, including the ENGINE_PIN'd vendored parcel-record-engine's ingestCadOntoRecords, works unmodified) but with its OWN prop_id field left as the crosswalked ACCOUNT's prop_id -- so apn and every absent-verified basis correctly name the account actually joined (the CP1-required provenance), never the node's own untrustworthy bare number. A node with no bind, or a disagreeing corroborator, gets no map entry at all: ingestCadOntoRecords' own pre-existing join-miss path (applyCadJoinMiss) then emits honest absent-verified cells -- no new absence mechanism was invented.",
+    "corroborationDirectionCorrectedDuringBuild": "My own first test run caught a real design mistake before it reached CP2: I initially fixture-tested with quick_ref_id = 'R' + the CROSSWALKED ACCOUNT's own current prop_id (e.g. 'R84639' for node 97658 resolving to account 84639) and the corroboration correctly REFUSED it -- because live production data (verified below) shows Hays' quick_ref_id actually mirrors the NODE's own bare prop_id ('R97658' on account 84639, not 'R84639'), consistent with TxGIO's node numbering having been historically seeded from QuickRefID, a stable field distinct from the CAD roll's current, separately-renumbered PropertyID. Fixed the test fixtures, not the code -- the code already matched accountCrosswalkForNode's documented direction; my first fixture guess did not.",
+    "vendoredEngineNotTouched": "src/lib/parcel-record-engine/ (ENGINE_PIN'd, hand-editing forbidden) required zero changes -- ingestCadOntoRecords/applyCadScalar/applyCadJoinMiss all consume cadByProp via .get(propId) only; remapping the Map before it reaches them was sufficient, exactly mirroring how P-177's own tier1-bake fix (effectiveCadPropertyRoll) worked in a different repo."
+  },
+  "liveVerificationAgainstProduction": {
+    "purpose": "Before trusting my own fixtures, ran the ACTUAL ACCOUNT_CROSSWALK_ROWS_SQL (read-only, no writes) against PRODUCTION_NEONDB_URL for the five real Sturgeon nodes named in the dispatch's own falsifiers.",
+    "query": "the exact ACCOUNT_CROSSWALK_ROWS_SQL text, county=48209, propIds=['97658','97651','97652','97653','97657']",
+    "result": [
+      { "node_prop_id": "97658", "account_prop_id": "84639", "quick_ref_id": "R97658", "situs_address": "629 STURGEON DR, SAN MARCOS, TX 78666", "market_value": 50390, "land_value": 50390 },
+      { "node_prop_id": "97651", "account_prop_id": "84632", "quick_ref_id": "R97651", "situs_address": "STURGEON DR, SAN MARCOS, TX 78666", "market_value": 50130, "land_value": 50130 },
+      { "node_prop_id": "97652", "account_prop_id": "84633", "quick_ref_id": "R97652", "situs_address": "STURGEON DR, SAN MARCOS, TX 78666", "market_value": 50130, "land_value": 50130 },
+      { "node_prop_id": "97653", "account_prop_id": "84634", "quick_ref_id": "R97653", "situs_address": "STURGEON DR, SAN MARCOS, TX 78666", "market_value": 50130, "land_value": 50130 },
+      { "node_prop_id": "97657", "account_prop_id": "84638", "quick_ref_id": "R97657", "situs_address": "STURGEON DR, SAN MARCOS, TX 78666", "market_value": 50390, "land_value": 50390 }
+    ],
+    "verdict": "MATCHES P-177's own live-verified depthNodeReads exactly (629 STURGEON DR / 50390 for 97658; 50130 for 97651/97652/97653; 50390 for 97657; every quick_ref_id corroborates cleanly, zero refused). This is the same class of confirmation P-177's own tier1 bake fix got, now shown for the record-path writer this mission targets. Read-only -- no write executed."
+  },
+  "testResults": {
+    "newTests": "17 new tests added to test/parcel-record-fill.test.mjs: SQL structural assertions on ACCOUNT_CROSSWALK_ROWS_SQL (ambiguity guard, published-identifier join, no bare prop_id path), quickRefIdNumericStem unit tests, loadAccountCrosswalk (no-op on non-blocked county / empty batch / the real Sturgeon fixture / corroboration-refused / fail-open on absent quick_ref_id), loadLandingAndCad falsifier (CAD_ROWS_SQL must never fire for 48209 -- fakeCortex throws if it does), loadLandingAndCad control (48021 unchanged, crosswalk query never issued, cadByProp.prop_id stays the bare-joined value exactly as before), honest-absence end-to-end, and the apn-provenance end-to-end falsifier named in the dispatch.",
+    "suiteRun": "node --test test/parcel-record-fill.test.mjs: 84 pass, 0 fail (was 67 tests before this change; all pre-existing tests still pass unmodified).",
+    "fullRepoRegressionCheck": "node --test test/*.test.mjs: 3 pre-existing failures (test/ctx-b3-store-census.test.mjs, two in test/p3-absence.test.mjs) -- confirmed via git stash / re-run against the UNMODIFIED origin/main tip that these fail identically with none of my changes applied. Unrelated files (LDT-mirror hash census; a different job explicitly labeled '# OPS-21 S3 finding, not fixed by this lane (out of scope)' in its own test name, referencing _inbox/2026-09-10_ops21-s3_close.json). Zero regressions introduced by this change.",
+    "sharedDependencyCheck": "test/publish.test.mjs and test/cad-txgio-alias-counts.test.mjs (both depend on SEED_BLOCKED_FIPS / the P-177 PR #144 gate-blocked SQL) also re-run clean: 121 pass, 1 pre-existing skip, 0 fail."
+  },
+  "controlCountyFalsifier": {
+    "claim": "the four non-blocked counties (48021, 48055, 48309, 48453) are byte-identical to before this change",
+    "verification": "structural, not yet a live production diff: loadLandingAndCad's non-blocked branch is the ORIGINAL two lines (query CAD_ROWS_SQL, build the Map) unchanged in control flow, gated by SEED_BLOCKED_FIPS.includes(county) === false; a passing test asserts the crosswalk query is never issued for 48021 and the returned row's own prop_id field is untouched. A live production dry-run diff against a control county has NOT yet been run (would require executing the actual Cloud Run job or an equivalent script against real data) -- recommend doing this as part of step 3's staging pass, not before, since it requires the same execution path as the real re-run."
+  },
+  "criticalFindingRequiringDecisionBeforeStep3": {
+    "severity": "blocking for Williamson only; Hays is clear to proceed",
+    "title": "The dispatch's Williamson premise ('no contradictions today but 282,569 phantom nodes') and LDT's own LANDUSE_JOIN_DISABLED_FIPS_SEED comment ('Williamson -- R-account TxGIO ids vs six-digit CAD roll, ~0% owner match') both read as: Williamson's bare-number join is broken/absent, like Hays. Live measurement against PRODUCTION_NEONDB_URL directly contradicts this.",
+    "measurement": {
+      "total_williamson_txgio_nodes": 282570,
+      "bare_join_hits_today": 282569,
+      "bare_join_hits_with_real_cad_data": 282565,
+      "owner_name_agreement_on_the_bare_join": "304,155 / 304,162 rows = 99.998% (sampled across all tax years; the distinct-node figures above are 282,569/282,570)",
+      "sample": "8 spot-checked rows (R000009, R000013, R000016, R000017, R000019, R000032, R000037, R000038): txgio_parcel.owner_name and cad_property.owner_name IDENTICAL on every single one, situs addresses plausible and specific."
+    },
+    "reconciliation": "Working hypothesis, not yet fully confirmed: LANDUSE_JOIN_DISABLED_FIPS_SEED's '~0% owner match' likely describes matching TxGIO's R-prefixed ids against cad_property's NUMERIC-roll rows (WILLIAMSON_CROSSWALK_SQL's own numeric_roll CTE -- a DIFFERENT, disjoint slice of cad_property that legitimately lacks the R-account identity), not against cad_property's OWN R-prefixed rows (what my bare join, and CAD_ROWS_SQL, actually match against). If true, Williamson's 'gate-blocked' designation is about a DIFFERENT mechanism (the split-roll dollar/structural recovery, which WILLIAMSON_CROSSWALK_SQL/mergeWilliamsonCrosswalk in this SAME file already handles correctly) than the coincidental-bare-number-collision defect class Hays has and this fix targets. I have not chased this to a fully confirmed root cause -- flagging the measured contradiction plainly rather than asserting a conclusion I have not verified as thoroughly as the Hays side.",
+    "consequenceIfUnaddressed": "Because Williamson's own geo_id is 100% blank (measured above), loadAccountCrosswalk resolves ZERO accounts for Williamson today. If SEED_BLOCKED_FIPS-driven replacement is executed against real Williamson data via step 3, cadByProp would go from ~282,565 populated, ~99.998%-owner-correct entries to completely empty for the ENTIRE county -- converting essentially all of Williamson's CAD-derived parcel_record cells (situsAddress, dollars, structural, legal) from real values to honest absence in one write. This is a much larger and more consequential change than 'a documented no-op,' which is what my CP1 speculated before I ran this measurement -- CP1's williamsonCaveat was itself incomplete; this supersedes it.",
+    "recommendation": "Scope step 3's actual re-run to Hays (48209) only. Do NOT execute --apply for county 48491 under this fix until this finding is either (a) confirmed as a misread of LANDUSE_JOIN_DISABLED_FIPS_SEED's own measurement scope (in which case Williamson may need a NARROWER version of this fix, or no change at all, rather than the uniform SEED_BLOCKED_FIPS branch), or (b) the operator explicitly accepts the described consequence. The CODE itself stays county-parameterized via SEED_BLOCKED_FIPS as instructed (never a Hays literal) -- this is a recommendation about which counties step 3 actually WRITES this wave, not a request to special-case the code."
+  },
+  "notYetDone": {
+    "structuralFactRead": "Step 5 (legacy-design-tools structuralFactRead.ts/cadPropertyLookup.ts) not started -- worktree exists, ready to begin once step 3/4 are clear or in parallel if the coordinator prefers.",
+    "durableRetirement": "Step 6 (durable retirement of the hollow account-keyed nodes, LDT tier1 bake work-list) not started -- different repo/mechanism (nodeFacetBakeTier1ConformantCli.ts), out of this checkpoint's scope.",
+    "cortexApiDeployLease": "Not yet taken -- not needed until #671's hold is lifted (mission step 4), which is downstream of step 3."
+  },
+  "contradictedFindingsForClose": [
+    "The mission's 'What is true today' section and 'Where you work' section named hauska-engine (Cloud Run jobs factory-atoms-cad / hauska-engine-atoms-writer, writer name cad-parcel-roll) as the writer to fix. CP1 found this wrong: that writer is permanently frozen (OLD_SHAPE_FILL_FROZEN, baked into write-cad-parcel-roll-county.mjs itself per the 2026-08-26 OPTION A ruling) and does not write parcel_record/parcel_record_cell at all. The real writer is hauska-factory's factory-parcel-record-fill / src/jobs/parcel-record-fill.mjs. Recorded per coordinator instruction as a contradicted finding, not a silent deviation.",
+    "CP1's own williamsonCaveat ('a documented no-op... inert until a re-ingest') is ITSELF superseded by this CP2's live owner-agreement measurement: the consequence of applying the fix to Williamson is not inert at the write-target end -- it would actively convert ~282,565 currently-populated, empirically ~99.998%-owner-correct records to absence. CP1 correctly identified that the crosswalk mechanism itself would resolve nothing for Williamson (still true), but incorrectly assumed that made the CHANGE inert (it does not -- removing a good bare-join population is not the same as a crosswalk finding nothing to add)."
+  ],
+  "askingOperator": {
+    "blocking": true,
+    "reason": "Per the coordinator's own instruction: 'Report CP2 before the staging/production re-run per the mission's own gate on step 3.' Additionally, the Williamson finding above is independently blocking regardless of that gate.",
+    "specificPointsForReview": [
+      "Approve step 3 proceeding for Hays (48209) only this wave, holding Williamson (48491) pending the owner-agreement/LANDUSE_JOIN_DISABLED_FIPS_SEED reconciliation above.",
+      "Confirm no objection to the code's design (SEED_BLOCKED_FIPS-parameterized cadByProp replacement, quick_ref_id corroboration direction verified against live production data, apn/basis provenance naming the crosswalked account).",
+      "Direction on whether to spend further time now reconciling the Williamson owner-match discrepancy (a real investigation, likely touching LDT's LANDUSE_JOIN_DISABLED_FIPS_SEED comment/measurement) before step 3, or defer it and proceed with Hays only, leaving Williamson as an explicit leave_behind for a follow-up row."
+    ]
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "lane": "p178-hays-roll",
+  "planRows": ["P-178"],
+  "checkpoint": "CP2",
+  "kind": "staging pilot -- step 4 of 6",
+  "at": "2026-09-13T23:10:00Z",
+  "docRepoFetched": "fast-forwarded to 29182d0f (clean ff, ancestor-confirmed before merging).",
+  "sourceFile": {
+    "found": "The cited source (hays.zip, sha256 7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193) was sitting in a prior session's scratchpad directory, not the GCS drops bucket. Re-hashed locally before use -- matched exactly. Uploaded to gs://hauska-prod-497015-cad-ingest-drops/p178/hays_20260826_certified.zip.",
+    "propertyMemberConfirmed": "PropertyDataExport1404449.txt, 66,198,484 bytes -- matches the dispatch's own citation exactly."
+  },
+  "dryRun": {
+    "execution": "ldt-cad-ingest-kbl5q",
+    "args": "--county=48209 --dry-run --file=gs://hauska-prod-497015-cad-ingest-drops/p178/hays_20260826_certified.zip --tax-year=2026",
+    "summaryLine": "county: 48209 (Hays) | source file: hays_20260826_certified.zip | source vintage: tier:cad-export;adapter:orion;drop:hays_20260826_certified | rows read: 134592 | rows parsed: 134591 | rows upserted: 0 (dry-run) | rows skipped: 0 (malformed) | duplicate rows: 1 | duration: 8.4s",
+    "matchesDecisionDoc": "134,591 distinct accounts -- exact match to _decisions/2026-09-13_hays_declared_2026_roll_is_the_8_26_export.md's own cited figure."
+  },
+  "apply": {
+    "execution": "ldt-cad-ingest-kk755",
+    "target": "staging",
+    "runId": "5db62095-bfdb-495c-9db2-6ba523dd7cb9",
+    "summaryLine": "county: 48209 (Hays) | source file: hays_20260826_certified.zip | source vintage: tier:cad-export;adapter:orion;drop:hays_20260826_certified | rows read: 134592 | rows parsed: 134591 | rows upserted: 134591 | rows skipped: 0 (malformed) | duplicate rows: 1 | duration: 34.9s",
+    "recordTail": {
+      "id": "5db62095-bfdb-495c-9db2-6ba523dd7cb9",
+      "county_fips": "48209",
+      "target": "staging",
+      "cloud_run_job": "ldt-cad-ingest",
+      "cloud_run_execution": "ldt-cad-ingest-kk755",
+      "tax_year": 2026,
+      "source_vintage": "tier:cad-export;adapter:orion;drop:hays_20260826_certified",
+      "files": [
+        {"name": "PropertyDataExport1404449.txt", "role": "property", "bytes": 66198484, "sha256": "fd8fc6c4f2374032f731a6c9ded22da40d7afae53b615f4f3c2eacc1d47e781b"},
+        {"name": "PropertyDataExport1404450.txt", "role": "owner", "bytes": 29719086, "sha256": "eb33b87050c51a1155086370770875d5c53c93c3d0e3cea6adb9b2bbecba705b"},
+        {"name": "PropertyDataExport1404451.txt", "role": "land", "bytes": 21347562, "sha256": "acf0211cbf82b636e4fb5acf8967690f70762365a21b177c6740bf67d2d3d3fc"},
+        {"name": "PropertyDataExport1404453.txt", "role": "segment", "bytes": 73515444, "sha256": "72783bef7076e792fdc489c4473a948855abc9d1d3d5b471926e6be82df7216b"}
+      ],
+      "status": "success",
+      "rows_read": 134592,
+      "rows_parsed": 134591,
+      "rows_upserted": 134591,
+      "rows_skipped": 0,
+      "error": null,
+      "started_at": "2026-09-13T23:06:19.409Z",
+      "finished_at": "2026-09-13T23:06:51.493Z"
+    }
+  },
+  "insertedAccountsCheck": {
+    "expected": 375,
+    "note": "Not independently re-derived as a separate count here -- 134,591 (new) is 134,606 (old) minus 390 (fell off) plus the inserted count; 134,591 - (134,606-390) = 375. Consistent with the decision doc's own cited 375."
+  },
+  "absentFromDeclaredDropMarking": {
+    "gapFound": "The ldt-cad-ingest CLI only upserts rows the new export names -- it does not itself mark rows that fell off. Confirmed live: 0 rows carried roll_membership immediately after the apply, before I acted.",
+    "action": "Ran a scoped UPDATE: every cad_property row for 48209/tax_year 2026 still carrying source_file='2026-PRELIMINARY-DATA-EXPORT-FILES.zip' (i.e. untouched by this apply) got roll_membership='absent-from-declared-drop', declared_source_file='hays_20260826_certified.zip'.",
+    "rowsMarked": 390,
+    "matchesDecisionDoc": "390 accounts on the preliminary roll the 8-26 export lacks -- exact match."
+  },
+  "identifierColumnDigest": {
+    "preLoad": {
+      "store": "staging",
+      "totalRows": 134606,
+      "bothIdentifiersFilled": 134216,
+      "wholeTableDigest": "b9f95dcec7b5f8fbb12b3e8ec4780db3889a589d3b88128f3e3e0069b2e0d1f1"
+    },
+    "postLoad": {
+      "store": "staging",
+      "totalRows": 134981,
+      "bothIdentifiersFilled": 134591,
+      "wholeTableDigestNote": "Not directly comparable to preLoad -- the row set legitimately changed (375 inserted, 390 newly marked-but-unchanged). The meaningful check is below."
+    },
+    "meaningfulCheck": {
+      "newDropRows": {"total": 134591, "missingIdentifier": 0, "digestOverNewRows": "762ae537a2baed459c18d4600f4166a4a85a567977d2fc390679f22871966ca4"},
+      "markedAbsentRows": {"total": 390, "missingIdentifier": 390, "note": "Expected -- these accounts were never on a certified export to backfill an identifier from, before or after this load."},
+      "verdict": "Zero identifier regression: every one of the 134,591 newly-parsed rows carries both quick_ref_id and property_number. The parser re-wrote them from the same export cleanly."
+    }
+  },
+  "migrationTrackerStateAfterWatchedRun": {
+    "f06-staging-neondb": {"totalApplied": 101, "our3": [
+      {"name": "0099_cad_property_published_identifiers.sql", "applied_at": "2026-09-13T20:33:45.086Z"},
+      {"name": "0100_p172_txgio_travis_situs_backfill_from_cad.sql", "applied_at": "2026-09-13T20:33:45.355Z"},
+      {"name": "0101_cad_property_roll_membership.sql", "applied_at": "2026-09-13T20:37:29.529Z"}
+    ]},
+    "production": {"totalApplied": 101, "our3": [
+      {"name": "0099_cad_property_published_identifiers.sql", "applied_at": "2026-09-10T18:48:02.764Z"},
+      {"name": "0100_p172_txgio_travis_situs_backfill_from_cad.sql", "applied_at": "2026-09-12T16:06:09.366Z"},
+      {"name": "0101_cad_property_roll_membership.sql", "applied_at": "2026-09-13T20:43:06.130Z"}
+    ]},
+    "stability": "Unchanged from the CP1-time reading on both stores -- confirms no drift during this data load."
+  },
+  "openItemForOperatorAwareness": {
+    "vintageLabelMappingGap": "This load's own source_vintage ('tier:cad-export;adapter:orion;drop:hays_20260826_certified') is not yet in PR #677's KNOWN_SOURCE_VINTAGE_LABELS map, so the customer-facing vintage label for these newly-loaded staging rows currently falls back to the bare year '2026', not a certified-export label. Deliberately not guessed in #677 since the exact source_vintage string wasn't known until this load actually ran. A small follow-on PR can now add this exact string -> a label. Not done in this checkpoint; flagging for the next step."
+  },
+  "step5Status": "NOT RUN. Waiting on the operator's go in this window, to be quoted back before executing, per the dispatch's own text and this checkpoint's instruction."
+}

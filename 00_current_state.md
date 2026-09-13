@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-12
+last_updated: 2026-09-13 (session close / model-switch reconciliation)
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -18,6 +18,26 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 **P-124 CTX COMPLETION SPRINT opened and Wave 1 executed 2026-09-07.** Ten concurrent lanes, eight closed. THE BAKE MUST NOT RUN YET and the reason is not caution: a 2026-09-03 StratMap reload replaced every parcel row in all six Central Texas counties and dropped the derived zoning stamp, leaving `zoning_district` NULL on 1,516,110 parcels (verified live, with Comal 48091 as an unreloaded control still at 28,305 on the same column and predicate). The 582,442 baked snapshot rows still carrying a real district were the ONLY surviving copy of that value, and the conformant bake lane that wrote them has no monotonic guard, so a bake before a re-stamp would have overwritten the last copy with nulls. Wave 1 re-stamped all six (Bastrop 12,199, Caldwell 10,310, McLennan 55,425, Hays 51,503, Williamson 158,957, Travis 35,272 plus an Austin apply in flight), each verified with an out-of-city NULL check and the Comal control. **Nothing destructive has run; every write went to `txgio_parcel` or added atoms and the served snapshots are untouched.** ALSO ESTABLISHED, and each reverses something previously recorded: there are TWO bakes, and the LDT facet bake consumes no setback tables at all, so setbacks, envelopes, footprints and boundary edges come from elsewhere and three of the four from the hauska-engine atom bake, which has no runner in any of the 33 Cloud Run jobs across both projects. `county_facet_coverage` is wrong in both directions (Bastrop zoning 99.77 percent from a 433-row sample against a real 12.3; Travis 0.00 from `sampled=0` with `staleness_flag=false` against a real 46.6) and must not be used to scope anything. `parcel_record` is drawn from the StratMap parcel layer rather than the CAD account population, confirmed at row level. Parcel identity churns across reloads (Hays 30.5 percent gone and 19.5 percent drifted; Bastrop zero across 400 samples) and healthy-looking aggregates mask it because new parcels backfill the count. Read A-115 in OPS-16 before resuming: it is the complete resumption contract and Wave 2's preconditions, consolidated because the material is otherwise spread across four amendments and eight lane closes. Session `_sessions/2026-09-07_ctx_completion_sprint_claude_code.md`.
 
 **P-124 WAVE 2 PRECONDITIONS CLOSED 2026-09-08, AND THE BAKE IS NOW BLOCKED ON ONE ARTIFACT THAT DOES NOT EXIST.** Both A-115 preconditions are done and neither closed as written. The readiness gate was refusing Williamson at 46.9 percent and Caldwell at 51.4 percent for a defect that does not exist: `parcel_record`'s intended population is `landing_parcel_jurisdiction` (what `parcel-record-fill`'s own `LANDING_PAGE_SQL` pages), not the `cad_property` ACCOUNT roll, and a parcel is not an account. Measured as real id-set intersections the two match EXACTLY in all six counties, so neither county was ever under-instantiated; the 0.99 floor is unchanged and the measurement was corrected instead (`c59965e`, PR #101, proven by violation with Dallas and Tarrant refusing on real data). The cadRoll card rested on a superseded premise (the CONFORMANT bake at the pinned SHA always reads `cad_property`; CTX-F's rationale was true of the LEGACY CLI only) and its unblock trigger had NOT fired (CTX-C's situs guard is unmerged in LDT PR #637), so the POST-condition was built without the unsafe fold-in (`df22ea88`, PR #102). **The bake then refused for a real reason:** `zoningDistrict` was unaccounted on 79,197 in-city parcels across all six counties. That was TWO populations, and `parcel-r5-zoning` already carried the honest resolution for the larger one but had not run since 2026-09-02, before the reload and before its own 2026-09-05 fix. Re-run: `refused` 0 to 73,321 (each carrying "a data-acquisition gap, not a join failure"), `unaccounted` 79,197 to **5,876**, with `value` and `not-applicable` both untouched. **THE REMAINING 5,876 ARE THE WHOLE BLOCKER.** The rail gate is zero-tolerance (`publish-gate.js`: `ok: unaccountedCount === 0`), so all six counties still refuse. Clearing them honestly requires a PER-CITY COMPLETENESS DECLARATION that exists nowhere in the stack: without it nobody can say a city's staged zoning layer is complete, and a parcel matching no polygon is indistinguishable from a hole in our own layer. That artifact is the last thing between P-124 and a bake. Bastrop's 181 is the pilot; Travis 2,758 and Williamson 1,271 carry most of the rest. Do not clear it by writing `not-applicable`. Decision, reversal criteria and a relabelling tripwire: `_decisions/2026-09-08_zoning_unaccounted_two_populations.md`. Session `_sessions/2026-09-08_wave2_gate_rebuild_claude_code.md`, amendment A-116.
+
+**SESSION CLOSE / HANDOFF, 2026-09-13T23:55Z, doc_repo main `ea3a7fd2`.** OPS-23 is the live
+program; its durable card (`_inbox/2026-09-11_ops23_ledger_serving_path_WDLL.md`) now opens
+with a dated STATUS block — **read that block first**, this paragraph only points at it. In
+one sentence: wave 5 is in progress right now in the dispatch-planner seat worktree after a
+mid-wave `429` killed all four running lanes simultaneously; the planner wrote a full recovery
+checkpoint (`_inbox/2026-09-13_ops23_checkpoint_5.md`, now on main) and a successor planner
+session has already resumed (confirmed live by the overseer via lease renewals at 23:46–23:55Z
+and two open PRs, #678/#679, both green pending one check). **The single highest-consequence
+open item:** lane `p180-hays-cells` asked to run `--apply` against 116,420 PRODUCTION rows
+having shown only a dry run and no confirmed staging execution, and was killed before the
+planner answered — do not approve that production write until the checkpoint's
+staging-target question is settled. P-178 (the Hays declared-roll re-ingest) is separately at
+step 4 of 6, staging done and verified at source, production load waiting on the operator's go
+in that lane's own thread (the shape of the run is already signed off; the literal go on
+staging's counts is not yet given). Three rows landed on main this session
+(P-176, P-181, P-182) from sessions/commits **outside this thread's review loop and are
+UNVERIFIED by the overseer** — read them before citing their numbers. Full reconciliation,
+every ruling, every PR by number, and the five-lane wave-5 state are in the WDLL card's status
+block and in checkpoint_5; this snapshot paragraph is a pointer, not a substitute.
 
 **P-179 AMENDED 2026-09-13 (operator agreed): option 1, the engine gate is armed from the existing `HAUSKA_ENGINE_API_KEY` secret the four callers already send; no new secret minted; IAM door still its own go.** Wave 5 and P-178 back in flight.
 
@@ -160,7 +180,7 @@ findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 ## 6. Cross-cutting watch list
 
 - Two plans of record. Work that cannot name `P-xx` or `G-xx` is not scoped. G-66 is draft until approved.
-- Cotality extinguished. Deploys planner-owned. No privileged data. CTX/national HELD. Code-done is not customer-done.
+- Cotality REST extinguished; the MCP **eval** channel is LIVE (creds written 2026-07-14, first probed 2026-09-12, 11 tools). Never rotate a REST credential; re-route. Deploys planner-owned. No privileged data. CTX/national HELD. Code-done is not customer-done.
 - Gold parcel `48021:34137` on Dashboards is a demo fixture, not Bastrop onboarded.
 - Plan-review files writes are reviewer uploads only. Planner does not seed Smart Files.
 - Hauska inbound meter / ICC store UPDATE waits a quiet L26 slot.

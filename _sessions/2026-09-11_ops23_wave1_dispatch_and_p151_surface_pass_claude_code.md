@@ -431,3 +431,12 @@ out of the lane's worktrees, so the MCP still prints the raw code; the planner g
   that calls it) lands with the P-151 close commit's gate evidence, whichever way it goes.
 - `_catalog/repo_intents.md`: hauska-map and smartsite-mcp carry no `@empressaio/atom-contract`
   dependency; the P-167 close will change that and the intents row should say so.
+
+## Session closed 2026-09-13T23:55Z
+
+This scrollback runs from wave 1 through wave 5. It is not maintained further. The
+authoritative handoff for a successor is
+`_sessions/2026-09-13_ops23_session_close_and_handoff_claude_code.md`, written at close, and
+the durable card's status block at the top of
+`_inbox/2026-09-11_ops23_ledger_serving_path_WDLL.md`. Read those two, not this file end to
+end.
