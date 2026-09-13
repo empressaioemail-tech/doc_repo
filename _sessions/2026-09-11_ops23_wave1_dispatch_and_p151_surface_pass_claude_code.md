@@ -396,6 +396,14 @@ shared-checkout git incidents this day, one by a lane in the hauska-engine hub, 
 in a second doc_repo clone; the rule is unchanged and now written into A-140. P-178 is at its
 first item with a migration run that must be watched.
 
+## Wave 5 compiled (2026-09-13, 21:40Z)
+
+Four lanes for the four seams wave 4 and P-177 left: the slate siblings and the panel override,
+the Hays cells in the engine store, the public engine API, and the last three string
+differences. The gate lane is built to prepare and stop, because minting a secret and changing
+IAM are the operator's. Both seat doc worktrees were cleaned of artifacts already on main and
+fast-forwarded so the next planner and the P-178 lane start from b8e7863b.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
