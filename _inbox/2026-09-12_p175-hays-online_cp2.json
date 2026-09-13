@@ -1,0 +1,34 @@
+{
+  "lane": "p175-hays-online",
+  "planRows": ["P-175", "P-145"],
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review",
+  "at": "2026-09-12",
+  "headline": "Step 1's staging pilot ran clean, but 'rows updated: 0' on what should have been a first real apply is a real finding, not a formality -- staging's quick_ref_id/property_number were already populated identically before I touched it, and the migration that added the columns provably backfills nothing.",
+  "dryRun": {
+    "invocation": "DATABASE_URL=$(neonctl connection-string --project-id fancy-fire-06136146 --branch f06-staging-neondb --database-name neondb --role-name neondb_owner) pnpm --filter @workspace/cad-ingest cad-backfill-published-identifiers -- --county=48209 --file=<scratchpad>/hays.zip --tax-year=2026 --dry-run --record=<scratchpad>/ctx-hays-backfill_staging_dryrun.jsonl",
+    "summaryLine": "roll rows 134606; accounts offered 134591; rows matched 134216; skipped no roll row 375; skipped null identifier 0; roll rows not written 390 (all not-in-export); digest not taken (dry run)",
+    "matchesPreRegisteredExpectation": true
+  },
+  "apply": {
+    "invocation": "DATABASE_URL=$(neonctl connection-string --project-id fancy-fire-06136146 --branch f06-staging-neondb --database-name neondb --role-name neondb_owner) pnpm --filter @workspace/cad-ingest cad-backfill-published-identifiers -- --county=48209 --file=<scratchpad>/hays.zip --tax-year=2026 --record=<scratchpad>/ctx-hays-backfill_staging_apply.jsonl",
+    "summaryLine": "roll rows 134606; accounts offered 134591; rows matched 134216; ROWS UPDATED 0 (expected 134216 on a first real run, per the pre-registered production expectation and by the same logic for staging); skipped no roll row 375; skipped null identifier 0; roll rows not written 390; untouched-columns digest VERIFIED unchanged over 21 columns",
+    "recordTail": "{\"kind\":\"untouched-digest\",\"phase\":\"after\",\"rows\":134606,\"digest\":\"8d7094ca9e51fa69fd2bbad295899344\",\"columnCount\":21,\"matchesBefore\":true} / {\"kind\":\"run-end\",...\"rowsUpdated\":0,...\"untouchedDigestVerified\":true,\"batches\":135} / {\"kind\":\"committed\",\"at\":\"2026-09-12T19:00:05.958Z\"}",
+    "recordPath": "C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/a4463c17-e411-4d27-a5cb-b5c9ab2f984a/scratchpad/ctx-hays-backfill_staging_apply.jsonl (this session's scratchpad; not committed to git -- it is the durable record of a state-changing operation, named here per contract section 6)"
+  },
+  "verificationQuery": {
+    "sql": "SELECT count(*) AS total, count(quick_ref_id) AS has_quick_ref_id, count(property_number) AS has_property_number FROM cad_property WHERE county_fips='48209' AND tax_year=2026;",
+    "ranAgainst": "f06-staging-neondb, read-only session (SET default_transaction_read_only = on first)",
+    "result": {"total": 134606, "has_quick_ref_id": 134216, "has_property_number": 134216},
+    "conclusion": "matches rowsMatched (134216) exactly -- the data IS correctly populated on staging, matching what a correct run should produce."
+  },
+  "finding_unexplainedPriorPopulation": {
+    "whatIExpected": "a first real apply against staging should report rowsUpdated=134216 (identifiers were NULL, migration 0099 is schema-only, added 2026-09-10, and the mission's own text states production -- the only other Neon branch -- was 0/134606 populated as of 2026-09-12).",
+    "whatIObserved": "rowsUpdated=0 across all 135 batches; untouchedDigestBefore and untouchedDigestAfter identical (8d7094ca9e51fa69fd2bbad295899344); the live verification query independently confirms 134216 rows already carry both identifiers, exactly matching this run's own rowsMatched count.",
+    "readMigrationSourceToRuleOutASimplerExplanation": "lib/db/drizzle/0099_cad_property_published_identifiers.sql is two ADD COLUMN statements only; its own header comment states explicitly 'no existing row changes, and nothing is backfilled by this migration.' Ruled out: the columns were not pre-populated by the migration itself.",
+    "searchedForAnEarlierRun": "grepped doc_repo _inbox for any close/cp1/cp2 mentioning quick_ref_id + hays/p175 -- only CTX-HAYS-BACKFILL's own artifacts (2026-09-10), which explicitly state that lane's own testing was a read-only dry-run against PRODUCTION plus a throwaway LOCAL Postgres cluster, never a staging write ('NOT a store: no Neon branch was written at any point'). No p175-hays-online or other 2026-09-12 artifact for this mission exists yet besides my own CP1. Did not find who ran this.",
+    "assessment": "the write itself is verifiably correct and safe (independently confirmed by live query, and the untouched-columns digest proves no other column moved either now or, if this happened before, presumably then too, since the digest matches before/after this run). This is reported as an open provenance question, not as a blocker -- it does not change the plan for Step 2, and if anything it is a second, independently-timed real-world demonstration that this exact backfill's idempotence claim (0 updated on re-run) holds against production-shaped data.",
+    "openQuestion": "who or what populated f06-staging-neondb's cad_property.quick_ref_id/property_number for Hays 48209/2026 before this session's run, and when. Left open in the close's leave_behind."
+  },
+  "askingOperator": "Staging pilot (Step 1) is complete and matches the pre-registered plan exactly in every figure except rowsUpdated, which is 0 because the target state already existed -- flagged above, not hidden. Per dispatch Step 2, production apply is explicitly gated on the operator's go in this thread. Requesting that go now, or instructions on the unexplained-prior-population finding first."
+}

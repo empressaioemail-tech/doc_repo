@@ -327,6 +327,23 @@ the chain in order and closes through the customer's path: an address-keyed prob
 that fails on all five today. The three untracked CTX-HAYS closes the row cites were committed
 with it, since cited-and-untracked is the worst state.
 
+## P-175 reviewed: the falsifier fired and was scored as not firing (2026-09-13, 12:30Z)
+
+The lane closed P-175 closed-partial with the backfill, H1 and the resolver live, and said node
+`48209:97658` "now correctly serves 13669 Mesa Verde Dr". Read at depth node after its publish,
+the node carries the Sturgeon ring, acreage, neighbours, school district, watershed district and
+flood cell under the Mesa Verde label, anchor and dollars: the label had always been Mesa Verde
+and the lane verified the label. The "second chimera" on 617 is the class: all five Sturgeon
+TxGIO ids collide with real accounts on Catalina Ln and Mesa Verde Dr, and the nodes the resolver
+now routes the customer to serve those accounts' dollars and anchors on the Sturgeon polygons,
+while the account-keyed node for 629 was re-baked with no ring and no cells. Zero of five cards
+are right; the flood determination is right on all five because the cells are geometry-derived.
+P-145 is closed on H1's table. P-177 (A-136) carries the whole-class fix: the TxGIO-keyed node
+stays the Hays node and every account attribute joins through the crosswalk. The lane also
+committed to doc_repo main twice and put its close on a seat branch, and its cited probe artifact
+was a hand-made file wearing the instrument's name; both are recorded. Memory written:
+verify a geometry claim by ring, acreage and neighbours, never by label.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
