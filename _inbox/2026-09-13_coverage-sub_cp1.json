@@ -1,0 +1,39 @@
+{
+  "lane": "COVERAGE-SUB",
+  "checkpoint": "CP1",
+  "planRows": ["P-182"],
+  "at": "2026-09-13T15:40:00-05:00",
+  "snapshot": {
+    "doc_repo": { "branch": "main", "head": "9eef6a6c4a5c5c7e6baa363800257482b9a8a70d", "dirty": true, "note": "integration seat checkout P:/doc_repo; dispatch was compiled here and names these _inbox paths" },
+    "legacy_design_tools": { "ref": "origin/main", "head": "78275570d8991da882f2915160a99d5b6726c7bf", "committed_at": "2026-09-13T14:31:45-05:00", "note": "read via git show origin/main:<path>; the local working tree at P:/legacy-design-tools is on feat/s1-instrument-hardening @10069854 (2026-08-12) and dirty, so it was NOT used as a read path" },
+    "factory_store": { "role": "parcel_record_ro", "database": "neondb", "dsn_source": "gcloud secrets versions access latest --secret=FACTORY_DATABASE_URL_RO --project=hauska-prod-497015", "server": "PostgreSQL 18.6" }
+  },
+  "designDecisions": {
+    "roster": "_catalog/texas_roster_v1.json (schema t6_roster_v1, generated_at 2026-08-12T16:47:05.273Z, last_updated 2026-08-12T21:39:21Z). 1223 incorporated cities statewide with all_county_fips, from the T6 recon. Chosen over tx_city_boundary because the RO role cannot see tx_city_boundary (see instrumentLimits) and because the roster carries the zoning-layer probe record per city, which the boundary table does not.",
+    "rosterLimit": "The roster's record_type is 'city' only. CDPs, unincorporated communities and postal-only places are NOT in it. That gap is itself a finding and is reported, not silently absorbed.",
+    "zoningLayersRegistry": "legacy-design-tools lib/cad-ingest/src/txgio/zoning-layers.ts at origin/main.",
+    "setbackTables": "legacy-design-tools lib/adapters/src/local/setbacks/*.json + index.ts SETBACK_TABLES at origin/main. Registration in SETBACK_TABLES, not mere file presence, is the test.",
+    "parcelBinding": "landing_parcel_jurisdiction is NOT visible to the read-only role. Substitute: parcel_record_cell rail_key='zoningJurisdictionKey', whose cell_state carries {kind:'value', value:'<cityKey>'} or {kind:'not-applicable'} / unaccounted. This is the SERVING binding, which is the stronger measurement for this question; it is a different instrument from landing_parcel_jurisdiction and is labelled as such in every row."
+  },
+  "instrumentLimits": [
+    "parcel_record_ro can SELECT exactly four tables: parcel_record, parcel_record_cell, parcel_record_companion_row, parcel_gate_verdict. tx_city_boundary, tx_zoning_district_staging and landing_parcel_jurisdiction are NOT reachable from this credential.",
+    "Verified by violation 2026-09-13: BEGIN; INSERT INTO parcel_record ... -> 'ERROR:  permission denied for table parcel_record'. The role refuses writes at the database, not at a code check.",
+    "parcel_record.place_key is the PARCEL identity (<countyFips>:<propId>), NOT a place key. Do not read it as a city binding."
+  ],
+  "heavyScanAnnouncement": {
+    "target": "Factory Neon store, parcel_record_cell (76,055,440 reltuples / 25 GB), six index-range scans on the (place_key, rail_key) pkey prefix, one per county FIPS",
+    "expected": "seconds to low minutes per county; statement_timeout set on every statement",
+    "readOnly": true
+  },
+  "preRegisteredFalsifiers": [
+    { "id": "F1", "prediction": "The roster's by-parent-county city counts reproduce OPS-22 section 2: Bastrop 3, Caldwell 3, Hays 11, Williamson 14, Travis 18, McLennan 20 = 69.", "falsifier": "any county count differs", "result": "HELD — reproduced exactly" },
+    { "id": "F2", "prediction": "23 of those 69 carry a zoning source_url, split 3/3, 3/3, 5/11, 7/14, 3/18, 2/20.", "falsifier": "a different total or a different split", "result": "HELD — reproduced exactly" },
+    { "id": "F3", "prediction": "ZONING_LAYERS wires strictly fewer than 23 of the six counties' cities.", "falsifier": "23 or more wired", "result": "HELD — 17 distinct cities wired (18 config entries; Elgin twice, once per county)" },
+    { "id": "F4", "prediction": "Thrall is ABSENT from every roster we hold, which is the dispatch's stated premise for why it stayed invisible.", "falsifier": "Thrall present in _catalog/texas_roster_v1.json", "result": "FALSIFIED — Thrall is present, place_fips 72824, probed 2026-08-12T22:14:05Z by lane Z1-central-tx-reopen, status NOT-FOUND-UNKNOWN-WHY with a SEARCHED-AND-ABSENT sentinel. The premise needs correcting: the roster held the finding and nothing consumed it." },
+    { "id": "F5", "prediction": "The zoning-layer status field in the roster agrees with source_url presence.", "falsifier": "a city with a live-probed source_url carrying a non-LAYER-FOUND status", "result": "FALSIFIED — 12 of the 23, including Bastrop city (features_staged 7075) and Taylor (8145), carry source_url + verification 'verified-live' + a positive staged-feature count while status reads NOT-FOUND-UNKNOWN-WHY. The status column is not a safe read." }
+  ],
+  "open": [
+    "live-surface column: decide probe scope. 69 places x one real address is not bounded; a sample plus an explicit UNMEASURED for the rest is the honest shape.",
+    "3 cities whose parent county is outside the six but whose boundary touches one (Falls, Guadalupe, Milam parents) — the 69 is a parent-county count, not a touches-the-county count, which is 72."
+  ]
+}
