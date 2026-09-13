@@ -1,0 +1,76 @@
+{
+  "lane": "p177-hays-attributes",
+  "planRows": ["P-177"],
+  "checkpoint": "CP2",
+  "kind": "post-build/pre-close",
+  "at": "2026-09-13T18:40:00Z",
+  "snapshot": {
+    "docRepoFetched": "P:/seat-worktrees/property/doc_repo reset to origin/main (b2d03f77, then 9eef6a6c after P-178 dispatched) -- CP1's claim of having fetched this worktree was wrong; it had actually fast-forwarded the wrong checkout (P:/doc_repo). Corrected mid-mission via git reset --hard origin/main once discovered (seat/property's only divergent commit, 4199e58f, was already safely pushed to origin/seat/property -- no data loss)."
+  },
+  "namedFixDone": {
+    "pr670": "legacy-design-tools#670, merged 6ae7ef57510a1a0a96ead3251cc9788bb0492335, CI success -- account-attribute crosswalk in nodeFacetBakeTier1ConformantCli.ts; resolver revert in txgioAddressResolve.ts. Already covered in CP1.",
+    "pr143": "hauska-factory#143, merged f13cca336f4fcc687fb3f975c184440b0c6f8939, CI success -- _LDT_SHA bumped to 6ae7ef57.",
+    "cloudBuild1": "gcloud builds submit bc861a31-5926-4d1b-be73-4db5fa3ed5a3, SUCCESS, new factory-bastrop-publish image sha256:ea62b6914e1248818b2e2f71db81ca001465e0bb469969f2ec1a2b6efdab0e31."
+  },
+  "midTaskBlocker": {
+    "finding": "Hays staging republish (on the #670-fixed pin) failed CADROLL_RENULLED: 146/500 (29.2%) sampled CAD accounts appeared to have no baked dollar -- live-verified false positive. requireCadRollPostcondition's sample assumed place_key's prop_id and cad_property's prop_id name the same account, true everywhere except gate-blocked Hays/Williamson, where P-177's own crosswalk fix correctly stopped honoring that bare-number coincidence.",
+    "operatorDecision": "User chose 'Fix the gate now, scoped to gate-blocked counties' over 'stop and write up as a finding'.",
+    "pr144": "hauska-factory#144, merged 97b93877c1dbb5598942821a553e50d0d677a006, CI success -- CADROLL_EXPECTATION_SQL_GATE_BLOCKED samples TxGIO nodes via the same crosswalk bind, for SEED_BLOCKED_FIPS counties only; byte-identical original SQL elsewhere. 122/122 new+existing publish.test.mjs tests pass; full repo npm test 1322 tests, only 3 pre-existing unrelated failures (2 self-documented OPS-21 S3 out-of-scope in p3-absence.test.mjs; 1 in ctx-b3-store-census.test.mjs confirmed via git merge-base --is-ancestor to already exist at the pre-P-177 LDT pin, not introduced here).",
+    "cloudBuild2": "gcloud builds submit 0ea1c820-289d-4f7f-afdd-91c3d2e4a754, SUCCESS, new image sha256:1c6a7a5a619b4fb1d10bc1058a6e1822f41bfe517150b784c46b370f9841c9ab."
+  },
+  "republish": {
+    "staging": {
+      "executionId": "factory-bastrop-publish-l26sd",
+      "publishRunId": "20374057-a4a6-460c-9ce2-28fecfdefa39",
+      "walkId": "04926cce-a1aa-4cfc-a387-7a05bdb68558",
+      "status": "success",
+      "tier1Written": 306722,
+      "walkVerdict": "pass",
+      "cadrollPostcondition": {"ok": true, "misses": 0, "sampled": 500, "compared": 500, "missRate": 0, "gateBlocked": true, "absentSnapshot": 0}
+    },
+    "production": {
+      "executionId": "factory-bastrop-publish-zbf7r",
+      "publishRunId": "b5e54917-4f5a-461c-ad75-37b60016ca7d",
+      "walkId": "eeac978a-b638-42ef-8ff4-73ecf97b5f01",
+      "status": "success",
+      "tier1Written": 306722,
+      "walkVerdict": "pass",
+      "cadrollPostcondition": {"ok": true, "misses": 0, "sampled": 500, "compared": 500, "missRate": 0, "gateBlocked": true, "absentSnapshot": 0},
+      "stagingSiblingId": "20374057-a4a6-460c-9ce2-28fecfdefa39",
+      "operatorGoAheadObtained": "explicit AskUserQuestion approval before this run, matching the standing production-write check-in pattern"
+    }
+  },
+  "newFindingMidVerification": {
+    "what": "After both republishes, direct DB reads of place_layer_snapshots confirmed the bake correct (97658: situsAddress '629 STURGEON DR...', marketValue 50390, parcelJoin.state 'joined-crosswalk'), but a live get_smart_site read of the SAME node still showed the OLD Mesa Verde-collision values (636690 etc, unchanged vintage timestamp).",
+    "rootCause": "A SECOND, independent code path -- cadRollServeCutover.ts / parcelRecordAllowlist.ts in legacy-design-tools -- overlays marketValue/assessedValue/landValue/improvementValue/livingAreaSqft/yearBuilt from a live ledger (hauska-engine parcel_record_cell) at request time whenever the allowlist resolves 'record'. That allowlist gate (parcel_gate_verdict) checks only cell COVERAGE, never correctness. Hays' record-sourced cells for these six rails were populated before the crosswalk protection existed and still carry the same bare-prop_id collision the bake fix closed.",
+    "userDecision": "Explicit go-ahead: 'investigate and fix now'.",
+    "fix": {
+      "pr": "legacy-design-tools#671, merged a003bd996344ba8b7a41b71ebd2640692c113ba7, CI success (11 checks)",
+      "change": "Held Hays back from all six PARCEL-B-SLATE2 slate entries in parcelRecordAllowlist.ts (48209:marketValue/assessedValue/landValue/improvementValue/livingAreaSqft/yearBuilt removed from PARCEL_RECORD_SLATE, 122 -> 116 entries). Falls back to the P-177-fixed legacy/bake value for exactly these six rails, exactly this county. Williamson untouched -- its TxGIO/CAD key spaces are lexically disjoint (R-prefixed vs six-digit), live-spot-read 48491:R638791 shows no collision shape.",
+      "tests": "48/48 parcelRecordAllowlist.test.ts pass (two existing tests updated to the new 116-entry/5-county shape, one new falsifier added); full api-server suite 2039/2039 individual tests pass (189 test FILES fail only on the pre-existing, unrelated local DATABASE_URL gap); tsc --noEmit clean."
+    },
+    "deploy": {
+      "raceConditionCaught": "First deploy-canary run (cortex-api-00784-riy) started gcloud run deploy at 18:13:17Z, before the merge-triggered build-and-push job finished pushing the new :latest image at 18:15:09Z -- deployed a stale image. Live-verified wrong (byte-identical old response) before proceeding, re-triggered deploy-canary once the build was confirmed complete.",
+      "correctedRevision": "cortex-api-00786-cis, deployed 0% traffic, then shifted to 100% via workflow_dispatch action=shift-traffic. Serving revision confirmed by field name from the traffic JSON: {'percent': 100, 'revisionName': 'cortex-api-00786-cis', 'tag': 'canary', ...}.",
+      "lease": "Self-granted per AGENT_CONTRACT section 3 (user-approved): wrote _catalog/leases/cortex-api.json (lane p177-hays-attributes), shifted traffic, verified the serving revision by field name and ran the live probe against it, then deleted the lease file -- no other lane was found touching cortex-api concurrently."
+    },
+    "liveVerifiedAfterFix": "All 5 Sturgeon nodes re-read via get_smart_site post-shift: marketValue/landValue now 50390 (97658, 97657) or 50130 (97651/97652/97653), matching the roll's own 50,130-50,390 band; labels correct; no Mesa Verde attribute on any of the 5."
+  },
+  "realSurfaceProbeResult": {
+    "artifact": "_inbox/2026-09-13_183517_surface_probe.json",
+    "verdict": "PASS 0 FAIL 5",
+    "cause": "scripts/surface-probe.mjs's facets leg hits a THIRD/FOURTH distinct endpoint, /api/spine/property-atoms/<id>/facets (readPath 'record', the 'one reader' P152-PANEL asserts) -- Property Explorer's own atoms/ledger reader, with NO legacy fallback at all (unlike cadRollServeCutover.ts, which I fixed). Record point read 34,801-34,869 m (21-22 miles) from the actual address for 4 of 5 addresses; label empty for 4 of 5. Root cause is the SAME stale hauska-engine parcel_record/atoms population, but this reader has no allowlist to hold back to -- it reads the ledger unconditionally.",
+    "attemptedFix": "Located the obvious writer (hauska-engine packages/engine-core/scripts/write-cad-parcel-roll-county.mjs); its own logic ALREADY protects Hays correctly (isLandUseJoinHoldCounty), but --apply is hard-refused for every county except one legacy exception (OLD_SHAPE_FILL_FROZEN), matching the CANON-PREAMBLE's 'old-shape writes ended permanently 2026-08-27'. The current, non-frozen writer for this ledger was not located within this session.",
+    "userDecision": "Stop; close closed-partial with this precisely documented, rather than keep digging for the current atoms-writer pipeline."
+  },
+  "retirement": {
+    "targets": ["48209:84639", "48209:84633", "48209:84638", "48209:84634", "48209:84632"],
+    "written": "5/5 rows on both staging and production carry a well-formed Tier1RecordRetirement object (recordRetirement.ts's isEarnedRecordRetirement) as of this checkpoint.",
+    "durabilityCaveat": "The tier1 bake CLI's work list re-mints one work item per CAD atom for gate-blocked counties, independent of TxGIO node identity -- confirmed empirically these exact 5 nodes were re-baked fresh during THIS mission's own republishes. This retirement marker will be overwritten by the next Hays tier-1 republish (e.g. P-178 step 6) unless re-applied.",
+    "decineNotVerified": "Live-checked get_smart_site on 48209:84639 after writing the marker: it still serves the hollow node's full content (no decline). Grepped the repo: the only consumer of recordRetirement/isEarnedRecordRetirement is a narrow exemption inside one situs-punctuation guard in serveGuards.ts -- there is no code path anywhere that turns a well-formed recordRetirement into an actual declined response to a direct node lookup. The dispatch's own premise ('A retired path returns a decline') does not hold as the code stands."
+  },
+  "notYetDone": {
+    "ctxHaysKeyContradiction": "Reconstructed instrument run against production (original was scratch/ephemeral, never preserved as a script). Result and full method go in the close.",
+    "cp2ToClose": "This checkpoint; close file next."
+  }
+}

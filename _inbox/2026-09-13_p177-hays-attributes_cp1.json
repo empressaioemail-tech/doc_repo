@@ -1,0 +1,37 @@
+{
+  "lane": "p177-hays-attributes",
+  "planRows": ["P-177"],
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "at": "2026-09-13T13:00:00Z",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p175-hays-online (continuation, per dispatch)",
+    "branch": "feat/p177-hays-account-attributes",
+    "baseCommit": "066ada6becd50669ec31e1e06f66a199b7ccfc3a (origin/main, contains #668+#669)",
+    "docRepoFetched": "P:/doc_repo fast-forwarded to origin/main 2c6fac3c before any work, per the operator's explicit instruction this time -- read the overseer review and this dispatch from there, not a stale checkout"
+  },
+  "rootCauseTraced": {
+    "claim": "P-175's crosswalk fix (LDT #668) only ever affected which TxGIO ring a gate-blocked node draws (parcelJoin.row in nodeFacetBakeTier1ConformantCli.ts), never the CAD-account attribute lookup that feeds baseFacts.situsAddress, cadRoll dollars, structural facts, legal description and exemption codes -- that lookup was, and until this fix remained, `cadPropertyRoll.byPropId.get(propId)` keyed by the ATOM'S OWN bare TxGIO prop_id, at three call sites in the CLI (the situs-key recovery prepass, the per-atom rollEntry, and buildConformantTier1Payload's own internal apn-keyed lookup in nodeFacetBakeTier1Conformant.ts:1252) plus a fourth read-only use for basis text (line ~1173 of the same builder file).",
+    "verifiedBy": "direct code read, all four call sites traced by line number, cross-checked against the overseer review's live observation (97658's ring, acreage and neighbours byte-identical before/after the P-175 publish; its label and dollars still Mesa Verde's own)",
+    "whyThisExplainsTheOverseerFinding": "for Hays, a TxGIO node's bare prop_id (e.g. 97658) can coincidentally equal a real, DIFFERENT CAD PropertyID (Mesa Verde's own account). cadPropertyRoll.byPropId.get('97658') therefore returns Mesa Verde's own row every time, regardless of what the geometry crosswalk resolved for the RING -- the two mechanisms never touched each other."
+  },
+  "fixDesign": {
+    "approach": "a single new precompute block in the CLI, before the per-atom loop: effectiveCadPropertyRoll, identical object reference to cadPropertyRoll for a non-blocked county (strict no-op, zero behaviour change on Bastrop/Caldwell/McLennan/Travis), or a REMAPPED Map for a gate-blocked county -- still keyed by each atom's own bare prop_id (so every existing .byPropId.get(propId) call site downstream works unmodified, including the builder's own internal lookup), but each key now points at the entry for the CAD account the node's OWN geo_id names via the crosswalk.",
+    "newPureFunction": "accountCrosswalkForNode (joinNormalize.ts) -- the REVERSE direction of the existing parcelCrosswalkJoinKey/crosswalkBindCorroborated (which answer 'which geometry does this account's geo_id name'; this answers 'which account does this node's own geo_id name'). Inputs: the node's own bare prop_id, its own geo_id (fetched via the existing fetchParcelRowsByPropIds/joinParcelRows helper, now also run for gate-blocked counties), and the SAME geoIdToAccountPropId / accountStemByPropId maps the existing geometry crosswalk already builds (inverted/reused, zero new queries beyond the one prop_id-keyed txgio_parcel fetch). Three outcomes, each counted: crosswalk (bound + corroborated or corroborator silent), no-crosswalk-account (node's geo_id resolves no account -- honest absence), corroboration-refused (resolved account's own QuickRefID stem names a DIFFERENT node -- positive evidence, refused not guessed).",
+    "resolverRevert": "txgioAddressResolve.ts's situsNodeId/loadSitusCrosswalk (P-175's resolver-side crosswalk) deleted entirely. A parcel-situs hit for every county, gate-blocked or not, mints plain parcelNodeId(fips, propId) again. Containment (#668/#669's other half) untouched -- it was never crosswalked."
+  },
+  "verifiedByTest": {
+    "newTests": "22 tests for accountCrosswalkForNode (bound/no-account/corroboration-refused/non-vacuity), using the real Sturgeon-block fixtures (97658->84639, verified crosswalk-target from the overseer review's own cad_property reads)",
+    "revertedBehaviorTests": "txgioAddressResolveSitusCrosswalk.test.ts rewritten: proves a gate-blocked parcel-situs hit resolves to the PLAIN TxGIO node (48209:97658, not any CAD-keyed id), and that no cad_property query happens on that path at all (the @workspace/db mock in that file no longer even exports a cadProperty table -- an accidental reference would throw at import time, not just fail an assertion)",
+    "regressionCheck": "536 existing tests unaffected (12 unrelated suites fail locally on pre-existing missing DATABASE_URL, confirmed unrelated by git diff not touching those files); pnpm run typecheck clean"
+  },
+  "notYetDone": {
+    "prMerge": "legacy-design-tools PR #670 open, CI running at time of this checkpoint",
+    "ldtPinBump": "hauska-factory cloudbuild.publish.yaml _LDT_SHA needs bumping to #670's merge sha, by its own PR, once #670 merges",
+    "republish": "Hays tier-1, staging then production, on the bumped pin",
+    "liveVerification": "re-read 97658/97651/97652/97653/97657 at depth node; CTX-HAYS-KEY contradiction instrument re-run (baseline 37,479); scripts/surface-probe.mjs --rows P-175 (real row now exists, added between the P-175 close and this dispatch -- confirmed present in doc_repo after the fast-forward, unlike P-175's own checkout which predated it)",
+    "retirement": "the P-175-publish account-keyed hollow snapshots (48209:84639 and siblings) named for retirement in the dispatch -- not yet counted or acted on"
+  },
+  "askingOperator": "No blocking question at CP1 -- proceeding to merge #670 on green CI (property seat has self-merge authority on its own branches, per established practice) and continuing through the pin bump and republish. Will check in again before the production republish specifically, matching the production-write gate this whole program applies."
+}

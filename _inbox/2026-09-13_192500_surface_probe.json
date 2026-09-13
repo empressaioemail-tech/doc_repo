@@ -1,0 +1,48 @@
+{
+  "instrument": "hand probe (R-4 fallback for lane p152-entitlement)",
+  "why_not_scripts_surface_probe_mjs": "Ran node scripts/surface-probe.mjs against production first (artifact _inbox/2026-09-13_191759_surface_probe.json, PASS 3 / FAIL 2 / UNMEASURED 27 -- unchanged from the pre-deploy baseline lane p152-rails reported, confirming this lane's deploy did not regress the existing probe set). That instrument has no leg for entitlement/tier gating on the feasibility-export route at all -- its predicates are P-151..P-175 data-parity rows, none of which is P-152-entitlement's actual claim (dollar/owner composition gated by caller tier). This file is the direct hand-probe R-4 explicitly allows in that case, matching lane p152-rails's own precedent (_inbox/2026-09-12_p152-rails_close.json probe.instrument).",
+  "runAt": "2026-09-13T19:08Z-19:16Z",
+  "missionCorrection_applied": "Per CP1 contradicted-2 (approved by the planner, Q6): the mission's original verification target (run_report / get_smart_site) was corrected to export_instrument kind:'feasibility' -- the only MCP path that calls hauska-engine-api at all. All rows below test that corrected target.",
+
+  "engineDirectRows": [
+    {
+      "target": "https://p152canary---hauska-engine-api-h7gvu7rgcq-uc.a.run.app (revision hauska-engine-api-00215-niv, 0%% live traffic at test time)",
+      "parcelNodeId": "48021:33223",
+      "test": "POST feasibility-export/refresh with x-hauska-access-tier: public-free, then poll GET status to ready",
+      "result": "state=ready; entitlement={tier:public-free, granted:false, requiredTier:studio-or-property-unlock, gatedSections:[parcelOwnership]}; polling the SAME job with x-hauska-access-tier: public-paid returned entitlement={tier:public-paid, granted:true, ...} on the identical job (confirms the marker is recomputed fresh per request from the current caller's own header, exactly as designed)",
+      "verdict": "PASS -- falsifier 'unentitled call returns a value' did not fire"
+    },
+    {
+      "target": "https://p152canary---hauska-engine-api-h7gvu7rgcq-uc.a.run.app (revision hauska-engine-api-00215-niv, canary)",
+      "parcelNodeId": "48021:34049",
+      "test": "Fresh POST feasibility-export/refresh with x-hauska-access-tier: public-paid (never-requested state, so this caller's tier is what gets baked into the compose), poll to ready",
+      "result": "state=ready; entitlement={tier:public-paid, granted:true, requiredTier:studio-or-property-unlock, gatedSections:[parcelOwnership]}",
+      "verdict": "PASS -- falsifier 'entitled path returns a refusal' did not fire"
+    },
+    {
+      "target": "https://p152canary---hauska-engine-api-h7gvu7rgcq-uc.a.run.app",
+      "parcelNodeId": "48021:34049",
+      "test": "POST feasibility-export/refresh with NO gate-front headers at all",
+      "result": "HTTP 401",
+      "verdict": "PASS -- falsifier 'missing header returns a value' did not fire (server.ts's existing top-level middleware, unmodified by this lane, still refuses before any route)"
+    },
+    {
+      "target": "https://hauska-engine-api-h7gvu7rgcq-uc.a.run.app (PRODUCTION, 100%% traffic on hauska-engine-api-00215-niv after shift, verified via gcloud run services update-traffic + a direct /health read showing startedAt matching the deploy time)",
+      "parcelNodeId": "48453:367134",
+      "test": "Fresh POST feasibility-export/refresh with x-hauska-access-tier: public-free, poll to ready",
+      "result": "state=ready; entitlement={tier:public-free, granted:false, requiredTier:studio-or-property-unlock, gatedSections:[parcelOwnership]}",
+      "verdict": "PASS on PRODUCTION (not just canary) -- same falsifier re-checked post-traffic-shift"
+    }
+  ],
+
+  "mcpLiveRow": {
+    "target": "smartsite-mcp production (revision smartsite-mcp-00115-wic, 100%% traffic after shift-traffic workflow run 34776296962) via this session's own authenticated Smart Site MCP connection (mcp__claude_ai_Smart_Site__export_instrument)",
+    "parcelNodeId": "48021:34049",
+    "kind": "feasibility",
+    "result": "status:ok, a real 1,172,470-byte PDF download (pageCount 13, feasibilityPageCount 11, sectionCount 15, openItemCount 2) -- this session's account is entitled (Studio subscription or a property unlock; not independently distinguishable from this call alone) and received the real report end-to-end through the ACTUAL production smartsite-mcp -> hauska-engine-api round trip, both freshly deployed with this lane's changes.",
+    "verdict": "PASS for the entitled/grant side of the full MCP round trip.",
+    "notObtained": "The REFUSED side of this same MCP-level round trip (an unentitled caller's export_instrument call returning upgrade_required) was NOT obtained live through the MCP tool itself -- this session holds exactly one Smart Site MCP credential (whatever account this session's connector authenticates as) and has no way to present a different, unentitled identity to that same tool. The mission named this exact contingency ('the operator supplies one, or the planner uses the anonymous path'); neither was available to this lane. The refusal side of the identical mechanism (the engine's own gate, which is what export_instrument would surface as upgrade_required per feasibility-export.ts's new granted:false handling, unit-tested in tests/feasibility-export.test.ts's 'P152-ENTITLEMENT: the engine's own refusal' describe block) IS verified live, directly against the engine, in the engineDirectRows above -- the same server-side mechanism the MCP call would have hit had it been made by an unentitled caller."
+  },
+
+  "summary": "PASS 4 (engine direct, both tiers, canary and production, missing-header) + PASS 1 (MCP live, entitled side only, production) = 5 PASS, 0 FAIL, 1 explicitly-named gap (MCP-level live refusal, substituted by the equivalent engine-direct live refusal test since the mechanism is identical and this session held no independent unentitled credential)."
+}

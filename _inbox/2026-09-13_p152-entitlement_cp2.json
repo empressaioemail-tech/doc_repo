@@ -1,0 +1,69 @@
+{
+  "lane": "p152-entitlement",
+  "checkpoint": "CP2",
+  "planRows": ["P-152"],
+  "date": "2026-09-13",
+  "status": "build-complete-ci-in-flight",
+  "approvalReceived": "Planner approved all six CP1 open questions (Q1-Q6) as proposed and instructed: proceed to CP2, build steps 2-4 as designed, continue managing own leases, report back at CP2 and close.",
+
+  "step2_engine": {
+    "repo": "hauska-engine",
+    "branch": "feat/p152-engine-access-tier-gate",
+    "pr": "https://github.com/empressaioemail-tech/hauska-engine/pull/438",
+    "commit": "08c5ad7",
+    "filesChanged": [
+      "packages/engine-core/src/site-plan/feasibility-model.ts (new AbsenceKind 'entitlement-required', CallerAccessTier type, parcelOwnershipEntitledForTier())",
+      "packages/engine-core/src/site-plan/report-model.ts (parcelOwnership section gated first, before any data-availability check; callerTier threaded through ComposeParcelReportOptions/ComposeParcelReportFactsOptions)",
+      "packages/engine-core/src/site-plan/feasibility-author.ts (callerTier added to AuthorParcelFeasibilityExportOptions, flows through the existing ...options spread)",
+      "packages/engine-core/src/site-plan/index.ts (re-exports)",
+      "services/engine-api/src/entitlement-gate.ts (new: resolveCallerAccessTier -- signed-context precedence per CP1, fails closed on unrecognized signed tier)",
+      "services/engine-api/src/routes/parcel-terrain.ts (resolves tier from gate-front context on refresh; GET status response gains the typed `entitlement` marker, computed fresh per request, no schema change)"
+    ],
+    "testsAdded": [
+      "packages/engine-core/src/site-plan/__tests__/p152-entitlement-gate.test.ts (7 tests: the composer-level falsifier -- public-free refuses with no dollar/owner value anywhere in the serialized section, checked as a raw string not just the typed field; public-paid/platform-internal/tenant-private grant; omitted tier preserves pre-gate default for every existing caller)",
+      "services/engine-api/src/__tests__/entitlement-gate.test.ts (5 tests: signed-context precedence both directions, unrecognized signed tier fails closed to public-free)",
+      "services/engine-api/src/__tests__/feasibility-export-route.test.ts (+6 tests: route threads the resolved tier to the author; GET status entitlement marker reflects the request's own tier for both grant and refuse; a buildApp()-driven missing-gate-front-header test mirroring flood-drainage-route.test.ts's own established pattern, proving the existing 401 fail-closed behavior rather than assuming it)"
+    ],
+    "testResults": {
+      "engine-core full suite": "1592 passed, 11 skipped, 4 pre-existing FAILED files (all under scripts/__tests__/*.mjs, syntax-error unrelated to src/site-plan; confirmed unrelated -- git diff --stat shows zero changes under scripts/)",
+      "engine-api full suite": "114 passed, 0 failed",
+      "flaky-test-check": "manifest-is-load-bearing.test.ts's byte-identical CONTROL test failed once (495057 vs 495056) on the FIRST run with my changes present; git stash + re-run on unmodified code passed clean, confirming pre-existing nondeterminism unrelated to this lane; git stash pop restored my changes before continuing"
+    },
+    "designDecisionMadeDuringImplementation_notInCP1": {
+      "cacheAcrossCallersCaveat": "The async feasibility job (P-155) is cached and shared PER PARCEL, not per caller -- an already-composed job's bytes are reused for any subsequent caller polling the same parcelNodeId. The composer-level gate applies at COMPOSE time; a caller reading an ALREADY-CACHED job gets bytes composed under whichever caller's tier triggered that compose. Analysis: this is NOT an additional gap beyond the already-flagged CP1 Q5 (unauthenticated direct-to-engine bypass), because both real callers (PE BFF, smartsite-mcp) re-run their OWN local Studio/property-unlock check on EVERY invocation regardless of this cache, so a less-entitled caller never reaches the download step through either mediated path -- confirmed by reading tools.ts's export_instrument handler, which checks canRunStudioReport/hasPropertyUnlock before every call, not just the first. Documented in code comments (parcel-terrain.ts) and in leave_behind below rather than re-architecting job-keying, which would be a materially larger, unapproved scope change (no DB schema change was in the approved design).",
+      "resultSummaryNotUsed": "Considered persisting the entitlement marker into the job's resultSummary (a DB-backed field per packages/storage/src/port.ts's FeasibilityExportJob type) but found it is a STRONGLY TYPED, closed set of columns requiring a new migration to extend -- outside the CP1-approved, no-schema-change design. Instead the GET status route recomputes the marker FRESH from the CURRENT request's own gate-front context on every read, which is actually more correct (reflects the live caller, not a frozen compose-time snapshot) and required zero storage changes."
+    }
+  },
+
+  "step3_mcp": {
+    "repo": "legacy-design-tools",
+    "branch": "feat/p152-mcp-entitlement-check",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/673",
+    "commit": "9c6a3644",
+    "filesChanged": [
+      "artifacts/smartsite-mcp/src/engine-client.ts (buildEngineGateHeaders' callerTier is now required, never a hardcoded 'public-paid' default)",
+      "artifacts/smartsite-mcp/src/tools.ts (export_instrument kind:'feasibility' passes callerTier:'public-paid' explicitly, with a comment stating this line is reached only after the Studio-or-unlock check already passed; threads the caller's entitlement snapshot through)",
+      "artifacts/smartsite-mcp/src/feasibility-export.ts (FeasibilityExportArgs gains callerTier + entitlement; recognizes the engine's new entitlement marker and surfaces refuseStudioReport(entitlement) -- the SAME upgrade_required vocabulary this connector already publishes -- instead of the PDF, when the engine's own gate disagrees with this connector's local check)"
+    ],
+    "testsAdded": [
+      "engine-client.test.ts (+1 test: a caller-supplied public-free tier is carried verbatim, never coerced)",
+      "feasibility-export.test.ts (+3 tests, all 15 pre-existing call sites updated to pass callerTier/entitlement explicitly rather than relying on now-removed defaults: engine granted:false surfaces upgrade_required; granted:true downloads normally; NO marker at all -- an older engine deploy -- downloads normally, backward compatible, never a crash)"
+    ],
+    "testResults": {
+      "feasibility-export.test.ts": "18 passed",
+      "engine-client.test.ts": "9 passed",
+      "full smartsite-mcp suite": "621 passed; 9 pre-existing failures in records-extraction.test.ts are ECONNREFUSED against a local Postgres this environment does not run -- that file is untouched by this lane"
+    },
+    "scopeBoundaryConfirmed": "export_instrument kind:siteplan/terrain/dossier proxy through hauska-mcp-server (a third repo, SUBSTRATE seat) -- not hauska-engine-api, and not touched by this lane, per CP1's contradicted-2 finding."
+  },
+
+  "ciStatus": "Both PRs opened; CI running as of this checkpoint. Will not merge or deploy until CI passes; will not deploy without holding this session's own lease per the operational addendum, checked immediately before each deploy.",
+
+  "nextSteps": [
+    "Wait for CI on both PRs (bounded poll)",
+    "Self-merge both on green CI (per this program's established norm, e.g. lane p152-rails's PRs 393/426/431/433)",
+    "Take a lease on hauska-engine-api, deploy, verify, release the lease",
+    "Take a lease on smartsite-mcp (or its underlying Cloud Run service name -- to be confirmed from cloud-run-deploy.yml), deploy through the workflow, verify, release the lease",
+    "Step 4: live violation verification against export_instrument kind:'feasibility' for 48021:34049 (the corrected target per CP1 contradicted-2, not run_report/get_smart_site) -- a direct curl against the deployed engine with a hand-set public-free header for the refusal side (this session controls no independent free-tier MCP credential), and this session's own live, authenticated Smart Site MCP connection (mcp__claude_ai_Smart_Site__export_instrument) for the entitled side"
+  ]
+}

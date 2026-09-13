@@ -381,6 +381,21 @@ the declared roll: the 2026-08-26 export is Hays' 2026 vintage, consistent with 
 ruling, landing as a cloud re-ingest after P-177 with the 390 accounts it lacks marked rather
 than silently kept at notice values. P-178 is rowed and compiled for hand-carry.
 
+## Wave 4 and P-177 reviewed (2026-09-13, 21:10Z)
+
+Wave 4 closed-partial on all three rows and the closes agree with the instrument: the shared
+resolver is live on the MCP and endpoint paths, the panel keeps its own axis override, the five
+allowlist siblings need per-rail slate entries (ruled here, veto open), the entitlement gate is
+in the engine and the MCP, and the display strings differ for three named reasons. The planner's
+Q5 is confirmed at source and is the most important thing the wave found: the engine API is
+public and its gate token does not exist in either project, so the new composer gate is defence
+in depth only; P-179 mints and mounts the token on the operator's approval. P-177 fixed the
+Hays chimera on the MCP path and found that the Property Explorer reads a different store,
+parcel_record in the engine, filled by the same bare-number join; P-180 carries that. Two more
+shared-checkout git incidents this day, one by a lane in the hauska-engine hub, one by a session
+in a second doc_repo clone; the rule is unchanged and now written into A-140. P-178 is at its
+first item with a migration run that must be watched.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not

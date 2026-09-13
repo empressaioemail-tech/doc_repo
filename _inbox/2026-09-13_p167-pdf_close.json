@@ -1,0 +1,124 @@
+{
+  "lane": "p167-pdf",
+  "planRows": ["P-167"],
+  "status": "closed-partial",
+  "probe": {
+    "artifact": "_inbox/2026-09-13_184328_surface_probe.json",
+    "command": "node scripts/surface-probe.mjs --rows P-167 --observations _inbox/2026-09-13_p167_observations.json --allow-unmeasured",
+    "summary": "PASS 0, FAIL 5, UNMEASURED 0 -- the row FAILS on all five probe parcels, on strings, not on missing legs. This lane ran the instrument itself (in addition to the planner's own official run) so the close cites a concrete, reproducible artifact rather than a promise."
+  },
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "number": 672,
+      "title": "chore(P-167): pin every LDT importer of @empressaio/atom-contract to ^1.33.1",
+      "mergeCommit": "01ee076cb1abb438ad9b7cee02d658bb7784101b",
+      "mergedAt": "2026-09-13T18:38:24Z",
+      "ciConclusions": "gh pr view 672 --json statusCheckRollup: 11 of 11 check-runs, unique conclusion set [\"SUCCESS\"]"
+    }
+  ],
+  "ldtPin": {
+    "before": "6 of 7 LDT package.json files importing @empressaio/atom-contract were still ^1.30.0 on origin/main (artifacts/api-server, lib/engine-core, lib/knowledge-atoms, lib/portal-ui, lib/submission-classifier, scripts/package.json); only artifacts/smartsite-mcp was ^1.33.1 (PR #667). Contradicts the dispatch's own 'what is true today', which said only 'at least one' was stale and credited #667 with covering api-server too -- gh pr view 667 --json files shows #667 touched only artifacts/smartsite-mcp/*.",
+    "after": "All 7 bumped to ^1.33.1. pnpm-lock.yaml re-resolved to a single @empressaio/atom-contract@1.33.1 entry (the 1.30.0 entry is gone from the lockfile).",
+    "pnpmLsOutput": "pnpm -r ls @empressaio/atom-contract --depth 0 (2026-09-13, post-merge worktree): @workspace/api-server 1.33.1, @workspace/smartsite-mcp 1.33.1, @workspace/engine-core 1.33.1, @workspace/knowledge-atoms 1.33.1, @workspace/portal-ui 1.33.1, @workspace/submission-classifier 1.33.1, @workspace/scripts 1.33.1 -- all 7.",
+    "typecheck": "root `pnpm run typecheck` (tsc --build for project references, then per-package typecheck) passes clean; api-server, smartsite-mcp and scripts (the packages with a typecheck script) all report Done.",
+    "parityLock": "git grep -il 'parity.lock|parity_lock' in legacy-design-tools origin/main: zero hits (confirmed no survivor).",
+    "independentVerificationOfHauskaMapAndEngine": "Re-verified at source, read-only, not our worktree: hauska-map origin/main has exactly one importer (apps/property-explorer/package.json) at ^1.33.1, no parity-lock file. hauska-engine origin/main has 9 importers, all ^1.33.1 (PR #429 merged 2540a48c, PR #430 merged 41a7fd3a), no parity-lock file. npm view @empressaio/atom-contract dist-tags => latest 1.33.1."
+  },
+  "deploys": {
+    "smartsite-mcp": {
+      "status": "deployed and verified",
+      "lease": "_catalog/leases/smartsite-mcp.json written 2026-09-13T18:40Z, deleted 2026-09-13T18:42Z after verification",
+      "steps": "gh workflow run cloud-run-deploy-smartsite-mcp.yml -f action=deploy-canary -f image_tag=latest (run 34775299613, success) -> new revision smartsite-mcp-00113-hip served 0% traffic -> gh workflow run ... -f action=shift-traffic (run 34775374035, success)",
+      "servingRevisionByFieldName": "traffic JSON printed by the shift-traffic job: '100% smartsite-mcp-00113-hip'. Smoke-probe: {\"status\":\"ok\",\"service\":\"smartsite-mcp\",...,\"revision\":\"smartsite-mcp-00113-hip\"}.",
+      "postDeployHealthCheck": "get_smart_site 48021:34049 depth=stub returned normally after the shift, confirming the service is healthy."
+    },
+    "cortex-api (artifacts/api-server)": {
+      "status": "build-and-push only; traffic shift deliberately NOT performed by this lane",
+      "reasoning": "Live, verified concurrent-activity finding: gh run list --workflow=cloud-run-deploy.yml showed FOUR workflow_dispatch runs on cortex-api between 18:12:37Z and 18:27:11Z (all conclusion success) -- during this lane's own work window, and BEFORE this lane's own PR merged at 18:38:24Z -- while _catalog/leases/ never carried a lease file for cortex-api at any point this lane checked it. This matches AGENT_CONTRACT section 3's named bypass class exactly (a lane operating outside the lease system) and is the identical incident shape the section cites (P-155/P-159 colliding on hauska-engine-api traffic within minutes). gh pr list --search P-177 confirms two of P-177's PRs (#670, #671) touched artifacts/api-server directly in the hours before this lane started. Given none of this lane's observed P-167 findings depend on cortex-api's atom-contract version (the defects found -- the unhumanized 'no-zoning-stamp' leak and hauska-engine's own hardcoded PDF override -- are code-path issues, not version-resolution issues), this lane judged the collision risk of a manual shift-traffic on a service another lane is actively cycling right now to outweigh the benefit of getting a technically-fresher serving revision. The merge's own push trigger already ran build-and-push (run 34775252258, success) automatically and without a traffic-touching action, so a corrected image (pin ^1.33.1) is built and sitting in the registry, ready for whoever next runs deploy-canary.",
+      "leftFor": "planner or the P-177 lane, whichever has full cross-lane visibility, to run deploy-canary + shift-traffic on cortex-api when it is not mid-cycle from another lane."
+    }
+  },
+  "engineApiRevisionEvidence": {
+    "claim": "hauska-engine-api-00211-vam (100% traffic, per the mission) contains PR #429 (feat(P-167/vocab): engine-core and retrieval import the display package, merged 2540a48c) and PR #430 (test(site-plan): retirement guard, merged 41a7fd3a).",
+    "verifiedBy": "CONTENT, not timestamp. gcloud run revisions describe hauska-engine-api-00211-vam --format=json => spec.containers[0].image = us-central1-docker.pkg.dev/hauska-prod-497015/cloud-run-source-deploy/hauska-engine-api@sha256:894c951e307bde8eee467647eb880e40cf6948509c6d6c33500062b4cc0292f0. gcloud builds list found the exact Cloud Build (id 4e134a3d-38e6-4dcd-9ca1-467f9497c671, createTime 2026-09-12T20:44:44Z) whose results.images[].digest matches that sha256 exactly. Downloaded that build's source tarball from GCS (gs://hauska-prod-497015_cloudbuild/source/1789245875.363867-...tgz#1789245884543427, the exact generation named in the build's sourceProvenance) and confirmed by direct file inspection: packages/engine-core/src/site-plan/buildable-display-vocab.ts is ABSENT (deleted by #429), packages/engine-core/src/site-plan/__tests__/buildable-display-vocab-retired.test.ts is PRESENT (added by #430), no parity-lock/peer-fixture file survives in the tarball, and both packages/atom-contract-pin/package.json and packages/engine-core/package.json in the tarball pin @empressaio/atom-contract@^1.33.1.",
+    "conclusion": "PDF leg is MEASURED against a revision confirmed by content to contain #429 and #430. Not unmeasured on this dimension."
+  },
+  "pdfLeg": {
+    "parcelsAttempted": 5,
+    "succeeded": ["48021:34049", "48021:33223", "48453:474034", "48453:367134"],
+    "unmeasured": {
+      "48453:113408": "export_instrument kind=feasibility returned {status:'error',reason:'engine_unreachable',message:'This operation was aborted'} on two consecutive attempts (18:23:28Z, 18:24:41Z). Retried once per F14's precedent that this class of hang on this exact split-situs parcel is intermittent, not a fixed state; stopped after the second failure per the two-strikes rule rather than hammering it further. Per the mission's own falsifier class, this leg is UNMEASURED, not failed."
+    },
+    "method": "Real export path: mcp__Smart_Site__export_instrument kind=feasibility per parcel; decoded the returned base64 PDF; pdftotext -layout for text extraction."
+  },
+  "sideBySideTable": {
+    "location": "_inbox/2026-09-13_p167_observations.json (per-parcel 'mismatches' arrays carry the full cited evidence; this block is the compact summary)",
+    "rows": [
+      {
+        "parcel": "48021:34049",
+        "panel_setbacks": "30/5/25/-/15 (atom-chain, bakedAt 2026-08-05, despite top-level readPath='record')",
+        "mcp_setbacks": "30/10/30/20 (disposition Present)",
+        "pdf_setbacks": "25/5/25 (engine per-parcel adapter)",
+        "buildable_figure": "panel payload carries 19,052 sq ft (FIGURE-IN-PAYLOAD, tracked P-153 finding, still live); MCP overlay withholds it ('Buildable envelope modelled from setbacks — area withheld pending an atom'); PDF prints '19,052 sq ft ... 64%' with no withholding language",
+        "displayStringsIdentical": false,
+        "attribution": "setback three-way disagreement: P-152 (one reader)/P-154 (most-current-source). Figure divergence: P-159/Ruling-B (PDF's printedBuildable/buildablePdfLabel split in site-model.ts is not gated the same way as the map/MCP overlay)."
+      },
+      {
+        "parcel": "48021:33223",
+        "panel_setbacks": "20/5/20 (atom-chain)",
+        "mcp_setbacks": "absent (Reported absent, SETBACK_ROUTER_NOT_A_DISTRICT) -- the P-91/Ruling-B refuse baseline this parcel exists to test",
+        "pdf_setbacks": "20/5/20 (engine per-parcel adapter, agrees with the panel, not the MCP)",
+        "buildable_figure": "MCP fully refused (state:'refused', reason:'atom_path_pending' -> 'Withheld, setbacks unruled', geom:'none'); PDF prints '1,397 sq ft ... 42%' with no refusal",
+        "displayStringsIdentical": false,
+        "attribution": "same P-159/Ruling-B class as 34049 -- the PDF path invents a figure the MCP correctly refuses."
+      },
+      {
+        "parcel": "48453:113408",
+        "panel_zoning_text": "'No zoning district observed for parcel — honest absence, no fallback district invented.' (full humanized sentence)",
+        "mcp_zoning_text": "envelope overlay reasonDisplayText = 'no-zoning-stamp' (the raw internal code, unhumanized -- not in the P-91 v3 VOCABULARY table or the atom-contract display catalog at all)",
+        "pdf_zoning_text": "PDF LEG UNMEASURED (export failed twice, see pdfLeg above)",
+        "displayStringsIdentical": false,
+        "attribution": "panel vs MCP alone is sufficient to fail this parcel; the missing PDF leg does not change the verdict, only leaves the three-way table incomplete for it."
+      },
+      {
+        "parcel": "48453:474034",
+        "panel_zoning_text": "'No zoning district observed for parcel — honest absence, no fallback district invented.'",
+        "mcp_zoning_text": "envelope overlay reasonDisplayText = 'no-zoning-stamp' (raw)",
+        "pdf_zoning_text": "'WHAT BINDS IT / Zoning / no-zoning-stamp' and, in the detail table, 'Zoning district UNAVAILABLE No matching record was found for this fact. no-zoning-stamp' -- bare code printed twice on the customer-facing document",
+        "buildable_text": "PDF: 'Buildable area is refused: pending -- build-to-line governs (scalar setback silent)' -- verified this IS the atom-contract display package's own not_specified.pdfLabel, correctly vocabulary-sourced (not hardcoded in hauska-engine, confirmed by source read).",
+        "displayStringsIdentical": false,
+        "attribution": "MCP and PDF agree with EACH OTHER (both leak 'no-zoning-stamp') but neither matches the panel's hand-written sentence, and neither routes the zoning-absence text through the shared vocabulary. This is a genuine, fresh P-167-class defect: 'no-zoning-stamp' was never added to the vocabulary catalog, so legacy-design-tools mcp-app.ts's envelopeHuman (which maps exactly one token, atom_path_pending) ships it raw, and the same raw string reaches the PDF through the same underlying decline-reason field."
+      },
+      {
+        "parcel": "48453:367134",
+        "note": "the cleanest apples-to-apples case: zoning (SF-2) and setback numbers (25/5/10/15) agree BYTE FOR BYTE across panel, MCP and PDF -- the only one of five parcels where the underlying data does not disagree.",
+        "mcp_text": "envelope overlay reason='atom_path_pending' -> reasonDisplayText='Withheld, setbacks unruled' (the vocabulary's canonical humanization)",
+        "pdf_text": "'pending — buildable-envelope atom not yet on file' -- read at source: hauska-engine packages/engine-core/src/site-plan/site-model.ts:658-660 deliberately substitutes this hardcoded literal in place of the shared vocabulary's own pdfLabel for exactly two of its five buildableDisplayKind branches (buildable-with-area, provisional), with a code comment citing Ruling B/P-159: the vocabulary's own pdfLabel for those two kinds would otherwise leak a raw figure the PDF must not print.",
+        "displayStringsIdentical": false,
+        "attribution": "a DELIBERATE, documented divergence, not an omission -- named precisely because it is the one case where the mismatch is purely textual and not entangled with a data disagreement. Reconciling it would need a new shared token or an accepted, documented exception; both are out of this lane's scope (mission excludes new vocabulary tokens)."
+      }
+    ]
+  },
+  "leaseReads": [
+    "_catalog/leases/ held only README.md at CP1, CP2, and immediately before both smartsite-mcp deploy actions.",
+    "_catalog/leases/smartsite-mcp.json written before the canary deploy, updated with the real revision name after deploy-canary, deleted after shift-traffic was verified by field name.",
+    "cortex-api: deliberately NOT leased or deployed by this lane past build-and-push, per the concurrent-activity finding above."
+  ],
+  "falsifier": "Pre-registered (three, from the mission): (1) any string differing on any surface means the row is not done, named precisely -- TRUE, observed and named on all five parcels ('no-zoning-stamp' raw leak on 113408/474034; three-way setback and figure divergence on 34049/33223; the deliberate site-model.ts hardcoded-string substitution on 367134). (2) a PDF generated from a revision without #429 is unmeasured, not failed -- did not occur; the revision was confirmed by content to contain #429 and #430, so all four generated PDFs are MEASURED. (3) any consumer resolving something other than 1.33.1 means it is not cut over -- did not occur after the pin; pnpm -r ls confirms 1.33.1 for all 7 LDT importers, plus independently-verified hauska-map and hauska-engine.",
+  "contradicted": [
+    "The dispatch's 'what is true today' understated the LDT pin gap: it said 'at least one' package.json was still ^1.30.0 and credited PR #667 with api-server as well as smartsite-mcp; six of seven were actually stale, and #667's own file list (gh pr view --json files) shows it touched only artifacts/smartsite-mcp.",
+    "The wave-4 planner checkpoint's note that P-177 'holds cortex-api ... by lease' does not match the leases directory, which never carried a cortex-api lease file at any point this lane checked -- P-177 is the named bypass class from AGENT_CONTRACT section 3 (operating outside a doc_repo-rooted session), not a recorded lease holder. This lane treated the checkpoint's underlying WARNING (real, active concurrent use) as correct even though its literal mechanism (a lease file) was not."
+  ],
+  "leave_behind": [
+    "cortex-api traffic shift: the corrected ^1.33.1 image is built (run 34775252258) but not yet serving; whoever has cross-lane visibility to safely sequence around the concurrent P-177 deploys should run deploy-canary + shift-traffic on cloud-run-deploy.yml.",
+    "The unhumanized 'no-zoning-stamp' leak: this decline-reason code is used across engine-core, retrieval and legacy-design-tools's mcp-app.ts/PDF path, but is not in the P-91 v3 VOCABULARY table or the atom-contract display catalog. legacy-design-tools mcp-app.ts's envelopeHuman maps only the single token atom_path_pending (2026-09-11 verify doc); every other decline reason, including this one, ships raw. Fixing this needs a new vocabulary entry, which this mission explicitly excludes ('New vocabulary tokens' is out of scope) -- flagged for the row that owns vocabulary additions.",
+    "hauska-engine site-model.ts:658-660's hardcoded 'pending — buildable-envelope atom not yet on file' override: documented, deliberate, and correctly reasoned (avoids leaking a raw figure per Ruling B), but it means the PDF and the MCP will never say byte-identical things for the buildable-with-area/provisional dispositions even after every other P-167 defect is fixed, unless a new shared token is minted or the two wordings are accepted as a permanent documented exception.",
+    "The P-152/P-154 setback-number three-way disagreement (panel atom-chain vs MCP record vs PDF's own per-parcel adapter) is still fully live on 2026-09-13 for both Bastrop probe parcels and drives most of the FAIL verdicts here; it is not this lane's to fix, but it means P-167 cannot pass structurally until P-152/P-154 land, independent of any pure-vocabulary fix.",
+    "48453:113408's feasibility export fails with engine_unreachable through the MCP path specifically (not a general Travis timeout -- the other two Travis parcels succeeded); worth a targeted look by whichever lane owns that surface, given F5/F16 already flag this exact parcel's placement/geocoding as fragile.",
+    "FIGURE-IN-PAYLOAD (48021:34049, 48021:33223) and WRONG-PARCEL (48021:33223 envelope-by-address answering for a Williamson parcel 48491:R419407) both reconfirmed live and unchanged from the 2026-09-11 baseline -- tracked P-153/one-reader findings, not new, cited here only because the fresh probe run surfaced them again."
+  ],
+  "missionPremise": "OPS-23 P-167 (wave 4): the display vocabulary is one versioned subpath of @empressaio/atom-contract imported identically by hauska-map, hauska-engine and legacy-design-tools with the parity locks retired; the row's completion predicate is that the actual customer-visible strings match byte-for-byte across the panel, the MCP and the PDF for the fixed parcel set (R-4: the customer surface is the predicate, not a merge or a package version).",
+  "completionPredicate": "PASS requires, per parcel: displayStringsIdentical=true (panel, MCP and PDF agree byte-for-byte on every string a customer would read for that parcel's disposition) AND globally: parityLockDeleted=true, packageVersion=latest, importers=[hauska-map,hauska-engine,legacy-design-tools] all verified at pin. This lane closes the global half (pin, lockfile, no parity lock, engine-api revision content-verified) but the per-parcel half FAILS on all five parcels for concrete, cited, non-speculative reasons -- so the row is not done, and this close says so rather than reporting the pin as if it were the whole predicate.",
+  "scopeBasis": "OPS-23 sections 0, 2 (F19), 3 (R-1..R-6), 7; mission_p167_pdf_leg.md's explicit four build items and three out-of-scope exclusions (no new vocabulary tokens, no engine deploy tooling beyond what exists). The cortex-api traffic-shift deferral is scoped by AGENT_CONTRACT section 3's deploy-traffic lease law and its named-bypass clause, applied to a live, verified concurrent-use signal rather than a hypothetical one."
+}

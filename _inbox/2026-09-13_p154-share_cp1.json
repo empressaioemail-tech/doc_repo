@@ -1,0 +1,61 @@
+{
+  "lane": "p154-share",
+  "checkpoint": "CP1 (design, pre-build for consumers; corpus PR already opened)",
+  "planRows": ["P-154"],
+  "docRepoHeadAtStart": "9eef6a6c",
+  "wave4Cp1Read": "_inbox/2026-09-13_ops23-wave4_cp1.json (baseline probe PASS 3 FAIL 4 UNMEASURED 5, both p154 FAILs expected pre-share per mission)",
+  "worktreesCreated": [
+    {
+      "name": "hauska-setback-corpus-p154-share",
+      "path": "P:/seat-worktrees/property/hauska-setback-corpus-p154-share",
+      "method": "fresh clone (no P:/ checkout existed)",
+      "branch": "feat/p154-resolve-subpath",
+      "startCommit": "b8020c8b92df5e76c6bc22261ac5809e76ddf16c (origin/main)"
+    },
+    {
+      "name": "hauska-engine-p154-share",
+      "path": "P:/seat-worktrees/property/hauska-engine-p154-share",
+      "method": "git worktree add from local hub P:/hauska-engine, origin/main fetched fresh",
+      "branch": "feat/p154-consume-corpus-resolve",
+      "startCommit": "06dd840 (P-158 phase 3 #436)"
+    },
+    {
+      "name": "hauska-factory-p154-share",
+      "path": "P:/seat-worktrees/property/hauska-factory-p154-share",
+      "method": "git worktree add from local hub P:/hauska-factory, origin/main fetched fresh",
+      "branch": "feat/p154-consume-corpus-resolve",
+      "startCommit": "97b9387 (P-177 #144)"
+    },
+    {
+      "name": "legacy-design-tools-p154-share",
+      "path": "P:/seat-worktrees/property/legacy-design-tools-p154-share",
+      "method": "git worktree add from local hub P:/legacy-design-tools, origin/main fetched fresh",
+      "branch": "feat/p154-date-first-through-corpus",
+      "startCommit": "6ae7ef57 (P-177 #670)"
+    }
+  ],
+  "reverifiedAtStartCommit": [
+    "hauska-engine: most-current-setback-resolver.ts confirmed at packages/adapters/src/local/setbacks/, imported by ./index.ts (packages/adapters/src/local/setbacks/index.ts, NOT the package top-level index.ts -- the mission's 'index.ts' reference is this file) and bastrop-per-parcel-record.ts; table-types.ts references it only in a comment, no import. Adapters package.json already carries @empressaio/setback-corpus ^1.1.0.",
+    "hauska-setback-corpus: confirmed 1.1.0, exports '.', './setbacks', './gate' exactly as the mission states; ci.yml runs lint+typecheck+test+build on node 18/20/22 for push-to-main and PRs; publish.yml triggers on tag push v*.*.* OR workflow_dispatch(ref, set_latest). CONFIRMED FINDING (matches falsifier #4's premise): a plain tag push does NOT set the latest dist-tag -- only a workflow_dispatch run with set_latest:true does (inputs.set_latest is only defined on that trigger). Plan: push tag v1.2.0 for the publish, then explicitly workflow_dispatch publish.yml with ref=v1.2.0, set_latest=true so dist-tags.latest actually moves; verify both by field with npm view.",
+    "hauska-factory: setback-table-router.mjs not yet re-read at this start commit (queued for step 3).",
+    "legacy-design-tools: authoritativeSetbackSource.ts not yet re-read at this start commit (queued for step 4)."
+  ],
+  "design": {
+    "step1_corpus": "Move the module+test into src/resolve/ (new dir, mirrors the src/index.ts re-export pattern rather than gate.ts's flat-file pattern, since resolve has a test subfolder). Add './resolve' export entry. Public names unchanged. Bump 1.1.0->1.2.0, package-lock.json synced via --package-lock-only. CHANGELOG entry added. DONE: PR #2 opened (https://github.com/empressaioemail-tech/hauska-setback-corpus/pull/2), local lint/typecheck/test(36/36)/build all green pre-push, CI running.",
+    "step2_engine": "Repoint the two import sites to '@empressaio/setback-corpus/resolve', delete the local file and its test (moved, not duplicated), bump the adapters package.json pin to ^1.2.0, add a retirement test asserting the old relative import path rejects, add the missing sixth-producer test locking bastrop-per-parcel-setback.ts:75's numeric output for 48021:34049 against the resolver's answer.",
+    "step3_factory": "setback-table-router.mjs currently vendors R-1 locally (PR #141 ba15fee5) because the factory could not import the (private) engine package; it CAN import the published corpus already (per seat_register note on OPS-21 S2/P-133: 'Uses @empressaio/setback-corpus, NOT @hauska-engine/adapters'). Swap the local rule for the package's ./resolve import, delete the local rule with a retirement test, then re-run the Bastrop setback cells staging-then-production via the factory's own job runner (never a laptop --apply), and measure the cell diff (count changed, from-value, to-value) that wave 3's close explicitly left unmeasured.",
+    "step4_ldt": "authoritativeSetbackSource.ts is unchanged from wave 3 (still vendors its own table JSON, ranks tier-first). Add the ^1.2.0 dependency (esbuild conditions stay [\"workspace\"] per fleet memory -- broadening crashed pg ESM previously), build SetbackCandidates from LDT's existing sources with dates read at source, call resolveMostCurrentSetback, delete the tier-first ranking with a test that fails on the old ranking, and add a divergence test comparing LDT's and the engine's answers for 48021:34049 and 48021:33223 that fails on disagreement.",
+    "step5_read": "After all four consumers are serving: get_smart_site for both gold parcels pasted with setbackSourceDate; ask the operator once for the 48021:34049 feasibility PDF after the engine deploy (PDF generation is not this lane's to trigger without asking, per the mission)."
+  },
+  "leaseNote": "Will check _catalog/leases/hauska-engine-api.json, cortex-api.json, legacy-design-tools's relevant service lease files before any deploy step (steps 2 and 4); factory job runs (step 3) are not traffic-shift deploys and are not believed to need this lease, re-confirming against AGENT_CONTRACT section 3's traffic-shift definition before running them.",
+  "falsifiersPreRegistered": [
+    "If after step 4 the panel for 48021:34049 still prints 30/5/25/15 while the endpoint prints 30/10/30/20, a consumer still ranks tier-first or reads a stale cell; name which.",
+    "If LDT's and the engine's answers differ for either parcel, the divergence test must fail; if it passes while they differ, the test is vacuous.",
+    "If the old engine path still resolves after step 2, the retirement is not proven.",
+    "If the corpus publish leaves dist-tags.latest at 1.1.0, nothing downstream changed.",
+    "If a source's date is unreadable and a value is still picked, the rule is wrong (conflict row)."
+  ],
+  "missionPremise": "R-1 (most-current source wins) and the 2026-09-13 sharing ruling: one resolver, published once, consumed by every producer that can import a package; the engine's local copy retired by decline.",
+  "completionPredicate": "All four consumers import the same @empressaio/setback-corpus/resolve at 1.2.0-or-later; the engine's old relative import path is provably gone; the Bastrop cell re-run's diff is measured on staging then production; LDT and the engine agree on both gold parcels via a real divergence test; get_smart_site reads are pasted for both.",
+  "scopeBasis": "No envelope atom minting, no entitlement/pricing change, no new setback tables, no conflict-shaped return type for getSetbackTableForZoning -- all per the dispatch's explicit out-of-scope list."
+}

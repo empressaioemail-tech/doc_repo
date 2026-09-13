@@ -1,0 +1,76 @@
+{
+  "lane": "ops23-wave4",
+  "checkpoint": "CP2 (after three lane closes: p167-pdf, p152-entitlement, p154-share)",
+  "planRows": ["P-154", "P-152", "P-167"],
+  "docRepoHead": "9eef6a6c",
+  "laneStatus": {
+    "p167-pdf": {
+      "status": "closed-partial",
+      "close": "_inbox/2026-09-13_p167-pdf_close.json",
+      "plannerVerification": "Re-ran node scripts/surface-probe.mjs --rows P-167 myself (artifact _inbox/2026-09-13_184755_surface_probe.json): PASS 0 FAIL 5, matches the lane's own self-run exactly. Completed the lane's leave_behind item myself (cortex-api traffic shift, deliberately deferred by the lane pending a concurrent-lane collision risk that had since cleared): took the cortex-api lease, ran deploy-canary -> run-migrations -> shift-traffic, verified cortex-api-00788-quf serving 100% by field name (gcloud), released the lease."
+    },
+    "p152-entitlement": {
+      "status": "closed",
+      "close": "_inbox/2026-09-13_p152-entitlement_close.json",
+      "plannerVerification": "Independently reconstructed the gate-front header schema from services/engine-api/src/gate-front-context.ts and hit the live production engine directly myself (not via the lane's own report): x-hauska-access-tier public-free -> entitlement.granted:false; public-paid -> entitlement.granted:true. Matches the lane's claim exactly on the one mechanism I could check without a full MCP session.",
+      "midTaskCorrection": "Lane ended its first turn passively waiting for 'background CI poll notifications' after opening PRs -- exactly the stall pattern OPS-23 names by number (two lanes stalled this way in wave 2). Caught and corrected via SendMessage; lane resumed with active bounded polling and finished cleanly."
+    },
+    "p154-share": {
+      "status": "closed-partial",
+      "close": "_inbox/2026-09-13_p154-share_close.json",
+      "plannerVerification": "Independently checked the self-reported incident below rather than accepting the lane's own severity assessment at face value.",
+      "gateClearedForP152Slate": true
+    },
+    "p152-slate": {
+      "status": "in progress",
+      "startedAt": "2026-09-13T~19:50Z",
+      "note": "Gate cleared by p154-share's Bastrop production re-run (0 cells changed, structural reason, DB-verified). Explicitly briefed on the p154-share incident below before starting, with a hard instruction never to touch P:/hauska-factory or P:/hauska-map (the bare hub checkouts its own mission text names as 'other seats' checkouts')."
+    }
+  },
+  "incident": {
+    "reportedBy": "p154-share lane, self-reported, unprompted, in its close's contradicted field",
+    "what": "Lane ran `git checkout origin/main -- .` directly inside P:/hauska-engine (a shared bare hub checkout, not its own dedicated worktree) to prepare a build, overwriting uncommitted, never-staged edits to 5 files (packages/engine-core/scripts/write-rail-corridor-fact-county.mjs, write-special-district-fact-county.mjs, write-well-fact-county.mjs, packages/engine-core/src/well-fact/index.ts, and an untracked well-fact/fetch-wells-staged.ts) that had apparently sat there since 2026-08-12.",
+    "plannerIndependentVerification": [
+      "git reflog in P:/hauska-engine shows exactly ONE entry ever (this lane's own checkout) -- the hub was not any active lane's live workspace; git worktree list shows 100+ separate dedicated worktrees are what lanes actually use.",
+      "The untracked file (fetch-wells-staged.ts, the one file with zero git history anywhere) survived on disk untouched -- confirms `checkout -- .` only overwrites paths present in the target tree, same mechanical distinction as `reset --hard`.",
+      "The destroyed tracked files' apparent purpose (rail-corridor-fact, special-district-fact) already exists properly merged into origin/main via real PRs -- consistent with stale, superseded draft content, not live unique work."
+    ],
+    "assessment": "Low real-world impact, contained. Lane stopped immediately on realizing the mistake and redid all real work from its own isolated worktree; nothing else in this wave was affected.",
+    "systemicPoint": "Second incident of this exact shape in this session (see the planner's own earlier C:\\Users\\cente\\doc_repo reset, and a peer's independent count of a THIRD in three days across this operation). A recurring fleet-wide failure mode -- agents defaulting to a shared bare hub checkout instead of a dedicated worktree when in a hurry -- not a one-off. Recorded in this session's own durable memory; p152-slate was explicitly warned before starting given its mission also names two other bare hubs (hauska-factory, hauska-map) it must not touch.",
+    "operatorNotified": false,
+    "operatorNotifiedNote": "Not yet separately escalated to the operator -- assessed as contained per the independent verification above, distinct from the Q5 unauthenticated-engine finding (P-152 lane 5) which WAS escalated as a live, unmitigated production gap. Will mention in the wave-level report regardless, since a real (if low-impact) destructive-command incident belongs in the record either way."
+  },
+  "plannerErrorLog": [
+    {
+      "date": "2026-09-13",
+      "claim": "This dispatch's own 'what is true today' for P-167 said 'at least one' LDT package.json importing @empressaio/atom-contract was stale at ^1.30.0, crediting PR #667 with covering api-server too.",
+      "caughtBy": "p167-pdf lane, via gh pr view 667 --json files",
+      "shape": "understated scope -- six of seven were actually stale; #667 touched only artifacts/smartsite-mcp."
+    },
+    {
+      "date": "2026-09-13",
+      "claim": "This dispatch's own checkpoint note said P-177 'holds cortex-api ... by lease.'",
+      "caughtBy": "p167-pdf lane, via a live check of _catalog/leases/ during its own work window",
+      "shape": "the underlying warning (real, active concurrent use) was correct but its named mechanism was not -- no lease file was ever present; P-177 is the AGENT_CONTRACT-named bypass class (a lane operating outside a doc_repo-rooted session), not a recorded lease holder."
+    },
+    {
+      "date": "2026-09-13",
+      "claim": "This dispatch's mission text for p152-entitlement said 'smartsite-mcp has NO entitlement check before calling the engine,' and named run_report/get_smart_site as the live-violation verification targets for step 4.",
+      "caughtBy": "p152-entitlement lane, via direct code read of tools.ts and propertyExplorer.ts",
+      "shape": "wrong mechanism named as fact (the MCP's local check existed; the real gap was server-side) AND wrong verification target named (neither tool calls hauska-engine-api at all) -- both corrected and approved by the planner as CP1 rulings Q6 before any live testing was attempted against the wrong surface."
+    },
+    {
+      "date": "2026-09-13",
+      "claim": "hauska-factory's setback-table-router.mjs 'carries the rule locally because it could not import the engine's module' (this dispatch's 'what is true today' for p154-share), implying a local duplicate rule exists to retire.",
+      "caughtBy": "p154-share lane, via direct code read",
+      "shape": "the router has exactly one candidate by construction, per its own docstring -- there was never a local rule to delete; the mission's premise was false."
+    }
+  ],
+  "probeSummary": {
+    "artifact": "_inbox/2026-09-13_192500_surface_probe.json (P-152, post p152-entitlement deploy) and _inbox/2026-09-13_184755_surface_probe.json (P-167, planner's own run)",
+    "p154": "Convergence confirmed live via get_smart_site: 48021:34049 now reads 30/10/30/20 (was a three-way disagreement pre-wave); 48021:33223 correctly absent (SETBACK_ROUTER_NOT_A_DISTRICT). Panel (hauska-map) still shows the OLD mixed value for 34049 -- a P-152/hauska-map defect (atom-chain-to-facets.ts's axis-override logic), not a P-154 regression; named, not fixed, out of p154-share's three repos.",
+    "p152": "FAIL on 48021:34049 and 48021:33223 for the pre-existing setback three-way disagreement (P-154/panel side, above); entitlement gating (this wave's actual P-152 work) verified working correctly in both directions, live, by both the lane and the planner independently.",
+    "p167": "FAIL on all 5 parcels -- global half (pin, lockfile, engine-api revision content-verified) closed; per-parcel string-identity half fails for real, cited, non-speculative reasons (a genuine vocabulary gap for 'no-zoning-stamp', a deliberate Ruling-B-motivated hardcoded string, and the still-live P-152/P-154 setback disagreement above)."
+  },
+  "next": "p152-slate in progress (factory slate + panel dollar/owner gating + hauska-map deploy). On its close: run the surface probe myself for the official record, write the wave-level close naming every row's real status (P-154 closed-partial, P-152 closed-partial pending p152-slate, P-167 closed-partial), and report to the operator with the full leave_behind list -- vocabulary gap for 'no-zoning-stamp', the hardcoded site-model.ts string exception, and the still-open Q5 unauthenticated-engine finding already escalated separately."
+}

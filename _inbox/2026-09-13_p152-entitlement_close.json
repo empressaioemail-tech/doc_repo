@@ -1,0 +1,85 @@
+{
+  "lane": "p152-entitlement",
+  "planRows": ["P-152"],
+  "status": "closed",
+  "closedAt": "2026-09-13T19:25:00Z",
+
+  "cp1": "_inbox/2026-09-13_p152-entitlement_cp1.json -- design approved by the dispatch planner 2026-09-13 (Q1-Q6 all ruled).",
+  "cp2": "_inbox/2026-09-13_p152-entitlement_cp2.json -- build-complete checkpoint filed before live verification.",
+
+  "repos": [
+    {
+      "name": "hauska-engine",
+      "branch": "feat/p152-engine-access-tier-gate",
+      "baseCommit": "06dd8402291ecce8d24ed30449fbdb780165ce2d",
+      "prs": [
+        {
+          "pr": 438,
+          "mergeSha": "112bccb8bed29da639955219511975bddbb425b4",
+          "ciConclusion": "SUCCESS (typecheck + test, re-verified with real conclusion strings via gh api check-runs after a clean rebase onto origin/main; the sibling p154-share PR #437 landed on main first, touched only packages/adapters/, zero file overlap, rebase was conflict-free)"
+        }
+      ],
+      "servingRevision": "hauska-engine-api-00215-niv, 100% traffic, us-central1, project hauska-prod-497015. Built via `gcloud builds submit --config=cloudbuild.engine-api.yaml` from merge commit 112bccb (image digest sha256:54de2a9868a4978d7aed27be5bbbdfdb60be9707c9baeb074b64eed993a2e6a2), deployed --no-traffic --tag=p152canary first, live-verified on the canary tag, then traffic shifted 100% via `gcloud run services update-traffic --to-revisions=hauska-engine-api-00215-niv=100`, then re-verified on the production URL directly (both read live by field name via gcloud, not inferred from the deploy command's own success)."
+    },
+    {
+      "name": "legacy-design-tools",
+      "branch": "feat/p152-mcp-entitlement-check",
+      "baseCommit": "6ae7ef57510a1a0a96ead3251cc9788bb0492335",
+      "prs": [
+        {
+          "pr": 673,
+          "mergeSha": "065c4412cd175e4df06199dea16aff30132afd93",
+          "ciConclusion": "SUCCESS (all checks including Test/Typecheck, re-verified with real conclusion strings after a clean rebase onto origin/main; two sibling commits (P-177, P-167) had landed, touched artifacts/api-server and package.json version bumps only, zero overlap with artifacts/smartsite-mcp; an earlier CI attempt's 'Test' job failure was traced to an unrelated, pre-existing Postgres 'out of shared memory' flake in lib/submission-classifier's own DB-integration test -- confirmed unrelated by grep of the full CI log, which showed my changed test files never even ran before pnpm's recursive-run-first-fail aborted the whole matrix; a rerun of the failed job alone came back green)"
+        }
+      ],
+      "servingRevision": "smartsite-mcp-00115-wic, 100% traffic, us-central1, project legacy-design-tools-prod. Deployed through the existing GH Actions workflow (cloud-run-deploy-smartsite-mcp.yml): push-triggered build-and-push (run 34776143591), workflow_dispatch deploy-canary --no-traffic --tag=canary (run 34776199520), live-verified on the canary tag, then workflow_dispatch shift-traffic (run 34776296962, which includes the workflow's own /health smoke-probe), then re-verified on the production URL directly."
+    }
+  ],
+
+  "cp1DesignApproved": {
+    "Q1_absenceKind": "Approved -- added a 6th AbsenceKind, 'entitlement-required', to feasibility-model.ts's closed union rather than reusing 'out-of-scope'.",
+    "Q2_tierAllowlist": "Approved as proposed -- grant {public-paid, platform-internal, tenant-private}, refuse only {public-free}. Noted in code and tests that platform-internal/tenant-private remain untested-by-production-traffic as of this close.",
+    "Q3_propertyUnlockGranularity": "Acknowledged as a known, accepted limitation -- documented in code comments (tools.ts, entitlement-gate.ts) rather than built around.",
+    "Q4_refusalTransport": "Approved -- kept 200/201/202 with a typed `entitlement` marker; no new status code, preserving P-155's async job contract.",
+    "Q5_unauthenticatedEngine": "Kept out of this lane's scope per the planner's explicit ruling; the planner escalated it to the operator directly as a separate finding. Not touched by this lane's changes -- still true after this deploy that a caller reaching hauska-engine-api directly with a hand-set 'public-paid' header is not stopped by anything but this lane's own composer-level gate (the ENGINE_API_GATE_TOKEN bearer check remains unmounted and Cloud Run IAM still grants allUsers; both confirmed unchanged in this session).",
+    "Q6_missionStep4Correction": "Confirmed and used -- all live verification below targets export_instrument kind:'feasibility', not run_report/get_smart_site."
+  },
+
+  "engineChanges": {
+    "gatedComposer": "composeParcelReportFacts's parcelOwnership section only (packages/engine-core/src/site-plan/report-model.ts) -- confirmed by reading author.ts, dossier-author.ts and flood-drainage.ts that no other composer independently reads dollar/owner data from the engine's own substrate/reader.",
+    "tierResolution": "services/engine-api/src/entitlement-gate.ts's resolveCallerAccessTier: prefers a verified signed gate-context tier over the plain header when present (per CP1's 'header is not trusted on its own where a signed context exists' ruling); a verified-but-unrecognized signed tier fails closed to public-free rather than falling back to the plain header. No live caller mints a signed context as of this close (confirmed by grep across both repos) -- this branch is real, unit-tested (entitlement-gate.test.ts, 5 tests), and currently unexercised by production traffic.",
+    "entitlementMarker": "GET feasibility-export status response gains `entitlement: {tier, granted, requiredTier, gatedSections}`, computed fresh from the CURRENT request's own gate-front context on every read -- no storage/schema change. Caveat (documented in code and leave_behind): the underlying composed artifact is cached per parcelNodeId (P-155), not per caller, so the marker's `granted` can differ from the tier the cached PDF bytes were actually composed under on a cache hit; analyzed and judged safe for both real callers (PE BFF, smartsite-mcp) because each re-runs its own local Studio/property-unlock gate on every invocation regardless of this cache -- a less-entitled caller never reaches the download step through either mediated path. This is not a new gap beyond the already-flagged, already-escalated Q5 direct-bypass hole."
+  },
+
+  "mcpChanges": {
+    "tierPassed": "engine-client.ts's buildEngineGateHeaders now requires callerTier, never a hardcoded default. tools.ts's export_instrument kind:'feasibility' handler passes 'public-paid' explicitly (with a comment noting this line is reached only after the local Studio-or-unlock check already passed) and threads the caller's SmartsiteEntitlementSnapshot through.",
+    "refusalSurfacing": "feasibility-export.ts recognizes the engine's entitlement marker and, on a ready job with granted:false, returns refuseStudioReport(entitlement) -- the SAME upgrade_required vocabulary this connector already publishes for its own local refusals -- instead of the PDF. Backward compatible: a ready job with NO entitlement marker at all (an older engine deploy) still downloads normally, unit-tested explicitly.",
+    "scopeBoundaryConfirmed": "export_instrument kind:siteplan/terrain/dossier proxy through hauska-mcp-server, a third repo (SUBSTRATE seat) outside this lane's two registered repos and outside this lane's reach -- named in CP1, unchanged."
+  },
+
+  "probe": {
+    "artifact": "_inbox/2026-09-13_192500_surface_probe.json",
+    "supplementaryGeneralHealthCheck": "_inbox/2026-09-13_191759_surface_probe.json (node scripts/surface-probe.mjs run against production post-deploy: PASS 3 / FAIL 2 / UNMEASURED 27, matching lane p152-rails's own prior baseline exactly -- confirms this lane's deploy did not regress the existing probe set. This instrument has no entitlement-gating leg at all, so it does not measure this lane's own row; the hand-probe artifact above does.)"
+  },
+
+  "falsifier": "Pre-registered at CP1: 'If an unentitled live call returns a dollar or owner value from the engine after step 2, the gate is not in the path. If a missing header returns a value, the gate fails open. If the entitled path returns a refusal for the operator's own account, the tier mapping is wrong.' Observed, live, on both the canary tag and after the 100% traffic shift to production: a public-free-tier compose settles with parcelOwnership absent (kind entitlement-required) and entitlement.granted:false; a public-paid compose on a fresh parcel settles with entitlement.granted:true; a request with no gate-front headers at all still gets HTTP 401 before any route; this session's own live, authenticated Smart Site MCP connection received a real feasibility PDF for 48021:34049 (entitled account, production, post-deploy). None of the three falsifiers fired.",
+
+  "contradicted": [
+    "P-152 lane 3's leave_behind and this dispatch's own 'What is true today' both stated 'smartsite-mcp has NO entitlement check before calling the engine.' False as stated for the only code path that reaches the engine: tools.ts's export_instrument handler already ran canRunStudioReport/hasPropertyUnlock before calling out. The real, narrower gap -- confirmed live via a read-only, pre-deploy GET against hauska-engine-api with hand-fabricated headers and no bearer token, which returned full job metadata for a real parcel -- was that the ENGINE itself enforced nothing server-side, making the MCP's local check necessary but not sufficient.",
+    "The dispatch's step-4 instrument named run_report and get_smart_site as the live-violation targets. Both call cortex-api's POST /api/property-explorer/v1/research/brief (legacy-design-tools), which reads LDT's own Postgres fact atoms directly under its own independent, pre-existing gate (requirePePaidOrPropertyUnlocked + grantsCadRollValuationFor) and never calls hauska-engine-api at all -- confirmed by reading propertyExplorer.ts and by the live MCP tool descriptions themselves (get_smart_site's own description states 'owner is a separate Studio/Team-gated read this tool does not carry at any depth'). Corrected to export_instrument kind:'feasibility' before any live testing; approved by the planner as Q6.",
+    "Step 4's suggested fallback 'the planner uses the anonymous path' does not exist for this connector: a raw, unauthenticated POST to smartsite-mcp's production /mcp endpoint returned {\"error\":\"unauthorized\",\"reason\":\"missing_bearer\"} before reaching any tool or entitlement logic at all. Checked live rather than assumed."
+  ],
+
+  "leave_behind": {
+    "mcpLevelLiveRefusalNotObtained": "This lane never obtained a live, MCP-level 'unentitled export_instrument call returns upgrade_required' observation, because this session held exactly one Smart Site MCP credential (its own authenticated connector session, which is entitled) and the mission's two suggested fallbacks (an operator-supplied free-tier key; an anonymous path) were both checked and unavailable -- the anonymous path was tried live and refused before reaching any tool logic. Substituted with the equivalent, live, both-directions test directly against the engine (the same server-side mechanism export_instrument's refusal-surfacing code depends on), plus three new unit tests in feasibility-export.test.ts that simulate exactly the engine response an unentitled MCP call would receive. A future session with the operator's free-tier key should close this specific observation gap; it does not, on its own, cast doubt on the shipped mechanism given the alternative verification.",
+    "unauthenticatedEngineGap": "hauska-engine-api's Cloud Run IAM still grants allUsers:roles/run.invoker (ingress=all) and ENGINE_API_GATE_TOKEN is still unmounted, confirmed unchanged in this session (Q5, out of this lane's scope, already escalated by the planner to the operator directly). This lane's composer-level gate is real, live-verified defense-in-depth for the two known legitimate callers, but a caller who knows the engine's URL and hand-sets 'x-hauska-access-tier: public-paid' still reaches the engine at all -- fixing that needs a new secret mount and/or an IAM change, both explicit stop-for-operator items this lane did not take.",
+    "cacheAcrossCallersCaveat": "The async feasibility job (P-155) is cached per parcelNodeId, not per caller; documented in code (parcel-terrain.ts) and above (engineChanges.entitlementMarker) rather than re-architected, since a schema/job-keying change was outside the CP1-approved, no-schema-change design and the realistic exploit path collapses into the already-flagged Q5 gap for both mediated callers.",
+    "platformInternalTenantPrivateUntested": "Per CP2 Q2 ruling, platform-internal and tenant-private remain untested-by-production-traffic; only fixture-level unit tests exercise them (p152-entitlement-gate.test.ts).",
+    "signedContextBranchInert": "resolveCallerAccessTier's preference for a verified signed gate-context tier over the plain header is real and unit-tested (entitlement-gate.test.ts) but unreached by any live caller today -- neither repo mints x-hauska-gate-context/x-hauska-gate-signature. Noted so a future close does not overclaim it as a live control.",
+    "preExistingFlakesObserved": "manifest-is-load-bearing.test.ts's byte-identical CONTROL test failed once nondeterministically (495057 vs 495056 bytes) with this lane's changes present; confirmed pre-existing and unrelated via git stash + clean re-run on unmodified code, then git stash pop to restore. lib/submission-classifier's upsert.test.ts hit a transient Postgres 'out of shared memory' error in LDT's CI, aborting the whole pnpm -r recursive test run before smartsite-mcp's own test files (including this lane's) ran; a bare rerun of the failed job came back green. Neither is this lane's row to fix; both named here for the record."
+  },
+
+  "missionPremise": "The engine parses x-hauska-access-tier but no route or composer reads it to gate anything, and smartsite-mcp sends a static 'public-paid' header regardless of the caller -- an unentitled caller who could reach the engine at all would get the same dollar-rail and owner-info composition as an entitled one.",
+  "completionPredicate": "A free-tier (or otherwise unentitled) live call to the gated composer refuses parcelOwnership with a typed reason; the identical entitled call composes real values; a missing gate-front header still fails closed; smartsite-mcp passes the caller's real resolved tier and surfaces the engine's own refusal, if one ever fires, in the same upgrade_required vocabulary the connector already publishes.",
+  "scopeBasis": "Built, tested, merged, deployed, and live-verified in both directions on the deployed hauska-engine-api (canary and 100% production traffic) for the ONE composer confirmed to read dollar/owner data from the engine's own substrate; built, tested, merged and deployed on smartsite-mcp, with the entitled side of the full MCP round trip live-verified in production and the refused side verified by the equivalent live engine-direct test plus targeted unit tests, per the leave_behind above. Deliberately NOT touched: the unauthenticated-engine finding (Q5, escalated by the planner to the operator), the panel's own gating (P-152 lane 4, out of scope per the dispatch), pricing/tier definitions (P-119, authoritative), and hauska-mcp-server's siteplan/terrain/dossier proxy (a third repo, SUBSTRATE seat, outside this lane's two registered repos)."
+}

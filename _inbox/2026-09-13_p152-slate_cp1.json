@@ -1,0 +1,58 @@
+{
+  "lane": "p152-slate",
+  "checkpoint": "CP1 (design / pre-build)",
+  "at": "2026-09-13T19:30:00Z",
+  "planRows": ["P-152"],
+  "worktreesCreated": [
+    {
+      "repo": "hauska-factory",
+      "worktree": "P:/seat-worktrees/property/hauska-factory-p152-slate",
+      "branch": "feat/p152-slate-zoning-envelope-rails",
+      "startCommit": "97b93877c1dbb5598942821a553e50d0d677a006",
+      "createdFrom": "origin/main, via `git -C P:/hauska-factory worktree add` (non-mutating to the hub's own working tree; never checked out/reset/cleaned inside P:/hauska-factory itself, per the operational addendum)"
+    },
+    {
+      "repo": "hauska-map",
+      "worktree": "P:/seat-worktrees/property/hauska-map-p152-slate",
+      "branch": "feat/p152-panel-dollars-owner-gated",
+      "startCommit": "489945f117c6d8cd374bec199965cc069e3bbe14",
+      "createdFrom": "origin/main, same non-mutating worktree-add pattern"
+    }
+  ],
+  "findingsBeforeAnyEdit": [
+    {
+      "id": "F-A",
+      "title": "The slate is not a hauska-factory artifact — it is out of this lane's registered write scope entirely",
+      "detail": "readParcelRecord (hauska-engine services/retrieval-api/src/parcel-record-reader.ts) checks PARCEL_RECORD_SLATE.has(`${countyFips}:${railKey}`) against services/retrieval-api/src/parcel-record-slate.json. That file's own header says it is 'Vendored copy of legacy-design-tools artifacts/api-server/src/lib/parcelRecordAllowlist.ts's PARCEL_RECORD_SLATE ... Re-sync both this file and legacy-design-tools's own copy together.' The CANONICAL slate is therefore in legacy-design-tools, the VENDORED copy in hauska-engine. Neither repo is in this lane's dispatch ('Where you work: hauska-factory-p152-slate ... and hauska-map-p152-slate'). hauska-factory owns only the GATE VERDICT (parcel_gate_verdict, written by publish-gate-sched.mjs) — a real, separate control, per OPS-21 preamble's own 'grading is not serving' section. Running the gate is in scope; writing the slate is not.",
+      "action": "Do not create an ad-hoc hauska-engine or legacy-design-tools worktree. Read-verify the gate (in scope) and hand off the exact slate diff for the owning seat/lane to apply."
+    },
+    {
+      "id": "F-B",
+      "title": "Five of the ten named rails are architecturally NOT independent slate candidates",
+      "detail": "legacy-design-tools' parcelRecordAllowlist.ts documents, at length, that zoningJurisdictionKey and zoningProvenance are siblings of the representative key zoningDistrict, and setbackSideFt/setbackRearFt/setbackCornerFt are siblings of the representative key setbackFrontFt. Its own comment: 'these three have NO resolveAllowlist call site of their own anywhere in this repo ... A slate entry literally spelled \"<county>:setbackSideFt\" would never be read by any code.' That is true for LDT's consumers. It is NOT true for hauska-engine's retrieval-api reader, which iterates every PARCEL_RECORD_RAIL_KEYS independently with no group/representative-key concept at all — readParcelRecord will happily classify setbackSideFt as record the moment a literal '<county>:setbackSideFt' slate entry exists and its own per-rail gate verdict passes. This is a genuine architecture mismatch between the two consumers sharing one 'verbatim-synced' slate file, not something this lane should resolve unilaterally by appending strings to two files it does not own.",
+      "action": "Report precisely; do not silently patch. Named in the close as a design question for whoever owns both the reader and the allowlist."
+    },
+    {
+      "id": "F-C",
+      "title": "Mission item 2 (panel dollar rails + owner gated in the BFF) is already true in production",
+      "detail": "Live anonymous GET https://smartsite.cloud/api/spine/property-atoms/<id>/facets, all five OPS-23 probe parcels, 2026-09-13T19:39Z: facets.baseFacts.cadRoll.{marketValue,assessedValue,landValue,improvementValue} and ownerFact all return {state:'refused', code:'studio-gated', reason:'...Studio or Team only...'} — never a value, never null, never a blank. Built by P152-PANEL (cadRoll: atom-chain-to-facets.cadroll.test.ts, PR #390). The gate lives at legacy-design-tools cadRollValue.ts/ownerFactRead.ts (single canonical `granted` boolean from subscriptionTierGrantsStudio, forwarded via the PE session cookie the BFF already relays to cortex) — 'the entitlement gate is not yours to change', and there is nothing here that needs changing.",
+      "action": "Do not build a second, redundant gate in the BFF (pe-property-atoms.ts's own module doc: 'a fourth [gate] in the BFF is the defect, not the fix'). Add regression coverage for the one half of this contract with none today (ownerFact; cadRoll already has it) so this correct, already-live behavior cannot silently regress."
+    },
+    {
+      "id": "F-D",
+      "title": "Item 3 (retire by decline) is already generically built for 9 of the 10 rails",
+      "detail": "composeRecordPatch (agValuation, maxImperviousCoverPct, acreageAcres, acreageSqft, acreageMethod) and composeZoningSetbackOverride (zoningJurisdictionKey, zoningProvenance, setbackSideFt, setbackRearFt, setbackCornerFt) already gate strictly on rail.serve === 'record', already leave the legacy/atom-chain value untouched otherwise (verified by reading both functions in full, origin/main). This mechanism activates automatically the moment F-A's slate gap closes. No new hauska-map runtime code is needed for retirement of 9 of the 10 rails. zoningProvenance is the exception: it is tracked in COMPOSED_ZONING_SETBACK_RAIL_KEYS/railStates but its value is applied to no field on ZoningSetbackOverride — no wire field exists to carry it. Slating it would flip its serve state with zero visible effect.",
+      "action": "Do not invent a new wire field for zoningProvenance (out of mandate — 'new values for the rails' is explicitly out of scope, and a new field is closer to new product surface than a value). Add unit coverage proving the other nine, and name the zoningProvenance gap precisely, both in code comments and in the close."
+    }
+  ],
+  "revisedPlan": [
+    "1. hauska-factory: READ-ONLY verification only — no commit expected. Query parcel_gate_verdict directly (FACTORY_DATABASE_URL from Secret Manager, direct host, read-only SELECT, statement_timeout set) for the 10 rails x 6 counties; cross-check a sample of PASS verdicts against the underlying parcel_record_cell value for the Bastrop probe parcel to rule out F-A's own falsifier ('if a slated pair serves a value that differs from the cell in parcel_record, the slate reads the wrong store').",
+    "2. hauska-map: add regression tests only (no runtime change) — (a) ownerFact studio-gated refusal passthrough (cadRoll already covered), proven non-vacuous by a live falsifier drill; (b) composeZoningSetbackOverride direct unit coverage using the REAL Bastrop parcel_record_cell values, demonstrating the divergence from today's live legacy value and naming the zoningProvenance gap in a permanent, executable comment.",
+    "3. PR, green CI (checked via gh api check-runs conclusion strings, not gh pr checks text), squash-merge, `git checkout origin/main --detach` for a byte-exact deploy tree, `vercel deploy --prod --yes`, confirm aliased to smartsite.cloud, re-pull recordRailStates for all five probe parcels as the 'after' capture (expected: identical to 'before', since this is a test-only change — an honest, informative non-result).",
+    "4. Close with the exact slate diff to hand off (the PASS pairs not yet in either the LDT canonical file or the hauska-engine vendored copy), the architecture question from F-B named for the owning team, and F-A/F-C/F-D as contradicted findings against the dispatch's own premise."
+  ],
+  "openQuestionsForPlanner": [
+    "Should a follow-on lane be registered with write access to BOTH legacy-design-tools (parcelRecordAllowlist.ts) and hauska-engine (parcel-record-slate.json) to land the acreageAcres/acreageMethod slate additions this lane verified are safe? Or does the property seat prefer to fold this into an existing open lane on either repo?",
+    "F-B (representative-key vs per-key slate architecture for the zoning/setback sibling rails) is a genuine design decision, not a bug this lane can safely resolve by itself. Requesting a ruling or a dedicated design lane before anyone adds '<county>:setbackSideFt'-shaped entries to either slate file."
+  ]
+}

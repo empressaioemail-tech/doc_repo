@@ -1,0 +1,40 @@
+{
+  "lane": "p167-pdf",
+  "checkpoint": "CP1 (baseline / plan, before merge or deploy)",
+  "planRows": ["P-167"],
+  "startCommits": {
+    "legacy-design-tools": "6ae7ef57 (origin/main at worktree creation)",
+    "hauska-engine": "06dd840 (origin/main at worktree creation)"
+  },
+  "worktreesCreated": [
+    "P:/seat-worktrees/property/legacy-design-tools-p167-pdf on chore/p167-pin-and-strings",
+    "P:/seat-worktrees/property/hauska-engine-p167-pdf on chore/p167-pdf-strings (read/verify only -- no engine-repo code change needed, see below)"
+  ],
+  "priorArtifactsRead": [
+    "_inbox/2026-09-12_p167-vocab_close.json (predecessor lane's closed-partial close, with overseer annotation)",
+    "_inbox/2026-09-11_ops23_wave1_verify_p167.md (pre-mission fact verification)",
+    "_catalog/dispatch_missions/mission_p167_pdf_leg.md",
+    "_inbox/2026-09-13_ops23-wave4_cp1.json (planner's wave-4 baseline probe, doc_repo 9eef6a6c)"
+  ],
+  "instrumentRead": "scripts/surface-probe.mjs ROWS[\"P-167\"]: reads per-parcel obs[id].displayStringsIdentical and global obs._vocab.{parityLockDeleted, packageVersion, importers}. importers must include hauska-map, hauska-engine, legacy-design-tools or the row reads UNMEASURED regardless of the per-parcel booleans.",
+  "findingsAtBaseline": {
+    "ldtPinContradiction": "The dispatch's 'what is true today' said 'at least one LDT package.json ... still declares ^1.30.0'. Direct git grep on origin/main shows SIX of seven LDT importers at ^1.30.0 (api-server, engine-core, knowledge-atoms, portal-ui, submission-classifier, scripts); only artifacts/smartsite-mcp (PR #667) was at ^1.33.1. PR #667's own file list (gh pr view --json files) confirms it touched only artifacts/smartsite-mcp/*, never api-server. The predecessor close's claim 'legacy-design-tools merged #667 for ^1.33.1 in api-server and smartsite-mcp' was wrong on api-server specifically.",
+    "hauskaMapVerifiedIndependently": "git grep on hauska-map origin/main (read-only, not our worktree): apps/property-explorer/package.json is the ONLY importer, pinned ^1.33.1. No parity-lock file survives (git ls-tree).",
+    "hauskaEngineVerifiedIndependently": "git grep on hauska-engine origin/main: 9 package.json files import the package, all ^1.33.1 (PR #429/#430 already merged and on main). No parity-lock file survives.",
+    "npmDistTag": "npm view @empressaio/atom-contract dist-tags --json => {\"latest\":\"1.33.1\"}."
+  },
+  "plan": [
+    "1. LDT pin: bump the six stale package.json files to ^1.33.1, pnpm install to re-resolve the lockfile, pnpm -r ls to confirm, root pnpm run typecheck, PR, merge on CI success string, deploy api-server + smartsite-mcp workflows under a lease each.",
+    "2. Confirm hauska-engine-api's serving revision (hauska-engine-api-00211-vam per the mission) contains #429/#430 by CONTENT (image digest -> Cloud Build source tarball -> presence/absence of the exact files each PR touched), not by timestamp inference alone.",
+    "3. Generate the feasibility PDF for all five probe parcels via export_instrument (real MCP export path), extract text with pdftotext, and pull the panel facets (GET .../property-atoms/<id>/facets, same endpoint surface-probe.mjs uses) and MCP get_smart_site depth=node for the same five.",
+    "4. Build a side-by-side string table per parcel across panel/MCP/PDF and judge displayStringsIdentical byte-for-byte per the mission's own falsifier ('if any string differs on any surface, the row is not done; name the surface and the string').",
+    "5. Write the observation file in the probe's exact shape and hand back CP2/close."
+  ],
+  "leaseNote": "No deploy has been requested yet at CP1 time. Before any api-server/smartsite-mcp deploy-workflow trigger or hauska-engine-api traffic command, will check _catalog/leases/<service>.json in this doc_repo worktree; none exist right now (README.md is the only tracked file in _catalog/leases/).",
+  "falsifiersPreRegistered": [
+    "If any string differs on any surface, the row is not done; name the surface and the string.",
+    "If the PDF is generated from a revision that does not contain #429, the leg is unmeasured, not failed; say so.",
+    "If a consumer's lockfile resolves anything other than 1.33.1, that consumer is not cut over."
+  ],
+  "next": "Open the LDT pin PR, poll CI, merge, then run the PDF/panel/MCP legs for all five parcels while the deploy proceeds."
+}

@@ -1,0 +1,140 @@
+{
+  "lane": "p152-entitlement",
+  "checkpoint": "CP1",
+  "planRows": ["P-152"],
+  "date": "2026-09-13",
+  "status": "cp1-design-complete-awaiting-approval",
+  "worktrees": {
+    "legacy-design-tools-p152-entitlement": {
+      "path": "P:/seat-worktrees/property/legacy-design-tools-p152-entitlement",
+      "branch": "feat/p152-mcp-entitlement-check",
+      "createdFrom": "origin/main 6ae7ef57510a1a0a96ead3251cc9788bb0492335"
+    },
+    "hauska-engine-p152-entitlement": {
+      "path": "P:/seat-worktrees/property/hauska-engine-p152-entitlement",
+      "branch": "feat/p152-engine-access-tier-gate",
+      "createdFrom": "origin/main 06dd8402291ecce8d24ed30449fbdb780165ce2d"
+    },
+    "leaseCheck": "No entry existed in _catalog/leases/ for hauska-engine-api, cortex-api, smartsite-mcp or legacy-design-tools at worktree-creation time (dir held only README.md). Not yet held for this lane -- will take one immediately before any deploy in CP2/step 2-3, per the addendum."
+  },
+
+  "codeReadBeforeDesigning": [
+    "services/engine-api/src/gate-front-context.ts -- GateFrontContext, GATE_FRONT_ACCESS_TIERS (public-free|public-paid|platform-internal|tenant-private), parseGateFrontHeaders (zod-validated, shape-only, no crypto).",
+    "services/engine-api/src/gate-context-verify.ts + src/server.ts -- verifyGateContext (HMAC-SHA256 over GATE_CONTEXT_SIGNING_KEY, timing-safe compare), mounted at v1.use('*', ...) in BUILD-AND-STAGE mode: 'off' (key unset) | 'log' (verify, log, never reject -- DEFAULT when key is set and GATE_CONTEXT_MODE is unset) | 'enforce'.",
+    "services/engine-api/src/config.ts -- loadConfig() derivation of gateContextMode from env.",
+    "services/engine-api/src/routes/parcel-terrain.ts -- the deployed engine-api route builder (Cloud Run service hauska-engine-api). buildParcelTerrainRoutes() mounts /:parcelNodeId/{terrain,site-plan,dossier,feasibility}-export/*.",
+    "packages/engine-core/src/site-plan/report-model.ts -- composeParcelReportFacts / composeParcelReport, the ParcelOwnershipFacts section (marketValue/assessedValue/landValue/improvementValue/yearBuilt/livingAreaSqft/ownerName/ownerMailingAddress/absenteeOwner), lines ~538-600.",
+    "packages/engine-core/src/site-plan/feasibility-model.ts -- FeasibilityFactState<T>, present()/absent(), the closed AbsenceKind union (clear|not-applicable|out-of-scope|blocked-at-source|failed-this-run) with an explicit docstring that this is a deliberately curated, closed taxonomy.",
+    "packages/engine-core/src/site-plan/author.ts, dossier-author.ts -- confirmed neither calls composeParcelReportFacts/composeParcelReport.",
+    "services/engine-api/src/routes/flood-drainage.ts -- confirmed it does not call composeParcelReportFacts/composeParcelReport either (grepped for the symbols; zero matches).",
+    "artifacts/smartsite-mcp/src/entitlement.ts -- SmartsiteEntitlementSnapshot, canRunDeepReport/canRunStudioReport, EntitlementGateRefusal ({status:'upgrade_required', reason, tier, subscriptionTier, message}), refuseDeepReport/refuseStudioReport/refusePropertyExport.",
+    "artifacts/smartsite-mcp/src/tools.ts -- run_report (calls cortex research/brief, locally gated by canRunDeepReport), get_smart_site (calls the SAME cortex research/brief endpoint, NO local gate), export_instrument (kind=feasibility|siteplan|terrain|dossier -- feasibility and the Studio/property kinds ARE already locally gated by canRunStudioReport/canRunDeepReport + hasPropertyUnlock before the outbound call, lines 1044-1088).",
+    "artifacts/smartsite-mcp/src/engine-client.ts -- loadEngineApiConfig, buildEngineGateHeaders (hardcodes 'x-hauska-access-tier':'public-paid' for every feasibility call regardless of caller).",
+    "artifacts/smartsite-mcp/src/feasibility-export.ts -- executeFeasibilityExport, the ONLY MCP code path that calls hauska-engine-api directly (status -> refresh -> poll -> download, all reusing the same static headers built once at entry).",
+    "artifacts/smartsite-mcp/src/export-instrument.ts -- siteplan/terrain/dossier kinds proxy through hauska-mcp-server (HAUSKA_MCP_BASE_URL), a THIRD, separate repo owned by the SUBSTRATE seat -- not hauska-engine-api, and not in either of this lane's two registered repos.",
+    "artifacts/api-server/src/routes/propertyExplorer.ts -- POST /property-explorer/v1/research/brief (what run_report and get_smart_site actually call). Reads LDT's own Postgres-backed fact atoms directly (loadOwnerFactAtom, resolveCadRollOverlaysForServe, etc.), gated by requirePeAuthenticated + requirePePaidOrPropertyUnlocked() at the route, plus a per-field grantsCadRollValuationFor()/grantsOwnerCoGatedFields() (Studio|Team OR a per-parcel Property Unlock) that decides whether to even fetch the owner atom, falling back to studioGatedOwnerFactRefusal() otherwise. This route never calls hauska-engine-api.",
+    "Live gcloud read (hauska-prod-497015, us-central1, service hauska-engine-api): env vars confirmed GATE_CONTEXT_SIGNING_KEY mounted (Secret Manager), GATE_CONTEXT_MODE unset (-> mode 'log'), ENGINE_API_GATE_TOKEN NOT mounted (-> server.ts's bearer-token check is skipped entirely in production). IAM policy: bindings=[{members:[allUsers], role:roles/run.invoker}], ingress=all -- the service is fully public.",
+    "Live read-only GET probe (2026-09-13, this session): GET /v1/property-nodes/48453:474034/feasibility-export with hand-fabricated x-hauska-* headers (access-tier: public-paid) and no bearer token returned HTTP 200 with full job/atom metadata for a parcel with real Studio-tier content on file (page counts, GCS artifact ref, narrative citations). No POST/refresh or GCS byte fetch was issued -- read-only, no new compute triggered, no data mutated."
+  ],
+
+  "tierMapping": {
+    "vocabularyMismatchFound": "GateFrontAccessTier (public-free|public-paid|platform-internal|tenant-private, gate-front-context.ts) is a CALL-CLASSIFICATION axis designed for the gate-front trust boundary (is this call anonymous/free, paid, an internal platform job, or a tenant-private integrated-product call) -- it is NOT the P-119 subscription ladder (Solo/Solo-annual/Studio/Studio-annual/Team/Team-annual/Property-Unlock). The dispatch's phrase 'which of the four existing access-tier values denotes Studio-or-better' assumes a closer mapping than the code actually has. Both real callers today (PE BFF and smartsite-mcp) already resolve the P-119 ladder LOCALLY (requireStudioSession; canRunStudioReport+hasPropertyUnlock) before ever building the outbound header, and both currently collapse every entitled outcome onto the single value 'public-paid' -- there is no live example of 'platform-internal' or 'tenant-private' being sent to this route today.",
+    "p119Source": "08_tiered_access_model.md (portfolio tier doc) + OPS-16_texas_market_plan_of_record.md row P-119 (operator's verbatim package table, 2026-09-05): Feasibility Studies appear on the Studio, Studio-annual, Team, Team-annual and Property-Unlock rows; Solo and Solo-annual do NOT include Feasibility Studies (only Property X-ray and Flood & Drainage). This is the authoritative ladder; P-119 is out of scope to re-litigate per the dispatch.",
+    "proposedAllowlist": {
+      "grant": ["public-paid", "platform-internal", "tenant-private"],
+      "refuse": ["public-free"],
+      "rationale": "Fail-closed default (refuse unless a recognized non-free value is present) collapses to a one-value blocklist given only four possible values, framed as an allowlist for correctness under future additions. public-paid is the value both current entitled callers actually send. platform-internal (an internal Hauska job/pipeline) and tenant-private (a paying SmartCity-OS-class tenant) are included on the reasoning that neither is the free/anonymous surface, but NEITHER IS EXERCISED BY ANY LIVE CALLER TODAY -- flagged as OPEN QUESTION Q2 below rather than decided unilaterally, since it is a judgment call this lane should not make silently on a security-relevant row."
+    },
+    "signedContextPrecedence": "Per the dispatch instruction 'the header is not trusted on its own where a signed context exists': when c.get('gateContextVerified') is present (HMAC-verified successfully via verifyGateContext, regardless of the transport-level gateContextMode being 'log' vs 'enforce' -- those two are orthogonal, gateContextMode only controls whether the OUTER request is rejected for a missing/invalid signature, not whether a valid payload's tier is honored downstream), the composer uses gateContextVerified.payload.tier instead of gateFront.accessTier. CONFIRMED BY GREP: no caller in either of this lane's two repos (legacy-design-tools, hauska-engine) currently mints x-hauska-gate-context/x-hauska-gate-signature -- this branch is real, tested, and forward-compatible, but INERT in production today. Stating this precisely so the close does not overclaim a live control."
+  },
+
+  "refusalShape": {
+    "sectionLevel": {
+      "location": "packages/engine-core/src/site-plan/report-model.ts, composeParcelReportFacts's parcelOwnership safeSection only. Every other section (flood, terrain, jurisdiction, wellsPipelines, specialDistricts, footprint, utilities, hoa, soil, electricProvider, gasProvider, dischargePoint, floodplainAcreage, firmPanel) is untouched -- matches R-2's 'refuse the specific figure, not the document' posture already established for the buildable-envelope ruling.",
+      "shape": "absent(kind, reason, consequence) using the SAME FeasibilityFactState<ParcelOwnershipFacts> discriminated union every other absence in this file already uses -- never a null, never a second ad hoc shape.",
+      "openDesignQuestion_Q1": "feasibility-model.ts's AbsenceKind is a CLOSED, deliberately curated 5-value enum (clear|not-applicable|out-of-scope|blocked-at-source|failed-this-run) whose own docstring states 'a new producer cannot skip the question' of which kind of nothing was found -- none of the five mean 'the data exists and is known, but the caller is not entitled to see it' (an access-control fact, not a data-coverage fact). Recommendation: add a 6th kind, e.g. 'entitlement-required', rather than overload 'out-of-scope' (whose documented meaning is 'a scope decision... a sales conversation, not a defect' -- close, but conflates 'we chose not to build this' with 'you have not paid for this'). DEV_PROCESS 'an instrument's exclusion set is part of its contract' is exactly on point for this decision -- asking rather than deciding unilaterally."
+    },
+    "topLevelMarker": {
+      "purpose": "So a caller does not have to diff which section changed to detect the refusal, add a same-response typed marker to the feasibility-export GET status/atom response (never changing the 200/201/202 status codes P-155's async job contract already commits to).",
+      "proposedShape": "{ ...existingResponse, entitlement: { tier: GateFrontAccessTier, granted: boolean, requiredTier: \"studio-or-property-unlock\", gatedSections: [\"parcelOwnership\"] } }",
+      "openDesignQuestion_Q4": "Keep 200/201/202 + typed marker (my recommendation -- preserves 'every outcome carries the same declared envelope' from P-155), or introduce a distinct status/shape for the refused case? A 403 would break feasibility-export.ts's readStatus() which currently treats any non-res.ok as a generic upstream_error, losing the typed distinction MCP needs to re-wrap correctly."
+    },
+    "mcpLevel": {
+      "reuse": "artifacts/smartsite-mcp/src/entitlement.ts already defines EntitlementGateRefusal {status:'upgrade_required', reason:'deep_report'|'studio_report'|'studio_screens'|'property_export', tier, subscriptionTier, message} and refuseStudioReport() -- this is the exact vocabulary the mission asks the MCP to surface. No new refusal type needed in smartsite-mcp; the new work is (a) feasibility-export.ts must recognize the engine's new top-level entitlement marker on an otherwise-200 response and, when granted:false, return refuseStudioReport(entitlement) instead of downloadReady(...)/the raw body, and (b) buildEngineGateHeaders must stop hardcoding 'public-paid' and instead pass the caller's actually-resolved tier (see MCP-side changes below)."
+    }
+  },
+
+  "whichComposersGate": {
+    "gated": [
+      "composeParcelReportFacts's parcelOwnership section (packages/engine-core/src/site-plan/report-model.ts) -- the ONLY place in either repo where the engine independently reads its own substrate/reader for marketValue, assessedValue, landValue, improvementValue, ownerName, ownerMailingAddress, absenteeOwner. Sole call chain: services/engine-api routes/parcel-terrain.ts POST /:parcelNodeId/feasibility-export/refresh -> runFeasibilityJob -> authorParcelFeasibilityExport -> composeParcelReport -> composeParcelReportFacts."
+    ],
+    "confirmedNotGated_andWhy": [
+      "authorParcelSitePlanExport (author.ts) -- pure geometry/setback/terrain content, no ParcelOwnershipFacts field exists in its output type at all.",
+      "authorParcelPropertyDossierExport (dossier-author.ts) -- content is ENTIRELY caller-supplied (address/brief/chatSummary/notes, per dossierRefreshBody's own doc comment 'never fabricates'); the engine has no independent read of dollar/owner atoms here. Any dollar/owner values that end up in a dossier PDF were already gated upstream by LDT's propertyExplorer.ts (grantsCadRollValuationFor/studioGatedOwnerFactRefusal) before the caller ever built the request body -- this is the SAME gate MCP's isPropertyExportKind check (canRunDeepReport, Solo+) already enforces client-side for dossier exports.",
+      "authorParcelTerrainExport -- terrain-model output only (DXF/glb/ifc contour geometry), no dollar or owner fields.",
+      "buildFloodDrainageRoutes (flood-drainage.ts) -- confirmed by grep to never call composeParcelReportFacts/composeParcelReport; a fully separate composer.",
+      "map-layers, site-context, briefing, findings, hydrology, topography, encumbrances, chat, document-ingest routes -- not independently re-verified line-by-line at CP1 (assumption, based on route naming and scope, not a grep-confirmed absence like the others above); flagged for CP2 if the planner wants a broader sweep before code."
+    ]
+  },
+
+  "mcpSideChanges_step3Preview": {
+    "note": "Design only -- NOT implemented pending CP1 approval, per the hard gate.",
+    "buildEngineGateHeaders": "Currently hardcodes 'x-hauska-access-tier':'public-paid' in engine-client.ts for every feasibility call. Proposed: accept the caller's SmartsiteEntitlementSnapshot and derive the header value -- 'public-paid' when canRunStudioReport(entitlement) is true OR a live property-unlock was found for this parcel (both cases already gate entry to this call site today, so this is a consistency fix, not a new decision); the header should never be reached at all for a refused caller, since tools.ts's local gate already returns upgrade_required before feasibility-export.ts is invoked -- so in practice the header value does not change for the ONE path that calls it today. The forward-looking value is if/when a caller EVER reaches buildEngineGateHeaders without having passed a local Studio check (a future refactor risk), the header now reflects the true resolved tier rather than a constant, and the engine's own gate (this lane's real fix) is the backstop regardless.",
+    "refusalSurfacing": "feasibility-export.ts's readStatus()/downloadReady() must check the new entitlement.granted marker on a settled 'ready' job and, when false, return refuseStudioReport(entitlement)-shaped upgrade_required instead of the PDF/metadata -- this is the 'MCP checks it before it calls, and surfaces the engine's refusal as its own' half of the mission title."
+  },
+
+  "negativeTestPlan": {
+    "engine_unit": [
+      "composeParcelReportFacts({...fixture with real cad-roll+owner atoms, callerTier:'public-free'}) -> facts.parcelOwnership.status==='absent' with the new kind; every OTHER section identical to the tier-omitted baseline (snapshot diff scoped to parcelOwnership only, so this test cannot pass by accident if some other section regresses).",
+      "same fixture, callerTier:'public-paid' (or omitted, matching pre-change default) -> facts.parcelOwnership.status==='present' with unchanged values -- proves no regression for the entitled/legacy-default path.",
+      "same fixture, callerTier:'platform-internal' and 'tenant-private' -> present. Labeled explicitly in the test as 'fixture-only, no live caller exercises this branch today' per the contradicted section.",
+      "signed-context precedence: gateContextVerified.payload.tier='public-free' with gateFront.accessTier='public-paid' -> refused (signed wins). Reverse case (signed='public-paid', plain='public-free') -> granted (signed wins). Both new; GATE_CONTEXT_MODE is 'log' in prod today so this is currently inert in production but must be correct and tested for when it is not."
+    ],
+    "engine_route_integration": [
+      "POST refresh + poll GET status with x-hauska-access-tier: public-free on a parcel with real ownership data on file -> settled job's response body contains entitlement.granted===false and a raw-string substring check confirms no marketValue/ownerName/assessedValue/landValue/improvementValue value appears ANYWHERE in the serialized JSON (not just the typed field -- catches an accidental duplicate emission elsewhere in the payload).",
+      "same route, x-hauska-access-tier: public-paid -> entitlement.granted===true, parcelOwnership values match the fixture.",
+      "gate-front headers entirely absent -> confirms the EXISTING top-level middleware (server.ts, parseGateFrontHeaders) still returns 401 gate_front_context_required before reaching this route -- an explicit test rather than an assumption, since CP1 must show the missing-header fail-closed case was actually exercised.",
+      "malformed/unrecognized access-tier value (outside the 4-value enum) -> existing zod schema rejection at the top-level middleware, 401 -- explicit test."
+    ],
+    "mcp_unit": [
+      "export_instrument(kind:'feasibility') for an entitled (canRunStudioReport===true) caller against a MOCKED engine response carrying entitlement.granted===false (simulating the engine's defense-in-depth firing despite MCP's local check passing, e.g. a signed-context mismatch) -> MCP returns refuseStudioReport(entitlement)-shaped upgrade_required, never a bare upstream error, never silently serving the (already section-redacted) body as a success.",
+      "confirm buildEngineGateHeaders' header value tracks the caller's resolved entitlement for both the Studio-subscription and property-unlock grant paths (both currently collapse to 'public-paid', so this test is mostly a regression guard against a future change re-introducing a hardcoded constant)."
+    ],
+    "failClosedSummaryPerMissionRequirement": "unentitled call -> refusal (parcelOwnership absent + entitlement.granted:false); entitled call -> value (parcelOwnership present, values unchanged from pre-lane behavior); missing header -> refusal (401 at the existing top-level middleware, verified by an explicit new test rather than assumed)."
+  },
+
+  "contradicted": [
+    "'smartsite-mcp has NO entitlement check before calling the engine' (P-152 lane 3 leave_behind, repeated verbatim in this dispatch's 'What is true today'): FALSE as stated for the ONLY code path that actually reaches the engine. tools.ts's export_instrument handler (kind=feasibility/siteplan/terrain/dossier, lines 1044-1088) already runs canRunStudioReport/canRunDeepReport + hasPropertyUnlock BEFORE calling out. What is actually missing, precisely: the ENGINE has no server-side enforcement of its own (confirmed live -- see the GET probe below), so the MCP's local check is necessary but not sufficient; a caller that reaches hauska-engine-api directly (bypassing MCP) is not gated by anything today.",
+    "The dispatch's step-4 live-violation instrument ('call run_report and get_smart_site for 48021:34049... paste the refusals... with the operator's Studio key, paste the values') targets the wrong tools for this lane's change. Both run_report and get_smart_site call cortex-api's POST /api/property-explorer/v1/research/brief (legacy-design-tools), which reads LDT's own Postgres fact atoms directly and is gated by its OWN pre-existing, independent mechanism (requirePePaidOrPropertyUnlocked + grantsCadRollValuationFor/studioGatedOwnerFactRefusal) -- NEITHER TOOL EVER CALLS hauska-engine-api. Building or testing the engine gate will produce zero observable change on either tool. The correct live-violation target for this lane is export_instrument with kind:'feasibility' (the sole MCP->engine-api direct call path); dossier/siteplan/terrain proxy through hauska-mcp-server, a third repo (SUBSTRATE seat) outside this lane's two registered repos. Recommend the planner correct the mission's step 4 before CP2, or explicitly accept that run_report/get_smart_site cannot demonstrate this lane's work.",
+    "GATE_CONTEXT_SIGNING_KEY IS mounted on hauska-engine-api (dispatch's premise confirmed true), but the mission's implicit assumption that this makes the header 'not trustworthy on its own' a live, exercised concern is only half true: it is architecturally correct to prefer it when present, but NO caller in either of this lane's repos currently sends a signed context at all, so this precedence rule is presently inert, not a live safeguard. Stated precisely per this session's own standing 'precise empirical claims' practice.",
+    "P-152 lane 3's leave_behind stated RETRIEVAL_API_URL/RETRIEVAL_API_KEY were 'NOT mounted' on hauska-engine-api. A live gcloud read this session shows both ARE now mounted. Not this lane's row -- noted for the record, not acted on."
+  ],
+
+  "outOfScopeFindingsForPlanner": [
+    {
+      "id": "Q5-unauthenticated-engine",
+      "severity": "high, pre-existing, not introduced by this lane",
+      "finding": "hauska-engine-api Cloud Run service has IAM binding allUsers:roles/run.invoker (ingress=all) and ENGINE_API_GATE_TOKEN is not mounted, so the app-level bearer-token check in server.ts is presently a no-op. Confirmed live via gcloud run services describe/get-iam-policy and one read-only GET probe against a real parcel's feasibility-export status route, which returned full job metadata (page counts, GCS artifact ref, narrative citations) with hand-fabricated headers and no credential at all.",
+      "relationToThisLane": "The composer-level tier gate this lane builds meaningfully closes the gap for the two known legitimate callers (whose local checks were already correct) but does NOT stop a caller who hand-sets x-hauska-access-tier:public-paid directly against the public URL -- that requires mounting ENGINE_API_GATE_TOKEN (already coded, just unconfigured) and/or removing allUsers from the Cloud Run IAM policy, both of which are credential/infra changes of the kind the operational addendum reserves for planner/operator sign-off, not a lane's own judgment call.",
+      "recommendation": "Flag as a follow-on row; do not fold into this lane without explicit planner instruction, since it changes blast radius (a live secret mount + an IAM policy change on a production service touched by two sibling lanes this wave) beyond 'gate two composers'."
+    }
+  ],
+
+  "openQuestionsForPlanner": {
+    "Q1_absenceKind": "Add a 6th AbsenceKind ('entitlement-required' or similar) to feasibility-model.ts's closed enum, or reuse 'out-of-scope'? Recommend adding a new kind; asking because DEV_PROCESS treats an instrument's exclusion set as part of its contract.",
+    "Q2_tierAllowlist": "Grant on {public-paid, platform-internal, tenant-private}, refuse only on {public-free}? Neither platform-internal nor tenant-private is exercised by any live caller today. Confirm this is the intended posture, or specify a narrower allowlist (e.g. public-paid only, requiring platform-internal/tenant-private callers to separately prove entitlement some other way).",
+    "Q3_propertyUnlockGranularity": "The engine's tier-only gate cannot distinguish 'Studio subscription' from 'one-off property-unlock for THIS parcel' the way MCP's own hasPropertyUnlock check can -- both currently arrive at the engine as the same 'public-paid' value. This is inherent to a header-only design and matches the already-accepted PE BFF pattern; flagging so it is a known, accepted limitation rather than a silent gap.",
+    "Q4_refusalTransport": "Keep 200/201/202 + a typed in-body entitlement marker (recommended), or introduce a distinct status/shape for the engine's own refusal?",
+    "Q5_unauthenticatedEngine": "See outOfScopeFindingsForPlanner above -- separate row, or extend this lane?",
+    "Q6_missionStep4Correction": "Confirm the live-violation verification target changes from run_report/get_smart_site (which never call the engine) to export_instrument kind:'feasibility' (the only path that does), per the contradicted section."
+  },
+
+  "falsifierPreregistered": "If, after building the composer gate, a live export_instrument(kind:'feasibility') call using a key/session that resolves to canRunStudioReport()===false and no property unlock still returns marketValue/assessedValue/ownerName in the downloaded PDF or its underlying JSON atom, the gate is not in the composition path. If a call with no gate-front headers at all returns anything but the existing 401, the top-level gate has regressed. If the operator's own Studio-tier live call is refused post-change, the tier mapping (Q2) is wrong.",
+
+  "leaveBehindSoFar": [
+    "Both worktrees created and registered-branch-correct; no code changes made in either yet (CP1 is design-only per the hard gate).",
+    "No lease held yet for hauska-engine-api/cortex-api/smartsite-mcp/legacy-design-tools; _catalog/leases/ held only README.md at check time.",
+    "Six open questions (Q1-Q6) above must be answered, or explicitly deferred to the lane's own judgment, before CP2 code begins.",
+    "A high-severity, pre-existing, out-of-this-lane's-scope live finding (unauthenticated public hauska-engine-api) is on record for the planner/operator; not acted on."
+  ]
+}
