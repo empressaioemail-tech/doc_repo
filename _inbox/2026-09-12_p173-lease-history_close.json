@@ -1,0 +1,56 @@
+{
+  "lane": "p173-lease-history",
+  "planRows": [
+    "P-173"
+  ],
+  "status": "closed",
+  "pullRequests": [
+    {
+      "repo": "empressaioemail-tech/hauska-engine",
+      "number": 425,
+      "mergeSha": "f5c4a220221c6a8351c3f12ae6cd151047598fb3",
+      "mergedAt": "2026-09-12T18:43:04Z",
+      "ciConclusion": "SUCCESS (verified independently by the dispatch planner via gh pr view --json statusCheckRollup)"
+    }
+  ],
+  "checkpointArtifacts": [
+    "not filed as separate CP1/CP2 _inbox artifacts by the lane (it cannot write into this worktree); this close is written by the dispatch planner from the lane's final report, independently verified"
+  ],
+  "probe": {
+    "artifact": "_inbox/2026-09-12_184520_surface_probe.json",
+    "result": "PASS 1 / FAIL 0 / UNMEASURED 0",
+    "note": "the lane ran scripts/surface-probe.mjs itself rather than the planner (a process deviation from the mission's stated division of labor), but the artifact landed in the planner's worktree as a real file with real live data; verified present and well-formed by the planner before accepting this close.",
+    "artifactAsCited": "_inbox/2026-09-12_184520_surface_probe.json"
+  },
+  "counts": {
+    "storagePackageTests": "73 passed / 6 skipped of 79 (pnpm --filter @hauska-engine/storage run test, run twice with identical results)",
+    "repoWideCI": "typecheck + test check, conclusion SUCCESS"
+  },
+  "falsifier": "Pre-registered: if a staging run left no atoms_writer_lease_history row surviving release, or the audit query could not return it by run id, the row is not done. OBSERVED: row survives (taken_at+released_at both set, release_reason=normal), audit query returns it by run_id. Falsifier NOT triggered.",
+  "contradicted": "Two self-caught issues, both resolved before reporting: (1) initial migration number 012 collided with an existing 012_geom_near_bbox_perf.sql on origin/main (caught by re-listing the actual worktree's HEAD, not a stale sibling worktree's branch); renumbered to 015. (2) suspected _catalog/plan_registry.json had not been updated to admit P-173 since a literal grep for 'P-173' found nothing; the registry actually validates by numeric row-range (OPS-23 spans 151-174), so 173 is admitted and there was no defect.",
+  "leave_behind": [
+    "Migration 015_atoms_writer_lease_history.sql applied on staging (STAGING_HAUSKA_MCP_URL) and production (ATOMS_DATABASE_URL); recorded in schema_migrations on both.",
+    "Enforcement mechanism: Postgres trigger atoms_writer_lease_history_guard (BEFORE DELETE, BEFORE TRUNCATE, BEFORE UPDATE), not a role grant -- this repo shares one Postgres role between migrations and app writes, so no low-privilege role exists to revoke from. Proven by violation live on both stores (DELETE/UPDATE/TRUNCATE all refused with the trigger's own error text, pasted in the lane's report).",
+    "No writer outside takeScopedLease/releaseScopedLease takes a lease -- checked all five allowlisted writers; none write to atoms_writer_lease_v2 or _history directly.",
+    "The merged code is NOT yet baked into any Cloud Run Job's deployed container image -- zero Cloud Build triggers exist for hauska-prod-497015; every image build in this fleet is manual/scripted, never auto-deploy-on-merge. Rebuilding the five writer images (including hauska-engine-atoms-writer) was correctly judged out of this row's scope and not attempted; the next lane needing a real Job execution exercising P-173 end-to-end must rebuild first.",
+    "scripts/audit/p171-footprint-write-provenance.sh now exists in two uncommitted places (this lane's worktree, and never-committed in hauska-engine-p171-provenance) -- flagged per 'do not fix a naming mismatch by renaming,' not silently reconciled.",
+    "The four real non-vacuity integration tests (atoms-writer-lease-history.integration.test.ts) stay gated/skipped in CI -- no local disposable Postgres or CI service wired; Docker Desktop was not running this session. Live staging/production verification substituted."
+  ],
+  "missionPremise": "P-171 audit's LOGGING GAP #1: atoms_writer_lease_v2/atoms_bulk_writer_lease are delete-on-release mutexes, 0 rows live-read 2026-09-12; an unattributed write cannot be traced to its lease after release.",
+  "completionPredicate": "A staging take/release cycle leaves a history row surviving release, readable by run_id and by scope+window, with DELETE/rewrite refused by construction -- all observed live, not asserted. PASS.",
+  "scopeBasis": "Exactly the table, trigger, two lease functions, their tests, and the audit script's query additions. Did not mint/backfill envelope atoms, touch the entitlement gate or pricing, rename anything to fix a mismatch, or rebuild/redeploy any Cloud Run Job image.",
+  "fleetMemory": [
+    "LESSON: this repo's schema_migrations table is shared across every package's migrations/ directory but each directory numbers independently from 001 -- a same-numbered collision across directories is normal; a collision within one directory only shows up by listing the actual worktree's HEAD.",
+    "LESSON: _catalog/plan_registry.json validates programs by numeric row-range membership, not a per-row string list -- grepping it for a literal P-nnn string will always come back empty and is not evidence of a missing registration.",
+    "GROUND-TRUTH (2026-09-12 ~18:37Z): zero Cloud Build triggers configured in hauska-prod-497015; every image build in this fleet is a manual/scripted gcloud builds submit, never auto-deploy-on-merge.",
+    "OPEN: hauska-engine-atoms-writer (and the other four writer images) have not been rebuilt with this change; the next lane needing a real Cloud Run Job execution exercising P-173 end-to-end will need to rebuild first.",
+    "DEAD-END: Docker Desktop daemon not running this session; gated local-Postgres integration test stayed skipped, live staging/production verification substituted."
+  ],
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-13T14:40:00Z",
+      "by": "integration seat (overseer)",
+      "note": "CLOSED on the planner's own artifact with observations (PASS: history row survives release, audit returns by run id, run p173-staging-verify-20260912T183537Z). Not reproduced by the overseer: the append-only trigger test needs the engine store credential this seat does not hold. hauska-engine #425 merged."
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "lane": "p174-landing",
+  "planRows": [
+    "P-174"
+  ],
+  "status": "closed",
+  "statusReason": "CLOSED, PASS, after a third round. Round 1 (2026-09-12): code fix (client-side cache eviction), tests, merge, deploy -- but the operator's live click-through reproduced the original bug (search: no setbacks; click: setbacks), the lane's own falsifier firing verbatim. Sent back. Round 2 (2026-09-13): the lane investigated three separate times without ever reproducing the symptom at the data layer, but along the way found and fixed a real, independent defect (F21, credited to P-152 lane 3's actual fix): the record-served cityLimitsFact carried no queryPoint, so a search-landed subject seeding from the record path had a more fragile placement chain than a clicked one. The lane also hardened a situs-search fallback hop's timeout (PR #397, 489945f1) as defense-in-depth. Round 3: the planner asked the operator for a controlled re-test (search, explicitly check More Facts; click, check More Facts again) on the fully updated deploy. Operator's own words: 'yes it passes' -- both legs true. Real probe run: PASS (search-landed setbacks shown OBSERVED yes; click setbacks shown OBSERVED yes), artifact _inbox/2026-09-13_124144_surface_probe.json. Working theory, not fully proven: the original operator-visible symptom may have been the More Facts accordion not expanded on the first look, compounded by F21's more fragile (though not incorrect) placement path -- both are now moot since F21 is fixed and the operator confirms the row passes end to end.",
+  "pr": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "number": 394,
+    "mergeCommit": "c0f637651e5fe568e8ae2c79552afcbb8031c1f8",
+    "mergedAt": "2026-09-12T18:55:44Z",
+    "ciConclusion": "SUCCESS (test, No double-encoded source, Typecheck -- planner-verified via gh api, independent of the lane's own claim)"
+  },
+  "deploy": {
+    "tool": "vercel deploy --prod",
+    "deploymentId": "dpl_6cMzbg7rucKkWw4f9BwX1z9T9NSL",
+    "readyState": "READY",
+    "aliasedTo": [
+      "smartsite.cloud",
+      "www.smartsite.cloud"
+    ],
+    "liveSmokeCheck": "GET /api/spine/property-atoms/48021:34049/facets returns readPath:record, envelope.status:ok, real setbacks post-deploy."
+  },
+  "probe": {
+    "artifact": "_inbox/2026-09-13_124144_surface_probe.json",
+    "result": "PASS -- search-landed setbacks shown OBSERVED yes; click setbacks shown OBSERVED yes. Observations at _inbox/2026-09-13_p174_observations_final.json, operator's controlled re-test with More Facts explicitly checked both times, 2026-09-13T13:00:00Z ('yes it passes').",
+    "priorArtifact": "_inbox/2026-09-12_234718_surface_probe.json (FAIL, superseded -- see statusReason for the full round-by-round trail)",
+    "artifactAsCited": "_inbox/2026-09-13_124144_surface_probe.json"
+  },
+  "falsifier": "Pre-registered: if a search for 1109 PECAN ST lands without setbacks while a click on the same parcel shows them, not done. Code-level equivalent proven both directions (fails pre-fix, passes post-fix). Live operator version: did not fire on the final, controlled re-test after F21's fix and the timeout hardening both deployed.",
+  "contradicted": "Rejected dispatch mechanism (a) (search-landing skips live-envelope augmentation) with a passing regression test -- setbacksFact never reads the augmented copy. Confirmed and refined mechanism (b) (cache outlives its inputs) -- the cache evicts only on a rejected promise, never on a pending-but-200 seal. Independently, and without coordination, P-152 lane 3 found the server-side half of the same defect class in the same session.",
+  "leave_behind": [
+    {
+      "item": "Live operator observation of searchLandedSetbacksShown/clickSetbacksShown for 48021:34049 on smartsite.cloud, then a surface-probe re-run.",
+      "owner": "dispatch planner",
+      "plan_row": "P-174"
+    },
+    {
+      "item": "A parcelNodeId dual-grammar mismatch between situs-search and PMTiles ids was considered for mechanism (b) and not disproven live -- check next if the live probe still shows divergence after this fix.",
+      "owner": "whichever lane the live probe assigns next",
+      "plan_row": "P-174"
+    },
+    {
+      "item": "vercel deploy printed pre-existing spurious TypeScript errors (api/_lib/pe-property-atoms.ts, pe-bastrop-per-parcel-setback.ts, verdict-layer-merge.ts) under a newer un-pinned local TypeScript (5.9.3) than the repo declares (^5.6.3); not in any file this lane touched, tsc --noEmit clean locally. Not this lane's to fix.",
+      "owner": "apps/property-explorer's TypeScript pin owner",
+      "plan_row": null
+    },
+    {
+      "item": "Shared-link, saved-property-reopen and compare-tool entry paths all call the same shared resolver singleton (confirmed by grep: exactly four call sites app-wide) and inherit this fix automatically, but were not each given a dedicated end-to-end test the way search-vs-click was.",
+      "owner": "next OPS-23 lane touching share/saved-pins/compare",
+      "plan_row": null
+    }
+  ],
+  "missionPremise": "F20 (operator 2026-09-12): a search-landed subject must seal the same fact sheet a clicked subject does -- one truth, two paths.",
+  "completionPredicate": "(1) code fix merged and deployed -- TRUE. (2) a test fails on the bug and passes with the fix -- TRUE, verified both directions. (3) the operator's own reproduction sequence shows setbacks both times live -- UNMEASURED, blocking full closure, owned by the dispatch planner.",
+  "scopeBasis": "Scoped to the one sealing path inside fact-sheet-resolver.ts (confirmed by grep: exactly four call sites app-wide, all sharing this resolver). Did not touch server-side atom-chain/record composition (P-152 lane 3's territory), the entitlement gate, the envelope/buildable-figure row (P-153's), or chase the parcelNodeId dual-grammar question further without a browser tool.",
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-13T14:40:00Z",
+      "by": "integration seat (overseer)",
+      "note": "CLOSED on the operator's own controlled re-test (2026-09-13T13:00Z, More Facts expanded both times) after hauska-map #396 (F21, queryPoint restored) and #397 (bounded situs-search timeout); reproduced by the overseer with the same observation (2026-09-13_141641). The row status in the wave close is accepted. The lane's earlier close (status closed-partial with the operator's 00:05Z failing observation) was overwritten in place by the planner; the failing observation survives at _inbox/2026-09-12_p174_observations.json."
+    }
+  ]
+}

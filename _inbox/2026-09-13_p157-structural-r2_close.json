@@ -1,0 +1,34 @@
+{
+  "lane": "p157-structural",
+  "planRows": [
+    "P-157"
+  ],
+  "status": "closed",
+  "note": "Relayed by the dispatch planner from the lane's own worktree _inbox/ (a stray, untracked location). PR merge, CI conclusion, and both probe parcels' structuralFact values independently re-verified by the planner -- the PR via gh api, the parcel values via the planner's own live get_smart_site call, which returned exact matches (113408: present, livingAreaSqft 3550, yearBuilt 1950; 474034: present, livingAreaSqft 4168, yearBuilt 2001) before this close was filed.",
+  "probe": {
+    "artifact": "_inbox/2026-09-12_191500_surface_probe.json",
+    "result": "PASS for both 48453:113408 and 48453:474034 (structuralFact present with non-null livingAreaSqft/yearBuilt). PASS 2 / FAIL 0 / UNMEASURED 0. Independently reconfirmed by the planner's own live get_smart_site call.",
+    "artifactAsCited": "_inbox/2026-09-12_191500_surface_probe.json (in the lane's own worktree, P:/seat-worktrees/property/legacy-design-tools-p157-cad-ingest/_inbox/ -- the lane invoked the planner's script itself since it cannot write to this worktree)"
+  },
+  "falsifier": "Resumption 2's addendum: if after the re-load through the fixed parser the improved-parcel null count on cad_property does NOT fall for 48453, the vocabulary is still wrong. OBSERVED: fell from 396,743/396,743 (100%) to 2,702/396,743 (0.68% living area) / 2,882/396,743 (0.73% year built) on both staging and production. Both probe parcels carry exact values matching the raw IMP_DET.TXT rows. A second mechanism (an overlay clobbering a correct value) was explicitly checked per the falsifier's own instruction, found live and firing for one parcel via a DIFFERENT surface than the one the probe measures, and resolved by the mission's own required fill step.",
+  "contradicted": "Nothing about this resumption's premise was wrong. Two findings named, neither a contradiction: (1) Caldwell's MAIN AREA convention is now empirically confirmed against real checked-in fixture rows (previously theorized); Bastrop's convention remains an assumption, not independently re-pulled this round (out of Travis-scoped budget). (2) The falsifier's own precautionary instruction to check 'an overlay reading a different rail' was not merely theoretical -- it was live and firing for 48453:474034 via propertyExplorer.ts's brief route (a different surface than the probe measures), resolved by the mission's own required fill step, not a separate fix.",
+  "leave_behind": [
+    "legacy-design-tools#666 squash-merged 955b7a05..., all CI green. Adds sources.ts PacsExportDeclaration.livingAreaSegmentTypeCds (TCAD: 1ST/2ND/3RD) and a matching rule in pacs/parser.ts's readImprovementRollups, plus ImprovementVocabularyMismatchError. Folds memory=16Gi/cpu=4 into cloudbuild.cad-ingest.yaml's declared spec (previously a hand `gcloud run jobs update` bump).",
+    "Load manifest: staging execution ldt-cad-ingest-kldxq (run 91abfa82...), production execution ldt-cad-ingest-26s8k (run adda0475...), both byte-identical files (PROP.TXT sha256 81e33a3c..., IMP_DET.TXT sha256 6d15c2dd...), both status=success, no ImprovementVocabularyMismatchError thrown.",
+    "factory-parcel-record-fill-dx6b6: county=48453 --apply, records=380917, cells=6,856,506, drift=null. Production-only by design (no staging Factory store).",
+    "county-rail-coverage-report before/after the fill: livingAreaSqft value count rose from 35,694 to 326,667 (+290,973); yearBuilt from 48,298 to 326,614 (+278,316).",
+    "Residual 2,702/2,882 nulls on the improved population NOT root-caused (not required by the falsifier, which only requires the count to fall -- a 99.3% reduction is well past threshold). Left as an open thread if the residual matters to a future program goal.",
+    "Class finding #1 for the overseer (carried forward from resumption 1): the writer and cortex both emit absent-verified for structural fields without knowing whether the improvement-detail file was actually in the load, in every PACS county loaded without one. TCAD is now honest going forward; the general mechanism is unchanged. Fix location: hauska-engine ingest-existing.ts first, then the factory pin. Not fixed in this lane.",
+    "Class finding #2 for the overseer (new, empirically confirmed live): propertyExplorer.ts's structuralFactWithParcelRecordOverlay merges parcel_record's own livingAreaSqft/yearBuilt rail onto the cad_property-sourced value, and when parcel_record's copy is stale it OVERWRITES a correct present value with null -- confirmed live for 48453:474034 before this lane's fill ran (and independently re-confirmed by the planner: get_smart_site's cadRoll.livingAreaSqft still shows 'absent' for both parcels even after the fill, while structuralFact shows present -- two different read paths for the same fact, disagreeing). Sits uneasily next to R-6's 'never add a seventh read path' / 'a cell never holds a value as canon' -- flagged for the overseer to judge against OPS-23 R-6 and ADR-031, not touched in this lane (shared code well outside its Travis-scoped mandate)."
+  ],
+  "missionPremise": "Resumption 2: the real certified export loaded clean but the parser's literal 'MAIN AREA' match never fired against TCAD's real vocabulary. This lane owns teaching the parser a declared per-county segment vocabulary and re-running the load to prove it empirically.",
+  "completionPredicate": "Property Explorer facets and get_smart_site show structuralFact present with non-null livingAreaSqft/yearBuilt for both Travis probe parcels, AND the county-wide null count falls measurably. MET, independently reconfirmed by the planner.",
+  "scopeBasis": "Per-county source declaration, not a hardcoded global literal or a widened check -- the undeclared-county default path is byte-for-byte unchanged, proven by an unmodified existing test still passing. The refusal path is new defensive code, never a relaxation. The job-sizing fold is in-scope under 'deploys are planner-owned'. Both class findings are named for the overseer and explicitly not fixed -- shared code outside this lane's parser-vocabulary mandate.",
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-13T14:40:00Z",
+      "by": "integration seat (overseer)",
+      "note": "CLOSED PASS confirmed by the overseer: the lane's artifact (copied from the LDT lane worktree into doc_repo _inbox) and the overseer's own run 2026-09-13_141641 both read PASS on 48453:113408 (3,550 sq ft, 1950) and 48453:474034 (4,168 sq ft, 2001); production read 2026-09-13: Travis 2026 improved accounts 396,743, living_area_sqft null on 2,702 (0.68 percent), matching the lane's 0.7 percent. This file is the planner's rewrite of the wave-2 close; the wave-2 blocked close stays at _inbox/2026-09-12_p157-structural_close.json on main."
+    }
+  ]
+}

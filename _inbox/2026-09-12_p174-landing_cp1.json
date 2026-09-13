@@ -1,0 +1,21 @@
+{
+  "lane": "p174-landing",
+  "planRows": ["P-174"],
+  "checkpoint": "CP1",
+  "writtenAt": "2026-09-12T18:54:30Z",
+  "note": "Relayed by the dispatch planner from the lane's own worktree _inbox/ (a stray, untracked location -- confirmed not committed into the PR).",
+  "measurementMethod": {
+    "limitation": "No browser-automation tool available; substituted a thorough static+dynamic code investigation and a reproduction test harness (vitest, real PeFactSheetResolver, real fixture-derived facets payloads). This is a genuine code-level measurement, not the live browser session R-4 calls for -- flagged, not hidden."
+  },
+  "mechanismConfirmed": {
+    "name": "cache-outlives-its-inputs",
+    "statement": "PeFactSheetResolver.resolve() is the one shared read path for every entry point, keyed by parcelNodeId with no TTL and no eviction on success -- only on a rejected promise. A parcel whose atom chain has not resolved yet is not a rejection: the server answers HTTP 200 with envelope.declineReason:'atom_path_pending' (the documented Gate C bounce). That pending seal was cached forever, freezing whichever entry point happened to see it first.",
+    "crossValidatedAgainst": "P-152 lane 3 (#393, merged mid-session) independently found the server-side half of the same defect class: applyRecordPatch's failure branch explicitly leaves zoning/envelope untouched on a /record outage, named not silently fixed. Two lanes converged on one root cause from opposite directions without coordinating."
+  },
+  "mechanismRejected": {
+    "name": "search-landing skips the live-envelope augmentation",
+    "statement": "setbacksFact reads facets.envelope.setbacks from the raw un-augmented facets, never from augmentFacetsWithLiveEnvelope's output, which only ever touches geometry/buildableArea (P-153's row), never setbacks. Rejected with a passing regression test comparing a weak search hint against a rich click hint on an identical fixture.",
+    "secondaryCandidateAlsoConsidered": "A parcelNodeId dual-grammar mismatch between situs-index-derived and PMTiles-derived ids -- not proven false with a live trace; left as an open item."
+  },
+  "falsifier": "If, after this lane's deploy, a search for 1109 PECAN ST lands on a card without the setbacks row while a click on the same parcel shows it, the row is not done."
+}

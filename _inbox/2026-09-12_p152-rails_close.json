@@ -1,0 +1,104 @@
+{
+  "lane": "p152-rails",
+  "planRows": [
+    "P-152"
+  ],
+  "status": "closed-partial",
+  "closedAt": "2026-09-12T19:05:00Z",
+  "note": "Relayed by the dispatch planner from the lane's scratchpad final report; PR merges/CI independently re-verified by the planner via gh api before filing. FOURTH ROUND (2026-09-13): the overseer found F21 -- the record-served cityLimitsFact carries no queryPoint, breaking P-158's automated near-bbox instrument and named as a possible third mechanism for P-174's search-vs-click bug. The lane traced the actual defect precisely: mergeBakedBaseFacts already carries cortex's full cityLimitsFact including queryPoint onto the payload, but applyRecordPatch's cityLimits handling does a full replace with composeCityLimits's output, which has no way to construct queryPoint (it isn't part of the retrieval reader's cityLimits cell) -- so the point silently disappeared whenever the rail served 'record'. Important correction, stated precisely by the lane rather than left ambiguous: this predates lane 3's own item-1/item-3 changes -- the lane's own pre-deploy capture from before PR #393 already showed the missing field; it is lane 2's (P152-PANEL) original bug, not something this lane's earlier rounds introduced. Fixed anyway since P-152 is this lane's row: PR #396 (4cffb25c), CityLimitsFactWire now declares queryPoint, applyRecordPatch gains withPreservedQueryPoint applied in both the success and outage branches (carries the point through, never fabricates one). Deployed (dpl_8yn9cac97SZGncJK8ZfA8YA2U9tg) under the lane's own hauska-map lease. Planner independently re-verified live (queryPoint present on all three parcels F21 named) and re-ran P-158's automated instrument, confirming PASS 2/FAIL 0/UNMEASURED 0 with no hand-probe fallback needed.",
+  "noteOriginal": "RESOLVED (planner, three deploy rounds after this close was first filed). Round 1: after mounting RETRIEVAL_API_URL/KEY and deploying, a genuinely fresh feasibility refresh (bypassing all export caching) for 48453:474034 still showed every dollar rail, city-limits and special-district clause exactly as before this row's work, despite the planner independently confirming retrieval-api itself returned correct serve:record data for every rail needed. Sent back to the lane. Round 2: the lane found and fixed a temporal-dead-zone bug (readBudgetMs referenced before its const initializer inside a Promise.race timeout branch, so a synchronous ReferenceError silently beat every real network fetch) -- PR #431. Redeployed; re-verification showed city limits, year built, living area, both special-district names (Lake Pointe MUD + West Travis County MUD 3, reconciled), and the vacancy guard all now correct live -- but market/assessed value still UNAVAILABLE. Round 3: the planner independently confirmed by reading the raw retrieval-api response that market/assessed/land/improvement value are served as JSON STRINGS ('969365') while yearBuilt/livingAreaSqft are served as JSON numbers; the lane found and fixed the same asymmetry in recordScalarNumber (only accepted typeof number) -- PR #433. Redeployed; final verification shows $969,365 for both market and assessed value. Final probe (_inbox/2026-09-12_205510_surface_probe.json): PASS 3 / FAIL 2, the two fails being the pre-existing F3 setback disagreement explicitly assigned to P-154, not a regression. Status upgraded from the lane's own closed-partial only insofar as the report-composer half (items 4,6,7) is now fully live-confirmed; item 2 (panel dollar rails gated in BFF) remains genuinely deferred per the lane's own CP1 decision.",
+  "repo": [
+    {
+      "name": "hauska-map",
+      "branch": "feat/p152-setbacks-zoning-from-reader",
+      "baseCommit": "4350ab957a5b2a64faba5b39b32575ac4c2a8668",
+      "prs": [
+        {
+          "pr": 393,
+          "mergeSha": "58573ea64d5ae936a426572976e0a62a2c7769d6",
+          "ciConclusion": "SUCCESS"
+        }
+      ],
+      "servingRevision": "dpl_7uKw7Bzi3HQgaYKRCT4xis33oDTh, production, READY, confirmed live via X-Pe-Read-Path: record on all five probe parcels."
+    },
+    {
+      "name": "hauska-engine",
+      "branch": "feat/p152-report-composer-reads-reader",
+      "baseCommit": "99f9146fa5fc0b172cd77a122487b8dddc2502e4",
+      "prs": [
+        {
+          "pr": 426,
+          "mergeSha": "da9069327e30af098d87419ffd5804d79c536a7f",
+          "ciConclusion": "SUCCESS"
+        }
+      ],
+      "servingRevision": "UNCHANGED (hauska-engine-api-00205-san) -- merged, not yet deployed; RETRIEVAL_API_URL/KEY not mounted."
+    }
+  ],
+  "missionPremise": "Lane 2 made the panel a second reader consumer for 14 rails but left zoning/setbacks on the atom chain and the feasibility report untouched. This lane finishes the panel's zoning/setback composition (item 1), declares rather than silently absorbs a reader outage (item 3), and makes the report composer a third reader consumer (items 4,6,7).",
+  "completionPredicate": "Pre/post facets diff for all 5 probe parcels shows setbacks/zoning changing only on record-served axes and matching the stated prediction; a simulated /record 503 yields record-unavailable with typed refusals, never a silent stale 200; composeParcelReportFacts given 48453:474034's real shape produces a present parcelOwnership section and trips footprintContradictsAppraisal -- proven by 9 passing integration tests, not yet observable live because the engine change is undeployed.",
+  "scopeBasis": "Built/tested/merged, and for hauska-map live-verified: items 1,3,4,6,7. Deliberately NOT built: item 2 (panel dollar rails+owner gated in BFF -- deferred, entitlement-gate risk/verification tradeoff not safe to ship unreviewed in one pass); schoolDistrict/utilityService/zoning-setback in the report (no existing section to hang them on); item 5's engine-side gate (real gap is smartsite-mcp having no entitlement check at all, and the engine composer never reading accessTier -- the PE BFF itself was found to already fully gate its callers, so the originally-dispatched fix would have been a no-op).",
+  "probe": {
+    "instrument": "Manual live pre/post diff against production smartsite.cloud plus get_smart_site (depth=node) as independent cross-check -- the lane could not write scripts/surface-probe.mjs's output artifact into this worktree; this is R-4's 'raw output of hand probes' fallback.",
+    "diff": {
+      "48021:34049": {
+        "setbacks_pre": {
+          "front": 25,
+          "side": 5,
+          "rear": 25,
+          "corner": 15
+        },
+        "setbacks_post": {
+          "front": 30,
+          "side": 5,
+          "rear": 25,
+          "corner": 15
+        },
+        "mcpCrossCheck": "front_ft NOW MATCHES MCP (30==30) -- exact fix predicted at CP1. side/rear/corner remain mismatched because those three axes serve legacy-transitional, untouched by design, not a regression."
+      },
+      "48021:33223": {
+        "setbacks_pre": {
+          "front": 20,
+          "side": 5,
+          "rear": 20
+        },
+        "setbacks_post": "unchanged",
+        "mcpCrossCheck": "get_smart_site setbacks-envelope is ABSENT (SETBACK_ROUTER_NOT_A_DISTRICT, district GC has no table). setbackFrontFt serves record but the underlying cell has no value; composeSetbackAxisScalar correctly returns undefined, panel's atom-chain 20ft left untouched, not fabricated. Residual disagreement assigned to P-154."
+      },
+      "48453:113408": {
+        "verdict": "PASS, unchanged (both absent before and after)"
+      },
+      "48453:474034": {
+        "verdict": "PASS, unchanged (both absent, not-applicable, before and after)"
+      },
+      "48453:367134": {
+        "verdict": "PASS, unchanged, exact MCP match before and after"
+      }
+    },
+    "p152RowPredicateResult": "PASS 3 / FAIL 2 -- identical bucket count to lane 2's prior result, but 48021:34049 measurably improved (front_ft now agrees with MCP) without flipping its bucket, since 3 of 4 axes remain on legacy-transitional rails outside this lane's control. Full resolution of this row is P-154/MOST-CURRENT's mandate (R-1).",
+    "reportSidePendingDeploy": "48453:474034's PDF (UNAVAILABLE dollars, city-limits constant) and F17's special-district disagreement cannot be observed live -- engine change merged but not deployed. Verified instead via 9 passing integration tests using fixtures shaped from this parcel's real live data.",
+    "artifact": "_inbox/2026-09-13_141641_surface_probe.json",
+    "artifactAsCited": null
+  },
+  "falsifier": "Did NOT fire for the hauska-map half: every rail whose reader-slated serve is 'record' now matches MCP. A simulated 503 yields record-unavailable with typed refusals, never a silent stale 200. Engine-side clauses (PDF, anonymous studio-gated read) are UNMEASURED, not passed -- code exists and is tested but undeployed, and item 2 (which an anonymous-read test would need) was deferred.",
+  "contradicted": [
+    "CP1's plan for item 5 assumed a real BFF bug ('send the real header instead of static'). Re-reading pe-feasibility-export-handler.ts before building found requireStudioSession already rejects unentitled callers before the header is built -- every real caller today IS entitled, so the static value is accurate. No BFF bug exists; caught before writing code.",
+    "vercel build/deploy from hauska-map repo root prints spurious tsc diagnostics on untouched files; confirmed pre-existing on the parent commit and non-blocking.",
+    "Nothing else in the dispatch or wave-3 verify doc's factual claims was found wrong."
+  ],
+  "leave_behind": {
+    "perParcelServeCounts": "2 of 7 zoning/setback rails serve record (zoningDistrict, setbackFrontFt), 5 serve legacy-transitional, 0 refused -- identical across all 5 probe parcels. This is the retirement backlog for whoever next touches the zoning-envelope rail group's slate (a factory-side change, not this lane's).",
+    "engineSecretMountNeeded": "gcloud run services update hauska-engine-api --region us-central1 --project hauska-prod-497015 --update-secrets=RETRIEVAL_API_KEY=HAUSKA_ENGINE_API_KEY:latest --update-env-vars=RETRIEVAL_API_URL=https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app (mirrors LDT's existing cloud-run-deploy.yml pattern; HAUSKA_ENGINE_API_KEY already exists in Secret Manager). This program's own named STOP gate for a new secret mount -- not run by the lane. A deploy of PR #426 under the planner's lease is also required.",
+    "entitlementTransportGapIsRealButElsewhere": "PE BFF is fully gated already. Real gap: (1) smartsite-mcp has NO entitlement check at all before calling the engine; (2) the engine parses x-hauska-access-tier but no route/composer reads it to gate anything -- this lane's new dollar-rail composition is ungated, same as the pre-existing substrate path. Building the engine-side gate requires threading GateFrontContext through parcel-terrain.ts, deciding which of the four existing access-tier values denotes Studio-or-better, and a typed refusal shape -- not built this session (security-relevant, no live round-trip to verify against, explicitly reserved for review at CP1).",
+    "specialDistrictLiveConfirmation": "get_smart_site confirms 48453:474034's specialDistrictFact is 'Lake Pointe MUD' via record/reader. Did NOT find a live special-district-fact atom in the engine substrate for the same parcel to confirm F17's 'West Travis County MUD 3' disagreement fires against real substrate data (no live engine deploy to query against) -- a future lane deploying this change should re-pull the PDF and confirm both names appear.",
+    "buildDiagnosticNoise": "vercel build/deploy prints spurious tsc errors on unrelated files; confirmed pre-existing, non-blocking; the repo's Vercel build-config owner should reconcile which tsconfig the build-time pass resolves.",
+    "acreageLivingAreaYearBuiltOnPanelOutage": "Item 3's declared-outage treatment covers 9 *FactWire rails but deliberately leaves acreage/livingArea/yearBuilt/zoning/envelope untouched on a /record outage -- no honest refused shape exists for these without inventing one this lane has no data to construct correctly."
+  },
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-13T14:40:00Z",
+      "by": "integration seat (overseer)",
+      "note": "closed-partial STANDS. Instrument 2026-09-13: readPath record on all five; panel and MCP setbacks DISAGREE on 48021:34049 (30/5/25/15 vs 30/10/30/20) and 48021:33223 (20/5/20 vs absent); the lane's own close says only setbackFrontFt and zoningDistrict serve record and five rails serve legacy-transitional. F21 (queryPoint dropped by applyRecordPatch's cityLimits replace) fixed by hauska-map #396 and the point is back on the record path (P-158's near-bbox leg measures again). Remaining: the five legacy-transitional rails, item 2 (dollar rails and owner gated in the BFF), and the engine-side entitlement gate, all named in leave_behind."
+    }
+  ]
+}

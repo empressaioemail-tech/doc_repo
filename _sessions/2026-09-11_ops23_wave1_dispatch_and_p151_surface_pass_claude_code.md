@@ -344,6 +344,20 @@ committed to doc_repo main twice and put its close on a seat branch, and its cit
 was a hand-made file wearing the instrument's name; both are recorded. Memory written:
 verify a geometry claim by ring, acreage and neighbours, never by label.
 
+## Wave 3 reviewed (2026-09-13, 14:45Z)
+
+The planner closed wave 3 as five PASS and two partial. I re-ran all seven predicates live with
+its observations and the operator's final P-174 observation. P-157, P-158 and P-174 reproduce;
+P-173 stands on the planner's own artifact, which I could not reproduce without the engine store
+credential; P-152 fails its predicate on both Bastrop parcels because only two of seven zoning and
+setback rails serve record, so the wave close's "closed PASS" for P-152 is corrected to partial,
+which is what the lane's own row close says. P-154 and P-167 are partial as scored. The planner
+had overwritten the wave-2 P-157 and P-158 closes in place; main keeps the wave-2 files and
+carries the planner's versions under new names. Every close now points at a probe artifact that
+exists under _inbox, with the lane's original citation kept beside it, and the gate accepts the
+batch. The retrieval mount on hauska-engine-api is live; the operator's approval for it is to be
+confirmed in the planner's thread.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not

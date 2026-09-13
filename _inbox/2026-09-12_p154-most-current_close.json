@@ -1,0 +1,54 @@
+{
+  "lane": "p154-most-current",
+  "planRows": [
+    "P-154"
+  ],
+  "status": "closed-partial",
+  "note": "Filed by the dispatch planner from the lane's two reports (initial build + a rebase/correction round the planner requested after an adversarial review). Both PR merges independently re-verified via gh api before filing.",
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/hauska-engine",
+      "number": 424,
+      "mergeSha": "2221b6a63fe0b170a7920e16a3a84fb77f8ce769",
+      "mergedAt": "2026-09-12T19:14:20Z",
+      "ciConclusion": "SUCCESS (planner-verified via gh api on the post-rebase head 48ba0c5, then again after merge)"
+    },
+    {
+      "repo": "empressaioemail-tech/hauska-factory",
+      "number": 141,
+      "mergeSha": "ba15fee524fb36cd53075627385e94d3155ff3e3",
+      "mergedAt": "2026-09-12T18:45:01Z",
+      "ciConclusion": "SUCCESS (planner-verified, merged before the layer-83 review round since unaffected)"
+    }
+  ],
+  "probe": {
+    "artifact": "_inbox/2026-09-13_141641_surface_probe.json",
+    "artifactAsCited": "not applicable -- no service deploy needed (packages/adapters and factory job code, consumed at call time, not a deployed service); raw get_smart_site output pasted below per R-4's fallback"
+  },
+  "falsifier": "If the resolver picks a value for a parcel whose candidates disagree and whose dates are unreadable, it is a silent pick and the change is wrong. Observed: it doesn't -- resolveMostCurrentSetback returns status:'conflict' with every candidate whenever an unreadable-date candidate disagrees in value. 12/12 unit tests pass including all 3 required non-vacuity cases and the concrete 48021:34049 case (451/451 full adapters suite post-rebase).",
+  "contradicted": [
+    "The dispatch's 'consume it through the engine module it already pins' was false -- hauska-factory cannot pin @hauska-engine/adapters (private, unpublished, 404 on npm); factory's own 2026-09-10 correction already recorded this.",
+    "The dispatch and this lane's own initial verify doc both said the Ordinance_Link bug 'reads empty' on layer 83; live-reproduced it 400s the whole query instead.",
+    "48021:33223's setbacks are not '30/10/30/20 already' as the mission assumed -- live get_smart_site (pre-deploy) showed it absent (SETBACK_ROUTER_NOT_A_DISTRICT, district GC has no chart row); honest behavior, not a bug, but the mission's baseline claim was wrong.",
+    "PLANNER'S OWN ERROR, caught and corrected: the planner's adversarial review initially concluded the lane's Ordinance_Link->Ordinance_ fix targeted the wrong layer (layer 83, which genuinely has no Ordinance_ field -- confirmed live by the planner). The lane's rebuttal, verified by the planner reading the actual source, was correct: the outFields request with Ordinance_ only ever targets layer 23 (BASTROP_PARCELS_ONE_CLICK_LAYER_23, confirmed at both call sites); BASTROP_LAYER_83_REVISIONS_URL is used only as a static citation_url string, never as a query target. The planner's layer-83 field-list finding was itself correct and is now a locked-in regression test (bastropPerParcelRecordLiveFieldCheck.test.ts), but the conclusion drawn from it was wrong. Recorded here as this wave's planner error-log entry.",
+    "During the forced rebase onto a fast-moving main (origin/main advanced through #427, #426, #425, #423 while this PR sat open), the lane found a genuine, previously-undocumented SIXTH live producer of Bastrop setbacks not named in any wave's verify doc: packages/engine-core/src/property-reasoning/bastrop-per-parcel-setback.ts:75 (buildBastropPerParcelSetbackDescriptor) calls getSetbackTableForZoning with a supplied per-parcel record -- the exact code path this lane's resolver change affects -- and it has no test exercising its numeric output. Not built out this wave (flagged, not silently left uncovered)."
+  ],
+  "leave_behind": [
+    "Resolver lives at hauska-engine packages/adapters/src/local/setbacks/most-current-setback-resolver.ts (fallback location; no substrate worktree was available this wave). Imported by hauska-engine's own index.ts and bastrop-per-parcel-record.ts. NOT imported by legacy-design-tools or hauska-factory -- structurally blocked (private/unpublished package).",
+    "legacy-design-tools authoritativeSetbackSource.ts is UNCHANGED -- still vendors its own table JSON, still ranks tier-first with date only as tiebreak. Needs either a substrate worktree with a corpus 'resolve' subpath, or approval to publish @hauska-engine/adapters to npm.",
+    "Bastrop cell diff counts: NOT MEASURED -- no --apply run against staging/production was performed this wave (no Cloud Run job execution needed for this row; the change takes effect at call time once the merged code reaches a deployed consumer).",
+    "hauska-engine index.ts's getSetbackTableForZoning still returns SetbackTable | null (no conflict variant) -- a genuine conflict still yields a value today, now disclosed via display_meta.second_source rather than silent, but not refused outright. Growing a real conflict-shaped return type ripples into every existing caller; flagged for a future row.",
+    "The sixth live producer (bastrop-per-parcel-setback.ts:75, buildBastropPerParcelSetbackDescriptor) has no test locking in its numeric output before or after this change -- not this wave's to build, named for whoever next touches that file.",
+    "FLEET MEMORY: GROUND-TRUTH (2026-09-12) layer23 row 34049 = 25/5/25/15, Ordinance_ 2019-51; layer83 row 34049 = 30/10/30/20, no ordinance-citation field of any name. LESSON: ArcGIS 400s the WHOLE query on an unknown outFields entry. LESSON: verify which SERVICE URL a field-name fix actually targets before concluding a fix is wrong -- a correct field-list finding can still be misapplied to the wrong call site. DEAD-END: @hauska-engine/adapters cannot be the cross-repo home for the shared resolver -- private/unpublished. OPEN: whether layer 23's 2026-08-24 edit touched row 34049 is unreadable from the service (the genuine conflict-shaped case R-1 names, not the one 34049 hits)."
+  ],
+  "missionPremise": "R-1: the source with the most recent effective date supplies the value everywhere; tier breaks ties only on equal/unreadable dates; unreadable-date disagreement is a conflict row, never a silent pick.",
+  "completionPredicate": "One resolver module exists, is imported by every producer that CAN import it given real repo/package boundaries, is unit-tested against the pre-registered falsifier and non-vacuity cases, and demonstrably changes at least one live producer's answer for 48021:34049 from the tier-first value to the most-current value -- all TRUE, and both PRs are now merged (previously blocked on CI/rebase). NOT complete: LDT and factory sharing the executable resolver (blocked on a worktree/publish decision outside this lane); a newly-found sixth producer left untested; no live surface deploy of the merged hauska-engine code confirmed this wave (that is P-152 lane 3's shared hauska-engine-api deploy, still pending the planner's lease and a secret mount).",
+  "scopeBasis": "Did not touch hauska-map. Did not mint/backfill envelope atoms. Did not change the entitlement/pricing surface. Did not change any Bastrop value by hand -- every value change is the resolver picking a different existing candidate. Did not rank by source kind anywhere in new code.",
+  "overseerAnnotation": [
+    {
+      "at": "2026-09-13T14:40:00Z",
+      "by": "integration seat (overseer)",
+      "note": "closed-partial STANDS. Instrument 2026-09-13: panel and endpoint disagree on both Bastrop parcels (34049 panel 30/5/25/15, endpoint and MCP 30/10/30/20, source date 2026-04-14; 33223 panel 20/5/20, endpoint 25/7/15/7). The resolver exists in hauska-engine only; legacy-design-tools still ranks tier-first. Sharing it needs the substrate worktree grant or an adapters package publish, an operator ruling."
+    }
+  ]
+}
