@@ -57,6 +57,8 @@ A parcel is not an account. `parcel_record`'s intended population is
 `landing_parcel_jurisdiction`, not the `cad_property` account roll. N polygons can share one
 `prop_id` and are folded to one atom by design.
 
+**Two-namespace counties (ruled 2026-09-13, `_decisions/2026-09-13_hays_node_identity_is_the_parcel_map_id.md`).** Where the parcel map and the appraisal district number one parcel differently (Hays: `txgio_parcel.prop_id` is the QuickRefID R-stem, `cad_property.prop_id` is the PropertyID; Williamson has the same structure), the `place_key` STAYS the parcel-map prop_id. The appraisal account is an attribute reached only through the county's published crosswalk (`txgio_parcel.geo_id` = `cad_property.property_number`, corroborated by the `quick_ref_id` stem). Never join a cell, a label or a dollar to `cad_property` by the bare number; no crosswalk account is an honest absence (`no-crosswalk-account`), never the colliding account. Minting nodes on the account number is rejected.
+
 ## Stores
 
 CORRECTED 2026-09-10. This block previously read "Two databases on one Neon host" and

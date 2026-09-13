@@ -371,6 +371,16 @@ observation file the instrument can read. Ten worktrees registered; the planner 
 the wave-3 lessons: never overwrite a previous wave's close, and a wave close's row statuses
 must agree with the row closes.
 
+## Two Hays rulings (2026-09-13, 15:45Z)
+
+The operator ruled the node identity question as option A, final: the parcel-map id stays the
+node id and the ledger key, and the appraisal account is an attribute reached only through the
+county's crosswalk. Re-keying on the account is rejected; the OPS-21 identity law gains the
+paragraph and P-161 carries the crosswalk type. The operator also accepted the recommendation on
+the declared roll: the 2026-08-26 export is Hays' 2026 vintage, consistent with the Travis
+ruling, landing as a cloud re-ingest after P-177 with the 390 accounts it lacks marked rather
+than silently kept at notice values. P-178 is rowed and compiled for hand-carry.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
