@@ -1,0 +1,61 @@
+{
+  "lane": "p175-hays-online",
+  "planRows": ["P-175", "P-145"],
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "at": "2026-09-12",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p175-hays-online",
+    "branch": "fix/p175-hays-online-situs-binding",
+    "baseCommit": "955b7a056a794c0d9ecd347ee8c1d092ae181122",
+    "commitContainsRequired": "cebd041d (CTX-HAYS-BACKFILL, verified via git merge-base --is-ancestor)",
+    "pnpmInstall": "clean, 1052 packages, done in ~30-40s",
+    "seatRegistration": "already pre-registered ahead of creation by the dispatch planner (mission _catalog/dispatch_missions/mission_p175_hays_online.md) at the correct worktree path, branch fix/p175-hays-online-situs-binding. Self-correction: I initially did not check for this and created a worktree + a duplicate seat_register.json entry under a self-chosen branch name (feat/p175-hays-online) before reading the register closely. Caught it, removed the duplicate entry (P:/doc_repo commit 2225a8c2, pushed), deleted and recreated the worktree on the correct pre-registered branch. Lesson for this lane: read the full existing registration before registering anything."
+  },
+  "sourceVerified": {
+    "haysDrop": "hays.zip, sha256 7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193, recovered from a prior session's scratchpad and re-hashed to confirm match against the dispatch's declared value before use",
+    "propertyMember": "PropertyDataExport1404449.txt, 40 columns, 134,592 rows read (matches dispatch's stated 134,592 records)"
+  },
+  "neonBranchesDeclared": {
+    "project": "fancy-fire-06136146",
+    "order": ["f06-staging-neondb (br-purple-snow-ap51ewu6)", "production (br-crimson-feather-aphfmy91)"],
+    "connectionMethod": "neonctl connection-string --project-id fancy-fire-06136146 --branch <name> --database-name neondb --role-name neondb_owner"
+  },
+  "violationTestsRunLive": [
+    {
+      "test": "wrong/decoy branch name",
+      "how": "built DATABASE_URL against f06-staging-neondb-1788871574546, a real but stale near-miss-named branch (not the declared f06-staging-neondb), and ran the real dry-run pipeline (real file, real read) against it",
+      "result": "REFUSED (target-columns): cad_property on this store has no quick_ref_id, property_number column. Fired even on the dry-run path, after the file was read but before any digest/write attempt.",
+      "conclusion": "the migration-presence guard is live and would have caught a mistyped/stale branch name before any write"
+    },
+    {
+      "test": "wrong --tax-year",
+      "how": "ran dry-run against the REAL f06-staging-neondb with --tax-year=1999 (declared vintage is 2026)",
+      "result": "REFUSED: --tax-year=1999 does not match the declared vintage for county 48209, which is 2026. Fired before any file work or DB connection.",
+      "conclusion": "declared-vintage gate is live"
+    },
+    {
+      "test": "missing --record on a non-dry-run",
+      "how": "ran the real (non-dry-run) invocation against the real f06-staging-neondb with no --record flag",
+      "result": "REFUSED: --record=<path.jsonl> is required for a real run. Fired before any file work, DB connection, or write.",
+      "conclusion": "durable-record requirement is live"
+    }
+  ],
+  "leaseCheck": {
+    "checked": "_catalog/leases/ (doc_repo)",
+    "result": "empty except README.md -- no outstanding deploy-traffic lease on hauska-engine-api, api-server, or smartsite-mcp as of this checkpoint. Will re-check and record a lease before any Step 5 traffic shift, per AGENT_CONTRACT section 3."
+  },
+  "plan": {
+    "step1": "Staging backfill: dry-run with --record against f06-staging-neondb (real branch, migration confirmed present in the wrong-branch violation test's contrast -- will re-confirm target-columns passes on the real branch as the first line of the dry-run output), read the record, then apply. File as CP2.",
+    "step2": "GATED ON OPERATOR GO IN THIS THREAD, per dispatch Step 2 explicitly. Will not run before that.",
+    "step3": "H1 reconciliation in hauska-factory-ops21-h1 worktree, on production, after step 2's operator go and after step 2 completes cleanly.",
+    "step4": "Factory publish job, staging then production, gated the same way as step 2 for the production half.",
+    "step5": "Situs resolver code change + deploy; will register a deploy-traffic lease in _catalog/leases/ before any traffic shift, per AGENT_CONTRACT section 3 (added 2026-09-12, OPS-16 P-170, post-incident rule).",
+    "step6": "surface-probe.mjs run against all five parcels."
+  },
+  "missionPremise": "CTX-HAYS-BACKFILL (#654, merged cebd041d) built but never ran the two-column identifier backfill; CTX-HAYS-REBIND (#653, merged c43e2436) built but never activated the geometry rebind; OPS-21 H1 built the Hays identity reconciliation and held it on this backfill. All three are merged, dormant code -- per the dispatch's own 'vacuous write path' framing, this lane's job is to actually run them, in the declared order, against real data, and fix the situs resolver so the five Sturgeon Dr parcels stop chimera-binding to 48209:97658.",
+  "completionPredicate": "get_smart_site 48209:84639 carries the Sturgeon polygon and 629 label; 48209:97658 carries the Mesa Verde polygon and label; scripts/surface-probe.mjs --rows P-175 reads PASS on all five addresses (615/617/619/627/629 Sturgeon Dr), or the exact reason on each if not.",
+  "scopeBasis": "Dispatch explicitly excludes: adopting the 8-26-2026 drop as the declared roll, repairing p78Merge's overwrite in other counties, OPS-21 cell fill for Hays beyond what the bake serves, and any 2D hydraulic modeling. Identity backfill only -- values are a separate, explicitly out-of-scope question.",
+  "askingOperator": "Go-ahead to run Step 1 (staging backfill: dry-run then apply against f06-staging-neondb). This is a real write to a real store, even though it is staging, and CP1/CP2 are this dispatch's own named review points 'in this thread' before further work -- flagging for review now rather than proceeding straight through to CP2 and the production gate."
+}

@@ -1,0 +1,77 @@
+{
+  "lane": "p175-hays-online",
+  "planRows": ["P-175", "P-145"],
+  "status": "closed-partial",
+  "probe": { "artifact": "_inbox/2026-09-13_003000_surface_probe.json" },
+  "falsifier": "Pre-registered in the dispatch: (1) 48209:97658 still showing the Sturgeon polygon under the Mesa Verde label after Step 4 -> rebind did not reach the bake. (2) '615 STURGEON DR' resolving to a parcel other than TxGIO 97651 -> containment query wrong. (3) production backfill updating a number other than 134,216 on first run or other than 0 on re-run -> stop before Step 4. (4) probe passing while the operator's own Find box search for 629 lands on a Mesa Verde card -> probe/browser path mismatch.",
+  "contradicted": "None of the four pre-registered falsifiers fired. (1) live-verified 48209:97658 now correctly serves '13669 MESA VERDE DR, AUSTIN, TX 78737', not the Sturgeon lot. (2) live-verified '615 Sturgeon Dr' resolves to TxGIO 97651 exactly. (3) both production backfill runs matched the pre-registered expectation exactly (134,216 / 0). (4) find_parcel IS the Find box's own backend route (/api/brokerage/v1/place/situs-search), same code path, no divergence. A fifth, NOT pre-registered condition did fail: the dispatch's own text asserted '48209:84639 must carry the Sturgeon polygon AND the 629 label' as the Step 4 completion state, implicitly assuming parcel_record_cell would be populated under the crosswalk-target node id after the production publish. Live-verified false: parcel_record/parcel_record_cell is keyed by txgio_parcel.prop_id verbatim everywhere (H1's own documented finding, confirmed again here), so node 48209:84639 has zero parcel_record_cell rows no matter how many more publish runs happen under the current bake code -- its flood fact stays 'refused (parcel-record-cell-miss)'.",
+  "leave_behind": [
+    {
+      "item": "48209:97652 (617 Sturgeon Dr's own raw TxGIO parcel) is a SECOND, previously undiscovered chimera: the same CAD PropertyID also names a real, unrelated account at 13749 Mesa Verde Dr, Austin (verified live: cad_property 48209/97652/2026 carries that situs from the 2026-PRELIMINARY-DATA-EXPORT-FILES.zip; the 2025 P-78 StratMap merge had overwritten it with 'STURGEON DR, SAN MARCOS'). find_parcel's search result is correct (617 Sturgeon), but the served card for that specific node currently shows the Mesa Verde account. Same defect class and same root cause (CTX-HAYS-KEY) as 629's named chimera; not named in this dispatch because nobody had looked at 97652 specifically until this close. Needs the same treatment 629 got, or a generic 'does this TxGIO id collide with a different real CAD account at a different address' check across the whole gate-blocked join -- decided with the operator to leave for a follow-up card rather than build under this dispatch.",
+      "owner": "next P-124/OPS-21 lane on the property seat's Hays work",
+      "plan_row": "P-175"
+    },
+    {
+      "item": "48209:84639 (629 Sturgeon's now-correct node) has flood fact 'refused (parcel-record-cell-miss)', not 'present'. parcel_record_cell is keyed by TxGIO's raw prop_id everywhere; the tier-1 bake's crosswalk (nodeFacetBakeTier1ConformantCli.ts) stamps the CAD account's dollar/land-use values onto the TxGIO-keyed row (97658) rather than writing a row under the crosswalk-target id (84639), so no flood/cityLimits/schoolDistrict/etc. cell exists for 84639 under the current bake code. This is a bake-side node-identity question (does the bake need to ALSO write a row keyed by the crosswalk target, or should the situs resolver instead point 629 at 97658 with a corrected label-stamp on that row -- two different fixes with different blast radii), explicitly out of scope here ('OPS-21 cell fill for Hays beyond what the bake serves' -- dispatch's own stated exclusion).",
+      "owner": "hauska-factory maintainer / next OPS-21 lane",
+      "plan_row": "P-175"
+    },
+    {
+      "item": "615/619/627's served card labels ('STURGEON DR, SAN MARCOS, TX 78666', no house number) do not literally start with the house number, even though find_parcel's own search-result label does. No stored field (CAD roll or TxGIO situs_address) carries the number yet for these three accounts -- this will resolve itself once the CAD roll is re-ingested with house numbers assigned (an out-of-scope re-ingest question per this dispatch's own 'declared-roll' exclusion), not something the resolver can synthesize.",
+      "owner": "whichever lane next handles Hays CAD re-ingest",
+      "plan_row": "P-175"
+    },
+    {
+      "item": "find_parcel near {\"query\":\"629 Sturgeon Dr, San Marcos, TX\",\"radiusFt\":300} truncation/705-W-RIVER-RD-stacking issue named in the dispatch's 'Also measure' section was NOT investigated -- out of scope for this lane's two changed files, no time remaining after the two chimera investigations.",
+      "owner": "unassigned",
+      "plan_row": "P-175"
+    }
+  ],
+  "missionPremise": "CTX-HAYS-BACKFILL (LDT#654, merged cebd041d) and CTX-HAYS-REBIND (LDT#653, merged c43e2436) were both merged but never executed/activated; OPS-21 H1 (P-145) was built and held on the backfill; the Sturgeon/Mesa-Verde chimera at node 48209:97658 and four located-unbound vacant lots meant Smart Site could not serve a flood determination for any of five addresses a real customer (an architect, via a builder client) needed for a City of San Marcos hydraulic-modeling request. This lane's job was to run the merged-but-dormant chain in order and fix the situs resolver so all five addresses work through the customer's own Find-box path.",
+  "completionPredicate": "OPS-16 plan-of-record P-175 row, verbatim: 'each of the five addresses resolves through the Find box path to a node whose card label starts with that house number and STURGEON, whose record point is within 150 m of the CAPCOG address point, and whose flood fact is present.' Measured live (see probe artifact): address resolution is fixed 5/5 (no located-unbound, no wrong-account landing via search, for any of the five); flood fact is present 4/5 (refused only on 629's own corrected node, for the bake-stamping reason above); served-card label is fully correct only 1/5 (629) and lacks a house number (not wrong, just absent) on 3/5 (615/619/627), and is actively wrong on 1/5 (617, the newly-discovered second chimera). Status is 'closed-partial' because the predicate, read literally against the served card (not just the search result), does not PASS for every parcel.",
+  "scopeBasis": "In scope and done: the identifier backfill (staging + production, digest-verified, idempotent), OPS-21 H1's disposition instrument (closing P-145's own predicate: noDispositionCount=0), the Hays tier-1 publish (staging + production, walkVerdict pass both times), and the situs resolver's two named changes (address-point containment for located-unbound addresses; crosswalk resolution for a gate-blocked county's parcel-situs hit) -- the SECOND of which required a live-caught, self-corrected design error (the containment path should not crosswalk; PR #669 fixed it after PR #668 shipped it wrong). Explicitly out of scope per the dispatch and preserved as such: adopting the 8-26-2026 drop as the declared roll, repairing p78Merge's overwrite in other counties, OPS-21 cell fill for Hays beyond what the bake serves (the 84639 flood gap falls here), and any 2D hydraulic model. The newly-discovered 617/97652 chimera and the extended surface-probe.mjs P-175 row were judged, with the operator, to belong to a follow-up card rather than this close.",
+  "backfillRecords": {
+    "staging": {
+      "dryRun": "C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/a4463c17-e411-4d27-a5cb-b5c9ab2f984a/scratchpad/ctx-hays-backfill_staging_dryrun.jsonl",
+      "apply": "C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/a4463c17-e411-4d27-a5cb-b5c9ab2f984a/scratchpad/ctx-hays-backfill_staging_apply.jsonl",
+      "summary": "roll 134606, offered 134591, matched 134216, updated 0 (staging was ALREADY populated identically before this run -- an unexplained prior write, live-verified via count query and untouched-columns digest, reported as a finding at CP2, not hidden), skipped-no-roll-row 375, skipped-null-identifier 0, digest VERIFIED"
+    },
+    "production": {
+      "dryRun": "C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/a4463c17-e411-4d27-a5cb-b5c9ab2f984a/scratchpad/ctx-hays-backfill_prod_dryrun.jsonl",
+      "apply": "C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/a4463c17-e411-4d27-a5cb-b5c9ab2f984a/scratchpad/ctx-hays-backfill_prod_apply.jsonl",
+      "applyRerun": "C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/a4463c17-e411-4d27-a5cb-b5c9ab2f984a/scratchpad/ctx-hays-backfill_prod_apply_rerun.jsonl",
+      "summary": "matched the pre-registered expectation exactly: roll 134606, offered 134591, matched 134216, updated 134216 (first run), updated 0 (re-run), skipped-no-roll-row 375, skipped-null-identifier 0, not-written 390, digest VERIFIED both runs"
+    }
+  },
+  "h1Disposition": {
+    "pr": "hauska-factory#142",
+    "mergeSha": "22bb03683eaf237a653e33ba39f18f714ca791c9",
+    "ciConclusion": "success (test, gate8, ldt-sha-comment-presence all literal conclusion 'success', read via check-runs API not gh pr checks)",
+    "parcelRecordRows": 116420,
+    "realCadAccounts": 134990,
+    "intersecting": 78361,
+    "nonIntersecting": 38059,
+    "table": { "different-key": 37927, "left-the-roll": 0, "never-an-account": 25, "unknown": 107 },
+    "noDispositionCount": 0,
+    "completionPredicateMet": "yes -- P-145's predicate (every non-intersecting Hays row carries a declared disposition, count with none = 0) is satisfied",
+    "controlReconfirmedPostRebase": "Bastrop 48021 / Caldwell 48055, no crosswalk supplied: zero false different-key resolutions, zero no-disposition, both counties"
+  },
+  "publishRuns": {
+    "staging": { "id": "4416e80d-a6be-49de-a6f0-e3b05dd0957e", "status": "success", "walkVerdict": "pass", "tier1Written": 306722 },
+    "production": { "id": "e22c5a01-a0ac-40b6-aece-e19d4118d60d", "status": "success", "walkVerdict": "pass", "tier1Written": 306722, "stagingSiblingId": "4416e80d-a6be-49de-a6f0-e3b05dd0957e" },
+    "ldtShaPin": "cebd041d7ddf102f29ab60eeb9feb04946888125 (confirmed contains c43e2436 via git merge-base --is-ancestor, both before and after the publish runs)",
+    "goldParcel": "48209:135570 (established precedent from CTX-F close, 2026-08-28 -- not invented for this lane)"
+  },
+  "getSmartSiteReads": {
+    "48209:84639": { "label": "629 STURGEON DR, SAN MARCOS, TX 78666", "cadRoll": { "marketValue": 50390, "landValue": 50390, "improvementValue": 0 }, "floodFact": "refused (parcel-record-cell-miss)", "bakedAt": "2026-08-30T06:15:36.571Z (pe-r1 snapshot, pre-dates this lane's work -- was already correctly labeled before today; see missionPremise/leave_behind for what that does and does not mean)" },
+    "48209:97658": { "label": "13669 MESA VERDE DR, AUSTIN, TX 78737", "cadRoll": { "marketValue": 636690, "landValue": 177000, "improvementValue": 459690 }, "floodFact": "present (Zone AO, SFHA true)", "bakedAt": "2026-08-30T06:21:20.097Z" }
+  },
+  "prsAndDeploys": {
+    "legacyDesignTools_668": { "title": "situs resolver: containment + crosswalk", "mergeSha": "9af8649a01991b800e137fa983e688b65aef5e3b", "ciConclusion": "success (11/11 checks, verified via check-runs API)" },
+    "legacyDesignTools_669": { "title": "correction: containment must not crosswalk", "mergeSha": "066ada6becd50669ec31e1e06f66a199b7ccfc3a", "ciConclusion": "success (11/11 checks, verified via check-runs API)" },
+    "hauskaFactory_142": { "title": "H1 rebase + live Hays run", "mergeSha": "22bb03683eaf237a653e33ba39f18f714ca791c9" },
+    "cortexApiServingRevision": "cortex-api-00782-geq (100% traffic, verified by field name from the traffic JSON after shift-traffic; two deploys during this lane, this is the final one carrying both #668 and #669)",
+    "deployTrafficLease": "_catalog/leases/cortex-api.json, taken before both traffic shifts, released after the serving revision was read by field name and this lane's own probe ran against it"
+  },
+  "seatRegistrationNote": "Self-corrected error at Step 0: the worktree/branch for this lane was pre-registered ahead of creation by the dispatch planner (branch fix/p175-hays-online-situs-binding) but this lane initially registered a duplicate seat_register.json entry under a self-chosen branch name before reading the existing registration. Caught and fixed (doc_repo commits 933f68b8 then 2225a8c2) before any further work; the actual worktree/branch used matches the planner's original registration."
+}
