@@ -411,6 +411,15 @@ signed off P-178's migration run as a watched run in the sequence I gave, let th
 ruling stand, and okayed filing the P-153 lane's own close beside mine. P-178's first item is
 landed on main. Wave 5 is in a fresh planner window.
 
+## F23: the refresh stopped producing documents (2026-09-13, 23:10Z)
+
+The P-167 wave-5 lane could not measure its PDF leg because every export came back identical.
+I called the export twice myself: same bytes, created at 19:12Z, before the engine deploy. P-155
+closed on the operator's first click on 2026-09-12 and its predicate no longer holds, so it is
+reopened as a wave-5 addendum with a mission that starts by reading the path and pasting one
+refresh call's log lines. My own error this wave: the P-167 mission left Legacy Design Tools
+out of the lane's worktrees, so the MCP still prints the raw code; the planner gets an addendum.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
