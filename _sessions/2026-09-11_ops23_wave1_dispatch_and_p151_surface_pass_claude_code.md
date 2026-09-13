@@ -404,6 +404,13 @@ differences. The gate lane is built to prepare and stop, because minting a secre
 IAM are the operator's. Both seat doc worktrees were cleaned of artifacts already on main and
 fast-forwarded so the next planner and the P-178 lane start from b8e7863b.
 
+## Four approvals (2026-09-13, 22:00Z)
+
+The operator approved the engine gate token (mint and mount; the door stays a separate go),
+signed off P-178's migration run as a watched run in the sequence I gave, let the siblings
+ruling stand, and okayed filing the P-153 lane's own close beside mine. P-178's first item is
+landed on main. Wave 5 is in a fresh planner window.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
