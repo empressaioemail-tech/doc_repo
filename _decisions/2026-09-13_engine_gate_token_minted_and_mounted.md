@@ -1,9 +1,9 @@
 ---
 id: 2026-09-13_engine_gate_token_minted_and_mounted
-title: ENGINE_API_GATE_TOKEN is minted in both GCP projects and mounted on hauska-engine-api; the public-invoker removal is a separate go
+title: The engine gate is armed from the key its callers already send; no new secret is minted this wave; the public-invoker removal is a separate go
 date: 2026-09-13
 last_updated: 2026-09-13
-status: active
+status: active, AMENDED 2026-09-13 (option 1: no new secret minted)
 owner: nick
 decided_by: nick (operator), 2026-09-13, "token approved"
 plan_rows: [P-179, P-152]
@@ -12,6 +12,10 @@ related:
   - _catalog/dispatch_missions/mission_p179_engine_gate_token.md
   - _inbox/2026-09-13_ops23-wave4_close.json (operatorOwedItems Q5)
 ---
+
+## AMENDMENT 2026-09-13 (operator: "agreed")
+
+The p179-gate lane's CP1 found FOUR live callers that already send a key to the engine, not the two the original text counted: cortex-api, smartsite-mcp, hauska-mcp-server and the Property Explorer BFF on Vercel. Minting a new dedicated token would have required switching all four before arming the engine or two of them go dark. The operator agreed with the overseer's recommendation of option 1: mount `ENGINE_API_GATE_TOKEN` on `hauska-engine-api` FROM THE EXISTING `HAUSKA_ENGINE_API_KEY` secret, after the lane confirms from code that all four callers send that key in the header the engine's check reads; verify by violation (401 without the key on a gated route on the public URL; reads of `48021:34049` through all four callers unchanged). No new secret is minted this wave. A dedicated, independently rotatable token is a later row once every caller reads its key from Secret Manager. The IAM step (removing `allUsers` invoker) still takes its own go. The text below is the original approval, superseded on the minting point only.
 
 ## Decision
 
