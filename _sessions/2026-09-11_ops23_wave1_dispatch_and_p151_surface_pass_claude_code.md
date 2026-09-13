@@ -358,6 +358,19 @@ exists under _inbox, with the lane's original citation kept beside it, and the g
 batch. The retrieval mount on hauska-engine-api is live; the operator's approval for it is to be
 confirmed in the planner's thread.
 
+## The resolver is shared; wave 4 compiled (2026-09-13, 15:20Z)
+
+The operator ruled the P-154 resolver shared and said P-177 is running. The mechanism is the
+corpus package: `@empressaio/setback-corpus` gains a `./resolve` subpath at 1.2.0, the engine and
+the factory already depend on it, legacy-design-tools adds the dependency and stops ranking
+tier-first, and a divergence test between the two answers fails on disagreement. Wave 4 is four
+lanes: the shared rule, the slate of the ten rails still riding the atom chain (which waits for
+the Bastrop cell re-run so the slate does not serve tier-first values as record), entitlement
+in the engine and the MCP (design reviewed before code), and P-167's last leg with an
+observation file the instrument can read. Ten worktrees registered; the planner mission carries
+the wave-3 lessons: never overwrite a previous wave's close, and a wave close's row statuses
+must agree with the row closes.
+
 ## Suggested canonical doc updates
 
 - OPS-16: an amendment row for the Find box (F16) if the P-151 close says the lane did not
