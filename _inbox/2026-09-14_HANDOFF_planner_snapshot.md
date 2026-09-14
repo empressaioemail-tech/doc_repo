@@ -160,6 +160,112 @@ Atoms lease        PRIMARY KEY (scope_type, scope_id) — already scoped, NOT a 
   present in a 1,223-place roster, in 448,245 store refusals, and in OPS-22. **The recurring
   defect here is a missing rollup, not missing data. Search before you card.**
 
+## EVERY DURABLE DOCUMENT — the complete manifest
+
+All committed to `doc_repo main`. Read in the order of the first block; the rest is reference
+you pull when you need it.
+
+### Read these four, in this order
+
+| # | Path | What it is |
+|---|---|---|
+| 1 | `_inbox/2026-09-14_county_to_serving_WDLL.md` | **THE DESTINATION.** One picture, written to be read instead of everything below it |
+| 2 | `_inbox/2026-09-14_HANDOFF_planner_snapshot.md` | **THIS FILE.** Operational state: what runs, what closed, what is blocked |
+| 3 | `90_operations/OPS-24_county_to_serving_program.md` | **THE PROGRAM.** Thirteen stages, P-186..P-198, six laws |
+| 4 | `_inbox/2026-09-14_county_to_serving_program_map.md` | **THE ARCHITECTURE**, rev 2. Stage-by-stage with status markers |
+
+### Evidence — read when you need the basis for a claim
+
+```
+_inbox/2026-09-13_assumption_register_ldt.md        38 rows, LDT 31d181c2
+_inbox/2026-09-13_assumption_register_engine.md     27 rows, engine 112bccb8
+_inbox/2026-09-13_assumption_register_factory.md    29 rows + completeness inventory,
+                                                    factory 97b93877
+                                                    (THREE DIFFERENT FORMATS — normalising
+                                                     them is step one of the pre-bake runner)
+_inbox/2026-09-13_dead_controls_ranked_fixes.md     L0. SEVEN controls that cannot fail,
+                                                    ranked, fix proposed each
+_inbox/2026-09-14_ops24_teardown_review.md          the teardown that corrected OPS-24 on
+                                                    day one
+_inbox/2026-09-13_subcounty_coverage_audit.md       places not counties; closed-partial
+_inbox/2026-09-13_tx_source_inventory_and_acquisition_process.md
+                                                    the Texas source picture + the process
+                                                    it implies
+```
+
+### Read as a PAIR, never separately
+
+```
+_inbox/2026-09-13_national_scale_working_notes.md
+_inbox/2026-09-13_national_scale_adversarial_review.md
+```
+
+The notes are **wrong in seven confirmed ways** and were committed wrong on purpose. The
+review is what found them. The pair is the honest record of how the reasoning moved; the notes
+alone will mislead you.
+
+### Instruments — re-run them, never quote their numbers
+
+```
+scripts/tx-source-truth.mjs          per-county joined truth, 254 counties, self-testing
+scripts/tx-cad-source-inventory.mjs  source availability from the 254 probes, self-testing
+scripts/vendor-testset-ctx.mjs       the 60-parcel Cotality test set, self-testing
+scripts/surface-probe.mjs            THE success instrument, already the close-artifact
+                                     standard in every compiled dispatch
+scripts/enforcement/probe-close-gate.mjs   ranges now derive from _catalog/plan_registry.json
+                                           and self-test against drift
+```
+
+### Catalog artifacts — measured state, re-derivable
+
+```
+_catalog/tx_source_truth.json            per-county: CAD source, geometry, ingest, flags
+_catalog/tx_cad_source_inventory.json    176 reachable / 19 unproven / 58 absent / 1 unmeasured
+_catalog/texas_roster_v1.json            1,223 places with zoning determinations
+_catalog/tx_cad_source_registry.json     35 counties, vendor/format tuples
+_catalog/vendor_testset_ctx.json         60 parcels, 10 per county, 5 in-city 5 unincorporated
+```
+
+### Rulings and decisions
+
+```
+_decisions/2026-09-14_smartsite_brief_gate_waits_for_p163.md   the gate waits; 3 reversal criteria
+_decisions/2026-09-11_ledger_as_serving_path_seven_steps.md    atoms canonical, cells accounting
+_decisions/2026-09-11_setback_source_most_current_wins.md      the source-conflict pattern to copy
+_decisions/2026-07-13_cotality_swap_public_record_migration.md  REST extinguished (MCP eval is live)
+80_adrs/adr_032_third_party_source_rights_envelope.md          PROPOSED, not accepted
+_catalog/repo_intents.md                                       per-repo intent; smartcity-os NO-TOUCH
+```
+
+### The Cotality thread — parallel, not blocking
+
+```
+_research/2026-09-12_cotality_reengagement_division_cogs_and_probe.md
+        the 65-rail BUY/MAKE/HAVE division, the COGS model, the live probe
+_dispatches/2026-09-12_ctx-bakeoff_dispatch.md
+        P-176. COMPILED AND NEVER DISPATCHED. Needs no contract — the eval channel
+        is live and the eval agreement permits internal evaluation.
+```
+
+### Coordination and queue
+
+```
+_inbox/2026-09-14_COORD_bastrop_cutover_to_dashboards.md   the separate lane's boundary
+_inbox/2026-09-14_HANDOFF_farm_model_and_burnet_prototype.md   farm model + Burnet, with a
+                                                               CORRECTION BLOCK at the top
+_inbox/2026-09-13_HANDOFF_national_program_package.md          the earlier package manifest
+_queue/cards/smartsite-auth-gate/card.json                     BLOCKED on P-163
+```
+
+### Session records
+
+```
+_sessions/2026-09-12_cotality_reengagement_and_third_party_sources_claude_code.md
+_sessions/2026-09-13_scale_source_inventory_and_prebake_claude_code.md
+_sessions/2026-09-13_handoff_package_and_close_claude_code.md
+_sessions/2026-09-14_smart_site_lane_and_auth_gate_claude_code.md
+```
+
 ## One pattern worth naming
 
 Three lanes this week returned findings sharper than the hypotheses they were handed: six
