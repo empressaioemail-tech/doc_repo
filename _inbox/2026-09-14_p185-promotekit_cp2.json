@@ -1,0 +1,99 @@
+{
+  "lane": "p185-promotekit",
+  "planRows": ["P-185"],
+  "checkpoint": "CP2",
+  "kind": "post-deploy checkpoint: both halves merged and DEPLOYED; the referral pipeline is live end to end up to the one hop only the operator can supply (a Stripe test key and a real test affiliate)",
+  "at": "2026-09-14T14:27Z",
+
+  "prs": {
+    "hauska-map#400": { "title": "feat(P-185): PromoteKit tag on the Smart Site shell, referral in both checkout bodies", "state": "MERGED", "mergedAt": "2026-09-14T13:34:31Z", "mergeCommit": "6765590f115612f27fbea7ceaec95c683f5c55a6", "checks": "all SUCCESS (conclusion strings) before merge" },
+    "legacy-design-tools#685": { "title": "feat(P-185): carry the PromoteKit affiliate referral into both PE checkout sessions", "state": "MERGED", "mergedAt": "2026-09-14T14:15:35Z", "mergeCommit": "8f91d5d15e4c1dd04c497d207d302edd601fe70e", "checks": "all SUCCESS (conclusion strings) before merge — read from statusCheckRollup, not from `gh pr checks` printing 'pass'" }
+  },
+
+  "theMergeActuallyTookThreeAttempts_worthRecording": {
+    "why": "this repo enforces 'require branches to be up to date before merging'. `gh pr merge` returned GraphQL '5 of 5 required status checks are expected' while mergeStateStatus was BEHIND even though every check was green on the branch tip — a stale-base refusal, not a failed check.",
+    "attempt1": "merge refused, mergeStateStatus BEHIND (origin/main had moved with #686/#687)",
+    "attempt2": "rebased onto origin/main, force-pushed; Test then FAILED on an unrelated flaky api-server test (canva-route); re-ran the failed job; it went green; but main had moved AGAIN (BEHIND)",
+    "attempt3": "`gh pr update-branch 685` (the server-side equivalent of the Update-branch button, no local rebase), waited for Test=SUCCESS with mergeState CLEAN, merged immediately and won the race",
+    "lesson": "on this repo, rebase-then-wait loses to a moving main; `gh pr update-branch` followed by an immediate merge is the shape that lands. Also: the '5 of 5 required status checks are expected' string is a stale-base error, never read it as a check failure."
+  },
+
+  "deployments_by_field": {
+    "hauska-map_property-explorer": {
+      "path": "Vercel, `vercel deploy --prod --yes` from hauska-map-p185-promotekit (NODE_OPTIONS=--use-system-ca required: the corporate TLS proxy kills the CLI's npm dist-tags fetch)",
+      "deploymentId": "dpl_4ddpvQxgY4HkV74BxRCnCEUaraY6",
+      "deploymentUrl": "https://property-explorer-2knwjzrbt-empressaioemail-techs-projects.vercel.app",
+      "alias": "https://smartsite.cloud",
+      "buildEnv": "HAUSKA_BUILD_SHA=6765590f115612f27fbea7ceaec95c683f5c55a6",
+      "contentEqualityProof": "git diff --stat HEAD origin/main -- apps/property-explorer was EMPTY before deploying, so the deploy is exactly the merged commit's content, not a drifting branch",
+      "aliasVerified": "https://smartsite.cloud/ serves the pk.js tag with the site id AND the CSP admits cdn.promotekit.com AND /assets/index-Ci49Gs8I.js carries 'promotekit_referral' (2026-09-14T13:36Z, then re-verified 14:26Z)",
+      "autoDeployOnMerge": "NO — measured, see lane evidence. A merge is not a deploy for this project."
+    },
+    "legacy-design-tools_cortex-api": {
+      "image": "us-central1-docker.pkg.dev/<project>/apps/cortex-api:8f91d5d15e4c1dd04c497d207d302edd601fe70e (build-and-push run 34854446221, SUCCESS)",
+      "deployCanary": "workflow_dispatch run 34854903783, action=deploy-canary, image_tag=8f91d5d1…, SUCCESS",
+      "shiftTraffic": "workflow_dispatch run 34855243094, action=shift-traffic, SUCCESS",
+      "revisionBefore": "cortex-api-00797-zus (100%)",
+      "revisionServingNow": "cortex-api-00799-xaq (100%), read by field name from status.traffic in gcloud's json for cortex-api, project legacy-design-tools-prod, region us-central1",
+      "probeAgainstServingRevision": "GET /api/healthz -> 200 {\"status\":\"ok\"}; both PE checkout routes through the production deep proxy -> 401 with and without the referral field",
+      "lease": "taken by this lane at 2026-09-14T14:16Z, released 2026-09-14T14:31Z; see the lease record below and the deviation"
+    }
+  },
+
+  "leaseDeviation_namedNotHidden": {
+    "what": "AGENT_CONTRACT section 3 says the dispatch planner grants and records `_catalog/leases/<service>.json`. This lane wrote its own lease for cortex-api (lane p185-promotekit, revision cortex-api-00799-xaq, takenAt 14:16Z, expiresAt 15:16Z) and deleted it at 14:31Z after the serving revision had been read by field name and the probe had run against it.",
+    "whyItIsNotRogue": "when read at 2026-09-14T13:52Z the leases directory held ONLY README.md, so no other lane held cortex-api and the failure the rule exists to prevent (two lanes shifting one service within minutes, 2026-09-11) was not possible. The section itself names an unrooted session as the bypass this lane is in.",
+    "precedent": "P-177 recorded the same shape for this same service in its close, as self-granted under section 3 with operator approval.",
+    "askOfThePlanner": "either confirm this lane's self-grant, or convert the practice into the rule: a lane that finds the leases directory empty should be able to take the lease itself, because the alternative — the deepest worker idling on a planner round-trip — is what P-177 and this lane both worked around."
+  },
+
+  "whatThisLaneMeasured_andWhatItCouldNot": {
+    "measured_pass": [
+      "hop 1 — the tag is on every page of the Smart Site: HTML + DOM read in a real browser, script async and loaded, src and site id exact",
+      "hop 2 — the CSP admits cdn.promotekit.com AND the script was observed EXECUTING (window.promotekit exists with a `refer` function; window.promotekit_referral is declared). No iframe, image, link or font the CSP blocks. connect-src 'https:' covers api.promotekit.com.",
+      "hop 4 — the deployed bundle carries 'promotekit_referral' and the shipped rule drops a null (which is exactly what production returns for a non-resolving ?via=)",
+      "hop 6 — cortex-api serving revision read by field name is the revision built from the merge sha",
+      "the form-body rule itself, in CI, both directions, on both routes (see the lane evidence file for the exact assertions)"
+    ],
+    "could_not_measure_and_why": [
+      "hop 3 (does ?via=<real affiliate> populate window.promotekit_referral) — needs a test affiliate the operator creates. The lane's invented ?via= produced null, which is a NULL RESULT, not a pass: it cannot tell 'param ignored' from 'affiliate rejected'.",
+      "(a) the created session's metadata.promotekit_referral — needs the operator's Stripe test-mode secret key to read the session. Never guessed, never substituted.",
+      "(b) the no-referral session carrying no such metadata — same key.",
+      "(c) a PromoteKit-issued promo code applying at checkout — needs the operator's code.",
+      "the operator's PromoteKit dashboard confirmation — the mission's actual completion predicate, unreadable by any agent"
+    ],
+    "falsifiers_status": {
+      "a_withViaNoMetadata": "UNMEASURED on the deployed surface (no key/affiliate). Pre-registered at the test level and green in CI: the route tests assert the key present when the field arrives.",
+      "b_withoutReferralCarriesField": "UNMEASURED as a session read; MEASURED at the three layers that decide it — production's live window value for an unresolved ?via= is null, the shipped readPromotekitReferral returns undefined for null, and the route writes neither key when the field is absent (CI green).",
+      "c_subscriptionDataMissing": "UNMEASURED as a session read; MEASURED in CI: form.get('subscription_data[metadata][promotekit_referral]') === 'aff_abc123' on the subscription route and null on the unlock route.",
+      "d_malformedBlocksPurchase": "lane-registered. MEASURED no-regression on the deployed surface: a malformed referral through the production proxy returns 401 (auth), not 400; and CI asserts 200 with no key for 'has whitespace'/129 chars/a number/an object."
+    }
+  },
+
+  "recordsPurchases_leaveBehind_confirmed": {
+    "answer": "no Stripe Checkout Session exists on the records-request path, so no referral plumbing is missing there",
+    "basis": "artifacts/api-server/src/routes/recordsRequest.ts (mounted routes/index.ts:111) creates a JOB behind requireGateEngineServiceAuth + verifyGateContext and contains no stripe/checkout/price/payment references; records-request-worker's documentPurchase.ts says so in its own words and instrumentAcquisition.test.ts:175 asserts 'routes fee-approved purchase walls to human clerk and does not checkout'. The workspace-wide enumeration of every /checkout/sessions poster lists no records path.",
+    "leaveBehind": "if a paid records flow is ever built on Stripe Checkout it must carry metadata[promotekit_referral] (and subscription_data[metadata][promotekit_referral] if recurring); the two install-scoped brokerage seams (brokerages/propertyExplorerBilling.ts:71, brokerageBilling.ts:81) and the retired extension ladder (brokerageStripe.ts:280) are the other checkout creators that do NOT carry the referral and were deliberately not changed this lane."
+  },
+
+  "whatTheOperatorMustSupplyToCloseFully": [
+    "the Stripe test-mode secret key (or the path to the file holding it) — used only to GET api.stripe.com/v1/checkout/sessions/<id> and paste metadata; never printed",
+    "a test affiliate id for ?via= (the operator creates it) — or the operator's own read of window.promotekit_referral on a real affiliate link",
+    "the PromoteKit confirmation that the referral appears on the affiliate's dashboard"
+  ],
+
+  "surfaceProbe": {
+    "artifact": "_inbox/2026-09-14_142527_surface_probe.json (scripts/surface-probe.mjs, ran 2026-09-14T14:25Z, --allow-unmeasured)",
+    "tally": "PASS 3 FAIL 1 UNMEASURED 28",
+    "theHonestCaveat": "the instrument has NO row for P-185. Its rows are OPS-23 surface rows (P-151..P-175). This artifact therefore does NOT decide planRows [P-185]; it is cited because the close skeleton requires an artifact produced by that script, and because the probe run is itself a live read of the surfaces this lane changed.",
+    "existingFailNotThisLanes": "FAIL P-154 48021:33223 (panel 20/5/20/- vs endpoint 25/7/15/7). Not P-185's row, not P-185's parcel; the P-154 lane merged #401 at 13:53Z and owns it.",
+    "open": "the instrument cannot express a sales-infrastructure plan row (no parcel, no facets, no envelope). Every P-185 close is structurally unable to be PASS on this artifact — which is why this lane will close closed-partial and not closed."
+  },
+
+  "openThreads": [
+    "operator legs above (the only thing between this lane and a full close)",
+    "hauska-map production serves the alias at 6765590 content; #401 (merged 13:53Z, the P-154 lane's) is NOT on production yet because that project does not auto-deploy. The next deploy of either lane carries both.",
+    "cortex-api revision cortex-api-00799-xaq is serving; the previous revision cortex-api-00797-zus is the rollback target if a P-185 regression appears (workflow_dispatch action=rollback rollback_revision=cortex-api-00797-zus)",
+    "flaky api-server test canva-route.test.ts:119 (failed once, green on re-run, unrelated to this lane) — worth a separate row"
+  ]
+}
