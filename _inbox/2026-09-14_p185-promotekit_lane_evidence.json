@@ -31,17 +31,39 @@
   },
 
   "hop3_viaParamPopulatesTheVariable": {
-    "verdict": "UNMEASURED (operator-owned input)",
-    "whyUnmeasured": "the operator has not yet supplied a test affiliate. The only ?via= value available to this lane was an invented one.",
-    "whatWasMeasuredInstead": "https://smartsite.cloud/?via=p185probe -> window.promotekit_referral === null (typeof object), stable across a re-read 3 minutes later. A null, not an undefined: the script declares the variable and leaves it null when the ?via= value does not resolve to an affiliate. This is a NULL RESULT on the populate question, not a pass and not a failure — it cannot distinguish 'the param was ignored' from 'the affiliate was rejected'.",
-    "noteForTheOperator": "with a real affiliate id this is a one-line console read (window.promotekit_referral)"
+    "verdict": "MEASURED PASS",
+    "measuredAt": "2026-09-14T14:47Z",
+    "how": "real browser tab navigated to the operator's own affiliate link https://smartsite.cloud/?via=empressa, then CDP Runtime.evaluate on the loaded page",
+    "result": {
+      "href": "https://smartsite.cloud/?via=empressa",
+      "referralType": "string",
+      "referral": "43ff6ff0-44bf-404f-94aa-e6fdfa2558c5",
+      "cookie": "promotekit_referral=43ff6ff0-44bf-404f-94aa-e6fdfa2558c5",
+      "pkObject": "present, window.promotekit.refer is a function",
+      "localStorage": "no PromoteKit key",
+      "sessionStorage": "no PromoteKit key"
+    },
+    "THE_FINDING_THAT_DECIDES_THE_SESSION_READ": "the value is a VISIT-SCOPED UUID (43ff6ff0-44bf-404f-94aa-e6fdfa2558c5), NOT the affiliate slug 'empressa' that is in the ?via= parameter. So the Stripe session's metadata[promotekit_referral] must equal a UUID, never the string 'empressa'. An operator who opens ?via=empressa and then looks for 'empressa' in the session metadata will wrongly read a correct session as broken; and the UUID is per-visit, so it differs between the operator's browser and this measurement tab.",
+    "howToReadTheExpectedValue": "in the SAME browser that will run the checkout: open the affiliate link, read document.cookie for promotekit_referral (or run `window.promotekit_referral` in the console). That exact string is what must appear as metadata[promotekit_referral] on the created session.",
+    "alsoConfirms": "the populate half of the pipeline is alive on production: window.promotekit_referral is a non-null STRING, where the invented ?via=p185probe produced null. Same variable, same page; the only variable that changed is whether the affiliate resolves.",
+    "operatorSideConfirmation": "PromoteKit's dashboard showed Clicks 0 / Paying Referrals 0 before the operator's first visit; a click should now register there, which is an independent read of the same event from the vendor's side",
+    "carryForward": "the referral cookie persists in the browser, so a checkout run in that same browser carries it without needing the ?via= param again"
   },
 
   "hop4_clientReadsItAtCheckoutTime": {
     "verdict": "MEASURED PASS (shipped code) + the null case matters",
-    "deployedBundle": "https://smartsite.cloud/assets/index-Ci49Gs8I.js contains the string 'promotekit_referral' (fetched and grepped 2026-09-14T13:36Z)",
-    "shippedRule": "readPromotekitReferral() returns undefined for anything that is not a short whitespace-free string, so the live null window value produces NO field on the wire; both POST bodies spread the field only when it is present (billingClient.ts:112-131 and :352-362)",
-    "falsifierB_status": "the null value measured live on production is exactly the input that falsifier (b) names ('a session created without a referral carries the field' = a stale cached value). The shipped rule drops it."
+    "deployedBundle": "https://smartsite.cloud/assets/index-Ci49Gs8I.js (2042151 bytes, fetched and read 2026-09-14T13:36Z, re-read 14:37Z)",
+    "bundleProof_strongerThanAStringMatch": {
+      "promotekitReferral_occurrences": 2,
+      "bothArePOSTBodyKeys": [
+        "billing/checkout  -> body: JSON.stringify({tier:e.tier, interval:e.interval, ...(seats!==void 0?{seats:seats}:{}), ...(b?{promotekitReferral:b}:{}), uiMode:\"elements\", returnUrl:o, suc…})",
+        "entitlement/checkout -> body: JSON.stringify({parcelNodeId:e, ...(w?{promotekitReferral:w}:{}), uiMode:\"elements\", returnUrl:n.suc…})"
+      ],
+      "theReaderIsWiredAtBothCallSites": "the shipped reader `function VR(){ … const e=window.promotekit_referral; if(typeof e!=\"string\")return; const n=e.trim(); if(!(!n||n.le…` is called immediately before each fetch: `…b=VR();try{const u=await fetch(`${Ni}/api/property-explorer/v1/billing/checkout`,…` and `…w=VR();try{const b=await l(`${Ni}/api/property-explorer/v1/entitlement/checkout`,…` (VR() occurs 3 times: 1 definition + 2 call sites)",
+      "theReadIsAtCheckoutTime_notAtLoad": "the call sits inside the checkout function body, immediately before the fetch, not at module scope — which is the dispatch's requirement (the tag is async, so a load-time capture can be permanently empty)"
+    },
+    "shippedRule": "readPromotekitReferral() returns undefined for anything that is not a short whitespace-free string, so the live null window value produces NO field on the wire; both POST bodies use `...(x ? {promotekitReferral:x} : {})`, so an undefined reader result OMITS the key rather than sending an empty one",
+    "falsifierB_status": "the null value measured live on production is exactly the input that falsifier (b) names ('a session created without a referral carries the field' = a stale cached value). The shipped rule drops it — and the omit-spread means it cannot be sent as '' either."
   },
 
   "hop5_proxyAndServerForm": {
