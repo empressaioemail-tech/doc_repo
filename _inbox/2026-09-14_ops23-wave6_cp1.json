@@ -943,6 +943,32 @@
       "severity": "low-medium -- costs a wasted execution, and it did, twice-over today with the PowerShell arg failure",
       "measured": "GOLD_PARCELS registers ONE county (48021:34137). resolveGold refuses GOLD_REQUIRED for any other county with no --gold. The example command uses --county=48021 and no --gold, so the documented form cannot reveal the omission. The 48209 form exists only in lane invocations and mission text (--gold=48209:97658).",
       "consequence": "factory-bastrop-publish-2phjz died in 10s; verified clean (no runs row, publish_runs unchanged, store unchanged, surface still 404)."
+    },
+    {
+      "id": "O35",
+      "title": "The CONTRACT_VERSION fail-open risk is settled: the writer performs NO contract validation at all, so there is no version gate to fail open",
+      "severity": "informational -- it CLOSES the operator's highest-named risk, and it removes the reason to defer the re-mint on version grounds",
+      "operatorInstruction": "'do not INVOKE the re-mint until the CONTRACT_VERSION question is answered, and answer it by reading what the writer actually validates against at its pinned SHA, not by reading the template's declared version string. Re-measure the live published atom-contract version from npm. Do not quote 1.36.0 or any version number carried in a doc; that figure has been stale by many minors before.'",
+      "measured": {
+        "npmLiveLatest": "1.36.0 -- read from the REGISTRY (`npm view @empressaio/atom-contract version`), published 2026-09-14T13:43:06Z. Not quoted from any doc. Recent publishes: 1.32.0 (09-11), 1.33.0/1.33.1 (09-12), 1.34.0 (09-13), 1.35.0 (09-14 13:06Z), 1.36.0 (09-14 13:43Z).",
+        "enginePinsAtTheMergedSha": "hauska-engine @ 45ba9d21 lockfile: specifier `^1.36.0` resolves to `1.36.0`. The engine's declared range and the registry's latest AGREE, so there is no skew to reason about.",
+        "theWriterItself": "packages/storage/src/pg-storage.ts:230 `async writePropertyAtom(instance)` does exactly TWO assertions -- `assertCanonicalParcelEntityId(instance.entityId)` and `assertPropertyWriteBoundary(instance)` -- then pins to IPFS and runs `INSERT INTO atoms (...) VALUES (...)` with the body as `this.sql.json(instance)` (the WHOLE instance, serialized verbatim), upserting `ON CONFLICT (atom_did) DO UPDATE SET body = EXCLUDED.body`. Neither assertion inspects the body's schema, and neither reads any contract version.",
+        "noVersionSymbolAnywhere": "grep for CONTRACT_VERSION|contractVersion|CONTRACT_MIN|schemaVersion across the entire hauska-engine repo returns ZERO matches.",
+        "whatTheEngineActuallyImportsFromTheContract": "types and read-side helpers only -- `WidthedConfidence`, `AtomInputRef`, `RailCorridorClass`, `RailCorridorStatus`, `createWidthedConfidence`, `RRC_PIPELINE_DEFAULT_BUFFER_METERS`. No validator, no schema, no version gate."
+      },
+      "verdict": "The named risk -- 'a writer validating at 1.30.0 could accept the re-mint and SILENTLY DROP THE PAYLOAD' returning a green run and no data -- has NO MECHANISM on this write path. There is no write-time schema validation of display_meta against the contract, so a 1.30.0 process could not strip the field: it would write the whole body verbatim and merely lack the vocabulary to RENDER it. The silent-no-op risk that IS real is the data-origin one already filed (O17): emitSetbackRule adds `conflict` only when the resolved setback-table row ALREADY carries display_meta.second_source.conflict, so if the A-148/R-1 detector does not fire that execution, the re-mint succeeds and the surface does not change.",
+      "caveatKept": "This is a read of the SOURCE at the merged SHA plus a registry read -- it is not an execution of the writer. Nothing here was invoked.",
+      "artifact": "_inbox/2026-09-14_remint-derivation.json (Q4_contract_version) reached the same conclusion independently; this is the second derivation, agreeing."
+    },
+    {
+      "id": "O36",
+      "title": "get_smart_site collapses a PROVENANCED ABSENCE into never-had-it: parcel_not_found / parcelExists=false for a node the store holds an earned retirement for",
+      "severity": "high -- named by the operator as its own defect, carded separately by the integration seat",
+      "operatorInstruction": "OUT OF SCOPE for the p180-walk lane, and do not mark it resolved. The walk fix must not be used to close it.",
+      "measured": "production get_smart_site at the depth node returns reason=`parcel_not_found` and parcelExists=`false` for 48209:84629 (measured by the operator today), while the store holds an earned retirement for that node (recordRetirement.status retired, verdict absent-verified).",
+      "whyItIsItsOwnDefect": "The surface is not saying 'this parcel is retired' and it is not saying 'we decline to serve this'. It is saying the parcel DOES NOT EXIST -- collapsing an earned, provenanced absence into never-had-it. That is a different failure from the 404 the walk grades, and a fix to the walk's GRADE cannot and must not be read as a fix to the SURFACE's vocabulary.",
+      "guard": "explicitly listed as out of scope in the p180-walk mission and dispatch, with an instruction not to cite the walk fix as evidence about it. Carded by the integration seat.",
+      "ownership": "integration seat (per the operator). Not this wave's lanes."
     }
   ],
   "premiseCorrections": [
@@ -1126,6 +1152,12 @@
       "executed": true,
       "outcome": "restamp LANDED (WROTE pass); 404 NOT fixed (FIXED fail, as pre-registered); walk RED on BP-MEANING-01/HTTP 404, an unpredicted family -- see O32",
       "newDecisionRequired": true
+    },
+    "o32": {
+      "ruling": "option A -- dispatch the walk fix now, with TWO NON-OPTIONAL conditions",
+      "condition1": "derive the grade from TWO INDEPENDENT SOURCES, never an exclusion list: accept a 404 only where the STORE independently holds an earned retirement for that node (status retired, verdict absent-verified, with a vintage). A grade that accepts a 404 because the node was excluded from the work list is PRESENCE-SHAPED -- the publish would satisfy both halves of its own check, and one party acting alone must not be able to pass it.",
+      "condition2": "prove it BOTH directions: re-running against bc47625c shows only that it passes; also show the walk still FAILS on a node that 404s with NO earned retirement. A check observed only passing has not been observed working.",
+      "executedAs": "dispatched to lane `p180-walk` -- _dispatches/2026-09-14_p180-walk_dispatch.md, mission _catalog/dispatch_missions/mission_p180_walk_declined_retirement.md. Both conditions are written into the mission as its load-bearing constraints, plus the zero-write proof path (factory-verify-walk --target=production --county=48209 --publish-run=bc47625c, with --gold=48209:97658) and the O36 out-of-scope guard."
     }
   },
   "step4PreconditionVerification": {
@@ -1162,5 +1194,27 @@
     "surfaceAfter": "48209:84629 -> 404 not_baked/no_coverage; 48209:97658 -> 200",
     "preRegisteredOutcome": "OUTCOME A, the anticipated one: run id CHANGED, retirement STAYED retired, GET STAYED 404. The step-4 premise 'the publish fixes the 404' is now falsified by measurement rather than by argument.",
     "verdictOnTheStep": "succeeded AS A RESTAMP on the store-side criterion, and RED AS A WALK on the walk criterion. The factory runs row's failure/WALK_FAILED must not be read as 'the restamp failed'."
+  },
+  "wrapperDeploy": {
+    "queuedByOperatorRuling": "2026-09-14: 'THE DEPLOY: queue it. A Cloud Run job deploy is not an invocation, so it carries none of the 2026-09-11 shape.'",
+    "job": "hauska-engine-depth-warm-remint",
+    "project": "hauska-prod-497015",
+    "region": "us-east4",
+    "sourceRepo": "empressaioemail-tech/hauska-engine",
+    "mergedSha": "45ba9d21015f1d329c8ebdba420ccb26f3df55b6 -- PR #445, squash",
+    "builtContentProof": "checked out --detach 45ba9d21 and compared trees: HEAD^{tree} == 7f457a1^{tree} == ca7a1511ad3f994f5d2dcaabdd3bb9eb1274cc25, so what is being built is the merged main content and not a stray branch head",
+    "config": "cloudbuild.depth-warm-remint.yaml (digest-pinned, A-020 refusal if describe returns no @sha256:)",
+    "buildId": "d1e867da-fc07-47ba-90d3-116aceeb55f5",
+    "submittedAtUtc": "2026-09-14T18:25:32Z",
+    "status": "submitted, build running",
+    "invocationGate": "NOT INVOKED AND NOT TO BE INVOKED in this step. The deploy creates the job only. The job's BAKED args are the DRY leg (--dry-run --remint-preview), so even a bare execute writes nothing; the apply leg requires a deliberate --args override that swaps in --promote.",
+    "note": "the wrapper close flagged the declaration itself as UNEXERCISED -- this is its first build, so whether the describe/pin/--set-secrets/--command forms are accepted as written is UNMEASURED until the build finishes"
+  },
+  "cortexApiShift": {
+    "status": "HELD -- do not attempt",
+    "operatorReasoning": "(1) the original reasoning stands: the shift's purpose was to make the re-minted payload visible on get_smart_site, and until the re-mint is actually run there is nothing for it to reveal, so a second same-day shift buys nothing; (2) a SECOND, mechanical reason: the P-170 traffic lease is ARMED and was verified refusing through the harness today, so a cortex-api shift with NO `_catalog/leases/cortex-api.json` will be REFUSED BY THE GATE, not by judgement.",
+    "verifiedByPlanner": "_catalog/leases/ contains README.md ONLY -- cortex-api.json is ABSENT, so a shift attempt would be refused.",
+    "doNotConfuse": "the AGENT_CONTRACT self-grant amendment permits a lane to TAKE an uncontended lease; it does not authorise bypassing the P-170 gate. A shift without the lease file is refused by the gate regardless of policy.",
+    "rollbackIfEverShifted": "cortex-api-00799-xaq"
   }
 }
