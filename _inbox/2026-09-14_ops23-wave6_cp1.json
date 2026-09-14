@@ -855,7 +855,20 @@
       "theRealContentionIsServeStateNotRows": "gate-sched writes `parcel_gate_verdict` — and PARCEL-B-READER's allowlist CONSUMES that table to decide whether a rail serves `record` or FAILS CLOSED to `legacy-transitional` (its own rule: no verdict row => legacy). The publish→walk window GRADES SERVED STATE. So a gate-sched run inside that window can flip a rail between record-served and legacy-transitional and change what the walk observes — which is precisely the read-path question in O27 that decides whether the conflict payload can be swallowed. THAT, not row locking, is the contention.",
       "aSecondRealHazardFound": "src/jobs/reap.mjs:274 uses a START-TIME-MATCHED termination as a basis, and explicitly prefers the run's own close evidence over it. With an hourly job, a ten-minute job, and ad-hoc publishes overlapping, start-time collisions are routine — which is a plausible mechanism for the UNATTRIBUTED JOB LAUNCHES recorded earlier as C5/O18. Stated as a hypothesis with a named mechanism, NOT as a proven cause.",
       "restatedPrecondition": "Step 1 should NOT wait for \"zero running executions\" — that is a timing race against an hourly timer. It should require that the publish→walk window does not SPAN A GATE-SCHED VERDICT CHANGE for the rails being graded, and record acceptance of the timers deliberately rather than claiming quiescence.",
-      "owner": "planner (recorded); the step-1 verification design inherits it"
+      "owner": "planner (recorded); the step-1 verification design inherits it",
+      "cadenceMeasured20260914": {
+        "method": "gcloud run jobs executions list --job=factory-publish-gate-sched --limit=14 plus a full count; start/completion/running/succeeded/failed/cancelled read per execution BY FIELD.",
+        "finding": "THE SCHEDULER EXPLAINS THE START TIMES BUT NOT THE CONCURRENCY, AND NOT A BURST THIS AFTERNOON.",
+        "theScheduleIsHonoured": "From 07:00Z to 16:00Z every execution starts at HH:00:04 or HH:00:05 — exactly the `0 * * * *` cron of factory-publish-gate-sched-hourly. One per hour, no gaps.",
+        "BUT_THEY_STACK_UP": "Those executions RUN for far longer than an hour, so they OVERLAP HEAVILY rather than clearing: dzf4n 07:00:04 -> 09:45:42; 799nr 08:00:04 -> 09:05:10; 4554p 09:00:04 -> 09:46:04; cv7gl 10:00:04 -> 14:50:11; 6vksk 11:00:04 -> 14:50:11; 9qjvt 12:00:04 -> 14:50:11; kcjc5 13:00:04 -> 14:50:11; psjh6 14:00:04 -> 16:30:43; 7d6m5 15:00:05 -> 16:30:43; str7b 16:00:05 -> 16:35:47. So at any moment in the working day there are typically FOUR OR MORE concurrent gate-sched executions, and the whole point of the operator's contention concern is thereby CONFIRMED AND QUANTIFIED.",
+        "theCoTimedCompletions": "Four executions that started an hour apart ALL completed at 14:50:11Z (cv7gl, 6vksk, 9qjvt, kcjc5), and two more that started an hour apart BOTH completed at 16:30:43Z (psjh6, 7d6m5). Runtimes of 1h50m to 4h50m all terminating in the same instant is not the shape of independent runs; it is the shape of a shared release or a deadline. Unresolved WHICH, and the planner does not assert one.",
+        "oneWasCancelled": "799nr (08:00:04) is the one execution with cancelledCount 1 rather than succeeded.",
+        "THE_UNEXPLAINED_BURST": "FROM ~16:51Z THE CADENCE BREAKS. Four executions at roughly 3-MINUTE intervals: vrrfh 16:51:31 -> 16:52:17, txrpg 16:54:05 -> 16:56:31, 9flw4 16:57:15 -> 16:57:45, cvsq5 17:00:05 -> RUNNING. The hourly cron cannot produce this.",
+        "theLauncherIsNotInTheSchedulerLayer": "The planner enumerated Cloud Scheduler in BOTH us-east4 and us-central1: only TWO jobs exist — factory-conformant-reap (`*/10 * * * *`, ENABLED) and factory-publish-gate-sched-hourly (`0 * * * *`, ENABLED), both Etc/UTC, both targeting Cloud Run jobs in this project. Cloud Tasks is DISABLED for the project (\"Cloud Tasks API has not been used ... or it is disabled\"). So NOTHING in the scheduler layer accounts for a 3-minute cadence, and the launcher of the post-16:51Z burst is UNEXPLAINED.",
+        "whyThisIsTheSameShapeAsC5O18": "This is the \"unattributed job launches\" problem, now measured with a cadence change and an hour of timestamps instead of a suspicion. The planner is NOT claiming a cause. It IS claiming that something launches this job that is not in the scheduler layer, and that the earlier hypothesis — reap.mjs:274 matching terminations by START TIME while an hourly job, a ten-minute job and ad-hoc publishes overlap — is now more plausible, not less.",
+        "consequenceForStep1": "CONTINUOUS CONTENTION IS THE STEADY STATE, NOT AN ANOMALY. One execution is running right now (cvsq5, since 17:00:05Z). So \"fire into a clear window\" is not achievable and should be abandoned as the precondition. The defensible position is the row-level proof plus a RECORDED ACCEPTANCE: the restamp's own ledger writes are safe (gate-sched never touches publish_runs, so requireStagingSibling cannot be corrupted), and gate-sched verdict churn during the walk window is accepted deliberately, with the acceptance test being the STORE fields rather than the walk verdict.",
+        "executionsRetained": "265 executions retained for this job."
+      }
     },
     {
       "id": "O31",
@@ -1038,5 +1051,27 @@
       "lesson": "the planner hand-committed the exact defect class the wave is hunting — P-186 is \"the address-keyed leg answered for another county's parcel\". A 48021 written where a 48209 belonged, with fluent and internally consistent reasoning built on top. The only catch is comparing the response's OWN identifier back to the identifier asked about. Concrete practice: every artifact and every command quotes the full parcel id, and no conclusion is drawn from a response's shape until its returned node id has been compared to the requested one.",
       "origin": "C9, OPS-23 wave 6"
     }
-  ]
+  ],
+  "operatorRulings_20260914C": {
+    "at": "2026-09-14T17:0xZ",
+    "wrapper": "BUILD the Cloud Run Job wrapper for the bounded --parcel form (rejected: a seat-run exception, and the sanctioned county/cohort form). Lane dispatched.",
+    "productionSiteUrl": "smartsite.cloud — exact form confirmed at source as https://smartsite.cloud (bare origin).",
+    "quiescence": "PROVE NON-CONTENTION rather than wait for quiescence. Delivered in O30 (row-level) with the hazard relocated to serve-state.",
+    "step4": "KEEP step 4, re-purposed: authorise the RESTAMP with the store-side acceptance test (publishRunId for WROTE, recordRetirement for FIXED). The false \"fixes the 404\" premise is struck by A-151."
+  },
+  "step4PreconditionVerification": {
+    "readAt": "2026-09-14T17:0xZ",
+    "capabilityRecovered": "IMPORTANT: the planner CAN read publish_runs and verify_walks with the FULL FACTORY_DATABASE_URL secret (host ep-round-base-au0jofw…). FACTORY_DATABASE_URL_RO is DENIED (\"permission denied for table publish_runs\"). This CLOSES the trust gap recorded earlier as O13/O22: the guard's own input is now independently readable by the planner rather than taken from a lane's report. The RO secret is weak; the full URL is the working read connector.",
+    "theGuardsOwnSqlRunByThePlanner": "STAGING_SIBLING_SQL (publish-guards.mjs:89-97) executed read-only against publish_runs LEFT JOIN verify_walks for county 48209, target staging, status succeeded, ORDER BY completed_at DESC LIMIT 5.",
+    "rowsMostRecentFirst": [
+      "5b3a1c2c-eee5-460b-ae1c-dc1102674b5d | staging | walk 8eacb135-143b-4191-9d09-5bcd43ef4ae7 | completed 2026-09-14 15:46:21.581767+00 | verdict PASS | sweep 42 | walk names its own run id — THIS IS THE MOST RECENT SUCCEEDED STAGING PUBLISH",
+      "b0864dde-3e9f-43b4-bf14-49174abfea23 | staging | walk c636b630-1257-4e58-abb0-7e2df26abce6 | completed 2026-09-14 14:21:10Z | verdict FAIL | sweep 42 — this is the S13-failed run",
+      "12f464a9-66af-4cc9-ad17-95e5b82f0011 | completed 05:01:09Z | verdict FAIL | 42",
+      "16b83446-c452-4ee3-b2e3-591da046a892 | completed 04:22:46Z | verdict FAIL | 52",
+      "e0f6e487-130a-48b0-b0d1-0620ce398326 | completed 03:36:42Z | verdict PASS | 52"
+    ],
+    "verdict": "THE GUARD IS SATISFIED, and the planner verified it with its own read rather than the lane's report. evaluateStagingSibling clears every check on 5b3a1c2c: row exists; age ≈1.3h against MAX_SIBLING_AGE_HOURS = 48 (publish-guards.mjs:35) so NOT stale; walk_id present and the walk row present; the linked walk names its own publish run; verdict pass; sweep 42 >= MIN_SWEEP_PARCELS = 10 (:41).",
+    "theNearMiss": "NOTE THE ORDERING THAT ALMOST MATTERED: the S13-FAILED run b0864dde completed 14:21:10Z, and the PASSING run 5b3a1c2c completed LATER at 15:46:21Z. So the guard picks the passing one. Had the failed run been the more recent, the guard would have refused with STAGING_SIBLING_FAILED before any bake — which is the correct and safe behaviour, and worth stating because it means the publish cannot proceed on a red staging walk.",
+    "allRefusalsArePreBake": "Every refusal in this module (STAGING_SIBLING_REQUIRED | UNWALKED | FAILED | NO_SWEEP | STALE, plus BRANCH_STALE, SITUS_PUNCTUATION_ONLY, ACCESS_NOT_DEFAULTED) fires BEFORE the first bake. Combined with resolveTargetSiteUrl refusing TARGET_ENV_MISSING before the first bake, the step-1 job cannot half-run: it refuses loudly and writes nothing. That is why firing it is low-risk even though it is a serving-store write."
+  }
 }
