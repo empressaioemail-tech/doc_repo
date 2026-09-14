@@ -79,8 +79,9 @@
     "rule": "two lanes never hold the same service; the planner writes one lease file at a time and sequences the shifts explicitly"
   },
   "operatorGatesRequestedEarly": [
-    { "lane": "p178-publish", "gate": "step 4, the PRODUCTION publish (serving-store write) after the step-3 staging walk is green and the stamp counts are pasted", "status": "not yet requested from the operator in this thread" },
-    { "lane": "p183-querypoint", "gate": "step 3's PRODUCTION re-run of the record-store writer", "status": "not yet requested from the operator in this thread; sequenced after p178-publish's production publish" }
+    { "lane": "p154-conflict", "gate": "`npm publish` of @empressaio/atom-contract 1.36.0 — an OPERATOR OTP is required and no agent can supply it. This is the wave's CRITICAL PATH: until it lands the A-148 sentence cannot print on any surface (the panel has no conflict slot at all; get_smart_site and PDF fail closed on the installed 1.35.0), and origin/main still carries the retiring 1.35.0 sentence. The p154 surface work items are also stuck behind it.", "status": "REQUESTED 2026-09-14 with the wave-6 lane reports; OPEN" },
+    { "lane": "p178-publish", "gate": "step 4, the PRODUCTION publish (serving-store write) after the step-3 staging walk is green and the stamp counts are pasted. Note the code half is already merged (PR #686; factory pin #147), so this gate is the last thing between the wave and a serving-store write.", "status": "REQUESTED 2026-09-14; OPEN" },
+    { "lane": "p183-querypoint", "gate": "step 3's PRODUCTION re-run of the record-store writer, sequenced AFTER p178-publish's production publish so the walk sees one bake. Note the code half is merged into the branch and PR #687 is open, but a code change alone moves nothing on the surface: the point only moves when the bake re-runs under the factory's pinned _LDT_SHA.", "status": "REQUESTED 2026-09-14; OPEN, sequenced" }
   ],
   "errorsLog": [
     {
@@ -145,8 +146,62 @@
         "why": "a worktree capture is a point-in-time reading, not a property of the worker. The predecessor kept writing after the capture and before the stop, so reporting the capture as the stop state understated the risk.",
         "evidence": "git -C P:/seat-worktrees/property/hauska-engine-p154-conflict diff --stat at 2026-09-14 ~08:25 local; the predecessor's own partial capture _inbox/2026-09-14_p154-conflict_engine-uncommitted.diff (22,542 bytes, 08:10 local); the resumed lane's capture _inbox/2026-09-14_p154-conflict_engine-uncommitted-full.diff and the planner's snapshot _inbox/2026-09-14_p154-conflict_engine_planner_snapshot.diff, byte-identical at sha256 52FD8079596F9E13202BF3994CB6AE027E5FE67B099587BA10A971D777EF3CA3 (which also proves the lane captured before editing, not over it).",
         "handling": "Nothing discarded. The worktree was left untouched; the body is captured twice out-of-tree; the resumed lane owns it and was told to continue from it rather than reconstruct."
+      },
+      {
+        "id": "C2",
+        "corrects": "the seven rows the capture recorded as 'clean, no work' with disposition 'resumed'. The STATE was true; the DISPOSITION word was wrong.",
+        "truth": "Those worktrees really were clean at 13:55Z, but the instances working them were never actually stopped. The lanes kept writing after the capture, and each lane's continuation was launched as a NEW agent rather than as a continuation of the instance that already held the checkout — so TWO instances of one lane ran per checkout, and they collided. Three lanes hit it and each diagnosed it independently: p154-conflict (a live peer in the engine and vocab worktrees, _inbox/2026-09-14_p154-conflict_worker-collision.md), p156-bastrop (a superseded instance that found the writer already at work over the declaration and stood down, _inbox/2026-09-14_p156-bastrop_superseded-instance_report.json), p183-querypoint (a duplicate describe block, duplicated test helpers and a mid-flight `UU` conflict on nodeFacetBakeTier1ConformantCli.ts, _inbox/2026-09-14_p183-querypoint_collision_c964d973.json).",
+        "why": "The same point-in-time defect as C1, one layer up. C1 was a WORKTREE read as a stop state; C2 is a set of WORKERS read as stopped when they were still live. 'Stopped' and 'resumed' are different acts, and the capture verified the first without performing it. A capture proves what a worktree holds at T; it proves nothing about whether its writer has quit.",
+        "handling": "Every colliding instance applied the fan-model rule (one lane, one checkout, one writer) without being told: each stood down, wrote a machine-readable collision note instead of the lane's CP2/close, removed only the artifacts it had itself introduced, and deferred the canonical close to the owning instance. No lane close was written twice and no work was lost. The p183 clean-up worked: its duplicate block and helpers were removed and the project typechecks at 0 errors.",
+        "notFixedHere": "The planner did NOT retro-stop anything or reassign a lane by hand. The surviving writer in each checkout was already the right one, and reaching into a lane's checkout to tidy a record is how work gets lost. The defect is recorded, not papered over.",
+        "forM0": "Launching a continuation while the original may still be live is a duplication hazard; the safe form is to confirm the original is quiescent (its own 'I am stopping' artifact) before a replacement is dispatched, and to prefer continuing the SAME instance where the harness supports it."
+      },
+      {
+        "id": "C3",
+        "corrects": "the p154-conflict close's account of its own two SURFACE items, and the 13:55Z capture's reading of both surface worktrees",
+        "truth": "The close reports the panel and the `get_smart_site` surfaces as NOT PRODUCED, and the capture recorded both worktrees as 'clean, no work'. Both readings are stale. hauska-map-p154-conflict (feat/p154-conflict-row-panel) holds 9 modified files / 297 insertions (InspectCard.tsx + test, baked-facets.ts + test, sheet-to-card-model.ts, atom-chain-to-facets.ts, package.json, lockfile) and legacy-design-tools-p154-conflict (feat/p154-conflict-row-mcp) holds 2 modified files / 92 insertions (r1BriefCompose.ts + test). Both pin @empressaio/atom-contract at ^1.36.0 and both import `setbackConflictNote` from the shared display vocabulary; the MCP test asserts the A-148 sentence VERBATIM. This is the P-154 surface work, built and left UNCOMMITTED by an instance that never wrote a close for it.",
+        "why": "The p154 lane ran as two instances in parallel (see C2). The amended instance closed the engine and contract work; the pre-A-148 instance took the two surface items it had been left, exactly as its own collision note said it would ('I am taking the two SURFACE items of my dispatch there'). So the lane's single canonical close was written by the instance that did NOT hold the surfaces, and it describes them as unbuilt.",
+        "evidence": "git status --porcelain + git diff in each worktree, captured by the planner to _inbox/2026-09-14_p154-surface_unaccounted.panel.diff (44,118 bytes, sha256 1AF5A713E96F8CD61E1A1FE870B68B250A11C73094DF3E172BB97D8C57DF0F52) and _inbox/2026-09-14_p154-surface_unaccounted.mcp.diff (11,504 bytes, sha256 19C15459C2AD405E9E2A70F545FFC9C1B51B984DF849DD5CA2BBB7329F4D4C67), each with a .status.txt. Newest writes 08:35:15 (panel) and 08:38:41 (mcp) — the second is AFTER the lane close at 08:36:11 — and no process was writing in either worktree when captured at 08:43, so the worker went quiet without committing.",
+        "handling": "Captured out-of-tree and read-only; neither worktree was written to and neither was reconstructed. The work is additive and dormant by the lane's own description (no `conflict` on the rail means the envelope is returned unchanged), so it is not a live-serving hazard — but it is the wave's second-largest unaccounted body and it is NOT reflected in the lane's close.",
+        "status": "OPEN — needs an owner to commit it, open its PRs, and either amend the p154 close or carry the surfaces as a named follow-on. It is also downstream of O5: the panel pins ^1.36.0, which does not exist on npm yet."
       }
     ]
+  },
+  "laneOutcomes": {
+    "at": "2026-09-14T13:40Z — read by the planner from the artifacts and the git/PR states, NOT from the lanes' own summaries",
+    "p154-conflict": {
+      "status": "closed-partial",
+      "artifacts": ["_inbox/2026-09-14_p154-conflict_cp1.json", "_inbox/2026-09-14_p154-conflict_cp2.json", "_inbox/2026-09-14_p154-conflict_close.json"],
+      "engine": "branch feat/p154-conflict-row @ 4aafe3b, worktree CLEAN, PR #442 OPEN and DRAFT on purpose (must not merge before the contract publishes), CI typecheck+test pass",
+      "vocab": "branch fix/p154-conflict-a148-vocab @ 1668d6f, PR #33 OPEN, CI green on 18.x/20.x/22.x, 1.36.0 NOT published",
+      "sentence": "verified character-for-character by invoking the 1.36.0 vocabulary module directly: the exact A-148 sentence with the (confirmed with the City of Bastrop 2026-09-14) parenthetical intact",
+      "stringLegs": "as the close states it: panel NOT PRODUCED (hauska-map's PE card has no conflict slot); get_smart_site and PDF wired to the same seam but NOT PRODUCED because the installed contract is 1.35.0 has no stale-columns arm — conflictNote now FAILS CLOSED rather than printing undefined values. SUPERSEDED IN PART BY C3: the planner found the panel and MCP surfaces BUILT but uncommitted in their two worktrees (9 files / 297 insertions and 2 files / 92 insertions, both pinned ^1.36.0), so 'NOT PRODUCED' describes the close's own instance, not the wave. See C3 and O9; the PDF leg remains genuinely unbuilt.",
+      "worktreeCleanliness": "re-read by the planner. The engine worktree is clean. The atom-contract worktree shows one modified path, src/display/__snapshots__/wire.test.ts.snap, which the planner diffed and found to be LINE-ENDINGS ONLY (empty diff, content byte-identical, and the committed snapshot already carries the A-148 sentence). The close's 'worktree clean' is substantively right; the CRLF noise is not a second defect and needs no write.",
+      "ordinance": "built with 2026-06 per the operator ruling; the layer's own live Ordinance_ field (2019-51) diverges and is carried to the city as a stale-field report"
+    },
+    "p156-bastrop": {
+      "status": "closed-partial",
+      "artifacts": ["_inbox/2026-09-14_p156-bastrop_cp1.json", "_inbox/2026-09-14_p156-bastrop_cp2.json", "_inbox/2026-09-14_p156-bastrop_close.json", "_inbox/2026-09-14_p156-bastrop_superseded-instance_report.json"],
+      "declaration": "src/config/zoning-declarations/bastrop-tx.json, v2026-09-14.1, self-digest sha256 ee8b97e37a4c8167aa1ad357c62d00ff3fcd9230eb84b25f00ef4025ffedc8d2, generated from live reads and validated at read time (seven refusal codes, incl. DISTRICT_SOURCE_IS_STALE_NUMERIC and DECLARATION_DIGEST_MISMATCH)",
+      "districtSource": "Zone_Types/FeatureServer/25 via the coded-domain field ZoneTypeClass, never an underscore numeric column. The lane flagged that A-148's 'the TEXT fields' is imprecise (the TEXT fields are the dimensional definitions; identity is the coded pair) and recorded zoneTypeRawValueAtSource for audit rather than silently reinterpreting the rule.",
+      "perDistrictDivergence": "9 district rows recorded with both readings. The city contradicts itself on SF-1 (175 features, text 30/10/30/20 vs numeric 25/5/25 — matches A-148 exactly), MU (103, SideSetback_ latched the secondary '0 feet allowed' clause) and PI (63, 61 stale). Agreeing districts recorded as positive determinations, not absences.",
+      "the181": "44 Bastrop + 111 Smithville not-applicable, 9 refused (Elgin layer gap), 17 value (legacy county field) = 181 exactly. A precision correction to the amended dispatch: the 155 split two cities, not one.",
+      "gateReads": "before 13:25:41.227Z / after 13:26:44.072Z / at close 13:28:59.885Z all read {ok:true, cellCount:62256, unaccountedCount:0} — three reads of ONE state, not a delta. No store write was made or needed; the lane refused to fabricate a before/after.",
+      "partial": "two legs unmeasurable by this lane: the customer-surface leg (the probe defines NO predicate for P-156 or P-124 — a coverage gap reported as such, never as a pass) and the store write (unnecessary under the premise correction, and impossible from a laptop: LAPTOP_WRITE_FROZEN)"
+    },
+    "p183-querypoint": {
+      "status": "NOT CLOSED — no CP2 and no close exist for this lane",
+      "artifacts": ["_inbox/2026-09-14_p183-querypoint_cp1.json", "_inbox/2026-09-14_p183-querypoint_collision_c964d973.json (a disposition note, explicitly NOT the lane close)"],
+      "code": "branch fix/p183-querypoint-from-geometry @ f8c4ee89 (the origin/main merge the collision note saw mid-`UU` is RESOLVED and committed), 0 dirty paths, pushed, PR #687 OPEN",
+      "plannerVerification": "the planner ran the api-server typecheck itself: 0 TypeScript errors. The 6 TS2345s the collision note reported are GONE, so the owning instance fixed them after the note was filed at 08:31. The lane's CODE is in good shape; what is missing is its close.",
+      "blocked": "step 3, the production re-run of the record-store writer, gated behind p178-publish's production publish",
+      "writerCorrection": "the plan row names parcel_record / hauska-factory as the writer of the served queryPoint. It is NOT: the point is composed on the serve from place_layer_snapshots.lat_rounded/lng_rounded, written by legacy-design-tools' tier-1 conformant bake as ringCentroid(firstRing(...)). The lane found the defect in the bake's own row selection (own parcel row vs CAD-account-keyed crosswalk/situs rows) and fixed it THERE, which is why the fix reaches serving only through the factory's pinned _LDT_SHA."
+    },
+    "p178-publish": {
+      "status": "NOT CLOSED — no CP2 and no close exist; the code is landed",
+      "code": "PR #686 (the P-180 retirement pass) is MERGED; the factory pin bump chore(P-178) _LDT_SHA -> 84f4e7c9 is MERGED as #147; both lane worktrees are clean",
+      "blocked": "step 4, the PRODUCTION publish (a serving-store write), still gated on the operator's go"
+    }
   },
   "openItems": [
     {
@@ -171,6 +226,49 @@
       "handling": "Recorded and escalated. The probe names it: 'any consumer that does not compare node ids will serve another lot'. This is a live mis-serving path on a customer surface and is NOT in this wave's four lane missions; it is not silently folded into a lane's scope.",
       "owner": "operator to triage into a row",
       "status": "RESOLVED 2026-09-14 by operator ruling: open it as its own row now and triage into a wave. DONE — declared as P-186 in plan amendment A-149 (90_operations/OPS-16_texas_market_plan_of_record.md), with mission _catalog/dispatch_missions/mission_p186_envelope_wrong_parcel.md and a compiled dispatch _dispatches/2026-09-14_p186-envelope_dispatch.md (18,188 bytes; the compiler accepted the row, which proves the declaration is well-formed). The row was NOT folded into wave 6's four lanes; it is opened and waiting for a wave. Root cause deliberately left unestablished in the row text — the address-keyed leg plus the measured four-county ambiguity of a bare street address makes an address collision the leading candidate, so the mission's first step is discriminating rather than fixing. CONTROL (the acceptance is not vacuous): the same invocation on an undeclared row P-999 is REFUSED — exit 1, 'PLAN-ROW P-999 not found as a declared row ... No row, no dispatch', and no dispatch file written — while P-186 returns exit 0. The row-declaration gate is therefore proven able to fire."
+    },
+    {
+      "id": "O4",
+      "raised": "2026-09-14 by the planner reading the wave's branches on origin after the lanes reported",
+      "question": "The superseded vocabulary branch refs/heads/feat/p154-conflict-row-vocab @ 2132cd2 still exists on origin and carries the RETIRED sentence (Ord. 2019-51, repealed). Nothing points at it, but it is a PR one click away from landing the mechanism A-148 retired. Delete it, or leave it as history?",
+      "handling": "Recorded, not acted on: deleting a branch on origin is an operator/release action, not the planner's, and the branch is evidence of what 1.35.0 shipped. The A-148 work was correctly done on a NEW branch (fix/p154-conflict-a148-vocab @ 1668d6f) rather than by rewriting a pushed commit.",
+      "owner": "operator (release hygiene)"
+    },
+    {
+      "id": "O5",
+      "raised": "2026-09-14 by the planner verifying the contract at source rather than accepting '1.36.0 is not published'",
+      "question": "origin/main of hauska-atom-contract is at package.json version 1.35.0 and STILL CARRIES the retired sentence: `git grep 'repealed 2026-04-14' origin/main -- src` hits src/display/wire.ts and src/display/wire.test.ts, while `git grep 'unrefreshed numeric columns' origin/main -- src` returns nothing. So the published latest is the retired mechanism, and the correction is only on PR #33. Publishing 1.36.0 requires an operator OTP that no agent can supply.",
+      "handling": "Escalated as the wave's critical path, not worked around. The engine deliberately fails closed on 1.35.0 rather than printing undefined values, so the live surface is SAFE but uninformative — the customer gets no conflict note rather than a wrong one. Note the p167Observation above already measured the customer-facing half of this: the live surface currently prints the engine-composed 'the two city schedules conflict' sentence, which A-148 supersedes.",
+      "owner": "operator (npm publish)",
+      "status": "OPEN as a hard gate — nothing of the p154-conflict row is servable until it lands"
+    },
+    {
+      "id": "O6",
+      "raised": "2026-09-14 by the superseded p156 instance (subagent 73246365) in its stand-down report, verified against the lane's own close",
+      "question": "Two residue items in the Bastrop declaration, both stated by the lane and neither a defect it can close from a laptop: (1) Smithville's 111 not-applicable cells are still authorised by the CODE CONSTANT rather than by per-city versioned data, so the shape the row exists to fix survives for 111 of the 181; (2) 17 Elgin parcels carry asserted legacy-county-field values while 9 siblings are refused for having no source — the same city, two different epistemics.",
+      "handling": "Recorded as the honest residue of a closed-partial, not hidden inside the 181 arithmetic. The lane also corrected the dispatch's precision: the 155 split (44 Bastrop + 111 Smithville), and it left the next-wave question explicit — Travis (2,758) and Williamson (1,271) are the cities that would carry the same declaration shape, and neither has a JSON declaration.",
+      "owner": "a future P-156/P-124 wave"
+    },
+    {
+      "id": "O7",
+      "raised": "2026-09-14 by the p183 collision note, and confirmed by two lanes independently",
+      "question": "The P-183 plan row names the wrong WRITER: it points at parcel_record / hauska-factory, but the served cityLimitsFact.queryPoint is composed on the serve from place_layer_snapshots.lat_rounded/lng_rounded, written by legacy-design-tools' tier-1 conformant bake. A row that names the wrong writer will dispatch the wrong lane next time. The row also scopes 'the bake and its walk' OUT of bounds while the bake's own row selection IS the defect.",
+      "handling": "Recorded so the next dispatch of this row names the real writer and does not re-scope the bake out of its own defect. Not edited by the planner mid-wave: the row text is the operator's/plan's to amend (as A-149 did for P-186), and rewriting a row while its lane is mid-flight is the same hazard as editing a live worktree.",
+      "owner": "operator (plan row amendment, next wave)"
+    },
+    {
+      "id": "O8",
+      "raised": "2026-09-14 by the p156 lane, found by reading the probe's own registry rather than its verdict",
+      "question": "scripts/surface-probe.mjs defines NO predicate for P-156 or P-124 (its ROWS registry covers P-151..P-159, P-167, P-169, P-171..P-175). A row with no predicate can never be graded by the instrument the wave is judged with — it is a coverage gap that would otherwise read as silence.",
+      "handling": "Recorded as a measured coverage gap. The lane correctly reported 0 parcels on the cited artifact as a GAP rather than a pass, which is the DEV-PROCESS distinction between 'not measured' and 'measured good'.",
+      "owner": "the wave that adds a P-156 predicate, or the operator if the row is to be graded another way"
+    },
+    {
+      "id": "O9",
+      "raised": "2026-09-14 by the planner checking the two p154 surface worktrees against the close that declares those surfaces unbuilt (see correction C3)",
+      "question": "The P-154 panel and MCP surfaces are BUILT but uncommitted and unowned: 9 files / 297 insertions in hauska-map-p154-conflict and 2 files / 92 insertions in legacy-design-tools-p154-conflict, both pinned to ^1.36.0 and both wired to the shared `setbackConflictNote`. The lane is closed and its close says NOT PRODUCED. Do we land these this wave (which needs O5 published first, plus a lease for hauska-map / cortex-api), or carry them as a named P-154 follow-on?",
+      "handling": "Captured to _inbox/ (panel and mcp diffs, with hashes and status files) so the work is recoverable regardless of the answer. NOT committed by the planner — the lanes own their worktrees, and the p154 lane's files are its own to commit. NOT silently folded into the close either, which would be the C3 error repeated.",
+      "owner": "operator to rule; then a single owner commits and opens the PRs. Sequenced behind O5."
     }
   ],
   "premiseCorrections": [
