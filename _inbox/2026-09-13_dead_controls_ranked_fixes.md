@@ -34,7 +34,20 @@ Ranked by what arming it catches, times how cheap the fix is.
 
 ## 1. `evaluateRailGate` passes a county that is completely empty
 
-**Where:** hauska-factory `src/lib/parcel-record-engine/publish-gate.js:72-83`
+**Where — AND THIS IS TWO FILES, corrected 2026-09-14:**
+
+```
+hauska-factory  src/lib/parcel-record-engine/publish-gate.js        (what publish-gate-sched calls)
+hauska-engine   packages/engine-core/src/parcel-record/publish-gate.ts:171-188
+```
+
+Both carry the identical predicate. The factory `.js` has **no generated-file banner** and
+reads as authored, with its own imports, its own `gate-rail-cli` and its own `index` beside it.
+So either it is a compiled artifact whose provenance is undeclared, or it is a second
+implementation free to drift. **Fixing one leaves the other**, and the factory copy is the one
+the hourly scheduler actually calls. Settle which before editing, and if they are independent
+add the divergence test DEV_PROCESS requires for paired controls. The same question applies to
+`evaluatePopulation` and to the writers in entry 3.
 
 ```js
 export function evaluateRailGate(cells, railKey, options = {}) {
@@ -101,16 +114,27 @@ states and this collapses two of them into "ok."
 
 ---
 
-## 3. Three engine rails cannot write at all
+## 3. SIX engine rails cannot write at all
+
+**Corrected 2026-09-14 from three to six** by the farm-model lane, verified at hauska-engine
+`origin/main` `14c7e850`. I found three by reading the rails I happened to care about; the
+lane read all seven writer scripts and found the same defect in three more.
 
 **Where:** hauska-engine `packages/engine-core/scripts/`
 
 ```
-write-owner-fact-county.mjs         lease mentions: 0    writePropertyAtomsBatch(slice) @416
-write-land-use-fact-county.mjs      lease mentions: 0    writePropertyAtomsBatch(slice) @374
-write-flood-hazard-fact-county.mjs  lease mentions: 0    writePropertyAtomsBatch(slice) @164, @734
-write-parcel-node-county.mjs        lease mentions: 15   (the one that works)
+write-owner-fact-county.mjs             no lease    writePropertyAtomsBatch(slice) @416
+write-land-use-fact-county.mjs          no lease    writePropertyAtomsBatch(slice) @374
+write-flood-hazard-fact-county.mjs      no lease    writePropertyAtomsBatch(slice) @164, @734
+write-rail-corridor-fact-county.mjs     no lease    (found 2026-09-14)
+write-rrc-pipeline-fact-county.mjs      no lease    (found 2026-09-14)
+write-special-district-fact-county.mjs  no lease    (found 2026-09-14)
+write-parcel-node-county.mjs            lease x15   (the one that works)
 ```
+
+**Narrower than first stated, and this matters for the fix.** Flood cells exist and serve
+today — the Hays lots read Zone AO from the record — so these writers ran at some point. The
+defect is **re-runs under the current lease**, not that the rails have never been populated.
 
 And `packages/storage/src/pg-storage.ts:305-307`:
 
@@ -164,19 +188,27 @@ derivations and the check becomes meaning-shaped rather than presence-shaped.
 
 ---
 
-## 5. `computeTier1Envelope` has no branch that returns a value
+## 5. ~~`computeTier1Envelope` has no branch that returns a value~~ — WITHDRAWN 2026-09-14
 
-**Where:** legacy-design-tools `artifacts/api-server/src/lib/nodeFacetBakeTier1.ts:103-116` —
-both return branches carry `status: "declined"`. Still true at `31d181c2`.
+**This entry was wrong and is retained struck through rather than deleted, because deleting it
+would hide the error.**
 
-Known since 2026-09-10 and the root cause of weeks of setback shortfall. Listed here for
-completeness because it is the archetype of the class and because **its presence in a fourth
-repo-spanning tally is what makes this a class rather than an incident.**
+**The code fact stands:** `artifacts/api-server/src/lib/nodeFacetBakeTier1.ts:103-116`, both
+return branches carry `status: "declined"` at `31d181c2`, and `envelopeStatus` holds a value
+on 0 of 611,116 incorporated parcels (measured directly).
 
-**Proposed fix.** Already chosen: OPS-21 S1/S2 writes cells direct from the ruled-table
-computation (`brokeragePlaceBuildableEnvelope`, which runs live and correctly for roughly
-twenty jurisdictions) rather than through the held atom writer. No new decision needed; this
-row just needs to land.
+**But that is a RULING, not a defect.** Corrected from the OPS-23 side 2026-09-14: OPS-21
+refuses buildable area, buildable percent and envelope status **until an envelope atom
+exists** (R-2). The polygon draws under P-153; the figure is withheld deliberately. A
+function correctly implementing a refusal is not a control that cannot fail.
+
+**Do not fix this.** Listing it here would have sent someone to change a decision, and the
+change would have looked like progress. That is the more dangerous kind of error in this
+document, because a defect that is really a ruling gets "fixed" and nobody notices until a
+number appears that should not exist.
+
+**The count in this card is therefore SEVEN, not eight.** The class is still real and still
+found in the other entries.
 
 ---
 
@@ -261,18 +293,18 @@ a gate, because writing it where nothing looked is a lie that passes every check
 
 ---
 
-## The one rule that would have caught all eight
+## The one rule that would have caught all seven
 
 Every one of these was found by **reading the write path**, and none would have been found by
 measuring output, because each returns clean output by construction.
 
 ENFORCEMENT already carries the procedure: **verify a check by violating it.** Before any of
-these eight is reported as fixed, run it against a known violation and confirm it fails. For
-five of the eight the fixture already exists: an empty county for 1 and 2, Thrall for 6, a
+these seven is reported as fixed, run it against a known violation and confirm it fails. For
+five of the seven the fixture already exists: an empty county for 1 and 2, Thrall for 6, a
 known-failed join for 4, a moved pin for 8.
 
 ## What is not proposed here
 
 No ruling on any fix. No sequencing against OPS-21 or OPS-23, both of which are mid-flight and
 touch the same files. No estimate of effort, per the operator's standing instruction. Whether
-these become one row or eight is a scoping decision nobody has made.
+these become one row or seven is a scoping decision nobody has made.
