@@ -1,0 +1,22 @@
+{
+  "lane": "AUTH-GATE",
+  "planRow": "P-199",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work",
+  "filedAt": "2026-09-14T17:34:29Z",
+  "phase1_result": {
+    "method": "Live unauthenticated GET (bare fetch, no cookies/session) against https://smartsite.cloud/api/spine/property-atoms/48021:34841/facets, once bare and once with ?via=empressa, reusing surface-probe.mjs's own extractFacets extractor unmodified.",
+    "artifact": "_inbox/2026-09-14_173412_surface_probe.json",
+    "finding": "HTTP 200 both times; response bodies identical after dropping the one clock-only field (bakedAt, unchanged anyway). No field present with the param that is absent without it, and vice versa.",
+    "conclusion": "Hypothesis 1 (p185 PromoteKit regression) is ELIMINATED by direct live A/B, not by inference. Also cross-checked against source: p185's three diffs (legacy-design-tools#N feat/p185-promotekit-checkout-metadata: pePaywallStripe.ts +24, new promotekitReferral.ts +65, propertyExplorer.ts +19; hauska-map feat/p185-promotekit-script-and-referral: an async <script> tag reading window.location into window.promotekit_referral, one CSP script-src addition for cdn.promotekit.com, and billingClient.ts reading that window global) touch ONLY Stripe Checkout Session metadata construction. window.promotekit_referral is read in exactly one place in the client (billingClient.ts, at checkout) and nowhere in the brief/facets fetch path. The param never reaches any server route outside the checkout POST body. Two independent lines of evidence (live A/B, source read) agree."
+  },
+  "phase2_and_3_findings_pending_final_writeup": {
+    "servingPathForTheOpenFields": "zoning/setbacks/utilityService/overlayDistricts/schoolDistrict/specialDistrict/pipeline/well/footprint/boundary/cityLimits are served by LDT's per-rail 'ServeCutover' loaders (e.g. utilityServiceFactServeCutover.ts), which call hauska-engine's retrieval-api ONE-READER (GET /property-nodes/:id/record, parcel-record-reader.ts, P-152) against the Factory's parcel_record store -- NOT the atom/ledger accessPolicy path the dispatch's phase-2 hypothesis names.",
+    "accessPolicyEnforcement": "grep across legacy-design-tools/artifacts/api-server/src and hauska-engine/services/retrieval-api/src: zero references to accessPolicy on any file in the parcel_record read/serve path (parcelRecordCellRead.ts, parcel-record-reader.ts, utilityServiceFactServeCutover.ts and siblings, structuralFactToFacetsWire.ts, brokerageNodeFacets.ts). accessPolicy appears only on unrelated endpoints (/jurisdictions, /atoms/:did tests). Read live in parcel-record-reader.ts:60: 'Candidate field name for a future atom pointer on a cell (P-163 has not landed; no live cell carries one yet)' -- confirmed empirically in the live probe body (no atom or atomDid on any served rail for 48021:34841). There is currently no atom, and therefore no accessPolicy, anywhere in this serve path for these fields.",
+    "workingGateMechanism": "Owner name and the four CAD tax-assessed dollar fields are gated by a hand-built, PE-tier co-gate: grantsOwnerCoGatedFields() in legacy-design-tools/artifacts/api-server/src/lib/peEntitlement.ts (Studio|Team subscription tier OR an active per-parcel Property Unlock), applied explicitly in the brief route brokerageNodeFacets.ts (stripOwnerLikeKeys-shaped refusal for ownerFact; gateCadRollValuationOnFacets() for the four CAD dollar rails), per two named operator rulings (OPS-16 A-103 item 5, A-104, 2026-09-05). This mechanism does not read accessPolicy either -- it is independent, deliberate, PE-tier business logic, added ONLY for these two field groups.",
+    "liveConfirmation": "The same probe artifact shows ownerFact present-but-name-stripped and cadRoll market/assessed value returning a typed {state:'refused', code:'studio-gated', reason:...} shape -- the gate is live, working, and typed, exactly matching the source."
+  },
+  "openQuestionsForClose": [
+    "Whether cause (2) or (3) is the more precise label: source evidence favors a variant of (2) -- not 'atoms carry public-free and are correctly served' (no atom exists yet for these rails) but 'the entire pre-atom parcel_record serving path has no access-tier concept at all, so accessPolicy is moot rather than satisfied'. This distinction changes the correction (P-163 atom cutover + accessPolicy enforcement, vs. relabeling existing public-free atoms) and must be stated precisely in the close."
+  ]
+}
