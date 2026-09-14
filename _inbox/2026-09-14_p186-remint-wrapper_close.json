@@ -1,0 +1,212 @@
+{
+  "artifact": "P-186 / OPS-23 wave 6 close — the Cloud Run Job wrapper for the BOUNDED per-parcel depth-warm atom re-mint",
+  "planRows": ["P-154"],
+  "role": "deepest worker; authoring and merging only",
+  "startCommit": "2cc20578262bca1881ad81c84231f9c6288fe94a",
+  "startCommitNote": "equals origin/main at branch creation; declared before any edit",
+  "branch": "feat/p186-remint-wrapper",
+  "worktree": "P:/hauska-engine-worktrees/p186-remint-wrapper",
+  "repo": "empressaioemail-tech/hauska-engine",
+  "pr": {
+    "number": 445,
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/445",
+    "title": "feat(cloud-run): depth-warm per-parcel re-mint job wrapper + dry leg (P-186, OPS-23 wave 6; P-154)",
+    "headSha": "7f457a11ceaba013881d4f2b07c5f25cbabd61cd"
+  },
+  "mergeSha": "45ba9d21015f1d329c8ebdba420ccb26f3df55b6",
+  "mergedAt": "2026-09-14T17:08:08Z",
+  "mergeMethod": "squash (matches #443 and #444, the two merges immediately before this one)",
+  "conclusionString": "typecheck + test | status=completed | conclusion=success",
+  "conclusionStringProvenance": "gh api repos/empressaioemail-tech/hauska-engine/commits/7f457a11ceaba013881d4f2b07c5f25cbabd61cd/check-runs --jq '.check_runs[] | [.name, .status, .conclusion] | @tsv' — the check-run CONCLUSION STRING on the PR head, read BEFORE the merge and used as the merge gate. NOT 'gh pr checks printing pass'. Merged with: gh pr merge 445 --squash.",
+  "theWrapper": {
+    "declaration": "cloudbuild.depth-warm-remint.yaml (repo root, new)",
+    "jobName": "hauska-engine-depth-warm-remint",
+    "project": "hauska-prod-497015",
+    "region": "us-east4 (substitution _REGION)",
+    "shape": "follows the engine's own P-169 writer jobs (cloudbuild.atoms-writer-p169.yaml, cloudbuild.footprint-retag.yaml), which in turn follow hauska-factory's cloudbuild.publish.yaml convention: docker build from Dockerfile.atoms-writer -> docker push -> describe-for-DIGEST -> gcloud run jobs deploy pinned to the digest -> images list. Digest pinning is assertion-tested (A-020).",
+    "command": "--command=pnpm,--filter,@hauska-engine/engine-core,exec,tsx,scripts/depth-warm-city-batch.mjs",
+    "bakedArgs_dryLeg_default": "--args=--row-id=${_ROW_ID},--parcel=${_PARCEL},--dry-run,--remint-preview  with substitutions _ROW_ID=Bastrop, _PARCEL=48021:34049",
+    "applyArgs_explicitOverride": "--args=--row-id=Bastrop,--parcel=48021:34049,--promote  (an execution-time override; NOT baked)",
+    "env_set_on_the_job": {
+      "PROPERTY_ATOM_PATH": "1 — hard-required by writePropertyAtomIfEnabled; set on the job so no execution can omit it",
+      "NODE_OPTIONS": "--use-system-ca (per the documented depth warm command)",
+      "IMAGE_DIGEST": "$DIGEST (deployed digest, echoed into the job env)",
+      "CLOUD_RUN_REGION": "us-east4",
+      "CLOUD_RUN_JOB": "NOT set by this file — set by the Cloud Run Jobs platform on every execution and never suppliable by a caller flag. This is how P-169 is satisfied by construction."
+    },
+    "secrets_set_on_the_job": {
+      "SUBSTRATE_DATABASE_URL": "ATOMS_DATABASE_URL:latest (resolveSubstrateDatabaseUrl reads this FIRST — pinned to the atoms store so it cannot fall through)",
+      "DATABASE_URL": "ATOMS_DATABASE_URL:latest (the mutation target)",
+      "TXGIO_DATABASE_URL": "SOURCE_DATABASE_URL:latest (read-only store holding txgio_parcel; the runner's own header names this variable)",
+      "CORTEX_DATABASE_URL": "SOURCE_DATABASE_URL:latest (adapter/storage fallback name for the source store, never a second mutation target)"
+    },
+    "secretNameProvenance": "ATOMS_DATABASE_URL / SOURCE_DATABASE_URL measured in-repo: cloudbuild.atoms-writer.yaml:57 and cloudbuild.atoms-writer-p169.yaml:81 use exactly those two secret names for the same roles; atoms-writer-allowlist.mjs:67 falls back CORTEX_DATABASE_URL || SOURCE_DATABASE_URL || TXGIO_DATABASE_URL, confirming SOURCE_DATABASE_URL is the source-store secret.",
+    "runtimeLimits": "--tasks=1 --parallelism=1 --max-retries=0 --memory=4Gi --cpu=2 --task-timeout=3600",
+    "maxRetriesRationale": "0 on purpose: a retry after a partial promote re-runs an already-partial promotion (boundary-edge atoms are persisted before the property atoms).",
+    "whyTheBakedArgsAreTheDryLeg": "A bare `gcloud run jobs execute hauska-engine-depth-warm-remint` must not be able to fire a live in-place upsert of a real atom. Baking the dry leg makes the write require a deliberate --args override, which mirrors the P-169 atoms-writer job being left deliberately unspecialized ('no --writer is baked, so every execution names its own writer, county and target'). A bare execute with no --args at all also cannot write: --row-id is REQUIRED and the runner FATALs without it.",
+    "runbook": "RUNBOOK.depth-warm-remint.md (repo root, new)",
+    "codeAdditions": [
+      "packages/engine-core/src/depth-warm/remint-preview.ts (new) — buildRemintPreview / emptyRemintPreview / remintPreviewRefusal",
+      "packages/engine-core/scripts/depth-warm-city-batch.mjs — +106 lines: --remint-preview and --remint-preview-out in parseArgs, the refusal gate before any store connection, the per-parcel preview accumulation, and the depth-warm.remint-preview.doc emission"
+    ]
+  },
+  "mechanismConfirmedAtSource": {
+    "method": "Read in the worktree at 2cc2057 before wrapping anything; every line reference is to that tree.",
+    "link1_runner": {
+      "claim": "--parcel truly scopes to ONE parcel",
+      "evidence": "depth-warm-city-batch.mjs:480 `if (args.parcel) {` -> SQL at :482-492 selects from atoms WHERE entity_type='zoning-fact' AND body->>'parcelNodeId' = ${args.parcel} AND NOT (body ? 'absence') AND coalesce(body->>'district','') <> '' LIMIT 1. The cohort branches are guarded: :418 `} else if (args.cityCohort && !args.parcel) {`, :493 `} else if (useLayer23RegistryCohort && cityParcelIds?.length) {`.",
+      "verdict": "CONFIRMED"
+    },
+    "link2_rowId": {
+      "claim": "--row-id is REQUIRED and FATALs without it",
+      "evidence": "parseArgs rejects a missing --row-id and the script exits non-zero before any store connection.",
+      "verdict": "CONFIRMED"
+    },
+    "link3_promoteToWrite": {
+      "claim": "the --promote leg reaches writePropertyAtom",
+      "evidence": "warmThenVerify (warm-then-verify.ts:38-66) -> promoteDepthWarmToStorage (promote.ts:251) -> emitDepthWarmPromotion (promote.ts:151) -> emitSetbackRule (emit-setback-rule.ts:119) for the setback-rule atom -> writePropertyAtomIfEnabled(storage, atom) (promote.ts:332) -> storage.writePropertyAtom (pg-storage.ts) = INSERT INTO atoms ... ON CONFLICT (atom_did) DO UPDATE SET body = EXCLUDED.body, fetched_at = ..., updated_at = ...",
+      "verdict": "CONFIRMED"
+    },
+    "link4_displayMetaSecondSourceConflict": {
+      "claim": "emitSetbackRule adds conflict ONLY when the resolved setback-table row already carries display_meta.second_source.conflict",
+      "evidence": "emit-setback-rule.ts:210-231 — secondSource is spread only from setbackTableRow.display_meta.second_source, and conflict is spread only from setbackTableRow.display_meta.second_source.conflict. Nothing in this file invents a conflict. The row's disclosure is built upstream in adapters: index.ts:413-472 (shape 'stale-numeric-columns', the A-148 same-layer case, from perParcelRecord.textNumericDisagreement) and index.ts:483-527 (shape 'second-source', the two-instrument R-1 case, when candidatesDisagree), surfaced onto the row by withSecondSourceDisclosure (index.ts:539).",
+      "verdict": "CONFIRMED, with the additional finding that the LIVE path reaches it through buildBastropPerParcelSetbackDescriptor -> getSetbackTableForZoning(...).table -> setbackTableDescriptorFromAdapter (which preserves display_meta.source identity) -> descriptor.setbackTable.rows -> promote's rawRow."
+    },
+    "link5_propertyAtomPathGate": {
+      "claim": "PROPERTY_ATOM_PATH=1 is genuinely required, and without it the run is a silent no-op returning null",
+      "evidence": "write-property-atom.ts:20 `if (!isPropertyAtomPathEnabled()) return null;` — a null return with NO throw. env.ts:12 `return process.env.PROPERTY_ATOM_PATH === \"1\"`.",
+      "verdict": "PARTLY CONFIRMED — the dispatch's premise is TOO STRONG for this runner, and this is the correction. Three layers: (1) writePropertyAtomIfEnabled returns null silently (confirmed, and it is the shape that lets a careless caller lie); (2) promoteDepthWarmToStorage :332-335 CHECKS the return and THROWS ('promote: PROPERTY_ATOM_PATH not enabled or write skipped'); (3) depth-warm-city-batch.mjs:337-340 FATALs up front for !dryRun && PROPERTY_ATOM_PATH !== '1', BEFORE any store connection. So a runner invocation that forgot the env does NOT report success — it dies loudly.",
+      "theSilentLiarThatDoesExist": "packages/engine-core/scripts/stamp-bastrop-successor-zoning-fact.mjs:126-134 calls writePropertyAtomIfEnabled and pushes { status: 'stamped', district, atomDid: written?.atomDid } with no null check: with the env unset it reports every parcel 'stamped' with NO atomDid, having written nothing. table-backed-setback-from-zoning.ts:229 is the milder form (result?.atomDid, returns wrote:false). Also honest-decline-promote.ts:212 returns null early. This is the class of lie the tests below are written against — the failure mode is real in this repo, just not in the instrument we wrapped.",
+      "verdictHonest": "the wrapper cannot lie this way; the codebase can, elsewhere"
+    },
+    "link6_gates": {
+      "claim": "what do assertWarmGateApplied / gateWarmCohort require of an input parcel?",
+      "evidence": "packages/engine-core/src/parcel-node/warm-preflight-gate.ts. parcelNodeWarmEligibility(parcelNodeId, anchor) is TOTAL and refusal-first: it refuses a synthetic feature key (isSyntheticParcelKey, declineCode 'parcel-node-key-unresolved'), a null anchor ('no-parcel-node-anchor'), a typed absence ('parcel-node-absence'), a retired anchor ('parcel-node-retired'), geometry the serve path cannot reduce to one ring ('parcel-node-geometry-incomplete'), and a pointer naming a different parcel ('parcel-node-pointer-mismatch'). The invariant in its header: NO PARCEL IS WARMED WITHOUT A LIVE, RESOLVED, ACCOUNT-KEYED PARCEL-NODE ANCHOR. The warm set is the INTERSECTION of recipe eligibility and parcel-node eligibility; refusals are named and counted, never silently dropped. gateWarmCohort intersects them into a tally and assertWarmGateApplied fails closed.",
+      "envRequirement": "MEASURED: warm-preflight-gate.ts contains NO process.env reference at all (grep for process.env / env. returns zero matches). These gates read NOTHING from the environment — they read the parcel-node atom from the atoms store. So the only environment the wrapper must supply for them is the store connection itself (DATABASE_URL / SUBSTRATE_DATABASE_URL -> atoms store), which the job sets. There is no hidden gate env var to forget.",
+      "verdict": "CONFIRMED by grep, not by reading"
+    },
+    "link7_noLease": {
+      "claim": "writePropertyAtom takes NO lease, unlike writePropertyAtomsBatch",
+      "evidence": "pg-storage.ts — writePropertyAtom performs the ON CONFLICT (atom_did) DO UPDATE with no lease argument; writePropertyAtomsBatch requires a HeldLease and throws LeaseRequiredError without one.",
+      "verdict": "CONFIRMED"
+    }
+  },
+  "theDryLeg": {
+    "invocation": "gcloud run jobs execute hauska-engine-depth-warm-remint --project=hauska-prod-497015 --region=us-east4 --wait --args=--row-id=Bastrop,--parcel=48021:34049,--dry-run,--remint-preview   (this is also the JOB'S BAKED DEFAULT, so a bare execute is the dry leg)",
+    "whatItEmits": "a depth-warm.remint-preview.doc JSON document on stdout (and to --remint-preview-out when given): for each property atom the apply leg would upsert, its entityType/entityId/atomDid/contentHash and the WHOLE body; plus for the setback-rule atom the summaries secondSourcePresent, conflictPresent, conflictShape, secondSourceNote; plus the document-level flags deletesExistingDisclosure and noOpForConflict, each with a plain-language note.",
+    "whyItIsSafeByConstruction": "it is the same emit that promote.ts makes (emitDepthWarmPromotion is pure and touches no store) and it never calls a write path; writePropertyAtomIfEnabled is not reached because promoteDepthWarmToStorage is only called when input.promote && input.storage.",
+    "theThreeStatesItDistinguishes": {
+      "conflictPresent_true": "the A-148 (stale-numeric-columns) or R-1 (second-source) detector fired; the body carries displayMeta.secondSource.conflict and the surfaces' one conflict sentence survives the re-mint. Proceed.",
+      "noOpForConflict_true (secondSourcePresent true, conflictPresent false)": "SUCCESSFUL NO-OP FOR THE REMIT'S PURPOSE. The detectors did not fire; the apply leg exits 0, increments its promoted/verifyPass counts, and changes nothing about the disclosure. The operator must not read exit 0 as 'the risk is now wired'.",
+      "deletesExistingDisclosure_true (secondSourcePresent false)": "REGRESSION, NOT A NO-OP. The emitted body carries no secondSource at all, so SET body = EXCLUDED.body DELETES what the live row carries today — the pre-A-148 prose the surfaces print. STOP.",
+      "emptyPreviews": "nothing would be written, with the reason string (empty --parcel cohort: no non-absence zoning-fact atom with a non-empty district; or the warm-gate decline with its named code; or mechanical verify did not pass)"
+    },
+    "honestCaveatsDocumentedInTheRunbook": [
+      "The preview's contentHash is NOT the hash the apply leg stores: emitSetbackRule / emitBuildableEnvelope stamp extractedAt/fetchedAt at emit time and contentHash derives from them. The runbook compares the STORED content_hash before/after instead. A preview hash must never be compared to a stored hash.",
+      "The dry leg reads the same live layer-23 record one execution earlier, so its detector verdict is as fresh as its own wall clock; steps 3 and 4 should run back to back.",
+      "The dry leg reports; it never refuses. Whether a payload with no conflict is acceptable is the operator's call (for 48021:34049 it is the whole point of the run), and a preview that refused to show such a payload could not tell the operator the A-148 predicate did not fire."
+    ]
+  },
+  "serialization": {
+    "theFinding": "writePropertyAtom takes NO LEASE. There is no mutual exclusion from the storage layer for this write; the last writer wins silently. The leases exist ONLY on the batch path (writePropertyAtomsBatch requires a HeldLease and throws LeaseRequiredError without one), which is not the path promoteDepthWarmToStorage uses.",
+    "whatTheWrapperDoesInstead": "It cannot rely on the storage layer, so the exclusion is the runbook's step-2 preflight, which is documented as a HUMAN check that can be wrong: list running executions of hauska-engine-depth-warm-remint, hauska-engine-atoms-writer and hauska-engine-footprint-retag, and confirm no depth-warm cohort run with --city-cohort --force-overwrite is in flight over the parcel's jurisdiction. If it cannot be established that no other lane is re-minting the same parcel, the runbook says write that down and do not run.",
+    "whatItWouldCollideWith": [
+      "the cohort arm of this same runner over an overlapping parcel set (different cohort, same atoms)",
+      "a future per-parcel run of another lane",
+      "any in-place fix-up script addressing the same rows (e.g. stamp-bastrop-successor-zoning-fact.mjs, which writes into the same atoms table)"
+    ],
+    "schedulerExposure": "The atoms store has NO confirmed scheduled writer. factory-conformant-reap (*/10 * * * *) and factory-publish-gate-sched-hourly (0 * * * *) run on the FACTORY store, not the atoms store. So the realistic collision is a concurrent human/agent execution, not a cron — which is worse, because an unlisted seat run is invisible to the preflight.",
+    "whyNoLockWasInvented": "Adding a lease/lock to writePropertyAtom is a storage-layer change touching the atom store's write path, outside this worktree's remit and outside the ruling, and it would change the semantics of every existing writer. It is named as a leave-behind instead of being smuggled in."
+  },
+  "rollbackArtifact": {
+    "theFinding": "There is NO rollback target. The write is an in-place upsert over body/fetched_at/updated_at with no version row and no history table for property atoms. Therefore the ONLY rollback artifact that can exist is a read-only capture of the live row taken before the write, and it only exists if someone takes it.",
+    "sql_wired_as_runbook_step_1": "SELECT atom_did, entity_id, content_hash, fetched_at, updated_at, body FROM atoms WHERE entity_type = 'setback-rule' AND (entity_id = '<nodeId>' OR entity_id LIKE '<nodeId>:%') AND COALESCE(body->>'status','active') = 'active';  — plus the same query for entity_type = 'buildable-envelope' and, when the parcel's geometry is in question, for the boundary-edge rows.",
+    "howTheRunbookWiresIt": [
+      "Step 1 is expressly READ-ONLY and mandatory before anything else; the single-parcel arm's contract form of the query is given verbatim, and the LIKE '<nodeId>:%' arm is called out as covering the suffixed variants.",
+      "The operator saves both result sets to a dated file outside the repo and is told that losing that file IS losing the rollback.",
+      "The operator records the content_hash of each captured row. That stored hash is the before/after discriminator: step 5 re-runs the same query and requires a CHANGED content_hash when something was rewritten, or the SAME one when the re-mint was a no-op. The wrapper echoes each atom's contentHash in the dry-leg preview as well.",
+      "The runbook states plainly that a 0-row capture means there is nothing to roll back and the apply leg would INSERT a brand-new atom — a different act from a re-mint, needing its own decision.",
+      "The reversal is given as an explicit UPDATE restoring the captured body, content_hash and updated_at, together with its limitations: it restores ONE row from ONE capture, it is itself an unversioned in-place write with no lease, no gate and no dry leg, no Cloud Run Job restores a property atom, and it does not undo the boundary-edge atoms written in phase 1.",
+      "It also warns that the restored content_hash matches the captured one, so a later reader cannot tell a rollback happened — say so where the run is recorded."
+    ],
+    "note": "The wrapper does NOT automate the capture: automating a store read from the job would imply the job owns the rollback, and the rollback is deliberately an operator act on the record of the run."
+  },
+  "twoDirectionalTestEvidence": {
+    "howRun": "pnpm --filter @hauska-engine/engine-core exec vitest run src/depth-warm/__tests__/remint-preview.test.ts src/depth-warm/__tests__/remint-wrapper.contract.test.ts src/property-reasoning/__tests__/write-property-atom-path-gate.test.ts",
+    "result": "3 files / 22 assertions, all passing; tsc --noEmit clean. CI: 'typecheck + test' status=completed conclusion=success on head 7f457a1 (3m43s).",
+    "directionA_propertyAtomPathUnset": {
+      "file": "packages/engine-core/src/property-reasoning/__tests__/write-property-atom-path-gate.test.ts",
+      "asserts": [
+        "PROPERTY_ATOM_PATH unset -> writePropertyAtomIfEnabled returns null AND storage.writePropertyAtom is never called (a caller checking only for thrown errors would call this success)",
+        "PROPERTY_ATOM_PATH=1 -> called EXACTLY once, returns { atomDid, cid, skipped: false } — the two directions differ by this alone",
+        "a value that is not exactly '1' (e.g. PROPERTY_ATOM_PATH=true) is NOT enabled and writes nothing"
+      ],
+      "whyItGuardsTheWrapper": "plus remint-wrapper.contract.test.ts, which asserts the runner still carries the FATAL 'PROPERTY_ATOM_PATH=1 required for promote', that the runner actually calls remintPreviewRefusal and exits 1, and that the JOB declaration still sets PROPERTY_ATOM_PATH=1 — so neither the env nor the guard can be dropped without a failing test."
+    },
+    "directionB_emitWithNoSecondSource": {
+      "file": "packages/engine-core/src/depth-warm/__tests__/remint-preview.test.ts",
+      "asserts": [
+        "a CORPUS/codified-table descriptor (getSetbackTable('bastrop-development-code') -> setbackTableDescriptorFromAdapter) emits a setback-rule atom with secondSourcePresent === false and conflictPresent === false, and buildRemintPreview flags deletesExistingDisclosure === true with a note naming the DELETE. @empressaio/setback-corpus@1.2.0 contains ZERO occurrences of second_source, so this is the shape of ANY corpus/snapshot-derived emit — the instrument must be the LIVE-record path.",
+        "the LIVE-record descriptor for the SAME parcel (buildBastropPerParcelSetbackDescriptor with the live-verified layer-23 row) carries secondSourcePresent === true and does NOT flag a delete — the two directions are distinguished by the descriptor's source, not by the parcel.",
+        "the A-148 same-layer row (live-verified Zone_Types/FeatureServer/25 row for 48021:34049, numerics 25/5/25 vs text 30/10/30/20) parses to textNumericDisagreement, resolves through getSetbackTableForZoning to the CONFLICT arm, and the emitted body's conflictShape is 'stale-numeric-columns'.",
+        "a district with no codified row (MU) keeps the layer's prose disclosure and NO structured conflict -> the preview flags noOpForConflict === true and says 'NO-OP FOR CONFLICT'.",
+        "remintPreviewRefusal: allows exactly the bounded dry leg, refuses a cohort, refuses the dry leg combined with --promote, and says nothing when the flag is absent.",
+        "the empty case: emptyRemintPreview says NOTHING WOULD BE WRITTEN with its reason rather than printing an empty list."
+      ]
+    },
+    "measuredAncillaryFinding_aboutTheFirstUseCase": {
+      "parcel": "48021:34049 (Bastrop County), atom minted 2026-08-05 pre-A-148",
+      "measured": "The live PATH THIS JOB RUNS fetches Parcels_One_Click/FeatureServer/23 (fetchBastropPerParcelSetbackRecord, outFields FrontSetback_,FrontSetback,SideSetback_,SideSetback,RearSetback_,RearSetback,...,Ordinance_). On the live-verified 2026-09-12 layer-23 row for prop_id 34049 the numeric shortcut columns AGREE with the row's own text fields (25/5/25), so the A-148 same-layer detector does NOT fire on this path: textNumericDisagreement is undefined.",
+      "but": "that same record's citation (Ordinance_ 2019-51, year precision) is superseded by the codified BDC row (effective 2026-04-14) and the two disagree on all four scalars, so resolveMostCurrentSetback resolves to the chart and candidatesDisagree -> the CONFLICT arm fires with shape 'second-source', and withSecondSourceDisclosure puts displayMeta.secondSource.conflict on the row. So on today's live record the emit DOES carry a structured conflict (conflictShape 'second-source') and the re-mint is NOT a no-op — it replaces the pre-A-148 prose-only disclosure with the structured payload.",
+      "honesty": "This is measured against the live-verified FIXTURE rows committed in this repo, not against a fresh live query performed by this lane (this lane queried no upstream and no store). The A-148 shape genuinely does not fire here; anyone expecting the stale-numeric-columns sentence for this parcel will not get it from the layer this job reads.",
+      "notRun": "the dry leg was NOT executed for this parcel or any other; this is a derivation from committed live-verified fixtures and the resolver's own code path."
+    }
+  },
+  "notDeployed": {
+    "statement": "NOTHING WAS DEPLOYED AND NOTHING WAS EXECUTED.",
+    "notRun": [
+      "no gcloud run jobs deploy",
+      "no gcloud run jobs update",
+      "no gcloud run jobs execute",
+      "no gcloud builds submit (against the real project or otherwise)",
+      "no job run, no bake, no migrate",
+      "no write to the atom store, the record store, the factory store, or any database — no INSERT, UPDATE, UPSERT or migration",
+      "the depth-warm runner script was NOT executed, not even in --dry-run mode, because the hard limit forbids firing the instrument and every non-refusal path of that script opens a store connection",
+      "no gcloud auth or project mutation"
+    ],
+    "whatWasRun": [
+      "local reads (grep/read of source and config)",
+      "pnpm install --frozen-lockfile --prefer-offline in the worktree (dependency install only)",
+      "node --check on the edited runner, tsc --noEmit on engine-core, and vitest run on the three new test files plus the full engine-core suite",
+      "git add/commit/push and gh pr create/merge (code and config only)"
+    ],
+    "worktreeHygiene": "No file outside the worktree was modified. The one write outside it is this close artifact. No watch, tail, dev server or background process was left running (the two backgrounded vitest runs were observed to completion, and the stash used to prove the pre-existing failures was popped)."
+  },
+  "unmeasured": [
+    "The job has never been built or deployed, so the declaration itself is UNEXERCISED: whether `gcloud artifacts docker images describe` returns the expected digest, whether the deploy step's --command/--args/--set-secrets forms are accepted as written, and whether the container actually runs `pnpm --filter ... exec tsx scripts/depth-warm-city-batch.mjs` are all UNMEASURED. The build step's Dockerfile.atoms-writer was verified to EXISTS at the repo root, nothing more.",
+    "The secret INSTANCES (ATOMS_DATABASE_URL, SOURCE_DATABASE_URL) are assumed to exist in project hauska-prod-497015 because two sibling Cloud Build configs in this repo name them for the same roles — that is consistency with the convention, NOT a verification that the secrets resolve for this job.",
+    "The runner's full gate list for the apply leg was read, not exercised: gateWarmCohort / assertWarmGateApplied were confirmed by grep to read no environment, but whether a particular parcel passes them (i.e. whether 48021:34049 has a live, resolved, account-keyed parcel-node anchor with geometry reducible to one ring) was NOT measured for any parcel — the wrapper's own sub-tests never touch a store.",
+    "The cost of one apply execution (the single-parcel run still pages the jurisdiction's whole layer-23 feature index in the bulk acquisition step) is not measured; --task-timeout=3600 is a hang bound chosen for that reason, not a measured budget.",
+    "Whether the atoms store receives any write from an unlisted lane at the moment of a future execution cannot be established from here; the preflight is a human check.",
+    "The .mjs runner is not covered by tsc (it is plain JS): its correctness rests on `node --check` plus the vitest contract test's assertions on the runner's text, not on typechecking."
+  ],
+  "dangers": [
+    "STATE IT FIRST: this wrapper is NOT yet a code gate. The depth-warm runner has no refuseApplyOutsideCloudRunJob call the way write-building-footprint-county.mjs does (writer-apply-lease.mjs exports it; P-169 wired it into that writer only). P-169 holds for this path BY CONSTRUCTION because the job runs as a Cloud Run Job, but a laptop that sets PROPERTY_ATOM_PATH=1 and runs the runner with --promote still writes. The ruling's enforcement here is procedural, not mechanical.",
+    "PARTIAL PROMOTION: promoteDepthWarmToStorage persists boundary-edge atoms FIRST, then the property atoms, then does the read-back verify. A timeout, OOM or cancellation between those phases leaves a half-promoted parcel — new boundary edges, old setback-rule — and --max-retries=0 will not repair it. The runbook's post-check covers setback-rule and buildable-envelope; the boundary-edge rows must be captured too if the parcel's geometry is in question.",
+    "SILENT SUCCESS, TWO WAYS: PROPERTY_ATOM_PATH unset (impossible through the job, possible by hand — see the stamp-bastrop-successor-zoning-fact.mjs precedent where a naive caller reports 'stamped' while writing nothing) and the conflict detectors not firing (the run exits 0, the promoted count rises, and the disclosure is unchanged). Only the dry-leg preview and the before/after content_hash diff separate these from a real re-mint.",
+    "DELETING THE PROSE CONFESSION: because the write replaces body wholesale, an emit that carries no secondSource DELETES the disclosure the live row has today. The preview flags it (deletesExistingDisclosure) but nothing BLOCKS it — the flag is advice. If the operator proceeds past a flagged preview, the pre-A-148 prose is gone and only the step-1 capture can bring it back.",
+    "NO MUTUAL EXCLUSION: two concurrent re-mints of the same parcel interleave at the body level with no lock and no error. Nothing detects it afterwards except a content_hash that changed twice.",
+    "THE PREVIEW HASH TRAP: comparing the dry leg's contentHash to the stored content_hash will ALWAYS show a difference (extractedAt/fetchedAt are stamped at emit) and could be misread as 'the write landed'. The runbook forbids it; the failure is one careless glance away.",
+    "THE A-148 SHAPE DOES NOT FIRE FOR THE FIRST USE CASE: re-minting 48021:34049 today adds the two-instrument R-1 conflict sentence (shape 'second-source'), NOT the A-148 stale-numeric-columns sentence. Anyone who re-mints this parcel expecting the One Click 25/5/25-versus-text sentence will not get it from the layer this job reads, and should not conclude the wrapper is broken.",
+    "TIMEOUT AS THE ONLY HANG BOUND: --task-timeout=3600 is the only thing bounding a hung upstream fetch in the bulk layer-23 acquisition; there is no per-request timeout imposed by this job beyond what the adapter already has."
+  ],
+  "leave_behind": [
+    "The obvious next gate: call refuseApplyOutsideCloudRunJob (packages/engine-core/scripts/writer-apply-lease.mjs) from depth-warm-city-batch.mjs on the --promote arm, so P-169 stops being procedural for this runner. That is a runner change with a blast radius beyond the re-mint arm (it would affect the cohort form too) and it was deliberately NOT done here — it is the operator's/planner's call whether the cohort form should also be frozen to Cloud Run Jobs.",
+    "writePropertyAtom takes no lease while writePropertyAtomsBatch does. Unifying that (a lease, or an explicit documented exemption with a comment at the singular call site) is a storage-layer decision, NOT a re-mint fix; it was left alone because it changes the semantics of every existing writer.",
+    "No Cloud Run Job restores a property atom. If property-atom rollback matters, the rollback UPDATE in this runbook is the only mechanism and it is break-glass. A gated restore job, or a version/history table for property atoms, does not exist.",
+    "No runbook documented the per-parcel arm before this one; doc_repo/90_runbooks/factory_2_jurisdiction_depth.md documents only the city-cohort form. That doc still does not mention the per-parcel arm or the new job — pointing it at RUNBOOK.depth-warm-remint.md is a doc_repo edit outside this worktree.",
+    "stamp-bastrop-successor-zoning-fact.mjs reports status 'stamped' with atomDid undefined when PROPERTY_ATOM_PATH is unset. It writes to the same atoms table. Someone should fix that null check; it is unrelated to this wrapper and was not touched.",
+    "The runbook's apply step still requires a human to remember to run steps 1-3 first. Nothing enforces the order. A future improvement would be an --require-capture flag or a job that refuses to start without a fresh capture path, but that presupposes the operator wants the wrapper to own the rollback artifact."
+  ],
+  "limitsAcknowledged": "Authored and merged only. Deploying the job is a separate operator gate, requested by the planner, not fired here."
+}

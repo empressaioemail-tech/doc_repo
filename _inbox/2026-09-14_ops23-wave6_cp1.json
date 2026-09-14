@@ -376,6 +376,14 @@
         "correction": "C9: the planner probed 48021:84629 (Bastrop) instead of 48209:84629 (Hays) and drew four conclusions from it (recorded and withdrawn in O21.PLANNER_ERROR_WITHDRAWN_20260914). Nothing derived from that probe is carried forward except the PRODUCTION_SITE_URL form, which does not depend on the parcel.",
         "whyItMatters": "This is the SAME DEFECT CLASS the wave is hunting. P-186 is \"the address-keyed leg answered for another county's parcel\"; P-175/O19 are id-binding failures. The planner committed it by hand — a 48021 written where a 48209 belonged — and the reasoning built on top was fluent and internally consistent. That is the strongest available demonstration that the hazard is real and that the only catch is comparing the returned identifier back to the one asked about, which is exactly what the P-186 mission says.",
         "caughtBy": "the serve-layer lane, which measured the real parcel and whose store read carries publishRunId b5e54917-4f5a-461c-ad75-37b60016ca7d — the operator's citation, correct in full UUID form, which is what exposed the planner's parcel as the wrong one."
+      },
+      {
+        "id": "C10",
+        "what": "The planner fired the operator-authorised production publish WITHOUT --gold, and the job refused in 10s with GOLD_REQUIRED.",
+        "whyItHappened": "The planner copied the documented example in bastrop-publish.mjs:96-99, which passes --county=48021 and no --gold. That example is not wrong: 48021 is the ONE county registered in GOLD_PARCELS (verify-walk.mjs:85, { '48021': '48021:34137' }), so it is the one county where --gold is unnecessary. 48209 has no registered gold, so resolveGold refuses. The documented form silently teaches the omission.",
+        "consequence": "One wasted Cloud Run execution (factory-bastrop-publish-2phjz, 10s). Verified clean afterwards, not assumed clean: no factory runs row, publish_runs unchanged, store rows unchanged, surface still 404. GOLD_REQUIRED fires in parseFlags before any store work.",
+        "fix": "Re-fired with --gold=48209:97658 -- a value that was already in this wave's own mission text and in the p180-joint lane's invocation, not something the planner had to invent.",
+        "standingLesson": "When a job's flags are documented by example, the example is an existence proof for ONE invocation, not a specification of the form. Read the resolver (resolveGold) and the registry (GOLD_PARCELS) before firing a county the example never used. This is the third invocation-shape failure on this job today: 2phjz (no gold), 4qzj4 (PowerShell comma parsing), and the pin-vs-deploy error the p180-joint lane recorded."
       }
     ]
   },
@@ -457,22 +465,23 @@
       "alsoFlagged": "hauska-map production serves content 6765590f and NOT #401 (the P-154 panel change), because that project does not auto-deploy; the next deploy of either lane carries both. A flaky api-server test (canva-route.test.ts:119) failed once and passed on re-run, unrelated to this lane, proposed as its own row."
     },
     "p180-joint": {
-      "status": "closed-partial (instrument coverage, not missed work) — THE WALK PASSES",
-      "artifacts": [
-        "_inbox/2026-09-14_p180-joint_cp1.json",
-        "_inbox/2026-09-14_160500_p180-joint_staging_reads.json",
-        "_inbox/2026-09-14_p180-joint_cp2.json",
-        "_inbox/2026-09-14_p180-joint_close.json",
-        "_inbox/2026-09-14_154943_surface_probe.json"
+      "status": "closed-partial (instrument coverage only -- every mission step done and measured)",
+      "close": "_inbox/2026-09-14_p180-joint_close.json",
+      "fix": "PR #149 merged, factory 63aca2c -- servedProvenanceTokens admits only STRING tokens, four two-directional tests, statusCheckRollup 6/6 SUCCESS",
+      "jointDigest": "sha256:bb3d7148 = factory 63aca2c + LDT bae48d40, read back from the JOB by field name, pinned on factory-bastrop-publish, factory-staging-reset and factory-verify-walk",
+      "stagingRun": "5b3a1c2c, execution txddf, 41m36s, publish_runs succeeded, walk 8eacb135 verdict PASS, 173,050 rows at one run id, 116,421 fact + 56,629 retirement",
+      "p183Predicate": "record points 1-3 m from CAPCOG address points (was ~34,869 m, county centroid)",
+      "inheritedPinWasNotJoint": "sha256:7e73cafa carried LDT 84f4e7c9 (P-180 only) -- reproduces 'a pin-merge is not a pin-deploy' and made the rebuild load-bearing",
+      "plannerNote": "THIS LANE'S DIGEST IS THE ONE MY STEP-4 PRODUCTION FIRE RAN. Its green staging walk is real; its completion predicate is nonetheless not transferable to production -- see O32/O33."
+    },
+    "p186-remint-wrapper": {
+      "status": "closed",
+      "planRows": [
+        "P-154"
       ],
-      "fix": "PR #149 MERGED, squash `63aca2cfc3e4bd73a2d3aa71e1611546855897cf` at 14:52:30Z, 6 of 6 check-runs SUCCESS read from `statusCheckRollup`. INDEPENDENTLY VERIFIED BY THE PLANNER on `origin/main`: the change is exactly the ruled clause and nothing else — `.filter((t) => t != null && t !== false && typeof t === \"string\")` — with a comment recording the ruling and why a non-string can never be a provenance token. Strictly fewer admissions, as required.",
-      "result": "WALK `8eacb135-143b-4191-9d09-5bcd43ef4ae7` verdict **pass**, 86 of 86 parcels pass, `sFamilies.failed` EMPTY, grade histogram BP-MEANING-01 69 / RETIRED 16 / BP-VERIFY-01 1 (was: fail, retiredCount 0, 16 x S13). Staging counts: 173,050 rows at the current publishRunId, one run id in the store, 116,421 + 56,629 exactly. Production still 404s on 48209:84629, so step 4 remains a real serving-store write.",
-      "theJointPinActuallyProved": "the predecessor's O12 lesson was load-bearing and the lane reproduced it: the inherited pin `7e73cafa` carried LDT `84f4e7c9` (P-180 ONLY). The lane rebuilt, and the digest it ran, `sha256:bb3d7148…`, carries factory `63aca2cf` and LDT `bae48d40` — read back BY FIELD NAME from the pinned job before AND after the run on all three jobs, corroborated by the build log line `HEAD is now at bae48d4`. So this is the first run to exercise #148's P-183 fix.",
-      "p183Predicate": "measured through the point-keyed leg on publishRunId `5b3a1c2c`: the five Sturgeon record points are 1-3 m from their CAPCOG address points (was 34,869 m = the county centroid). P-183's own predicate PASSES independently of the walk verdict.",
-      "twoDirectionalTest": "11 tests pass. Direction 1: the mirrored refusal object yields NO token -> S13 UNMEASURED -> walkParcel retains RETIRED/pass. Direction 2 (the anti-silencing half): `parcelSource: \"some-uncatalogued-source-2026\"` still FAILS S13 and still fails the walk; an allowlisted string still passes. Negative control: reverting the clause makes Direction 1's tests fire, so they discriminate.",
-      "whyClosedPartial": "the surface-probe instrument has NO row for P-180 or P-183 (its rows are P-151..P-175), so the lane could not cite a PASS for its own planRows and said so rather than claiming one. The 'partial' is instrument coverage. The planner considers this the correct call.",
-      "honestGaps": "per-parcel `sGrades` are not stored in `verify_walks.body` (only grade/verdict/parcelId), so S13=UNMEASURED on the 16 rests on the served token shape plus the tests; `runs.image_digest`/`runs.ldt_sha` are NULL by job shape. Shared state left clean: lease self-granted 14:53Z and deleted 16:07Z, job args restored to the deploy default, nothing in flight, and a 24s mis-invocation (`4qzj4`) disclosed which touched no store.",
-      "plannerVerification_CAN_AND_CANNOT": "INDEPENDENTLY VERIFIED by the planner: PR #149 merged with the exact clause; the clause read on `origin/main`; the staging tier-1 row count 173,050 read directly from the staging Neon via `psql`; and the P-175 history compared across 77 committed probe artifacts. NOT INDEPENDENTLY VERIFIED: the walk verdict itself — `verify_walks` lives in the factory store (`id, at, target, body`) and the read-only credential `FACTORY_DATABASE_URL_RO` is DENIED SELECT on it, so the planner's seat cannot read that table at all. The walk verdict is therefore lane-reported with its method named (`body.verdict`), and the schema is consistent with how the lane read it. This is a real limitation of the planner seat and is recorded as such rather than papered over. UPDATE 2026-09-14C: the operator ruled this gap SATISFIED, and the planner agrees. The verdict now rests on TWO independently derived confirmations from different mechanisms: (a) the lane read verify_walks.body.verdict directly; (b) the coordinator executed requireStagingSibling's own STAGING_SIBLING_SQL live at 16:11:31Z and all six of its checks passed — staging publish 5b3a1c2c for 48209 completed 15:46:21Z (0.42h old), walk_id present with its joined row, body.publishRunId = the sibling's own id, verdict pass, sweep.count 42 >= 10. The second derivation does not read the same table the same way, so the two are genuinely independent. Recorded as satisfied rather than as a caveat."
+      "close": "_inbox/2026-09-14_p186-remint-wrapper_close.json",
+      "what": "the per-parcel re-mint Cloud Run Job wrapper + RUNBOOK.depth-warm-remint.md (authoring only; deploy is a separate operator gate)",
+      "plannerNote": "closed while the restamp was in flight. Its leave-behind carries a standing-law question the operator may want to rule on: whether refuseApplyOutsideCloudRunJob should also be called from the city-cohort arm, and whether writePropertyAtom's lack of a lease should be unified with writePropertyAtomsBatch."
     }
   },
   "openItems": [
@@ -880,6 +889,60 @@
       ],
       "handling": "Recorded, not actioned — both are reads that belong to whoever fires the shift.",
       "owner": "the wave that shifts cortex-api"
+    },
+    {
+      "id": "O32",
+      "title": "The walk CANNOT pass in a gate-blocked county: the P-180 serve decline turns earned retirements into 404s and the walk grades a 404 as BP-MEANING-01 FAIL",
+      "severity": "high -- it invalidates the completion predicate of the work we just did, and of any future production publish of 48209/48491",
+      "discoveredBy": "the planner, reading walk_results 065523f5 to explain why the production walk failed",
+      "measured": {
+        "productionWalk_065523f5": {
+          "verdict": "fail",
+          "parcelCount": 86,
+          "servedCount": 85,
+          "retiredCount": 0,
+          "grades": {
+            "BP-MEANING-01 pass": 69,
+            "BP-MEANING-01 fail": 16,
+            "BP-VERIFY-01 pass": 1
+          },
+          "sFamiliesFailed": {}
+        },
+        "stagingWalk_8eacb135": {
+          "verdict": "pass",
+          "parcelCount": 86,
+          "servedCount": 69,
+          "retiredCount": 16,
+          "grades": {
+            "BP-MEANING-01 pass": 69,
+            "RETIRED pass": 16,
+            "BP-VERIFY-01 pass": 1
+          },
+          "sFamiliesFailed": {}
+        },
+        "reading": "identical parcel count, identical 69 plain passes, identical 1 BP-VERIFY-01 pass, sFamilies clean on BOTH, same 16 rows. The ONLY difference is the 16: RETIRED/pass on staging, BP-MEANING-01/fail on production."
+      },
+      "verbatimEvidence": "all 16 rows in walk_results read {\"grade\":\"BP-MEANING-01\",\"reason\":\"HTTP 404\",\"sGrades\":{\"S1\":\"PASS\",\"S2\":\"UNMEASURED\",\"S3\":\"UNMEASURED\"...}} -- the reason field is literally 'HTTP 404'. The walk is grading the serve-side refusal, not a defect in the record.",
+      "mechanism": "bake writes an earned retirement -> production serve DECLINES it via shouldDeclineRetiredRecordAtServe (48209 is in LANDUSE_JOIN_DISABLED_FIPS_SEED; the row IS present at the run id the walk just wrote) -> route answers 404 not_baked/no_coverage -> the walk reads THROUGH the serve, sees no row, grades BP-MEANING-01 fail -> walk RED.",
+      "whyStagingDiffers": "the same predicate on the same parcels must 404 on staging too, so staging serving them (retiredCount 16) means the staging cortex-api revision does NOT apply the decline. Production cortex-api (00799-xaq, LDT 8f91d5d1) has it; staging does not.",
+      "consequence": "No production publish of 48209 or 48491 can produce a green walk today, at any LDT SHA. The S13 fix was necessary and it WORKED (S13 failures 16 -> 0, sFamilies empty), but BP-MEANING-01 now carries the same 16 rows across the line. We did not fix the walk; we moved the failure.",
+      "theFix": "a companion change to the S13 fix on the SAME 16-row population: a declined earned retirement (404 not_baked/no_coverage on a parcel whose record is an earned retirement) must be an ACCEPTABLE served outcome, on the same reasoning that put S13 on UNMEASURED. Must be written so it cannot silence a genuine no-coverage 404, with two-directional tests.",
+      "whereItBelongs": "the same lane as the S13 fix -- same population, same walk file. A separate lane would re-derive the same serve read."
+    },
+    {
+      "id": "O33",
+      "title": "requireStagingSibling's premise is weakened for the two counties where it matters: staging does not run the serve predicate that decides the walk",
+      "severity": "medium-high -- the guard passed on this very run and the production walk still failed",
+      "measured": "staging sibling 5b3a1c2c with staging walk 8eacb135 verdict PASS satisfied the guard; the production walk then failed 16 on BP-MEANING-01/HTTP 404, for a predicate absent from staging.",
+      "relationshipToTheRecordedTrustGap": "this is NOT a reopening of the walk-verdict trust gap the operator recorded as SATISFIED. That gap was whether the staging PASS was real; it is real, independently confirmed twice over. This is narrower and different: the staging PASS is genuine and it does NOT TRANSFER, because the two environments differ in the one predicate that decides these 16 rows.",
+      "doNotOverstate": "measured for 48209/48491 only, the decline's hardcoded county set. For counties outside it the guard's premise is untouched -- the predicate returns false on the countyFips check immediately, which is why 48055:1 (Caldwell, retired, same shape) serves 200."
+    },
+    {
+      "id": "O34",
+      "title": "The documented invocation of factory-bastrop-publish omits --gold, which every county except 48021 requires",
+      "severity": "low-medium -- costs a wasted execution, and it did, twice-over today with the PowerShell arg failure",
+      "measured": "GOLD_PARCELS registers ONE county (48021:34137). resolveGold refuses GOLD_REQUIRED for any other county with no --gold. The example command uses --county=48021 and no --gold, so the documented form cannot reveal the omission. The 48209 form exists only in lane invocations and mission text (--gold=48209:97658).",
+      "consequence": "factory-bastrop-publish-2phjz died in 10s; verified clean (no runs row, publish_runs unchanged, store unchanged, surface still 404)."
     }
   ],
   "premiseCorrections": [
@@ -1057,7 +1120,13 @@
     "wrapper": "BUILD the Cloud Run Job wrapper for the bounded --parcel form (rejected: a seat-run exception, and the sanctioned county/cohort form). Lane dispatched.",
     "productionSiteUrl": "smartsite.cloud — exact form confirmed at source as https://smartsite.cloud (bare origin).",
     "quiescence": "PROVE NON-CONTENTION rather than wait for quiescence. Delivered in O30 (row-level) with the hazard relocated to serve-state.",
-    "step4": "KEEP step 4, re-purposed: authorise the RESTAMP with the store-side acceptance test (publishRunId for WROTE, recordRetirement for FIXED). The false \"fixes the 404\" premise is struck by A-151."
+    "step4": "KEEP step 4, re-purposed: authorise the RESTAMP with the store-side acceptance test (publishRunId for WROTE, recordRetirement for FIXED). The false \"fixes the 404\" premise is struck by A-151.",
+    "fire": {
+      "ruling": "fire the restamp now, with the store-side acceptance test and the contention acceptance recorded",
+      "executed": true,
+      "outcome": "restamp LANDED (WROTE pass); 404 NOT fixed (FIXED fail, as pre-registered); walk RED on BP-MEANING-01/HTTP 404, an unpredicted family -- see O32",
+      "newDecisionRequired": true
+    }
   },
   "step4PreconditionVerification": {
     "readAt": "2026-09-14T17:0xZ",
@@ -1073,5 +1142,25 @@
     "verdict": "THE GUARD IS SATISFIED, and the planner verified it with its own read rather than the lane's report. evaluateStagingSibling clears every check on 5b3a1c2c: row exists; age ≈1.3h against MAX_SIBLING_AGE_HOURS = 48 (publish-guards.mjs:35) so NOT stale; walk_id present and the walk row present; the linked walk names its own publish run; verdict pass; sweep 42 >= MIN_SWEEP_PARCELS = 10 (:41).",
     "theNearMiss": "NOTE THE ORDERING THAT ALMOST MATTERED: the S13-FAILED run b0864dde completed 14:21:10Z, and the PASSING run 5b3a1c2c completed LATER at 15:46:21Z. So the guard picks the passing one. Had the failed run been the more recent, the guard would have refused with STAGING_SIBLING_FAILED before any bake — which is the correct and safe behaviour, and worth stating because it means the publish cannot proceed on a red staging walk.",
     "allRefusalsArePreBake": "Every refusal in this module (STAGING_SIBLING_REQUIRED | UNWALKED | FAILED | NO_SWEEP | STALE, plus BRANCH_STALE, SITUS_PUNCTUATION_ONLY, ACCESS_NOT_DEFAULTED) fires BEFORE the first bake. Combined with resolveTargetSiteUrl refusing TARGET_ENV_MISSING before the first bake, the step-1 job cannot half-run: it refuses loudly and writes nothing. That is why firing it is low-risk even though it is a serving-store write."
+  },
+  "step4Restamp": {
+    "at": "2026-09-14T17:07:35Z",
+    "authority": "operator ruling 2026-09-14: 'Go -- fire the restamp now, with the store-side acceptance test and the contention acceptance recorded'",
+    "artifact": "_inbox/2026-09-14_step4_restamp_outcome.json",
+    "before": "_inbox/2026-09-14_step4_restamp_BEFORE.txt (captured 17:05:46Z)",
+    "execution": "factory-bastrop-publish-t7dtd",
+    "duration": "44m22s",
+    "cloudRunOutcome": "failed, NonZeroExitCode, exit 1",
+    "publishRunId": "bc47625c-2de9-4c59-bec9-1e5fe0b313ce",
+    "walkId": "065523f5-2fd6-4b62-84e0-ac0183d1b41e",
+    "stagingSibling": "5b3a1c2c-eee5-460b-ae1c-dc1102674b5d",
+    "publishRunsStatus": "succeeded",
+    "factoryRunsStatus": "failure / WALK_FAILED",
+    "imageRan": "the JOINT digest sha256:bb3d7148 (factory 63aca2c + LDT bae48d40), pinned on factory-bastrop-publish by the p180-joint lane -- so this run carried the S13 fix, corroborated by sFamilies.failed={} with S13 in ruleIds",
+    "ACCEPTANCE_1_WROTE": "PASS -- node:48209:84629 restamped to publishRunId bc47625c at 17:47:17Z (was b5e54917); node:48209:97658 at 17:50:04Z",
+    "ACCEPTANCE_2_FIXED": "FAIL, exactly as pre-registered -- recordRetirement still status 'retired' / verdict 'absent-verified' at the new run id; the field the decline predicate reads did not move",
+    "surfaceAfter": "48209:84629 -> 404 not_baked/no_coverage; 48209:97658 -> 200",
+    "preRegisteredOutcome": "OUTCOME A, the anticipated one: run id CHANGED, retirement STAYED retired, GET STAYED 404. The step-4 premise 'the publish fixes the 404' is now falsified by measurement rather than by argument.",
+    "verdictOnTheStep": "succeeded AS A RESTAMP on the store-side criterion, and RED AS A WALK on the walk criterion. The factory runs row's failure/WALK_FAILED must not be read as 'the restamp failed'."
   }
 }
