@@ -6,7 +6,8 @@ status: durable card — the destination and its evidence; rulings marked where 
 kind: WDLL
 owner: nick
 programs: [OPS-24]
-plan_rows: [P-186 .. P-198]
+plan_rows: [P-186 .. P-198, P-200 .. P-208]
+last_updated: 2026-09-14 (A-153: the rail ceiling named; excluded split into three)
 related:
   - 90_operations/OPS-24_county_to_serving_program.md
   - _inbox/2026-09-14_county_to_serving_program_map.md
@@ -108,6 +109,37 @@ ATOMS LEASE         atoms_writer_lease_v2 is PRIMARY KEY (scope_type, scope_id) 
 | **Serve** | record path carries the CELLS' vintage, not the old snapshot's | F25 | values right, label lying |
 | **Probe** | a Marble Falls address returns district + setbacks + envelope, cited; a Bertram address says no zoning layer on file for Bertram | `surface-probe.mjs` with an OPS-24 predicate | a close file asserting it |
 | **Farm** | a four-line manifest (LDT, engine, factory, two packages) the merge gate compares | merge refused on manifest mismatch | an isolated store nobody needed |
+
+## The rail ceiling, added 2026-09-14 (A-153, P-202)
+
+**A county finished by this program answers 31 to 41 rails out of 65, and the gate will call
+it done.** That sentence belongs in done-looks-like because without it "Burnet is done" reads
+as "Burnet answers everything", and it does not.
+
+Measured across the six counties already in the ledger: Travis 41 rails passing of 65, Bastrop
+38, Williamson 37, McLennan 37, Caldwell 36, Hays 31. In Hays, every one of the 32 excluded
+rails has zero value cells and every one of the 33 non-excluded rails has values, with no
+exception either way. The gate removes a rail with no writer from its own denominator, so the
+county passes and the largest gap never surfaces.
+
+**Read the thirteen stages and note what is not among them: not one stage creates a rail.**
+Stage 6 runs writers that already exist under a lease. Nothing in this program builds a writer
+for a rail that has none. So OPS-24 executed perfectly moves a county to the ceiling and not
+past it. That is the pipeline-makes-correct-not-capable ruling, and it is a property of the
+program rather than a defect in it.
+
+The other half of the work is therefore a different program with different economics. A
+per-county pipeline costs the same for every county and cannot raise the ceiling; a rail built
+once applies to all 254. Onboarding a seventh county at today's ceiling buys eight more empty
+rails, not fewer. That program is P-203, and the eight rails with no source anywhere are
+`easements`, `hoaDeedRestrictions`, `mineralRights`, `ossf`, `permits`, `salesHistory`,
+`terrain` and `treeProtection`.
+
+Not a gap and not to be "fixed": the envelope family (`buildableAreaSqFt`, `buildableAreaPct`,
+`envelopeStatus`, `envelopeDisclosure`) reads zero BY RULING R-2. Nine further rails are
+mid-cutover rather than missing, serving by another path while their ledger cell is empty
+(P-204). Those three conditions are one word, `excluded`, today; splitting them is P-201.
+
 
 ## The one sentence that defines success
 
