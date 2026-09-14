@@ -50,6 +50,17 @@ eight. An unevidenced absence is not.
 - **Do not propose a build.** This is a roadmap, not a design. Naming what exists is the job.
 - **Do not acquire anything, register for anything, or create an account anywhere.**
 
+### The ONE write path you do have, and you must use it
+
+"Read-only" above means no PRODUCT-repo writes, no code, no store, no acquisition. It does
+NOT mean you skip your own bookkeeping. You still: run `scripts/lane-claim.mjs claim` at
+start, and write your artifact and close under `_inbox/` in doc_repo.
+
+CORRECTED 2026-09-14 after the first run of this mission: the original wording said "no repo
+writes" beside a close requirement, the lane correctly read those as contradictory, wrote
+nothing at all, and never appeared in the claim registry. That was the MISSION's defect, not
+the lane's. A read-only lane that leaves no claim and no close is invisible to the fleet.
+
 ### Known context you must not re-derive
 
 - The envelope family (`buildableAreaSqFt`, `buildableAreaPct`, `envelopeStatus`,
