@@ -15,8 +15,7 @@ longer trip `BP-PUBLISH-RUN-01`, and the counts are exactly right. The walk is n
 16 graded `S13`, and the mechanism is a false positive in the walk itself — the planner verified
 both halves at source:
 
-- `src/stages/grade/s-rules.mjs:698-705` — `servedProvenanceTokens` maps the three provenance keys
-  and filters `.filter((t) => t != null && t !== false)`. A **non-string object survives that
+- `src/stages/grade/s-rules.mjs` — `servedProvenanceTokens` (function at `:698`; the filter clause it ends on is `:714` in the tree AFTER the fix and read `:704` before it, so quote the function name rather than a line range — the fix's own comment block shifts the range) maps the three provenance keys and filters `.filter((t) => t != null && t !== false)`. A **non-string object survives that
   filter** and is handed to the provenance allowlist as though it were a token. An earned
   retirement is facts-free, so what it serves is a mirrored *refusal* object
   (`verdict: "refused"`, `authority: "unresolved"`, `serveLayer: "zoning"`), and the allowlist
