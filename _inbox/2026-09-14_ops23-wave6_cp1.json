@@ -466,7 +466,7 @@
       "twoDirectionalTest": "11 tests pass. Direction 1: the mirrored refusal object yields NO token -> S13 UNMEASURED -> walkParcel retains RETIRED/pass. Direction 2 (the anti-silencing half): `parcelSource: \"some-uncatalogued-source-2026\"` still FAILS S13 and still fails the walk; an allowlisted string still passes. Negative control: reverting the clause makes Direction 1's tests fire, so they discriminate.",
       "whyClosedPartial": "the surface-probe instrument has NO row for P-180 or P-183 (its rows are P-151..P-175), so the lane could not cite a PASS for its own planRows and said so rather than claiming one. The 'partial' is instrument coverage. The planner considers this the correct call.",
       "honestGaps": "per-parcel `sGrades` are not stored in `verify_walks.body` (only grade/verdict/parcelId), so S13=UNMEASURED on the 16 rests on the served token shape plus the tests; `runs.image_digest`/`runs.ldt_sha` are NULL by job shape. Shared state left clean: lease self-granted 14:53Z and deleted 16:07Z, job args restored to the deploy default, nothing in flight, and a 24s mis-invocation (`4qzj4`) disclosed which touched no store.",
-      "plannerVerification_CAN_AND_CANNOT": "INDEPENDENTLY VERIFIED by the planner: PR #149 merged with the exact clause; the clause read on `origin/main`; the staging tier-1 row count 173,050 read directly from the staging Neon via `psql`; and the P-175 history compared across 77 committed probe artifacts. NOT INDEPENDENTLY VERIFIED: the walk verdict itself — `verify_walks` lives in the factory store (`id, at, target, body`) and the read-only credential `FACTORY_DATABASE_URL_RO` is DENIED SELECT on it, so the planner's seat cannot read that table at all. The walk verdict is therefore lane-reported with its method named (`body.verdict`), and the schema is consistent with how the lane read it. This is a real limitation of the planner seat and is recorded as such rather than papered over."
+      "plannerVerification_CAN_AND_CANNOT": "INDEPENDENTLY VERIFIED by the planner: PR #149 merged with the exact clause; the clause read on `origin/main`; the staging tier-1 row count 173,050 read directly from the staging Neon via `psql`; and the P-175 history compared across 77 committed probe artifacts. NOT INDEPENDENTLY VERIFIED: the walk verdict itself — `verify_walks` lives in the factory store (`id, at, target, body`) and the read-only credential `FACTORY_DATABASE_URL_RO` is DENIED SELECT on it, so the planner's seat cannot read that table at all. The walk verdict is therefore lane-reported with its method named (`body.verdict`), and the schema is consistent with how the lane read it. This is a real limitation of the planner seat and is recorded as such rather than papered over. UPDATE 2026-09-14C: the operator ruled this gap SATISFIED, and the planner agrees. The verdict now rests on TWO independently derived confirmations from different mechanisms: (a) the lane read verify_walks.body.verdict directly; (b) the coordinator executed requireStagingSibling's own STAGING_SIBLING_SQL live at 16:11:31Z and all six of its checks passed — staging publish 5b3a1c2c for 48209 completed 15:46:21Z (0.42h old), walk_id present with its joined row, body.publishRunId = the sibling's own id, verdict pass, sweep.count 42 >= 10. The second derivation does not read the same table the same way, so the two are genuinely independent. Recorded as satisfied rather than as a caveat."
     }
   },
   "openItems": [
@@ -633,7 +633,23 @@
       "raised": "2026-09-14 by the planner reading the factory project state directly after the coordination pass",
       "question": "Step 1 (the production publish) is approved and its guard passes, but TWO preconditions are unmet as of 16:14Z, and neither is the operator's to solve. (1) THE PROJECT IS NOT QUIESCENT. Three `factory-publish-gate-sched` executions have no completionTime — started 14:00:04Z, 15:00:05Z and 16:00:05Z — and it is an APPLIED FACTORY-STORE WRITER. The three named plan jobs (bastrop-publish, staging-reset, verify-walk) ARE quiet, so the obvious check passes and the project is still busy: this is C5/O18 repeating in a new place, where the resource that matters is the store, not the job being run. Three earlier gate-sched executions only completed at 14:50:11Z, which suggests this job runs long or gets reaped rather than finishing promptly. (2) ONE INPUT IS MISSING. The command needs `PRODUCTION_SITE_URL` as an execution-time override. The planner checked the job template env (it carries CONTRACT_VERSION, IMAGE_DIGEST, CLOUD_RUN_REGION and others, but NO site URL) and the secret list (there is `PRODUCTION_HAUSKA_MCP_URL` and `STAGING_HAUSKA_MCP_URL`, which are MCP endpoints, not Smart Site base URLs). So the value is genuinely unmeasured.",
       "handling": "STEP 1 IS NOT FIRED. The planner will not add a fourth concurrent writer to a store that an applied writer is already touching, and will not invent the missing argument. Both blockers are named rather than worked around. Note the `--args` hazard the coordinator flagged: the job's deployed defaults are `--target=staging --county=48021`, so a bare execute would publish the WRONG TARGET and the WRONG COUNTY; the args override is mandatory, not optional.",
-      "owner": "planner — wait for gate-sched to drain or rule it out, and obtain PRODUCTION_SITE_URL"
+      "owner": "planner — wait for gate-sched to drain or rule it out, and obtain PRODUCTION_SITE_URL",
+      "quiescenceReadByField": {
+        "method": "gcloud run jobs executions list --job=factory-publish-gate-sched --format=json, read at ~16:32Z; status.runningCount / status.completionTime / status.conditions per execution, NOT inferred from the completion pattern.",
+        "correctionsToTheEarlierRead": "The planner had said \"three executions open\". BY FIELD that was wrong: only ONE is running. The other two COMPLETED at 16:30:43Z (2026-09-14T16:30:43.219Z and .279923Z) — after the earlier read. So the state changed between reads, and the by-field read is what caught it.",
+        "perExecution": [
+          "str7b — start 16:00:05Z, completion EMPTY, runningCount 1, Completed=Unknown/ (with ResourcesAvailable=True, Started=True, ContainerReady=True, Retry=True/WaitingForOperation) => RUNNING NOW",
+          "7d6m5 — start 15:00:05Z, completed 16:30:43Z, succeededCount 1 => finished after ~1h30m",
+          "psjh6 — start 14:00:04Z, completed 16:30:43Z, succeededCount 1 => finished after ~2h30m",
+          "kcjc5 — start 13:00:04Z, completed 14:50:11Z, succeededCount 1",
+          "9qjvt — start 12:00:04Z, completed 14:50:11Z, succeededCount 1"
+        ],
+        "theReapingSignatureIsReal": "CONFIRMED BY FIELD. Executions with start times an hour apart finish at the SAME INSTANT: the 12:00 and 13:00 pair both completed at 14:50:11Z (within 6ms), and the 14:00 and 15:00 pair both completed at 16:30:43Z (within 60ms). Different ages, identical termination instants is not the shape of healthy long runs; it is the shape of a shared release — a lock, a gate, or a deadline reaper. The operator's suspicion was right, and now it is measured rather than suspected.",
+        "whatGateSchedActuallyDoes": "command `node src/cli.mjs`, args `publish-gate-sched`. Its env carries FACTORY_DATABASE_URL (a secret) — so it IS a factory-store user, which is what makes the contention real rather than theoretical. It does NOT carry the staging or production store secrets, so it touches the RUN LEDGER (runs / publish_runs / verify_walks), not the place_layer_snapshots serving store.",
+        "whyThisStillBlocks": "The publish job also writes those same ledger tables, and requireStagingSibling reads publish_runs. So a concurrent gate-sched can interleave the very rows the guard consults. Not proven to have caused anything; sufficient to block, given this wave has already been burned by concurrent access to a shared store.",
+        "staleImageNote": "gate-sched runs IMAGE_DIGEST sha256:36fe6832… and ENGINE_SHA a38cbb22… — a DIFFERENT image from the publish job's bb3d7148. It was not rebuilt by the p180-joint lane, so it is running older code against the same store.",
+        "verdict": "STILL BLOCKED for step 1. Re-read by field before firing."
+      }
     },
     {
       "id": "O21",
@@ -649,6 +665,32 @@
       "question": "Two facts about the deploy surface that the approved plan does not account for. (1) `smartsite-mcp` IS A SECOND SERVICE, rebuilt by the same merge, whose `get_smart_site` handler PROXIES to cortex-api. It currently serves revision `00119-naf` on LDT `82857ebb`. So the P-154 `get_smart_site` change may be renderable through a path the plan does not shift: shifting cortex-api alone may be necessary but is not obviously sufficient, and nobody has measured whether smartsite-mcp caches, pins or proxies its way around the cortex-api revision. (2) THE RO CREDENTIAL IS WEAKER THAN ASSUMED: `FACTORY_DATABASE_URL_RO` is denied SELECT not only on `verify_walks` (which the planner found) but on `publish_runs` as well. That means the publish guard's own inputs cannot be re-read from that credential, so any independent check of the guard must go through a different credential or accept the lane's word.",
       "handling": "Both recorded rather than acted on. The smartsite-mcp question is measured in the post-shift verification (does the row render, through which service); the credential limit is simply stated so no successor mistakes \"the RO credential can read the store\" for a fact.",
       "owner": "planner — the verification pass after step 3"
+    },
+    {
+      "id": "O23",
+      "raised": "2026-09-14 by the planner reading the publish job template and the target-env module at source, per the operator instruction that absence is itself the finding",
+      "question": "PRODUCTION_SITE_URL is required and is NOT on the job template. Is that a defect, and where does its value come from?",
+      "answer": "It is BY DESIGN, not a defect — and the operator's framing was exactly right: the absence IS the finding.",
+      "evidence": [
+        "TEMPLATE, READ BY FIELD: factory-bastrop-publish env carries CONTRACT_VERSION=1.30.0, IMAGE_DIGEST=bb3d7148…, CLOUD_RUN_REGION=us-east4, FACTORY_CLOUD=1, BAKE_CLI_ROOT=/app/bakes, STAGING_SITE_URL=https://smart-site-factory.vercel.app/site, and the five secrets (FACTORY_DATABASE_URL, STAGING_NEONDB_URL, STAGING_HAUSKA_MCP_URL, PRODUCTION_NEONDB_URL, PRODUCTION_HAUSKA_MCP_URL). PRODUCTION_SITE_URL IS ABSENT. So the two PRODUCTION_* STORE secrets are templated but the production SITE URL deliberately is not.",
+        "cloudbuild.publish.yaml:7 says it outright: \"OPERATOR_PUBLISH_GO and PRODUCTION_SITE_URL are execution-time --update-env-vars, never\" templated. cloudbuild.publish.yaml:394 and :396 show STAGING_SITE_URL templated by value for the staging target.",
+        "src/lib/publish-target-env.mjs:29 names PRODUCTION_SITE_URL in TARGET_VARS.production.site; :83-87 resolveTargetSiteUrl refuses TARGET_ENV_MISSING naming the variable (never its value) when absent; :10-12 of bastrop-publish.mjs says the target site URL is required UP FRONT unless --skip-walk, \"so a walk can never be skipped silently\".",
+        "No .github workflow in the factory repo sets SITE_URL. A repo-wide grep finds SITE_URL only as STAGING_SITE_URL plus the doc comments quoted above — NOTHING in any artifact records a production value.",
+        "The documented production form is in-code at bastrop-publish.mjs:33-37, and it shows PRODUCTION_SITE_URL supplied as an execution-time --update-env-vars alongside OPERATOR_PUBLISH_GO=1."
+      ],
+      "consequenceForUsefulness": "GOOD NEWS that reduces the risk of step 1 materially: a missing site URL is not a silent half-run. resolveTargetSiteUrl THROWS before the first bake, naming the variable. So step 1 cannot start and partially write with the URL absent — it refuses up front. The failure mode is loud and safe.",
+      "theActualBlocker": "The VALUE is not recorded in any artifact the planner can read. The only site URL on record anywhere is the STAGING sibling, https://smart-site-factory.vercel.app/site. The planner will NOT derive a production origin by analogy — inventing a production URL is exactly the fabrication this program must not do, and a wrong site URL would make the walk fetch the wrong surface.",
+      "handling": "OPERATOR INPUT REQUIRED: either the value, or an explicit authorisation to use a named production origin. Note the alternative in-code path — publish with --skip-walk and then run factory-verify-walk --target=production --publish-run=<id> — which the source documents; that still needs the URL for the walk, but decouples it from the publish.",
+      "owner": "operator (the value), then planner"
+    },
+    {
+      "id": "O24",
+      "raised": "2026-09-14 by the OPERATOR, connecting O19 to Burnet — this is the operator's finding, recorded by the planner",
+      "question": "O19 is four Sturgeon parcels failing because a located address point carries no parcel node id. Burnet has ZERO address points. Address-point-to-parcel-node binding has therefore surfaced in TWO counties from two OPPOSITE directions: one where the points exist but bind to nothing, one where they do not exist at all.",
+      "whyItMatters": "That reads as a RAIL-LEVEL gap rather than two independent incidents — the binding step itself, not either county's data. It matters now, before the Burnet loader run is designed around an assumption that binding works: a loader built on that assumption would produce a county that looks loaded and serves nothing, which is the same class of quiet failure this wave keeps finding.",
+      "handling": "Recorded as the operator's connection, explicitly NOT as a planner measurement. The planner has not verified the Burnet count; it came from the operator. It is recorded here so that whichever wave designs the Burnet loader inherits the question rather than the assumption.",
+      "nextStep": "Before the Burnet loader is designed: measure whether the address-point-to-parcel-node binding rail exists at all, and if it does, why 615/617/619/627-sturgeon fail to bind. One rail, two counties, two directions.",
+      "owner": "the wave that designs the Burnet loader; and whoever next takes P-175"
     }
   ],
   "premiseCorrections": [
@@ -782,5 +824,20 @@
       "leaseTrap": "`_catalog/leases/` holds only README.md — empty, which under the amended rule would ALLOW a self-grant, but this service is CONTENDED (p185 moved it once today) so the planner grants it, not a lane",
       "rollback": "clean and documented — `action=rollback`, `rollback_revision=cortex-api-00797-zus`; note that this would ALSO revert p185's PromoteKit change, so a rollback is not free"
     }
+  },
+  "operatorDirection_20260914C": {
+    "at": "2026-09-14T16:25Z (operator message)",
+    "ruling": "HOLD ALL THREE STEPS. FIRE NOTHING. Each has an independent blocker and one of them invalidates how success would be graded.",
+    "orderOfResolution": [
+      "1. The 404 semantics — why identical data 404s before and 200s after. Stops the sequence on its own, because until it is answered the verification cannot fail for the right reason.",
+      "2. Store quiescence — the open gate-sched executions must clear, read BY FIELD not by completion pattern. Plus PRODUCTION_SITE_URL read at source; absence is itself the finding.",
+      "3. The contract version (1.30.0 vs 1.36.0) BEFORE any mechanism hunt for the re-mint.",
+      "4. The smartsite-mcp proxy measurement, before deciding on a second same-day cortex-api shift."
+    ],
+    "onTheHeadline": "The operator ruled the 404 finding is THE headline and stops the sequence on its own: production already holds a retired tier-1 row for 48209:84629, so step 4 is a restamp, the 404 is a serving-layer problem, and a post-publish 200 proves nothing about whether the publish did work. \"As designed, your verification cannot fail for the right reason.\" Same shape as a falsifier set that cannot catch its own failure.",
+    "onWalkVerdictTrustGap": "RULED SATISFIED, and recorded as such. The planner could not read verify_walks, but the coordinator ran requireStagingSibling's OWN SQL live at 16:11:31Z and all six checks cleared — a second, independently derived confirmation from a different mechanism than the lane's report. \"Two derivations agreeing is the standard this program demands.\" The gap is therefore closed, not merely noted.",
+    "onStep2": "Recorded that the planner's reframe (\"approved as work\" -> \"not dispatchable as an execution\") was the right correction, honestly made. Step 2 LEAVES the sequence and becomes its own row. Settle the version question before the mechanism question.",
+    "onStep3": "Two unmeasured dependencies: a second cortex-api shift in one day is the 2026-09-11 incident shape, AND smartsite-mcp proxies get_smart_site to cortex-api with nobody having measured whether it proxies AROUND the revision — so the shift may be both unsafe AND insufficient. Measure the proxy first; it is a read.",
+    "onStep1": "The store-contention blocker is the real one, because the named plan jobs being idle is the obvious check and it passes — \"THE CONTENDED RESOURCE IS THE STORE, NOT THE JOB. That is C5/O18 in a third location.\""
   }
 }

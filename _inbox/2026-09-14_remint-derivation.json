@@ -1,0 +1,272 @@
+{
+  "artifact": "2026-09-14_remint-derivation.json",
+  "agent": "read-only derivation, OPS-23 wave 6 (CP1 item O17) for the dispatch planner",
+  "generatedAt": "2026-09-14",
+  "mode": "READ-ONLY. Nothing was executed, deployed, baked, migrated or written except this file. Disclosure: one `git fetch --no-tags origin main` was run inside the hauska-engine clone so that every engine claim could be read from current origin/main rather than the 2026-08-26 worktree; that updated remote-tracking refs only (no working-tree, index, commit, branch, push or worktree change, and no other repo was fetched).",
+  "subject": {
+    "atom": "setback-rule atom for parcelNodeId 48021:34049 (Bastrop County, TX)",
+    "liveAtomMinted": "2026-08-05 (pre-A-148; display_meta.conflict absent)",
+    "goal": "how the atom would be re-minted WITH the A-148 conflict payload, and what 'refresh the record snapshot' concretely is"
+  },
+  "headsChecked": {
+    "hauska-engine": "origin/main, fetched 2026-09-14 during this pass (git fetch --no-tags origin main); all engine reads below are origin/main blobs, not the stale 2026-08-26 worktree",
+    "hauska-factory": "origin/main",
+    "hauska-map-p154-conflict": "39caa2c 2026-09-14T08:50:08-05:00",
+    "hauska-atom-contract-p154-conflict": "1668d6f 2026-09-14T08:17:40-05:00 (package version 1.36.0)",
+    "hauska-setback-corpus-p154-share": "ec6041d 2026-09-13T12:58:43-05:00",
+    "legacy-design-tools-p154-most-current": "78ad8a51 2026-09-12T10:59:08-05:00",
+    "note": "The brief's candidate instruments were read from a 2026-08-26 worktree. Every claim they supported was re-read against current main. Two of them changed materially (see Q1 and Q3)."
+  },
+
+  "Q1_exact_invocation": {
+    "verdict": "NO setback-specific, apply-enabled re-mint invocation exists in the current tree. There is exactly ONE path that actually persists a setback-rule atom anywhere in the code, and it is a generic whole-parcel depth-warm promote runner with no Cloud Build / Cloud Run wrapper. Naming a setback-specific job here would be fabrication.",
+    "theOnlyPersistingPath": {
+      "callChain": [
+        "packages/engine-core/scripts/depth-warm-city-batch.mjs (runner; --row-id=REQUIRED; FATAL without it)",
+        "packages/engine-core/src/depth-warm/promote.ts (promoteDepthWarmToStorage; write-then-verify + ground-truth gate)",
+        "packages/engine-core/src/property-reasoning/emit-setback-rule.ts (emitSetbackRule; builds displayMeta.secondSource incl. conflict)",
+        "packages/engine-core/src/property-reasoning/write-property-atom.ts (writePropertyAtomIfEnabled; returns null unless PROPERTY_ATOM_PATH=1)",
+        "packages/storage/src/pg-storage.ts (writePropertyAtom: INSERT ... ON CONFLICT (atom_did) DO UPDATE)"
+      ],
+      "repo": "hauska-engine",
+      "commit": "origin/main as fetched 2026-09-14 (no tag named in any runbook or cloudbuild file; the runbook discipline is to record the full 40-char engineSha in the dry/apply artifact pair and require identical-engine-SHA across legs)",
+      "runbookSanction": "doc_repo/90_runbooks/factory_2_jurisdiction_depth.md, 'Verbatim GATED warm command (all zoned cities -- substitute --row-id)' block"
+    },
+    "whyThereIsNoSetbackJob": [
+      "packages/engine-core/scripts/atoms-writer-allowlist.mjs: the frozen WRITER_ALLOWLIST entry for setbacks is { id: 'setback', script: 'scripts/write-setback-city.mjs', pathEnv: 'SETBACK_PATH', planRow: 'F-11' }.",
+      "packages/engine-core/scripts/write-setback-city.mjs header: 'Apply is held on this card (SETBACK_APPLY_HELD).' and 'Dry-run / plan is the only path this card may take.' Its args are --county/--city/--apply/--probed/--fixture/--out/--run-id/--chunk-size/--limit; it is CITY-scoped, there is no --parcel, and --apply is refused by design.",
+      "The deployed Cloud Run job hauska-engine-atoms-writer (project hauska-prod-497015, region us-east4, image digest sha256:005eab6e...) has container command 'pnpm --filter @hauska-engine/engine-core exec tsx scripts/atoms-writer-job.mjs' and NO container args (gcloud run jobs describe --format went to the container spec and returned no args). atoms-writer-job.mjs resolves the writer from --writer via WRITER_REQUIRED/WRITER_NOT_ALLOWLISTED, so the job as deployed cannot dispatch anything.",
+      "Even if it were given --writer=setback it would reach the held F-11 script, not an apply path.",
+      "cloudbuild.atoms-writer.yaml deploys a DIFFERENT job (factory-atoms-cad) with --args=--writer=cad-parcel-roll, i.e. the Cloud Run writer job is bound to the CAD rail."
+    ],
+    "exclusionConfirmed": {
+      "claim": "hauska-engine-atoms-writer dispatches to write-cad-parcel-roll-county and cannot write a setback atom for 48021",
+      "verdict": "CONFIRMED, on three independent grounds",
+      "evidence": [
+        "cloudbuild.atoms-writer.yaml: --command=pnpm,--filter,@hauska-engine/engine-core,exec,tsx,scripts/atoms-writer-job.mjs --args=--writer=cad-parcel-roll",
+        "The deployed job carries no --writer arg at all, so the dispatcher refuses before any script runs",
+        "The allowlist's own pathEnv/planRow split puts cad-parcel-roll on F-02 and setback on F-11 (a different rail, a different script)"
+      ],
+      "notVerified": "I could not read the job's args through gcloud with the formats I tried (the container spec dumped only the image). The exclusion rests on the cloudbuild file, the allowlist, and the empty-args describe; the OLD_SHAPE_FILL_FROZEN county-48029 argument was NOT independently re-read this pass."
+    },
+    "literalCommands": "see exactInvocations[0..3]"
+  },
+
+  "Q2_scope": {
+    "setbackSpecificWriter": "city-scoped only (--county=<fips> --city=<cityKey>); no per-parcel form; apply held",
+    "cloudBuildBake": "bake-property-atom-county is COUNTY-wide (--county=48021 --limit --offset --batch), fired by cloudbuild.property-atom-bake.yaml with PROPERTY_ATOM_PATH=1 and SUBSTRATE_DATABASE_URL from the DATABASE_URL secret. It is driven by emitFromTier1Snapshot, i.e. the TIER-1 SNAPSHOT, not the Bastrop per-parcel layer-23 record.",
+    "goldSet": "bake-property-atom-gold-set is per-parcel but fixtures-file driven (a gold-set fixtures file, not a live parcel id you can pass), so it is not a general per-parcel instrument",
+    "perParcelFormThatDoesExist": "ONLY on the generic runner: depth-warm-city-batch.mjs parses --parcel=<value> and scopes the warm SQL with `AND body->>'parcelNodeId' = ${args.parcel}`; the cohort branch is guarded (`else if (args.cityCohort && !args.parcel)`), so --parcel selects the single-parcel arm. --row-id is STILL required.",
+    "warning": "So the approved work has three possible shapes and they differ by orders of magnitude in blast radius: (a) --parcel=48021:34049 on the generic runner (one parcel, still a full parcel re-warm: envelope + boundary edges + setbacks + promote, and --force-overwrite rewrites stored envelope geometry per R28/R30); (b) --row-id=Bastrop --city-cohort (the whole Bastrop city cohort — the Elgin precedent in the same runbook processed 3,762 parcels in one cohort run); (c) bake-property-atom-county --county=48021 (every tier1 snapshot parcel in the county). The planner must be told that (b) and (c) are the sanctioned documented forms and (a) is the only bounded one."
+  },
+
+  "Q3_record_snapshot_refresh": {
+    "verdict": "SEPARATE operation, and NO invocation for it exists. I also refute the candidate the coordination pass named.",
+    "isItTheSameOperation": "No. The re-mint writes the substrate atoms Postgres; 'the record' is a different store served by a different route with a different owner. They are two steps, two instruments, two stores.",
+    "whatTheRecordActuallyIs": {
+      "route": "GET /property-nodes/:parcelNodeId/record — services/retrieval-api/src/parcel-record-reader.ts ('P-152 ONE-READER'; the hauska-map BFF reads it for every rail whose serve is 'record').",
+      "reads": [
+        "parcel_record_cell.cell_state (loadCell) — via FACTORY_DATABASE_URL_RO, never the writer URL",
+        "parcel_record_companion_row (row_index, payload, source, vintage) (loadCompanionRows)",
+        "parcel_gate_verdict.verdict / evaluated_at (loadGateVerdict)",
+        "the closed 65-rail registry (parcel-record-rail-registry.ts, PARCEL_RECORD_RAIL_REGISTRY_SHA)",
+        "parcel-record-slate.json — which (countyFips, railKey) pairs are slated"
+      ],
+      "serveRule": "slated + verdict pass => serve 'record'; slated + refuse/excluded => 'refused'; unslated => 'legacy-transitional'; slated + no verdict => fail closed to legacy-transitional",
+      "atomLink": "the reader dereferences an atom ONLY if the cell carries an atomDid; the source comment says 'P-163 has not landed; no live cell carries one yet'. rendering is hardcoded null in the reader.",
+      "slateForThisCounty": "48021 IS slated for the setback rails: setbackFrontFt, setbackSideFt, setbackRearFt, setbackCornerFt (scalar) and setbackRules (companion). So for 48021 these rails are record-served if the gate verdict passes.",
+      "consequence": "the record layer's setback values are authored from @empressaio/setback-corpus by the factory job parcel-setback-cells — a DIFFERENT source than the atom — and that corpus contains no conflict disclosure at all (Q4/Q5 evidence). So 'refreshing the record' is not the same act as re-minting the atom and cannot be satisfied by it."
+    },
+    "candidateInstrumentRefuted_orIncapable": [
+      {
+        "candidate": "factory-parcel-setback-cells (cloudbuild.parcel-setback-cells.yaml, writer-allowlist id 'f11-setback')",
+        "writes": "parcel_record_cell + parcel_record_companion_row in the Factory store (FACTORY_DATABASE_URL); reads PRODUCTION_NEONDB_URL (landing_parcel_jurisdiction) and the zoningDistrict cell",
+        "refusal": "Its UPDATE_SETBACK_CELLS_SQL guard 'only ever moves a cell that is currently unaccounted ... so a re-run can never downgrade an earned cell.' This parcel's setback cells are earned, so this job CANNOT refresh them. It is a first-write-only instrument, not a refresh instrument.",
+        "also": "in-city only; Hays structurally excluded; --apply refuses anywhere but Cloud Run (LAPTOP_WRITE_FROZEN, FACTORY_CLOUD=1)"
+      },
+      {
+        "candidate": "load-snapshot-into-pg.mjs (named by the coordination pass as the record-snapshot refresh)",
+        "refuted": "Its own header: 'One-time / offline loader: commit the CODE-CORPUS snapshot into Postgres so retrieval-api can serve Postgres-only (G2) without losing Codex atoms.' It requires format === 'hauska-corpus-snapshot/1' from services/retrieval-api/corpus/snapshot.json and INSERTs into atoms, atom_links, jurisdiction_status on DATABASE_URL (hauska_mcp / substrate Neon). It is a code-corpus artifact loader, not a per-parcel record refresh, and it cannot regenerate a property atom from live layers."
+      },
+      {
+        "candidate": "factory snapshot (src/jobs/snapshot.mjs, SNAPSHOT_REQUIRED_ENV)",
+        "refuted": "A 120-second deploy-health probe: writes one runs row, measures connection/query RTT p50, compares image digests, writes a termination record. No data snapshot exists in it."
+      },
+      {
+        "candidate": "the phrase itself",
+        "finding": "grep for 'record snapshot', 'snapshot refresh', 'refresh the record' across hauska-engine, hauska-factory, hauska-map, legacy-design-tools, hauska-setback-corpus and the doc_repo returns ZERO code hits; the only doc hits are the 2026-05 'corpus snapshot refresh + retrieval-api redeploy' deploy step (code corpus) and the CP1/O17 sentence itself."
+      }
+    ],
+    "whatARecordRefreshWouldHaveToDo": "If the envelope/secondSource rail for this parcel turns out to be record-served, then the conflict payload would have to reach parcel_record_cell (or its companion row) or the reader's rendering field. Nothing in hauska-factory writes 'secondSource' or 'second_source' anywhere (zero grep hits in src), the reader's rendering is hardcoded null, and no live cell carries the atomDid pointer P-163 would add. On today's tree there is NO route for the conflict payload into the record path."
+  },
+
+  "Q4_contract_version": {
+    "verdict": "The writer path CAN express the A-148 conflict payload. The 1.30.0 pins are factory-side bookkeeping, not a runtime schema gate, and — decisively — NOTHING on the write path validates display_meta against the contract at all, so the 'silent drop' mechanism the brief hypothesised does not exist. The real silent-no-op risk is elsewhere (see Q4.realRisk).",
+    "whatTheWriterPathActuallyLoads": {
+      "engine": "@empressaio/atom-contract resolves to 1.36.0 in hauska-engine/pnpm-lock.yaml (declared and pinned across 9 manifests; pnpm install --frozen-lockfile in the Cloud Build bake path). 1.36.0 is the version whose src/display/wire.ts defines SETBACK_CONFLICT_SECOND_SOURCE_TOKEN = 'setback-conflict-second-source' plus the VOCABULARY row (hauska-atom-contract @ 1668d6f, package version 1.36.0). The engine also resolves @empressaio/setback-corpus@1.2.0.",
+      "factory": "hauska-factory/package.json declares ^1.30.0; package-lock.json resolves 1.30.0; the Dockerfile sets ARG/ENV CONTRACT_VERSION=1.30.0; every cloudbuild.*.yaml pins _CONTRACT_VERSION: '1.30.0'. BUT the Dockerfile installs with `npm install --omit=dev` and copies only package.json (not the lockfile), so a fresh image build with the ^1.30.0 range resolves the latest 1.x at build time — the 1.30.0 in the lockfile is not what a Docker build necessarily installs. The value's real destination is the factory run record (runs.contract_version)."
+    },
+    "whyNoSilentDrop": [
+      "There is no write-time schema validation of display_meta anywhere. packages/storage/src/pg-storage.ts writes the instance as JSONB (${this.sql.json(instance)}); the guards on the path are assertCanonicalParcelEntityId, assertPropertyWriteBoundary (identity/parcel-key only), resolveAccessPolicyOrRefuse, and (batch path) assertScopeOnAtoms — none inspects display_meta.",
+      "The symbol the factory imports as mint is `export function mint(): NodeId` in @empressaio/atom-contract src/identity/node-id.ts — a node-id minter, NOT an atom validator.",
+      "So an atom body carrying display_meta.secondSource.conflict would be written verbatim regardless of whether the process resolved 1.30.0 or 1.36.0. A 1.30.0 process would not strip the field; it simply has no vocabulary to RENDER it."
+    ],
+    "whereTheVersionActuallyMatters": "The READ/render side. The conflict sentence is a contract-provided vocabulary string (atom-contract src/display/wire.ts, consumed by engine-core/src/site-plan/setback-display.ts conflictNote/conflictNoteInput and by the surfaces). hauska-map #401 (848ec0aa, merged; its worktree reads `...(dm?.secondSource ? { secondSource: dm.secondSource } : {})` at api/_lib/atom-chain-to-facets.ts:1950 and composes setbackConflictNote from env.secondSource.conflict at src/lib/baked-facets.ts:1050), legacy-design-tools #688 (803cd0d5) and hauska-engine #442 (3726466a) are merged, so the render side is in place.",
+    "realRisk": "The no-op risk is the DATA ORIGIN, not the version. emitSetbackRule copies setbackTableRow.display_meta.second_source verbatim, and only adds `conflict` when `setbackTableRow.display_meta.second_source.conflict` is present (emit-setback-rule.ts:224-228). For Bastrop that row is built at warm time from the LIVE layer-23 per-parcel record plus the layer-83 Revisions second source by the A-148 detector in packages/adapters/src/local/setbacks/bastrop-conflict-a148.ts (shape 'stale-numeric-columns', secondSourceLabel 'One Click card') via bastrop-per-parcel-record.ts / bastrop-per-parcel-setback.ts. If the detector does not fire for 48021:34049's governing district on the day of the re-mint, the write SUCCEEDS and the surface DOES NOT CHANGE. The atomic safeguard is to run the dry leg and read the emitted atom body, not to reason about the version."
+  },
+
+  "Q5_writes_and_where": {
+    "step1_remint": {
+      "store": "substrate/atoms Postgres (hauska_mcp)",
+      "connection": "DATABASE_URL / SUBSTRATE_DATABASE_URL (secret ATOMS_DATABASE_URL in the Cloud Build bake; the runbook's warm form takes DATABASE_URL=<atoms>)",
+      "tables": ["atoms (INSERT ... ON CONFLICT (atom_did) DO UPDATE SET cid, content_hash, entity_type, entity_id, jurisdiction_tenant, source_adapter, source_url, fetched_at, body, access_policy, updated_at)", "atom_links (applies-to edges from the atom)", "the geom bbox table (upsertGeomBboxRows)"],
+      "leaseTables": "atoms_writer_lease / atoms_writer_lease_history — only if the batch write path is used (see Q7)"
+    },
+    "step2_record": {
+      "store": "the FACTORY store (FACTORY_DATABASE_URL) — a DIFFERENT store from the atoms corpus",
+      "tables": ["parcel_record_cell", "parcel_record_companion_row", "parcel_gate_verdict", "parcel_record"],
+      "readBy": "services/retrieval-api/src/parcel-record-db.ts over FACTORY_DATABASE_URL_RO (service account lacks SELECT on verify_walks and publish_runs, per the brief)",
+      "corpus": "the record cell values for setback rails come from @empressaio/setback-corpus, a separate published corpus (engine resolves 1.2.0); it is NOT the atom corpus"
+    },
+    "step3_serving": {
+      "atomChain": "services/retrieval-api serves /property-nodes/:id/atom-chain from Postgres PgStorage over SUBSTRATE_DATABASE_URL / DATABASE_URL — the SAME database the re-mint writes (boot-storage.ts, index.ts; pg-calibration-overlay.ts calls that database 'Substrate hauska_mcp'). Consequence: the atom-chain path reads the re-minted row LIVE. No snapshot reload is required for the atom chain.",
+      "recordRoute": "reads the FACTORY store (tables above)",
+      "smartSiteStore": "PRODUCTION_NEONDB_URL holds place_layer_snapshots (adapter_key 'node-facets:tier1'), cad_property, county_ledger_snapshot — written by the bake/publish lane, NOT by the setback atom writer"
+    },
+    "whichStoreIsProduction": "The atoms corpus IS the production serving store for the atom chain (retrieval-api reads it directly). The factory store is the production serving store for the record route. They are two different stores, which is why 'plus a record snapshot refresh' exists as a second sentence."
+  },
+
+  "Q6_idempotence_reversibility": {
+    "idempotent": "Yes, at the atom level: INSERT ... ON CONFLICT (atom_did) DO UPDATE, keyed on a deterministic atom DID; re-running produces the same DID and updates in place. The runner also reports skippedIdempotent, and listPropertyAtomsByParcelNodeId prefers the canonical entityId === parcelNodeId row (pickPreferredSetbackRule) among coexisting setback-rule rows.",
+    "rollbackTarget": "NONE. There is no version or history table for property atoms on this path; the upsert OVERWRITES body, fetched_at and updated_at in place. The 2026-08-05 atom body is the only prior artifact and it is destroyed by the write. Material finding: no rollback target exists. The only recovery is re-running the previous writer at the previous engine SHA with the previous inputs (live layers at that date), which is not a rollback — it is a re-derivation against now-different live sources.",
+    "recommendation": "Before any write, capture the live row read-only (SELECT body FROM atoms WHERE entity_type='setback-rule' AND (entity_id = '48021:34049' OR entity_id LIKE '48021:34049:%')) and keep it as the only rollback artifact that can exist."
+  },
+
+  "Q7_preconditions_contention": {
+    "lease": {
+      "batchPath": "packages/storage/src/pg-storage.ts writePropertyAtomsBatch requires a HeldLease: `if (!isHeldLease(lease)) throw new LeaseRequiredError()`, then assertScopeOnAtoms + lockAndHeartbeatLease inside a transaction. packages/storage/src/atoms-writer-lease.ts: scope is (entity_type, county_fips) for a bulk write 'or one heavy-scan scope per database'; DEFAULT_LEASE_TTL_MS = 15 min; v1 single-row lock and the ATOMS_WRITER_LEASE_HOLDER env var are RETIRED (v1 holder 'cannot satisfy a write'); release reasons normal/expired/killed recorded in atoms_writer_lease_history.",
+      "singleAtomPath": "writePropertyAtom (the method writePropertyAtomIfEnabled calls, and therefore the method the depth-warm promote path uses) takes NO lease and has no isHeldLease check.",
+      "consequence": "The only path that persists this atom acquires NO lease. There is no mutual exclusion between it and anything else writing the atoms store."
+    },
+    "factoryGates": [
+      "Any factory --apply requires --run-id (a Factory runs row): LEASE_REQUIRED, 'HeldLease is minted from that id. v1 ATOMS_WRITER_LEASE_HOLDER cannot satisfy a write.'",
+      "Any factory --apply must run inside a Cloud Run Job: LAPTOP_WRITE_FROZEN, CLOUD_RUN_JOB unset (2026-09-12 ruling, P-169). The module notes it is wired into write-building-footprint-county.mjs only, and that well-fact, utility-easement and setback are 'a different lane's scope'."
+    ],
+    "scheduledWritersOnTheSameStores": {
+      "source": "gcloud scheduler jobs list --project=hauska-prod-497015 --location=us-east4",
+      "jobs": [
+        "factory-conformant-reap — '*/10 * * * *' -> run.googleapis.com .../jobs/factory-conformant:run (every 10 minutes; the factory conformant writer, which is the factory's own new-shape atom writer and does take scoped leases: takeScopedLease/lockLease/releaseLease in src/control/leases.mjs)",
+        "factory-publish-gate-sched-hourly — '0 * * * *' -> .../jobs/factory-publish-gate-sched:run (hourly; the publish/gate lane that feeds the record cells and gate verdicts)"
+      ],
+      "notEstablished": "whether factory-conformant's writes land in the substrate atoms database the re-mint writes, or only in the factory store. The only factory->atoms module I found is src/db/atoms-connect.mjs, which is READ-ONLY by design ('Read-only consumer ... never writes an atom'). So the atoms store has no scheduled writer that I could confirm; the factory store does."
+    },
+    "exclusiveState": "No exclusive store state is required by the single-atom path. The planner's own sequencing rule for this class is 'all but (1) and (4) are serving-store writes and must not interleave' (CP1, O17-adjacent), and the depth-warm runner is exactly the kind of long-running serving-store write that rule is about."
+  },
+
+  "Q8_not_established": [
+    {"item": "Any apply-enabled, setback-specific re-mint invocation", "blocker": "None exists. The F-11 writer is held by design (SETBACK_APPLY_HELD, dry-run only); the deployed Cloud Run writer job has no --writer arg and the dispatcher refuses without one; the only persisting path is the generic depth-warm runner with no Cloud Build/Cloud Run wrapper. This is an ABSENCE finding, not an obscurity finding."},
+    {"item": "'record snapshot refresh' as a named operation", "blocker": "The phrase appears in no code in any of the five repos, and no script or job has that effect. The one candidate the earlier pass named (load-snapshot-into-pg.mjs) is refuted by its own header (code-corpus one-time loader)."},
+    {"item": "Which read path serves the ENVELOPE facet (which carries secondSource.conflict) for 48021:34049 — record or atom-chain", "blocker": "It is decided at runtime per rail by parcel_gate_verdict + the slate, and the slate confirms 48021's SETBACK rails are slated. I did not execute a query or an HTTP probe (both out of scope), so the per-rail serve state for this parcel is unmeasured. This is the single question that decides whether a record refresh is even needed."},
+    {"item": "Where display_meta.second_source ORIGINATES for a non-Bastrop rail", "blocker": "For Bastrop it is the live layer-23/layer-83 fetch + A-148 detector in @hauska-engine/adapters. But @empressaio/setback-corpus@1.2.0 (HEAD ec6041d 2026-09-13) contains ZERO occurrences of 'second_source' anywhere in src or dist, and 'display_meta' appears only in georgetown-tx.json. So a corpus-derived emit (the factory parcel-setback-cells lane) cannot produce a secondSource at all."},
+    {"item": "Whether the A-148 detector fires for 48021:34049's governing district today", "blocker": "It depends on live layer 23 and the One Click/layer-83 row for prop_id 34049 at warm time. Reading that record or running the dry leg are both outside a read-only file-inspection budget; I did not run either."},
+    {"item": "The engine SHA / checkout the live writer would run from", "blocker": "No runbook or cloudbuild names one. The runbook discipline is to record a 40-char engineSha in the artifact pair, which means the SHA is chosen at run time by whoever runs it. The deployed hauska-engine-atoms-writer image digest is sha256:005eab6e... but that job dispatches no writer, so its digest is not the writer's SHA."},
+    {"item": "Whether the depth-warm promote path can be reached for this parcel at all (warm-cohort eligibility)", "blocker": "The runner intersects recipe eligibility with parcel-node eligibility (gateWarmCohort / assertWarmGateApplied) and reads warmRunner config from the frozen JurisdictionRegistryRow. I did not read the Bastrop registry row or run the gate."},
+    {"item": "The exact per-parcel cost", "blocker": "Unmeasured. The nearest measured cohort datapoint in the same runbook is Elgin's 3,762-parcel cohort. A --parcel run's cost is bounded by one parcel's warm+verify+promote, which I did not instrument."},
+    {"item": "The deployed args of hauska-engine-atoms-writer", "blocker": "gcloud run jobs describe --format=json|value(...) returned the container image but no args, and the container-spec path I used did not surface them. The exclusion therefore rests on the cloudbuild file + allowlist rather than on the live job spec."}
+  ],
+
+  "exactInvocations": [
+    {
+      "id": "I1-depth-warm-dry-leg",
+      "command": "PROPERTY_ATOM_PATH=1 DATABASE_URL=<atoms-substrate-url> TXGIO_DATABASE_URL=<txgio-neondb-url> NODE_OPTIONS=--use-system-ca pnpm --filter @hauska-engine/engine-core run depth-warm-city-batch -- --row-id=Bastrop --parcel=48021:34049 --dry-run --limit=1 --force-overwrite",
+      "what": "the bounded dry leg that would tell you whether the A-148 conflict arm fires for this parcel, without writing",
+      "confidence": "likely",
+      "evidence": "packages/engine-core/scripts/depth-warm-city-batch.mjs (--row-id REQUIRED with a FATAL without it; --parcel parsed and applied as AND body->>'parcelNodeId' = <value>; --dry-run; --force-overwrite; --limit) + the verbatim gated warm command in doc_repo/90_runbooks/factory_2_jurisdiction_depth.md. NOT confirmed end-to-end: no recorded run anywhere uses --parcel, and no runbook documents the per-parcel form."
+    },
+    {
+      "id": "I2-depth-warm-apply",
+      "command": "PROPERTY_ATOM_PATH=1 DATABASE_URL=<atoms-substrate-url> TXGIO_DATABASE_URL=<txgio-neondb-url> NODE_OPTIONS=--use-system-ca pnpm --filter @hauska-engine/engine-core run depth-warm-city-batch -- --row-id=Bastrop --parcel=48021:34049 --promote --force-overwrite --limit=1",
+      "what": "the only way the setback-rule atom for this parcel gets re-minted (emitSetbackRule -> writePropertyAtomIfEnabled -> storage.writePropertyAtom)",
+      "confidence": "likely (mechanism confirmed in code; wrapper/preconditions not satisfied by any existing job)",
+      "evidence": "same runner + packages/engine-core/src/depth-warm/promote.ts + src/property-reasoning/write-property-atom.ts (needs PROPERTY_ATOM_PATH=1) + packages/storage/src/pg-storage.ts writePropertyAtom"
+    },
+    {
+      "id": "I3-runbook-sanctioned-form-is-county-city-wide",
+      "command": "PROPERTY_ATOM_PATH=1 DATABASE_URL=<atoms> TXGIO_DATABASE_URL=<neondb> NODE_OPTIONS=--use-system-ca pnpm --filter @hauska-engine/engine-core run depth-warm-city-batch -- --row-id=Bastrop --city-cohort --force-overwrite --promote --limit=10000 --dry-run",
+      "what": "the VERBATIM form the runbook actually sanctions (city cohort, not one parcel). Drop --dry-run for the apply leg.",
+      "confidence": "confirmed",
+      "evidence": "doc_repo/90_runbooks/factory_2_jurisdiction_depth.md, 'Verbatim GATED warm command (all zoned cities -- substitute --row-id)' + the 'City re-warm discipline' paragraph requiring --force-overwrite on every re-warm that fixes stored geometry"
+    },
+    {
+      "id": "I4-county-bake-cloud-build",
+      "command": "pnpm --filter @hauska-engine/engine-core run bake-property-atom-county -- --county=48021 --limit=<n> --offset=<o> --batch=<b>   (with PROPERTY_ATOM_PATH=1 and SUBSTRATE_DATABASE_URL=$$DATABASE_URL; fired by: gcloud builds submit --config=cloudbuild.property-atom-bake.yaml --project=hauska-prod-497015)",
+      "what": "county-wide bake via emitFromTier1Snapshot -> emitSetbackRule",
+      "confidence": "unverified for THIS atom",
+      "evidence": "hauska-engine/cloudbuild.property-atom-bake.yaml + packages/engine-core/scripts/bake-property-atom-county.mjs. It is tier1-SNAPSHOT driven, and the Bastrop per-parcel setback row is built from the LIVE layer-23 record (bastrop-per-parcel-setback.ts, sourceAdapter 'bastrop-per-parcel-record-layer-23'), so this bake may not produce this atom at all. Do not fire it on the strength of this artifact."
+    },
+    {
+      "id": "I5-gold-set-per-parcel",
+      "command": "pnpm --filter @hauska-engine/engine-core run bake-property-atom-gold-set -- --fixtures=<gold-set-fixtures-file>",
+      "what": "the only per-parcel-shaped bake",
+      "confidence": "unverified",
+      "evidence": "packages/engine-core/scripts/bake-property-atom-gold-set.mjs (fixtures-file driven; imports emitSetbackRule). It requires a fixtures FILE, so it is not a general 're-mint this parcel id' instrument. The exact flag name was not re-read from current main this pass."
+    },
+    {
+      "id": "I6-setback-specific-writer-HELD",
+      "command": "SETBACK_PATH=1 pnpm --filter @hauska-engine/engine-core run write-setback-city -- --county=48021 --city=<bastrop-city-key>",
+      "what": "the F-11 rail's own writer",
+      "confidence": "confirmed (invocation), confirmed INCAPABLE of the approved action",
+      "evidence": "packages/engine-core/scripts/write-setback-city.mjs header: 'Apply is held on this card (SETBACK_APPLY_HELD)' and 'Dry-run / plan is the only path this card may take'; allowlist entry allowlist id 'setback', pathEnv SETBACK_PATH, planRow F-11. There is no --parcel."
+    },
+    {
+      "id": "I7-atoms-writer-job-dispatch",
+      "command": "gcloud run jobs execute hauska-engine-atoms-writer --project=hauska-prod-497015 --region=us-east4 --args=... (dispatcher: tsx scripts/atoms-writer-job.mjs --writer=<id>)",
+      "what": "the writer-rail dispatcher",
+      "confidence": "confirmed EXCLUDED",
+      "evidence": "atoms-writer-job.mjs requires --writer (WRITER_REQUIRED / WRITER_NOT_ALLOWLISTED); the deployed job carries no --writer arg; cloudbuild.atoms-writer.yaml binds the Cloud Run writer job to --writer=cad-parcel-roll; the allowlist maps setback to the held F-11 script."
+    },
+    {
+      "id": "I8-record-cell-job",
+      "command": "gcloud run jobs execute factory-parcel-setback-cells --project=hauska-prod-497015 --region=us-east4 --wait --args=parcel-setback-cells,--city=Bastrop,--apply",
+      "what": "the only job that writes setback cells into the record store",
+      "confidence": "confirmed (invocation), confirmed INCAPABLE of a refresh",
+      "evidence": "cloudbuild.parcel-setback-cells.yaml 'EXECUTE FORMS' block + 'STORES' block: writes parcel_record_cell + parcel_record_companion_row in the Factory store; UPDATE_SETBACK_CELLS_SQL moves only cells currently 'unaccounted' ('a re-run can never downgrade an earned cell')."
+    },
+    {
+      "id": "I9-snapshot-loader-REFUTED",
+      "command": "DATABASE_URL='postgres://.../hauska_mcp?sslmode=require' NODE_OPTIONS=--max-old-space-size=4096 node packages/storage/scripts/load-snapshot-into-pg.mjs [--snapshot services/retrieval-api/corpus/snapshot.json] [--batch 200] [--dry-run]",
+      "what": "the code-corpus loader the earlier pass named as 'record snapshot refresh'",
+      "confidence": "confirmed REFUTED as a record refresh",
+      "evidence": "its own header ('commit the code-corpus snapshot into Postgres so retrieval-api can serve Postgres-only (G2) without losing Codex atoms'; format hauska-corpus-snapshot/1; INSERTs atoms/atom_links/jurisdiction_status)"
+    },
+    {
+      "id": "I10-factory-snapshot-REFUTED",
+      "command": "factory snapshot (src/cli.mjs -> src/jobs/snapshot.mjs runSnapshot)",
+      "what": "the factory command literally named 'snapshot'",
+      "confidence": "confirmed REFUTED",
+      "evidence": "src/jobs/snapshot.mjs: writes one runs row (phase 'snapshot'), measures query RTT p50, compares image digests, writes a termination record, MAX_DURATION_S = 120. No data snapshot."
+    }
+  ],
+
+  "dangers": [
+    "THERE IS NO INVOCATION. Any command presented to the planner as 'the' re-mint is an invention unless it is the generic depth-warm runner. A fabricated write against a serving store is the worst outcome available here.",
+    "THE SILENT NO-OP IS REAL, but it is a DATA-ORIGIN problem, not a contract-version problem. emitSetbackRule adds `conflict` only when the resolved setback-table row already carries display_meta.second_source.conflict (emit-setback-rule.ts:224-228). For Bastrop that row is built at warm time from the live layer-23 per-parcel record by the A-148 detector (adapters/src/local/setbacks/bastrop-conflict-a148.ts). If the detector does not fire that day, the re-mint succeeds and the surface does not change.",
+    "RE-MINTING FROM THE WRONG PATH IS A REGRESSION, not a no-op. @empressaio/setback-corpus@1.2.0 contains no 'second_source' key at all. Any corpus-derived emit (the factory parcel-setback-cells lane, or any bake that resolves setbacks from the corpus) would emit an atom with NO secondSource and would DELETE the existing pre-A-148 prose confession the surfaces print today.",
+    "NO ROLLBACK TARGET. The write is an in-place upsert over body/fetched_at/updated_at with no version or history table for property atoms. The 2026-08-05 atom body is the only prior artifact and the write destroys it.",
+    "BLAST RADIUS. The two documented forms are county/city-wide: --row-id=Bastrop --city-cohort (whole cohort; Elgin's precedent processed 3,762 parcels) and bake-property-atom-county --county=48021. Both re-warm and --force-overwrite rewrites stored envelope geometry (R28 ring recompute, R30 road relabel) across the cohort. Only --parcel is bounded, and it is undocumented.",
+    "READ-PATH SPLIT CAN SWALLOW THE PAYLOAD. The conflict row rides the ENVELOPE facet from the atom's display_meta (hauska-map atom-chain-to-facets.ts:1950, baked-facets.ts:1050). But 48021's record slate includes setbackFrontFt/SideFt/RearFt/CornerFt and the setbackRules companion, served from factory parcel_record_cell/parcel_record_companion_row, whose author is @empressaio/setback-corpus (no conflict data), whose writer can only touch 'unaccounted' cells, whose reader's rendering is hardcoded null, and whose cell carries no atomDid because P-163 has not landed. If the rail in question is record-served, a perfect re-mint still shows nothing.",
+    "NO LEASE ON THE WRITING PATH. writePropertyAtomsBatch demands a HeldLease, but writePropertyAtom — the method the promote path actually calls — does not. So the re-mint would run with no mutual exclusion in the atoms store, while factory-conformant-reap (every 10 minutes) and factory-publish-gate-sched-hourly (hourly) write the factory store on a timer.",
+    "SANCTIONED RUNNER VS. AVAILABLE RUNNER. The 2026-09-12 P-169 ruling makes --apply Cloud-Run-Job-only (LAPTOP_WRITE_FROZEN, CLOUD_RUN_JOB). The only path that persists this atom has no Cloud Run/Cloud Build wrapper, so as things stand the write is either done from a seat (against the standing law) or a job must be built first. That is a decision for the planner, not something to improvise.",
+    "STALENESS OF THE BRIEF'S EVIDENCE. The brief's candidate instruments were read from a 2026-08-26 worktree. Against current main, the setback rail is now a held writer (F-11) and the A-148 detector now exists in @hauska-engine/adapters. Do not act on the 2026-08-26 reading."
+  ],
+
+  "whatWouldMakeThisExecutable": [
+    "1. Read-only select of the current atom, kept as the rollback artifact: SELECT body FROM atoms WHERE entity_type = 'setback-rule' AND (entity_id = '48021:34049' OR entity_id LIKE '48021:34049:%') AND COALESCE(body->>'status','active') = 'active' — against the substrate/atoms store (DATABASE_URL / SUBSTRATE_DATABASE_URL).",
+    "2. Establish that the payload would exist: read prop_id 34049's layer-23 per-parcel record and the One Click/layer-83 row and evaluate the A-148 predicate (adapters/src/local/setbacks/bastrop-conflict-a148.ts), OR run the depth-warm dry leg with --parcel=48021:34049 --limit=1 --dry-run and inspect the emitted atom body in the dry artifact. If no conflict arm fires, the approved work cannot achieve its purpose and must be escalated, not run.",
+    "3. Establish which rail carries the conflict for this parcel on the panel (record vs atom-chain): check parcel_gate_verdict for (48021, envelope) and (48021, setbackRules). If those rails are 'pass', the conflict needs the RECORD path, and a second instrument must be named or built — none exists today (no factory code writes secondSource into a cell; the reader's rendering is null; no cell carries atomDid).",
+    "4. Pick and record the engine SHA at origin/main containing the A-148 detector (engine PR #442, 3726466a) and confirm the checkout/image builds at that SHA (the runbook's identical-engine-SHA rule across dry and apply legs).",
+    "5. Decide the wrapper: either (a) build a Cloud Run Job for depth-warm-city-batch with --parcel + --promote (satisfies P-169's Cloud-Run-only rule), or (b) obtain an explicit operator ruling that a seat run is permitted for this one atom. Do not assume (b).",
+    "6. Serialize: take no write while factory-publish-gate-sched-hourly or factory-conformant-reap is mid-run, and do not interleave with the p180-joint lane's serving-store work (the CP1 sequencing note already forbids interleaving serving-store writes).",
+    "7. Verify after the write, read-only: read the atom row back (display_meta.secondSource.conflict present?) and then run the planner's own scripts/surface-probe.mjs --rows P-154 and read the { conflictRow: true } arm. If step 7 cannot pass, the record-path question in step 3 is the reason, and it is a separate card."
+  ]
+}
