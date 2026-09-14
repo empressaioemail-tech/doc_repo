@@ -228,5 +228,7 @@ the specific go for the production apply itself.
 
 **Addendum 2026-09-14T12:20Z (A-146).** Wave 5 and P-178 closed and reviewed at source after this file was written: P-152 passes on 1109 Pecan, P-155's fix is live, the certified Hays roll is on production, and the publish waits on a ruled P-180 walk fix. See A-146 and the card's 2026-09-14 update block.
 
+**Addendum 2026-09-14T14:30Z (A-147, A-148, P-185), final.** Wave 6 compiled and sent (`_dispatches/2026-09-14_ops23-wave6_dispatch.md`: p178-publish, p183-querypoint, p156-bastrop, p154-conflict). The operator's Bastrop setback concern resolved at source: the city's current zoning layer `Zone_Types/25` says 30/10/30/20 in text and 25/5/25 in unrefreshed numeric columns that the One Click join reads; our card matches the city's words; the conflict note names the stale columns; the city is told. Williamson was never touched (P-184). P-185 PromoteKit affiliates dispatched (Stripe Checkout path: script in the shell, referral in both checkout bodies, session and subscription metadata). Session ends at 5ac88890.
+
 This file will not be updated further. The durable card and checkpoint 5 are where the truth
 lives from here.
