@@ -16,8 +16,10 @@ related_canonical:
 
 Three rulings, made 2026-09-14, unblocking OPS-17 G-127.
 
-**1. Staff authentication is a managed provider, SSO-first against the city's own identity
-system, with magic link as the fallback for anyone without a city account.**
+**1. SmartCity admin provisions every staff account and issues the credentials.** No city IT, no
+city-manager invites, no self-registration. A managed provider holds the credentials so we never
+store password hashes for a government customer, but every user is created and every role assigned
+by us through its admin API. *(AMENDED 2026-09-14, twice — see Ruling 1.)*
 
 **2. The department roster is the nine lenses.** Not the city's directory, not the ~25
 departments in Bastrop's budget. The product's own lens roster is the role vocabulary.
@@ -46,25 +48,58 @@ handing every department the same shared account. G-115's item-5 ruling accepted
 model "scoped to a small named set of invited Bastrop staff" — there was no set. There was one
 persona.
 
-## Ruling 1 — authentication
+## Ruling 1 — authentication, amended twice on the day it was made
 
-Managed provider (WorkOS or Clerk class), configured SSO-first against the city's identity
-system, magic link fallback.
+**Final: SmartCity admin provisions every account and issues the credentials.**
 
-**The deciding argument is offboarding.** A staff member leaves. If we hold the accounts,
-somebody must remember to remove them from three products. Under SSO the city disables one
-account and access ends everywhere, immediately, without us being told. For a customer whose
-data carries citizen names and phone numbers in free-text fields, that is the control, not a
-convenience.
+### What it replaced, and why each fell
 
-Second argument: three products need this. Built in-house it is built three times, or it is a
-bespoke auth service. Neither is work this operation should own.
+**First ruling: SSO against the city's own identity system.** Chosen on the offboarding
+argument — the city disables one account and access ends everywhere without anyone telling us.
 
-**Known cost:** per-user pricing becomes a real line item at many cities rather than one.
-Accepted.
+Reversed the same day by the operator: **"we should not be asking cities to configure
+anything."** That is a product principle beyond this decision. If every city needs an IT project
+to onboard, cost-per-jurisdiction blows up and the onboarding machine is not a machine. That is
+commitment 3, not a preference. SSO requires the city to register an application on their side;
+it is a configuration ask however it is framed.
 
-**Known risk, and it is calendar rather than engineering:** SSO requires Bastrop IT to configure
-their side. That dependency is on them. Open the conversation before the build is ready.
+**Second proposal: domain-restricted magic link with city-manager invites.** Zero city IT, but
+still asked Sylvia to run an invite flow.
+
+Reversed by the operator: **"we (smart city admin) need to control the users. we should set them
+up and provide login creds."** Right for a reason the planner did not surface — an invite UI is
+still a thing a customer has to learn and operate, and at pilot scale it buys nothing over us
+just doing it.
+
+### What we build
+
+We create every account. We assign every role. We hand over the credentials. Self-registration
+is off. The city does nothing.
+
+**Use a managed provider's admin API rather than building auth.** "We control the users" does not
+require "we store credentials." The provider holds password hashes, reset flows and MFA; we hold
+the admin authority. This keeps the operator's control total and keeps us out of being a
+credential custodian for a government customer in the dangerous sense.
+
+**MFA is on.** These are government staff accounts reaching citizen names, phone numbers and
+complaint addresses.
+
+### What this costs, named rather than argued
+
+**Offboarding becomes ours, and it is now a process rather than a property.** Under SSO it was
+automatic and instant. Under this it depends on the city telling us and us acting. That needs a
+named owner and a stated turnaround, or it will be discovered as a gap after a staff member
+leaves. **This is the real cost of the ruling and it is accepted knowingly.**
+
+**It does not scale past a few cities without becoming a job.** Fine at pilot scale, and it
+should be revisited at a named threshold rather than when it hurts.
+
+### Reconciliation: Sylvia sees, we control
+
+The **People and access** lens — already in the nav, marked NOT BUILT — becomes the access
+review surface: **read-only for the city manager, administered by us.** She can see who has
+access to her city's data at any time without being asked to manage it. That answers the
+legitimate half of the invite proposal without handing the customer an operational burden.
 
 ## Ruling 2 — the roster is the nine lenses
 

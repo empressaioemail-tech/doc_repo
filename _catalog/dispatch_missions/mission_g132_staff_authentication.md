@@ -22,81 +22,77 @@ sentence true.
 
 ## The ruling you are implementing
 
-`_decisions/2026-09-14_staff_identity_and_department_rbac.md`, ruling 1:
+`_decisions/2026-09-14_staff_identity_and_department_rbac.md`, ruling 1, **amended twice on the
+day it was made**. Read the record, not a summary — both reversals matter and the reasoning is
+load-bearing.
 
-> A managed provider (WorkOS or Clerk class), configured **SSO-first against the city's own
-> identity system**, with magic link as the fallback for anyone without a city account.
+> **SmartCity admin provisions every staff account and issues the credentials.** No city IT, no
+> city-manager invites, no self-registration. A managed provider holds the credentials so we never
+> store password hashes for a government customer, but every user is created and every role
+> assigned by us through its admin API.
 
-**The deciding argument was offboarding, and it is your acceptance test.** A staff member leaves,
-the city disables their account, and access ends across all three products immediately without
-anyone telling us. Under our own accounts somebody has to remember, three times. For a customer
-whose data carries citizen names and phone numbers in free-text fields, that is the control.
+**What was tried and rejected, so you do not re-propose either.** SSO against the city's identity
+system was the first ruling and was reversed on the principle *"we should not be asking cities to
+configure anything"* — SSO requires them to register an application, which is a configuration ask
+however it is framed, and it breaks the cost-per-jurisdiction commitment. Domain-restricted magic
+link with city-manager invites was the second proposal and was reversed because an invite UI is
+still a thing a customer has to learn and operate.
 
-Do not substitute a different mechanism because it is faster to stand up. If you believe the
-ruling is wrong, say so in your close and stop — do not quietly build the easier thing.
+**The city does nothing.** That is the test. If any part of your design requires an action by
+anyone at Bastrop — IT, the city manager, or a staff member beyond signing in with credentials we
+gave them — it fails the ruling.
 
-## Scope
+## What to build
 
-**In:** the identity layer for `smartcity-dashboards`, `plan-review` and `smart-files` — one
-identity across all three, not three integrations.
+**Use a managed provider's admin API. Do not build auth.** "We control the users" does not mean
+"we store credentials." The provider holds password hashes, reset flows and MFA; we hold the
+admin authority. Turn self-registration OFF — every account exists because we created it.
 
-**Out:** the role model and department gating (G-127, blocked on this row). Cross-tenant
-isolation (G-126, closed — do not re-open it). The persona lists themselves, beyond what must
-change to accept a real identity.
+**MFA on.** These accounts reach citizen names, phone numbers and complaint addresses.
 
-## What it must do
+**One identity, three products.** A staff member signs in once and is the same person in
+`smartcity-dashboards`, `plan-review` and `smart-files`. If your design produces three
+integrations, stop and report — avoiding that is why this is one row.
 
-**One identity, three products.** A staff member signs in once and is the same person in all
-three. If your design produces three separate integrations, stop and report — that is the thing
-this row exists to avoid.
+**Carry a `role` claim.** G-127 reads it. The vocabulary is the nine lenses per ruling 2; you are
+not defining roles here, but the claim must exist and be readable so G-127 is not blocked a second
+time on the shape of the token.
 
-**Carry a `role` claim.** G-127 reads it. The role vocabulary is the nine lenses per ruling 2;
-you are not defining roles here, but the claim must exist and be readable so G-127 is not blocked
-again on the shape of the token.
+**Reach the MCP surface.** If identity stops at the UI, the door around it is open. Establish how
+the MCP path receives the same identity, or name it as an explicit gap with its consequence
+stated.
 
-**Reach the MCP surface.** If identity stops at the UI, the door around it is open. Establish
-how the MCP path receives the same identity and say so, or name it as an explicit gap with its
-consequence stated.
+**Fail closed.** No identity, unknown issuer, expired or malformed token: refuse. Never fall back
+to the shared persona and never fall back to tenant-only resolution — that is the exact state this
+row removes.
 
-**Fail closed.** No identity, an unknown issuer, an expired or malformed token: refuse. Never
-fall back to the shared persona, and never fall back to a tenant-only resolution — that is the
-exact state this row is removing.
+**Typed refusals.** A refused request says it was refused and why. A silent empty response is
+indistinguishable from "no records".
 
-**Typed refusals.** A refused request states that it was refused and why. A silent empty
-response is indistinguishable from "no records", which this operation's doctrine forbids.
+## Two operational obligations the ruling creates — build the surface for them
+
+The ruling accepts a known cost knowingly, and your job is to make it operable rather than to
+re-argue it.
+
+**Offboarding is now OURS.** Under SSO it was automatic. Under this, the city tells us someone
+left and we act. That needs a real path: a documented way to disable an account and an instrument
+that shows it took effect across all three products. **Verify by violation** — disable an account,
+confirm access ends in all three, confirm a live account still works.
+
+**Sylvia must be able to SEE who has access without managing it.** The **People and access** lens
+already exists in the nav marked NOT BUILT. Make it the access review surface: **read-only for the
+city manager, administered by us.** She sees everyone with access to her city's data at any time.
+This is the reconciliation the ruling names explicitly; it is in scope.
 
 ## The anonymous path is load-bearing — do not break it
 
 `template-city` is public-free and must keep serving anonymously. An anonymous caller currently
-gets fixtures on `template-city` and 401 on every `bastrop_tx` route, and both halves must still
-be true after this lands. **Verify both directions**, not just that signed-in users can get in.
+gets fixtures on `template-city` and 401 on every `bastrop_tx` route. **Both halves must still be
+true afterwards, and you verify both**, not just that signed-in users get in.
 
-There is also existing anonymous data in the products. Do not orphan it: establish what exists
-under the current anonymous or shared-persona path and what happens to it when real identities
-arrive. If a claim flow is needed, name it — do not silently strand records nobody can reach any
-more.
-
-## Snapshot
-
-Three repos: `smartcity-dashboards`, `plan-review`, `smart-files`. Local checkouts have been
-badly stale this week — `smartcity-dashboards` was 43 commits behind on 2026-09-14. Fetch each
-and work from current `origin/main`. Declare repository, branch and commit SHA for each in your
-first output line. Work on your own branch in your own worktree, per repo.
-
-## The calendar dependency — raise it early, do not sit on it
-
-SSO requires **Bastrop IT to configure their side**. That is a dependency on the customer, not on
-us, and it is likely the long pole on this whole row.
-
-**Establish what they need from us and report it in CP1, not at close.** What their IdP is
-(Microsoft Entra and Google Workspace are both common in Texas municipalities — find out rather
-than assume), what metadata or redirect URIs they must register, and who at the city does it. The
-operator can start that conversation in parallel with your build, but only if you surface the
-requirement early.
-
-If SSO cannot be configured in a useful timeframe, the magic-link fallback is the path to a real
-per-person identity meanwhile — build so that switching to SSO later does not re-issue everyone's
-identity.
+Establish what data exists under the current anonymous or shared-persona path and what happens to
+it when real identities arrive. If a claim flow is needed, name it — do not silently strand
+records nobody can reach any more.
 
 ## Method
 
@@ -120,7 +116,7 @@ Every verification command exit-bounded (`timeout 120 ...`).
 
 The mechanism is ruled. The provider choice within that class, and anything about cost, is not.
 If you hit a decision the ruling does not cover — pricing tier, where identities are stored, what
-happens to a staff member who is in the directory but has no lens role — **name it and stop**
+happens to a staff member we provision who maps to no lens role — **name it and stop**
 rather than choosing. An identity model chosen by an agent and discovered later is worse than a
 day of delay.
 
@@ -132,7 +128,8 @@ Deploys are planner-owned: you deploy and you fix your own failed deploys. Canar
 Write your close to the path named in the CHECKPOINTS AND CLOSE block above — that is the
 machine-checkable one, and this mission deliberately does not name a second.
 
-State: the offboarding violation test in both directions across all three products; what Bastrop
-IT must do and who does it; how the MCP surface receives identity or why it does not; the
-anonymous `template-city` path verified still working; and what happened to any pre-existing
-anonymous or shared-persona data.
+State: the offboarding violation test in both directions across all three products; the
+documented path for disabling an account and the instrument that shows it took effect; how the
+MCP surface receives identity or why it does not; the anonymous `template-city` path verified
+still working in both directions; what happened to any pre-existing anonymous or shared-persona
+data; and confirmation that NOTHING in your design requires an action by anyone at Bastrop.
