@@ -601,7 +601,16 @@
       "question": "The p154 re-mint was APPROVED by the operator ('the p154 atom re-mint + record snapshot refresh once the lanes are green') and the lanes are now green — all four P-154 surfaces merged (#33 5f8f531, #401 848ec0aa, #688 803cd0d5, #442 3726466a). But the re-mint is a WRITER-PATH (factory/publish) action against the SAME shared resources the p180-joint lane is using right now: the Cloud Run job runner and the serving store. C5 established this wave's worst incident was precisely a second party running a publish sequence against those unleased shared resources. So: dispatch the re-mint now for parallelism, or serialize it behind p180-joint?",
       "handling": "SERIALIZED, and the planner's call rather than escalated, because the operator's approval was for the WORK, not for concurrent access to a shared resource. The re-mint is queued behind p180-joint's staging publish; it is NOT dispatched while that lane is live. The requirement is recorded here in full so the successor lane can execute it without re-deriving it: re-mint 48021:34049's setback-rule atom with the A-148 `conflict` payload through the writer path (the write-slot law and the atom writer lease apply), refresh the record snapshot, then run `scripts/surface-probe.mjs --rows P-154` and read the `{ conflictRow: true }` arm — which CANNOT pass before the re-mint, unlike the `{ setbackSourceDate: 2026-04-14 }` arm that already measures green. Note the mechanism is the lane's finding and is not re-verified by the planner.",
       "notDispatchedYet": "recorded, not compiled into a dispatch. Writing a mission that prescribes an invocation the planner has not read would be worse than saying plainly that the mechanism is the writer path and letting the deepest worker find it in the factory runbook — the same reason the planner refused to guess at the S13 fix before the lane traced it.",
-      "owner": "planner to dispatch once p180-joint's staging run is terminal"
+      "owner": "a read-only derivation pass, then the operator reviews what it found before any write",
+      "coordinationVerdict": "STOP — the approved re-mint has NO EXECUTABLE INVOCATION anywhere in the wave-6 record. A read-only coordination pass searched for a job, command or entrypoint and found none: the requirement (this item) names the mechanism only as \"the writer path\", and nothing anywhere names how to invoke it. Step 2 therefore cannot be dispatched as an execution. It has to be DERIVED first — a measurement task, not a write.",
+      "candidateInstruments_foundNotConfirmed": [
+        "engine-core `emitSetbackRule` via Cloud Build `bake-property-atom-county` (county-wide) or `bake-property-atom-gold-set` (per-parcel, fixtures-file driven)",
+        "\"record snapshot refresh\" is a SEPARATE operation: `load-snapshot-into-pg.mjs`",
+        "EXCLUDED as provably wrong: `hauska-engine-atoms-writer` — it dispatches to `write-cad-parcel-roll-county`, hard-frozen by `OLD_SHAPE_FILL_FROZEN` outside county 48029, so it cannot write a setback-rule atom for 48021"
+      ],
+      "candidateEvidenceIsStale": "CAUTION recorded by the coordinator and repeated here: the entire candidate reading comes from a worktree whose HEAD is 2026-08-26. The derivation must re-read against current main before relying on any of it.",
+      "uncheckedHypothesis": "UNVERIFIED, recorded so the derivation checks it rather than assuming: the factory job template pins `CONTRACT_VERSION=1.30.0` while `@empressaio/atom-contract` is now 1.36.0 (the version that introduced the A-148 `conflict` arm). If the writer path validates through the factory contract version, a factory-side re-mint might not be able to express the conflict payload at all. The planner did NOT establish which contract version the writer path actually loads; the derivation must answer it before anyone attempts a write, because a writer that silently drops the new field would produce a \"successful\" re-mint that changes nothing on the surface.",
+      "status": "APPROVED AS WORK, BUT NOT DISPATCHABLE AS AN EXECUTION. A read-only derivation must come first."
     },
     {
       "id": "O18",
@@ -618,6 +627,28 @@
       "possibleRelation": "likely the same family as P-186 (the address-keyed envelope leg answering for another county) and P-172 (findbox situs first) — all three are address-resolution seams. NOT established; recorded as a hypothesis so a successor measures rather than assumes.",
       "handling": "Recorded with the exact parcels and verbatim basis so a successor can resume it without re-deriving. Not opened as a row by the planner: the operator's A-149 precedent was to open a row when the finding was NEW and unowned, and this one is a long-standing P-175 condition on an existing row rather than a new defect found by this wave. The grant of a new row number is the operator's if they want it.",
       "owner": "operator to open a row if wanted; otherwise a successor wave on P-175"
+    },
+    {
+      "id": "O20",
+      "raised": "2026-09-14 by the planner reading the factory project state directly after the coordination pass",
+      "question": "Step 1 (the production publish) is approved and its guard passes, but TWO preconditions are unmet as of 16:14Z, and neither is the operator's to solve. (1) THE PROJECT IS NOT QUIESCENT. Three `factory-publish-gate-sched` executions have no completionTime — started 14:00:04Z, 15:00:05Z and 16:00:05Z — and it is an APPLIED FACTORY-STORE WRITER. The three named plan jobs (bastrop-publish, staging-reset, verify-walk) ARE quiet, so the obvious check passes and the project is still busy: this is C5/O18 repeating in a new place, where the resource that matters is the store, not the job being run. Three earlier gate-sched executions only completed at 14:50:11Z, which suggests this job runs long or gets reaped rather than finishing promptly. (2) ONE INPUT IS MISSING. The command needs `PRODUCTION_SITE_URL` as an execution-time override. The planner checked the job template env (it carries CONTRACT_VERSION, IMAGE_DIGEST, CLOUD_RUN_REGION and others, but NO site URL) and the secret list (there is `PRODUCTION_HAUSKA_MCP_URL` and `STAGING_HAUSKA_MCP_URL`, which are MCP endpoints, not Smart Site base URLs). So the value is genuinely unmeasured.",
+      "handling": "STEP 1 IS NOT FIRED. The planner will not add a fourth concurrent writer to a store that an applied writer is already touching, and will not invent the missing argument. Both blockers are named rather than worked around. Note the `--args` hazard the coordinator flagged: the job's deployed defaults are `--target=staging --county=48021`, so a bare execute would publish the WRONG TARGET and the WRONG COUNTY; the args override is mandatory, not optional.",
+      "owner": "planner — wait for gate-sched to drain or rule it out, and obtain PRODUCTION_SITE_URL"
+    },
+    {
+      "id": "O21",
+      "raised": "2026-09-14 by the coordination pass reading the production store directly — it changes how step 4's success must be read",
+      "question": "The wave has been saying \"production still 404s on 48209:84629, so step 4 is a real write\". That framing is incomplete. The SERVED surface does 404 (measured), but the PRODUCTION STORE ALREADY HOLDS a full catalog-listed tier-1 row for that parcel, with `baseFacts` and `recordRetirement: retired`, under the 2026-09-13 production run `b5e54917`. So the missing row is not the reason for the 404 — the 404 comes from the SERVING layer, and the retirement data is already present. Step 4's work on that parcel is therefore a RESTAMP under a new run id, not the creation of a missing row.",
+      "whyItMatters": "It changes the pass/fail reading of step 4 in two ways. (1) A post-publish 200 does NOT by itself prove the publish did the work — someone must explain why the same data 404s before and 200s after, or the \"fix\" may just be a cache or revision artifact. (2) The predecessor's falsifiers were about stamps and row counts, and the wave has already been burned once by a check set that could not catch the failure that occurred (O13); this is the same hazard in a new place.",
+      "handling": "Recorded so the verification pass tests the SERVING explanation rather than only the store counts. Not escalated as a blocker — step 4 is still the right action — but the post-publish read must state which layer changed.",
+      "owner": "planner — the verification pass after step 4"
+    },
+    {
+      "id": "O22",
+      "raised": "2026-09-14 by the coordination pass",
+      "question": "Two facts about the deploy surface that the approved plan does not account for. (1) `smartsite-mcp` IS A SECOND SERVICE, rebuilt by the same merge, whose `get_smart_site` handler PROXIES to cortex-api. It currently serves revision `00119-naf` on LDT `82857ebb`. So the P-154 `get_smart_site` change may be renderable through a path the plan does not shift: shifting cortex-api alone may be necessary but is not obviously sufficient, and nobody has measured whether smartsite-mcp caches, pins or proxies its way around the cortex-api revision. (2) THE RO CREDENTIAL IS WEAKER THAN ASSUMED: `FACTORY_DATABASE_URL_RO` is denied SELECT not only on `verify_walks` (which the planner found) but on `publish_runs` as well. That means the publish guard's own inputs cannot be re-read from that credential, so any independent check of the guard must go through a different credential or accept the lane's word.",
+      "handling": "Both recorded rather than acted on. The smartsite-mcp question is measured in the post-shift verification (does the row render, through which service); the credential limit is simply stated so no successor mistakes \"the RO credential can read the store\" for a fact.",
+      "owner": "planner — the verification pass after step 3"
     }
   ],
   "premiseCorrections": [
@@ -728,5 +759,28 @@
       ]
     }
   ],
-  "adversarialReviewPlan": "Per lane: read every diff, re-run every check myself, verify PRs by number and merge conclusion strings at source, verify deploys by reading the serving revision by field name (never a working tree), run scripts/surface-probe.mjs myself (never accept a lane's self-grade), and hold a CP2 at `_inbox/<date>_<lane>_cp2.json`. Two checkpoints per lane. A stalled lane is replaced under supervision with the same compiled dispatch, never rebuilt from discussion."
+  "adversarialReviewPlan": "Per lane: read every diff, re-run every check myself, verify PRs by number and merge conclusion strings at source, verify deploys by reading the serving revision by field name (never a working tree), run scripts/surface-probe.mjs myself (never accept a lane's self-grade), and hold a CP2 at `_inbox/<date>_<lane>_cp2.json`. Two checkpoints per lane. A stalled lane is replaced under supervision with the same compiled dispatch, never rebuilt from discussion.",
+  "deploySequence": {
+    "validatedAt": "2026-09-14T16:1xZ by a read-only coordination pass; re-checked by the planner at 16:14Z",
+    "artifact": "_inbox/2026-09-14_deploy-sequence_coordination.json",
+    "step1_productionPublish": {
+      "safeToProceed": "withCondition — NOT MET at 16:14Z",
+      "condition": "the factory project must be quiescent (three gate-sched executions open) AND PRODUCTION_SITE_URL supplied",
+      "guardPasses": "yes — `requireStagingSibling`'s own STAGING_SIBLING_SQL was run live at 16:11:31Z and all six checks passed: staging publish 5b3a1c2c for 48209 completed 15:46:21Z (0.42h old), walk_id present with its joined row, body.publishRunId = the sibling's own id, verdict pass, sweep.count 42 >= 10",
+      "exactCommand": "gcloud run jobs execute factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --wait --args=bastrop-publish,--target=production,--county=48209,--skip-pmtiles,--gold=48209:97658 --update-env-vars=OPERATOR_PUBLISH_GO=1,PRODUCTION_SITE_URL=<unmeasured>",
+      "digest": "bb3d7148… on the publish, staging-reset AND verify-walk jobs — identical, no split, and it carries LDT bae48d40, so step 4 would genuinely exercise P-183",
+      "rollback": "NONE CHEAP — the only revert is another publish (a write); the target to revert TO is run b5e54917 (2026-09-13T17:44:48Z)"
+    },
+    "step2_remint": {
+      "safeToProceed": "no",
+      "condition": "no executable invocation exists — see O17; must be derived first"
+    },
+    "step3_cortexApiShift": {
+      "safeToProceed": "withCondition — correctly gated",
+      "condition": "planner-granted lease, and it is HELD until the re-mint lands",
+      "mechanics": "`deploy-canary` with `image_tag`, then `shift-traffic`; no migration needed; image tag 803cd0d5 exists; serving revision cortex-api-00799-xaq at 100% on image tag 8f91d5d1, so the P-154 change is genuinely unserved",
+      "leaseTrap": "`_catalog/leases/` holds only README.md — empty, which under the amended rule would ALLOW a self-grant, but this service is CONTENDED (p185 moved it once today) so the planner grants it, not a lane",
+      "rollback": "clean and documented — `action=rollback`, `rollback_revision=cortex-api-00797-zus`; note that this would ALSO revert p185's PromoteKit change, so a rollback is not free"
+    }
+  }
 }

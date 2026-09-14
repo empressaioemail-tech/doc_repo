@@ -1,0 +1,430 @@
+{
+  "artifact": "OPS-23 wave 6 deploy-sequence coordination (read-only validation of the approved 1 -> 2 -> 3 sequence)",
+  "lane": "deploy-sequence-coordination",
+  "at": "2026-09-14T16:05:00Z..2026-09-14T16:16:00Z (every reading below is stamped by its own command)",
+  "executedNothing": true,
+  "writesMade": [
+    "this artifact only (P:/seat-worktrees/dispatch-planner/doc_repo/_inbox/2026-09-14_deploy-sequence_coordination.json). No job, workflow, deploy, traffic shift, migration, git mutation or psql write was performed anywhere."
+  ],
+  "readOnlySurfacesUsed": [
+    "gcloud run jobs describe|list|executions list|executions describe (project hauska-prod-497015, region us-east4)",
+    "gcloud run services describe|revisions list (project legacy-design-tools-prod, region us-central1)",
+    "gcloud artifacts docker tags list|images describe (Artifact Registry)",
+    "gcloud secrets versions access latest (read only; used to obtain DB URLs for SELECT-only psql)",
+    "SELECT-only psql against the factory store (FACTORY_DATABASE_URL_RO, then FACTORY_DATABASE_URL) and the production Neon store (PRODUCTION_NEONDB_URL)",
+    "gh pr view 688 (read only)",
+    "read-only file reads + git log/show in the named worktrees",
+    "two read-only HTTP GETs against the public production surface"
+  ],
+  "tlsNote": "Every gcloud/psql call here ran with the corporate proxy in place; gcloud emitted the usual InsecureRequestWarning noise. No NODE_OPTIONS workaround was needed because no Node program was run. psql PID did need PGSSLMODE=require. Every command terminated on its own; nothing was left running.",
+
+  "headline": {
+    "sequenceAsOrderedSafeToFire": "NO, not as one uninterrupted run. Step 1 is safe to fire right now (its guard is satisfied as of 16:11:31Z). Step 2 is NOT ready to fire: its exact invocation is not established anywhere in the wave-6 record, so it is a plan gap rather than a plan step. Step 3 is correctly gated behind step 2 but additionally needs a planner-granted lease on a service that has already moved once today.",
+    "step1ExactCommand": "gcloud run jobs execute factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --wait --args=bastrop-publish,--target=production,--county=48209,--skip-pmtiles,--gold=48209:97658 --update-env-vars=OPERATOR_PUBLISH_GO=1,PRODUCTION_SITE_URL=<production Smart Site base URL>",
+    "whatShouldChangeThePlan": [
+      "Name and resolve the re-mint invocation BEFORE firing step 1. Today it is a label ('the writer path'), not a command; the two candidate instruments are county-granularity and their source worktree is three weeks stale.",
+      "Do not fire step 1 while factory-publish-gate-sched is running: three executions of it are in flight RIGHT NOW (14:00:04Z, 15:00:05Z, 16:00:05Z starts, no completionTime) writing parcel_gate_verdict into the factory store.",
+      "Expect no cheap rollback for step 1. The only rollback is another publish (a write); there is no traffic split to move back, and `gcloud run jobs update --image` would be a mutation.",
+      "Re-check the 'production still 404s' claim: the SERVED surface does 404 (measured), but the production store already holds a full tier1 row for that parcel under the 2026-09-13 production run — so the 404 comes from the serving layer, not from an empty store. That changes what step 4 is actually fixing."
+    ]
+  },
+
+  "A": {
+    "question": "Step 4 exact invocation: job name, args, target for a PRODUCTION publish of 48209, plus what requireStagingSibling checks and whether the current staging state satisfies it.",
+    "jobName": "factory-bastrop-publish",
+    "jobNameMeasuredBy": "gcloud run jobs describe factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --format='value(spec.template.spec.template.spec.containers[0].args)'",
+    "jobDeployedArgs_rightNow": "bastrop-publish;--target=staging;--county=48021;--skip-pmtiles",
+    "jobDeployedArgs_reading": "The job's DEPLOYED default args are a STAGING publish of a DIFFERENT county (48021). Every argument for step 4 must therefore be passed explicitly with --args at execute time. A bare `gcloud run jobs execute factory-bastrop-publish` would not publish 48209 to production; it would publish Bastrop county 48021 to staging.",
+    "exactInvocation": "gcloud run jobs execute factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --wait --args=bastrop-publish,--target=production,--county=48209,--skip-pmtiles,--gold=48209:97658 --update-env-vars=OPERATOR_PUBLISH_GO=1,PRODUCTION_SITE_URL=<production Smart Site base URL>",
+    "invocationProvenance": [
+      "Job/command pair and the production form (including the OPERATOR_PUBLISH_GO and PRODUCTION_SITE_URL execution-time overrides) are documented in the job's own module doc: P:/seat-worktrees/property/hauska-factory-p180-joint/src/jobs/bastrop-publish.mjs lines 25-37 ('--args=bastrop-publish,--target=production,--county=48021,--skip-pmtiles --update-env-vars=OPERATOR_PUBLISH_GO=1,PRODUCTION_SITE_URL=<production Smart Site base URL>').",
+      "Flag names and validation are the job's own parser: parsePublishFlags (bastrop-publish.mjs:90-110) accepts --target (assertKnownTarget, default staging), --county (requireCountyFips, never defaulted), --skip-pmtiles, --skip-walk, --gold, --anchor (repeatable), --sweep, --sweep-max, --prop-ids, --dry-run.",
+      "Operating-environment refusal is code: bastrop-publish.mjs:387-389 refuses OPERATOR_GO_REQUIRED unless env.OPERATOR_PUBLISH_GO is set when target=production.",
+      "PRODUCTION_SITE_URL is required up front when a walk will run: bastrop-publish.mjs:393 (resolveTargetSiteUrl(env, flags.target)); the variable name is fixed in src/lib/publish-target-env.mjs:30 (site: \"PRODUCTION_SITE_URL\") with no fallback chain across targets.",
+      "arg format (comma-separated single --args value, semicolons in the deployed template) matches the staging form the planner supplied and the one CP2 records for execution factory-bastrop-publish-txddf (scope.command=bastrop-publish, scope.target=staging)."
+    ],
+    "goldAnchor": "48209:97658",
+    "goldAnchorNotes": "The plan's gold anchor matches the staging walk's own gold (staging read: body.gold = 48209:97658, body.sweep.anchors = [48209:97658], walk 8eacb135). In parsePublishFlags, when --skip-walk is NOT set the gold value is passed through resolveGold(county, value); it is not ignored. Do NOT add --skip-walk if the plan expects the inline production walk whose verdict is part of the verification pass.",
+    "unmeasuredForA": [
+      "The VALUE of PRODUCTION_SITE_URL. It is an execution-time env override, is not on the job template (template env carries STAGING_SITE_URL only), and is not in the repo. UNMEASURED -- the operator must supply it. Blocker: no PRODUCTION_SITE_URL in any worktree or secret read in this lane (I did not enumerate production site URLs, as none of the sanctioned reads exposed one).",
+      "Whether the operator intends --skip-walk + a separate factory-verify-walk run (the job doc offers both forms). The plan's verification pass names 'the production walk verdict', which both forms produce; the inline form needs PRODUCTION_SITE_URL, the split form needs --args=verify-walk,--target=production,--county=48209,--publish-run=<id>."
+    ],
+    "requireStagingSibling_verbatim": {
+      "moduleDoc": "requireStagingSibling (CTX card B item 4): the county comes from the production run's flags, never from its own publish_runs row (which is inserted only after the bakes). The most recent succeeded staging publish for that county must carry a walk_id whose walk verdict is `pass` and whose sweep count is at least MIN_SWEEP_PARCELS. Each refusal has its own code so a vacuous pass (an unwalked sibling) and an always-refuse (no sibling ever found) are both impossible. (src/lib/publish-guards.mjs:1-15)",
+      "sql": "SELECT pr.id, pr.status, pr.walk_id, pr.completed_at, sw.id AS walk_row_id, sw.body AS walk_body FROM publish_runs pr LEFT JOIN verify_walks sw ON sw.id = pr.walk_id WHERE pr.county_fips = $1 AND pr.target = 'staging' AND pr.status = 'succeeded' ORDER BY pr.completed_at DESC NULLS LAST, pr.created_at DESC LIMIT 1 (STAGING_SIBLING_SQL, src/lib/publish-guards.mjs:88-97)",
+      "constants": "MAX_SIBLING_AGE_HOURS = 48 (publish-guards.mjs:33, with the note that the job's task timeout is 6h); MIN_SWEEP_PARCELS = 10 (publish-guards.mjs:40, 'A-021: gold plus an area-swept set; fewer than ten swept parcels is not a sweep'); refusal codes STAGING_SIBLING_REQUIRED, STAGING_SIBLING_UNWALKED, STAGING_SIBLING_FAILED, STAGING_SIBLING_NO_SWEEP, STAGING_SIBLING_STALE.",
+      "checksInOrder_verbatim": [
+        "if (!row) refuse(STAGING_SIBLING_REQUIRED, \"no succeeded staging publish for county\");",
+        "const ageHours = (now.getTime() - completedAtMs) / (1000 * 60 * 60); if (!Number.isFinite(completedAtMs) || ageHours > maxAgeHours) refuse(STAGING_SIBLING_STALE, ...)",
+        "if (!row.walk_id || !row.walk_row_id || !body || typeof body !== \"object\") refuse(STAGING_SIBLING_UNWALKED, \"staging sibling has no walk (walk_id null or walk row missing)\", { siblingId: row.id });",
+        "if (body.publishRunId && body.publishRunId !== row.id) refuse(STAGING_SIBLING_UNWALKED, \"linked walk names a different publish run\", ...)",
+        "if (body.verdict !== \"pass\") refuse(STAGING_SIBLING_FAILED, `staging walk verdict is ${String(body.verdict)}`, ...)",
+        "const count = Number(body.sweep?.count); if (!Number.isInteger(count) || count < minSweep) refuse(STAGING_SIBLING_NO_SWEEP, ...)",
+        "return { siblingId: row.id, walkId: row.walk_id, sweepCount: count };"
+      ],
+      "callSite": "bastrop-publish.mjs:418-421 -- `} else { const sibling = await requireStagingSibling(factory.client, flags.county); stagingSiblingId = sibling.siblingId; }`, reached only for target=production, before the bakes (module doc: 'Executes: runBastropPublish for target=production, before the first bake.'). The sibling id is then recorded on the production run as staging_sibling_id."
+    },
+    "satisfactionMeasuredLive": {
+      "how": "I ran the guard's OWN SQL (the exact STAGING_SIBLING_SQL text) against the factory store: psql (FACTORY_DATABASE_URL, project hauska-prod-497015) with PGOPTIONS='-c statement_timeout=25000', querying the same join with my own field selections (no write). Server now() at the time of the read: 2026-09-14 16:11:31.540561+00.",
+      "result_row": {
+        "id": "5b3a1c2c-eee5-460b-ae1c-dc1102674b5d",
+        "target": "staging",
+        "status": "succeeded",
+        "completed_at": "2026-09-14 15:46:21.581767+00",
+        "walk_id": "8eacb135-143b-4191-9d09-5bcd43ef4ae7",
+        "walk_row_id": "8eacb135-143b-4191-9d09-5bcd43ef4ae7",
+        "body.verdict": "pass",
+        "body.publishRunId": "5b3a1c2c-eee5-460b-ae1c-dc1102674b5d",
+        "body.sweep.count": 42
+      },
+      "evaluation": [
+        "row exists: PASS (siblingId 5b3a1c2c-eee5-460b-ae1c-dc1102674b5d)",
+        "age at 16:11:31Z = 25.2 minutes = 0.42h <= 48h: PASS (no STAGING_SIBLING_STALE)",
+        "walk_id and walk_row_id both present and the joined row found: PASS (no STAGING_SIBLING_UNWALKED)",
+        "body.publishRunId (5b3a1c2c...) === pr.id (5b3a1c2c...): PASS (walk is linked to this sibling, not another run)",
+        "body.verdict === 'pass': PASS (no STAGING_SIBLING_FAILED)",
+        "body.sweep.count 42 is an integer >= 10: PASS (no STAGING_SIBLING_NO_SWEEP)"
+      ],
+      "verdict": "SATISFIED as of 2026-09-14T16:11:31Z, on all six checks, by the guard's own predicate text. The production publish of 48209 will not be refused by requireStagingSibling if fired now.",
+      "fragility": "The window is time-bound (48h, so it closes 2026-09-16T15:46Z) and sibling-bound: the query takes the MOST RECENT succeeded staging publish for 48209. Any newer succeeded staging publish for 48209 -- including one written by a second party -- silently replaces this sibling and re-runs all six checks against itself. The prior two siblings in the same table (b0864dde, completed 14:21:10Z, verdict fail; 12f464a9, 05:01:09Z, verdict fail) are exactly the failure mode this guard exists for. Re-read the guard's SQL immediately before firing rather than trusting this line."
+    },
+    "verdict": "MEASURED. Invocation established from the job's own source and template; guard established verbatim from source and satisfied live at 16:11:31Z. The one unmeasured input is PRODUCTION_SITE_URL's value."
+  },
+
+  "B": {
+    "question": "Shared-resource quiescence RIGHT NOW on factory-bastrop-publish, factory-staging-reset, factory-verify-walk.",
+    "commands": [
+      "gcloud run jobs executions list --job=factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --limit=4 --format='value(metadata.name,status.startTime,status.completionTime)'",
+      "gcloud run jobs executions list --job=factory-staging-reset --project=hauska-prod-497015 --region=us-east4 --limit=4 --format='value(metadata.name,status.startTime,status.completionTime)'",
+      "gcloud run jobs executions list --job=factory-verify-walk --project=hauska-prod-497015 --region=us-east4 --limit=4 --format='value(metadata.name,status.startTime,status.completionTime)'",
+      "gcloud run jobs executions list --project=hauska-prod-497015 --region=us-east4 --limit=40 --format='csv[no-heading](metadata.name,status.startTime,status.completionTime)'  (then keeping lines whose completionTime field is empty)"
+    ],
+    "theThreeNamedJobs": {
+      "factory-bastrop-publish": {
+        "inFlight": "NONE. Every returned execution has a completionTime.",
+        "mostRecent": [
+          "factory-bastrop-publish-txddf  2026-09-14T15:06:23.074Z -> 2026-09-14T15:47:59.045Z  (this is the run that produced staging run 5b3a1c2c / walk 8eacb135)",
+          "factory-bastrop-publish-4qzj4  2026-09-14T15:02:55.069Z -> 2026-09-14T15:03:19.074Z  (24s -- short, i.e. a refusal/termination rather than a bake)",
+          "factory-bastrop-publish-twtwq  2026-09-14T13:43:38.958Z -> 2026-09-14T14:22:42.941Z  (the second party's publish window)",
+          "factory-bastrop-publish-wjjjm  2026-09-14T13:42:58.956Z -> 2026-09-14T13:43:21.677Z  (the second party's first, 23s)"
+        ]
+      },
+      "factory-staging-reset": {
+        "inFlight": "NONE.",
+        "mostRecent": [
+          "factory-staging-reset-qsk9k  2026-09-14T15:02:11.068Z -> 2026-09-14T15:02:43.084Z",
+          "factory-staging-reset-2phlw  2026-09-14T13:39:58.922Z -> 2026-09-14T13:40:22.948Z  (the second party's reset)",
+          "factory-staging-reset-nk6fg/rvsml  2026-09-08"
+        ]
+      },
+      "factory-verify-walk": {
+        "inFlight": "NONE.",
+        "mostRecent": "factory-verify-walk-wq5kq 2026-09-08T18:33:46.235Z -> 2026-09-08T18:34:58.813Z (no run today; the staging walk ran inline inside the publish job)"
+      }
+    },
+    "butSomethingElseIsRunning": {
+      "job": "factory-publish-gate-sched",
+      "inFlightRightNow": [
+        "factory-publish-gate-sched-str7b  start 2026-09-14T16:00:05.165Z  (no completionTime)",
+        "factory-publish-gate-sched-7d6m5  start 2026-09-14T15:00:05.070Z  (no completionTime)",
+        "factory-publish-gate-sched-psjh6  start 2026-09-14T14:00:04.980Z  (no completionTime)"
+      ],
+      "whyItMatters": "This is a FACTORY WRITER, not a bystander. Its source (src/jobs/publish-gate-sched.mjs) requires the writer allowlist (requireWriterJob(JOB_ID, writerJobs)), opens the factory store (connectFactory), calls startRun, and UPSERTs parcel_gate_verdict per (county, rail) with an explicit `--apply` and a run/termination record. Three executions whose scheduled starts are one hour apart and none of which has completed means the hourly scheduler is now overlapping itself three deep against the factory store. It does not write the Smart Site serving store and it does not run bastrop-publish, so it does not block the guard or the publish path structurally -- but it is live, unattributed in this lane's namespace, and exactly the class of 'something was already running' that C5 recorded as this wave's worst incident.",
+      "executionDetailRead": "gcloud run jobs executions describe factory-publish-gate-sched-str7b ... -> status.startTime=2026-09-14T16:00:05.164711Z, status.completionTime=(empty), status.conditions[0].type='Completed', status.conditions[0].status='Unknown' (i.e. not yet complete)."
+    },
+    "verdict": "QUIESCENT on all three jobs the sequence uses -- nothing in flight, nothing to stop. NOT quiescent in the project as a whole: factory-publish-gate-sched has three overlapping in-flight executions. I did NOT stop anything and I did not treat this as a blocker; it is reported because the operator's 'shared-resource quiescence' question deserves the whole answer, and because it is a factory-store writer sharing the job runner."
+  },
+
+  "C": {
+    "question": "Read the image the PRODUCTION publish job would actually run, by field name; does it carry LDT bae48d40; does it differ from the staging digest.",
+    "commands": [
+      "gcloud run jobs describe factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --format='value(spec.template.spec.template.spec.containers[0].image)'",
+      "gcloud run jobs describe factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --format='value(spec.template.spec.template.spec.containers[0].env)'  (field IMAGE_DIGEST)",
+      "gcloud run jobs describe factory-staging-reset --project=hauska-prod-497015 --region=us-east4 --format='value(spec.template.spec.template.spec.containers[0].image)'",
+      "gcloud run jobs describe factory-verify-walk --project=hauska-prod-497015 --region=us-east4 --format='value(spec.template.spec.template.spec.containers[0].image)'",
+      "gcloud artifacts docker images describe us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148... --project=hauska-prod-497015 --format=json"
+    ],
+    "readByFieldName": {
+      "factory-bastrop-publish.containers[0].image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+      "factory-bastrop-publish.containers[0].env[IMAGE_DIGEST]": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+      "factory-staging-reset.containers[0].image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+      "factory-verify-walk.containers[0].image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51"
+    },
+    "verdict": "IDENTICAL. The production publish job, the staging reset job and the verify-walk job all run the SAME digest the staging run used: sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51. There is no staging/production digest split, so step 4 exercises the same code the green staging run exercised -- including the P-183/P-180 joint work if that digest is what CP2 says it is.",
+    "ldtBae48d40": {
+      "attributionStatus": "INHERITED, NOT RE-DERIVED. CP2 records this digest as carrying factory 63aca2cfc3e4bd73a2d3aa71e1611546855897cf and LDT bae48d406f7595af3d47111b558d0ebc3efd9c56, and the factory half is independently corroborated here: P:/seat-worktrees/property/hauska-factory-p180-joint sits at HEAD 63aca2cfc3e4bd73a2d3aa71e1611546855897cf ('fix(P-180/S13): admit only STRING provenance tokens in servedProvenanceTokens (#149)', 2026-09-14 09:52:30 -0500), which is exactly the factory sha CP2 names for this digest.",
+      "whyTheLdtHalfIsInherited": "The digest carries no source labels that name the LDT pin: `gcloud artifacts docker images describe <image>@<digest> --format=json` surfaces no label/annotation containing bae48d40, 63aca2cf or 84f4e7c9 (greped for all three plus buildTime/LDT/label; zero hits). The LDT pin of a run is also NOT readable from the job: the CP2 note records that this container carries no env LDT_SHA, so runs.ldt_sha is NULL by shape for this job. So the LDT bae48d40 attribution rests on the Cloud Build record CP2 read, and I could not falsify or confirm it from the digest itself.",
+      "blocker": "No accessible Cloud Build record for this digest from this lane's sanctioned reads; the AR image metadata carries no provenance labels. UNMEASURED for the LDT half, MEASURED for the factory half."
+    }
+  },
+
+  "D": {
+    "question": "How is a setback-rule atom for 48021:34049 re-minted through the writer path -- which job/command/entrypoint, what it takes, what 'record snapshot refresh' is concretely, which stores it writes.",
+    "answer": "NOT ESTABLISHED AS AN INVOCATION. There is no recorded command for this step anywhere in the wave-6 artifacts; the plan carries a label ('the writer path'), not an invocation. Per your instruction I am saying so plainly rather than constructing one. Below is what I did measure, the two candidate instruments, and the one path that is provably WRONG.",
+    "whatIsMeasured": {
+      "theServedValueComesFromTheAtomsDisplayMeta": "CP1 (O12, _inbox/2026-09-14_ops23-wave6_cp1.json line 392) and the P-154 lane's own artifact (_inbox/2026-09-14_p154-conflict_cp2_surfaces-verified.json lines 47, 87) both record that the served secondSource is spread VERBATIM from the setback-rule ATOM's own display_meta.second_source (hauska-map api/_lib/atom-chain-to-facets.ts; the engine's vendored copy does `...(dm?.secondSource ? { secondSource: dm.secondSource } : {})`). The live atom was minted 2026-08-05, before the A-148 conflict payload existed, so display_meta.conflict is ABSENT and every surface prints the pre-A-148 prose. This makes the re-mint an atom-store write, not a code change.",
+      "theLiveServedRead": "Read-only GET https://smartsite.cloud/api/spine/property-atoms/48021:34049/facets -> HTTP 200 in 1.15s, which is the same surface the P-154 lane recorded as readPath=record, adapterKey=property-atom-chain, snapshotAt=2026-08-05T22:50:17.122Z. So the object to be refreshed is a record-path snapshot whose served snapshotAt is 2026-08-05, i.e. the pre-A-148 vintage.",
+      "theMintingCode": "emitSetbackRule is defined in P:/seat-worktrees/property/hauska-engine-writer/packages/engine-core/src/property-reasoning/emit-setback-rule.ts and is consumed by two engine-core scripts: packages/engine-core/scripts/bake-property-atom-county.mjs and packages/engine-core/scripts/bake-property-atom-gold-set.mjs (both import it from ../src/property-reasoning/index.ts).",
+      "candidate1_countyGranularity": "bake-property-atom-county, run as a Cloud Build, not a Cloud Run job: cloudbuild.property-atom-bake.yaml (hauska-engine) invokes `pnpm --filter @hauska-engine/engine-core run bake-property-atom-county -- --county=${_COUNTY} --limit=${_LIMIT} --offset=${_OFFSET} --batch=${_BATCH}` with PROPERTY_ATOM_PATH=1, secretEnv DATABASE_URL (the atoms/hauska_mcp store) and CORTEX_DATABASE_URL (cortex neondb snapshot inputs), machine E2_HIGHCPU_8, timeout 7200s, submitted as `gcloud builds submit --config=cloudbuild.property-atom-bake.yaml`. Its granularity is a COUNTY, not a parcel -- a 48021 re-mint on this instrument re-bakes the whole county.",
+      "candidate2_parcelGranularity": "bake-property-atom-gold-set, also engine-core: it requires PROPERTY_ATOM_PATH=1 and DATABASE_URL or SUBSTRATE_DATABASE_URL plus CORTEX_DATABASE_URL, and it iterates a GOLD SET FILE at ../src/property-reasoning/fixtures/central-tx-gold-set.json whose entries are `{ parcelNodeId, role, source, expect }`, loading each parcel's tier1 snapshot (`where place_key = 'node:' || parcelNodeId`) and emitting per parcel from that snapshot. This is the only instrument I found whose input is a named parcel, so it is the natural instrument for a single-atom re-mint -- but it requires EDITING a fixtures file (a repo write in the lane's own worktree), and NO artifact in this wave names it for this step.",
+      "theWrongPath_provably": "hauska-engine-atoms-writer is NOT the setback-rule re-mint path. Its container args are `pnpm --filter @hauska-engine/engine-core; exec; tsx; scripts/atoms-writer-job.mjs`, and that dispatcher's own header says 'F-02 writer half. Cloud Run Job only. Passes container args through to write-cad-parcel-roll-county' (packages/engine-core/scripts/atoms-writer-job.mjs:1-5). write-cad-parcel-roll-county is hard-frozen by the 2026-08-26 OPTION A ruling: OLD_SHAPE_FILL_FROZEN for every county except 48029, baked into the script itself (recorded in _inbox/2026-09-13_p180-hays-cells_cp1.json and _close.json, element 0 of both). Its env also points at ATOMS_DATABASE_URL/SOURCE_DATABASE_URL plus both Neon URLs, so it is an atoms-store writer -- a plausible-looking target that would burn a lease and refuse. There is no Cloud Run job in hauska-prod-497015/us-east4 that runs bake-property-atom-* (I listed all 39 jobs: factory-acquire-*, factory-atoms-cad, factory-bake-migrate, factory-bastrop-publish, factory-bexar-edges, factory-conformant(-migrate), factory-console-audit, factory-dollar-fields-patch, factory-f10-cad-loop, factory-flood-ingest, factory-landing-import, factory-p2-juris, factory-parcel-*, factory-publish-gate-sched, factory-publish-migrate, factory-restamp-access, factory-snapshot, factory-staging-reset, factory-verify-walk, hauska-engine-atoms-writer, hauska-engine-footprint-retag, ldt-cad-ingest).",
+      "recordSnapshotRefresh": "Measured mechanism, not the invocation: the record path is a Postgres snapshot loaded by P:/seat-worktrees/property/hauska-engine-writer/packages/storage/scripts/load-snapshot-into-pg.mjs, which loads a corpus snapshot into Postgres for retrieval-api; retrieval-api serves the chain at /property-nodes/:parcelNodeId/atom-chain (services/retrieval-api/src/server.ts). Its own doc repository history calls it a separate loader that writes atoms to Postgres directly and bypasses resolveAccessPolicyOrRefuse (recorded in _sessions/2026-08-24_govtech_thread_open_claude_code.md:68 and _state/govtech/STATE.md:30 'property; writer fix; backfill + load-snapshot bypass remain'). So 'record snapshot refresh' is concretely: regenerate the corpus snapshot from the re-minted atoms, then load that snapshot into the Postgres the record path reads. It is a SEPARATE operation from the atom mint (two steps, two instruments), which is consistent with the operator's phrasing 'plus a record snapshot refresh'.",
+      "storesWritten": "The atom mint writes the atoms store bound as DATABASE_URL/SUBSTRATE_DATABASE_URL (secret ATOMS_DATABASE_URL, i.e. hauska_mcp) in every read I made. The snapshot refresh writes the Postgres that retrieval-api reads, via load-snapshot-into-pg.mjs. Whether that same Postgres is the Smart Site store (STAGING_NEONDB_URL/PRODUCTION_NEONDB_URL) or a separate one is UNMEASURED -- see E and H; it is the single most important unresolved overlap for sequencing, because the publish job writes the Smart Site serving store."
+    },
+    "whereILooked": [
+      "P:/seat-worktrees/dispatch-planner/doc_repo/_inbox/2026-09-14_ops23-wave6_cp1.json (O11-O19, C1-C6; greped for 48021:34049|re-mint|remint|snapshot refresh|record snapshot, and for bake-property-atom|write-slot|atom writer|load-snapshot|property-atom-bake)",
+      "P:/seat-worktrees/dispatch-planner/doc_repo/_inbox/2026-09-14_p154-conflict_cp2_surfaces-verified.json",
+      "P:/seat-worktrees/dispatch-planner/doc_repo/_dispatches/2026-09-14_p154-surfaces_dispatch.md",
+      "P:/seat-worktrees/dispatch-planner/doc_repo/90_operations/OPS-23_surface_completion_program.md and OPS-16_texas_market_plan_of_record.md (P-154, P-163, P-173 rows)",
+      "hauska-engine-writer: cloudbuild.property-atom-bake.yaml, packages/engine-core/scripts/bake-property-atom-county.mjs, bake-property-atom-gold-set.mjs, scripts/atoms-writer-job.mjs, src/property-reasoning/emit-setback-rule.ts, packages/storage/scripts/load-snapshot-into-pg.mjs, services/retrieval-api/src/server.ts",
+      "hauska-factory-p180-joint: src/jobs/parcel-setback-cells.mjs (which declares itself 'never the held atom writer (SETBACK_APPLY_HELD stays untouched)')",
+      "the full Cloud Run job list for hauska-prod-497015, both us-east4 and us-central1"
+    ],
+    "majorCaveat": "The hauska-engine-writer worktree is NOT current: `git status -sb` reports branch seat/property-writer tracking origin/seat/property-writer with a modified test file, and HEAD is 6bec72a07fcd9ac7527ab96b46812249131940a8 dated 2026-08-26 20:51:22 -0500 ('fix(f-02): green atoms-writer tests and pin job without apply env'). Every D finding above is read from a tree ~3 weeks old. Before anything is fired, the instrument must be re-derived against origin/main of hauska-engine, not from this worktree.",
+    "verdict": "UNMEASURED as an invocation. Mechanism identified (atom mint via engine-core emitSetbackRule, then a separate record snapshot load into the Postgres retrieval-api reads), instruments named (bake-property-atom-county = county granularity via Cloud Build; bake-property-atom-gold-set = per-parcel via a fixtures file), and one plausible-but-frozen path excluded (hauska-engine-atoms-writer -> write-cad-parcel-roll-county, OLD_SHAPE_FILL_FROZEN outside 48029). Do not fire step 2 on this artifact alone."
+  },
+
+  "E": {
+    "question": "Which of steps 1-3 share a resource, and is 1 -> 2 -> 3 correct? Does the re-mint depend on the publish; does the publish risk overwriting a re-minted atom; does the shift depend on either?",
+    "sharedResources": [
+      {
+        "resource": "the Cloud Run job runner in hauska-prod-497015/us-east4",
+        "usedBy": "step 1 (factory-bastrop-publish) and step 2 (whatever instrument the re-mint turns out to be -- the two measured candidates both execute against the same project/region; hauska-engine-atoms-writer certainly is a job there)",
+        "severity": "shared, and the reason the planner serialized the re-mint behind p180-joint in the first place (CP1 O17 handling: 'the re-mint is queued behind p180-joint's staging publish; it is NOT dispatched while that lane is live', on the grounds that the operator approved the WORK, not concurrent access to a shared resource)"
+      },
+      {
+        "resource": "the write-slot / atom-writer lease discipline over the atoms store",
+        "usedBy": "step 2 (an atom mint is an atoms-store write; CP1 O17 names 'the write-slot law and the atom writer lease apply')",
+        "severity": "step 2 must take the atoms writer lease. Nothing in step 1 or 3 touches the atoms store."
+      },
+      {
+        "resource": "the Smart Site serving store (place_layer_snapshots, adapter node-facets:tier1)",
+        "usedBy": "step 1 (production Neon store). Whether step 2's record snapshot refresh writes this same store is UNMEASURED (see D.storesWritten).",
+        "severity": "if they DO share it, they are two writers on one serving store and must not overlap -- and the planner's own sequencing note already says so for this class of work: 'All but (1) and (4) are serving-store writes and must not interleave' (_inbox/2026-09-14_ops23-wave6_cp1.json, the sequencing note near line 725, where (4) is the p154 re-mint + snapshot refresh)."
+      },
+      {
+        "resource": "cortex-api, the Cloud Run service in legacy-design-tools-prod/us-central1",
+        "usedBy": "step 3 only",
+        "severity": "contended service (moved once already today by p185); shared with p185's shift, not with steps 1-2."
+      }
+    ],
+    "orderIsCorrect": "YES for 1 -> 2 -> 3 as an ordering, with one condition and one caveat.",
+    "reasoning": {
+      "doesTheReMintDependOnThePublishCompleting": "No measured dependency, and on the evidence they are independent stores: step 1 writes the Smart Site tier1 facet store for 48209 (re-measured below in this artifact: production already holds node:48209:84629 under run b5e54917), while step 2 writes the atom store that the record path spreads display_meta from. The panel's documented read order (CP1/A-128: the Property Explorer reads the atom chain and merges cortex only when the chain is empty) also means the conflict row's appearance does NOT wait on a fresh tier1 bake. So the re-mint does not need step 1 to have completed first.",
+      "doesThePublishRiskOverwritingAReMintedAtom": "Not in the atom store (the publish job writes place_layer_snapshots, not the atoms table). The RISK is the reverse direction and it is real: the publish's inline sweep walk reads the SERVED surface, and the planner's own CTX-F item 1 note is that a staging bake on incomplete data poisons its own sibling walk and can then satisfy Rule 6 for a production publish on the same incomplete data (bastrop-publish.mjs:395-397). That is about data completeness, not atoms. The concrete unknown is whether the record snapshot refresh rewrites rows the publish just wrote. UNMEASURED -- name the store before interleaving anything.",
+      "doesTheTrafficShiftDependOnEither": "Yes, semantically on step 2 only. The composer change in cortex-api (r1BriefCompose.ts) has nothing to read until display_meta.conflict exists on the atom, so shifting cortex-api before the re-mint would serve a code path that still prints the pre-A-148 prose -- which is exactly why the operator HELD the shift until the re-mint lands (CP1 O12 line 163; O18 ruling line 717: 'the cortex-api traffic shift was NOT selected and is therefore ON HOLD'). It has no dependency on step 1: the get_smart_site composer and the Bastrop production publish touch different services and different stores."
+    },
+    "mustNotOverlap": [
+      "step 1 and step 2: do not run concurrently. They share the job runner, and if the record snapshot refresh touches the Smart Site store they are two writers on one serving store. Serialize.",
+      "step 2 and step 3: the shift is worthless before the re-mint lands, and the operator held it; keep them in this order and do not overlap.",
+      "step 3 against any other cortex-api shift: decision 2026-09-12_one_traffic_shift_at_a_time_per_service is explicit, and p185 moved cortex-api at 14:20Z today."
+    ],
+    "verdict": "Order 1 -> 2 -> 3 is correct and should stay strict (no interleaving). It is correct because the only hard dependency runs 1 <- nothing, 2 <- nothing, 3 <- 2, and because every pair shares something that must not be written concurrently."
+  },
+
+  "F": {
+    "question": "cortex-api shift mechanics and lease: workflow action names/args, image existence for LDT merge 803cd0d5, currently serving revision by field name, leases directory state.",
+    "i_workflowActionNamesAndArgs": {
+      "file": "P:/seat-worktrees/property/legacy-design-tools-p154-most-current/.github/workflows/cloud-run-deploy.yml (workflow name 'Cloud Run Deploy (cortex-api)'); note this worktree's HEAD is 78ad8a51 (PR #664) so the file is read at an older revision than 803cd0d5, but the dispatch surface is the stable contract documented in the file header",
+      "inputs": "action (choice: deploy-canary | run-migrations | shift-traffic | rollback; required, default deploy-canary); image_tag (string, default latest, described as 'deploy-canary only -- image tag (sha preferred)'); rollback_revision (string, for action=rollback); bootstrap (boolean, run-migrations only)",
+      "confirmedSequence": "action=deploy-canary with image_tag=<sha> -> (action=run-migrations if a migration is pending) -> smoke -> action=shift-traffic. Only deploy-canary consumes image_tag; shift-traffic takes NO image argument -- it runs `gcloud run services update-traffic cortex-api --region=us-central1 --to-tags=canary=100` and then smoke-probes ${BASE_URL}/api/healthz, failing the job if the probe is not HTTP 200.",
+      "thisMatchesP185": "YES. p185's recorded practice ('action=deploy-canary then action=shift-traffic, image_tag = the merge sha') is exactly the workflow's own contract.",
+      "rollbackAction": "action=rollback with rollback_revision=<revision name> runs `gcloud run services update-traffic cortex-api --region=us-central1 --to-revisions=<REV>=100` (requires rollback_revision to be non-empty).",
+      "migrationNeededForThisMerge": "NO. `gh pr view 688 --json files` lists only artifacts/api-server/package.json, artifacts/api-server/src/lib/r1BriefCompose.ts (+37/-3), artifacts/api-server/src/lib/r1BriefCompose.test.ts (new), artifacts/smartsite-mcp/package.json, lib/engine-core/package.json, lib/knowledge-atoms/package.json, lib/portal-ui/package.json, lib/submission-classifier/package.json, scripts/package.json and pnpm-lock.yaml. Nothing under lib/db/drizzle/**, so action=run-migrations is not implied by this merge.",
+      "authoritativeReplaceWarning": "deploy-canary calls `gcloud run deploy --set-env-vars=... --set-secrets=...`, which are both authoritative-replace. The workflow's own comments enumerate the regression guards that exist for exactly this reason (--no-cpu-throttling, OVERPASS_URL + VPC connector, --min-instances=1, GOHIGHLEVEL_*, the DATABASE_URL binding to DEPLOYMENT_DATABASE_URL_DIRECT). A canary deploy of 803cd0d5 is therefore not a no-op on config, even though the code change is three files."
+    },
+    "ii_imageFor803cd0d5": {
+      "exists": "YES",
+      "how": "$t = gcloud artifacts docker tags list us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api --project=legacy-design-tools-prod --format='value(tag)' --limit=2000 ; then kept lines matching '803cd0d5|8f91d5d1|85b2d774'. The repository holds 649 tags and both 803cd0d564349f3a67fd1d2be7985f3d25a8888b (the merge sha) and 8f91d5d15e4c1dd04c497d207d302edd601fe70e (the currently served tag) are present.",
+      "merge": "gh pr view 688 --repo empressaioemail-tech/legacy-design-tools --json number,title,state,mergedAt,mergeCommit,headRefName,baseRefName -> {number 688, state MERGED, mergedAt 2026-09-14T14:34:27Z, mergeCommit 803cd0d564349f3a67fd1d2be7985f3d25a8888b, baseRefName main, headRefName feat/p154-conflict-row-mcp, title 'feat(mcp): print the R-1 conflict row in get_smart_site (P-154, OPS-23 wave 6; A-148)'}",
+      "verdict": "MEASURED: deploy-canary can be dispatched with image_tag=803cd0d564349f3a67fd1d2be7985f3d25a8888b. The image is already in the registry; nothing needs building."
+    },
+    "iii_currentlyServingRevision": {
+      "command": "gcloud run services describe cortex-api --project=legacy-design-tools-prod --region=us-central1 --format=json, read from status.traffic and spec.template",
+      "status_traffic": "one entry: { revisionName: 'cortex-api-00799-xaq', percent: 100 }",
+      "servingImage": "us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api:8f91d5d15e4c1dd04c497d207d302edd601fe70e (read from the service template image field)",
+      "reading": "p185's report is CONFIRMED: cortex-api-00799-xaq serves 100%. Its image is tagged 8f91d5d1, i.e. the P-185/promotekit merge -- NOT 803cd0d5. So the P-154 composer change is genuinely unserved, exactly as O12 states, while the p185 change IS served. There is no canary tag entry in status.traffic, so a deploy-canary is still required before a shift.",
+      "previousRevisionForRollback": "cortex-api-00797-zus (see G)."
+    },
+    "iv_leasesDirectoryRightNow": {
+      "command": "Get-ChildItem -Force 'P:/seat-worktrees/dispatch-planner/doc_repo/_catalog/leases/' | Select-Object Name,Length,LastWriteTime",
+      "state": "ONE file only: README.md (2319 bytes, 2026-09-14 09:44:47). There is NO live lease file for any service -- not for cortex-api, not for anything else. `_catalog/leases/<service>.json` is absent for every service.",
+      "consequence": "The empty directory is precisely the condition the README's self-grant clause addresses, and precisely the trap it warns about: '\"Empty right now\" is not \"uncontended in this wave\": on 2026-09-14 cortex-api was empty at 14:16Z when p185-promotekit self-granted, yet a second lane in the same wave intended to shift the same service later that day.' cortex-api IS contended (p185 already moved it today at 14:20:29Z per the revision creation time of 00799-xaq).",
+      "verdict": "MEASURED: no lease held by anyone; step 3 must not self-grant. The planner grants. (The hook `.claude/hooks/traffic-lease-gate.mjs` refuses update-traffic/deploy-with-traffic when no live lease exists for the named service in the session's worktree, and only WARNS on a workflow dispatch because the service is not readable from the command -- so a dispatch from a doc_repo-rooted session without a lease is warned, not blocked: the planner's explicit sequencing is the real control.)"
+    },
+    "verdict": "MEASURED on all four points. Mechanics confirmed and unchanged from p185's practice; image present; serving revision confirmed by field name; leases empty and the service contended."
+  },
+
+  "G": {
+    "question": "Rollback for each step, with the specific revision/run id/digest.",
+    "step1_productionPublish": {
+      "rollbackTarget": "production publish run b5e54917-4f5a-461c-ad75-37b60016ca7d (target=production, county 48209, status=succeeded, created_at = completed_at = 2026-09-13 17:44:48.650336+00, staging_sibling_id 20374057-a4a6-460c-9ce2-28fecfdefa39)",
+      "howMeasured": "psql (FACTORY_DATABASE_URL, SELECT-only) `SELECT id, target, status, created_at, completed_at, staging_sibling_id FROM publish_runs WHERE county_fips='48209' AND target='production' ORDER BY created_at DESC LIMIT 6;` -> b5e54917 (2026-09-13T17:44:48Z), e22c5a01 (2026-09-13T00:52:21Z), 003cdc7c (2026-08-30), 564fa712 (2026-08-28), b6cda81e (2026-08-28), 11f711b4 (2026-08-28).",
+      "theUncomfortablePart": "There is no non-write rollback for this step. The publish's effect is rows in the production Smart Site store (place_layer_snapshots, adapter node-facets:tier1) plus a freshness stamp; there is no traffic split to move back and no blue/green. Reverting means either re-running a publish (another write) or a hand UPDATE of the freshness stamp (explicitly named as a bypass in publish-guards.mjs's header: 'Bypasses: ... or a hand UPDATE of publish_runs'). Rolling the CODE back would need `gcloud run jobs update --image`, which is a mutation and is out of scope for any read-only lane. I would refuse to attempt any of these.",
+      "predecessorRowExists": "Yes, and it is fuller than the plan assumes -- see H: the production store already holds node:48209:84629 with baseFacts and recordRetirement present under run b5e54917, so 'roll back' means restoring a store state that already contains that parcel.",
+      "verdict": "Rollback target identified (run b5e54917). safeToProceed for step 1 therefore carries the condition that the operator accepts a rollback that is itself a write."
+    },
+    "step2_reMint": {
+      "rollbackTarget": "UNMEASURED, and named as such: without the invocation I cannot name the prior atom version. The mechanism implies one exists -- CP1/D record the atom as minted 2026-08-05 and the gold-set baker's ledger carries a historyEntityId of the form `${instance.parcelNodeId}/v${priorVersion}` (bake-property-atom-gold-set.mjs:89), i.e. the store keeps atom versions. So a re-mint SHOULD be reversible to the pre-re-mint version, but the specific atom id / version pair and the re-point procedure are not established here.",
+      "whatIRefuse": "Any hand-written atom UPDATE. The program's own preamble forbids lifting SETBACK_APPLY_HELD ('Do not lift SETBACK_APPLY_HELD or route through the setback atom writer', _catalog/program_preambles/OPS-21.md:150 and the wave dispatches' repeated form), and three separate lanes recorded 'Did not touch SETBACK_APPLY_HELD or the atom writer' as their own guardrail.",
+      "verdict": "UNMEASURED. Blocker: no invocation (D) and no atom-version read (no credential to the atoms store in this lane; ATOMS_DATABASE_URL exists as a secret but nothing in this lane opened it)."
+    },
+    "step3_trafficShift": {
+      "rollbackTarget": "cortex-api-00797-zus",
+      "howMeasured": "gcloud run revisions list --service=cortex-api --project=legacy-design-tools-prod --region=us-central1 --limit=6 -> cortex-api-00799-xaq (created 2026-09-14T14:20:29.189378Z, digest sha256:f918c2a82249f173533a60709781f350ea0b90dafa31e2e95b299d5f6c689404), cortex-api-00797-zus (2026-09-14T01:04:38.410904Z, digest sha256:f904f7b06808c3b9832a685de299d176baf206f07471faad847a6ca48f4f605d), cortex-api-00796-xix (2026-09-14T01:02:54Z), cortex-api-00794-bij, cortex-api-00792-fup, cortex-api-00790-hin.",
+      "procedure": "workflow_dispatch action=rollback with rollback_revision=cortex-api-00797-zus -- the workflow runs `gcloud run services update-traffic cortex-api --to-revisions=cortex-api-00797-zus=100`. This is the ONLY clean rollback in the whole sequence: it is a traffic move, not a write, needs no rebuild, and is a documented, one-dispatch action.",
+      "caveat": "00797-zus is the revision p185 displaced at 14:20Z today. Rolling back to it also rolls back the p185 PromoteKit change, which is a different operator's change from a different wave -- it is not a P-154-only rollback. Say so before pulling it.",
+      "verdict": "MEASURED. Rollback target: cortex-api-00797-zus."
+    },
+    "sequenceLevelRollback": "Steps 1 and 2 have no analogous lever. The only fully reversible step is 3."
+  },
+
+  "H": {
+    "contradictionsAndGaps": [
+      {
+        "id": "H1",
+        "severity": "high",
+        "claim": "Planner context: 'Production still 404s on 48209:84629, so step 4 is a real write.'",
+        "measurement": "BOTH HALVES ARE TRUE BUT THE INFERENCE IS NOT. Read-only GET of https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:84629/facets returns HTTP 404 in 0.94s -- the SERVED surface does 404. But SELECT against the production Neon store (PRODUCTION_NEONDB_URL) shows the ROW EXISTS: place_layer_snapshots, adapter_key='node-facets:tier1', place_key='node:48209:84629' returns 1 row with payload_json->>'publishRunId' = b5e54917-4f5a-461c-ad75-37b60016ca7d (the 2026-09-13 production run), has_baseFacts = true, has_recordRetirement = true, recordRetirement.status = 'retired', access {entitlement: anyone-free, discoverability: catalog-listed}.",
+        "whyItMatters": "A full, catalog-listed tier1 row for the exact parcel is sitting in the production store and the surface still 404s. So whatever step 4 fixes, it is NOT 'the store is empty' -- the 404 is produced by the serving/freshness layer, or by the read path, or by the row's own versioning, not by absence of data. Anyone who fires step 4 expecting to fill an empty store is reasoning from a wrong model, and any post-publish check that treats a 200 as proof the publish worked needs to explain why the pre-existing identical row served 404. One hypothesis I could NOT test: the freshness stamp for production:48209 may name a different run than the one stamped on the row. I looked for the stamp table in the Neon public schema (information_schema.tables where table_name like '%fresh%|%stamp%|%publish%') and found NOTHING -- so the freshness store is elsewhere (most likely the factory store), and reading it was blocked (see H2)."
+      },
+      {
+        "id": "H2",
+        "severity": "medium",
+        "claim": "Planner note: FACTORY_DATABASE_URL_RO is read-only and 'DENIED SELECT on verify_walks'.",
+        "measurement": "CONFIRMED AND BROADER THAN REPORTED. psql with FACTORY_DATABASE_URL_RO: `SELECT ... FROM publish_runs` -> ERROR: permission denied for table publish_runs; `SELECT count(*) FROM verify_walks` -> ERROR: permission denied for table verify_walks. The denial is not specific to verify_walks -- it covers publish_runs too, i.e. both tables the guard reads.",
+        "consequence": "The guard's inputs cannot be re-verified from the read-only credential at all. I compiled the guard evaluation from the exact SQL run against FACTORY_DATABASE_URL (the writable credential, SELECT-only statements, statement_timeout 25s, nothing else). Any future verification of this guard needs a credential decision, not a retry."
+      },
+      {
+        "id": "H3",
+        "severity": "high",
+        "claim": "Step 2 is an approved, executable step ('re-mint ... plus a record snapshot refresh, through the writer path').",
+        "measurement": "There is no invocation. CP1 O17 records the requirement in full and calls the mechanism 'the lane's finding', and CP1 line 392 says it is 'a WRITER-PATH (factory/publish) action plus a record-snapshot refresh', but no artifact anywhere names a job, a command, an entrypoint, an input set, or an argument list. My own search (see D.whereILooked) surfaced exactly two candidate instruments and one provably-wrong path.",
+        "whyItMatters": "This is the plan's largest single gap, and it is the middle step: step 3's value and the operator's hold both depend on it. The two candidates have different blast radii -- bake-property-atom-county re-bakes a whole county (48021), bake-property-atom-gold-set is driven by a fixtures file listing parcels. Choosing wrongly either over-writes or silently does nothing, and both write the atoms store under a lease."
+      },
+      {
+        "id": "H4",
+        "severity": "medium",
+        "claim": "The re-mint can be executed from the code as it exists in the property worktrees.",
+        "measurement": "The hauska-engine-writer worktree (P:/seat-worktrees/property/hauska-engine-writer) is on branch seat/property-writer at HEAD 6bec72a07fcd9ac7527ab96b46812249131940a8 dated 2026-08-26 20:51:22 -0500, with a locally modified test file. That is ~19 days stale.",
+        "whyItMatters": "Every D reading (the two bakers, emitSetbackRule, atoms-writer-job.mjs, load-snapshot-into-pg.mjs) comes from that stale tree. The atoms-writer path is exactly the area that changed after 2026-08-26 (the OLD_SHAPE_FILL_FROZEN ruling, the lease history work in P-173, the atoms-writer allowlist reaching twelve writers in P-163). Re-derive against origin/main before firing step 2. By contrast the FACTORY worktree checks out clean: hauska-factory-p180-joint HEAD = 63aca2cfc3e4bd73a2d3aa71e1611546855897cf, the exact sha CP2 attributes to the deployed digest, so the A/C reads above are against the code that will actually run."
+      },
+      {
+        "id": "H5",
+        "severity": "medium",
+        "claim": "The deployed digest carries LDT bae48d40 (so step 4 exercises the P-183 fix).",
+        "measurement": "The digest is measured (bb3d7148, identical on all three jobs). The factory sha is independently corroborated against the worktree HEAD (63aca2cf). The LDT half is INHERITED from CP2's Cloud Build record: the AR image carries no provenance labels (greped the describe JSON for bae48d40, 63aca2cf, 84f4e7c9, buildTime, LDT, label -- zero hits), and the job carries no env LDT_SHA so runs.ldt_sha is NULL by shape.",
+        "whyItMatters": "This program has already been burned once by 'a run believed to be joint was actually P-180-only'. The LDT half of that exact claim is still resting on one Cloud Build record I could not read. It is not falsified -- it is unverified."
+      },
+      {
+        "id": "H6",
+        "severity": "low",
+        "claim": "Shared-resource quiescence.",
+        "measurement": "The three named jobs are quiescent (nothing in flight). factory-publish-gate-sched is NOT: three executions with empty completionTime, started 14:00:04Z / 15:00:05Z / 16:00:05Z, one hour apart, on the hourly scheduler. Given the job's own design (one upsert per (county, rail) pair, no all-rails transaction, 'a kill mid-run leaves already-written verdicts standing'), three overlapping executions mean the parcel_gate_verdict table is being written by an unattributed belt of runs right now. It is a factory-store writer on the shared job runner, in the same project and region as step 1.",
+        "whyItMatters": "C5's lesson was that the worst incident of this wave came from a second party using the same unleased shared resources. This is not that (it is the scheduled job doing its job, or failing to finish), but it is the same shape, and it was not in the planner's quiescence question list."
+      },
+      {
+        "id": "H7",
+        "severity": "low",
+        "claim": "The get_smart_site composer change is served by cortex-api.",
+        "measurement": "CONFIRMED, with a wrinkle worth recording. PR #688's only behaviour change is artifacts/api-server/src/lib/r1BriefCompose.ts (+37/-3), and cortex-api IS the api-server (the workflow header calls it 'the legacy-design-tools Replit -> Cloud Run cutover target'; the workflow's env list is the api-server's). The MCP tool surface itself lives in a DIFFERENT service: artifacts/smartsite-mcp/src/tools.ts defines get_smart_site and its 'node' depth handler PROXIES to cortex-api by hand -- `cortexFetch(config, '/api/property-explorer/v1/research/brief', { method: 'POST', ... })` (tools.ts:877-886). So the row is composed by cortex-api and passes through smartsite-mcp.",
+        "wrinckle": "smartsite-mcp is its own Cloud Run service (project legacy-design-tools-prod, us-central1) with its own deploy workflow (cloud-run-deploy-smartsite-mcp.yml, actions deploy-canary | shift-traffic) and its own image: it is currently serving revision smartsite-mcp-00119-naf at 100% on image smartsite-mcp:82857ebb38804ee4cce6ed1ba8718cb712aa9f29, with an OLD canary-tagged revision smartsite-mcp-00121-vef sitting at 0%. A smartsite-mcp image tagged 803cd0d564349f3a67fd1d2be7985f3d25a8888b ALSO exists in the registry (PR #688 touched artifacts/smartsite-mcp/package.json, which matches that workflow's paths filter, so the push-to-main build fired).",
+        "whyItMatters": "This is not a contradiction of step 3 -- the plan shifts cortex-api, and cortex-api is where the composer runs -- but it means two services were rebuilt by the same merge and only one is in the plan. If any part of the conflict-row rendering turns out to be post-processed by smartsite-mcp (the tool does shape its own text; tool-honesty.ts is a hand-mirror of an api-server normalize routine), the cortex-api shift alone will not render the row. I could not measure the rendering split without an authenticated MCP call, which needs a session or service token that does not exist in this environment (the P-154 lane hit the same wall: 'those reads sit behind PE authentication ... and no session or service token exists in this environment')."
+      },
+      {
+        "id": "H8",
+        "severity": "low",
+        "claim": "Step 3 needs a migration.",
+        "measurement": "NO. gh pr view 688 --json files shows no lib/db/drizzle/** change. run-migrations is not implied. Recording it so nobody adds a step to the sequence 'to be safe' -- run-migrations against DEPLOYMENT_DATABASE_URL_DIRECT is a production write."
+      }
+    ],
+    "unmeasurable": [
+      "PRODUCTION_SITE_URL's value (step 1 has no walk without it). Blocker: execution-time override, not on the template, not in the repo.",
+      "LDT bae48d40's presence inside the deployed digest, independently of CP2's Cloud Build record. Blocker: no provenance labels on the AR image; no env LDT_SHA in the job; runs.ldt_sha NULL by shape.",
+      "The step-2 invocation, and therefore step 2's rollback target and its store overlap with step 1. Blocker: not recorded anywhere in the wave-6 artifacts; the source worktree is 3 weeks stale (H4).",
+      "The production freshness/stamp row for production:48209. Blocker: not in the Neon public schema; the factory credential with the tables is denied (H2).",
+      "The rendering split of the conflict row between cortex-api and smartsite-mcp. Blocker: authenticated MCP/PE surface; no token in this environment.",
+      "The seven get_smart_site card reads and scripts/surface-probe.mjs --rows P-154 (the plan's own verification pass). Out of scope for this lane and not run; note the probe's { conflictRow: true } arm CANNOT pass before the re-mint (CP1 O12), while its { setbackSourceDate: '2026-04-14' } arm already measures green."
+    ]
+  },
+
+  "dangers": [
+    {
+      "id": "D1",
+      "refuse": "Firing step 1 while factory-publish-gate-sched has executions in flight.",
+      "why": "Three of its executions are running right now on the hourly scheduler (14:00:04Z, 15:00:05Z, 16:00:05Z starts, no completionTime), each of them an applied writer into the factory store with a run record. This wave's worst incident (C5) was two parties on the same unleased shared resources. Even though the gate scheduler does not touch the Smart Site store or bastrop-publish, the operator asked for quiescence and the honest answer is that the project is not quiescent.",
+      "action": "Wait for those three to terminate (or for the operator to rule the scheduler out of scope) before firing. Do not kill them from a read-only lane."
+    },
+    {
+      "id": "D2",
+      "refuse": "Firing step 2 in any form, on this artifact alone.",
+      "why": "There is no invocation. The only paths I could measure are a county-wide Cloud Build bake and a fixtures-file-driven per-parcel bake, and the most obvious-looking Cloud Run job (hauska-engine-atoms-writer) is a provably frozen path (OLD_SHAPE_FILL_FROZEN outside county 48029). Firing a guess at a whole county under a lease is a much bigger write than the operator approved, and it is not reversible without naming the prior atom version.",
+      "action": "Derive the invocation first, against current main of hauska-engine, and register it. Then treat step 2 as a normal mission with its own CP1."
+    },
+    {
+      "id": "D3",
+      "refuse": "Attempting any rollback for step 1 or step 2 with a hand UPDATE / hand DELETE, or with `gcloud run jobs update --image`.",
+      "why": "publish-guards.mjs's own header names a hand UPDATE of publish_runs as a bypass; the program preamble forbids lifting SETBACK_APPLY_HELD and routing through the setback atom writer, and three separate lanes recorded not touching it as their guardrail. Both would be mutations from a lane whose entire warrant is read-only.",
+      "action": "If a rollback is needed, it is an operator decision with a named credential, not a coordination action."
+    },
+    {
+      "id": "D4",
+      "refuse": "Self-granting a cortex-api lease for step 3.",
+      "why": "The README's self-grant clause is explicitly conditioned on the service being uncontended, and it names cortex-api by name as the counter-example: empty at 14:16Z, self-granted by p185, with a second lane intending to shift it the same day. cortex-api has already moved once today (00799-xaq, created 14:20:29Z). Decision 2026-09-12_one_traffic_shift_at_a_time_per_service governs.",
+      "action": "The planner writes _catalog/leases/cortex-api.json before the dispatch and deletes it after the serving revision is read by field name from status.traffic and the probe has run."
+    },
+    {
+      "id": "D5",
+      "refuse": "Running step 3's shift before step 2 lands.",
+      "why": "The operator has HELD the shift until the re-mint lands (CP1 O12 line 163, O18 line 717). Shifting early would serve a composer that reads a display_meta.conflict which does not exist yet, i.e. spend the day's second cortex-api shift on a no-op for P-154 -- and it would consume the contended lease that step 3 needs.",
+      "action": "Order stays 2 then 3."
+    },
+    {
+      "id": "D6",
+      "refuse": "Executing factory-bastrop-publish with no --args (or with the job's deployed defaults).",
+      "why": "The job's deployed default args are `--target=staging --county=48021 --skip-pmtiles`, i.e. a STAGING publish of a different county. A bare execute is a real write to the wrong target.",
+      "action": "Pass every argument explicitly, exactly as in A.exactInvocation."
+    },
+    {
+      "id": "D7",
+      "refuse": "Treating `gcloud run jobs describe --format=value(...)` output as whole; and treating the RO credential's denial as a transient error.",
+      "why": "Operational, measured in this lane: `gcloud artifacts docker tags list --filter=\"tag=<sha>\"` returned NOT-FOUND for a tag I then proved exists (tag 8f91d5d1, the currently served one) -- only the full tag listing (649 tags) plus a grep found it. And FACTORY_DATABASE_URL_RO is denied on publish_runs as well as verify_walks, permanently, not transiently.",
+      "action": "For Artifact Registry existence questions, list and grep rather than filter. For the factory store, decide which credential reads the guard's tables."
+    }
+  ],
+
+  "safeToProceed": {
+    "step1_productionPublish48209": {
+      "value": "withCondition",
+      "conditions": [
+        "PRODUCTION_SITE_URL's value is supplied by the operator (UNMEASURED here; without it the job refuses rather than skipping the walk) and OPERATOR_PUBLISH_GO=1 is passed as an execution-time env override.",
+        "factory-publish-gate-sched has no execution in flight at fire time (three are in flight now).",
+        "The guard's own SQL is re-read immediately before firing; it passed all six checks at 2026-09-14T16:11:31Z with sibling 5b3a1c2c / walk 8eacb135 / verdict pass / sweep 42.",
+        "The operator accepts that this step has no non-write rollback (target: production run b5e54917, 2026-09-13T17:44:48Z) and that the production store already contains a full row for 48209:84629 under that run while the surface 404s (H1).",
+        "Every argument is passed explicitly (D6)."
+      ]
+    },
+    "step2_reMint48021_34049": {
+      "value": "no",
+      "conditions": [
+        "There is no invocation (D). Derive and register the exact job/command/entrypoint, its inputs (county vs gold-set file and the parcel list), its store(s), and its rollback target against current main of hauska-engine (the worktree read here is from 2026-08-26).",
+        "Then: take the atoms writer lease under the write-slot law, run it after step 1 has fully terminated (they share the job runner; if the snapshot refresh touches the Smart Site store they are two writers on one serving store), and only then schedule step 3.",
+        "Explicitly not on this artifact: hauska-engine-atoms-writer --writer=cad-parcel-roll (OLD_SHAPE_FILL_FROZEN outside county 48029)."
+      ]
+    },
+    "step3_cortexApiShift": {
+      "value": "withCondition",
+      "conditions": [
+        "Step 2 has landed and been read back (display_meta.conflict present on the served atom).",
+        "The PLANNER writes _catalog/leases/cortex-api.json before the dispatch (no self-grant: the service is contended and has already moved today). The directory is empty right now, which is the trap, not the licence.",
+        "image_tag=803cd0d564349f3a67fd1d2be7985f3d25a8888b exists and needs no build; the sequence is action=deploy-canary with that image_tag, then action=shift-traffic (no image arg; it moves the canary tag to 100% and smoke-probes /api/healthz). No migration is implied (H8).",
+        "Serving revision is read by field name from status.traffic immediately BEFORE and AFTER the shift (a lane must never assume a prior split still holds -- OPS-23 wave 1's P-155 collision).",
+        "The operator accepts that the only rollback, action=rollback with rollback_revision=cortex-api-00797-zus, also reverts p185's PromoteKit change from earlier today."
+      ]
+    },
+    "verificationPass": {
+      "value": "pending",
+      "note": "The plan's verification pass (production walk verdict, seven get_smart_site card reads, scripts/surface-probe.mjs --rows P-154) was not run here. Note that the probe's { conflictRow: true } arm cannot pass before step 2, and that the seven card reads need an authenticated MCP/PE path that no lane in this environment has been able to establish."
+    }
+  }
+}
