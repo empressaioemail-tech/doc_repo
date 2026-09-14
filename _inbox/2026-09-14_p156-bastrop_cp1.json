@@ -1,0 +1,166 @@
+{
+  "lane": "p156-bastrop",
+  "checkpoint": "CP1",
+  "date": "2026-09-14",
+  "planRows": ["P-156", "P-124"],
+  "program": "OPS-23 wave 6",
+  "author": "p156-bastrop lane (supervised continuation after A-148 interruption)",
+  "writtenTo": "_inbox/2026-09-14_p156-bastrop_cp1.json",
+  "checkpointKind": "declaration shape + premise verification, filed BEFORE any store write",
+
+  "startCommits": {
+    "hauska-factory-p156-bastrop": {
+      "branch": "feat/p156-city-completeness-declaration",
+      "head": "8771c519401f05dcf961ff8af0b3d6d32c74a98c",
+      "statusAtStart": "clean, no work yet (matches planner recovery note)"
+    },
+    "hauska-engine-p156-bastrop": {
+      "branch": "feat/p156-city-declaration-consumer",
+      "head": "14c7e8500cad8a5947bdf4e6fe4391fe33b9d22c",
+      "statusAtStart": "clean, no work yet (matches planner recovery note)"
+    }
+  },
+
+  "interruptionRecovery": {
+    "workerDisposition": "resumed (with amendment) — both p156 worktrees were CLEAN at the start commits above; there was no stopped diff to recover. Evidence captured by the planner at 2026-09-14 ~13:55Z in _inbox/2026-09-14_ops23-wave6_interrupt_recovery.md section 2 rows 5 and 6, re-verified by this lane with `git rev-parse HEAD` + `git status --porcelain` (both empty) at session start.",
+    "stoppedSubagents": "none — this lane is the deepest worker and spawned no sub-agents (dispatch forbids it); nothing of this lane's own was stopped mid-flight.",
+    "prLimbo": "none — no branch of this lane is pushed and no PR is open for p156 (planner verified with `gh pr list --state open` on hauska-factory and hauska-engine; this lane opened nothing).",
+    "scopeDisplacement": "none — A-148 ADDS the Zone_Types/25 TEXT-vs-numeric rules; it displaces no p156 item."
+  },
+
+  "missionPremiseCheck": {
+    "premiseAsWritten": "Bastrop carries 181 `unaccounted` zoningDistrict parcels that block the CTX bake, and 'a PER-CITY COMPLETENESS DECLARATION ... exists nowhere'.",
+    "verdictAtSource": "STALE / WRONG on both clauses. Both were true on 2026-09-08; neither is true today.",
+    "evidence": [
+      {
+        "claim": "Bastrop zoningDistrict unaccounted == 181",
+        "measured": "0",
+        "instrument": "node src/lib/parcel-record-engine/gate-rail-cli.mjs --county=48021 --rail=zoningDistrict",
+        "observed": {"ok": true, "unaccountedCount": 0, "cellCount": 62256, "parcelRowCount": 62256, "excludedDeclaredAhead": []},
+        "at": "2026-09-14T13:13:41.641Z"
+      },
+      {
+        "claim": "a per-city completeness declaration exists nowhere",
+        "measured": "it exists and is already consumed",
+        "path": "src/config/zoning-layer-completeness.mjs (31,171 bytes; 22 cities in DECLARED_COMPLETE, Elgin in EXPLICITLY_HELD, plus DECLARED_LAYER_GAP)",
+        "consumedBy": "src/jobs/parcel-r5-zoning.mjs:87-92 (buildCompletenessCells -> completenessNotApplicableState; buildLayerGapCells -> isDeclaredLayerGap/declaredResidueCeiling)",
+        "note": "the file is a CODE CONSTANT (.mjs), which is exactly the shape the mission says the declaration must NOT be; that half of the mission stands."
+      },
+      {
+        "claim": "the 181 are still open",
+        "measured": "all 181 individually disposed, with per-cell reasons, in the FACTORY store",
+        "decomposition": {
+          "not-applicable with completenessDeclaration key (city=Bastrop, DECLARED_COMPLETE)": 155,
+          "refused, reason names Elgin's declared layer gap (per-parcel gated genuinely-uncovered)": 9,
+          "value, source=legacy-design-tools:txgio_parcel.zoning_district (Elgin staleness class, stamp-sourced)": 17,
+          "sum": 181
+        },
+        "countingRule": "count of parcel_record_cell rows where rail_key='zoningDistrict' and parcel_record.county_fips='48021', bucketed by cell_state->>'kind' and cell_state->'completenessDeclaration'/reason text; 155+9+17=181 exactly.",
+        "writtenWindow": "2026-09-08T12:30Z (155) / 2026-09-09T21:03Z (9+17)"
+      },
+      {
+        "claim": "the county refuses to publish because of zoningDistrict",
+        "measured": "pass, unaccounted_count 0, all six CTX counties",
+        "instrument": "SELECT county_fips,rail_key,verdict,unaccounted_count,evaluated_at FROM parcel_gate_verdict WHERE rail_key='zoningDistrict'",
+        "observed": "48021/48055/48209/48309/48453/48491 all verdict='pass', unaccounted_count=0; 48021 row evaluated_at=2026-09-14T13:03:07.918Z run_id=77c90f15-8bb9-4ef3-80b0-a806e740fbaa"
+      }
+    ],
+    "consequence": "Step 4's before/after write is NOT AVAILABLE and is NOT NEEDED for Bastrop: the declaration already landed, the residue is already zero, and the gate already reads pass. Per DEV_PROCESS 3.2/4.1 this is reported as a planner-figure correction, not worked around. No store write is performed by this lane."
+  },
+
+  "declarationShape": {
+    "intent": "the mission's item 1 record shape: one record per city, versioned DATA with provenance, read by the gate, never a code constant; plus A-148's two added rules.",
+    "proposedPath": "src/config/zoning-declarations/<cityKey>.json (hauska-factory)",
+    "currentStatus": "the declared set + coverage attestation already live as a code constant in src/config/zoning-layer-completeness.mjs; this lane ADDS the missing provenance shape rather than duplicating the declared set (one authoritative copy per DEV_PROCESS 6.2; a divergence test binds the two, per DEV_PROCESS 2.4).",
+    "record": {
+      "declarationVersion": "string, monotonic; the versioned-data requirement",
+      "cityKey": "string, the key landing_parcel_jurisdiction and tx_zoning_district_staging share",
+      "cityName": "string",
+      "placeFips": "string (roster place FIPS; geoid = '48' || placeFips)",
+      "countyFips": "string[]",
+      "state": "DECLARED_COMPLETE | EXPLICITLY_HELD",
+      "claim": "string, the falsifiable sentence the state asserts",
+      "stagedLayer": {
+        "url": "string, read live at source",
+        "layerName": "string",
+        "lastEditDate": "string, ArcGIS editingInfo.lastEditDate, read at source",
+        "readAt": "string, when this lane read it",
+        "featureCount": "integer, measured",
+        "districtSource": {
+          "field": "string — A-148: MUST NOT be any underscore numeric column",
+          "kind": "string",
+          "domain": "object code->name, read from the layer metadata",
+          "dimensionTextFields": "string[] — the layer's TEXT dimensional fields",
+          "staleNumericShortcutFields": "string[] — the underscore twins; recorded so the divergence is auditable"
+        }
+      },
+      "cityLimits": {"source": "string", "polygonRef": "string"},
+      "counts": {
+        "inCityParcels": "integer, measured",
+        "matchedToDistrict": "integer, measured",
+        "matchedNone": "integer, measured",
+        "countingRule": "string, inline per DEV_PROCESS 1.2"
+      },
+      "unmatchedDispositions": "[{placeKey, reason}] — the reason is data, per the mission",
+      "perDistrictTextVsNumeric": "[{districtCode, districtName, featureCount, text, numeric, numericIsStaleVsText, staleOn}] — A-148: the discrepancy, per district, with provenance",
+      "provenance": {"establishedBy": "string", "measuredAt": "string", "instruments": "string[]"}
+    },
+    "enforcedByThisLane": [
+      "loader refuses a declaration whose districtSource.field is an underscore numeric column (A-148 rule 1)",
+      "loader refuses a declaration with no measured counts (falsifier 3: cannot be written by hand without the measured counts)",
+      "loader refuses a declaration whose cityKey is not the same declared set the live completeness module attests (divergence control)"
+    ],
+    "notDoneHere": "Travis and Williamson (next wave); setback VALUES and the conflict note (P-154); the bake."
+  },
+
+  "a148LiveRead": {
+    "at": "2026-09-14 (session time)",
+    "url": "https://services7.arcgis.com/qOeXJdBtGknaCJC4/arcgis/rest/services/Zone_Types/FeatureServer/25",
+    "layerName": "Zone_Types_Draft_11_2025",
+    "serviceDescription": "Layer for the new zoning districts that will replace the B3 PlaceType code (2025)",
+    "editingInfo": {"lastEditDate": "2026-07-09T19:05:23Z", "dataLastEditDate": "2026-07-09T19:05:23Z"},
+    "featureCount": 595,
+    "districtFieldAtSource": "ZoneTypeClass (esriFieldTypeSmallInteger, alias 'Zoning District Abv.', coded domain 1..10 -> P/OS, RR, SF-1, SF-2, SF-3, MU, GC, PI, IND, PDD); name twin is ZoneType",
+    "textDimensionFields": ["FrontSetback", "SideSetback", "RearSetback", "CornerSideStreetSetback"],
+    "staleNumericShortcutFields": ["FrontSetback_", "SideSetback_", "RearSetback_", "MinimumLotSize_", "MaxBuildingHt"],
+    "noNumericCornerColumn": true,
+    "ordinalDivergenceFlagged": "A-148's rule text says the district source is the layer's 'TEXT fields'; at source the district IDENTITY on Zone_Types/25 is the coded-domain integer pair ZoneType/ZoneTypeClass, and the TEXT fields are the dimensional definitions (Front/Side/Rear/CornerSideStreet). The operative A-148 prohibition is satisfied either way (no underscore numeric column is recorded as district). Flagged, not silently picked.",
+    "perDistrictTextVsNumeric": [
+      {"districtCode": "SF-1", "featureCount": 175, "text": {"FrontSetback": "30 feet", "SideSetback": "10 feet", "RearSetback": "30 feet", "CornerSideStreetSetback": "20 feet"}, "numeric": {"FrontSetback_": 25, "SideSetback_": 5, "RearSetback_": 25}, "numericIsStaleVsText": true, "staleOn": ["FrontSetback_", "SideSetback_", "RearSetback_"], "note": "174 of 175 features; matches A-148's 30/10/30/20 text vs 25/5/25 numeric exactly, and there is no numeric corner column"},
+      {"districtCode": "MU", "featureCount": 103, "text": {"FrontSetback": "15 feet", "SideSetback": "5 feet minimum; 0 feet allowed on shared/party-wall sides within a unified development; 10 feet where abutting RR or SF districts", "RearSetback": "15 feet", "CornerSideStreetSetback": "10 feet"}, "numeric": {"FrontSetback_": 15, "SideSetback_": 0, "RearSetback_": 15}, "numericIsStaleVsText": true, "staleOn": ["SideSetback_"], "note": "numeric latched the secondary '0 feet allowed' clause instead of the 5-foot minimum"},
+      {"districtCode": "PI", "featureCount": 63, "text": {"FrontSetback": "25 feet (may be reduced to 10 feet for urban frontage, provided fire access and pedestrian circulation are maintained)", "SideSetback": "15 feet", "RearSetback": "20 feet", "CornerSideStreetSetback": "20 feet"}, "numeric": {"FrontSetback_": 20, "SideSetback_": 20, "RearSetback_": 20}, "numericIsStaleVsText": true, "staleOn": ["FrontSetback_", "SideSetback_"], "note": "61 of 63 features carry the stale pair"},
+      {"districtCode": "P/OS", "featureCount": 22, "numericIsStaleVsText": false, "note": "numeric columns null on all 22"},
+      {"districtCode": "RR", "featureCount": 32, "numericIsStaleVsText": false, "note": "50/20/50 agrees"},
+      {"districtCode": "GC", "featureCount": 142, "numericIsStaleVsText": false, "note": "20/5/20 agrees"},
+      {"districtCode": "IND", "featureCount": 31, "numericIsStaleVsText": false, "note": "25/20/25 agrees"},
+      {"districtCode": "PDD", "featureCount": 26, "numericIsStaleVsText": false, "note": "all setback columns null by design"},
+      {"districtCode": "(null)", "featureCount": 1, "numericIsStaleVsText": false, "note": "one feature carries no ZoneTypeCode; text 20/5/20/10, numerics null — data-quality note"}
+    ],
+    "absentDistrictCodes": ["SF-2 (domain 4)", "SF-3 (domain 5)"],
+    "districtsWhereCityContradictsItself": ["SF-1", "MU", "PI"],
+    "countingRule": "all 595 features returned by outFields=* returnGeometry=false; grouped by ZoneTypeClass and by distinct (text tuple, numeric tuple); text lead numeric read from the leading number token of the text reading.",
+    "instrument": "curl.exe against the public ArcGIS REST query endpoint (node/undici cannot verify the corp MITM CA); raw payload kept at P:/tmp/p156/zt25_features.json, derived record at P:/tmp/p156/probe/zt25_discrepancy.json"
+  },
+
+  "gateReadBefore": {
+    "instrument": "src/lib/parcel-record-engine/gate-rail-cli.mjs --county=48021 --rail=zoningDistrict (the real gate code, read-only)",
+    "at": "2026-09-14T13:13:41.641Z",
+    "verdict": {"ok": true, "unaccountedCount": 0, "cellCount": 62256, "excludedDeclaredAhead": []},
+    "storedVerdict": {"verdict": "pass", "unaccounted_count": 0, "evaluated_at": "2026-09-14T13:03:07.918Z"}
+  },
+  "gateReadAfter": "NOT APPLICABLE — no store write is performed or needed (see missionPremiseCheck.consequence). The 'after' read is the same read; this will be stated plainly in the close rather than fabricated as a change.",
+
+  "falsifierPlan": {
+    "f1_unaccounted_zero_without_named_reason": "already false at source: every one of the 181 carries a written reason (155 completenessDeclaration, 9 Elgin layer-gap reason, 17 STAMP_SOURCE provenance). Evidence in missionPremiseCheck.evidence[2].",
+    "f2_gate_passes_EXPLICITLY_HELD_city": "Elgin remains in EXPLICITLY_HELD and must never appear in DECLARED_COMPLETE; asserted by test.",
+    "f3_declaration_writable_by_hand": "the loader refuses a record with no measured counts; asserted by test.",
+    "f4_district_field_is_underscore_numeric": "the loader refuses any districtSource.field matching /_$/; asserted by test.",
+    "f5_discrepancy_not_per_district": "the loader refuses a declared city whose perDistrictTextVsNumeric omits a district that the live layer shows diverging; asserted by test against the recorded set {SF-1, MU, PI}."
+  },
+
+  "awaitingPlannerReview": "This CP1 is the declaration's shape, filed before any write, as the dispatch requires. This lane proceeds to implement the shape as versioned data + tests in hauska-factory (no store write). If the planner rejects or amends the shape, only the file/tests are affected — no cell has been or will be moved by this lane.",
+
+  "leaveBehind": [
+    "if the premise correction is right, the wave's p156 dispatch should be recompiled: Bastrop is not blocked, and the remaining CTX bake question is whether Travis/Williamson carry the same declaration shape"
+  ]
+}

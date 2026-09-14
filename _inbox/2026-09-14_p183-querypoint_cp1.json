@@ -1,0 +1,96 @@
+{
+  "lane": "p183-querypoint",
+  "planRows": ["P-183"],
+  "checkpoint": "CP1",
+  "at": "2026-09-14T13:2xZ",
+  "status": "reading-complete",
+  "startCommits": {
+    "doc_repo": "P:/seat-worktrees/dispatch-planner/doc_repo (branch seat/dispatch-planner; artifacts only, never committed)",
+    "hauska-factory-p183-querypoint": "8771c519401f05dcf961ff8af0b3d6d32c74a98c chore(P-178): bump _LDT_SHA to 82857ebb (#146), branch fix/p183-geocoded-cells-crosswalk",
+    "hauska-engine-p183-querypoint": "origin/main, branch fix/p183-querypoint-from-geometry (not needed: see contradicted -- no queryPoint exists anywhere in hauska-engine)",
+    "legacy-design-tools": "82857ebb38804ee4cce6ed1ba8718cb712aa9f29 (= origin/main = the _LDT_SHA the factory pins; the bake this mission needs to change lives here, see scopeNote)"
+  },
+
+  "oneParagraph": "The served cityLimitsFact.queryPoint is NOT written by any factory job into parcel_record: parcel_record has no point/coordinate rail at all (65 rails enumerated live, none carries a coordinate; parcel_record_cell has no queryPoint key, and the FILL_OWNED_RAIL_KEYS allowlist this mission's own worktree pins contains no point). The served point is the tier1 bake's coordinate index -- place_layer_snapshots.lat_rounded/lng_rounded for adapter node-facets:tier1 -- which LDT's brokerageNodeFacets turns into queryPoint via usableCityLimitsQueryPoint(lngRounded, latRounded) and hauska-map's record patch then carries through unchanged (withPreservedQueryPoint). That coordinate is computed by legacy-design-tools' nodeFacetBakeTier1ConformantCli.ts:955-958 as ringCentroid(firstRing(row.geometry)) where row = crosswalkRow ?? situsRow, and on gate-blocked Hays crosswalkRow is selected by crosswalkKeyByPropId.get(NODE prop_id) -- a map keyed by the CAD ROLL's bare prop_id. Hays node 97658's bare digits are also a real 2026 CAD account (R128076) whose published property_number is 11-0362-000E-01500-4, which names txgio_parcel 128076 = 13669 MESA VERDE DR, 34.8 km from the Sturgeon lot. All five Sturgeon nodes reproduce this to 5 decimal places. The rule (node's own TxGIO polygon wins the geometry on a gate-blocked county) is implemented in the bake, not in the factory.",
+
+  "theWriter": {
+    "answer": "legacy-design-tools/artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts (the tier1 conformant bake), writing place_layer_snapshots(adapter_key='node-facets:tier1').lat_rounded/lng_rounded. It is NOT a hauska-factory writer and NOT a parcel_record cell.",
+    "serveChain": [
+      "GET https://smartsite.cloud/api/spine/property-atoms/48209:97658/facets -> readPath 'record', cityLimitsFact.source 'tx_city_boundary', basis 'parcel_record cityLimits: incorporated, city San Marcos (source: landing_parcel_jurisdiction, vintage: 2026-09-13T23:43:55.984Z)', queryPoint {longitude:-97.97703, latitude:30.18232} (live, 2026-09-14T12:5xZ).",
+      "hauska-map apps/property-explorer/api/_lib/pe-property-atoms.ts applyRecordPatch: replaces cityLimitsFact with the record composition and calls withPreservedQueryPoint(existing, composed) -- the composer sets no queryPoint, so the baked one is carried through verbatim.",
+      "LDT lib/cityLimitsFactFromParcelRecord.ts cityLimitsFactFromParcelRecord(parcelNodeId, queryPoint) -- queryPoint arrives as a PARAMETER; the function reads only the cityLimits rail (a scalar: value|absent-verified). It is the reason the city reads 'San Marcos' (correct, P-180) while the point is the colliding account's.",
+      "LDT routes/brokerageNodeFacets.ts loadBakedNodeFacetSnapshot: reads place_layer_snapshots (TIER1_ADAPTER_KEY|TIER2_ADAPTER_KEY, place_key 'node:<fips>:<prop_id>') and builds queryPoint: usableCityLimitsQueryPoint(Number(row.lngRounded), Number(row.latRounded)).",
+      "LDT nodeFacetBakeTier1ConformantCli.ts:955-958 writes lat_rounded/lng_rounded = the ring centroid of the joined parcel row; its own header (lines 27-29) says 'on conflict the 0,0 sentinel never overwrites a real prior coordinate (the serve's city-limits query point reads it)'.",
+      "hauska-factory src/jobs/verify-walk.mjs:40-46 says the same in the walk's own words: 'The query point is the served cityLimitsFact.queryPoint (the bake coordinate index), which the serve also used' -- and adds that the Factory holds no indexed parcel geometry, so 'a Factory-side point is the filed follow-up'."
+    ],
+    "theJoinPasted": {
+      "nodeToBadParcel": "nodeFacetBakeTier1ConformantCli.ts:465-491 builds the index off the CAD ROLL's own prop_id: `for (const [rollPropId, entry] of cadPropertyRoll.byPropId) { const key = parcelCrosswalkJoinKey(county, entry.propertyNumber, blockedSet); ... crosswalkKeyByPropId.set(owners[0], key) }` -- so crosswalkKeyByPropId maps CAD prop_id -> the geo_id that account publishes.",
+      "thenReadByBareNumber": "nodeFacetBakeTier1ConformantCli.ts:817-862 (the per-row loop): `const propId = w.parcelNodeId.split(\":\")[1]` (the TxGIO NODE's prop id) then `const key = crosswalkKeyByPropId.get(propId)` and `const offered = crosswalkByGeoId.get(key)`; `crosswalkBindCorroborated(offered.feature_index, stemRow.feature_index)` then accepts the bind; `const row = joinGateBlocked ? (crosswalkRow ?? situsRow) : propIdRow`.",
+      "whyTheCorroboratorCannotSaveIt": "joinParcelRowsByCrosswalk's second index (lines 312-323) is built with fetchParcelRowsByPropIds(..., accountStems, true) -- txgio_parcel rows whose prop_id equals the CAD account's QuickRefID stem. For Hays account 97658 the stem is 128076 and txgio_parcel prop_id 128076 IS the same Mesa Verde feature the property_number named, so the 'two independent derivations' agree on the WRONG parcel: both sides of the corroboration are derived from the colliding account.",
+      "theLiveCollision": "SELECT prop_id, property_number, quick_ref_id, situs_address FROM cad_property WHERE county_fips='48209' AND tax_year=2026: 97651->11-0362-000E-00800-4/R128069/476 CATALINA LN; 97652->11-0362-000E-00900-4/R128070/13749 MESA VERDE DR; 97653->11-0362-000E-01000-4/R128071/13735 MESA VERDE DR; 97657->11-0362-000E-01400-4/R128075/13681 MESA VERDE DR; 97658->11-0362-000E-01500-4/R128076/13669 MESA VERDE DR. The same five prop_ids at tax_year 2025 are the Sturgeon rows (property_number NULL, quick_ref_id NULL) -- the pre-P-178 roll residue.",
+      "theNodeOwnRowIsRight": "SELECT prop_id, geo_id, situs_address, bbox FROM txgio_parcel WHERE county_fips='48209': 97651 geo_id 11-2011-0001-00400-3 'STURGEON DR, SAN MARCOS'; 97652 ...00500-3; 97653 ...00600-3; 97657 ...01000-3; 97658 geo_id 11-2011-0001-01100-3 '629 STURGEON DR, SAN MARCOS, TX 78666'. The node's own published Geographic ID names its own parcel; the CAD account that owns THAT geo_id (property_number = 11-2011-0001-01100-3) is 84639/R97658, whose situs is 629 STURGEON DR (already proven in P-178's close)."
+    },
+    "theFivePointsReproduced": {
+      "measurement": "place_layer_snapshots rows for the five nodes, adapter node-facets:tier1, read 2026-09-14T13:01Z (production neondb):",
+      "rows": [
+        "node:48209:97651 lat 30.18158 lng -97.97623 = txgio_parcel 128069 (476 CATALINA LN) ring centroid; baked 2026-09-13T17:43:22Z",
+        "node:48209:97652 lat 30.18119 lng -97.97671 = txgio_parcel 128070 (13749 MESA VERDE DR)",
+        "node:48209:97653 lat 30.18144 lng -97.97683 = txgio_parcel 128071 (13735 MESA VERDE DR)",
+        "node:48209:97657 lat 30.18215 lng -97.97700 = txgio_parcel 128075 (13681 MESA VERDE DR)",
+        "node:48209:97658 lat 30.18232 lng -97.97703 = txgio_parcel 128076 (13669 MESA VERDE DR) -- exactly the point the probe reads as recordPoint"
+      ],
+      "eachMatchesTheCollidingAccount": "Each snapshot coordinate is the centroid of the parcel named by that SAME node number's CAD account (property_number), i.e. the bare-number collision, not the node's own parcel.",
+      "theCorrectTarget": "node 97658's own parcel (geo_id 11-2011-0001-01100-3, bbox 29.871672..29.872082 / -97.926111..-97.925640) is ~1 m from its CAPCOG address point 29.87188/-97.92588 -- well inside the 150 m falsifier."
+    }
+  },
+
+  "everyGeocodedCell": {
+    "definition": "a parcel_record rail whose value is produced by testing a POINT or a polygon against a layer. Every one of them is written by a hauska-factory job that reads the node's OWN txgio_parcel.geom by prop_id -- which is why the served cityLimits ('San Marcos') and flood (zone AO, method 'point-on-surface') are correct while the bake's queryPoint is 34.8 km away.",
+    "rows": [
+      { "rail": "flood", "writer": "hauska-factory src/jobs/flood-ingest.mjs", "pointRule": "ST_PointOnSurface(ST_MakeValid(ST_Union(t.geom))) GROUP BY prop_id, then ST_Contains(tx_fema_nfhl_flood_zone.geom, point); method 'point-on-surface' in the companion payload", "usesOwnPropId": true },
+      { "rail": "schoolDistrict", "writer": "src/jobs/parcel-school-district.mjs", "pointRule": "ST_Centroid(ST_Union(t.geom)) then ST_Contains(zone.geom, centroid)", "usesOwnPropId": true },
+      { "rail": "utilityService", "writer": "src/jobs/parcel-utility-service.mjs", "pointRule": "ST_Centroid(ST_Union(t.geom)) then ST_Contains(ccn.geom, centroid)", "usesOwnPropId": true },
+      { "rail": "overlayDistricts", "writer": "src/jobs/parcel-overlay-districts.mjs", "pointRule": "city by ST_Contains(city.geom, centroid), then overlay by ST_Contains(overlay.geom, centroid)", "usesOwnPropId": true },
+      { "rail": "maxImperviousCoverPct", "writer": "src/jobs/parcel-max-impervious-cover.mjs", "pointRule": "ST_Centroid(union) then ST_Contains(austin_watershed / edwards_recharge geom, centroid)", "usesOwnPropId": true },
+      { "rail": "wells", "writer": "src/jobs/parcel-r4-companions.mjs", "pointRule": "full-polygon ST_Contains(ST_Union(geom), well.geom) -- deliberately polygon, not point (its own close flags flood's single-fragment pick)", "usesOwnPropId": true },
+      { "rail": "specialDistricts", "writer": "src/jobs/parcel-r4-companions.mjs", "pointRule": "full-polygon ST_Intersects(union, district.geom)", "usesOwnPropId": true },
+      { "rail": "zoningDistrict + zoningJurisdictionKey + zoningProvenance", "writer": "src/jobs/parcel-r5-zoning.mjs (stampCountyZoning)", "pointRule": "point-in-polygon against the city's published layers", "usesOwnPropId": true },
+      { "rail": "cityLimits + parcel_record.incorporated", "writer": "src/jobs/p2-juris-store.mjs / p2-juris-containment.mjs into landing_parcel_jurisdiction; then src/jobs/parcel-record-fill.mjs ingestJurisdictionOntoRecords copies disposition/city_name", "pointRule": "full-parcel ST_Intersects(parcel.geom, city.geom) containment (no point), disposition in-city|unincorporated", "usesOwnPropId": true },
+      { "rail": "envelopeStatus + envelopeDisclosure + buildableAreaSqFt/Pct + maxFootprintSqFt (envelope family)", "writer": "src/jobs/parcel-envelope-cells.mjs", "pointRule": "parcel ring + setback corpus (out of this mission's scope)", "usesOwnPropId": true },
+      { "rail": "buildingFootprint", "writer": "src/jobs/parcel-building-footprint-reconcile.mjs", "pointRule": "parcel ring vs footprint polygons", "usesOwnPropId": true },
+      { "rail": "queryPoint (the SERVED cityLimitsFact.queryPoint)", "writer": "NOT a parcel_record cell at all -- legacy-design-tools nodeFacetBakeTier1ConformantCli.ts, into place_layer_snapshots.lat_rounded/lng_rounded", "pointRule": "ringCentroid of the joined parcel row, where the joined row on a gate-blocked county comes from the bare-number CAD lookup", "usesOwnPropId": false }
+    ],
+    "notGeo": "the other rails in the 65 (dollars, situs, APN, acreage, legal, exemptions, landUse, owner, valueHistory, permits, hoaDeedRestrictions, mineralRights, publicRecordRefs, terrain, ossf, roads, railCorridor, easements, pipelines, treeProtection, setback* scalars, agValuation, livingAreaSqft, yearBuilt) are CAD/corpus scalars, not point-derived."
+  },
+
+  "theRule": {
+    "statement": "On a gate-blocked county (SEED_BLOCKED_FIPS: 48209 Hays, 48491 Williamson) the bake's coordinate index must come from the node's OWN txgio_parcel row -- matched by (county_fips, prop_id), the identity law's parcel-map id, the same row the factory's flood/school/utility/overlay/watershed jobs and P-180's own exclusion probe already use -- taken before any published-identifier crosswalk bind or situs recovery. The bare-number CAD lookup (crosswalkKeyByPropId keyed by node prop_id) and the situs recovery keyed off a colliding account must never be able to win a coordinate.",
+    "whyGeometryFirst": "It exists for every node (P-180 drops only nodes with no txgio row at all, before this point), it is the same source the flood cell uses, and it cannot be reached through a numbering collision: txgio_parcel.prop_id is the node's own identity by the declared-roll ruling.",
+    "nonBlockedCountiesUnchanged": "The change is inside the joinGateBlocked branch only; for 48021/48055/48309/48453 the code path is byte-identical (propIdRow, as today)."
+  },
+
+  "contradicted": [
+    "The dispatch says the writer lives in hauska-factory (worktrees hauska-factory-p183-querypoint, branch fix/p183-geocoded-cells-crosswalk) and that the record store's geocoded cells were computed from the CAD situs joined by bare number. MEASURED: parcel_record/parcel_record_cell hold no coordinate for these nodes at all (they carry 65 rails; cityLimits is a scalar city name and parcelGeometry is kind 'unaccounted'), and no hauska-factory job writes a point into the record store. The only bare-number-joined coordinate is the LDT bake's, so the fix is a legacy-design-tools change plus a hauska-factory _LDT_SHA bump (exactly the shape P-178 used in #146).",
+    "The dispatch's alternative home, hauska-engine, has no queryPoint token anywhere in the repo (grep, 2026-09-14) -- the engine cannot be the reader that composes this point.",
+    "The dispatch lists 'the bake and its walk (the P-178 publish lane)' as out of scope, yet the value to fix is written by the bake's coordinate index. I am treating the CODE of the bake as in-lane (the value cannot be fixed anywhere else) and the P-178 publish/walk as the other lane's, reporting this rather than silently widening scope.",
+    "P-177's own comment (nodeFacetBakeTier1ConformantCli.ts:504-531) claims 'P-175's own crosswalk fix only ever affected which RING a node draws; it never touched this lookup, which is why the served label and dollars never changed' -- the first half is wrong for a blocked county: P-175's crosswalk fix is exactly what re-pointed the RING at the colliding account's parcel."
+  ],
+
+  "falsifiersPreRegistered": {
+    "main": "After the re-run, any of the five Sturgeon nodes' tier1 lat_rounded/lng_rounded (and the served cityLimitsFact.queryPoint) is more than 150 m from its CAPCOG address point in the probe's ADDRESSES table -> the cell still reads the colliding account.",
+    "control": "A non-blocked county's bake rows change on a control run (same prop-id set, before/after) -> the change is wider than the claim.",
+    "mechanism": "The five coordinates must move to the node's own parcel: 97651 -> 29.87113/-97.92674 neighbourhood, 97652 -> 29.87124/-97.92662, 97653 -> 29.87135/-97.92649, 97657 -> 29.87177/-97.92600, 97658 -> 29.87188/-97.92588 (CAPCOG points; the node's own ring centroid is within a few metres)."
+  },
+
+  "nextSteps": [
+    "Patch legacy-design-tools nodeFacetBakeTier1ConformantCli.ts: keep the P-180 own-row index and use it as the FIRST geometry source for a gate-blocked county (own row ?? crosswalk row ?? situs row), counted so a run is legible; unit test the selection with the Hays collision fixture.",
+    "hauska-factory: bump _LDT_SHA to the LDT merge SHA (the pin is the only factory-side lever; the bake image is built from it).",
+    "Staging re-run of the bake for 48209 (the writer), read back place_layer_snapshots for the five nodes + ten others, plus a non-blocked control county. Production re-run stays gated behind the planner's quoted operator go (one-bake sequencing with p178-publish)."
+  ],
+
+  "groundTruth": [
+    "2026-09-14T13:01Z production neondb: place_layer_snapshots node:48209:97658 tier1 = 30.18232/-97.97703 (baked 2026-09-13T17:44:13Z), tier2 = 29.87190/-97.92589 -- tier2 is already at the right lot, which is why the collision is tier1-only.",
+    "2026-09-14T13:00Z production neondb: LDT main = 82857ebb (= the factory's _LDT_SHA) and it CONTAINS f9d82bc8 (P-180); `git merge-base --is-ancestor f9d82bc8 82857ebb` exit 0. P-180 did not change the geometry selection (its diff adds only the account-keyed exclusion).",
+    "2026-09-14T13:00Z live surface: GET .../property-atoms/48209:97658/facets -> readPath record, cityLimits cityLimits value 'San Marcos', queryPoint 30.18232/-97.97703."
+  ]
+}

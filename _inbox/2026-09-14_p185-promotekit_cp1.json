@@ -1,0 +1,111 @@
+{
+  "lane": "p185-promotekit",
+  "planRows": ["P-185"],
+  "checkpoint": "CP1",
+  "kind": "recon + implementation complete, local guards green, PRs open, deploys and operator-owned verification ahead",
+  "at": "2026-09-14T13:2xZ",
+
+  "startCommits": {
+    "doc_repo_worktree_this_lane_writes_to": "P:/seat-worktrees/dispatch-planner/doc_repo (branch seat/dispatch-planner) — determined by evidence, not assumption: the wave-6 lane artifacts already sit here (_inbox/2026-09-14_p154-conflict_cp1.json, _inbox/2026-09-14_p183-querypoint_cp1.json, _inbox/2026-09-14_125245_surface_probe.json). The 'seat/property' worktree (P:/seat-worktrees/property/doc_repo) does NOT carry this dispatch at all (git log HEAD = 29182d0f, no P-185 dispatch, Test-Path false), so writing there would have been the exact 'artifacts had to be found by hand' failure the dispatch's close section records for waves 1-2.",
+    "legacy-design-tools-p185-promotekit": "start 82857ebb38804ee4cce6ed1ba8718cb712aa9f29 (= origin/main at branch creation; branch feat/p185-promotekit-checkout-metadata)",
+    "hauska-map-p185-promotekit": "start 9841c1bc0b86d450642d4617a9dca99c9a603b25 (= origin/main at branch creation; branch feat/p185-promotekit-script-and-referral)"
+  },
+
+  "whatTheDispatchAskedFor": {
+    "mission": "every Smart Site checkout carries the referral, and a referred sale shows up on the affiliate's dashboard",
+    "twoHalves": [
+      "the script on every page an affiliate can link to — <script async src=\"https://cdn.promotekit.com/pk.js\" data-promotekit=\"5d6458ec-b6b9-47df-a587-c2c255db7e8d\"></script>, which sets window.promotekit_referral (NOT populated on localhost, so verification is on a deployed surface)",
+      "the referral id sent to Stripe when the session is created — metadata[promotekit_referral], and for subscriptions ALSO subscription_data[metadata][promotekit_referral] so renewals attribute; promo codes need allow_promotion_codes=true"
+    ],
+    "buildOrder": "server first (safe without the client), then client, then verification by violation"
+  },
+
+  "recon_whereTheCheckoutSeamsActuallyAre": {
+    "method": "enumerate every creator of a Stripe Checkout Session in the api-server, then every caller, rather than trusting the dispatch's file list (the dispatch named brokerageStripe.ts as the session creator; that file holds stripePostForm and ONE other session creator, see below).",
+    "every_checkout_sessions_poster": [
+      "artifacts/api-server/src/lib/pePaywallStripe.ts:521 (createPeSubscriptionCheckoutSession) — REACHED by POST /api/property-explorer/v1/billing/checkout (propertyExplorer.ts:1562)",
+      "artifacts/api-server/src/lib/pePaywallStripe.ts:613 (createPePropertyUnlockCheckoutSession) — REACHED by POST /api/property-explorer/v1/entitlement/checkout (propertyExplorer.ts:1924)",
+      "artifacts/api-server/src/lib/brokerageStripe.ts:280 (createSubscriptionCheckoutSession, pro/max) — the RETIRED extension ladder; reached only by the install-scoped seams brokerages/propertyExplorerBilling.ts:71 and brokerageBilling.ts:81"
+    ],
+    "conclusion": "The two routes the dispatch names are the ONLY Smart Site (property-explorer product) checkout creators. Both are changed. The two brokerage/install seams are a separate, auth-gated, extension-era surface and are named as a leave-behind rather than changed (the PE client's route to them is retired and guard-enforced by hauska-map scripts/seam-retired-guard.mjs, P-103).",
+    "recordsRequests_are_not_a_checkout": {
+      "question": "dispatch item 4 — do the MCP connector's paid records requests (P-85/P-113) create checkout sessions?",
+      "answer": "NO. Determined by reading, not by absence of a grep hit.",
+      "basis": [
+        "artifacts/api-server/src/routes/recordsRequest.ts (mounted at routes/index.ts:111) creates a JOB (POST /api/engagements/:id/records-request) behind requireGateEngineServiceAuth + verifyGateContext; the file contains ZERO references to stripe/checkout/price/payment/entitle",
+        "artifacts/records-request-worker/src/recipes/documentPurchase.ts:35 documents the opposite of a checkout in its own words — \"purchaseApproved queues a human clerk; this card does not drive checkout\" — and instrumentAcquisition.test.ts:175 asserts 'routes fee-approved purchase walls to human clerk and does not checkout'",
+        "the workspace-wide enumeration above lists no records-request path as a checkout session poster"
+      ],
+      "leaveBehind": "no referral plumbing is missing on the records path, because the records path never opens a Stripe Checkout Session. If a paid records flow is ever built on Stripe Checkout, it must carry the same two metadata keys — named in the close's leave_behind."
+    }
+  },
+
+  "whatWasBuilt_server": {
+    "pr": "legacy-design-tools#685 (open) — feat/p185-promotekit-checkout-metadata",
+    "files": [
+      "NEW artifacts/api-server/src/lib/promotekitReferral.ts — the rule in ONE place, importing nothing, so it has a DB-free test; normalizes (short, no whitespace, non-empty string) and writes metadata[promotekit_referral] plus, when subscription:true, subscription_data[metadata][promotekit_referral]",
+      "NEW artifacts/api-server/src/__tests__/promotekit-referral.test.ts — 19 assertions, DB-free",
+      "artifacts/api-server/src/lib/pePaywallStripe.ts — promotekitReferral on both input types; applyPromotekitReferral called in both builders; allow_promotion_codes=true ADDED to the $15 unlock form body (the subscription body already had it at line 489 — read first, not assumed)",
+      "artifacts/api-server/src/routes/propertyExplorer.ts — promotekitReferral accepted as z.unknown().optional() on BOTH checkout body schemas and forwarded to the builders; z.unknown() is deliberate so the normalizer drops a malformed token instead of a 400",
+      "artifacts/api-server/src/__tests__/pe-paywall-stripe.test.ts — route-wiring tests, both directions, in the existing DB-backed suite"
+    ],
+    "lenientToIgnore": "a malformed referral is DROPPED (keys absent), never an error — a bad attribution token must not block a purchase. Pinned by test in both the pure and route suites.",
+    "outOfScopeUntouched": "webhooks (setPeAccessTierFromStripe / subscription resolution), commission rates, cookie windows, payouts, affiliate-facing pages"
+  },
+
+  "whatWasBuilt_client": {
+    "pr": "hauska-map#400 (open) — feat/p185-promotekit-script-and-referral",
+    "files": [
+      "apps/property-explorer/index.html — the PromoteKit tag in <head>, async, public site id 5d6458ec-b6b9-47df-a587-c2c255db7e8d",
+      "apps/property-explorer/src/lib/billingClient.ts — readPromotekitReferral() called AT CHECKOUT TIME in startPeCheckout and startPropertyUnlock, spread into both bodies only when present (never cached at load: the tag is async and a load-time capture can be permanently empty for the visit whose referral arrived late)",
+      "apps/property-explorer/vercel.json — script-src admits https://cdn.promotekit.com",
+      "NEW apps/property-explorer/src/lib/billing-client-promotekit.test.ts — 14 assertions on the reading half",
+      "NEW apps/property-explorer/src/lib/promotekit-tag.test.ts — 5 assertions on the shell half (tag in <head> + CSP admits the host + Stripe/Google still admitted)"
+    ],
+    "whyAGuardSinceNeitherFileIsChecked": "index.html and vercel.json are imported by nothing and typechecked by nothing; deleting the tag or tightening the CSP silently stops attribution with every existing test still green."
+  },
+
+  "localEvidence": {
+    "server_pure_suite": "npx vitest run src/__tests__/promotekit-referral.test.ts -> 19 passed (run twice, before and after LF normalization)",
+    "server_typecheck": "pnpm run typecheck:libs (exit 0 — required first, or tsc reports TS6305 for every file in the repo) then pnpm --filter @workspace/api-server run typecheck -> exit 0",
+    "client_suite": "pnpm --filter property-explorer test -> 205 files, 3004 passed | 1 todo (includes the three PE guard scripts CI runs: pe-chrome-kit, seam-retired, pe-public-pages, vocab-copy)",
+    "client_typecheck": "pnpm --filter @hauska/map-renderer build then pnpm --filter property-explorer exec tsc --noEmit -> clean",
+    "guard_mutation_tested_both_directions": "removing cdn.promotekit.com from the CSP script-src AND the tag from index.html fails 4 of the 5 promotekit-tag assertions; restoring them passes 5 of 5. A check seen only passing has not been seen working.",
+    "server_route_tests_not_runnable_here": "the route-wiring suite is DB-backed (CI's Postgres service). This workstation has no local Postgres (Test-NetConnection localhost:5432 closed, docker daemon unreachable), which is exactly why the rule was extracted into a DB-free module with its own suite — DEV_PROCESS 0: a control that depends on someone remembering is not a control.",
+    "ci_at_cp1": "hauska-map#400: all 3 checks (No double-encoded source, Typecheck, test) PASS. legacy-design-tools#685: Typecheck PASS; Test PENDING at the time of writing this checkpoint (it installs Chrome, adds PostGIS, pushes the schema, then runs the suite)."
+  },
+
+  "falsifiersPreRegistered": {
+    "a_withViaNoMetadata": "a session created from a ?via= visit without metadata[promotekit_referral] — the id did not travel; name which hop dropped it (script, client body, proxy, server form). Test-level guards: the reading half (client) and the forwarding half (route) each assert presence, so a CI failure names the hop.",
+    "b_withoutReferralCarriesField": "a session created without a referral that carries the field — a stale cached value. Asserted ABSENT at three layers: readPromotekitReferral returns undefined on a plain visit, the client omits the key, and the route writes neither key when the field is absent.",
+    "c_subscriptionDataMissing": "a subscription whose subscription_data lacks the metadata — renewals would not attribute. Asserted present in both the pure suite and the route suite.",
+    "d_malformedBlocksPurchase": "pre-registered by this lane (not in the dispatch): a malformed token must not 400. Asserted: the route returns 200 with no key for 'has whitespace', 129 chars, a number and an object."
+  },
+
+  "operatorOwnedAndStillOpen": {
+    "stripeKey": "the Stripe test-mode secret key, to read the created session's metadata (the dispatch: 'with the operator's key, never printed'). Not present in this session; no key was guessed or substituted.",
+    "testAffiliate": "the test affiliate the operator creates, for the ?via=<affiliate> half of verification (a)",
+    "promotekitDashboard": "the operator's confirmation that the referral appears in PromoteKit (the mission's actual completion predicate, and the one thing no agent can read)",
+    "withoutThem": "the deployed-surface half of verification-by-violation cannot run. What CAN and WILL be measured autonomously: the alias serves the tag, the deployed CSP admits the host, and the serving cortex revision is read by field name from the traffic JSON."
+  },
+
+  "deployPlan": {
+    "cortexApi": "hauska-map-independent: on merge, .github/workflows/cloud-run-deploy.yml push-job only builds+pushes the image; deploy-canary and shift-traffic are separate workflow_dispatch actions (push != deploy, by the workflow's own hard constraints). Sequence: deploy-canary -f image_tag=<merge-sha> -> read the canary revision's healthz -> shift-traffic under a lease -> read the SERVING revision by field name from the traffic JSON -> run the lane probe against it -> release the lease.",
+    "lease": "_catalog/leases/cortex-api.json in THIS lane's doc_repo worktree. Checked first: only _catalog/leases/README.md exists — no lane holds cortex-api. Self-granted per AGENT_CONTRACT section 3, the same shape P-177 recorded ('Self-granted per AGENT_CONTRACT section 3 (user-approved): wrote _catalog/leases/cortex-api.json ... then deleted the lease file — no other lane was found touching cortex-api concurrently'). Lease files are working state and gitignored.",
+    "hauskaMap": "apps/property-explorer on Vercel. The repo's own deploy path is `vercel deploy --prod --yes` with VERCEL_ORG_ID=team_4TH5lNnFHcBGx4EKNapJ2MVG / VERCEL_PROJECT_ID=prj_vcZGXbqdffk5C20WzaplEpzFynK3 (<- as asserted in property-explorer-sync-retrieval-key.yml, which refuses on the cmdcenter project-id trap). NOTE: the local Vercel CLI 54.20.1 crashed on its npm dist-tags update check until NODE_OPTIONS=--use-system-ca was set (the corporate TLS-intercepting proxy); with that set it authenticates as empressaioemail-tech."
+  },
+
+  "groundTruth": [
+    "2026-09-14T13:0xZ: local Vercel CLI `vercel whoami` -> empressaioemail-tech (exit 0) ONLY with NODE_OPTIONS=--use-system-ca; without it the CLI dies in get-latest-worker.cjs on a failed npm dist-tags fetch. Recorded because it silently blocked the documented deploy path.",
+    "2026-09-14T13:0xZ: this workstation has no local Postgres (localhost:5432 closed) and no reachable docker daemon; api-server's DB-backed suites are CI-only here.",
+    "2026-09-14T13:1xZ: legacy-design-tools origin/main = 82857ebb38804ee4cce6ed1ba8718cb712aa9f29 and hauska-map origin/main = 9841c1bc0b86d450642d4617a9dca99c9a603b25 at branch creation; both worktrees were 0 ahead / 0 behind.",
+    "2026-09-14T13:1xZ: P:/seat-worktrees/dispatch-planner/doc_repo is on branch seat/dispatch-planner at 5ac88890 and carries the wave-6 lane artifacts; P:/seat-worktrees/property/doc_repo is on seat/property at 29182d0f and does NOT carry this dispatch."
+  ],
+
+  "openThreads": [
+    "LDT #685 Test job outcome (the DB-backed route tests are new; typecheck green).",
+    "Merge only on the CI check-run conclusion STRING 'success' for every check on both PRs (AGENT_CONTRACT section 5: `gh pr checks` printing 'pass' is NOT the standard).",
+    "cortex-api deploy-canary must NOT race the merge-triggered build-and-push — P-177 lost a canary revision to exactly that race (cortex-api-00784-riy deployed a stale image). Confirm the build-and-push run for the merge SHA completed BEFORE dispatching deploy-canary.",
+    "Whether the Vercel project auto-deploys main on merge (git integration) or needs an explicit `vercel deploy --prod`. Test empirically by fetching the alias for the tag after merge before reaching for the CLI."
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "lane": "p156-bastrop",
+  "planRows": ["P-156", "P-124"],
+  "status": "closed-partial",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-14_132927_surface_probe.json",
+    "command": "node scripts/surface-probe.mjs --rows P-156,P-124",
+    "docRepoHead": "5ac88890",
+    "predicates": 0,
+    "finding": "the probe's ROWS registry defines predicates for P-151..P-159 and P-167, P-169, P-171..P-175 only. There is NO predicate for P-156 or P-124: these are factory/data-shape rows with no customer-surface leg. 0 parcels on the artifact is a COVERAGE GAP in the instrument for these rows, reported as UNMEASURED — never as a pass. The rows' own predicate is measured by the gate read and the declaration validators cited below."
+  },
+
+  "falsifier": "All five ran, all five HELD (none fired). Dispatch f1: every one of the 181 carries a named reason, so the 0-unaccounted state is not a relabel — measured by SQL (155 name their declaring city and its coverage; 9 name Elgin's declared layer gap; 17 carry a legacy-design-tools stamp provenance). Dispatch f2: the gate cannot pass an EXPLICITLY_HELD city — `completenessNotApplicableState('Elgin')` is null and `buildCompletenessCells(cityName:'Elgin')` returns [], so a held city's cells stay `unaccounted` and the gate keeps refusing them; `requireDeclaredComplete` throws CITY_EXPLICITLY_HELD. Dispatch f3: the declaration cannot be written by hand without the measured counts — `assertCountsAreMeasured` throws COUNTS_NOT_MEASURED with no counts and DECLARATION_VACUOUS on a vacuous run, and `assertDigestIntact` turns any post-hoc edit into DECLARATION_DIGEST_MISMATCH. A-148 f4: the recorded district `field` is `ZoneTypeClass`, and the loader throws DISTRICT_SOURCE_IS_STALE_NUMERIC for each of FrontSetback_/SideSetback_/RearSetback_ — a district read from those is refused as stale at read time. A-148 f5: all 9 district rows are recorded with both readings and the loader throws DISCREPANCY_HIDES_DISTRICT if a district present in the layer is missing from the record — so the city's own contradiction cannot be hidden. 16 tests, 16 pass, in test/zoning-declaration-shape.test.mjs.",
+
+  "contradicted": "The dispatch's ORIGINAL premise is contradicted, and the dispatch already carries the amendment saying so; this close records it with instruments rather than manufacturing a delta. CLAIM 1 — 'Bastrop carries 181 unaccounted zoningDistrict parcels that block the bake.' MEASURED: 0. Instrument `node src/lib/parcel-record-engine/gate-rail-cli.mjs --county=48021 --rail=zoningDistrict` -> {ok:true, cellCount:62256, unaccountedCount:0} at 13:25:41Z and again at 13:26:44Z and 13:28:59Z; and the stored verdict in parcel_gate_verdict says pass/0 for all six CTX counties. CLAIM 2 — 'a PER-CITY COMPLETENESS DECLARATION exists nowhere.' MEASURED: it exists and is already consumed — src/config/zoning-layer-completeness.mjs (22 cities in DECLARED_COMPLETE, Elgin in EXPLICITLY_HELD, plus DECLARED_LAYER_GAP), consumed by src/jobs/parcel-r5-zoning.mjs. The half of that claim that STANDS is the SHAPE: it is a code constant (.mjs), which is exactly what the mission says the declaration must not be, and that is the half this lane built. CLAIM 3 — 'the 181 are still open.' MEASURED: all 181 disposed with written reasons on 2026-09-08/09, decomposing 155 + 9 + 17 = 181 exactly. CONSEQUENCE, stated plainly and not worked around: the mission's step 4 write is NOT AVAILABLE and NOT NEEDED for Bastrop, so no store write was performed. The 'after' gate read is the SAME READ as the 'before', not a delta — the residue was already zero before this lane ran. ONE PRECISION CORRECTION to the amended dispatch: its parenthetical attributes the 155 to city=Bastrop; measured, the 155 split 44 Bastrop + 111 Smithville (both DECLARED_COMPLETE cities in county 48021). The 155+9+17=181 arithmetic is unchanged.",
+
+  "leave_behind": [
+    "The wave's p156 dispatch should be recompiled: Bastrop's zoningDistrict rail is already at 0 unaccounted and the gate already passes, so Bastrop is not the blocked city the row was written for. The live P-156/P-124 question is whether Travis (2,758) and Williamson (1,271) carry the same declaration shape, and neither has a JSON declaration yet.",
+    "The 18 `refused` no-staged-layer cells in county 48021 (Webberville and peers, written 2026-09-08T02:44Z) are a separate, earlier-swept population from the 181 and are NOT in the dispatch's arithmetic. If the p156 accounting is ever re-derived from the store, they must be excluded explicitly or the total will read 199.",
+    "src/config/zoning-declarations/ currently holds ONE city (bastrop-tx). The loader's divergence control (`assertNoDivergenceWithCoverageAttestation`) binds it to the 22-city code constant; until more cities are generated, that control is exercised by one positive case and two synthetic negatives. A second city would make it load-bearing rather than illustrative.",
+    "A-148's rule text says the district source is `Zone_Types/25`'s TEXT fields, but at source the district IDENTITY is the coded-domain integer `ZoneTypeClass` and the TEXT fields are the dimensional definitions. Both readings satisfy the operative prohibition (no underscore numeric column is recorded as district), and the declaration records `ZoneTypeClass` with `zoneTypeRawValueAtSource` for audit. Flagged in CP1 and CP2 rather than silently picked; the sequence's wording should be reconciled before it is applied to Travis/Williamson.",
+    "The store write that would put `declarationRef` on the cells requires `--apply`, which is Cloud-Run-only (LAPTOP_WRITE_FROZEN on a laptop). Until a Cloud Run run happens, the gate's accounting rests on the cell's existing `completenessDeclaration` block, and the new `declarationRef` is present in the code path and the dry run but not yet in the store. This is a deploy step, not a lane step.",
+    "P-154 owns the setback VALUES and the conflict note; the text-vs-numeric divergence this lane recorded (SF-1, MU, PI) is evidence that lane should read, not a finding it should re-derive."
+  ],
+
+  "missionPremise": "As written 2026-09-08: after parcel-r5-zoning re-ran, 5,876 in-city parcels across the six CTX counties were still `unaccounted` for zoningDistrict (Bastrop 181, Travis 2,758, Williamson 1,271); the rail gate is zero-tolerance; and clearing them honestly needed a PER-CITY COMPLETENESS DECLARATION that existed nowhere. As measured 2026-09-14: the declaration exists (as a code constant), Bastrop's residue is 0 with every one of the 181 individually dispositioned, and the gate passes all six counties. The mission's remaining, still-true half is the SHAPE — versioned data with provenance instead of a code constant — and that is what was built.",
+
+  "completionPredicate": "P-156 / P-124 are complete when (a) a per-city declaration exists as VERSIONED DATA with provenance, not a code constant, and the gate's not-applicable accounting rests on it; (b) every unmatched parcel in that city carries a named reason as data; (c) the declaration's district source is Zone_Types/FeatureServer/25 and is never an underscore numeric column; and (d) the text-vs-numeric setback divergence is recorded PER DISTRICT with both readings. MEASURED: (a) PASS — src/config/zoning-declarations/bastrop-tx.json, version 2026-09-14.1, sha256 digest ee8b97e37a4c8167aa1ad357c62d00ff3fcd9230eb84b25f00ef4025ffedc8d2, generated from live reads by scripts/ctx-w2/zoning-declaration-generate.mjs, validated by src/config/zoning-declarations/index.mjs, and attached to every completeness cell the job writes as `declarationRef`. (b) PASS — counts.matchedNone=44 and 44 dispositions, one per parcel, each with a non-empty reason; the county-level 181 decomposes 155+9+17. (c) PASS — districtSource.field = `ZoneTypeClass` (coded domain 1..10), with FrontSetback_/SideSetback_/RearSetback_ recorded ONLY as the stale twins; the loader refuses them as district with DISTRICT_SOURCE_IS_STALE_NUMERIC. (d) PASS — all 9 district rows recorded with both readings; districts where Bastrop's own layer contradicts itself are SF-1 (174 of 175 features: text 30/10/30/20 vs numeric 25/5/25), MU (103 of 103: SideSetback_ 0 vs text's 5-foot minimum), PI (61 of 63: FrontSetback_ 20 vs 25, SideSetback_ 20 vs 15). Gate read: unaccountedCount 0 for 48021/zoningDistrict, before and after, unchanged by design. 16 new tests, 16 pass; full suite 1343/1348 with 1 pre-existing environment-dependent failure (ctx-b3-store-census) that also fails with this lane's diff stashed.",
+
+  "scopeBasis": "In scope and done: the declaration record shape and its generator (scripts/ctx-w2/zoning-declaration-generate.mjs); the declaration as versioned data with a self-digest (src/config/zoning-declarations/bastrop-tx.json); the one reader and its validators (src/config/zoning-declarations/index.mjs); the consumer wiring that puts a traceable declaration reference on the cells the job writes (src/jobs/parcel-r5-zoning.mjs, buildCompletenessCells); the A-148 district-source and per-district divergence rules enforced at both write and read time; the tests (test/zoning-declaration-shape.test.mjs); the Bastrop dry run of parcel-r5-zoning and the gate reads. Out of scope and untouched: setback VALUES and the conflict note (P-154); the bake; the store write itself (no store write was performed or needed, per the premise correction); Travis and Williamson declarations (next wave); hauska-engine-p156-bastrop, which was authorised only if the reader must live there and was therefore not used at all — it remains clean at its start commit 14c7e85. Scope was not displaced by A-148: A-148 ADDS the two rules above and removed only the superseded two-competing-services framing, which was already superseded in the dispatch.",
+
+  "declarationFile": {
+    "path": "src/config/zoning-declarations/bastrop-tx.json",
+    "repo": "P:/seat-worktrees/property/hauska-factory-p156-bastrop",
+    "branch": "feat/p156-city-completeness-declaration",
+    "declarationVersion": "2026-09-14.1",
+    "digest": "ee8b97e37a4c8167aa1ad357c62d00ff3fcd9230eb84b25f00ef4025ffedc8d2",
+    "generator": "scripts/ctx-w2/zoning-declaration-generate.mjs",
+    "reader": "src/config/zoning-declarations/index.mjs",
+    "consumer": "src/jobs/parcel-r5-zoning.mjs (buildCompletenessCells -> declarationRef)",
+    "state": "DECLARED_COMPLETE"
+  },
+
+  "districtSource": {
+    "namedAs": "Zone_Types/FeatureServer/25 — the City of Bastrop's CURRENT, authoritative zoning layer (overseer A-148, commit 5ac88890)",
+    "url": "https://services7.arcgis.com/qOeXJdBtGknaCJC4/arcgis/rest/services/Zone_Types/FeatureServer/25",
+    "layerName": "Zone_Types_Draft_11_2025",
+    "lastEditDate": "2026-07-09T19:05:23.169Z",
+    "featureCount": 595,
+    "textFields": ["FrontSetback", "SideSetback", "RearSetback", "CornerSideStreetSetback"],
+    "districtCodeField": "ZoneTypeClass (esriFieldTypeSmallInteger, coded domain 1..10 -> P/OS, RR, SF-1, SF-2, SF-3, MU, GC, PI, IND, PDD)",
+    "neverUsedAsDistrict": ["FrontSetback_", "SideSetback_", "RearSetback_"],
+    "noNumericCornerColumn": true,
+    "recordedFieldIsNotUnderscoreNumeric": true,
+    "ordinalDivergenceFlagged": "A-148 names 'Zone_Types/25's TEXT fields' as the district source; at source the district IDENTITY is the coded-domain integer ZoneTypeClass and the TEXT fields are the dimensional definitions. The operative prohibition is satisfied either way and the declaration records ZoneTypeClass plus zoneTypeRawValueAtSource. Flagged, not silently picked.",
+    "staleNumericConsumer": {
+      "url": "https://services7.arcgis.com/qOeXJdBtGknaCJC4/arcgis/rest/services/Parcels_One_Click/FeatureServer/23",
+      "layerName": "Parcel_OneClick_Join",
+      "lastEditDate": "2026-09-10T20:24:43.755Z",
+      "carriesBothReadings": true,
+      "note": "the One Click join of Zone_Types/25; it carries each setback BOTH as text and as its underscore twin, so a consumer reading the twin reads the stale value A-148 names"
+    }
+  },
+
+  "perDistrictTextVsNumeric": {
+    "countingRule": "all 595 features returned by outFields=*&returnGeometry=false; grouped by ZoneTypeClass and by distinct (text tuple, numeric tuple); the leading number token of the text reading is compared to its underscore twin; `staleOn` names every field that disagrees.",
+    "districtsWhereTheCityContradictsItself": ["SF-1", "MU", "PI"],
+    "record": [
+      {"districtCode": "SF-1", "districtName": "SF-1", "featureCount": 175, "divergingFeatures": 174, "text": {"FrontSetback": "30 feet", "SideSetback": "10 feet", "RearSetback": "30 feet", "CornerSideStreetSetback": "20 feet"}, "staleNumeric": {"FrontSetback_": 25, "SideSetback_": 5, "RearSetback_": 25}, "staleOn": ["FrontSetback_", "SideSetback_", "RearSetback_"], "note": "matches A-148's 30/10/30/20 text vs 25/5/25 numeric exactly; there is no numeric corner column"},
+      {"districtCode": "MU", "districtName": "MU", "featureCount": 103, "divergingFeatures": 103, "text": {"FrontSetback": "15 feet", "SideSetback": "5 feet minimum; 0 feet allowed on shared/party-wall sides within a unified development; 10 feet where abutting RR or SF districts", "RearSetback": "15 feet", "CornerSideStreetSetback": "10 feet"}, "staleNumeric": {"FrontSetback_": 15, "SideSetback_": 0, "RearSetback_": 15}, "staleOn": ["SideSetback_"], "note": "the numeric latched the secondary '0 feet allowed' clause instead of the 5-foot minimum"},
+      {"districtCode": "PI", "districtName": "PI", "featureCount": 63, "divergingFeatures": 61, "text": {"FrontSetback": "25 feet (may be reduced to 10 feet for urban frontage, provided fire access and pedestrian circulation are maintained)", "SideSetback": "15 feet", "RearSetback": "20 feet", "CornerSideStreetSetback": "20 feet"}, "staleNumeric": {"FrontSetback_": 20, "SideSetback_": 20, "RearSetback_": 20}, "staleOn": ["FrontSetback_", "SideSetback_"], "note": "61 of 63 features carry the stale pair; the other 2 carry 25/15/20, which agrees"},
+      {"districtCode": "P/OS", "districtName": "P/OS", "featureCount": 22, "divergingFeatures": 0, "staleOn": [], "note": "agrees; numerics null throughout; 4 variants"},
+      {"districtCode": "RR", "districtName": "RR", "featureCount": 32, "divergingFeatures": 0, "staleOn": [], "note": "agrees, 50/20/50"},
+      {"districtCode": "GC", "districtName": "GC", "featureCount": 142, "divergingFeatures": 0, "staleOn": [], "note": "agrees, 20/5/20"},
+      {"districtCode": "IND", "districtName": "IND", "featureCount": 31, "divergingFeatures": 0, "staleOn": [], "note": "agrees, 25/20/25"},
+      {"districtCode": "PDD", "districtName": "PDD", "featureCount": 26, "divergingFeatures": 0, "staleOn": [], "note": "all setback columns null by design"},
+      {"districtCode": "(no district code)", "districtName": "(no district code)", "featureCount": 1, "divergingFeatures": 0, "staleOn": [], "note": "one feature carries no ZoneTypeClass; text 20/5/20/10, numerics null — recorded rather than dropped"}
+    ],
+    "absentDistrictDomainCodes": ["SF-2 (domain 4)", "SF-3 (domain 5)"]
+  },
+
+  "the181Dispositions": {
+    "countingRule": "parcel_record_cell rows with rail_key='zoningDistrict' joined to parcel_record where county_fips='48021', bucketed by cell_state->>'kind', by cell_state->'completenessDeclaration'->>'cityName', and by reason family; written-window from updated_at. Instrument: P:/tmp/p156/sql/b48021_split.sql run through P:/tmp/p156/q.mjs factory. The completed trigger was `node src/cli.mjs parcel-r5-zoning --city=bastrop-tx` (DRY).",
+    "sumTo181": "155 + 9 + 17 = 181 exactly",
+    "rows": [
+      {"bucket": "not-applicable carrying completenessDeclaration — city=Bastrop (DECLARED_COMPLETE)", "n": 44, "window": "2026-09-08T12:30:42.945Z -> 2026-09-08T12:30:58.275Z"},
+      {"bucket": "not-applicable carrying completenessDeclaration — city=Smithville (DECLARED_COMPLETE)", "n": 111, "window": "2026-09-08T12:31:44.665Z -> 2026-09-08T12:31:49.541Z"},
+      {"bucket": "refused — reason names Elgin's declared layer gap", "n": 9, "window": "2026-09-09T21:03:29.665Z -> 2026-09-09T21:03:31.838Z"},
+      {"bucket": "value — source=legacy-design-tools:txgio_parcel.zoning_district (Elgin staleness class)", "n": 17, "window": "2026-09-09T21:03:29.665Z -> 2026-09-09T21:03:33.727Z"}
+    ],
+    "outsideThe181ButInTheSameCounty": [
+      {"bucket": "refused — no staged layer, reason names the city (Webberville and peers)", "n": 18, "window": "2026-09-08T02:44:50.080Z -> 2026-09-08T02:45:40.738Z", "note": "written ~10 hours BEFORE the 181 window opened at 12:30Z; a separate earlier-swept population, not part of the 181"},
+      {"bucket": "value — source=tx_zoning_district_staging (real spatial match)", "n": 11793, "window": "2026-09-02T15:17:19.107Z -> 2026-09-02T15:54:33.586Z"},
+      {"bucket": "not-applicable carried by nothing (unincorporated, written at instantiate time)", "n": 50264, "distinctReasons": 1}
+    ],
+    "unaccountedIn48021": 0
+  },
+
+  "gateReads": {
+    "instrument": "src/lib/parcel-record-engine/gate-rail-cli.mjs --county=48021 --rail=zoningDistrict (the real gate code, read-only)",
+    "before": {"at": "2026-09-14T13:25:41.227Z", "verdict": {"ok": true, "railKey": "zoningDistrict", "cellCount": 62256, "unaccountedCount": 0, "unaccountedSamples": [], "excludedDeclaredAhead": []}},
+    "after": {"at": "2026-09-14T13:26:44.072Z", "verdict": {"ok": true, "railKey": "zoningDistrict", "cellCount": 62256, "unaccountedCount": 0, "unaccountedSamples": [], "excludedDeclaredAhead": []}},
+    "atClose": {"at": "2026-09-14T13:28:59.885Z", "verdict": {"ok": true, "railKey": "zoningDistrict", "cellCount": 62256, "unaccountedCount": 0}},
+    "sameReadNotADelta": "These are three reads of ONE state, not a before/after pair. NO STORE WRITE WAS PERFORMED OR NEEDED: the residue was already 0 before this lane ran, because the declaration landed on 2026-09-08/09. Stated plainly rather than manufactured into a delta."
+  },
+  "jobRun": {
+    "command": "node src/cli.mjs parcel-r5-zoning --city=bastrop-tx  (DRY — no --apply; --apply is Cloud-Run-only and refuses on a laptop with LAPTOP_WRITE_FROZEN)",
+    "at": "2026-09-14T13:26:12.339Z",
+    "result": {"totalParcels": 5819, "matchedParcels": 5775, "residualUnaccounted": 44, "completenessCells": 44, "layerGapCells": 0, "stampSourcedCells": 0, "residualAfterCompleteness": 0, "declaredComplete": true, "cellsMoved": 0, "zonePolygonCount": 7075, "byMethod": {"ring": 5775, "bbox-centre": 0}},
+    "cellPct": 99.24,
+    "arealPct": 69.53
+  },
+
+  "premiseCorrection": {
+    "clause1": {"claim": "Bastrop 181 unaccounted", "measured": 0, "instruments": ["src/lib/parcel-record-engine/gate-rail-cli.mjs --county=48021 --rail=zoningDistrict", "parcel_gate_verdict: all six CTX counties verdict=pass, unaccounted_count=0"]},
+    "clause2": {"claim": "a per-city completeness declaration exists nowhere", "measured": "it exists as a CODE CONSTANT and is already consumed", "instruments": ["src/config/zoning-layer-completeness.mjs (22 DECLARED_COMPLETE, Elgin EXPLICITLY_HELD, DECLARED_LAYER_GAP)", "src/jobs/parcel-r5-zoning.mjs imports and consumes it"], "stillStands": "the SHAPE — a .mjs code constant is exactly what the mission says the declaration must not be, and that is the half this lane built"},
+    "clause3": {"claim": "the 181 are still open", "measured": "all 181 disposed with written reasons", "instruments": ["P:/tmp/p156/sql/b48021_split.sql via P:/tmp/p156/q.mjs factory"]},
+    "precisionCorrection": "the amended dispatch attributes the 155 to city=Bastrop; measured they split 44 Bastrop + 111 Smithville. The 155+9+17=181 arithmetic is unchanged."
+  },
+
+  "evidence": {
+    "commits": [
+      {"repo": "hauska-factory", "branch": "feat/p156-city-completeness-declaration", "sha": "125e50bc53722ceedbb9e1f7a53ba3b7bde5a80c", "subject": "P-156: per-city zoning completeness declaration as versioned data (A-148)"},
+      {"repo": "hauska-factory", "branch": "feat/p156-city-completeness-declaration", "sha": "c8fcb7305ecd288347c00059819dfbd0b2b1f872", "subject": "P-156: pin digest line-ending independence (CRLF checkout regression test)"}
+    ],
+    "pullRequests": [],
+    "pullRequestCheck": {
+      "verdict": "NONE ambiguous. No p156 PR in ANY state in either repo, and no p156 branch on origin in either repo.",
+      "command": "GH_PROMPT_DISABLED=1, 30s per-call timeout, via P:/tmp/p156/probe/limbo_pr_check.mjs",
+      "measured": {
+        "hauska-factory open PRs": "1 — #37 seat/property-ctx-walk-alias-schema (not p156)",
+        "hauska-engine open PRs": "13 — none p156; the p154 conflict row #442 is present and explicitly isDraft:true, so it is not ambiguous",
+        "gh pr list --state all --search p156": "[] for BOTH repos",
+        "git ls-remote --heads origin *p156*": "nothing for EITHER repo (this lane's branch is not pushed)"
+      },
+      "correction": "An earlier check in this session omitted --repo, so it resolved the repo from the cwd at the time — the hauska-engine worktree — and therefore covered hauska-engine only, and its output was filtered by a select-string that printed nothing. The negative was therefore right for engine but not measured for factory. Re-run explicitly against both repos; the claim in this close is the re-measured one."
+    },
+    "orphanedCommandsTerminated": "The predecessor session left a whole-drive `dir /s /b P:\\...` scan running (pid 99092 + parent powershell 90524, launched 07:57:38 local, 1258s CPU). Command lines confirmed via Win32_Process, then BOTH terminated and verified dead. No watch, tail, dev server or runaway scan from this lane or its predecessor remains running.",
+    "ciConclusionStrings": "n/a — nothing pushed, nothing opened, so there is no PR for p156 in any state and no limbo PR",
+    "mergeSHAs": [],
+    "tests": {"new": {"file": "test/zoning-declaration-shape.test.mjs", "tests": 16, "pass": 16, "fail": 0}, "fullSuite": {"tests": 1348, "pass": 1343, "fail": 1}, "fullSuiteFailure": {"test": "test/ctx-b3-store-census.test.mjs:137 (pinned LDT checkout vs maintained mirror)", "verdict": "pre-existing and environment-dependent", "evidence": "9 pass / 1 fail in isolation, and 9 pass / 1 fail with this lane's entire diff stashed and then restored"}},
+    "artifacts": {
+      "declaration": "src/config/zoning-declarations/bastrop-tx.json",
+      "generator": "scripts/ctx-w2/zoning-declaration-generate.mjs",
+      "reader": "src/config/zoning-declarations/index.mjs",
+      "tests": "test/zoning-declaration-shape.test.mjs",
+      "surfaceProbe": "_inbox/2026-09-14_132927_surface_probe.json",
+      "cp1": "_inbox/2026-09-14_p156-bastrop_cp1.json",
+      "cp2": "_inbox/2026-09-14_p156-bastrop_cp2.json"
+    }
+  },
+
+  "stoppedSubagentDisposition": "NONE TO REPORT. This lane is the deepest worker and its dispatch forbids spawning sub-agents; it spawned none, so the supervision note's recovery steps 1-4 have no subject. There is no stopped sub-agent diff, no pushed branch, no PR and no work item that moved to deferred by virtue of any stop. Both p156 worktrees were CLEAN with no work at the planner's captured start commits (hauska-factory 8771c51, hauska-engine 14c7e85), re-verified by this lane at session start and again at close, so there was no stopped diff to recover and the mission itself is what resumed. hauska-engine-p156-bastrop was not used and remains clean at 14c7e85. SEPARATELY, the PREDECESSOR left one orphaned background command still running at close (pid 99092, a whole-drive `dir /s /b P:\\...`; parent powershell pid 90524) which had accumulated 1258 seconds of CPU; both were confirmed by command line and terminated, and no watch/tail/dev server/runaway scan remains. See evidence.pullRequestCheck and evidence.orphanedCommandsTerminated.",
+
+  "statusReason": "closed-partial, and the partial is stated rather than hedged. Every mission deliverable is built and measured: the declaration exists as versioned data with provenance and a self-digest, its district source is Zone_Types/25 and is never an underscore numeric column, the text-vs-numeric divergence is recorded per district with both readings, every one of the 181 carries a named reason, the gate reads 0 unaccounted for 48021/zoningDistrict, and all five falsifiers were run and held. TWO legs are not measured and neither can be by this lane: (1) the customer-surface leg is UNMEASURED because scripts/surface-probe.mjs defines no predicate for P-156 or P-124 — 0 parcels on the cited artifact, reported as a coverage gap, never as a pass; (2) the store write that would put `declarationRef` on the cells is not performed because the premise correction removed the need for it, and it could not be performed from a laptop anyway (LAPTOP_WRITE_FROZEN)."
+}

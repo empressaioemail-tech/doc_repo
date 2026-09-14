@@ -1,0 +1,50 @@
+{
+  "lane": "p183-querypoint",
+  "instance": "c964d973-6525-4419-968d-7a3bfc010081",
+  "planRows": ["P-183"],
+  "status": "blocked",
+  "artifactKind": "disposition-note (NOT the lane CP2 and NOT the lane close)",
+  "blockedOn": "duplicate dispatch into one checkout: a second instance of this lane is the owner of the same worktree and the same branch, and is mid-flight on it. This instance stood down rather than double-write. The canonical CP2/CLOSE for P-183 must be written by the owning instance.",
+  "collision": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p183-querypoint",
+    "branch": "fix/p183-querypoint-from-geometry",
+    "ownerInstance": "sibling subagent 7b6601df-4e1a-4952-b189-2c92b12364d6 (task text: 'the p183-querypoint lane of OPS-23 wave 6, resumed as a SUPERVISED CONTINUATION after an operator interruption'); this instance was briefed with the same lane at 07:56",
+    "observedEvidence": [
+      "the sibling's own commit is on the branch: 2a0aced9 'fix(P-183): a gate-blocked county's ring and coordinate index come from the node's own parcel row' (lib +98, test +242, cli +50)",
+      "at 08:32 the branch was mid-operation with `UU` on artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts: conflict markers at lines 389-399, HEAD side = the P-183 own-row hoist, origin/main side = `const excludedWork = []` from origin/main 84f4e7c9 (P-180 wave 6, PR #686). Trivial: both sides belong (keep both).",
+      "a live `npx tsx src/nodeFacetBakeTier1ConformantCli.ts --county=48209` was running at 08:26 from P:/seat-worktrees/property/legacy-design-tools-p178-publish",
+      "a live `npx vitest run src/nodeFacetBakeTier1Conformant.test.ts -t P-183` ran from the p183 worktree at 08:24"
+    ],
+    "whatThisInstanceDidAboutIt": "stopped writing to the shared checkout; removed only the two test-helper lines and the duplicate describe block this instance had introduced (they duplicated the sibling's block and did not compile: helpers scoped to another describe); deleted its four scratch files (main-lib.ts, main-err.txt, tsc-api.log, tsc-api2.log). Nothing else was touched."
+  },
+  "reading": {
+    "writerOfTheServedPoint": "NOT hauska-factory's parcel_record writer and NOT hauska-engine. The served cityLimitsFact.queryPoint is composed on the serve from place_layer_snapshots.lat_rounded / lng_rounded for the node's place_key, and those two columns are written by legacy-design-tools artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts (the tier-1 conformant bake) as ringCentroid(firstRing(row.geometry)). parcel_record carries no coordinate rail; its cityLimits rail is the city string only.",
+    "theJoiningBug": "For a gate-blocked county the bake refuses the CAD prop_id join but still takes its geometry from CAD-keyed sources: `row = crosswalkRow ?? situsRow`, where crosswalkRow is cad_property.property_number -> txgio_parcel.geo_id and situsRow is the owner-gated address recovery. Both are keyed off the CAD account, and the CAD account number is the numbering that diverges from the parcel table's. Node 48209:97658's claim (from the CAD roll read by that number) carries 13669 Mesa Verde Dr, so the record drew a different parcel.",
+    "whatTheNodeActuallyIs": "the parcel table's row whose prop_id equals the node id (second component of parcelNodeId). For the five Sturgeon Dr lots that is the lot itself; the served point for them was 30.18232,-97.97703 while the CAPCOG address points are 29.87113..29.87188 / -97.92674..-97.92588 (scripts/surface-probe.mjs ADDRESSES), 34,848 m apart.",
+    "joinPasted": "node id 48209:<prop_id> --(txgio_parcel.prop_id, the node's own identity)--> the lot | cad_property row <prop_id> --(propertyNumber)--> txgio_parcel.geo_id (the crosswalk) | claim situs address --(normalizeSitusAddress + owner gate)--> txgio_parcel (the address recovery). The first is the node; the second and third are the CAD account."
+  },
+  "rule": {
+    "forGateBlockedCounties": "the ring and the coordinate index come from the parcel-table row whose prop_id IS the node's identity (fetched, and offered, only when the node id is present in that column -- a MEASURED membership, not an assumption); the published-identifier crosswalk and the owner-gated address recovery remain the fallbacks for a node id the parcel table does not carry. Never from cad_property by bare number.",
+    "derivationUnchanged": "the point remains ringCentroid(firstRing(ring)) -- the same derivation every county uses for lat_rounded/lng_rounded; only the SOURCE of the ring changes. The lots are Conway Addition Sec IV lots of about a quarter acre, so the ring centroid and the CAPCOG point are within tens of metres.",
+    "landUseUntouched": "land use on a gate-blocked county still comes from the owner-gated address join and nothing else."
+  },
+  "whatIsInTheTree": {
+    "lib": "nodeFacetBakeTier1Conformant.ts: optional `parcelJoin.ownRow`; precedence `if (ownRow) row = ownRow; else if (crosswalkRow) row = crosswalkRow;`; new provenance state `joined-own-prop-id` (a sixth state, derived from `row` so it cannot claim a bind that did not happen).",
+    "cli": "nodeFacetBakeTier1ConformantCli.ts: the P-180 prepass fetch (joinParcelRows on the work ids) is KEPT as `ownPropIdRows` instead of being dropped after its keys are read -- so the fix costs no extra query and no extra scan; `row = joinGateBlocked ? (ownPropIdRow ?? crosswalkRow ?? situsRow) : propIdRow`; a `ownPropIdGeometry` counter printed on stdout for every gate-blocked run and carried in the JSON summary.",
+    "tests": "the owning instance's block ('P-183: a gate-blocked county draws the node's OWN parcel row') carries the measured Sturgeon/Catalina fixtures and the acreage leg.",
+    "typecheck": "after this instance removed its duplicate block: 6 remaining TS2345 errors, all in the owning instance's block, from a local helper whose parameter is typed `{ provenance: { parcelJoin: { featureIndex?: number | null } } }` -- the union has members without featureIndex. Trivial fix (type it as ConformantTier1Payload or read `.state` first). Everything else in the api-server project typechecks."
+  },
+  "falsifier": "pre-registered: if after the re-run any of the five Sturgeon nodes' record point is more than 150 m from its CAPCOG address point, the cell still reads the colliding account; and if a non-blocked county's cells change on a control run, the change is wider than the claim. OBSERVED BY THIS INSTANCE: neither leg was measurable -- no re-run was fired by this instance (production is gated behind the p178-publish lane's production publish, and the record point only moves when the bake re-runs and the served place_layer_snapshots rows are re-read), and no probe artifact exists from this instance. The code change is blocked-only and additive, so the control leg is argued by construction, not measured.",
+  "contradicted": "The dispatch's premises about the writer and the store are wrong at the source. (1) 'the record store's geocoded cells' -- parcel_record holds no coordinate cell for these nodes; the served queryPoint is composed from place_layer_snapshots.lat_rounded/lng_rounded. (2) The writer named by the plan row (hauska-factory / parcel_record) is not the writer of the point; the writer is legacy-design-tools' tier-1 conformant bake. (3) 'Out of scope: the bake and its walk' contradicts the finding: the bake's row selection IS the defect, so the fix lands in the bake's own source and reaches serving only through the factory's pinned _LDT_SHA.",
+  "leave_behind": [
+    "The served point moves only when the bake re-runs for 48209 under the new code AND the factory's LDT pin points at the merge commit; a code change alone changes nothing on the surface.",
+    "place_layer_snapshots' ON CONFLICT update keeps the old lat_rounded/lng_rounded only when the new pair is exactly (0,0) (the sentinel guard), so a re-run with a real centroid does move the column -- verified in the CLI's upsert.",
+    "The probe's P-175 leg fails on `distM > 150` against the CAPCOG ADDRESS point, so the fix must place the point inside/near the lot, not merely on the right parcel: the centroid of the node's own ring does that for these lots (about a quarter acre each).",
+    "Two instances of one lane were dispatched into one checkout; the second writer is how a `UU` conflict appeared in the middle of a routine origin/main advance. One lane, one checkout, one writer.",
+    "My four scratch files in the shared checkout were removed; the duplicate describe block and the two duplicated test-helper lines this instance introduced were removed so the owning instance's suite compiles and runs."
+  ],
+  "missionPremise": "the record path's cityLimitsFact.queryPoint for the five Sturgeon Dr addresses is 34.8 km from the CAPCOG address point because the geocoded geometry was taken from the CAD account joined by bare number; the node's own parcel-table row is the correct source.",
+  "completionPredicate": "scripts/surface-probe.mjs --rows P-175 PASS on all five Sturgeon addresses after the re-run and the deploy -- not measured by this instance.",
+  "scopeBasis": "mission P-183 'GEOCODED CELLS THROUGH THE CROSSWALK', plan row P-183 in 90_operations/OPS-16_texas_market_plan_of_record.md; dispatch _dispatches/2026-09-14_p183-querypoint_dispatch.md.",
+  "handoff": "The owning instance (sibling subagent 7b6601df) holds the branch, the commit 2a0aced9 and the in-flight conflict resolution; it should write CP2 and the CLOSE at the exact paths. This artifact exists only so the planner has a machine-readable record of the collision and of the reading, and must not be cited as the lane's probe or close."
+}
