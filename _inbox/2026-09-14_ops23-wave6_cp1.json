@@ -645,7 +645,8 @@
         "documentedAndSanctioned": "`--row-id=Bastrop --city-cohort --force-overwrite --promote --limit=10000` — the whole Bastrop city cohort; the same runbook records the Elgin precedent processing 3,762 parcels in one cohort run. And `bake-property-atom-county --county=48021` — every tier1 snapshot parcel in the county. Both re-warm and `--force-overwrite` REWRITES STORED ENVELOPE GEOMETRY (R28 ring recompute, R30 road relabel) across the cohort.",
         "boundedAndUndocumented": "`--parcel=48021:34049` on the generic runner scopes the warm SQL to one parcel (the cohort branch is guarded by `else if (args.cityCohort && !args.parcel)`), but no runbook documents the per-parcel form and no recorded run uses it. --row-id is still REQUIRED.",
         "noteForTheOperator": "So the sanctioned way to do the approved work re-warms a whole city. The bounded way exists but is not the documented path."
-      }
+      },
+      "recordPathBound": "SEE O37: the re-mint cannot change the P-152 record surface at all (no atomDid on any live cell, rendering hardcoded null, P-163 not landed, and the record's setback values come from @empressaio/setback-corpus, a different source with no disclosure)."
     },
     {
       "id": "O18",
@@ -969,6 +970,23 @@
       "whyItIsItsOwnDefect": "The surface is not saying 'this parcel is retired' and it is not saying 'we decline to serve this'. It is saying the parcel DOES NOT EXIST -- collapsing an earned, provenanced absence into never-had-it. That is a different failure from the 404 the walk grades, and a fix to the walk's GRADE cannot and must not be read as a fix to the SURFACE's vocabulary.",
       "guard": "explicitly listed as out of scope in the p180-walk mission and dispatch, with an instruction not to cite the walk fix as evidence about it. Carded by the integration seat.",
       "ownership": "integration seat (per the operator). Not this wave's lanes."
+    },
+    {
+      "id": "O37",
+      "title": "The P-152 record surface has NO ROUTE for the conflict payload today, so the pending re-mint cannot change what the record rails serve",
+      "severity": "medium-high -- it BOUNDS what the step-2 re-mint can accomplish, and it is invisible until after a re-mint someone expected to show up on the record",
+      "discoveredBy": "the re-mint derivation subagent (Q3_record_snapshot_refresh), read by the planner while reconciling the stale lane notifications -- under-recorded in CP1 until now (the artifact carried it; the wave ledger did not)",
+      "theDistinction": "The re-mint writes SUBSTRATE ATOMS. 'The record' is a DIFFERENT STORE served by a DIFFERENT ROUTE with a DIFFERENT OWNER. Two steps, two instruments, two stores.",
+      "whatTheRecordIs": "GET /property-nodes/:parcelNodeId/record — services/retrieval-api/src/parcel-record-reader.ts, the P-152 ONE-READER, which the hauska-map BFF calls for every rail whose serve is 'record'. It reads parcel_record_cell.cell_state, parcel_record_companion_row, parcel_gate_verdict, the closed 65-rail registry, and parcel-record-slate.json — all via FACTORY_DATABASE_URL_RO.",
+      "whyItCannotCarryTheConflict": {
+        "noAtomPointer": "the reader dereferences an atom ONLY if the cell carries an atomDid, and the reader's own source comment records that P-163 has not landed so no live cell carries one yet. `rendering` is hardcoded null.",
+        "differentSourceForSetbackValues": "the record layer's setback values are authored from @empressaio/setback-corpus by the factory job parcel-setback-cells — a DIFFERENT source from the atom — and that corpus contains no conflict disclosure at all (measured: zero occurrences of second_source in @empressaio/setback-corpus@1.2.0).",
+        "theRefreshInstrumentCannotRefresh": "factory-parcel-setback-cells is FIRST-WRITE-ONLY: its UPDATE_SETBACK_CELLS_SQL guard only ever moves a cell that is currently unaccounted, explicitly 'so a re-run can never downgrade an earned cell'. This parcel's cells are EARNED, so the job cannot refresh them. Also in-city only, and Hays is structurally excluded.",
+        "theCandidateWasRefuted": "load-snapshot-into-pg.mjs — named by the coordination pass as the 'record snapshot refresh' — is refuted by its own header: a one-time CODE-CORPUS loader (hauska-corpus-snapshot/1 into atoms/atom_links/jurisdiction_status), not a per-parcel record refresh. The phrase 'record snapshot refresh' has ZERO code hits across hauska-engine, hauska-factory, hauska-map, legacy-design-tools and the doc_repo."
+      },
+      "conclusion": "On today's tree there is NO route for the conflict payload into the record path. The re-mint reaches the ATOMS-backed surfaces (panel, get_smart_site, PDF — where smartsite-mcp's composer is dormant only until the atom carries `conflict`), but it does NOT reach the P-152 record surface. DO NOT OVERSTATE THE IMPACT: this is a bound, not a blocker, for the pending re-mint — those three surfaces are the ones P-154 set out to serve. It matters because 48021 IS slated for all five setback rails, so the record path genuinely is a serving path for 48021 setbacks, and anyone expecting the conflict to appear on a RECORD rail needs a separate row for it (the atomDid pointer P-163 would add, plus a corpus that carries the disclosure).",
+      "remedyIfWanted": "its own row: land P-163's cell->atomDid pointer, and give the setback-cell writer a refresh arm for earned cells, or make the record rail dereference the atom. Each is a separate decision.",
+      "artifact": "_inbox/2026-09-14_remint-derivation.json -> Q3_record_snapshot_refresh"
     }
   ],
   "premiseCorrections": [
@@ -1237,6 +1255,12 @@
     "operatorReasoning": "(1) the original reasoning stands: the shift's purpose was to make the re-minted payload visible on get_smart_site, and until the re-mint is actually run there is nothing for it to reveal, so a second same-day shift buys nothing; (2) a SECOND, mechanical reason: the P-170 traffic lease is ARMED and was verified refusing through the harness today, so a cortex-api shift with NO `_catalog/leases/cortex-api.json` will be REFUSED BY THE GATE, not by judgement.",
     "verifiedByPlanner": "_catalog/leases/ contains README.md ONLY -- cortex-api.json is ABSENT, so a shift attempt would be refused.",
     "doNotConfuse": "the AGENT_CONTRACT self-grant amendment permits a lane to TAKE an uncontended lease; it does not authorise bypassing the P-170 gate. A shift without the lease file is refused by the gate regardless of policy.",
-    "rollbackIfEverShifted": "cortex-api-00799-xaq"
+    "rollbackIfEverShifted": "cortex-api-00799-xaq",
+    "rollbackDisambiguated": {
+      "why": "the planner flagged a possible error in this record because the operator's phrase ('00799-xaq as rollback') and the coordination pass's finding ('rollback_revision=cortex-api-00797-zus') appear to disagree. They do not. They answer two DIFFERENT questions, and the record must say which is which rather than 'correcting' either.",
+      "forAFutureShift": "cortex-api-00799-xaq — CORRECT, and it is the operator's figure. It is what serves today (100% traffic, tag canary, observedGeneration=800, latestReady), so it is by definition the state a NEW shift would roll back to. This record's rollbackIfEverShifted is right as written.",
+      "forRevertingTheCurrentRevision": "cortex-api-00797-zus — the coordination pass's figure, answering the other question: how to undo 00799-xaq ITSELF. Note that doing so would also revert p185's PromoteKit change, which is a consequence to state before anyone uses it.",
+      "plannerNote": "verified by reading the live revision list rather than assuming: 00799-xaq is at percent=100 and is latestReadyRevision, so it cannot be a rollback target for undoing itself. No correction was needed; the record was made unambiguous instead."
+    }
   }
 }
