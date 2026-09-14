@@ -230,5 +230,7 @@ the specific go for the production apply itself.
 
 **Addendum 2026-09-14T14:30Z (A-147, A-148, P-185), final.** Wave 6 compiled and sent (`_dispatches/2026-09-14_ops23-wave6_dispatch.md`: p178-publish, p183-querypoint, p156-bastrop, p154-conflict). The operator's Bastrop setback concern resolved at source: the city's current zoning layer `Zone_Types/25` says 30/10/30/20 in text and 25/5/25 in unrefreshed numeric columns that the One Click join reads; our card matches the city's words; the conflict note names the stale columns; the city is told. Williamson was never touched (P-184). P-185 PromoteKit affiliates dispatched (Stripe Checkout path: script in the shell, referral in both checkout bodies, session and subscription metadata). Session ends at 5ac88890.
 
+**Addendum 2026-09-14T15:30Z (A-149).** OPS-24 opened from the county-to-serving map: thirteen rows P-186 to P-198, a program preamble, and a read-only teardown dispatch for a fresh planner; the gate fix (P-195) is first to build and Burnet runs end to end before any farm.
+
 This file will not be updated further. The durable card and checkpoint 5 are where the truth
 lives from here.
