@@ -610,7 +610,27 @@
       ],
       "candidateEvidenceIsStale": "CAUTION recorded by the coordinator and repeated here: the entire candidate reading comes from a worktree whose HEAD is 2026-08-26. The derivation must re-read against current main before relying on any of it.",
       "uncheckedHypothesis": "UNVERIFIED, recorded so the derivation checks it rather than assuming: the factory job template pins `CONTRACT_VERSION=1.30.0` while `@empressaio/atom-contract` is now 1.36.0 (the version that introduced the A-148 `conflict` arm). If the writer path validates through the factory contract version, a factory-side re-mint might not be able to express the conflict payload at all. The planner did NOT establish which contract version the writer path actually loads; the derivation must answer it before anyone attempts a write, because a writer that silently drops the new field would produce a \"successful\" re-mint that changes nothing on the surface.",
-      "status": "APPROVED AS WORK, BUT NOT DISPATCHABLE AS AN EXECUTION. A read-only derivation must come first."
+      "status": "APPROVED AS WORK, BUT NOT DISPATCHABLE AS AN EXECUTION. A read-only derivation must come first.",
+      "fullDerivationArtifact": "_inbox/2026-09-14_remint-derivation.json (read-only derivation, 2026-09-14; read by the planner at 16:4xZ)",
+      "contractVersionQuestion_SETTLED": {
+        "verdict": "SETTLED, and the planner's hypothesised \"silent drop by version\" DOES NOT EXIST. The writer path can express the A-148 conflict payload.",
+        "why": "Nothing on the write path validates display_meta against the contract at all. packages/storage/src/pg-storage.ts writes the instance as JSONB (${this.sql.json(instance)}); the guards on the path are identity/parcel-key only (assertCanonicalParcelEntityId, assertPropertyWriteBoundary, resolveAccessPolicyOrRefuse, assertScopeOnAtoms) and none inspects display_meta. Decisively, the symbol the factory imports as `mint` is `export function mint(): NodeId` in @empressaio/atom-contract src/identity/node-id.ts — a NODE-ID MINTER, not an atom validator. So a 1.30.0 process would not strip the field; it simply has no vocabulary to render it.",
+        "engineResolvesCurrent": "@empressaio/atom-contract resolves to 1.36.0 in hauska-engine/pnpm-lock.yaml across 9 manifests, and 1.36.0 is the version defining SETBACK_CONFLICT_SECOND_SOURCE_TOKEN.",
+        "whatsActuallyHappeningWith130": "The factory declares ^1.30.0, its lockfile resolves 1.30.0, and the Dockerfile sets ARG/ENV CONTRACT_VERSION=1.30.0 — but the Dockerfile installs with `npm install --omit=dev` and copies only package.json, NOT the lockfile, so a fresh image build with the ^1.30.0 range resolves the latest 1.x at build time. The value's real destination is the run record (runs.contract_version), i.e. BOOKKEEPING.",
+        "whereTheVersionDoesMatter": "the READ/render side: the conflict sentence is a contract-provided vocabulary string consumed by the surfaces, which already carry 1.36.0."
+      },
+      "theSilentNoOpIsREAL_butElsewhere": {
+        "finding": "The no-op hazard the planner feared exists, but it is a DATA-ORIGIN problem, not a version problem — and it is now precisely located.",
+        "mechanism": "emitSetbackRule adds `conflict` ONLY when the resolved setback-table row already carries display_meta.second_source.conflict (emit-setback-rule.ts:224-228). For Bastrop that row is built at warm time from the LIVE layer-23 per-parcel record by the A-148 detector (adapters/src/local/setbacks/bastrop-conflict-a148.ts). If the detector does not fire that day, THE RE-MINT SUCCEEDS AND THE SURFACE DOES NOT CHANGE.",
+        "consequence": "So the correct pre-write check is not a version check but a DATA check: establish that the A-148 predicate fires for prop_id 34049 before writing, or the write is a no-op that looks like success. This is the same failure shape the wave has already been burned by twice."
+      },
+      "noInvocationExists": "CONFIRMED BY DERIVATION, not merely unfound: no setback-specific, apply-enabled re-mint invocation exists anywhere in the current tree. There is exactly ONE path that persists a setback-rule atom and it is a GENERIC whole-parcel depth-warm promote runner with NO Cloud Build and NO Cloud Run wrapper. The F-11 writer (write-setback-city.mjs) is CITY-scoped, has no --parcel, and its apply is refused by design (SETBACK_APPLY_HELD). The deployed hauska-engine-atoms-writer job carries NO container args, so it cannot dispatch anything, and with --writer=setback it would reach the held F-11 script. The derivation states plainly that naming a setback-specific job would be fabrication.",
+      "blastRadius": {
+        "finding": "THE TWO DOCUMENTED FORMS ARE CITY- AND COUNTY-WIDE. Only the bounded form is UNDOCUMENTED.",
+        "documentedAndSanctioned": "`--row-id=Bastrop --city-cohort --force-overwrite --promote --limit=10000` — the whole Bastrop city cohort; the same runbook records the Elgin precedent processing 3,762 parcels in one cohort run. And `bake-property-atom-county --county=48021` — every tier1 snapshot parcel in the county. Both re-warm and `--force-overwrite` REWRITES STORED ENVELOPE GEOMETRY (R28 ring recompute, R30 road relabel) across the cohort.",
+        "boundedAndUndocumented": "`--parcel=48021:34049` on the generic runner scopes the warm SQL to one parcel (the cohort branch is guarded by `else if (args.cityCohort && !args.parcel)`), but no runbook documents the per-parcel form and no recorded run uses it. --row-id is still REQUIRED.",
+        "noteForTheOperator": "So the sanctioned way to do the approved work re-warms a whole city. The bounded way exists but is not the documented path."
+      }
     },
     {
       "id": "O18",
@@ -649,6 +669,13 @@
         "whyThisStillBlocks": "The publish job also writes those same ledger tables, and requireStagingSibling reads publish_runs. So a concurrent gate-sched can interleave the very rows the guard consults. Not proven to have caused anything; sufficient to block, given this wave has already been burned by concurrent access to a shared store.",
         "staleImageNote": "gate-sched runs IMAGE_DIGEST sha256:36fe6832… and ENGINE_SHA a38cbb22… — a DIFFERENT image from the publish job's bb3d7148. It was not rebuilt by the p180-joint lane, so it is running older code against the same store.",
         "verdict": "STILL BLOCKED for step 1. Re-read by field before firing."
+      },
+      "quiescenceCriterionMayBeUNAchievable": {
+        "finding": "gate-sched is not an ad-hoc run — it is an HOURLY SCHEDULED job, and there is a second timer on the same store.",
+        "evidence": "gcloud scheduler jobs list (project hauska-prod-497015, us-east4) shows `factory-publish-gate-sched-hourly` on cron `0 * * * *` firing jobs/factory-publish-gate-sched:run, and `factory-conformant-reap` on `*/10 * * * *` firing jobs/factory-conformant:run.",
+        "consequence": "So \"wait for the executions to clear\" cannot be satisfied by waiting for zero running executions in any durable sense: a new one starts every hour, and the factory conformant writer starts one every TEN MINUTES. Waiting for a gap is a timing race, not a quiescence. The operator's instinct to read state by field is what surfaced this — the completion pattern alone looked like a stuck job when it is actually a scheduler.",
+        "whatThisChanges": "The step-1 precondition should probably NOT be \"no gate-sched running\". It should be either (a) evidence that the publish job and gate-sched do not contend on the same rows — the derivation found gate-sched carries ONLY FACTORY_DATABASE_URL, so it touches the factory LEDGER (runs/publish_runs/verify_walks), which the publish DOES also write and requireStagingSibling DOES read; or (b) accept the timer and rely on the publish job's own guards/transactionality, recorded as a deliberate acceptance rather than a claim of quiescence.",
+        "plannerNote": "The derivation also notes the ATOMS store has NO confirmed scheduled writer (the only factory->atoms module is read-only by design), so the atom write is less exposed to timers than the ledger write is."
       }
     },
     {
@@ -691,6 +718,42 @@
       "handling": "Recorded as the operator's connection, explicitly NOT as a planner measurement. The planner has not verified the Burnet count; it came from the operator. It is recorded here so that whichever wave designs the Burnet loader inherits the question rather than the assumption.",
       "nextStep": "Before the Burnet loader is designed: measure whether the address-point-to-parcel-node binding rail exists at all, and if it does, why 615/617/619/627-sturgeon fail to bind. One rail, two counties, two directions.",
       "owner": "the wave that designs the Burnet loader; and whoever next takes P-175"
+    },
+    {
+      "id": "O25",
+      "raised": "2026-09-14 by the derivation, and it is a standing-law conflict rather than a technical one",
+      "question": "The 2026-09-12 P-169 ruling makes any `--apply` Cloud-Run-Job-only (LAPTOP_WRITE_FROZEN; CLOUD_RUN_JOB must be set). But THE ONLY PATH THAT PERSISTS THIS ATOM HAS NO CLOUD RUN OR CLOUD BUILD WRAPPER. So as things stand the atom can only be re-minted either (a) from a seat, which is against the standing law, or (b) after somebody BUILDS a job wrapper that does not exist yet. The derivative also notes the write path takes NO LEASE: writePropertyAtomsBatch demands a HeldLease, but writePropertyAtom — the method the promote path actually calls — has no isHeldLease check, so there is no mutual exclusion in the atoms store.",
+      "options": [
+        "(a) BUILD a Cloud Run Job wrapper for depth-warm-city-batch with --parcel + --promote, satisfying P-169. Most work, cleanest, and the wrapper is reusable.",
+        "(b) Obtain an explicit operator ruling that a SEAT RUN is permitted for this one atom. Cheapest, but carves an exception into a ruling made four days ago and would need its own justification.",
+        "(c) Do the sanctioned county/city-cohort form instead. No new wrapper, but re-warms a whole cohort and rewrites stored envelope geometry across it — a blast radius the approved work never contemplated."
+      ],
+      "handling": "ESCALATED, NOT PICKED. The planner will not improvise against a standing ruling, and will not build a job wrapper without the operator knowing what it is for. Note this also answers the operator's earlier sequencing instinct: step 2 was right to leave the sequence.",
+      "owner": "operator"
+    },
+    {
+      "id": "O26",
+      "raised": "2026-09-14 by the derivation; this is a precondition the planner had not recorded at all",
+      "question": "THERE IS NO ROLLBACK TARGET for the atom re-mint. The write is an in-place upsert over body/fetched_at/updated_at with NO version and NO history table for property atoms — the 2026-08-05 atom body is the only prior artifact and the write destroys it. The only recovery would be re-running the previous writer at the previous engine SHA against today's live layers, which is not a rollback but a re-derivation against now-different sources.",
+      "requiredPrecondition": "BEFORE any write, capture the live row read-only as the only rollback artifact that can exist: SELECT body FROM atoms WHERE entity_type = 'setback-rule' AND (entity_id = '48021:34049' OR entity_id LIKE '48021:34049:%') AND COALESCE(body->>'status','active') = 'active'. This is cheap, read-only, and the planner should treat it as mandatory for any successor.",
+      "handling": "Recorded as a hard precondition. Note it contrasts with step 3, whose rollback IS clean and documented (cortex-api-00797-zus) — the atom write is the one with no way back."
+    },
+    {
+      "id": "O27",
+      "raised": "2026-09-14 by the derivation; it is the finding that could make a PERFECT re-mint show nothing",
+      "question": "A READ-PATH SPLIT can swallow the payload. The conflict row rides the ENVELOPE facet, from the atom's display_meta (hauska-map atom-chain-to-facets.ts, baked-facets.ts). But county 48021's record slate ALSO includes the setback rails (setbackFrontFt/SideFt/RearFt/CornerFt and the setbackRules companion) served from the factory's parcel_record_cell / parcel_record_companion_row — whose AUTHOR is @empressaio/setback-corpus, which contains NO conflict data at all; whose writer can only touch currently-UNACCOUNTED cells (so it can never refresh an earned one); whose reader's rendering is hardcoded null; and whose cell carries no atomDid because P-163 has not landed. IF THE RAIL IN QUESTION IS RECORD-SERVED, A PERFECT RE-MINT STILL SHOWS NOTHING.",
+      "alsoExplains": "This is also why the approved phrase \"record snapshot refresh\" is not a real operation: the phrase appears in NO code in any of the five repos, no script or job has that effect, and the one candidate the coordination pass named (load-snapshot-into-pg.mjs) is refuted by its own header as a one-time code-corpus loader. The record layer's setback values come from a DIFFERENT SOURCE than the atom, so refreshing the record is not the same act as re-minting the atom and cannot be satisfied by it.",
+      "theSingleDecidingQuestion": "The derivation names the one measurement that decides whether a record refresh is even needed: which read path serves the ENVELOPE facet for 48021:34049 — record, or atom-chain? It is decided at runtime per rail by parcel_gate_verdict plus the slate. 48021 IS slated for the setback rails. The per-rail serve state for this parcel is UNMEASURED.",
+      "handling": "Recorded, not resolved. It means the approved \"re-mint + record snapshot refresh\" may be HALF A NON-QUESTION (the record half) sitting on top of an unmeasured read-path question. Before any write, measure the per-rail serve state.",
+      "owner": "the derivation's successor, or the wave that builds the re-mint wrapper"
+    },
+    {
+      "id": "O28",
+      "raised": "2026-09-14 by the derivation; it is a REGRESSION risk, which makes it worse than a no-op",
+      "question": "Re-minting from the WRONG PATH would be a REGRESSION, not a no-op. @empressaio/setback-corpus@1.2.0 contains ZERO occurrences of `second_source` anywhere in src or dist. So ANY corpus-derived emit — the factory parcel-setback-cells lane, or any bake that resolves setbacks from the corpus rather than the live Bastrop layer-23 record — would write an atom with NO secondSource AND WOULD DELETE THE EXISTING PRE-A-148 PROSE CONFESSION the surfaces print today. The parcel would go from \"showing an outdated confession\" to \"showing nothing\".",
+      "whyItMatters": "The planner's original brief listed the county bake as a candidate instrument. The derivation refutes it for this atom: bake-property-atom-county is driven by emitFromTier1Snapshot (the TIER-1 SNAPSHOT), whereas the Bastrop per-parcel setback row is built from the LIVE layer-23 record. Using the snapshot-driven bake would be exactly this regression.",
+      "handling": "Recorded as a danger to be carried into any successor brief: the instrument must be the live-record path, not the snapshot or corpus path.",
+      "owner": "whoever executes the re-mint"
     }
   ],
   "premiseCorrections": [
