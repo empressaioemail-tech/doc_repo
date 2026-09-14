@@ -22,6 +22,10 @@ related:
 
 # OPS-23 — The ledger as the serving path — WDLL
 
+## UPDATE 2026-09-14T13:30Z (A-147): wave 6 compiled; F24 the Bastrop GIS conflict
+
+Wave 6 (`_dispatches/2026-09-14_ops23-wave6_dispatch.md`): `p178-publish` (option B, then the Hays publish and seven cards), `p183-querypoint` (the last P-175 leg), `p156-bastrop` (the per-city zoning declaration that unblocks the CTX bake; Bastrop's 181 first), `p154-conflict` (the card admits when the city's own layers disagree, F24). The P-160 label leg is in the probe. Williamson untouched, P-184 later.
+
 ## UPDATE 2026-09-14T12:20Z (A-146): wave 5 and P-178 accepted at source
 
 Wave 5 closed-partial on all five rows and verified: **P-152 now PASSES on 1109 Pecan** (panel 30/10/30/20), P-179 armed (live 401), P-180 done on Hays, **P-155's refresh fix is live** (an export call now returns `in_progress` with a job reference). P-178's certified load is ON PRODUCTION (134,591 rows, 390 marked by a real loader step); its publish is blocked by the P-180/walk conflict, RULED option B (retire excluded nodes with the current run id). P-175 fails for one last reason, the record store's query point (P-183 ADDED); the vacant-lot label leg is RULED (P-160 change). P-184 (Williamson) rowed. Owed: P-179 step 4 go; a P-167 strings observation. Wave 6 = the P-180 walk fix then P-178 step 6, P-183, P-160 label leg, P-167 strings.
