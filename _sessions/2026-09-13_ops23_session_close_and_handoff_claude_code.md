@@ -232,5 +232,7 @@ the specific go for the production apply itself.
 
 **Addendum 2026-09-14T15:30Z (A-149).** OPS-24 opened from the county-to-serving map: thirteen rows P-186 to P-198, a program preamble, and a read-only teardown dispatch for a fresh planner; the gate fix (P-195) is first to build and Burnet runs end to end before any farm.
 
+**Addendum 2026-09-14T17:00Z (A-150).** The OPS-24 teardown held on all four findings; one was the overseer's own close gate, whose regex had stopped at P-167 while the program grew to P-174. Fixed and self-tested; OPS-24 revised in place; P-195 (the gate) dispatched as the first build row.
+
 This file will not be updated further. The durable card and checkpoint 5 are where the truth
 lives from here.

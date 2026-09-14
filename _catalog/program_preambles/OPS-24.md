@@ -17,7 +17,10 @@ before one county has run end to end through the pipeline that exists.
 1. **The customer predicate is the definition of done.** `scripts/surface-probe.mjs` with a
    real address in the county is the finish line for every stage, not stage 12's private
    check. A stage that cannot be traced to a change in what the probe reads is not on this
-   program.
+   program. ARMED 2026-09-14 on the enforcement side: `probe-close-gate.mjs` gates every
+   OPS-24 row and prints the predicate debt on each close until `surface-probe.mjs` carries
+   the stage's row (P-197); a close with neither an artifact nor a declared
+   `probe.notApplicable` (read-only reviews only) is refused.
 2. **The gate is fixed before anything trusts it.** The publish gate today passes TOTAL
    absence and refuses PARTIAL absence (P-181, dead-controls ranking, entry 1). Nothing that
    reads a gate verdict, the per-place declaration, the completeness check, a farm's merge, is
