@@ -1,0 +1,78 @@
+{
+  "lane": "p178-hays-roll",
+  "planRows": ["P-178"],
+  "checkpoint": "CP5",
+  "kind": "STEP 6 STAGING PUBLISH SUCCEEDED, BUT THE PRE-REGISTERED MARKED-390 FALSIFIER IS RED. PRODUCTION PUBLISH NOT FIRED. Root cause found and is OUTSIDE this lane (a stale LDT pin in hauska-factory).",
+  "at": "2026-09-14T03:5xZ",
+  "docRepoFetched": "P:/seat-worktrees/property/doc_repo (CP1-CP4 still filed-but-uncommitted, per the standing do-not-commit-to-doc_repo rule).",
+
+  "stagingPublish": {
+    "command": "gcloud run jobs execute factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --wait --args=\"bastrop-publish,--target=staging,--county=48209,--gold=48209:135570,--skip-pmtiles\"",
+    "execution": "factory-bastrop-publish-qzbct",
+    "startedAt": "2026-09-14T03:00:42.029968Z",
+    "completedAt": "2026-09-14T03:38:33Z",
+    "elapsedSeconds": 2278,
+    "exitCode": 0,
+    "cliOutput": "Execution [factory-bastrop-publish-qzbct] has successfully completed.",
+    "note_notStuck": "The job logs nothing between container start and exit (the prior successful run zbf7r behaved identically, 17:03:47->17:45:41). Progress was confirmed out-of-band by reading the staging DB, not the logs: 173050 of 346100 node:48209:* rows rewritten with max(updated_at)=2026-09-14T03:36:16Z."
+  },
+
+  "falsifierMarked390": {
+    "preRegistered": "CP4 step6Probe.halfC: 305 marked accounts served a real cadRoll dollar pre-publish; 'the post-publish re-run of this same query is the falsifier: it must go to 0, or the marker is not in the read path.'",
+    "postPublishMeasured": {"marked_n": 390, "marked_in_snapshots": 390, "served_with_a_dollar": 305},
+    "verdict": "FAILED -- 305 -> 305, not 0.",
+    "all390WereRewrittenThisRun": "390 of 390 marked snapshots carry updated_at in 03:01:49..03:36:14Z (i.e. this publish DID rewrite them; it did not skip them).",
+    "samplePayload_marked_prop_100780": {"landValue": {"v": 67260, "source": "cad_property", "vintage": "2026", "valueBasis": "county-assessed"}, "marketValue": {"v": 311000, "source": "cad_property", "vintage": "2026", "valueBasis": "county-assessed"}},
+    "reading": "The re-bake re-derived real cad_property dollars for the marked rows. The bake has NO absent-awareness, so 'absent-from-declared-drop' cannot suppress the dollar. The marker is NOT in the bake/serve path as deployed."
+  },
+
+  "rootCause": {
+    "claim": "The factory publish image bundles LDT's conformant bake CLI at a pinned LDT SHA that PREDATES P-178's serve-side fixes. The bake therefore cannot honour cad_property.roll_membership.",
+    "pin": {
+      "file": "hauska-factory cloudbuild.publish.yaml -> substitutions._LDT_SHA",
+      "value": "6ae7ef57510a1a0a96ead3251cc9788bb0492335",
+      "onOriginMain": true,
+      "lastBumpedBy": "f13cca3 chore(P-177): bump _LDT_SHA to 6ae7ef57 for the account-attribute crosswalk fix (#143)",
+      "builtBy": "cloudbuild.publish.yaml steps: `git fetch --depth 1 origin ${_LDT_SHA} && git checkout FETCH_HEAD`; Dockerfile.publish runs scripts/build-publish-bake-clis.mjs with LDT_ROOT=/ldt BAKE_CLI_OUT=/app/bakes",
+      "jobEnvConfirms": "factory-bastrop-publish env BAKE_CLI_ROOT=/app/bakes"
+    },
+    "pinIsBehindTheFixes": {
+      "command": "gh api repos/empressaioemail-tech/legacy-design-tools/compare/78275570...6ae7ef57 --jq '{status,ahead_by,behind_by}'",
+      "result": {"status": "behind", "ahead_by": 0, "behind_by": 6},
+      "means": "6ae7ef57 does NOT contain 78275570.",
+      "missingFixes": [
+        "78275570 (#675, 2026-09-13T19:31:45Z) 'the declared-roll marker -- an absent-from-declared-drop row is never served as present' -- the ONLY place isAbsentFromDeclaredDrop is consumed",
+        "18704d8a (#676) wire roll_membership/declared_source_file into fetchCountyCadPropertyRoll",
+        "66fedc3e (#677) the card's vintage label is the drop's name, not the load timestamp"
+      ],
+      "corroboration": "The baked payload's vintage is the bare string \"2026\", not \"2026 preliminary (notice values)\" / \"2026-08-26 certified export\" -- i.e. the pre-#677 label behaviour, independently confirming the image predates these fixes."
+    },
+    "whereTheMarkerActuallyLives": {
+      "chokePoint": "artifacts/api-server/src/lib/cadRollValue.ts :: cadPropertyFactsFromRow() returns emptyCadRoll() when isAbsentFromDeclaredDrop(row)",
+      "onlyCallers": [
+        "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts:1254 (the tier-1 bake that writes place_layer_snapshots)",
+        "artifacts/api-server/src/nodeFacetPatchCadRollFromCadPropertyCli.ts:92 (a standalone patch CLI)"
+      ],
+      "bothAreInsideBundledLDT": "Both live under artifacts/api-server/src, i.e. inside the LDT tree this image bundles -- so both are stale at pin 6ae7ef57."
+    },
+    "whyThisIsTheServedSurface": {
+      "briefRoute": "artifacts/api-server/src/routes/propertyExplorer.ts:1244 POST /property-explorer/v1/research/brief -> assembleNodeBriefBody (line 196)",
+      "cadRollSource": "assembleNodeBriefBody loads loadBakedNodeFacetSnapshot(parcelNodeId) -- the BAKED snapshot -- and overlays resolveCadRollOverlaysForServe(countyFips, propId)",
+      "overlayIsParcelRecordNotCadProperty": "cadRollServeCutover.ts header: 'marketValue/assessedValue/landValue/improvementValue are baked into place_layer_snapshots (facets.baseFacts.cadRoll.*) by an offline job, not read live -- the legacy value is whatever the last bake wrote.' The overlay only replaces a rail where resolveAllowlist(...) === 'record' (a parcel_record cutover), and it does NOT route through isAbsentFromDeclaredDrop.",
+      "conclusion": "For Hays, absent a dollar-rail cutover, the dollars Smart Site reads ARE the last bake's. So the marker has no route to the served surface until the bake image is rebuilt on a post-#677 LDT SHA."
+    }
+  },
+
+  "consequence": {
+    "productionPublishMustNotFire": "Firing it would write serving stores with the SAME stale bake logic and would NOT move the falsifier (it would cost the same ~38 min and a production write for zero effect). Hard stop held.",
+    "notAFalsifierRefutation": "The falsifier was correctly specified; it is red for a real, external reason, not because the probe was wrong."
+  },
+
+  "remedyOptions": {
+    "A_bumpTheFactoryLdtPin": "Raise cloudbuild.publish.yaml _LDT_SHA past #677 in hauska-factory, rebuild + redeploy factory-bastrop-publish, re-run the staging publish, and re-check 305 -> 0. The 'right' fix; note the repo's own CI guard ('fails a pull_request or push whose diff changes _LDT_SHA's graph, line ~221) and that a sibling lane (fix/p180-hays-cells-crosswalk) is active on this repo.",
+    "B_runThePatchCli": "Run LDT's nodeFacetPatchCadRollFromCadPropertyCli from a post-#677 image (e.g. the cortex-api image just deployed) against the target to re-null cadRoll for marked rows without a full re-bake. Narrower, but a targeted repair rather than the intended path.",
+    "note": "Neither was executed: both are cross-repo/scope decisions for the operator."
+  },
+
+  "step6Status": "The staging half of step 6 ran and failed its falsifier for an identified external reason. The seven get_smart_site reads remain blocked (user-hauska-cortex namespace error). Production publish NOT fired; awaiting an operator ruling on remedy A vs B."
+}

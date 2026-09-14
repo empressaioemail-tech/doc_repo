@@ -22,6 +22,10 @@ related:
 
 # OPS-23 — The ledger as the serving path — WDLL
 
+## UPDATE 2026-09-14T12:20Z (A-146): wave 5 and P-178 accepted at source
+
+Wave 5 closed-partial on all five rows and verified: **P-152 now PASSES on 1109 Pecan** (panel 30/10/30/20), P-179 armed (live 401), P-180 done on Hays, **P-155's refresh fix is live** (an export call now returns `in_progress` with a job reference). P-178's certified load is ON PRODUCTION (134,591 rows, 390 marked by a real loader step); its publish is blocked by the P-180/walk conflict, RULED option B (retire excluded nodes with the current run id). P-175 fails for one last reason, the record store's query point (P-183 ADDED); the vacant-lot label leg is RULED (P-160 change). P-184 (Williamson) rowed. Owed: P-179 step 4 go; a P-167 strings observation. Wave 6 = the P-180 walk fix then P-178 step 6, P-183, P-160 label leg, P-167 strings.
+
 ## STATUS AS OF 2026-09-13T23:55Z — session-close reconciliation, read this first
 
 Written at a model/session switch so a cold agent can pick up without re-deriving anything

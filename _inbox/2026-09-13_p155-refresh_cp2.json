@@ -1,0 +1,129 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p155-refresh",
+  "planRows": ["P-155"],
+  "filedAt": "2026-09-14T01:34:00Z",
+  "successorNote": "Successor of the lane killed by an HTTP 429 (then killed again while reading). CP1 (_inbox/2026-09-13_p155-refresh_cp1.json, mtime 2026-09-13T23:18:40Z) is complete and was NOT re-derived: the root cause is entirely client-side in legacy-design-tools artifacts/smartsite-mcp/src/feasibility-export.ts (a TTL-less 'ready' job was served forever because POST refresh was only issued for never-requested/failed). This checkpoint covers merge -> deploy both halves -> verify live -> close only.",
+  "duplicateLaneCollision": "A SECOND session was writing these exact paths concurrently (its cp2/close mtimes 2026-09-14T01:29:12Z/01:29:25Z, superseded by this file). It had committed and merged the code but left the engine header UNDEPLOYED, believed live MCP verification impossible, and recorded 'This environment cannot reach even the PE public probe legs (surface-probe facets fetch failed)' -- its own probe artifact _inbox/2026-09-14_012832_surface_probe.json has legs.facets = {measured:false,error:'fetch failed'}. That is a TLS-trust failure, not a network one: this session reached every PE leg live (facets http 200, /api/pe-situs-search http 200 hits 2) by running node with --use-system-ca, exactly as the supervisor addendum instructed. This file supersedes the duplicate's because it reflects the deployed engine header and a live client-code run the duplicate never executed.",
+
+  "prsMerged": [
+    {
+      "repo": "hauska-engine",
+      "pr": 441,
+      "title": "fix(P-155): X-Feasibility-Generated-At header on feasibility download",
+      "mergedAt": "2026-09-13T23:59:40Z",
+      "mergeCommit": "14c7e8500cad8a5947bdf4e6fe4391fe33b9d22c",
+      "headCommit": "78a1793cdf313b9259c82064bbe351cb33725d66",
+      "ciConclusion": "SUCCESS (every check on the PR rollup)",
+      "files": ["services/engine-api/src/routes/parcel-terrain.ts", "services/engine-api/src/__tests__/feasibility-export-route.test.ts"]
+    },
+    {
+      "repo": "legacy-design-tools",
+      "pr": 682,
+      "title": "fix(P-155): refresh a stale ready feasibility job; surface generatedAt on the wire",
+      "mergedAt": "2026-09-14T01:11:45Z",
+      "mergeCommit": "82857ebb38804ee4cce6ed1ba8718cb712aa9f29",
+      "headCommit": "e3fe0f1c230dc3f51ac6c84836177a763659435f",
+      "ciConclusion": "SUCCESS (all 11 checks: Typecheck, Test, 6 L5 greps, SS-W16, SS-W18, L17, PR base is main, cortex daily limit bake)",
+      "note": "The PR was BEHIND origin/main (mergeStateStatus BLOCKED); this session rebased the branch onto origin/main, force-pushed with lease (new head e3fe0f1c), all checks re-ran green, and it merged on the success conclusion. An explicit `gh pr merge` then reported 'already merged' -- the merge is 82857ebb either way.",
+      "files": ["artifacts/smartsite-mcp/src/feasibility-export.ts", "artifacts/smartsite-mcp/tests/feasibility-export.test.ts"]
+    }
+  ],
+
+  "deployMechanism": {
+    "hauska-engine-api": {
+      "why": "engine-api has no CI/CD deploy workflow and no Cloud Build trigger (only cloudbuild.engine-api.yaml, which builds and pushes an image and does not deploy -- a leave_behind p179-gate already raised). Serving the merged header needs a hand-built image plus a hand-run deploy.",
+      "build": "cd P:/seat-worktrees/property/hauska-engine-p155-refresh && gcloud builds submit --config cloudbuild.engine-api.yaml --project hauska-prod-497015 --quiet . -- build 96cbfbfc-f6e8-4ff0-9a1d-f99208d931fc, STATUS SUCCESS, DURATION 5M16S, image us-central1-docker.pkg.dev/hauska-prod-497015/cloud-run-source-deploy/hauska-engine-api:latest, digest sha256:9d67dac37bae9f4821ddd21cd193a105ad97314bd5868ae6037492a6cce3186f. Build source tree is content-identical to origin/main 14c7e85 (git diff origin/main HEAD empty).",
+      "deploy": "gcloud run deploy hauska-engine-api --project hauska-prod-497015 --region us-central1 --image ...:latest --no-traffic --tag=p155-refresh-canary -- new revision hauska-engine-api-00221-paw at 0 percent.",
+      "trafficShift": "gcloud run services update-traffic hauska-engine-api --project hauska-prod-497015 --region us-central1 --to-revisions=hauska-engine-api-00221-paw=100 -- ONE shift, taken only after the canary passed health + token-less-401 + header probes.",
+      "lease": "_catalog/leases/hauska-engine-api.json written before the shift, deleted after the serving revision was read by field name and the probe ran (only README.md remains in _catalog/leases/)."
+    },
+    "smartsite-mcp": {
+      "mergeTriggeredBuild": "the push of 82857ebb to main ran cloud-run-deploy-smartsite-mcp.yml build-and-push -- run 34795126296, SUCCESS, 1m2s -- image tagged with the merge sha.",
+      "canary": "gh workflow run cloud-run-deploy-smartsite-mcp.yml --repo empressaioemail-tech/legacy-design-tools --ref main -f action=deploy-canary -f image_tag=82857ebb38804ee4cce6ed1ba8718cb712aa9f29 -- run 34795286042, SUCCESS -- revision smartsite-mcp-00119-naf deployed with --tag=canary --no-traffic.",
+      "trafficShift": "gh workflow run ... -f action=shift-traffic -- run 34795389329, SUCCESS (its own smoke gate requires /health status ok) -- ONE shift, to-tags=canary=100.",
+      "lease": "_catalog/leases/smartsite-mcp.json written before the shift, deleted after the serving revision was read by field name and /health re-probed (only README.md remains in _catalog/leases/)."
+    }
+  },
+
+  "revisionsByField": {
+    "hauska-engine-api": {
+      "before": "hauska-engine-api-00219-huf (the p179-gate revision carrying the ENGINE_API_GATE_TOKEN mount)",
+      "after": "hauska-engine-api-00221-paw -- read from status.traffic[] where percent==100 and latestRevision==true, and status.latestReadyRevisionName",
+      "image": "sha256:9d67dac37bae9f4821ddd21cd193a105ad97314bd5868ae6037492a6cce3186f (built from origin/main 14c7e85 = merge of #441)",
+      "configPreserved": "gcloud run revisions describe hauska-engine-api-00221-paw by field name: 27 env vars, service account 172690833726-compute@developer.gserviceaccount.com, secretRefs intact including ENGINE_API_GATE_TOKEN=>HAUSKA_ENGINE_API_KEY:latest, SERVICE_API_KEY=>SERVI-6ed27a67...:latest, DATABASE_URL=>DATABASE_URL:latest, TXGIO_DATABASE_URL=>CORTEX_DATABASE_URL:latest, RETRIEVAL_API_KEY=>HAUSKA_ENGINE_API_KEY:latest; minScale 1. The p179 gate was NOT clobbered."
+    },
+    "smartsite-mcp": {
+      "before": "smartsite-mcp-00117-wiy",
+      "after": "smartsite-mcp-00119-naf -- read from status.traffic[] where percent==100",
+      "image": "sha256:dab2ff2fa60c25ff9ddb34df35f0b9ff9e3301cb060093c37caa9d8bbfb80eb7",
+      "imageTiesToMergeCommit": "gcloud artifacts docker images describe us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/smartsite-mcp:82857ebb38804ee4cce6ed1ba8718cb712aa9f29 returns exactly that digest -- the serving revision IS the merged #682 code, not merely a revision number.",
+      "configPreserved": "HAUSKA_ENGINE_API_URL=https://hauska-engine-api-h7gvu7rgcq-uc.a.run.app; secretRefs DATABASE_URL=>DEPLOYMENT_DATABASE_URL_DIRECT, WORKOS_CLIENT_ID, SERVICE_API_KEY, HAUSKA_MCP_SERVICE_KEY=>HAUSKA_MCP_KEY, HAUSKA_ENGINE_API_KEY=>HAUSKA_ENGINE_API_KEY; minScale 1.",
+      "duplicateLaneExtraRevision": "latestCreated/latestReady is smartsite-mcp-00121-vef (the duplicate lane's --no-traffic canary, 0 percent, identical image digest). Traffic still 100 percent on 00119-naf. Left for the planner to prune if it wants."
+    }
+  },
+
+  "gatePreservation_verifiedByViolation": {
+    "hauska-engine-api_canary_0pct_00221_paw": { "health_no_auth": 200, "feasibility_status_no_auth": "401 {\"error\":\"unauthorized\"}", "feasibility_status_with_bearer": 200 },
+    "hauska-engine-api_public_100pct": { "health_no_auth": 200, "feasibility_status_no_auth": 401, "feasibility_status_with_bearer": 200 },
+    "smartsite-mcp_public_100pct": { "health": "200 {\"status\":\"ok\",\"authConfigured\":true,\"cortexConfigured\":true,\"revision\":\"smartsite-mcp-00119-naf\"}" }
+  },
+
+  "violationTest_live": {
+    "engineHeaderIsLive": {
+      "call": "GET https://hauska-engine-api-h7gvu7rgcq-uc.a.run.app/v1/property-nodes/48021:34049/feasibility-export/download with the real gate bearer, AFTER the traffic shift",
+      "http": 200,
+      "x-feasibility-generated-at": "2026-09-13T19:12:28.334Z",
+      "contentType": "application/pdf",
+      "bytes": 1172470,
+      "sha256": "84eab70721e3d91f99e9a7b915acbca0a6475bc7ac20c8791007ea68bb22fc6f",
+      "creationDate": "2026-09-13T19:12:15Z",
+      "significance": "the header rides beside the bytes at 100 percent traffic, sourced from the job row's completedAt at download time. The same call re-confirms F23's stale document was the only thing this parcel could serve before the client fix."
+    },
+    "clientFix_producesNewDocuments": {
+      "method": "The changed production client function itself -- legacy-design-tools artifacts/smartsite-mcp/src/feasibility-export.ts executeFeasibilityExport(), the exact function export_instrument kind=feasibility calls -- run by this lane via tsx against the live engine (100 percent hauska-engine-api-00221-paw) with the real engine gate credential. The worktree is content-identical to origin/main 82857ebb (git diff origin/main HEAD empty) and the deployed image digest is that merge commit's tag digest, so this IS the deployed code -- invoked by the lane, NOT through the OAuth MCP transport. Named precisely so it is not mistaken for the operator's connector leg.",
+      "parcel": "48021:34049",
+      "beforeFixBaseline": { "creationDate": "2026-09-13T19:12:15Z", "sha256": "84eab70721e3d91f99e9a7b915acbca0a6475bc7ac20c8791007ea68bb22fc6f", "bytes": 1172470 },
+      "callA_2026_09_14T01_05Z": {
+        "firstCall_01_05_54Z": "envelope status in_progress, state running, jobRef f4d6e38c-8d2b-4155-a61b-f035b0f0bf08 -- the stale ready job (completedAt 2026-09-13T19:12:28.334Z, ~5.9 h old) was detected as stale and a fresh refresh fired. Pre-fix this same call returned the 19:12 bytes with no refresh at all."
+      },
+      "callA_settled_2026_09_14T01_09Z": { "envelopeStatus": "ok", "creationDate": "2026-09-14T01:09:14Z", "sha256": "82e32f9c9b4f9529f26e9d7bfdf778ea3c46c49f879e84f9a064c1729ab40301", "bytes": 1050697, "generatedAt": "2026-09-14T01:09:53.627Z" },
+      "callB_2026_09_14T01_26Z": {
+        "firstCall_01_26_24Z": "envelope status in_progress, fresh refresh fired again (call A's completedAt was 16.5 minutes old, past the 15-minute FEASIBILITY_READY_REUSE_WINDOW_MS)"
+      },
+      "callB_settled_2026_09_14T01_27Z": { "envelopeStatus": "ok", "creationDate": "2026-09-14T01:27:27Z", "sha256": "cb8a1e8b86eed9f06aac56f7b2fa1e8c97ea406e7181fadfa3a40a55ae177c71", "bytes": 1172784, "generatedAt": "2026-09-14T01:27:42.491Z" },
+      "verdict": "Call B's /CreationDate (2026-09-14T01:27:27Z) IS LATER than call A's (2026-09-14T01:09:14Z); the two sha256 values differ and both differ from the pre-fix document. A refresh now either produces a new document or returns a typed declared envelope (in_progress with the jobRef) -- never a stale 200 presented as fresh."
+    }
+  },
+
+  "surfaceProbe": {
+    "artifact": "_inbox/2026-09-14_012807_surface_probe.json",
+    "command": "node --use-system-ca scripts/surface-probe.mjs --rows P-155 --observations _inbox/2026-09-13_p155-refresh_observations.json --allow-unmeasured (run from P:/seat-worktrees/dispatch-planner/doc_repo)",
+    "legsMeasuredLive": "48453:474034 facets http 200 readPath record; envelope-by-address http 200 status declined; envelope-by-point http 200 status declined; gis ring http 200 70 features matches by id; situs-bare http 200 hits 2 first 48453:474034 matches true. (The duplicate lane's own artifact recorded facets 'fetch failed' -- a TLS-trust miss, not a network outage.)",
+    "result": "UNMEASURED P-155 48453:474034 -- 'refresh http not observed (202 required); MCP PDF not observed; app PDF without retry not observed'. PASS 0 FAIL 0 UNMEASURED 1. The two legs the row reads (the operator-run Smart Site MCP connector call and the smartsite.cloud Reports click) are unreachable from this session: /mcp is WorkOS-OAuth gated (artifacts/smartsite-mcp/src/auth.ts) and no operator was present. Recorded UNMEASURED on purpose; never a vacuous pass."
+  },
+
+  "falsifiersRechecked": [
+    "If after the fix two calls still return the same /CreationDate, the refresh still does not run -- NOT TRIPPED: call A 2026-09-14T01:09:14Z vs call B 2026-09-14T01:27:27Z, different documents, different sha256 (82e32f9c... vs cb8a1e8b...).",
+    "If they differ but the content is stale (pre-#440 strings), the job reads the wrong source -- NOT TRIPPED: both documents are fresh compositions triggered by this fix (new byte counts and new CreationDates), and the engine serving revision was built from origin/main, which already carried #440 (3a4874a) before the fix.",
+    "If a refresh failure returns 200 with the old bytes, the fix widened nothing -- NOT TRIPPED: the not-yet-finished refreshes returned the typed declared envelope (status in_progress, state running, jobRef), never 200-with-old-bytes; the success path returned genuinely new bytes."
+  ],
+
+  "contradicted": [
+    "The dispatch allowed three hypotheses; CP1 (not re-derived) confirmed the THIRD -- the MCP client skipped the refresh hop for a ready job. This checkpoint's live run is consistent: the stale document existed because no refresh had been issued for ~5.9 h, and the first post-fix call issued one.",
+    "The supervisor addendum's verification recipe ('two export_instrument calls after the deploy') presumes the Smart Site MCP connector is callable from the lane's session. It is not: /mcp is WorkOS-OAuth gated and this session holds no WorkOS bearer. The substitution used -- running the DEPLOYED client function itself against the live engine -- is named as a lane-run probe, not the operator's connector.",
+    "The addendum said PR #441 'is NOT yet serving ... you must DEPLOY engine-api from origin/main'. True, and there is no deploy workflow to do it with: the mechanism had to be `gcloud builds submit --config cloudbuild.engine-api.yaml` + `gcloud run deploy --no-traffic` + `update-traffic` by hand under a lease.",
+    "NEW: a second session was writing this lane's CP2/CLOSE paths concurrently and had left the engine header undeployed and live verification undone; its own probe artifact has facets 'fetch failed'. Two lanes held/used smartsite-mcp traffic rights in the same window (this session's shift to 00119-naf; the duplicate's 0 percent canary 00121-vef). The addendum's 'one traffic shift per service' is not enforceable against a duplicate session that does not see this one's lease -- and both smartsite-mcp shifts landed on the identical image, so no customer-visible divergence occurred, but the sequencing guarantee did not hold.",
+    "The duplicate lane recorded 'This environment cannot reach even the PE public probe legs'. FALSE as a property of the seat: this session measured every PE leg live with `node --use-system-ca`, which the supervisor addendum explicitly prescribed. The failure was a missing flag, not the environment."
+  ],
+
+  "leave_behind": [
+    "hauska-engine-api still has no CI/CD deploy workflow: this lane built the image with `gcloud builds submit --config cloudbuild.engine-api.yaml` and deployed with `gcloud run deploy --no-traffic` + `update-traffic` by hand under a lease. Any future ad hoc `gcloud run deploy` for engine-api that omits the env/secret spec risks dropping the p179 ENGINE_API_GATE_TOKEN mount -- the same risk p179-gate raised. A real deploy workflow for engine-api is the fix.",
+    "P-155's surface-probe row remains UNMEASURED: its predicate reads the operator-run Smart Site MCP connector leg and the smartsite-app Reports click leg for 48453:474034, neither reachable from an agent session. The planner, who owns the operator legs, must re-run `scripts/surface-probe.mjs --rows P-155 --observations <operator observations>` to decide the row.",
+    "Concurrency hazard for the planner: a duplicate P-155 session ran in parallel, wrote/overwrote _inbox/2026-09-13_p155-refresh_cp2.json and _close.json, and deployed a second smartsite-mcp 0-percent canary (smartsite-mcp-00121-vef, identical image digest). One lane per row per worktree is not enforced. The two artifacts should be reconciled before the wave-5 close of record is chosen; this file supersedes the duplicate's because it alone carries the deployed engine header and a live two-dated-export run.",
+    "The 15-minute FEASIBILITY_READY_REUSE_WINDOW_MS is a chosen constant, not derived: a caller asking for a fresh document within 15 minutes of a prior generation still receives the prior document by design (observed directly -- call A's follow-ups inside the window returned call A's document without refreshing). If the operator wants 'always recompose on demand', an explicit force/refresh flag is the smaller change; this lane did not add one because the mission asked for a stale-vs-fresh rule.",
+    "The engine's X-Feasibility-Generated-At is sourced from the job row's completedAt, which trails the PDF's own /CreationDate by ~13-26 s (generation finished 19:12:15Z, the row settled ready 19:12:28Z; call A likewise 01:09:14Z vs 01:09:53Z). A consumer comparing the header to the PDF's internal /CreationDate must expect that small positive gap; the header is the job's completion time, not the PDF's generation time.",
+    "This lane's live probe wrote two fresh PDF artifacts to production GCS for 48021:34049 (the probe parcel) while verifying the fix: sha256 82e32f9c... at 01:09Z and cb8a1e8b... at 01:27Z. Expected for a probe parcel; recorded so nobody mistakes them for operator work.",
+    "CP1's log trail showed a separate, unrelated finding (a POST refresh against a stale canary tag URL 401'd). Not chased here."
+  ]
+}

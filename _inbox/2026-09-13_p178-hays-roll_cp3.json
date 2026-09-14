@@ -1,0 +1,131 @@
+{
+  "lane": "p178-hays-roll",
+  "planRows": ["P-178"],
+  "checkpoint": "CP3",
+  "kind": "items 1 and 2 merged AND deployed; production dry-run only (the apply is gated on the operator's quoted-back go)",
+  "at": "2026-09-14T01:10:30Z",
+  "docRepoFetched": "P:/seat-worktrees/property/doc_repo at 29182d0f (unchanged this checkpoint; CP1/CP2 still filed but uncommitted, per the standing do-not-commit-to-doc_repo rule).",
+
+  "operatorFollowUpExecuted": "Staging pilot accepted; before production: (1) the 390 marking becomes a loader step (post-upsert, with a test) or a scripted command that writes a record naming the accounts, never a hand UPDATE; (2) the label map gains this drop's source_vintage string so certified rows print the drop's name and date and preliminary rows print '2026 preliminary (notice values)'; merge both, deploy cortex-api under a lease; (3) name the duplicate account and which row won. Then run the production dry-run only and paste its counts.",
+
+  "item1_markingLoader": {
+    "pr": 680,
+    "title": "feat(P-178): the declared-roll marking becomes a real loader step, not a hand UPDATE",
+    "mergeSha": "e59f35414f8ad64b23138fcb85ca88e0062636f2",
+    "mergedAt": "2026-09-13T23:34:49Z",
+    "ciConclusion": "success (PR Checks Test 12m42s; squash merge)",
+    "what": "New lib/cad-ingest/src/rollMembership.ts: markAbsentFromDeclaredDrop() -- one named, parameterized UPDATE (MARK_ABSENT_FROM_DECLARED_DROP_SQL) scoped to (county_fips, tax_year), touching only roll_membership/declared_source_file, idempotent via IS DISTINCT FROM guards. Wired into cli.ts main() POST-UPSERT, guarded on taxYearArg !== undefined so PACS-format counties with no resolved tax year are unaffected. The record naming the accounts reuses publishedIdentifierBackfill.ts's BackfillRecordWriter (JSONL, one line per marked account) PLUS the durable copy on the cad_ingest_run row via rows_marked_absent + marked_absent_prop_ids, added by runRecord.ts's ensureCadIngestRunTable (ALTER TABLE IF NOT EXISTS; deliberately NOT in the numbered drizzle ledger). 6 new mock-DB tests; full lib/cad-ingest suite 369/369.",
+    "build": {
+      "id": "76713e6c-46a0-4bc9-bc24-54bb8da35665",
+      "config": "cloudbuild.cad-ingest.yaml (--project=hauska-prod-497015)",
+      "sourceCommit": "e59f3541",
+      "status": "SUCCESS",
+      "finishTime": "2026-09-13T23:39:08Z",
+      "imageDigest": "sha256:c687ee197e95b9bea7ff105103c6bb79dd47b33f392eda934cdd2c72315d9d23",
+      "jobPinnedTo": "ldt-cad-ingest (us-east4) now carries that digest -- verified live by reading spec.template.spec.template.spec.containers[0].image"
+    }
+  },
+
+  "item2_vintageLabel": {
+    "pr": 681,
+    "title": "feat(P-178): name the 8-26-2026 certified export's source_vintage on the card",
+    "mergeSha": "d2ef39d3748a6e0eae776a6b64e98ceecfc25eec",
+    "mergedAt": "2026-09-14T00:57:54Z",
+    "ciConclusion": "success",
+    "what": "artifacts/api-server/src/lib/cadRollValue.ts: adds 'tier:cad-export;adapter:orion;drop:hays_20260826_certified' -> '2026-08-26 certified export' to KNOWN_SOURCE_VINTAGE_LABELS (the live-read string the staging pilot load actually wrote). Preliminary rows still print '2026 preliminary (notice values)'. One new falsifier test; cadRollValue.test.ts 33/33.",
+    "mergeRace": "origin/main advanced 4 times during this PR's CI (~5-15 min cadence vs a ~13 min Test). 4 rebases + force-with-lease (final head 46f88a32) before a clean window. One Test failure mid-race was a transient shared-DB flake ('out of shared memory', PG 53200, max_locks_per_transaction) in UNRELATED DB-integration tests (williamsonAgValuation, submission-classifier/upsert) -- the new loader test is mock-only (createMemoryRecordWriter, zero DB). Re-ran failed jobs: pass.",
+    "deploy": {
+      "surface": "cortex-api (previously serving cortex-api-00790-hin, built from 31d181c2 / PR #674 -- i.e. none of P-178's merges were live before this deploy)",
+      "pushBuildRun": "34794342520 (sha d2ef39d3)",
+      "pushBuildCompletedAt": "2026-09-14T01:01:44Z",
+      "imageDigest": "sha256:f904f7b06808c3b9832a685de299d176baf206f07471faad847a6ca48f4f605d (tags: d2ef39d3..., latest)",
+      "deployCanary": {
+        "run": "34794642942",
+        "result": "success",
+        "imagePin": "explicit -f image_tag=<full 40-char sha> (NOT 'latest', because the :latest tag had been stale on 4f3034cb earlier and the handoff warned of a build/deploy race)",
+        "note": "A first deploy-canary dispatch (run 34794581142) FAILED with 'Image ...cortex-api:d2ef39d3 not found' because I passed the SHORT sha while the build tags the FULL 40-char sha. Re-dispatched with the full sha; this is a real gotcha for the next lane."
+      },
+      "newRevision": "cortex-api-00797-zus",
+      "newRevisionCreatedAt": "2026-09-14T01:04:38Z",
+      "imageVerified": "revision's spec.containers[0].image digest == f904f7b0... (the d2ef39d3 image); build completedAt 01:01:44Z is before the revision createdAt 01:04:38Z -- race guard satisfied by construction since the image digest was pinned explicitly",
+      "shiftTraffic": { "run": "34794827786", "result": "success" },
+      "servingRevision": {
+        "revisionName": "cortex-api-00797-zus",
+        "tag": "canary",
+        "percent": 100,
+        "readByFieldName": "status.traffic[].revisionName (the 100% entry) and status.latestCreatedRevisionName",
+        "healthz": "GET https://cortex-api-tds7av26va-uc.a.run.app/api/healthz -> HTTP 200 {\"status\":\"ok\"}"
+      },
+      "lease": "Written at _catalog/leases/cortex-api.json (lane p178-hays-roll, revision cortex-api-00797-zus, 1h TTL) BEFORE shift-traffic, read back the serving revision by field name, then deleted. No other lane's lease touched."
+    }
+  },
+
+  "item3_duplicateAccount": {
+    "propertyId": "172572",
+    "quickRefId": "P134814",
+    "propertyNumber": "13-L200-0000-00764-4",
+    "duplicateCountInExport": 1,
+    "foundBy": "parsing PropertyDataExport1404449.txt from the verified zip with the parser's own first-wins dedup (orion/parser.ts seen=Set, keeps FIRST, discards later)",
+    "line125438": { "rank": "FIRST", "wins": true, "situs": "2001 US 290, DRIPPING SPRINGS, TX 78620", "note": "full situs components present" },
+    "line125439": { "rank": "second", "discarded": true, "situs": "", "note": "blank situs and blank situs components" },
+    "verdict": "The winning (first) row is the strictly more complete one -- not a data-loss concern. Identifiers are identical on both occurrences.",
+    "independentlyReDerived": true
+  },
+
+  "productionDryRun": {
+    "execution": "ldt-cad-ingest-9qc79",
+    "args": "--county=48209,--dry-run,--file=gs://hauska-prod-497015-cad-ingest-drops/p178/hays_20260826_certified.zip,--tax-year=2026",
+    "result": "success",
+    "summaryLine": "county: 48209 (Hays) | source file: hays_20260826_certified.zip | source vintage: tier:cad-export;adapter:orion;drop:hays_20260826_certified | rows read: 134592 | rows parsed: 134591 | rows upserted: 0 (dry-run) | rows skipped: 0 (malformed) | rows marked absent: 0 (dry-run) | duplicate rows: 1 | duration: 10.1s",
+    "logTimestamp": "2026-09-14T01:09:10.489807Z",
+    "matchesStagingDryRun": "exact match to CP2's staging dry-run summary (rows read 134592 / parsed 134591 / duplicate 1)"
+  },
+
+  "sourceObjectVerification": {
+    "localZipSha256": "7a4bd56dad244b0ead0a0899e082800d2ea01660129d69a3b60387602ee2b193",
+    "gcsObject": "gs://hauska-prod-497015-cad-ingest-drops/p178/hays_20260826_certified.zip",
+    "gcsSize": 40471721,
+    "gcsMd5B64": "UfByGstCnsIFCm7KuSMGKg==",
+    "localMd5B64": "UfByGstCnsIFCm7KuSMGKg==",
+    "propertyMember": "PropertyDataExport1404449.txt (66,198,484 bytes, 40 columns, 134,593 physical lines incl header)",
+    "verdict": "GCS object is byte-identical to the sha256-verified local hays.zip -- confirmed by size AND md5, not assumed"
+  },
+
+  "productionPreState": {
+    "readLive": "2026-09-14T01:0xZ, read-only against DEPLOYMENT_DATABASE_URL_DIRECT",
+    "cadProperty_48209_2026": { "total": 134606, "bothIdentifiersFilled": 134216, "sourceFileIsPreliminary": 134606, "rollMembershipSet": 0, "declaredSourceFileSet": 0 }
+  },
+
+  "independentAccountArithmetic": {
+    "expectedUpserted": 134591,
+    "expectedInserted": 375,
+    "expectedMarked": 390,
+    "expectedIdentifiersNonNull": 134591,
+    "derived": { "exportDistinctPropertyIds": 134591, "productionRows": 134606, "inBoth_update": 134216, "productionOnly_mark": 390, "exportOnly_insert": 375 },
+    "method": "Read the 134,591 distinct PropertyIDs straight from the verified zip's PROPERTY member AND dumped production's 134,606 prop_ids; set-difference both ways. Not inherited from staging.",
+    "tiesOut": "134216 + 390 = 134606 (current); 134216 + 375 = 134591 (post-apply); 134606 - 390 + 375 = 134591"
+  },
+
+  "dryRunWroteNothing": {
+    "cadPropertyUnchanged": { "total": 134606, "bothIdentifiersFilled": 134216, "rollMembershipSet": 0, "declaredSourceFileSet": 0 },
+    "perCountySnapshot": "43 (county_fips, tax_year) groups captured before and after the dry-run -- byte-identical; NO county moved",
+    "cadIngestRun": "No run row created by the dry-run (dry-run never calls startCadIngestRun). Production cad_ingest_run still holds only its 2 pre-existing Travis rows.",
+    "countyScope": "The dry-run's county is 48209 and it wrote nothing anywhere; the apply's scoping will be visible on the run row's county_fips once it runs."
+  },
+
+  "noteForTheApply": {
+    "lazyRunColumns": "cad_ingest_run on production does NOT yet have rows_marked_absent / marked_absent_prop_ids; ensureCadIngestRunTable (runRecord.ts) will ADD them (IF NOT EXISTS) during the apply. Expected and by design.",
+    "markingStepRunsOnlyOnApply": "The dry-run prints 'rows marked absent: 0 (dry-run)'; the 390 is produced by the post-upsert marking step on a real (non-dry-run) execution."
+  },
+
+  "expectedApplyCounts": {
+    "upserted": 134591,
+    "inserted": 375,
+    "marked": 390,
+    "identifiersNonNull": 134591,
+    "countiesTouched": ["48209"]
+  },
+
+  "productionApply": "NOT RUN. Hard stop: the operator's instruction is that the apply waits for their explicit go, quoted back after these counts are reviewed.",
+  "step5Status": "Dry-run DONE and reported. Apply NOT RUN, gated."
+}

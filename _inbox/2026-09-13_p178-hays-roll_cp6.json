@@ -1,0 +1,92 @@
+{
+  "lane": "p178-hays-roll",
+  "planRows": ["P-178"],
+  "checkpoint": "CP6",
+  "kind": "REMEDY APPLIED (pin bumped, image rebuilt, staging re-run) and the P-178 serve-side fix CONFIRMED WORKING. A second staging run failed its walk on the GOLD ANCHOR selection, not on P-178. Re-run with the intended gold is in flight.",
+  "at": "2026-09-14T04:4xZ",
+  "docRepoFetched": "P:/seat-worktrees/property/doc_repo (CP1-CP5 still filed-but-uncommitted, per the standing do-not-commit-to-doc_repo rule).",
+
+  "remedyChosen": "Operator ruling: bump hauska-factory's _LDT_SHA past #677, rebuild + redeploy, re-run staging.",
+
+  "pinBump": {
+    "branch": "chore/p178-bump-ldt-pin-serve-marker",
+    "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/146",
+    "merge": "squash-merged; origin/main advanced to 8771c51",
+    "oldPin": "6ae7ef57510a1a0a96ead3251cc9788bb0492335",
+    "newPin": "82857ebb38804ee4cce6ed1ba8718cb712aa9f29",
+    "newPinIsLdtMainAtPinTime": "gh api repos/.../legacy-design-tools/commits/main returned 82857ebb, committer date 2026-09-14T01:11:45Z, read immediately before writing the value.",
+    "guardsRunLocally": {
+      "shape": "valid:true",
+      "commentPresence": "PASS (_LDT_SHA value changed and the diff added at least one comment line)",
+      "stalenessAgainstNewPin": "PASS -- pin already equals target; no divergence"
+    },
+    "groundTruthGraphCheck": {
+      "command": "node scripts/check-ldt-pin-staleness.mjs --ldt-root <legacy-design-tools worktree at 82857ebb> --pin 6ae7ef57 --main 82857ebb",
+      "commitsInRange": 19,
+      "changedFileCount": 38,
+      "bakeModuleGraph": {"moduleCount": 260, "unresolvedCount": 0},
+      "hits": ["accountKeyedWork.ts", "cadRollValue.ts", "joinIntegrityGate.ts", "serveGuards.ts", "nodeFacetBakeTier1ConformantCli.ts", "lib/db/src/schema/cadProperty.ts"],
+      "note": "All six hits are intended members of this card; no non-bake file entered the graph."
+    }
+  },
+
+  "rebuild": {
+    "buildId": "b75b0ee7-089c-4b9e-a0bd-55d733cd0a28",
+    "status": "SUCCESS",
+    "duration": "7M20S",
+    "image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory:publish-b75b0ee7",
+    "jobDigestBefore": "sha256:1c6a7a5a619b4fb1d10bc1058a6e1822f41bfe517150b784c46b370f9841c9ab",
+    "jobDigestAfter": "sha256:e40d3f7632158d957059a4567facda2bad499e07b13b1acdc1c49ce20ebcda60",
+    "jobsRedeployed": "factory-publish-migrate, factory-staging-reset, factory-bastrop-publish, factory-verify-walk, factory-dollar-fields-patch (cloudbuild.publish.yaml's own loop)"
+  },
+
+  "stagingRun_t5tvl": {
+    "execution": "factory-bastrop-publish-t5tvl",
+    "publishRunId": "16b83446-c452-4ee3-b2e3-591da046a892",
+    "startedAt": "2026-09-14T03:56:10Z",
+    "endedAt": "2026-09-14T04:24:18Z",
+    "outcome": "FAILED (exit 1), refuse_code WALK_FAILED",
+    "imageUsedConfirmed": "execution spec image = the NEW digest e40d3f76 (verified, not assumed)",
+    "bakeCompleted": "All 22 pages ran (run_events bake-page: pageIndex 0..21, 173050 ids in). So the chunk loop completed; the failure was the inline walk.",
+    "writes": {"rowsWithNewRunId": 116421, "rowsLeftWithPreviousRunId_e0f6e487": 56629, "total_tier1_48209": 173050},
+    "vintageLabelProvesTheNewBakeRan": "Among rows rewritten by t5tvl, payload baseFacts.cadRoll.marketValue.vintage = '2026-08-26 certified export' for 90958 of them (and blank for 1152) -- the post-#677 mapped label the old pin could not produce. The pin bump demonstrably took effect.",
+    "walkFailure": {
+      "parcels": ["48209:135568", "48209:135569", "48209:135570", "48209:135571", "48209:135572"],
+      "grade": "BP-PUBLISH-RUN-01",
+      "reason": "facets not stamped with publish run 16b83446-c452-4ee3-b2e3-591da046a892",
+      "reading": "The walk reads the served brief and requires the CURRENT publish run id at body.publishRunId or body.facets.publishRunId (verify-walk.mjs responseCarriesPublishRunId)."
+    },
+    "whyTheGoldNodesWereNotRestamped": {
+      "mechanism": "P-180 (hauska-factory #145, and LDT #683/#684 inside the new pin range) excludes 'hollow account-keyed nodes' from the bake work list on a gate-blocked county: nodeFacetBakeTier1ConformantCli.ts ~line 379-403 drops any work item where isAccountKeyedNodeId(propId, txgioPropIds). An excluded node is never rewritten, so it keeps the PREVIOUS run's stamp and the walk's stamp check fails.",
+      "goldAnchorIsExactlyThatPopulation": "txgio_parcel has ZERO rows for prop_id 135568..135572 AND zero for those values as geo_id. They are not TxGIO parcels at all. Contrast the real P-175/P-177 nodes 97651/97652/97653/97657/97658, which all resolve to real geo_ids (e.g. 97658 -> 11-2011-0001-01100-3).",
+      "so": "The failure is a GOLD-ANCHOR selection problem: --gold=48209:135570 names a parcel the new bake retires by design. It is not a P-178 defect and not a stamp regression."
+    }
+  },
+
+  "p178ServeSideFix_CONFIRMED_WORKING": {
+    "claim": "The declared-roll marker now reaches the served surface, and a marked account's own dollars are served nowhere.",
+    "concreteProof": {
+      "node": "48209:100780",
+      "nodeOwnGeoId": "11-6535-000U-00300-2",
+      "cadOwnerOfThatGeoId": {"prop_id": "12717", "market_value": 311000, "roll_membership": null, "source_file": "hays_20260826_certified.zip"},
+      "markedAccountSharingTheDigits": {"prop_id": "100780", "market_value": 395, "property_number": null, "roll_membership": "absent-from-declared-drop", "source_file": "2026-PRELIMINARY-DATA-EXPORT-FILES.zip"},
+      "reading": "The 311000 the node serves is account 12717's certified value, reached through the property_number<->geo_id crosswalk. Marked account 100780's own 395 is served nowhere: its property_number is NULL, so the crosswalk gives it no node. The marker is doing its job."
+    },
+    "theDeletedFalsifier": {
+      "originalWording": "CP4: 'marked accounts served with a real cadRoll dollar ... must go to 0'",
+      "verdict": "MIS-SPECIFIED -- a bare-number category error. It equated cad_property.prop_id with place_key's node id, but for a gate-blocked county those are two different published numbering systems that only coincidentally share digits (the exact collision P-177/SEED_BLOCKED_FIPS exists to refuse). The count could never reach 0 and its staying at 305 never indicated a servable marked dollar.",
+      "supersededBy": "The crosswalk-resolved check above (node's own geo_id -> owning certified account), which is the check that actually tests the marker."
+    }
+  },
+
+  "stagingStateIsNowMixed": "48209 tier1 rows are split: 116421 carry the new run (16b83446, post-#677 bake) and 56629 still carry the previous run (e0f6e487). Same county, same adapter, two bakes. Both are Hays-only staging writes; no production store was touched.",
+
+  "rerunInFlight": {
+    "why": "The only defect in t5tvl was the gold anchor. Re-running with the gold the handoff actually names for step 6.",
+    "command": "gcloud run jobs execute factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --wait --args=\"bastrop-publish,--target=staging,--county=48209,--gold=48209:97658,--skip-pmtiles\"",
+    "preflight": "node 48209:97658 confirmed rewritten by t5tvl with stamp 16b83446 (updated_at 04:22:18Z), so it is a live post-#677 node the walk can stamp-check."
+  },
+
+  "production": "NOT touched. No production write of any kind this checkpoint.",
+  "openForOperator": "The seven get_smart_site reads are still blocked (user-hauska-cortex namespace error), so the read-path half of step 6 still rests on place_layer_snapshots reads."
+}

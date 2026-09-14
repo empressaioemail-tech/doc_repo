@@ -226,5 +226,7 @@ the specific go for the production apply itself.
    way every other row on this card has been verified, since they entered the record without
    that pass.
 
+**Addendum 2026-09-14T12:20Z (A-146).** Wave 5 and P-178 closed and reviewed at source after this file was written: P-152 passes on 1109 Pecan, P-155's fix is live, the certified Hays roll is on production, and the publish waits on a ruled P-180 walk fix. See A-146 and the card's 2026-09-14 update block.
+
 This file will not be updated further. The durable card and checkpoint 5 are where the truth
 lives from here.
