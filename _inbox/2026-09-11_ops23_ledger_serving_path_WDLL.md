@@ -22,6 +22,10 @@ related:
 
 # OPS-23 — The ledger as the serving path — WDLL
 
+## UPDATE 2026-09-14T14:10Z (A-148): F24 resolved at source
+
+The city named `Zone_Types/FeatureServer/25` as its current zoning layer (updated 2026-07-09). Its SF row says 30/10/30/20 in words (Ordinance 2024-38 cited) and 25/5/25 in numeric shortcut columns that were never refreshed; One Click reads the numbers. Our card is right; the conflict note names the stale columns; P-156 reads the text fields. The operator tells the city.
+
 ## UPDATE 2026-09-14T13:30Z (A-147): wave 6 compiled; F24 the Bastrop GIS conflict
 
 Wave 6 (`_dispatches/2026-09-14_ops23-wave6_dispatch.md`): `p178-publish` (option B, then the Hays publish and seven cards), `p183-querypoint` (the last P-175 leg), `p156-bastrop` (the per-city zoning declaration that unblocks the CTX bake; Bastrop's 181 first), `p154-conflict` (the card admits when the city's own layers disagree, F24). The P-160 label leg is in the probe. Williamson untouched, P-184 later.
