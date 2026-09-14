@@ -112,7 +112,7 @@ itself. The map-engine question.
 
 ## Close
 
-Write your close to `_inbox/2026-09-14_g125_rainfall_control_close.json`.
+Write your close to the path named in the CHECKPOINTS AND CLOSE block above — that is the machine-checkable one, and this mission does not name a second.
 
 State: the end-to-end trace of `rainfallDepthInches` with the files and lines it passes through;
 the two-depth violation test on a named real Bastrop parcel with both results; whether a depth

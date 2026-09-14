@@ -149,7 +149,7 @@ one word. Do not fold them together. Any change to the merge, the stores, or the
 
 ## Close
 
-Write your close to `_inbox/2026-09-14_g130_flood_determination_recommendation.md`.
+Write your close to the path named in the CHECKPOINTS AND CLOSE block above — that is the machine-checkable one, and this mission does not name a second.
 
 Lead with the disagreement RATE and its denominator, then the recommendation in one sentence, then
 the case against it. End with what an operator needs to decide and what it would cost to implement

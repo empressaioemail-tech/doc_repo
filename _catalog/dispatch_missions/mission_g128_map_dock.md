@@ -124,6 +124,8 @@ Deploys are planner-owned: you deploy and you fix your own failed deploys. Canar
 `--no-traffic`, smoke, shift, verify the shift by reading the traffic JSON **by field name**,
 never a positional `value()` formatter.
 
-Write your close to `_inbox/2026-09-14_g128_map_dock_close.json`. State the deployed revision and
-digest, which of the three states you verified at which widths, the with-boundary and
-without-boundary results, and your answer on the sliver defect.
+Write your close to the path named in the CHECKPOINTS AND CLOSE block above — that is the
+machine-checkable one, and this mission deliberately does not name a second.
+
+State: the deployed revision and digest, which of the three states you verified at which widths,
+the with-boundary and without-boundary results, and your answer on the sliver defect.
