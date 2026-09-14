@@ -38,14 +38,30 @@ export const DOC_REPO = process.env.EMPRESSA_DOC_REPO?.replace(/\\/g, "/") || re
 // preceded this stopped at P-167 while OPS-23 grew to P-174 (found by the OPS-24 teardown 2026-09-14): rows
 // P-169..P-174 were never gated by this hook. Ranges are literal here so the hook never depends on a file it
 // might fail to read; the self-test asserts they match the registry.
-export const GATED_RANGES = [[151, 174], [186, 198]];
+export const OPS23_RANGES = [[151, 174]];
+// OPS-24 owns 186-198 and 200-210. 199 is deliberately NOT in either: it is the Smart Site auth
+// gate, not a county-to-serving row. Added 2026-09-14 with the registry extension; the drift
+// check below compares EVERY range, not rows[0], after that check was found vacuous by violation.
+export const OPS24_RANGES = [[186, 198], [200, 210]];
+export const GATED_RANGES = [...OPS23_RANGES, ...OPS24_RANGES];
 export const GATED_ROW = { test: (r) => { const m = /^P-(\d+)$/.exec(String(r).trim()); if (!m) return false; const n = Number(m[1]); return GATED_RANGES.some(([a, b]) => n >= a && n <= b); } };
 // OPS-24 rows carry a PREDICATE DEBT (OPS-24 Law 1): no ROWS entry in surface-probe.mjs yet. A close for one
 // of them must still cite an artifact, or, for a read-only review lane, declare probe.notApplicable with a
 // reason. Every close that uses the exception is named in the gate's own output so the debt stays visible.
-export const PREDICATE_DEBT = new Set(Array.from({ length: 13 }, (_, i) => 'P-' + (186 + i)));
+export const PREDICATE_DEBT = new Set(OPS24_RANGES.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => 'P-' + (a + i))));
 /** Instrument rows: no predicate in surface-probe.mjs; an existing, parseable artifact suffices. */
 export const ROWS_WITHOUT_PREDICATE = new Set(["P-160", "P-162", "P-168", "P-170", ...PREDICATE_DEBT]);
+
+/**
+ * Compare the hook's literal ranges against EVERY range the registry declares for these two
+ * programs. Found by violation 2026-09-14: the previous check read `rows[0]` only, so adding a
+ * second range to a program passed a check whose name claims it compares the program's ranges.
+ * A check narrower than its claim is the defect this file exists to catch.
+ */
+export function registryRangesMatch(programs, gated) {
+  const want = ["OPS-23", "OPS-24"].flatMap((id) => (programs?.[id]?.rows ?? []).map((r) => [r.from, r.to]));
+  return JSON.stringify(want) === JSON.stringify(gated);
+}
 
 export function isGitCommit(command) {
   return /(^|[;&|]\s*)git\s+(-C\s+\S+\s+)?commit\b/.test(String(command ?? ""));
@@ -203,7 +219,22 @@ export function selfTest() {
   check("partial: true flag is honoured like a partial status -> allow", evaluate(["_inbox/2026-09-11_partialflag_close.json"], read).block === false);
   check("a deleted close (unreadable) -> allow", evaluate(["_inbox/2026-09-11_gone_close.json"], read).block === false);
   // 2026-09-14: the ranges match the registry, P-169..P-174 are gated, OPS-24 rows carry a visible debt.
-  try { const reg = JSON.parse(readFileSync(join(DOC_REPO, "_catalog", "plan_registry.json"), "utf8")); const want = [reg.programs["OPS-23"].rows[0], reg.programs["OPS-24"].rows[0]].map((r) => [r.from, r.to]); check("GATED_RANGES equals the registry\x27s OPS-23 and OPS-24 ranges", JSON.stringify(want) === JSON.stringify(GATED_RANGES)); } catch (e) { check("plan_registry readable for the range check: " + e.message, false); }
+  try {
+    const reg = JSON.parse(readFileSync(join(DOC_REPO, "_catalog", "plan_registry.json"), "utf8"));
+    check("GATED_RANGES equals EVERY registry range for OPS-23 and OPS-24", registryRangesMatch(reg.programs, GATED_RANGES));
+  } catch (e) { check("plan_registry readable for the range check: " + e.message, false); }
+  // NOT-VACUOUS CASE. The predecessor of this check read rows[0] only and PASSED while a second
+  // range existed in the registry and not in the hook (found by violation 2026-09-14). Asserted
+  // here against synthetic input in BOTH directions, so the check is observed failing, not only passing.
+  check("drift check FAILS when the registry has a range the hook lacks (the 2026-09-14 violation)",
+    registryRangesMatch({ "OPS-23": { rows: [{ from: 151, to: 174 }] }, "OPS-24": { rows: [{ from: 186, to: 198 }, { from: 200, to: 210 }] } }, [[151, 174], [186, 198]]) === false);
+  check("drift check FAILS when the hook has a range the registry lacks",
+    registryRangesMatch({ "OPS-23": { rows: [{ from: 151, to: 174 }] }, "OPS-24": { rows: [{ from: 186, to: 198 }] } }, [[151, 174], [186, 198], [200, 210]]) === false);
+  check("drift check PASSES when every range agrees",
+    registryRangesMatch({ "OPS-23": { rows: [{ from: 151, to: 174 }] }, "OPS-24": { rows: [{ from: 186, to: 198 }, { from: 200, to: 210 }] } }, [[151, 174], [186, 198], [200, 210]]) === true);
+  check("P-200 is gated and carries the predicate debt (ungated before the 2026-09-14 registry extension)",
+    GATED_ROW.test("P-200") === true && PREDICATE_DEBT.has("P-200") === true);
+  check("P-199 is NOT gated by either program (Smart Site auth gate, deliberately excluded)", GATED_ROW.test("P-199") === false);
   put("_inbox/2026-09-14_p172_noprobe_close.json", { lane: "P172-FINDBOX", planRows: ["P-172"], status: "closed" });
   check("P-172 (inside the widened range) closed with no artifact -> BLOCK (was silently allowed before 2026-09-14)", evaluate(["_inbox/2026-09-14_p172_noprobe_close.json"], read).block === true);
   put("_inbox/2026-09-14_ops24-teardown_close.json", { lane: "ops24-teardown", planRows: ["P-186", "P-195", "P-198"], status: "closed", probe: { notApplicable: "read-only review; no surface predicate exists for OPS-24 rows yet" } });

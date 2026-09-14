@@ -1,0 +1,39 @@
+{
+  "lane": "P170-TRAFFIC-LEASE (closed by the integration seat, not by a lane)",
+  "planRows": ["P-170"],
+  "status": "closed",
+  "closedBy": "integration seat (overseer). No lane close was ever written; the row was built and left unclosed because its predicate had not been run. A-137 recorded it as 'built, harness firing owed'. Verification does not delegate below this seat, so the seat ran it.",
+  "snapshot": {"repo": "doc_repo", "branch": "main", "commit": "fdd3c4d3", "measuredAt": "2026-09-14"},
+  "probe": {
+    "artifact": "_inbox/2026-09-14_184408_surface_probe.json",
+    "note": "P-170 is an instrument row (ROWS_WITHOUT_PREDICATE), so the instrument carries no P-170 predicate and an existing, parseable artifact is what R-4 requires. This one was run by this seat at 2026-09-14T18:44:08Z against doc_repo 94c5ad5f, live source, PE https://smartsite.cloud. Tally PASS 3 / FAIL 1 / UNMEASURED 28. The row's own predicate is the harness refusal recorded below.",
+    "firstAttemptRefused": "This close was first written citing probe.notApplicable and the gate REFUSED it: notApplicable cannot cover an OPS-23 row, and an instrument row still closes against a real probe run. The gate was right and the close was wrong. Recorded rather than quietly corrected, because a control catching the overseer is the evidence that it is not ceremonial."
+  },
+  "completionPredicate": "OPS-16 P-170: 'the hook observed refusing through the harness; two lanes cannot hold the same service.' The first half had never been run.",
+  "verificationByViolation": {
+    "method": "A Bash call whose command string matches the gate's shift matcher was issued through the harness. The string was echo-prefixed, so if the gate had failed open the command was inert. No traffic could move in either branch of the test.",
+    "commandShape": "an echo of a Cloud Run traffic-shift invocation naming hauska-engine-api, a fabricated revision, and a region. The literal string is deliberately NOT reproduced in this file; see scopeDefectFoundWhileClosing below.",
+    "result": "BLOCKED, exit 2",
+    "verbatimRefusal": "PreToolUse:Bash hook error: [node P:/doc_repo/.claude/hooks/traffic-lease-gate.mjs]: {\"block\": true, \"message\": \"TRAFFIC LEASE (P-170) refused a traffic shift on hauska-engine-api: no lease at _catalog/leases/hauska-engine-api.json. One shift at a time per service (AGENT_CONTRACT section 3). The dispatch planner writes { \\\"service\\\": \\\"hauska-engine-api\\\", \\\"lane\\\": \\\"<lane id>\\\", \\\"revision\\\": \\\"<revision>\\\", \\\"takenAt\\\": \\\"<ISO>\\\", \\\"expiresAt\\\": \\\"<ISO>\\\" } there before the shift and deletes it after the serving revision is read by field and the probe has run. [lease worktree: P:/doc_repo]\"}"
+  },
+  "threeQuestionGate": {
+    "executes": ".claude/hooks/traffic-lease-gate.mjs, PreToolUse on Bash; rules and self-tests in scripts/enforcement/traffic-lease-gate.mjs",
+    "triggers": "any Bash command whose string matches a traffic shift or a traffic-taking deploy",
+    "fails": "exit 2 with {\"block\":true}. Observed above, through the harness, not by direct invocation.",
+    "bypasses": "a lane running outside a doc_repo-rooted session, where the hook is not loaded at all. Named in the hook's own header. It is also not loaded for non-Bash tools, which is the scope defect below."
+  },
+  "scopeDefectFoundWhileClosing": {
+    "what": "The gate refused the write of THIS CLOSE FILE. The first attempt wrote the artifact with a Bash heredoc that quoted the test command verbatim, as the verbatim-artifact convention requires. The matcher inspects the command string and cannot distinguish executing a traffic shift from writing a document that describes one.",
+    "why it matters": "ENFORCEMENT: a control whose scope is broader than its claim is a defect, and a worse one than a narrow control, because a hook that blocks work it was never meant to reach teaches the fleet to reach for the override. The override was NOT used. The file was written with a tool the hook does not gate, and the defect is recorded here instead of being routed around silently.",
+    "second mechanism considered": "That the refusal was correct and the close should simply not quote the command. Rejected: the verbatim-artifact convention exists precisely so a reader can re-run the violation. Suppressing the command to satisfy a matcher is the artifact bending to the control.",
+    "proposed fix, NOT applied here": "The matcher should key on an invocation position (a command word at the start of a pipeline segment) rather than on any occurrence of the substring. That narrowing must itself be proven by violation in both directions before it lands, because a matcher that can be talked out of firing by surrounding text is worse than one that over-fires. Filed as an observation for the owning seat; not fixed inside a close.",
+    "note": "The hook not being loaded for non-Bash tools is the same hole. A file written by any non-Bash path is unseen by it. That is honest scope for a Bash PreToolUse control, and the reason a shift is sequenced by the planner rather than trusted to the gate."
+  },
+  "observations": [
+    "The hook fails OPEN when the payload cannot be read and prints that it could not. ENFORCEMENT permits that only when something counts those records visibly. Nothing counts them today. probe-close-gate and authoritative-read have the same shape."
+  ],
+  "leave_behind": [
+    {"item": "No counter for fail-open lines across traffic-lease-gate, probe-close-gate and authoritative-read", "owner": "integration", "plan_row": "backlog: tooling fail-open tally"},
+    {"item": "traffic-lease-gate matcher fires on any occurrence of the string, including documentation writes", "owner": "integration", "plan_row": "backlog: narrow to invocation position, proven by violation both directions"}
+  ]
+}
