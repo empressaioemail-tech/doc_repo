@@ -25,8 +25,8 @@
   "prs": [
     { "repo": "hauska-atom-contract", "pr": 33, "state": "MERGED", "mergeSha": "5f8f531", "ci": "pass", "tag": "v1.36.0", "publish": "success (run 2026-09-14T13:42:27Z); npm latest = 1.36.0 (verified)" },
     { "repo": "hauska-engine", "pr": 442, "state": "OPEN, DRAFT (another writer's PR; this lane pushed one commit to its branch, not a competing PR)", "headSha": "a091eb3", "ci": "pass at a091eb3 (typecheck + test, 3m53s)", "content": "conflict arm in getSetbackTableForZoning + all callers + atom display_meta + the two new PDF summary rows + the A-148 sentence asserted character for character on the rendered sheet, with both pre-registered falsifiers" },
-    { "repo": "hauska-map", "pr": 401, "state": "OPEN", "headSha": "b4f6f05 (branch updated onto main)", "ci": "Typecheck pass; test pending at time of writing", "content": "panel card prints the source clause and the conflict sentence from the shared vocabulary" },
-    { "repo": "legacy-design-tools", "pr": 688, "state": "OPEN", "headSha": "6a863239", "ci": "Test/Typecheck pending at time of writing", "content": "get_smart_site R1 brief envelope data carries conflictNote" }
+    { "repo": "hauska-map", "pr": 401, "state": "MERGED", "mergeSha": "848ec0aab141ce98f308e152c5f3cb1a076716ee", "ci": "test pass, Typecheck pass, No double-encoded source pass (on b4f6f05)", "content": "panel card prints the source clause and the conflict sentence from the shared vocabulary" },
+    { "repo": "legacy-design-tools", "pr": 688, "state": "OPEN", "headSha": "771534c9", "ci": "first run's Typecheck FAILED on a two-copy atom-contract type clash; fixed at 771534c9 (see lessonsLearned) and re-running", "content": "get_smart_site R1 brief envelope data carries conflictNote" }
   ],
 
   "tokenVersion": { "token": "setback-conflict-second-source", "published": "@empressaio/atom-contract 1.36.0 (npm latest, verified 2026-09-14)", "consumers": "engine ^1.36.0 (9 package.json bumped + lock), hauska-map ^1.36.0, legacy-design-tools artifacts/api-server ^1.36.0" },
@@ -53,6 +53,29 @@
     "getSetbackTableForZoningStillReturnsABareValueOnARealConflict": "NOT OBSERVED — the return type is the discriminated union `SetbackTableResolution` (`kind: \"table\" | \"conflict\"`), and the compiler found every caller; the adapters/engine-core suites pass at a091eb3.",
     "cannotRenderStaleArmOnAnOldContract": "OBSERVED and INTENTIONAL — `conflictNote()` throws rather than printing `undefined/undefined/undefined` when the installed atom-contract cannot render the stale-columns arm. This is why the pins moved to ^1.36.0 in this wave; a deploy carrying a pre-1.36.0 install would 500 on a real conflict rather than print a sentence with no numbers."
   },
+
+  "lessonsLearned": [
+    {
+      "kind": "LESSON",
+      "text": "Raising a shared-type package's pin in ONE manifest of a pnpm workspace is worse than not raising it at all. LDT's api-server went to ^1.36.0 while six sibling manifests stayed at ^1.34.0; pnpm kept BOTH copies, and every type that crosses a package boundary (ReadContract, WidthedConfidence, PrivateRestrictionBriefingItem) became TS2322 'not assignable to .../dist/read-contract/read-contract' between the two paths. The fix is to raise every manifest that declares the dependency at once (the engine's wave-6 commit did exactly that, 9 manifests), then re-resolve. Symptom to recognise: an error naming two node_modules/.pnpm/<pkg>@<v1>_... and <pkg>@<v2>_... paths for the same nominal type."
+    },
+    {
+      "kind": "LESSON",
+      "text": "In LDT, `pnpm install` ends with `preinstall` calling `sh -c ...`; on this Windows seat `sh` is missing, so the very last step errors 'Failed' AFTER linking completes. Do not read that as a broken install. Complete it with `pnpm install --ignore-scripts` and confirm with the actual question: every workspace package's `node_modules/@empressaio/atom-contract/package.json` must report the SAME version (a stale `.pnpm/<pkg>@<old>` directory may linger harmlessly)."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A local api-server typecheck cannot be trusted in LDT until the libs are built: without them it fails with TS6305 'Output file ... has not been built from source file'. `pnpm run typecheck:libs` (tsc --build) first, then `npx tsc -p artifacts/api-server/tsconfig.json --noEmit`, gives a CI-equivalent check in under a minute and caught this class of failure without waiting on CI."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-14: for 48021:34049 the served setback envelope carries four values (30/10/30/20) plus `disclosure: parcel_record setback rule effective 2026-04-14`, and a `secondSource` whose note is the wave-5 CONFESSION string ('the two city schedules conflict - verify which is in effect with the city') — i.e. the customer already sees a prose confession, not the A-148 conflict row. The wave-6 note replaces that prose with numbers, dates and the ordinance; it cannot appear until the atom is re-minted."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Do not try to measure the three strings for a gated parcel from this seat. `POST /api/property-explorer/v1/research/brief` (the MCP path) is behind requirePeAuthenticated and the MCP itself behind the Solo/unlock gate; no CORTEX_*/SMARTSITE_*/GCP_* variable is set in this environment, so only unauthenticated surfaces (the panel and the spine facets endpoint) can be probed by hand."
+    }
+  ],
 
   "notDone": [
     "No deployment was performed by this worker and no serving revision was read by field: the lease for the services that carry these surfaces was not granted in this session, and the engine PR that carries the PDF half is a DRAFT owned by another writer.",
