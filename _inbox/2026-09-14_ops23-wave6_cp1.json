@@ -676,7 +676,8 @@
         "consequence": "So \"wait for the executions to clear\" cannot be satisfied by waiting for zero running executions in any durable sense: a new one starts every hour, and the factory conformant writer starts one every TEN MINUTES. Waiting for a gap is a timing race, not a quiescence. The operator's instinct to read state by field is what surfaced this — the completion pattern alone looked like a stuck job when it is actually a scheduler.",
         "whatThisChanges": "The step-1 precondition should probably NOT be \"no gate-sched running\". It should be either (a) evidence that the publish job and gate-sched do not contend on the same rows — the derivation found gate-sched carries ONLY FACTORY_DATABASE_URL, so it touches the factory LEDGER (runs/publish_runs/verify_walks), which the publish DOES also write and requireStagingSibling DOES read; or (b) accept the timer and rely on the publish job's own guards/transactionality, recorded as a deliberate acceptance rather than a claim of quiescence.",
         "plannerNote": "The derivation also notes the ATOMS store has NO confirmed scheduled writer (the only factory->atoms module is read-only by design), so the atom write is less exposed to timers than the ledger write is."
-      }
+      },
+      "resolution20260914": "SUPERSEDED by O30: the operator ruled prove-non-contention instead of wait-for-quiescence, and O30 delivers that proof (row-level) while relocating the real hazard to serve-state and start-time-matched reaping."
     },
     {
       "id": "O21",
@@ -684,7 +685,16 @@
       "question": "The wave has been saying \"production still 404s on 48209:84629, so step 4 is a real write\". That framing is incomplete. The SERVED surface does 404 (measured), but the PRODUCTION STORE ALREADY HOLDS a full catalog-listed tier-1 row for that parcel, with `baseFacts` and `recordRetirement: retired`, under the 2026-09-13 production run `b5e54917`. So the missing row is not the reason for the 404 — the 404 comes from the SERVING layer, and the retirement data is already present. Step 4's work on that parcel is therefore a RESTAMP under a new run id, not the creation of a missing row.",
       "whyItMatters": "It changes the pass/fail reading of step 4 in two ways. (1) A post-publish 200 does NOT by itself prove the publish did the work — someone must explain why the same data 404s before and 200s after, or the \"fix\" may just be a cache or revision artifact. (2) The predecessor's falsifiers were about stamps and row counts, and the wave has already been burned once by a check set that could not catch the failure that occurred (O13); this is the same hazard in a new place.",
       "handling": "Recorded so the verification pass tests the SERVING explanation rather than only the store counts. Not escalated as a blocker — step 4 is still the right action — but the post-publish read must state which layer changed.",
-      "owner": "planner — the verification pass after step 4"
+      "owner": "planner — the verification pass after step 4",
+      "SETTLED_20260914_byRead": {
+        "method": "read-only GETs by the planner, 2026-09-14, against the exact path the walk uses — src/jobs/verify-walk.mjs:712 builds `${baseUrl}/api/spine/cortex/api/brokerage/v1/place/node/<parcelNodeId>/facets`. Bodies saved: _inbox/2026-09-14_facets_production_bareOrigin.json and ..._staging_sibling.json.",
+        "headline": "THE 404 DOES NOT REPRODUCE ON THE LEG THE WALK GRADES. `48209:84629` returns HTTP 200 with a full 15.9 KB tier-1 JSON payload from PRODUCTION, and 200 with 12.0 KB from STAGING. Both carry `facets.tier = 1`, `facets.baked = true`, `access.entitlement = anyone-free`, `access.discoverability = catalog-listed`. So the premise \"identical data 404s before and 200s after\" does not hold at the facets leg — there is nothing there for a publish to change from 404 to 200.",
+        "whereTheRetirementActuallyIs": "THE ENVELOPE. `facets.envelope = null` and `facets.facetCoverage.envelope = false`, and the payload says why in its own words: `facets.provenance.tierNote` = \"Tier 1 (deterministic). Buildable envelope product path retired (anti-zombie / atom_path_pending) — read envelope from property atom chain. Tier 2 may still carry flood overlay.\" So the envelope is DELIBERATELY not served by this payload; it is served from the property atom chain by a DIFFERENT leg. The strong inference — TO BE CONFIRMED by the serve-layer read, the planner did not observe a 404 itself — is that the 404 and the 200 are on DIFFERENT LEGS, and the planned publish cannot change the leg that 404s, because that leg reads the atom chain, not the run snapshot, and it is marked atom_path_pending (i.e. the atom path is not built yet).",
+        "theRunThatActuallyBakedIt": "The served facets carry `publishRunId = 05179184-a7e7-420c-be40-6b58721c962a` with `bakedAt = 2026-09-10T18:47:55.043Z` and `snapshotAt = 2026-09-10T18:48:03.908Z`. That is NOT the run the sequence was framed around. NOTE THE IDENTIFIER-SPACE CAUTION: the operator cited b5e54917, an 8-hex-char form, while the served id is a UUID — these may be different fields (a git/merge sha vs a run uuid) rather than a contradiction. Flagged for the serve-layer read to reconcile. Either way, what is SERVED today was baked by 05179184.",
+        "recordPathIsLiveAndServingZEROS": "CONCRETE PROOF OF THE O27 SWALLOW RISK, measured. `setbacksFact` for this parcel is `{state: \"present\", source: \"setbacks-fact-parcel-record\", entityId: \"48021:84629\", frontFt: 0, sideFt: 0, rearFt: 0, cornerFt: 0, sourceAdapter: \"parcel_record\", sourceVintage: 2026-09-10T22:36:30.509Z}`. So the RECORD path is live and serving this parcel's setbacks — and serving ZEROS. A re-mint of the atom would not touch this: the facet names parcel_record as its adapter, exactly the source O27 identified as carrying no conflict data and being unable to refresh an earned cell.",
+        "servedZoningIsElginNotBastropCity": "IMPORTANT AND POSSIBLY DECISIVE FOR SCOPE. `facets.zoning` = {district: \"I\", jurisdictionKey: \"elgin-tx\", provenance: \"…/Elgin_Zoning/FeatureServer/0\"}; `setbackRulesFact` = {districtCode: \"I\", districtName: \"I General Industrial District\", jurisdictionKey: \"elgin-development-code\", citationUrl: \"library.municode.com/tx/elgin/…\", matchKind: \"matched\"}. So what is served for 48021:84629 is governed by ELGIN's development code (Elgin straddles Bastrop and Travis counties), NOT the City of Bastrop zoning layer that A-148/F24 resolved. The planner is NOT asserting this settles anything, but it means the premise that this parcel is a Bastrop-city conflict case is UNVERIFIED, and the A-148 payload may not even be the right lever for it. Flagged to the operator rather than acted on.",
+        "otherNotable": "provenance.parcelJoin = {basis: \"txgio_parcel row feature_index 54734 matched (county_fips, prop_id)\", state: \"joined\", sourceVintage: \"stratmap25-landparcels_48021_bastrop_202503\"} — so this parcel IS joined at the March 2025 vintage, and `roadsPending: true`. `baseFacts.cadRoll.{landValue,marketValue,assessedValue,improvementValue}.state = \"refused\"` are the ten \"refused\" markers in the payload (CAD values refused, not setbacks)."
+      }
     },
     {
       "id": "O22",
@@ -708,7 +718,14 @@
       "consequenceForUsefulness": "GOOD NEWS that reduces the risk of step 1 materially: a missing site URL is not a silent half-run. resolveTargetSiteUrl THROWS before the first bake, naming the variable. So step 1 cannot start and partially write with the URL absent — it refuses up front. The failure mode is loud and safe.",
       "theActualBlocker": "The VALUE is not recorded in any artifact the planner can read. The only site URL on record anywhere is the STAGING sibling, https://smart-site-factory.vercel.app/site. The planner will NOT derive a production origin by analogy — inventing a production URL is exactly the fabrication this program must not do, and a wrong site URL would make the walk fetch the wrong surface.",
       "handling": "OPERATOR INPUT REQUIRED: either the value, or an explicit authorisation to use a named production origin. Note the alternative in-code path — publish with --skip-walk and then run factory-verify-walk --target=production --publish-run=<id> — which the source documents; that still needs the URL for the walk, but decouples it from the publish.",
-      "owner": "operator (the value), then planner"
+      "owner": "operator (the value), then planner",
+      "RESOLVED_20260914": {
+        "operatorValue": "smartsite.cloud (given by the operator 2026-09-14).",
+        "exactFormConfirmedByREAD": "https://smartsite.cloud — the BARE ORIGIN, no path. Confirmed by read, not by analogy: GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48021%3A84629/facets returns http 200 application/json 15868 bytes. GET https://smartsite.cloud/site/<same path> returns http 200 text/html 1850 bytes — the SPA index.html, i.e. the /site prefix is WRONG on production and silently falls through to the app shell.",
+        "whyThisVindicatesTheRefusalToDerive": "The staging sibling is https://smart-site-factory.vercel.app/site — its base DOES carry a /site path, and its facets leg does work under it (verified: 200 JSON, 12008 bytes). So the two targets have DIFFERENT path layouts. Had the planner followed the \"derive from the sibling origin family\" option and appended /site, the walk would have fetched the SPA HTML and graded it. Refusing to derive it was correct, and the operator supplying it was necessary.",
+        "valueForTheCommand": "PRODUCTION_SITE_URL=https://smartsite.cloud",
+        "residualNote": "The walk stores this URL in verify_walks.target as well as body.siteUrl (verify-walk.mjs:1275-1281 passes siteUrl as the target column value) — which is why that column reads as a URL rather than the literal word \"production\"."
+      }
     },
     {
       "id": "O24",
@@ -754,6 +771,31 @@
       "whyItMatters": "The planner's original brief listed the county bake as a candidate instrument. The derivation refutes it for this atom: bake-property-atom-county is driven by emitFromTier1Snapshot (the TIER-1 SNAPSHOT), whereas the Bastrop per-parcel setback row is built from the LIVE layer-23 record. Using the snapshot-driven bake would be exactly this regression.",
       "handling": "Recorded as a danger to be carried into any successor brief: the instrument must be the live-record path, not the snapshot or corpus path.",
       "owner": "whoever executes the re-mint"
+    },
+    {
+      "id": "O29",
+      "raised": "2026-09-14 by the planner's read-only GETs",
+      "question": "Are PRODUCTION and STAGING serving the same baked snapshot?",
+      "finding": "They report the SAME run and snapshot: publishRunId 05179184-a7e7-420c-be40-6b58721c962a, snapshotAt 2026-09-10T18:48:03.908Z, bakedAt 2026-09-10T18:47:55.043Z on BOTH surfaces. They are not byte-identical: production carries five extra top-level keys (setbackRulesFact, parcelAreaSqFtFact, maxHeightFtFact, maxLotCoveragePctFact, maxFootprintSqFtFact) that staging omits.",
+      "whyItMatters": "If production and staging are serving the same run, then \"reset staging, publish to production, compare\" is not the two-environment comparison it looks like, and a production restamp may change less than expected. It also means the staging walk and the production walk may be grading substantially the same bytes.",
+      "unmeasured": "Whether the five extra keys are a production-only reader behaviour or genuinely different served content — NOT measured. Not to be asserted.",
+      "handling": "Recorded for the serve-layer read and for whoever designs the step-1 verification.",
+      "owner": "serve-layer read (running); then the step-1 verification design"
+    },
+    {
+      "id": "O30",
+      "raised": "2026-09-14 by the operator's instruction to PROVE non-contention rather than wait for quiescence",
+      "question": "Do the step-1 publish and the gate-sched writer contend on the same rows?",
+      "verdict": "PROVEN NON-CONTENDING AT THE ROW LEVEL, for the rows that matter — and the real contention is somewhere else entirely.",
+      "rowLevelProof": {
+        "gateSchedWrites": "src/jobs/publish-gate-sched.mjs shells out to the vendored engine gate CLI once per (county, slate rail) pair and writes each verdict to `parcel_gate_verdict`, plus its own `runs` row via startRun and its termination record. Each (county, rail) verdict is written independently — one upsert per pair, explicitly NO all-rails/all-counties transaction.",
+        "theGuardsInputIsUncontended": "`publish_runs` is written ONLY by bastrop-publish.mjs:477 (INSERT), verify-walk.mjs:1377 (UPDATE walk_id) and read by publish-guards.mjs:91 (requireStagingSibling). GATE-SCHED NEVER TOUCHES publish_runs. So requireStagingSibling — the guard whose answer gates the production publish — CANNOT be corrupted by a concurrent gate-sched run.",
+        "theSharedTableIsRowDisjoint": "`runs` is written by every job (dollar-fields-patch.mjs:75 calls it \"the `runs` table every job writes to\"), but each job INSERTs its OWN row; no job UPDATEs another's row. So the sharing is table-level, not row-level."
+      },
+      "theRealContentionIsServeStateNotRows": "gate-sched writes `parcel_gate_verdict` — and PARCEL-B-READER's allowlist CONSUMES that table to decide whether a rail serves `record` or FAILS CLOSED to `legacy-transitional` (its own rule: no verdict row => legacy). The publish→walk window GRADES SERVED STATE. So a gate-sched run inside that window can flip a rail between record-served and legacy-transitional and change what the walk observes — which is precisely the read-path question in O27 that decides whether the conflict payload can be swallowed. THAT, not row locking, is the contention.",
+      "aSecondRealHazardFound": "src/jobs/reap.mjs:274 uses a START-TIME-MATCHED termination as a basis, and explicitly prefers the run's own close evidence over it. With an hourly job, a ten-minute job, and ad-hoc publishes overlapping, start-time collisions are routine — which is a plausible mechanism for the UNATTRIBUTED JOB LAUNCHES recorded earlier as C5/O18. Stated as a hypothesis with a named mechanism, NOT as a proven cause.",
+      "restatedPrecondition": "Step 1 should NOT wait for \"zero running executions\" — that is a timing race against an hourly timer. It should require that the publish→walk window does not SPAN A GATE-SCHED VERDICT CHANGE for the rails being graded, and record acceptance of the timers deliberately rather than claiming quiescence.",
+      "owner": "planner (recorded); the step-1 verification design inherits it"
     }
   ],
   "premiseCorrections": [
