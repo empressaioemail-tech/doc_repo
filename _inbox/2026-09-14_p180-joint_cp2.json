@@ -1,0 +1,183 @@
+{
+  "lane": "p180-joint",
+  "checkpoint": "CP2",
+  "at": "2026-09-14T16:08:00Z",
+  "planRows": ["P-180", "P-183"],
+  "role": "lane (deepest worker, no sub-agents)",
+  "summary": "All five mission steps executed. The S13 false positive is fixed and merged, the image was rebuilt so the deployed digest carries BOTH the P-180 S13 fix and the P-183 geometry fix, staging was reset and republished, and the walk's OVERALL VERDICT IS pass (was fail). Step 4 (production) NOT started: it is out of scope and the planner requests the operator's go.",
+
+  "seat": {
+    "worktree": "P:/seat-worktrees/property/hauska-factory-p180-joint",
+    "branch": "fix/p180-s13-string-provenance-token",
+    "startCommit": "84642360184a685596417f2e0b066cd8a56cacaf",
+    "headEqualsOriginMain": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf (worktree clean; no further writes after the merge)",
+    "ldtShaDeclared": "bae48d406f7595af3d47111b558d0ebc3efd9c56 (verified on the checkout at cloudbuild.publish.yaml before any change)",
+    "singleWriter": "No other lane wrote in this worktree during the session."
+  },
+
+  "whatIChanged": {
+    "file": "src/stages/grade/s-rules.mjs",
+    "function": "servedProvenanceTokens",
+    "before": "[\"parcelSource\",\"landUseSource\",\"zoningSource\"].map((k) => prov[k]).filter((t) => t != null && t !== false)",
+    "after": "same map, filter extended to `.filter((t) => t != null && t !== false && typeof t === \"string\")`",
+    "shapeOfTheChange": "one clause added to the existing filter, not a restructure; it admits strictly LESS than before (every string still enters, including a placeholder or an off-allowlist string).",
+    "whyItIsSufficient": "src/stages/grade/v-rules.mjs:74-76 isNonPassGrade is true only for FAIL and KNOWN_OPEN; UNMEASURED is not a non-pass grade, and gradeS13 already returns unmeasured('S13', ...) when no token is supplied. So a facts-free earned retirement measures no token -> S13 UNMEASURED -> walkParcel's S-family promotion (verify-walk.mjs:743-757) has nothing to promote -> the RETIRED/pass grade survives -> retiredCount 16.",
+    "whyOnlyStrings": "Operator ruling O11 (option (a)): a provenance token is a SOURCE NAME, and a non-string can never be one. Two shapes reach the leaf as non-strings and neither is a token: the mirrored zoning REFUSAL object (zoningSourceMirror, on a facts-free retirement the only candidate) and any number/boolean.",
+    "notChanged": "src/jobs/verify-walk.mjs (the promotion), src/stages/grade/v-rules.mjs, the LDT P-183 source (#148/#687) -- out of scope by the mission.",
+    "tests": "test/p5-scrub.test.mjs -- four S13 tests added, two directions plus a control (see twoDirectionalTestEvidence)."
+  },
+
+  "pr": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "number": 149,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/149",
+    "title": "fix(P-180/S13): admit only STRING provenance tokens in servedProvenanceTokens",
+    "mergeCommit": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf",
+    "mergedAt": "2026-09-14T14:52:30Z",
+    "mergeMethod": "squash",
+    "conclusionString": "statusCheckRollup: 6 of 6 check-runs conclusion SUCCESS, 0 failing (read from statusCheckRollup as the merge gate, not from `gh pr checks` printing a word)"
+  },
+
+  "twoDirectionalTestEvidence": {
+    "command": "node --test --test-name-pattern=S13 test/p5-scrub.test.mjs",
+    "result": "11 tests, 11 pass, 0 fail",
+    "direction1_noToken": [
+      "S13 DIRECTION 1 (unit): a served body whose only provenance value in the token position is a mirrored zoning REFUSAL object -> gradeAllSFamilies returns S13 grade UNMEASURED (not FAIL) and firstSFail() is null.",
+      "S13 DIRECTION 1 end-to-end: walkParcel on an earned, facts-free retirement serving a refusal object -> grade.grade RETIRED, grade.verdict pass, sGrades.S13.grade UNMEASURED."
+    ],
+    "direction2_noSilencing": [
+      "S13 DIRECTION 2: a genuinely off-allowlist STRING provenance ('some-uncatalogued-source-2026') in provenance.parcelSource -> S13 grade FAIL with reason matching /off the allowlist/, firstSFail().ruleId === 'S13'.",
+      "S13 DIRECTION 2 end-to-end: the same body through walkParcel -> grade.verdict fail, grade.grade S13. A real signal still fails the walk."
+    ],
+    "control": "An ALLOWLISTED string token (conformant-v1-cad-parcel-roll) still PASSes S13 -- the filter admits every string, and only strings.",
+    "negativeControlOnTheOldCode": "With the typeof clause reverted, DIRECTION 1's tests fire (the object becomes tokens[0] and S13 FAILs), which shows the new tests actually discriminate and are not vacuous. Reverted afterwards; merged code carries the clause.",
+    "unsilencedOnTheRealWalk": "Walk 8eacb135 has sFamilies.failed = [] and S13 rule present in ruleIds, i.e. S13 was evaluated on all 86 parcels and reported no failure -- the change removed a false positive, it did not remove the rule."
+  },
+
+  "jointBuild": {
+    "buildId": "f1781a1d-a296-4dc1-a8b3-8a8bb4baa4fd",
+    "status": "SUCCESS (5M32S)",
+    "factoryCommitBuilt": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf (the merged S13 fix)",
+    "ldtShaReadFromTheBuildRecord": "bae48d406f7595af3d47111b558d0ebc3efd9c56 -- read by field name from the build resource's substitutions (_LDT_SHA), not inferred",
+    "ldtCheckoutLogLine": "Step #0: HEAD is now at bae48d4 Merge pull request #687 from empressaioemail-tech/fix/p183-querypoint-from-geometry",
+    "deployedDigest": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+    "deployLogLine": "Step #3: pinning publish jobs to us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51"
+  },
+
+  "deployedDigestReadBackBeforeRunning": {
+    "method": "gcloud run jobs describe factory-bastrop-publish --project=hauska-prod-497015 --region=us-east4 --format=value(spec.template.spec.template.spec.containers[0].image, ...env) -- read by FIELD NAME",
+    "jobImage": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+    "jobEnvImageDigest": "same digest",
+    "alsoPinned": "factory-staging-reset and factory-verify-walk read back the same digest",
+    "ldtShaTheDigestCarries": "bae48d406f7595af3d47111b558d0ebc3efd9c56 (P-183, LDT #687)",
+    "factoryShaTheDigestCarries": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf (P-180 S13 fix, #149)",
+    "readBackAfterTheRun": "Re-read at 2026-09-14T16:07Z while restoring the job args: image and env IMAGE_DIGEST still bb3d7148..., unchanged, and no execution in flight.",
+    "beforeThisBuild": "the pin I inherited read back sha256:7e73cafa1d8bd06c1ce9d477899d828d2040a8540ad40ac4f00f01fb0a3b6f34 = LDT 84f4e7c9 (P-180 only, no P-183) -- O12 reproduced: a pin-merge was not a pin-deploy, so a fresh build was load-bearing and not a formality."
+  },
+
+  "runAndWalk": {
+    "execution": "factory-bastrop-publish-txddf",
+    "cloudRunResult": "Execution completed successfully in 41m35.97s (status.conditions[0].status True)",
+    "publishRunId": "5b3a1c2c-eee5-460b-ae1c-dc1102674b5d",
+    "runRowStatus": "success, refuse_code null, target staging:48209",
+    "walkId": "8eacb135-143b-4191-9d09-5bcd43ef4ae7",
+    "walkAt": "2026-09-14T15:46:21.607Z",
+    "WALK_OVERALL_VERDICT": "pass",
+    "walkCounts": { "parcelCount": 86, "servedCount": 69, "retiredCount": 16, "sweepCount": 42, "valueGrade.failed": 0 },
+    "gradeHistogram": { "BP-MEANING-01 pass": 69, "RETIRED pass": 16, "BP-VERIFY-01 pass": 1 },
+    "sFamiliesFailed": {},
+    "the16NowGrade": "RETIRED / verdict pass (all 16), e.g. 48209:84629 = {grade RETIRED, verdict pass}",
+    "deltaVsPredecessor": "c636b630 (fail, retiredCount 0, 16 x S13) -> 8eacb135 (pass, retiredCount 16, 0 x S13). Same 16 parcels, rule changed from S13 to RETIRED."
+  },
+
+  "stampCounts": {
+    "stagingQuery": "GROUP BY payload_json->>'publishRunId' WHERE adapter_key='node-facets:tier1' AND place_key LIKE 'node:48209:%'",
+    "result": [{ "publishRunId": "5b3a1c2c-eee5-460b-ae1c-dc1102674b5d", "rows": 173050 }],
+    "distinctRunIds": 1,
+    "required": 173050,
+    "verdict": "MATCHES EXACTLY; a single uniform run id, no mixed rows.",
+    "factPartition": { "withBaseFacts": 116421, "retiredAndFactsFree": 56629, "sum": 173050 },
+    "writeCounterVsStoreRows": "runs.counts.tier1Written 194538 and publish_runs.body.tier1Summary.written 194538 are WRITE counters over 22 pages of 8000; the store holds 173050 rows (conformantCadRows 173050). Both recorded so the two cannot be confused."
+  },
+
+  "predicates": {
+    "predicate1_walkVerdict": { "value": "pass", "artifact": "verify_walks 8eacb135-143b-4191-9d09-5bcd43ef4ae7, field body.verdict", "was": "fail" },
+    "predicate2_p183RecordPoints": {
+      "value": "PASS -- 5 of 5 Sturgeon nodes serve their own record point, 1-3 m from the CAPCOG address point (bound 150 m)",
+      "measured": "facets.cityLimitsFact.queryPoint through the point-keyed leg GET <PE>/api/spine/property-atoms/<node>/facets, on publishRunId 5b3a1c2c (bakedAt 2026-09-14T15:45:03.931Z)",
+      "distances_m": { "48209:97651": 2, "48209:97652": 1, "48209:97653": 2, "48209:97657": 3, "48209:97658": 2 },
+      "was": "record point 34869 m from the address point (county centroid) on the pre-fix probe 14:26:15Z for 629-sturgeon; tally 5 FAIL",
+      "independentCorroboration": "the planner's own surface probe at 15:49:43Z scores 48209:addr:629-sturgeon PASS with 'record point 2 m from the address point', identical to my measurement, and its gisRing leg puts each of the other four record points inside the correct lot polygon (97651/97652/97653/97657)"
+    }
+  },
+
+  "falsifiers_preRegistered": [
+    {
+      "falsifier": "PRIMARY (O13): if the walk's OVERALL verdict is not `pass` after step 3, this lane has not succeeded, whatever the counts say.",
+      "observed": "NOT TRIGGERED. verify_walks 8eacb135-143b-4191-9d09-5bcd43ef4ae7 body.verdict = 'pass', 86 of 86 parcels verdict pass, sFamilies.failed = {}."
+    },
+    {
+      "falsifier": "If a parcel serving a genuinely off-allowlist STRING provenance no longer fails S13, a real signal was silenced.",
+      "observed": "NOT TRIGGERED. DIRECTION 2 unit + end-to-end: the string 'some-uncatalogued-source-2026' still FAILs S13 with reason /off the allowlist/ and still fails the walk (verdict fail, grade S13). The allowlisted-string control still PASSes."
+    },
+    {
+      "falsifier": "If any of the 16 no longer grades RETIRED, name which and why.",
+      "observed": "NOT TRIGGERED. All 16 grade RETIRED / verdict pass; served recordRetirement.status 'retired', verdict 'absent-verified' on all 16."
+    },
+    {
+      "falsifier": "If current-run rows differ from 173,050, or any excluded node serves facts, or BP-PUBLISH-RUN-01 fires on any node, the retirement pass regressed.",
+      "observed": "NOT TRIGGERED. Rows at the current publishRunId: 173,050 exactly, one run id only. Excluded population (56,629 retired rows): 0 acreage, 0 landUse, 0 zoning key, 0 envelope key, 0 non-empty baseFacts. BP-PUBLISH-RUN-01 occurrences on walk 8eacb135: 0 (it was 16 on the predecessor's walk before P-180 and 0 after P-180 -- this lane did not regress it)."
+    },
+    {
+      "falsifier": "If the digest you ran does not carry bae48d40, the run is not joint; say so rather than attributing a green walk to P-183.",
+      "observed": "NOT TRIGGERED, DIGEST READ BACK. The digest actually pinned on the job before the run and re-read after it is sha256:bb3d7148..., built from factory 63aca2c with _LDT_SHA bae48d406f7595af3d47111b558d0ebc3efd9c56, evidenced by the build record's substitution and the LDT checkout log line ('HEAD is now at bae48d4'). The inherited pin (7e73cafa / LDT 84f4e7c9) did NOT carry it. So the green walk is attributable to both changes, and P-183's own predicate is separately measured above."
+    }
+  ],
+
+  "probe": {
+    "artifact": "_inbox/2026-09-14_154943_surface_probe.json",
+    "instrument": "scripts/surface-probe.mjs",
+    "ranAt": "2026-09-14T15:49:43.341Z",
+    "rowsItMeasures": ["P-175"],
+    "tally": { "PASS": 1, "FAIL": 4, "UNMEASURED": 0 },
+    "disclosure": "The instrument has NO row for P-180 or P-183 -- its rows are OPS-23 parcel rows P-151..P-175 -- so it cannot carry a PASS for this lane's plan rows and I do not claim one. It was run after the publish because it is the only end-to-end read of the Sturgeon surface: it corroborates the P-183 record-point geometry (629 PASS '2 m') and its four FAILs are the P-175 situs-search->parcel-node leg (no situs hit carries a parcel node id; a located address point is not a parcel), not the record point. My plan rows are measured instead by verify_walks 8eacb135 (P-180) and by the point-keyed record-point read plus this probe's gisRing legs (P-183), recorded in _inbox/2026-09-14_160500_p180-joint_staging_reads.json.",
+    "consequenceForStatus": "Because my plan rows cannot be PASS on the cited instrument, this lane files closed-partial with that said plainly, per the dispatch, rather than claiming a pass I cannot cite."
+  },
+
+  "sharedResources": {
+    "inFlightCheckBeforeStarting": "factory-bastrop-publish executions: last before mine was factory-bastrop-publish-twtwq (start 13:43:38.958Z, completion 14:22:42.941Z, failed 1) and factory-staging-reset-2phlw (13:39:58Z -> 13:40:22Z, succeeded). Nothing in flight at 14:47Z, so no second publish was started against a live one.",
+    "lease": "_catalog/leases/factory-bastrop-publish.json, self-granted at 14:53:00Z and disclosed (the directory held only README.md at 14:52:59Z), released (deleted) at 16:07Z once the run row, the walk verdict and the P-183 leg were read -- its own releaseCondition. _catalog/leases/ is back to README.md only.",
+    "jobArgsRestore": "The publish job was run with --county=48209 --gold=48209:97658 (the deployed default is --county=48021 --skip-pmtiles). Restored at 2026-09-14T16:07Z to the deploy default: read back as bastrop-publish;--target=staging;--county=48021;--skip-pmtiles. The digest was unchanged by that update (still bb3d7148...) and no execution was in flight.",
+    "misInvocationDisclosed": "factory-bastrop-publish-4qzj4 failed in 24s, exit code 2, BEFORE any store work: PowerShell parsed the unquoted comma list into one argument. Fixed by quoting the token; the corrected job reads back 5 separate args. The failed attempt wrote nothing (it printed usage and exited)."
+  },
+
+  "couldNotMeasure": [
+    "Per-parcel sGrades of walk 8eacb135: verify_walks.body stores only grade/verdict/parcelId per parcel, so S13=UNMEASURED on the 16 is inferred from the served token shape (no string in the token position on any of the 16), the two-directional tests, and the walk's retiredCount 16 / sFamilies.failed = [] -- not from a stored S13 cell.",
+    "runs.image_digest and runs.ldt_sha: NULL on this run's row by job shape (the container has no env LDT_SHA), so joint-ness is evidenced by the Cloud Build record and the digest read back from the job instead.",
+    "The seven get_smart_site card reads: explicitly the planner's, out of scope.",
+    "A PASS for planRows on the surface-probe instrument: the instrument has no P-180/P-183 row at all."
+  ],
+
+  "contradicted": [
+    "Nothing in the mission premise is contradicted; every claim in it reproduced: the object in the token position on a facts-free retirement is the mirrored zoning refusal (verified served on all 16: tokenSlot zoningSource, tokenType object, 0 string tokens), isNonPassGrade excludes UNMEASURED, and walkParcel promotes an S-family failure over a RETIRED pass.",
+    "One nuance worth stating: the dispatch's own line numbers for the leaf (s-rules.mjs:698-705) are 2 lines off in the merged tree (the filter sits at 700-704 inside that block). The mechanism is exactly as described.",
+    "Also contradicted in passing: the lane's inherited belief that the previous pin was joint. It was not -- 7e73cafa carried LDT 84f4e7c9 (P-180 only). Reproduced and fixed by rebuilding."
+  ],
+
+  "leaveBehind": [
+    "S13 fix merged on hauska-factory origin/main at 63aca2cfc3e4bd73a2d3aa71e1611546855897cf (PR #149), with four two-directional S13 tests in test/p5-scrub.test.mjs.",
+    "A joint image digest sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51 (factory 63aca2c + LDT bae48d40) pinned on factory-bastrop-publish, factory-staging-reset, factory-verify-walk.",
+    "A green staging walk: verify_walks 8eacb135-143b-4191-9d09-5bcd43ef4ae7, verdict pass, 86/86, retiredCount 16.",
+    "A uniform staging store: 173,050 Bastrop tier-1 rows, all at publishRunId 5b3a1c2c-eee5-460b-ae1c-dc1102674b5d.",
+    "This CP2, _inbox/2026-09-14_160500_p180-joint_staging_reads.json (raw reads) and _inbox/2026-09-14_p180-joint_close.json.",
+    "The job's args restored to the deployed default; the lease released; no background job, watch or poll left running."
+  ],
+
+  "notDone": [
+    "Step 4, the PRODUCTION publish: NOT run, NOT requested-for-execution, out of scope. Production still 404s on 48209:84629 at the time of writing (staging-only state change), so step 4 remains a real serving-store write.",
+    "The P-183 source change and the LDT P-175 label/node leg: not touched (P-183's source is #148/#687 which I consume; the P-175 situs-search leg is another program's open row).",
+    "Williamson (P-184), FIGURE-IN-PAYLOAD, NO-CONTAINING-POLYGON, the seven get_smart_site card reads: untouched."
+  ],
+
+  "next": "Planner: the staging verdict and counts are above and the walk is green. Ask the operator for the go on step 4 (the production publish). This lane stops here."
+}
