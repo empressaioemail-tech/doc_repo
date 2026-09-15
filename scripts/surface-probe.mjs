@@ -69,6 +69,10 @@ export const PARCELS = [
   { id: "48453:474034", fips: "48453", label: "2601 Sterling Panorama Ct; unincorporated, Lake Pointe MUD; feasibility 154 s" },
   { id: "48453:367134", fips: "48453", label: "5833 Taylor Draper Cv, Austin SF-2; declared-complete city" },
   { id: "48021:8723767", fips: "48021", label: "P-214: 7-digit split-node half of 1009 Pecan St, Bastrop; bare 'TX' situs sentinel; customer saw a raw hauska-engine R32 mechanical-verify diagnostic under More facts" },
+  { id: "48209:97650", fips: "48209", label: "P-218: 613 Sturgeon Dr, San Marcos; real situs; adjacent to the 97651/97652 selection-leak pair" },
+  { id: "48209:97651", fips: "48209", label: "P-218: STURGEON DR, San Marcos; sentinel situs (street name, no house number); the id the panel wrongly rendered" },
+  { id: "48209:97652", fips: "48209", label: "P-218: STURGEON DR, San Marcos; sentinel situs (street name, no house number); the id the customer actually searched" },
+  { id: "48209:97658", fips: "48209", label: "P-218: 629 Sturgeon Dr, San Marcos; real situs; adjacent to the 97651/97652 selection-leak pair" },
 ];
 
 // P-175 (Hays online): address-keyed subjects. A customer reaches a parcel through the Find box, so the

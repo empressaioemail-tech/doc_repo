@@ -1,0 +1,46 @@
+{
+  "lane": "p218-selection-and-situs",
+  "planRows": ["P-218"],
+  "checkpoint": "CP2",
+  "stage": "pilot/mid-work",
+  "timestamp": "2026-09-15T12:05:00Z",
+  "seat": "property",
+  "seatSessionId": "cente-p218",
+  "worktree": "C:/Users/cente/hauska-map (branch fix/p218-selection-and-situs, commit a286b08)",
+
+  "builtSincCP1": {
+    "partA": [
+      "Committed and pushed a286b08 on fix/p218-selection-and-situs: apps/property-explorer/src/lib/card-subject-guard.ts (new, pure), card-subject-guard.test.ts (new, 6 tests), ExplorerMap.tsx (+28: subjectStore.subscribe -> reconcileCardWithSubject -> inspectInPlace).",
+      "Opened hauska-map PR #405 (https://github.com/empressaioemail-tech/hauska-map/pull/405). NOT merged -- see deployTriggerFinding below.",
+      "CI on PR #405 checked once, bounded, at 2026-09-15T~12:03Z: 'test' and 'Typecheck' jobs PENDING, 'No double-encoded source' PASS. Not polled further (exit-bounded verification rule); whoever merges should re-check gh pr checks 405 for a green 'success' conclusion string before merging, per AGENT_CONTRACT section 5."
+    ],
+    "partB": [
+      "Live per-county three-way situs measurement completed against production txgio_parcel (CORTEX_DATABASE_URL, hauska-prod-497015, read-only), 2026-09-15.",
+      "Report: _inbox/2026-09-15_p218_situs_three_way_measure.md. Data + query: _catalog/situs_three_way_2026-09-15/situs_three_way_by_county.json, measure-situs.mjs."
+    ]
+  },
+
+  "deployTriggerFinding": {
+    "claim": "The dispatch states 'hauska-map does not [auto-deploy], but verify before assuming.' Verified: hauska-map's own git history includes a commit message citing an error 'found via Vercel build' (70ea0fe), and _catalog/seat_register.json repeatedly and explicitly notes 'No deploy' as a constraint on individual hauska-map lane worktrees (e.g. hauska-map-ctx-b4, hauska-map-p91-mark) -- language that would be unnecessary if a hauska-map merge could not trigger a deploy. property-explorer-ci.yml itself has no deploy step, consistent with Vercel's GitHub App doing deploys out-of-band on push, not through GH Actions.",
+    "conclusion": "Contrary to the dispatch's premise, hauska-map/property-explorer most likely DOES deploy automatically via Vercel's GitHub integration on a merge to main -- this was not independently confirmed by reading Vercel project settings (no API access attempted; out of scope to chase further for a bug-fix lane), but the evidence available says 'verify before assuming' was warranted, and the honest position is 'probably deploys', not 'does not deploy'.",
+    "decision": "Fix is pushed and a PR is open (#405) but NOT merged. Merging is being treated as equivalent to deploying for this repo, and 'Deploy without the operator's go' is on this dispatch's Do-Not list. This is the reason the dispatch's own required 'live re-read of the 97651/97652 pair through both the brief and the export panel' (post-fix) cannot be produced in this close -- it needs the fix to actually be serving, which needs a merge/deploy, which needs the operator's go."
+  },
+
+  "partBHeadlineFindings": [
+    "Row-vs-parcel correction: txgio_parcel carries duplicate rows per (county_fips, prop_id) for ~30% of all rows statewide; a first-pass raw count(*) measurement was caught disagreeing with the already-verified Bastrop parcel count (P-212's 62,257) and discarded before being reported. Final counts use one row per (county_fips, prop_id).",
+    "Statewide (deduped, isUsableSitusAddress definition): 83.27% real, 16.18% sentinel, 0.55% none. 'none' is negligible everywhere measured -- the situs gap is a sentinel problem, not an absence problem, confirming the dispatch's framing with a load-bearing breakdown instead of one national number.",
+    "Reconciled against the dispatch's own cited 99.3%/89.9% (SS-W5, 2026-08-18): Bastrop is stable across both measurements; Hays/Bell/Bexar/Williamson all show MORE sentinel under this measurement's stricter, product-matching definition (isUsableSitusAddress, which requires a leading house number) than SS-W5's looser one -- expected. Travis is the outlier and the real finding: SS-W5 found only 17.9% real for Travis; this measurement finds 93.6%. Traced to source_vintage: Travis's txgio_parcel rows are stratmap25-landparcels_48453_travis_202508 (an August-2025 edition), while Hays and Bastrop are both on the March-2025 ..._202503 edition; all three counties' CURRENT rows were ingested in the same 2026-09-03 reload (matching the P-212 close's own timestamp for Bastrop). Travis's coverage was already substantially fixed by a full source-vintage upgrade that landed AFTER the SS-W5 sweep, not by an application-side join -- the dispatch's 'named fix was a per-county JOIN' framing is stale for this one county.",
+    "The Sturgeon Dr pair itself, live-queried from txgio_parcel: 97651 and 97652 both carry situs_address = 'STURGEON DR, SAN MARCOS, TX 78666' -- present, not absent, missing only the house number; both sit on a real platted geo_id (11-2011-0001-004/00500-3) in the same subdivision as their numbered neighbors 97650/97658. This is the 'street-name-present, house-number-absent' sentinel shape, which is Hays county's DOMINANT sentinel shape (82.6% of Hays sentinels) but is nearly absent in Bastrop (96.4% of Bastrop's sentinels are instead fully blank, ', ,'). The gap is not random: which sentinel SHAPE dominates is itself county-specific.",
+    "A third, unrelated data-quality anomaly found and contained (not chased): prop_id='0' is a placeholder/catch-all identity present in 204 of 253 counties (616,287 raw rows statewide, 454,349 of them in Travis alone) whose situs_address sample values are OWNER MAILING addresses, not situs addresses ('TAX DEPT MS 68 198 CHAMPION CT , TX'). The per-parcel dedup this measurement uses collapses every county's prop_id='0' rows to exactly one entry, so it does not distort the reported percentages -- but a naive per-row count (the discarded first pass) would have let it inflate Travis's picture by nearly half a million rows. Named in leave_behind."
+  ],
+
+  "byproductFindingsOutOfScope": [
+    "Live surface-probe run 2026-09-15 (_inbox/2026-09-15_115708_surface_probe.json) surfaced two pre-existing, unrelated FAILs while probing the shared PARCELS roster: P-214 (48021:8723767) FAILS live right now -- the raw hauska-engine R32 diagnostic string this row's own close (2026-09-14) reported as fixed is back in the served envelope disclosure text, meaning that fix is not currently live in production. P-154 (48021:33223) FAILS -- panel (20/5/20/-) and endpoint (25/7/15/7) setbacks disagree. Both are OTHER rows' closed or open work, out of this dispatch's Part A/Part B scope; reported here because the shared instrument surfaced them and ENFORCEMENT.md requires never suppressing a finding the instrument produces, not chased further."
+  ],
+
+  "openBeforeClose": [
+    "Await or check PR #405's CI conclusion string before it is merged (not this lane's call to make, given the deploy-trigger finding above).",
+    "Post-merge, post-deploy: live re-read of 48209:97652 through the actual property-explorer brief and export panel, per the dispatch's close requirement -- deferred to whoever executes the merge with the operator's go.",
+    "Report the P-214 live-FAIL and P-154 live-FAIL findings to the integration seat as out-of-scope observations (done in this checkpoint and will be repeated in the close; not independently investigated)."
+  ]
+}
