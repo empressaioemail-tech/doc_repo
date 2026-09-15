@@ -1,0 +1,43 @@
+{
+  "lane": "p212-bastrop-false-retirement",
+  "planRows": ["P-212"],
+  "checkpoint": "CP2",
+  "stage": "pilot/mid-work",
+  "timestamp": "2026-09-15T20:35:00Z",
+  "seat": "property",
+  "seatSessionId": "cente-p212",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-p212",
+  "branch": "fix/p212-bastrop-false-retirement",
+  "builtSinceCP1": [
+    "reviewRetiredParcelNodes + decideRetiredParcelNodeReactivations added to reconcile-county-parcel-nodes.ts (pure), exported from src/parcel-node/index.ts.",
+    "6 new tests added to re-acquisition-contract.test.ts (28/28 passing); violation proven both directions via git stash (3 fail pre-fix with 'reviewRetiredParcelNodes is not a function', 28 pass post-fix); no regressions in the two existing depth-warm-bastrop script test files (36/36 passing across all three files together).",
+    "Guard relocation implemented in depth-warm-city-batch.mjs: for the specific decline reason 'parcel-node-retired' only, parcelCurrencyFromBcadMap now runs BEFORE the decline is finalized. Never promotes on a live check alone (S3 unchanged); recorded under a new, separately-counted decline bucket 'parcel-node-retired-currency-live' instead of being silently indistinguishable from a genuine retirement decline.",
+    "New CLI packages/engine-core/scripts/review-retired-parcel-nodes.mjs: dry-run by default, --apply --run-id=<id> to persist. Reads the CURRENT complete txgio_parcel plan and every retired parcel-node atom for a county, narrows to candidates, live-corroborates via a county-keyed source registry (Bastrop/48021 wired to the existing parcelCurrencyFromBcadMap/bulkLoadBcadRingsByPropId/fetchBcadParcelRings), and would persist reactivations through the SAME writePropertyAtomsBatch seam and write-slot lease scope (parcel-node/48021) write-parcel-node-county.mjs uses, with write-then-verify on the stored bytes. package.json script alias 'review-retired-parcel-nodes' added."
+  ],
+  "dryRunAgainstLiveProduction": {
+    "command": "PARCEL_NODE_PATH=1 TXGIO_DATABASE_URL=<CORTEX_DATABASE_URL secret> DATABASE_URL=<ATOMS_DATABASE_URL secret> pnpm --filter @hauska-engine/engine-core run review-retired-parcel-nodes -- --county=48021",
+    "ranAt": "2026-09-15T20:2x-20:3xZ (live, hauska-prod-497015 Neon)",
+    "wallMs": 79668,
+    "result": {
+      "priorRetired": 57704,
+      "candidates": 57704,
+      "stillAbsent": 0,
+      "reactivated": 56691,
+      "stillRetired": 1013
+    },
+    "reconciliationWithDispatchHeadline": "The dispatch's own title says 'about 54,800' live -- that number is explainable as an EXTRAPOLATION from the 20-id sample's ratio (19/20 = 95% * 57,704 ~= 54,819 ~= 'about 54,800'), not an independent measurement. This dry run is a full-population, per-parcel, first-hand live check against the same endpoint (57,704 individual live lookups, not a 20-id sample), and finds a higher live rate (98.2%, 56,691/57,704). Reported as a reconciled disagreement per AGENT_CONTRACT rule 5, not rounded off: the sample ratio was a reasonable estimate but undercounted how many are actually live.",
+    "independentSpotChecks": {
+      "method": "20 of the predicted stillRetired ids and 4 of the predicted reactivate ids queried INDIVIDUALLY (single-id requests, not part of a 150-id batch) directly via fetchBcadParcelRings, to rule out a batching/chunking artifact in the bulk check.",
+      "stillRetiredSpotCheck": "20/20 confirmed NOT-FOUND in isolation -- matches the bulk result exactly.",
+      "reactivateSpotCheck": "4/4 confirmed FOUND in isolation -- matches the bulk result exactly.",
+      "conclusion": "The live-corroboration mechanism is not producing a batching artifact; both the reactivate and stillRetired predictions are trustworthy."
+    },
+    "sampleFromDispatchFixture": "All 20 of the dispatch's own fixture ids (19 LIVE + 77293 negative control) fall inside this run's candidate set; the dry-run's per-id verdicts for those 20 were independently confirmed live at CP1 and match the dispatch's claim exactly, including 77293 landing in stillRetired."
+  },
+  "notYetDone": [
+    "The actual --apply write against production (56,691 reactivations). NOT YET RUN. This is a real, ~56.7k-row write to a live production database backing a running product (Hauska), and while the in-repo canon frames writer-CLI applies as planner-autonomous ('the agent deploys and fixes failed deploys'), the scale and irreversibility of this specific write warrants a live check-in with the actual operator before executing it -- pausing here for that rather than proceeding unilaterally.",
+    "Post-apply re-sample of the original 20-id fixture (expect 19 active, 77293 still retired) -- blocked on the apply above.",
+    "Full engine-core test suite + typecheck run (only the directly-touched test files have been run so far).",
+    "Close artifact, PR, and doc_repo commit/push."
+  ]
+}

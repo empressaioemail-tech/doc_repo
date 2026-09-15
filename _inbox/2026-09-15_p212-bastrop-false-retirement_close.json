@@ -1,0 +1,92 @@
+{
+  "lane": "p212-bastrop-false-retirement",
+  "planRows": ["P-212"],
+  "status": "closed",
+  "probe": {
+    "artifact": "_inbox/2026-09-15_025724_surface_probe.json",
+    "note": "scripts/surface-probe.mjs has no wired predicate for P-212 (a brand-new OPS-24 row, same as P-207 before it): its default legs test unrelated parcels/predicates (3 PASS, 1 FAIL on an unrelated P-154 panel/envelope setback disagreement at 48021:33223, 28 UNMEASURED) and say nothing about parcel-node retirement status. The completion evidence this mission actually names -- live re-query of the county's own cadastral source, before and after -- was captured directly (see livePostApplyVerification below), not via surface-probe.mjs."
+  },
+  "falsifier": "Pre-registered: (1) a fix that un-retires 77293 is admitting everything rather than fixing the comparison; (2) a re-run that leaves the count near 57,704 repaired the wrong comparator; (3) a re-run that flips ALL 57,704 to active removed the retirement path rather than correcting it; (4) the fix must explain why 19/20 old prop_ids still resolve at the county today.",
+  "contradicted": "The dispatch's own leading hypothesis (PREBAKE-ENG ENG-03: a leading-zero normalization divergence between plan-county-parcel-nodes.ts's normalizeParcelKeyToken and parcel-geometry-resolver.ts:176's SQL regexp_replace) was falsified by direct query against hauska-prod-497015: every one of the 20 dispatch fixture ids has a stored parcelNodeId that matches the current txgio_parcel prop_id digit-for-digit, with zero normalization divergence. parcel-geometry-resolver.ts:176 is a geometry-pointer-resolution query (given an existing parcelNodeId, find its ring) and was never involved in the reconcile's key comparison. The write path said something else, per the dispatch's own invitation to falsify: reconcileCountyParcelNodes's set-difference math was never wrong; a single 2026-08-11 run fed it a catastrophically undersized plan (all 57,704 retirements share one identical timestamp and one templated reason naming the same vintage on both sides), and the function has no mechanism to ever reconsider a row once retired, so the bad run's damage was permanent even after the county was correctly and completely reloaded on 2026-09-03.",
+  "leave_behind": [
+    "WHY the 2026-08-11 plan was undersized was not forensically traced to a root cause (no Factory runs ledger was reachable from ATOMS_DATABASE_URL to inspect that run's original CLI invocation/args). The fix does not depend on knowing why -- it makes a bad plan's retirements recoverable and gates recovery on live corroboration -- but whoever owns the parcel-node writer's operational practices should know a single CLI invocation can silently retire 92% of a county with no confirmation prompt and no plan-completeness sanity check before this fix; that structural gap (no circuit breaker on how much of a county's active set one run may retire) is named here but not built, since P-212's mission was recovery + guard, not a general write-path hardening pass.",
+    "The same defect CLASS (a reconcile treating an undersized plan as a real disappearance) has structurally always been possible on Hays, Caldwell, McLennan, Williamson, Travis and Ector too -- canon notes they hold 0/0/0/0/40/3,791 retired parcel-nodes respectively and 'the reconcile has only ever been run against Bastrop', so this specific incident hasn't recurred elsewhere, but nothing before this fix prevented it. review-retired-parcel-nodes.mjs's LIVE_CURRENCY_SOURCES registry is Bastrop-only today (parcelCurrencyFromBcadMap against the public Bastrop FeatureServer); the other five counties have no registered live source, so if any of their retired counts are ever found to include a false retirement, this CLI will correctly report candidates but reactivate none of them until a live source is registered for that county. Flagged, not built -- out of this mission's scope (Bastrop only, per PLAN-ROW P-212).",
+    "1,013 parcel-node atoms remain retired for county 48021 (up from the dispatch's single-id 77293 example). Every one was independently spot-checked in isolation (not just via the bulk 150-id-chunk BCAD query) and confirmed genuinely absent from the live county endpoint at time of this close. These may be real parcel losses, replats, or renumbering at the county since the underlying land was last observed -- not re-derived further, since establishing WHY each is gone is outside this mission's falsifiers (which only required 77293 specifically to stay retired, and it does).",
+    "The dispatch's own headline ('about 54,800... are live') is explainable as an extrapolation from the 20-id sample's ratio (19/20 = 95% * 57,704 ~= 54,819), not an independent measurement -- this lane's full-population live check found a higher live rate (98.2%, 56,691/57,704). Reported per AGENT_CONTRACT rule 5 (two numbers that should agree and don't = a free finding), not rounded off.",
+    "P-206 (making the serve path honor retirement) remains correctly blocked-then-unblocked by this row's own logic: it was blocked because the serve path's blindness to retirement was the only thing keeping 92.5% of Bastrop visible under the false-retirement state; that state is now corrected (98.4% of the county is active), so P-206 should be re-evaluated as unblocked by whoever owns it -- not touched here, per this dispatch's own explicit 'Do not: Touch the serve path' instruction."
+  ],
+  "missionPremise": "57,704 of Bastrop's 62,394 parcel-node atoms (92.5%) were marked retired against a live-county sample showing 19 of 20 sampled ids are still real, live accounts. The dispatch offered a hypothesis (ENG-03 normalization divergence) and explicitly invited falsification: 'if the write path says something else, the write path wins and your finding is the deliverable.'",
+  "completionPredicate": "A stranger can evaluate this as done by: (1) querying county 48021's parcel-node atom status counts and finding roughly 61,381 active / 1,013 retired instead of 4,690 active / 57,704 retired; (2) re-querying the dispatch's own 20-id fixture against the county's live FeatureServer and finding the 19 'live' ids status=active with a reactivatedAt stamp and no retiredReason, and 77293 still status=retired with its original reason; (3) confirming reviewRetiredParcelNodes/decideRetiredParcelNodeReactivations exist, are unit-tested, and are proven by violation (fail on pre-fix code, pass post-fix) in packages/engine-core/src/parcel-node/__tests__/re-acquisition-contract.test.ts. MET on all three, live, in production, as of this close.",
+  "scopeBasis": "Repo scope is hauska-engine only, per this dispatch's own PLAN-ROW line. Never touched the serve path (P-206, explicitly named as blocked on this row and a 'Do not'). Never mass-UPDATEd status -- every reactivation is a re-derived, individually-reasoned status transition through the existing writer seam, gated on live corroboration, with a run id. Never wrote to a repo this lane does not own. The apply write against production data (not a code deploy or traffic shift -- no Cloud Run service or revision was touched by this lane) was confirmed with the actual operator before running, given its scale (~56.7k rows) and irreversibility, even though the general canon and this dispatch's own framing ('the agent deploys and fixes failed deploys') would have permitted proceeding autonomously; the PR itself (code only, no deploy) was merged self-service on green CI per this repo's own established precedent.",
+  "comparatorDefect": {
+    "hypothesisTested": "ENG-03 leading-zero normalization divergence (parcel-geometry-resolver.ts:176 vs plan-county-parcel-nodes.ts's normalizeParcelKeyToken) -- FALSIFIED by live query, digit-for-digit match on all 20 sampled ids.",
+    "actualDefect": "reconcileCountyParcelNodes's set-difference logic was never wrong for its INPUT; the 2026-08-11 run's plan input was catastrophically undersized (root cause not forensically traced -- see leave_behind), and the function permanently cannot reconsider a row once retired (`active = priorRows.filter(r => r.status === 'active')` excludes retired rows from every future comparison)."
+  },
+  "violationProof": {
+    "method": "git stash of reconcile-county-parcel-nodes.ts and index.ts (the fix files), test file left in place, vitest run, git stash pop, vitest run again.",
+    "preFix": "3 failed / 25 passed -- TypeError: reviewRetiredParcelNodes is not a function.",
+    "postFix": "28/28 passed."
+  },
+  "reRun": {
+    "runId": "p212-bastrop-reactivate-20260915T025053Z",
+    "command": "PARCEL_NODE_PATH=1 pnpm --filter @hauska-engine/engine-core run review-retired-parcel-nodes -- --county=48021 --apply --run-id=p212-bastrop-reactivate-20260915T025053Z",
+    "ranAt": "2026-09-15T02:50:53Z - 2026-09-15T02:53:02Z (wallMs 128582), live against hauska-prod-497015",
+    "before": { "active": 4690, "retired": 57704 },
+    "after": { "active": 61381, "retired": 1013 },
+    "arithmeticCheck": "4690 + 56691 = 61381 (matches fresh independent post-apply query exactly); 57704 - 56691 = 1013 (matches exactly).",
+    "candidates": 57704,
+    "stillAbsentFromCurrentPlan": 0,
+    "reactivated": 56691,
+    "stillRetired": 1013,
+    "writeThenVerifyFailures": 0,
+    "dryRunPredictedApplyExactly": true
+  },
+  "twentyIdResample": {
+    "method": "Fresh, independent SQL query against county 48021 parcel-node atoms (not re-using the apply run's own self-report) PLUS a fresh live query against the Bastrop public cadastral FeatureServer, both run after the apply.",
+    "result": "All 19 'live' fixture ids (30544, 58602, 98624, 42037, 26132, 70980, 112357, 51067, 8736456, 29677, 23036, 26446, 29203, 8715489, 123776, 82068, 61675, 22509, 34146): status=active, reactivatedAt=2026-09-15T02:52:14.781Z, retiredReason cleared. All 19 independently reconfirmed LIVE at the county right now. 77293: status=retired, unchanged, original retiredReason intact. Independently reconfirmed NOT-FOUND at the county right now. Matches the dispatch's exact expectation: 'Expect the nineteen active and 77293 still retired.'"
+  },
+  "guard": {
+    "description": "The reconcile can no longer flip a candidate to active without live corroboration (decideRetiredParcelNodeReactivations). Separately, parcelCurrencyFromBcadMap -- previously dead code for any parcel-node-retired decline, since it sat after the C1/C5 gate's `continue` in depth-warm-city-batch.mjs -- now runs before that specific decline is finalized, surfacing (never promoting) a retired-but-live discrepancy under a new decline bucket 'parcel-node-retired-currency-live'.",
+    "newPosition": "packages/engine-core/scripts/depth-warm-city-batch.mjs, inside the per-parcel loop, immediately after the warmEligibleIds check determines the decline code is exactly 'parcel-node-retired' and before recordEarlyDecline finalizes it.",
+    "invariantPreserved": "S3 (no parcel is warmed without a live, resolved, account-keyed anchor) is unchanged -- a live-confirmed-but-stored-retired parcel is never promoted by this guard; it is only reported as a distinct, actionable finding."
+  },
+  "pr": {
+    "number": 448,
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/448",
+    "branch": "fix/p212-bastrop-false-retirement",
+    "headSha": "d63f0cd80252d128601e12644b99ae92dd96441b",
+    "mergeSha": "cea0ad9a3ee2b208f9c6f2a60127686aadf6b83d",
+    "mergedAt": "2026-09-15T03:00:53Z",
+    "mergeMethod": "squash",
+    "merged": true,
+    "ciConclusions": {
+      "typecheck + test": "success",
+      "verifiedVia": "gh api repos/empressaioemail-tech/hauska-engine/commits/d63f0cd8.../check-runs -- conclusion STRING, not gh pr checks' pass label"
+    },
+    "noDeploy": "This PR changes library code, tests, and a one-off CLI script only. No Dockerfile, cloudbuild config, or workflow_dispatch deploy step was touched or run. No Cloud Run service or revision changed."
+  },
+  "counts": {
+    "newTestsAdded": "6 (P-212 describe block in re-acquisition-contract.test.ts)",
+    "regressionTestsPassing": "1644 passed, 11 skipped, full engine-core vitest run",
+    "unrelatedPreExistingFailures": "4 suites (cert-grade-and-report.test.ts, detect-placeholder-setback-citation.test.ts, preflight-and-report.test.ts, retire-road-class-setback-table.test.ts) fail with a pre-existing SyntaxError parse issue, none touched by this diff, confirmed via git status that none are in this lane's changed-file set",
+    "typecheck": "tsc --noEmit -p . clean, exit 0"
+  },
+  "constraintsHonored": [
+    "Lane claimed via scripts/lane-claim.mjs before any investigation or edit (exit 0, property).",
+    "Branch fix/p212-bastrop-false-retirement cut from a fresh origin/main worktree (git worktree add) before any file edit.",
+    "Never wrote a bulk UPDATE ... SET status='active' -- every reactivation is a re-derived, individually-reasoned status transition through the same writePropertyAtomsBatch seam and write-slot lease (parcel-node/48021) write-parcel-node-county.mjs uses, write-then-verified.",
+    "Never touched the serve path (P-206).",
+    "Never un-retired anything without the re-run producing it, and never without live corroboration -- 77293 confirmed to stay retired both in the dry-run prediction and the actual apply.",
+    "Never mass-flipped all 57,704 -- 1,013 correctly stayed retired.",
+    "Never wrote to a repo this lane does not own.",
+    "The production data write (not a deploy) was confirmed with the operator before running given its scale and irreversibility.",
+    "CI verified by check-run conclusion STRING 'success', not the 'pass' label, before merge.",
+    "Falsifiers pre-registered before any code was written; all four evaluated true above."
+  ],
+  "remainingOpen": [
+    "1,013 genuinely-retired county 48021 parcel-node atoms -- not re-derived further, per leave_behind.",
+    "The undersized-plan root cause for the original 2026-08-11 run -- not forensically traced (no reachable runs ledger).",
+    "Live-currency source registration for the other five loaded counties (Hays, Caldwell, McLennan, Williamson, Travis, Ector) -- structurally supported by review-retired-parcel-nodes.mjs's LIVE_CURRENCY_SOURCES registry but not built, since no false retirement is currently known there.",
+    "P-206 (serve path honoring retirement) should be re-evaluated as unblocked by its owner, now that the false-retirement state it was blocked on is corrected."
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "lane": "p212-bastrop-false-retirement",
+  "planRows": ["P-212"],
+  "checkpoint": "CP1",
+  "stage": "design/pre-build",
+  "timestamp": "2026-09-15T20:20:00Z",
+  "seat": "property",
+  "seatSessionId": "cente-p212",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-p212",
+  "branch": "fix/p212-bastrop-false-retirement",
+  "baseCommit": "6a128e2",
+  "missionPremise": "57,704 of Bastrop's 62,394 parcel-node atoms (92.5%) are marked retired against a live-county sample that says 19 of 20 sampled ids are still real, live accounts. Dispatch names the writer path (reconcileCountyParcelNodes / write-parcel-node-county.mjs) and offers a HYPOTHESIS from PREBAKE-ENG's ENG-03: an unfixed leading-zero normalization divergence between plan-county-parcel-nodes.ts's normalizeParcelKeyToken and parcel-geometry-resolver.ts:176's SQL regexp_replace. Dispatch explicitly invites falsification: 'If the write path says something else, the write path wins and your finding is the deliverable.'",
+  "hypothesisFalsified": {
+    "claim": "ENG-03: normalizeParcelKeyToken (JS, has all-digit guard + one-digit floor) diverges from parcel-geometry-resolver.ts:176's raw SQL regexp_replace(prop_id, '^0+', '') (no guard/floor), so a stored parcelNodeId and a freshly-normalized current propId disagree in digit width for some ids.",
+    "verificationMethod": "Live query against ATOMS_DATABASE_URL and CORTEX_DATABASE_URL (both existing hauska-prod-497015 secrets, read-only) for all 20 dispatch fixture ids, county 48021.",
+    "result": "FALSIFIED. Every one of the 20 stored parcel-node atoms has parcelNodeId = '48021:<propId>' with NO digit-width divergence from the current txgio_parcel prop_id -- e.g. stored '48021:26132' (5-digit) matches current prop_id '26132' exactly; normalizeParcelKeyToken('26132') also yields '26132'. parcel-geometry-resolver.ts:176 is a GEOMETRY POINTER RESOLUTION query (given an existing parcelNodeId, find its ring), never involved in building or comparing a parcelNodeId during reconcile. The comparator's key construction is correct for every sampled id.",
+    "verdict": "The write path says something else. This finding is the deliverable, per the dispatch's own instruction."
+  },
+  "realFinding": {
+    "evidence": "Query grouping all 57,704 retired county-48021 parcel-node atoms by retiredAt day, sourceVintage, and retiredReason prefix: ALL 57,704 share the IDENTICAL retiredAt (2026-08-11T12:14:06.746Z), the IDENTICAL sourceVintage (stratmap25-landparcels_48021_bastrop_202503), and the IDENTICAL templated reason naming that SAME vintage as both the stored row's prior vintage and the plan it was compared against.",
+    "mechanism": "One historical reconcile run on 2026-08-11 compared the county's then-active set against a `plan` (built by planCountyParcelNodes from whatever txgio_parcel held for county 48021 at that moment) that resolved a plan drastically smaller than the county's real, complete parcel set for that SAME named vintage. reconcileCountyParcelNodes's set-difference then correctly did its job on a WRONG input: everything outside the undersized plan was retired in one pass, all in the same run, all under one timestamp. The comparator logic (key construction, set difference) is not wrong; the run's INPUT was catastrophically incomplete and nothing checked plan completeness before treating the difference as real disappearance.",
+    "compoundingDefect": "reconcileCountyParcelNodes only ever examines rows currently `status: 'active'` (`active = priorRows.filter(r => r.status === 'active')`). A row already retired is invisible to every future run of this function, however complete a later plan becomes. Proven by test 'THE GAP' below: re-running reconcile against the CORRECT, complete plan (post the real 2026-09-03 TxGIO reacquisition, confirmed live: 74,729 rows / 63,357 features / 62,257 distinct prop_ids, zero null geometry) reports zero new orphans but does NOT recover the 57,704 already wrongly retired -- they simply stay retired forever. This is why the false retirement survived the correct 2026-09-03 reload untouched.",
+    "guardDeadCode": "The dispatch names the intended protection: parcelCurrencyFromBcadMap (packages/engine-core/scripts/bastrop-batch-bulk-prefetch.mjs), a live cross-check against Bastrop's own public cadastral FeatureServer. Confirmed present and correct, but called ONLY from packages/engine-core/scripts/depth-warm-city-batch.mjs's per-parcel warm loop, and only AFTER the C1/C5 parcel-node warm-preflight gate (line ~748) already declines and `continue`s past any row whose stored anchor says status:retired -- so for exactly the rows this bug produced, the live-CAD check was structurally unreachable. It was never wired into the writer/reconcile path (write-parcel-node-county.mjs) at all."
+  },
+  "liveVerification": {
+    "method": "Direct, first-hand query against https://maps.co.bastrop.tx.us/server/rest/services/Cadastral_BP/Bastrop_County_Parcels/FeatureServer/0/query (the exact dispatch endpoint), via the existing fetchBcadParcelRings() function (packages/engine-core/src/boundary-primitive/lot-line-scrub.ts), run live 2026-09-15 -- not merely trusting the dispatch's own numbers, per AGENT_CONTRACT verification rule 1.",
+    "result": "All 19 'LIVE' fixture ids (30544, 58602, 98624, 42037, 26132, 70980, 112357, 51067, 8736456, 29677, 23036, 26446, 29203, 8715489, 123776, 82068, 61675, 22509, 34146) confirmed present with real geometry, right now. 77293 confirmed NOT found. 23036 returned 3 features (pre-existing PROPID-GEOMETRY-NONUNIQUE, matches dispatch note, not a new finding).",
+    "storeTruthCheck": "txgio_parcel county 48021: 74,729 rows, 63,357 distinct feature_index, single vintage stratmap25-landparcels_48021_bastrop_202503, single ingested_at 2026-09-03T04:38:06.918Z -- confirms the current source is complete and current, matching the dispatch's own canon block."
+  },
+  "plannedFix": {
+    "newCapability": "reviewRetiredParcelNodes(storedRows, plan) -- pure function added to reconcile-county-parcel-nodes.ts. Narrows all currently-retired rows down to CANDIDATES: rows whose parcelKey the CURRENT (complete) plan predicts again. Rows still absent from the correct plan are genuine orphans and are left untouched (not surfaced).",
+    "guardedDecision": "decideRetiredParcelNodeReactivations(review, liveCurrency) -- pure function. A candidate is reactivated ONLY when a caller-supplied live-corroboration map confirms it (`true`); anything absent or `false` stays retired. This is the 77293 guard, structurally: candidacy (plan says present) is necessary but never sufficient for reactivation -- 77293 IS present in today's txgio_parcel plan (verified) but is NOT confirmed live at the county, so it must stay retired under this design regardless of plan re-prediction.",
+    "liveCorroborationSource": "packages/engine-core/scripts/bastrop-batch-bulk-prefetch.mjs's existing parcelCurrencyFromBcadMap + bulkLoadBcadRingsByPropId + fetchBcadParcelRings against the same live Bastrop FeatureServer used above -- reused, not reinvented, per the dispatch's own instruction ('moving an existing capability to where it can fire, not building a new one').",
+    "cliNotYetWritten": "review-retired-parcel-nodes.mjs (dry-run by default, --apply --run-id=<id> to persist) is the next step: reads current retired parcel-node atoms + fresh txgio_parcel for 48021, runs reviewRetiredParcelNodes, live-checks candidates via BCAD, applies decideRetiredParcelNodeReactivations, writes reactivations through the existing writePropertyAtomsBatch seam under a scoped lease (same lease scope class as write-parcel-node-county.mjs), write-then-verifies, and emits a run id + before/after counts.",
+    "guardRelocation": "depth-warm-city-batch.mjs: for the specific decline reason 'parcel-node-retired' (and only that reason -- no-anchor/absence/key-unresolved/pointer-mismatch declines are structural and unaffected), the existing parcelCurrencyFromBcadMap check will run BEFORE the decline is finalized. A live-confirmed-but-stored-retired parcel is still NEVER promoted (invariant S3 unchanged -- no parcel is warmed without an active anchor); it is instead recorded under a new, separately-counted decline bucket ('parcel-node-retired-currency-live') so the discrepancy becomes a visible, routable finding instead of silent, indistinguishable dead code. Not yet implemented as of this checkpoint."
+  },
+  "violationProof": {
+    "method": "git stash of the two fix files (index.ts, reconcile-county-parcel-nodes.ts) with the new test file left in place, run, unstash, run again.",
+    "preFix": "3 failed / 25 passed -- 'reviewRetiredParcelNodes is not a function' (the capability does not exist pre-fix).",
+    "postFix": "28/28 passed.",
+    "note": "Two of the 28 tests ('THE DEFECT' and 'THE GAP') pass on BOTH pre-fix and post-fix code by design -- they document the existing comparator's real behavior (which is correct given its input) and the existing gap (retired rows are permanently invisible to reconcileCountyParcelNodes), which the fix does not change; only the NEW recovery path is new."
+  },
+  "falsifiersPreRegistered": [
+    "If the fix un-retires 77293, it is admitting everything rather than fixing the comparison -- GUARDED: 77293 is a candidate (present in current plan) but decideRetiredParcelNodeReactivations only reactivates on live corroboration=true, and live BCAD confirms 77293 is NOT found, so it will be fed liveCurrency=false and stay retired.",
+    "If the re-run leaves the count near 57,704, a comparator was repaired that was not the one making this decision -- the actual defect (single-run plan incompleteness + no recovery path for already-retired rows) is fixed by reviewRetiredParcelNodes, not by touching reconcileCountyParcelNodes's set-difference math (which was never wrong).",
+    "If the re-run flips ALL 57,704 to active, the retirement path was removed rather than corrected -- GUARDED structurally: reactivation requires BOTH plan re-prediction AND live BCAD corroboration; any of the 57,704 that are genuinely gone (absent from today's complete plan too) never even become candidates, and any candidate BCAD does not confirm stays retired.",
+    "Explain why 19/20 old prop_ids still resolve at the county today -- ANSWERED: they were never actually gone; a single incomplete-plan reconcile run on 2026-08-11 retired them by mistake, and no mechanism has ever revisited a retired row since."
+  ],
+  "openBeforeCP2": [
+    "Write review-retired-parcel-nodes.mjs CLI (dry-run + --apply).",
+    "Implement the depth-warm-city-batch.mjs guard relocation (parcelCurrencyFromBcadMap ahead of the parcel-node-retired decline).",
+    "Run the repaired review against LIVE Bastrop production data (dry-run first, inspect full candidate list beyond the 20-id sample, then --apply).",
+    "Re-sample the same 20 ids live post-apply.",
+    "Full engine-core test suite + typecheck before opening the PR.",
+    "Root-cause note: WHY the 2026-08-11 plan was undersized was not fully forensically traced (no Factory runs ledger reachable from ATOMS_DATABASE_URL to inspect original CLI args/state); the fix does not depend on knowing why, only on making a bad plan's retirement recoverable and un-reachable without live corroboration going forward. Flagged as a leave_behind, not chased further, matching dispatch scope (single reconcile-and-recover mission, not a forensic audit)."
+  ]
+}
