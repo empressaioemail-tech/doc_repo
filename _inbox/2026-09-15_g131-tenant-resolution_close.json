@@ -1,0 +1,88 @@
+{
+  "lane": "g131-tenant-resolution",
+  "planRows": ["G-131"],
+  "status": "closed",
+  "seat": "cente-g131",
+  "worktree": "P:/seat-worktrees/g131-tenant-resolution/smartcity-os, branch fix/g131-tenant-resolution, from origin/main e6fbde73 (post G-122)",
+  "routeEnumeration": {
+    "totalRoutes": 12,
+    "g126CountVerifiedWrong": "G-126 counted five/one/five (=11), which never actually summed to twelve. The real split is five/one/six (=12): G-126 never separately accounted for property-intel/layers, which references no tenant field anywhere in its call chain.",
+    "groups": {
+      "nameBasedLookup_5": [
+        "/api/platform/mygov/permits (server/routes/mygov.ts:348)",
+        "/api/platform/mygov/work-orders (server/routes/mygov.ts:393)",
+        "/api/platform/mygov/inspections (server/routes/mygov.ts:424)",
+        "/api/platform/mygov/code-violations (server/routes/mygov.ts:441)",
+        "/api/platform/mygov/business-licenses (server/routes/mygov.ts:458)"
+      ],
+      "nameBasedMechanism": "getBastropTenantId() -- db.select({id:tenants.id}).from(tenants).where(eq(tenants.slug,'bastrop')).limit(1), module-cached, falls back to 1 only if no such row exists.",
+      "bareLiteral_1": [
+        "/api/platform/property-intel/summary (server/routes/property-intelligence.ts:152) -- DEFAULT_TENANT_ID = 2, passed directly into getPropertySummary()'s tenant-scoped SQL filter"
+      ],
+      "tenantBlind_6": [
+        "/api/platform/property-intel/layers (property-intelligence.ts:239) -- BASTROP_LAYER_REGISTRY, hardcoded single-city ArcGIS config",
+        "/api/platform/samsara/vehicles (samsara.ts:1154) -- single Samsara account token",
+        "/api/platform/spireon/vehicles (spireon.ts:657) -- single Spireon credential",
+        "/api/platform/firstdue/apparatus (firstdue.ts:577) -- single FirstDue OAuth token",
+        "/api/platform/goto/call-summary (goto.ts:295) -- single GoTo account key",
+        "/api/platform/powerbi/cip-projects (powerbi.ts:217) -- single PowerBI OAuth flow"
+      ]
+    },
+    "verificationMethod": "Full-file grep for tenant/Tenant across every one of the twelve routes' own files, then direct reading of every platform-prefixed handler body (not the session-gated siblings sharing the same files). No route's classification was inherited from G-126 without re-derivation."
+  },
+  "vendorRoutesVerdict": "Genuinely dimensionless, all six (property-intel/layers plus samsara, spireon, firstdue, goto, powerbi). Each calls one vendor's API or Bastrop's own ArcGIS server via a single account-level credential (an env-var token or an OAuth flow with no per-tenant credential store anywhere in the codebase). There is no tenant dimension anywhere upstream for these routes to ignore -- not a leak waiting for a second city, a genuinely single-tenant-upstream integration.",
+  "whatChanged": {
+    "repo": "smartcity-os",
+    "pr": "https://github.com/empressaioemail-tech/smartcity-os/pull/56",
+    "prNumber": 56,
+    "mergeSha": "8bea7fa591134fc24154630fa869081f4ddf003d",
+    "ciConclusionStrings": {
+      "Gitleaks — detect secrets in code and history": "success",
+      "Semgrep — static analysis": "success",
+      "Trivy — dependency vulnerability scan": "success",
+      "verifiedVia": "gh api repos/.../commits/<sha>/check-runs, polled to completion (not gh pr checks output)"
+    },
+    "diff": "server/routes/mygov.ts: exported getBastropTenantId (was private). server/routes/property-intelligence.ts: platform summary handler now resolves tenantId = await getBastropTenantId() and passes it to getPropertySummary(), replacing the direct DEFAULT_TENANT_ID literal reference. DEFAULT_TENANT_ID itself, and its use as a fallback in this file's session-gated (requireTenant) routes, was left untouched -- out of scope. Convergence onto the existing mechanism, not a fourth implementation.",
+    "localVerification": {
+      "scopedTests": "15/15 passing (platform-property-intel.test.ts, platform-property-intel-tenant-resolution.test.ts, platform-mygov-permits.test.ts)",
+      "fullSuite": "npx vitest run: 195/195 passing (192 baseline + 3 new)",
+      "build": "npm run build:cloud-run (the exact command Dockerfile.api runs): succeeds clean"
+    }
+  },
+  "violationTestBothDirections": {
+    "unitFalsifier": "tests/api/platform-property-intel-tenant-resolution.test.ts mocks getBastropTenantId() to resolve 777 (deliberately not 2) and asserts getPropertySummary is called with exactly 777. Run against the pre-fix code (DEFAULT_TENANT_ID hardcoded), this assertion fails regardless of the mock, because the literal never consulted the resolver at all -- proving the test can fire in both directions, not merely pass by construction. A second case proves the ordinary path (resolves 2, receives 2); a third proves fail-closed (resolution throws -> 500, getPropertySummary never invoked, no silent default).",
+    "liveProductionCheck": "There is only one real tenant in production (Bastrop, id 2), so a second-tenant refusal cannot be exercised live without fabricating tenant state on a soft-launch production database -- not attempted. In its place: verified the live-resolved value matches the previously-hardcoded value exactly (getBastropTenantId() against the real tenants table still resolves 2, so the ordinary case is provably unchanged), and relied on the unit falsifier above -- which does not have that limitation -- for the actual violation proof that the resolved binding, not a hardcoded literal, is what reaches the SQL filter."
+  },
+  "deployedRevision": {
+    "service": "smartcity-api",
+    "project": "smartcity-os-prod",
+    "region": "us-central1",
+    "revision": "smartcity-api-00142-yuv",
+    "tag": "g131-tenant-resolution",
+    "trafficPercent": 100,
+    "verifiedByFieldName": "gcloud run services describe --format=json, parsed status.traffic[].revisionName/percent/tag in Python's json module -- never the positional table output, which was independently observed to still work but was not trusted as the verification source",
+    "priorRevision": "smartcity-api-00140-kaj, tag g122-oneclick-fix (still exists, 0% traffic, not deleted -- rollback path preserved, matching every earlier revision back through the seam)",
+    "buildMethod": "Local Docker Desktop daemon was not running (checked, confirmed dead) so used Cloud Build instead: gcloud builds submit with an inline cloudbuild.yaml step (docker build -f Dockerfile.api ...) since gcloud run deploy --source only auto-detects a file literally named Dockerfile, and this repo's API service Dockerfile is named Dockerfile.api. Image pushed to us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-api:g131-tenant-resolution, build ID acce2359, SUCCESS.",
+    "leaseTakenAndReleased": "_catalog/leases/smartcity-api.json, lane g131-tenant-resolution, taken 2026-09-15T01:30:00Z before the canary build, revision field updated from a pending placeholder to smartcity-api-00142-yuv once the canary was live, released (file deleted) after the post-shift twelve-route smoke and the field-read traffic confirmation both passed."
+  },
+  "twelveRouteSmoke": {
+    "canary_preShift": "10x 200 (mygov's 5, property-intel's 2, samsara, spireon, powerbi), 2x 503 (firstdue/apparatus, goto/call-summary)",
+    "prodBaseline_sameTwoRoutes": "Independently curled the then-100%-serving revision (smartcity-api-00140-kaj) for the same two routes: identical 503s, identical response bodies (firstdue: permission_required, apparatus API scope not granted to current credential; goto: goto_not_authorized, needsAuth true) -- confirmed pre-existing, unrelated to this change, not a regression.",
+    "postShift_liveUrl": "Re-ran all twelve against the untagged production URL after the traffic shift: identical result set, 10x 200 / 2x 503, same pre-existing vendor-credential gaps.",
+    "summaryPayloadSanityCheck": "GET /api/platform/property-intel/summary?address=1011+Chestnut+St post-shift: found=true, owner='TALLEY, BOBBIE JEAN', activePermits=11, zoning and geometry populated -- the same real Bastrop parcel G-122's close used as its own verification point, now served through the resolved (not hardcoded) tenant binding."
+  },
+  "limitationNamedHonestly": "The live violation test (a second tenant refused rather than served Bastrop's rows) could not be run against production because production has exactly one tenant; fabricating a second tenant row on a soft-launch production database to exercise this was judged out of proportion to this fix and not attempted. The unit-level falsifier (mocked resolver returning a distinct value, asserted to reach the SQL-filtering call) is the actual violation proof for this row; the live checks above establish that the ordinary case is unchanged and that the deploy itself is clean, not that a second tenant is refused live.",
+  "falsifier": "A mock of getBastropTenantId() returning a value other than 2, asserted (not merely exercised) to reach getPropertySummary's first argument. Run against the pre-fix code this fails unconditionally, because the literal never called the resolver.",
+  "contradicted": "None. G-126's route count is corrected (5/1/6, not 5/1/5) but this is a completeness gap, not a contradicted finding -- the five and the one were both correctly classified; only the tenant-blind group's true size (6, not 5) went unstated.",
+  "leave_behind": [
+    "platformOneClickAtPoint() (server/routes/esri.ts, consumed by both property-intel/summary and property-intel/layers) silently swallows an ArcGIS query error into a plain null result, unlike the v1 session-gated route which correctly surfaces a 502. Named in G-122's close as a DEV_PROCESS 4.3 silent-fallback pattern and reconfirmed here: adjacent to this row (same file, same helper this fix's route calls) but not touched -- fixing it risks more of the platform-internal error-handling surface than this row's mandate covers, and it was not the reported defect for G-131.",
+    "Binding PLATFORM_INTERNAL_API_KEY itself to a tenant remains unbuilt, as explicitly directed by this dispatch ('Do NOT change the key's own shape... Name what it would take; do not do it here'). What it would take: every one of the twelve routes' callers (smartcity-dashboards, currently) would need to either (a) pass a tenant identifier the key's own validation checks against a per-tenant secret/claim, or (b) the key itself would need to become per-tenant-issued rather than a single shared bearer secret -- either is a larger design decision than this row, touching every v2 consumer of all twelve routes at once, and was correctly left to a future row rather than folded into this fix.",
+    "A convergence path exists for the tenant-blind group too, if a second city is ever onboarded onto vendor integrations that DO carry a tenant dimension upstream (e.g., a second Samsara account per city): today's single-account-token pattern in samsara.ts/spireon.ts/firstdue.ts/goto.ts/powerbi.ts would need a per-tenant credential lookup analogous to getBastropTenantId(), not built here because no second tenant exists for any of these vendors yet -- named so it is not rediscovered as a surprise at that point."
+  ],
+  "probe": {
+    "artifact": "not applicable: scripts/surface-probe.mjs is an OPS-23/property-seat instrument (parcel/setback/envelope probes) with no smartcity-os/OPS-17 equivalent, matching G-122's same finding on this point. This close's twelveRouteSmoke and violationTestBothDirections sections are the equivalent live-measured evidence for this row."
+  },
+  "missionPremise": "Dispatch _dispatches/2026-09-15_g131-tenant-resolution_dispatch.md, PLAN-ROW G-131, OPS-17 govtech stack plan of record. smartcity-os is under a narrow recorded exception (repo_intents.md, 2026-09-03 authorization, /api/platform/* only) for the tenant-resolution defect this row names, and nothing else; the repo is live production under the soft-launch ruling, so changes carry customer risk. Verified the exception's existence, the lane's availability, and (after an anomaly investigation) G-122's actual scope boundary directly against the source files before writing any code.",
+  "completionPredicate": "The bare numeric literal in property-intel/summary is replaced by a resolved binding (getBastropTenantId(), the same mechanism the five mygov platform routes already use); a falsifier proves the resolved value, not a hardcoded one, reaches the SQL-filtering call; all twelve platform routes are enumerated with corrected grouping (5/1/6, verified route by route, not inherited from G-126); a plain verdict is stated on the vendor routes (genuinely dimensionless, all six); the fix is deployed to production via canary with all twelve routes smoked before and after the shift, verified by gcloud JSON field read. Met in full. The one named limitation (no live second-tenant refusal test against production, since production has only one tenant) is disclosed rather than silently substituted for.",
+  "scopeBasis": "Scoped to smartcity-os, to the tenant-resolution defect on property-intel/summary and the route-count/vendor-verdict verification this row asked for, for exactly the reason and duration the narrow exception and this dispatch name. Did not bind PLATFORM_INTERNAL_API_KEY to a tenant (explicit dispatch exclusion). Did not fix platformOneClickAtPoint()'s silent-null swallow (adjacent, reported not fixed, per operator instruction). Did not touch the session-gated (requireTenant) routes' own DEFAULT_TENANT_ID fallback usage in the same file. Enumeration covered: every /api/platform/* route in the smartcity-os repo (twelve of twelve, file and line cited for each) and the tenants table / vendor-credential shape each one's tenant resolution actually depends on. Enumeration did not cover: any repo outside smartcity-os (the consuming v2 side, smartcity-dashboards, was read only insofar as repo_intents.md and the OPS-17 plan-of-record describe it, not independently re-audited here), and no second Empressa product's use of PLATFORM_INTERNAL_API_KEY was checked beyond what this dispatch and repo_intents.md already name."
+}

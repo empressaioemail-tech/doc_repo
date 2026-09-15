@@ -1,0 +1,92 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p235-envelope-front-line-writetime",
+  "title": "post-build adversarial checkpoint: every falsifier scored, including the one that made the fix look like a regression",
+  "planRows": ["P-235"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-15_p235-envelope-front-line-writetime_dispatch.md",
+  "at": "2026-09-15T21:35:00Z",
+  "seat": "claude-p235",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/p235-envelope-front-line-writetime/legacy-design-tools",
+  "branch": "fix/p235-envelope-front-line",
+  "baseCommit": "429980f5e44019e6e0288781121f5da40a7fbc89",
+  "headSha": "6c4cc960e057420afe9a69311742c7750bb22f01",
+  "pr": 693,
+  "prUrl": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/693",
+
+  "filesChanged": {
+    "artifacts/api-server/src/lib/buildableEnvelope/geometry.ts": "setbackStrip (bare rectangle) replaced by setbackStadium (rectangle + inscribed quarter-arc end cap at each endpoint); SETBACK_JOIN_SEGMENTS = 15 (6 deg per chord); buildForbiddenStrips calls it. Nothing else in the file changed -- stripReversalSpikes, the conservation gate, classifyInset and insetPerEdge are untouched.",
+    "artifacts/api-server/src/lib/buildableEnvelope/fixtures/parcelRings.ts": "three real Travis rings added with provenance and a stated caveat that the SERVING path reads txgio_parcel, not this service.",
+    "artifacts/api-server/src/lib/buildableEnvelope/setbackJoinCoverage.test.ts": "new standing check of the ordinance rule over the three rings, plus a not-vacuous case.",
+    "artifacts/api-server/src/lib/buildableEnvelope/geometry.test.ts": "Simsbrook 48453:280239 expectation RESTATED 3,798 -> 3,243 sqft with the reasoning inline."
+  },
+
+  "falsifiersScored": {
+    "note": "Pre-registered at CP1 before any run. Scored honestly here, including the one I got wrong.",
+    "f1_realRingFixtureFailsBeforeAndPassesAfter": {
+      "predicted": "Princeton FAIL before at about 25.0 ft; PASS after. Wickford uncertain.",
+      "observed_before": "PRINCETON FAIL: 'worst intrusion 25.00 ft at ring edge 3 (applied 25 ft, measured clearance 0.00 ft)'. WICKFORD FAIL: 'worst intrusion 25.00 ft at ring edge 39 (applied 25 ft, measured clearance 0.00 ft)'. SYLVAN PASS. Not-vacuous case PASS. 2 failed / 2 passed.",
+      "observed_after": "4 passed / 4. Test Files 1 passed.",
+      "verdict": "WON on Princeton exactly as predicted. Wickford resolved to FAIL, which I had explicitly refused to predict."
+    },
+    "f2_straightFrontageUnchanged": {
+      "predicted": "Sylvan ring BYTE-IDENTICAL before and after.",
+      "observed": "byte-identical: true. verts 5 -> 5. area 6203.621 -> 6203.621 sqft. Coordinates compared as JSON strings, not as rounded areas.",
+      "verdict": "WON. This is the load-bearing one: it is what distinguishes a joint fix from a general inset change, and it follows from the caps being INSCRIBED. Had I circumscribed the arc, this would have failed by roughly 4 cm per straight frontage."
+    },
+    "f3_secondIndependentlyChosenCurvedParcel": {
+      "predicted": "PASS after.",
+      "observed": "48453:284527 704 Wickford Cir PASSES after. Chosen by structural screen of 869 parcels on total reflex turn, before any envelope was derived.",
+      "verdict": "WON, and it turned out to be the most consequential case in the lane -- see areaMovement."
+    },
+    "f4_areaMovementReconciledAgainstFacets": {
+      "predicted": "decrease on curved parcels of roughly the sliver (about 0.56 sqft on Princeton); unchanged on Sylvan.",
+      "observed_princeton": "7,524.752 -> 7,524.229 sqft, delta -0.523 sqft. Within the predicted magnitude.",
+      "observed_sylvan": "6,203.621 -> 6,203.621 sqft, delta 0. As predicted.",
+      "observed_wickford": "12,634.497 -> 10,808.680 sqft, delta -1,825.8 sqft (-14.5%). FAR outside anything I predicted.",
+      "verdict": "LOST on magnitude. The prediction was anchored on Princeton, whose joints are sub-degree. A genuine radius street has joints up to 49 deg and the uncovered wedges are correspondingly large. Getting this wrong is the reason the next entry exists.",
+      "howTheBigNumberWasAdjudicated": "Not by trusting the new code. An independent pure-trig audit (5 cm grid, point-in-polygon plus point-to-segment distance, NO boolean ops, sharing no machinery with the code under test) measured how much of EACH envelope lies inside a setback: Wickford BEFORE 12,634.7 sqft drawn of which 1,828.4 sqft inside a setback; AFTER 10,809.1 drawn of which 2.9 sqft (the inscription residual). Princeton BEFORE 0.5 sqft intruding, AFTER 0.0. So the 1,825.8 sqft is ILLEGAL AREA BEING REMOVED, not the fix over-forbidding.",
+      "facetsReconciliation": "Probed the live facets route for all four parcels (48453:289990, 285377, 284527, 280239), tier 1 and tier 2: every one returns envelope: null and facetCoverage.envelope: false, and provenance.tierNote states the buildable-envelope product path is retired from that surface (anti-zombie / atom_path_pending). There is therefore NO served figure for the changed area to contradict, and this creates no new served-answer-contradicts-itself instance of the P-232 class. The envelope ROUTE serves buildableAreaSqFt from the same code path that was changed, so it moves consistently; there is no second store to diverge from."
+    },
+    "f5_honestRefutationIfMechanismWasWrong": {
+      "outcome": "Not needed -- the mechanism held. But it was genuinely at risk twice: two boundary-sampling probes REFUTED it before the area measurement confirmed it. Both refutations were instrument artefacts (boundary contact counted as membership by polygonClipping.intersection), and they are recorded in CP1 rather than quietly dropped."
+    }
+  },
+
+  "theThingThatNearlyReadAsARegression": {
+    "what": "geometry.test.ts 'REGRESSION: real Simsbrook 48453:280239, as-is per-edge setbacks -> ~3,798 sqft' FAILED after the fix: expected > 3,740, got 3,243.07.",
+    "temptation": "Treat a red pre-existing test as evidence the change is wrong, and tune the fix until it goes green.",
+    "whatWasDoneInstead": "Ran the same independent pure-trig audit on Simsbrook. BEFORE: 3,797.1 sqft drawn, of which 555.1 sqft lay INSIDE a setback, worst vertex intrusion 25.00 ft at edge 3 -- the envelope was ON the front property line. AFTER: 3,243.1 sqft drawn, 1.1 sqft intruding, worst vertex 0.03 ft. And 3,797.1 - 555.1 = 3,242.0, which closes on the new figure.",
+    "conclusion": "The 3,740..3,860 bound was a value the system produced that no external authority recognised -- exactly the ENFORCEMENT Tests failure: it converted the defect into a specification and made the fix read as a regression. RESTATED to 3,200..3,290 with the audit recorded in the test body so a future reader cannot 'restore' it by reflex.",
+    "significance": "Simsbrook is the parcel that produced stripRingSpikes / stripReversalSpikes in the first place (2026-08-24). Its envelope had been 14.6% too large, on the front setback, ever since -- the draw-time compensation hid the symptom and the assertion then froze the wrong number."
+  },
+
+  "mechanismsNotFixedAndWhyNot": {
+    "conservationGateStaysInternallyConsistent": "conservationFailures still derives both inputs from buildForbiddenStrips and therefore still cannot catch a strip-construction defect. This lane adds the second derivation as a TEST (setbackJoinCoverage.test.ts), not as a runtime gate. That is a real limitation, stated not hidden: the runtime path has no meaning-shaped guard on this class. Named in leave_behind.",
+    "stripReversalSpikesLeftInPlace": "Per the dispatch. It is now redundant for this defect class but still correct for genuine clip artefacts, and removing it is a separate blast radius.",
+    "deriveTsMaxLotCoverage": "P-232's untouched gap confirmed still present; not folded in, per the dispatch."
+  },
+
+  "costMeasured": {
+    "perf": "48453:290277, 200-vertex parcel: 254.4 ms/call before, 274.8 ms/call after (+8%). The cost is dominated by the number of incremental unions (one per edge), not the vertices per polygon, so a denser forbidden region is close to free. 44-vertex Wickford 16.8 -> 24.7 ms. 9-vertex Princeton 2.2 -> 4.5 ms.",
+    "ringSize": "envelope vertices grow where joints are genuinely reflex: Princeton 11 -> 8 (spike removed, net smaller), Wickford 57 -> 146, Huntwick 333 -> 668. Correct geometry: a reflex joint's envelope corner is genuinely rounded."
+  },
+
+  "testEvidence": {
+    "targetedSuite": "artifacts/api-server src/lib/buildableEnvelope: 16 files, 142 tests, all passing after the fix.",
+    "fullSuiteBaselineCompare": "Full api-server vitest run on the branch and on the same worktree with the change stashed. MAIN {tests 2129, pass 2125, fail 0, suiteFail 190}. BRANCH {tests 2133, pass 2129, fail 0, suiteFail 190}. Suites failing ONLY on branch: 0. Suites failing ONLY on main: 0. All 190 suite failures are 'DATABASE_URL must be set' -- the known local environment baseline, identical on both sides. The branch adds exactly 4 tests, all passing.",
+    "typecheck": "pnpm run typecheck (NOT the vacuous root tsc --build): 9 of 46 projects, all Done, zero errors.",
+    "verifiedByViolation": "Two ways. (1) The two curved cases were run against the PRE-FIX code and FAILED with the verbatim 25.00 ft intrusions quoted above. (2) The predicate carries a permanent not-vacuous case: the parcel ring passed off as its own envelope must report > 24 ft intrusion, and does."
+  },
+
+  "formattingDecision": {
+    "what": "prettier --check flags all four files.",
+    "why_not_fixed": "The three pre-existing files are ALREADY prettier-unclean on origin/main (verified by stashing the change and re-running --check), and pr-checks.yml has no prettier gate. Running --write would have produced a large diff unrelated to this fix. Left baseline-equal deliberately."
+  },
+
+  "openAtCP2": [
+    "live map verification, which this lane cannot perform: the deployed envelope route requires a session JWT, this repo does not auto-deploy, and this lane does not deploy or merge",
+    "whether txgio_parcel's digitization of these parcels differs from the county's published rings"
+  ]
+}

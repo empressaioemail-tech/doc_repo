@@ -1,0 +1,68 @@
+{
+  "lane": "p239-canonical-logo",
+  "planRows": ["P-239"],
+  "checkpoint": "CP2",
+  "seat": "claude-p239",
+  "snapshot": {
+    "repo": "hauska-engine",
+    "branch": "fix/p239-canonical-logo",
+    "commit": "3c12b5295dbecd9a7b0730429eb2dad8214fdb27",
+    "baseCommit": "1ab28a75d4fce86465439e9ca7d520ccd99f9b95",
+    "baseMovedDuringLane": false
+  },
+  "whatLanded": {
+    "mechanism": "The geometry is PARSED from the vendored canonical SVG at module load. There is no hand-entered geometry constant left in report-chrome.ts, so there is no second copy of the numbers to drift.",
+    "driftControl": "Three artifacts must agree or the suite fails: the vendored .svg on disk, its sha256 in PROVENANCE.json, and the SVG text inlined in smart-site-brand.ts. Editing any one alone is loud.",
+    "cloneSurvival": ".gitattributes pins the assets to eol=lf. core.autocrlf=true is set in this repo and would otherwise rewrite them on checkout, breaking the sha256 on every Windows clone. Verified: the staged blob sha256 equals the recorded sha256, and git emitted no CRLF warning for the .svg paths while warning on every other new text file in the same `git add`."
+  },
+  "threeQuestionGate": {
+    "whatExecutes": "vitest, in packages/engine-core: __tests__/brand-provenance.test.ts (20 assertions), __tests__/masthead-mark.test.ts (15), __tests__/p239-decode-probe.test.ts (1).",
+    "whatTriggers": ".github/workflows/ci.yml on push to main, pull_request to main, and workflow_dispatch. The suite is NOT dormant: the job 'typecheck + test' ran on this PR head and reported conclusion=success.",
+    "whatFails": "A non-zero vitest exit fails the CI job and blocks the merge. Demonstrated by violation below, not assumed.",
+    "whatBypasses": "HONEST ANSWER, NOT 'none'. (1) Nothing gates hauska-map: if the owning repo changes its logo, this lock pins the OLD asset and stays green. The lock detects local tampering, never upstream movement; refreshing is a deliberate human act via PROVENANCE.json's refresh procedure. (2) The sha256 lock is bypassed by editing the asset, the hash and the inlined string together, which is indistinguishable from a legitimate refresh - by design, since that IS the refresh. (3) Anything not routed through CI. (4) The masthead assertions are relative to the parsed asset, so a corrupted asset would keep them green; that case is covered by the sha256 lock, not by them. The pair is the control, neither half alone."
+  },
+  "verifiedByViolation": [
+    {
+      "control": "masthead drawing must match the asset",
+      "violation": "Reverted the tick math in drawRing to the old 96-box form (`outer = 76 - inner`).",
+      "guardAgainstVacuity": "The patch script exits 9 if the replacement is a no-op. It DID exit 9 on the first attempt, because CRLF line endings made the literal string not match - so the first violation attempt would have been vacuous and was caught.",
+      "result": "3 assertions failed: 'draws exactly four ticks, all the SAME length', 'every tick STRADDLES the ring edge', 'ring, dot and ticks carry canonical proportions'. Restored, 15/15 green."
+    },
+    {
+      "control": "vendored asset is locked to its source",
+      "violation": "Changed one character in smart-site-lockup.svg (stroke-width 4 -> 3).",
+      "result": "2 assertions failed: the sha256 comparison and the inlined-text byte comparison. Restored, 20/20 green, sha256 back to 4fff54e1...",
+      "note": "Both halves of the lock fired independently, which is the point of having two."
+    },
+    {
+      "control": "the parser fails closed",
+      "violation": "Fed it an SVG with no viewBox, one with 3 ticks, one with no filled dot, one with no stroke-width, and one carrying the redrawing's own numbers.",
+      "result": "First four THROW with specific messages; the fifth is reported AS 3 and 5 rather than normalised back to canon. Each negative case asserts the mutation actually fired before asserting the throw."
+    }
+  ],
+  "measuredFromTheRealPdf": {
+    "instrument": "scratchpad/verify-pdf.mjs - inflates the generated PDF's content streams and reads the m/l path operators directly. Not the constants, not a test double: the file.",
+    "artifact": "a generated 908 PINE / 48021:34137 masthead, 220770 bytes",
+    "tickLengthsPt": [7.1053, 7.1053, 7.1053, 7.1053],
+    "allEqual": true,
+    "expectedPt": "18 * (30/76) = 7.10526 -- MASTHEAD.logoHeight is pt(40) = 30pt, canonical box is 76",
+    "strokeWidthPt": 1.5789473684210527,
+    "expectedStrokePt": "4 * (30/76) = 1.578947",
+    "ringCentreX": 51.0,
+    "ringCentreCheck": "MARGIN_X pt(48)=36, + 38*(30/76)=15 -> 51. Matches.",
+    "ticksStraddleRing": "ring spans x 39.16..62.84; W tick 36.00->43.11 crosses 39.16; E tick 58.89->66.00 crosses 62.84. Symmetric and straddling."
+  },
+  "scope": {
+    "filesChanged": 11,
+    "bodyContentTouched": false,
+    "evidence": "git diff --name-only returns only report-chrome.ts, report-chrome-tokens.ts, .gitattributes, brand/* and the three new test files."
+  },
+  "ci": {
+    "readBy": "gh api repos/{owner}/{repo}/commits/<sha>/check-runs, conclusion read as a STRING per check run, never `gh pr checks` and never an exit code",
+    "firstAttempt": "name=typecheck + test status=completed conclusion=failure",
+    "failureCause": "packages/retrieval typechecks engine-core's sources under a STRICTER tsconfig (noUncheckedIndexedAccess). `tsc --noEmit` inside packages/engine-core passed, so it was invisible locally. The repo-wide `pnpm typecheck` is the authoritative instrument, not the package's.",
+    "fix": "An at() helper that THROWS on a missing index, rather than a `!` assertion. A non-null assertion would have asserted away exactly the case the parser exists to catch.",
+    "afterFix": "name=typecheck + test status=completed conclusion=success"
+  },
+  "status": "green, PR open, handing back"
+}

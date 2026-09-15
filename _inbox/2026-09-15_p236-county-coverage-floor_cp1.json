@@ -1,0 +1,96 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p236-county-coverage-floor",
+  "title": "design / pre-build adversarial checkpoint: where the refusal can sit such that it writes NOTHING, and what the two sides of the comparison actually are",
+  "planRows": ["P-236"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-15_p236-county-coverage-floor_dispatch.md",
+  "at": "2026-09-15T21:40:00Z",
+  "seat": "claude-p236",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-p236-coverage-floor",
+  "branch": "fix/p236-county-coverage-floor",
+  "baseCommit": "6b9185ffa940f2ff9fdf2766e77de4ed1110006c",
+  "snapshotDeclared": "repo hauska-factory, branch fix/p236-county-coverage-floor, cut from origin/main 6b9185f (fix(P-229) strict argument parsing, PR #154). No store was read: every measurement in this lane is fixture-based against the real module. LDT read read-only at the publish pin bae48d406f7595af3d47111b558d0ebc3efd9c56 via `git show`, never by checking out another seat's tree.",
+
+  "honestyNoteOnThisCheckpointsTiming": "CP1 and CP2 were FILED at the end of the lane, not mid-flight. What is recorded here as pre-registered was genuinely fixed before the corresponding run and is carried verbatim in the shipped artifacts (the falsifier block at the top of test/publish-coverage-floor.test.mjs and the per-scenario `expect` fields in scripts/verify-coverage-floor.mjs, both committed in 0b9ab9e). Nothing here is a prediction reconstructed after seeing its result. Stating the filing order rather than implying a contemporaneous record.",
+
+  "theQuestionThatDecidedTheDesign": {
+    "question": "The row says the refusal must write NOTHING. Where in the publish path is that even possible?",
+    "whyItIsNotObvious": "The bake writes page by page. By the time a POST-condition can measure the result the write has already landed -- which is exactly why publish-cadroll-postcondition.mjs is a post-condition and openly says so. A coverage floor built in the same place would be a detector with extra steps.",
+    "answer": "A collapsed population is knowable from the SOURCE, before a single row moves. So the gate is a PRE-condition, placed in runBastropPublish after gateClients open and recordReadinessEvent, and strictly before bakesFn. The full-path test asserts bakes.calls.length === 0 on a refusal, which is the only evidence that distinguishes this from a detector."
+  },
+
+  "codeReadFindingsBeforeAnyMeasurement": {
+    "note": "ENFORCEMENT: code reading outranks output measuring. Each was read at source before anything was built.",
+    "f1_theTwoSidesAreTheSamePredicate": {
+      "where": "legacy-design-tools at the publish pin bae48d40: artifacts/api-server/src/lib/nodeFacetTier1Assemble.ts:328-329 (str), :363 (zoningDistrict), :394 (zoning); artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts:1397 (zoningDistrictRaw)",
+      "rule": "const str = v => typeof v === 'string' && v.trim() ? v.trim() : null; const zoning = zoningDistrict ? {district, ...} : null. The served `zoning` facet is a non-null object EXACTLY when txgio_parcel.zoning_district is a non-blank string.",
+      "consequence": "The source-side count and the served-side count are the same predicate on the same column, taken before this bake and left by the prior one. In a stable county the ratio is 1.0 BY CONSTRUCTION. There is no constant offset to calibrate away, which is what makes a declared 0.95 floor meaningful instead of a guess. Had the two sides been different quantities the floor would have needed calibration, and a calibrated floor is a tuned number, which is what the row explicitly forbids."
+    },
+    "f2_theBakeResolvesItsParcelTablePerCounty_andOneOfThemHasNoZoningColumn": {
+      "where": "artifacts/api-server/src/lib/nodeFacetTier1ParcelJoin.ts: PARCEL_TABLES = ['txgio_parcel','txgio_parcel_staging']; resolveParcelTableForCounty; describeParcelTable",
+      "rule": "The bake takes the FIRST table holding at least one row for the county. txgio_parcel_staging predates the zoning stamp and has NO zoning_district column, so a county served from it bakes zoning-absent honestly.",
+      "consequenceForThisGate": "Counting txgio_parcel unconditionally would have compared the wrong table for such a county. The gate replicates the resolution and derives the column fact at runtime from the same catalog the bake reads. A resolved table with no zoning column against a stamped prior is correctly a total collapse, and the refusal says so by name.",
+      "whyThisIsTheFindingThatJustifiesADriftGuard": "If LDT prepends a new preferred table and the mirror does not follow, the gate counts the OLD table while the bake reads the NEW one. Where the new table holds fewer zoned rows, the gate reads ~1.0 retention against a bake that is collapsing: a SILENT FALSE PASS on the one control built to stop exactly that. The reverse is a loud false refusal. Only one of the two is survivable, so scripts/check-ldt-parcel-table-drift.mjs is not optional."
+    },
+    "f3_theServedReadMustBeAdapterScoped": {
+      "where": "src/lib/publish-cadroll-postcondition.mjs, the TIER1_ADAPTER_KEY paragraph, and its Caldwell 48055 regression tests in test/publish.test.mjs",
+      "rule": "place_layer_snapshots holds TWO rows per parcel, node-facets:tier1 and node-facets:tier2. An unscoped read on the sibling check produced a 100 percent false-positive refusal against a bake that had written perfectly.",
+      "consequence": "SERVED_ZONED_SQL is scoped to $2 = TIER1_ADAPTER_KEY, imported from the sibling module rather than copied, and a test pins the scoping. The same defect class was designed out before it could happen rather than after."
+    },
+    "f4_placeLayerSnapshotsHasNoCountyColumn": {
+      "where": "legacy-design-tools lib/db/drizzle/0030_place_layer_snapshots.sql",
+      "rule": "columns are id, place_key, adapter_key, lat_rounded, lng_rounded, ll_uuid, payload_json, content_hash, snapshot_at, created_at, updated_at. place_key is the only county discriminator and its shape is node:<fips>:<prop_id>.",
+      "consequence": "The county scope is a place_key prefix LIKE, under the adapter_key equality that leads the unique index."
+    },
+    "f5_theExistingTotalAbsenceGuardIsWhereTheRowSaysItIs": {
+      "where": "src/jobs/bastrop-publish.mjs assertPublishMayComplete -> BAKE_WROTE_ZERO",
+      "rule": "It refuses when tier1Summary.written === 0 and when the prop_id list is empty. TOTAL absence only.",
+      "consequence": "Confirms the row's premise from the code rather than inheriting it: a 35k-over-233k bake writes 35,000 valid rows and sails through. This gate is additive and the existing guard is untouched."
+    }
+  },
+
+  "preRegisteredFalsifiers": {
+    "note": "Fixed before any run. Carried verbatim in the shipped test file header (test/publish-coverage-floor.test.mjs) and in the per-scenario `expect` fields of scripts/verify-coverage-floor.mjs.",
+    "F1": {
+      "claim": "An undersized bake REFUSES and writes nothing.",
+      "predicted": "COUNTY_COVERAGE_COLLAPSE carrying both counts, and in the full-path test bakes.calls.length === 0.",
+      "wouldFalsify": "any outcome in which the bake function is invoked, or a refusal that carries no counts."
+    },
+    "F2": {
+      "claim": "A legitimate full bake PROMOTES.",
+      "predicted": "retention 1.0 passes; a 2 percent drop (0.98) passes; exactly 0.95 passes; 0.9499 refuses.",
+      "wouldFalsify": "a floor that refuses a healthy county, which is how a control gets disabled by the first person it blocks."
+    },
+    "F3": {
+      "claim": "A first-ever bake has no prior, and 'no prior' is distinguishable from 'zero prior'.",
+      "predicted": "servedTier1Rows === 0 promotes under priorBasis 'no-prior' with retention null; servedTier1Rows > 0 with servedZoned === 0 promotes under a SEPARATE basis 'prior-zero'; and the floor engages on the very next bake because the discriminator is servedTier1Rows, not servedZoned.",
+      "wouldFalsify": "the two states collapsing into one, or 'no prior' being reachable once snapshots exist."
+    },
+    "F4": {
+      "claim": "The authorisation is not a habit-flag.",
+      "predicted": "a token for another county, or one whose counts have moved by one, refuses with its OWN distinct code; only an exact <fips>:<sourceZoned>/<servedZoned> match promotes.",
+      "wouldFalsify": "any constant string that authorises any collapse, or a value that can be written before the measurement exists."
+    }
+  },
+
+  "designAlternativesConsideredAndRejected": {
+    "postConditionOnTheBakedResult": "REJECTED. It is measurable, but by then the rows are written. The row asked for a refusal and this operation's own record is that detectors get found dormant later. A post-condition here would also have been a second, weaker copy of a control the cadRoll module already occupies.",
+    "priorCountReadFromOurOwnPublishRunsRow": "REJECTED. That is a proxy for the serving store, and ENFORCEMENT says read the authoritative record, never a proxy. It also fails closed the wrong way on the first run under the new code: with nothing recorded, every county would read as no-prior. Reading place_layer_snapshots instead means the prior already exists for every county ever baked, so the floor is armed from the first publish rather than the second.",
+    "aShareExpressedToFourDecimalPlacesAsTheOverride": "REJECTED in favour of the exact integer pair. On 233k parcels a 4dp share barely moves when a handful of rows change, so a stale token would still match. The integer pair expires on ANY movement in either population.",
+    "anAbsoluteFloorPerCounty": "NOT BUILT, and named as a residual. A relative floor inherits whatever the first bake established; a collapsed first bake becomes the baseline. That is inherent to every relative floor, it is why P-236 carries the standing rule about Travis staying out while Austin is unmeasured, and it is recorded in the module header rather than glossed."
+  },
+
+  "adversarialReviewOfMyOwnPlan": {
+    "howThisGateCouldBeWrongAndStillLookRight": [
+      "It counts the wrong parcel table for a county served from staging. Closed by replicating the bake's resolution and guarding the one mirrored value.",
+      "It counts tier1 and tier2 together. Closed by adapter scoping plus a test that pins the scoping.",
+      "It treats an empty result set as zero. Closed by measuredCount: undefined, null, empty string, NaN, negative and non-integer are all UNMEASURED and refuse.",
+      "It compares pg bigint STRINGS lexically, in which case '35000' sorts above '233000' and the collapse passes. Closed by numeric coercion, and the fixtures deliberately feed strings rather than numbers so a regression here fails."
+    ],
+    "howThisGateCouldBeOverBroad": "A county-wide source count refuses even a single-prop_id publish while the stamp is mid-rebuild. Judged correct rather than over-broad: if the stamp has collapsed, the parcels that publish touches would be written with wrong zoning too. Recorded so the judgement is visible rather than implied."
+  },
+
+  "scopeBasis": "hauska-factory only. legacy-design-tools was READ at the publish pin via `git show` and never written or checked out. No store was read. No deploy, no Cloud Build, no Cloud Run execution, no --apply."
+}

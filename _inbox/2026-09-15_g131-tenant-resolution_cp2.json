@@ -1,0 +1,36 @@
+{
+  "lane": "g131-tenant-resolution",
+  "planRows": ["G-131"],
+  "checkpoint": "CP2 (pilot / mid-work)",
+  "seat": "cente-g131",
+  "timestamp": "2026-09-15T01:29:30Z",
+  "worktree": "P:/seat-worktrees/g131-tenant-resolution/smartcity-os, branch fix/g131-tenant-resolution, from origin/main e6fbde73 (post G-122)",
+  "whatChanged": {
+    "repo": "smartcity-os",
+    "files": [
+      "server/routes/mygov.ts -- getBastropTenantId exported (was private)",
+      "server/routes/property-intelligence.ts -- platform summary handler resolves tenantId via getBastropTenantId() instead of the DEFAULT_TENANT_ID literal",
+      "tests/api/platform-property-intel.test.ts -- mocked getBastropTenantId at 2 (the value the literal used to be) so this file's existing assertions stay unchanged",
+      "tests/api/platform-property-intel-tenant-resolution.test.ts (new) -- the falsifier test"
+    ],
+    "falsifier": "Mocks getBastropTenantId() to resolve a deliberately non-2 value (777) and asserts getPropertySummary is called with exactly that value, not 2. If the route still had the bare literal hardcoded, this assertion would fail regardless of the mock -- proving the resolved binding, not a cosmetic wrapper, crosses into the SQL-filtering call. A second test proves the ordinary case (resolves to 2) and a third proves fail-closed behavior (resolution throwing produces a 500, getPropertySummary never called) rather than a silent default.",
+    "localVerification": {
+      "scopedTests": "15/15 passing (platform-property-intel.test.ts, platform-property-intel-tenant-resolution.test.ts, platform-mygov-permits.test.ts)",
+      "fullSuite": "npx vitest run: 195/195 passing (192 baseline + 3 new), zero regressions",
+      "build": "npm run build:cloud-run (the exact command Dockerfile.api runs): succeeds clean"
+    }
+  },
+  "pr": {
+    "url": "https://github.com/empressaioemail-tech/smartcity-os/pull/56",
+    "number": 56,
+    "ciConclusionStrings": {
+      "verifiedVia": "gh api repos/.../commits/<sha>/check-runs, polled to completion (not gh pr checks)",
+      "Gitleaks — detect secrets in code and history": "success",
+      "Trivy — dependency vulnerability scan": "success",
+      "Semgrep — static analysis": "success"
+    },
+    "mergedSha": "8bea7fa591134fc24154630fa869081f4ddf003d",
+    "mergeMethod": "squash, self-merged on green CI per this program's established precedent (acting as its own planner -- no separate planner session dispatched this lane)"
+  },
+  "nextSteps": "Canary deploy (--no-traffic), smoke all twelve /api/platform/* routes on the canary revision, shift traffic under a per-service lease (AGENT_CONTRACT section 3), re-smoke on the live URL, verify the serving revision by gcloud JSON field read, release the lease."
+}

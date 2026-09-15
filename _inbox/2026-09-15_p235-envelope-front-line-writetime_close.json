@@ -1,0 +1,193 @@
+{
+  "lane": "p235-envelope-front-line-writetime",
+  "title": "the envelope front line was drawn on the property line because the per-edge setback rectangles never joined at ring vertices",
+  "planRows": ["P-235"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-15_p235-envelope-front-line-writetime_dispatch.md",
+  "closedAt": "2026-09-15T21:55:00Z",
+  "status": "closed",
+  "seat": "claude-p235",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/p235-envelope-front-line-writetime/legacy-design-tools",
+  "branch": "fix/p235-envelope-front-line",
+  "baseCommit": "429980f5e44019e6e0288781121f5da40a7fbc89",
+  "headSha": "6c4cc960e057420afe9a69311742c7750bb22f01",
+  "pr": 693,
+  "prUrl": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/693",
+  "merged": false,
+  "mergeSha": "not applicable: lane instructed not to merge and not to deploy",
+  "checkpoints": [
+    "_inbox/2026-09-15_p235-envelope-front-line-writetime_cp1.json",
+    "_inbox/2026-09-15_p235-envelope-front-line-writetime_cp2.json"
+  ],
+
+  "snapshotDeclared": "code: legacy-design-tools, branch fix/p235-envelope-front-line, commit 6c4cc960e057420afe9a69311742c7750bb22f01, cut from origin/main 429980f5e44019e6e0288781121f5da40a7fbc89 (P-232 PR #692 merged). Parcel geometry read live 2026-09-15 from the Travis County public cadastral service gis.traviscountytx.gov/server1/rest/services/Boundaries_and_Jurisdictions/TCAD_public/MapServer/0 (f=geojson, outSR=4326). Road centerlines read live from OSM Overpass with the same query shape roads.ts issues. Live cortex reads against https://cortex-api-tds7av26va-uc.a.run.app. No database was touched.",
+
+  "probe": {
+    "notApplicable": "no surface-probe predicate exists for P-235 (envelope front-line geometry at write time); OPS-24 Law 1 predicate debt. Verified at source rather than assumed: scripts/surface-probe.mjs carries legs for P-91, P-151 through P-175, P-214 and P-218 and has no P-235 leg. The real evidence for this row is the real-ring fixture test (setbackJoinCoverage.test.ts), run against the pre-fix code and shown to FAIL, plus an independent pure-trigonometry audit of the drawn envelopes."
+  },
+
+  "missionPremise": "P-226 established, read-only, that the curved-frontage envelope defect is WRITE-time, lives in legacy-design-tools artifacts/api-server/src/lib/buildableEnvelope/, and is not in hauska-engine or hauska-map. It named one candidate cause and marked it explicitly UNVERIFIED: that buildForbiddenStrips' per-edge rectangle union has no join at ring vertices and can therefore under-cover at a multi-chord curved frontage. This lane exists to confirm or refute that mechanism by reading the union construction BEFORE editing anything, and, if it holds, to fix the source rather than the draw-time compensation that has been hiding it since 2026-08-24.",
+
+  "wasBuildForbiddenStripsTheMechanism": {
+    "verdict": "YES, with one correction to the handed-down wording.",
+    "correction": "The dispatch and P-226 say the gap is at each CONVEX joint. It is at each REFLEX joint. In a CCW ring a convex vertex is a LEFT turn and the two rectangles there OVERLAP, so the corner is fully covered -- that is the safe case and it is why the defect survived. A reflex vertex is a RIGHT turn (interior angle > 180 deg), the two rectangles splay apart, and the uncovered wedge has its APEX ON THE PARCEL BOUNDARY. A frontage takes the reflex shape exactly when the parcel sits on the OUTSIDE of a street curve.",
+    "theReadThatEstablishesIt": "setbackStrip returned a bare four-vertex rectangle [a, b, b+n*d, a+n*d] whose end faces are perpendicular to ITS OWN edge direction, and buildForbiddenStrips unioned one per edge while adding nothing at the shared vertices. Two consecutive edges of different direction therefore produce two rectangles that meet only by accident of turn sign.",
+    "theMeasurementThatConfirmsIt": "forbidden-intersect-parcel computed two ways on 48453:289990 with the live per-edge setbacks [5,5,25,25,25,25,5,10,10]: rectangles-only 352.515651 m2, exact stadiums 352.567668 m2. The 0.052016 m2 difference resolves into exactly TWO pieces, each with minimum distance-to-boundary 0.0000 m: one of 0.048641 m2 reaching 7.6200 m deep at the frontage (the entire 25 ft front setback), one of 0.003375 m2 reaching 1.5240 m at a 5 ft side. The larger piece's vertices coincide with the spike in the drawn envelope.",
+    "symptomReproduced": "Real route composition on the real ring: minimum envelope-vertex distance to the front edges 0.00 ft against a 25 ft front setback."
+  },
+
+  "whatWasNOTTheMechanism": {
+    "edgeLabeling": "Ruled out on evidence, not plausibility. The live labeler on the real ring with the real OSM roads returned signal=road, confidence 0.851, and the note 'Street frontage is digitized as 4 contiguous near-collinear segments; the front setback applies along the entire frontage'. Ring edges 2,3,4,5 were correctly labelled front and correctly received 25 ft.",
+    "setbackValues": "resolveAuthoritativeSetbacks({austin-tx, SF-3}) returned front 25 / side 5 / rear 10 / side_corner 15, sourceKind codified-ordinance, City of Austin TX. Correct. No setback value, table row or jurisdiction routing was changed.",
+    "stripReversalSpikes": "Not the mechanism and not masking the fix. It is a pure vertex DELETER (removes a vertex whose deviation-from-straight exceeds 160 deg and whose neighbour-to-neighbour mouth is under 0.5 m); it cannot manufacture an intrusion. It IS part of why this survived: the Princeton sliver carries an intermediate vertex on one leg, so the mouth reads 6.25 m and 7.62 m at the two candidate vertices, both far over the 0.5 m cap, and the sliver is preserved. Left untouched per the dispatch."
+  },
+
+  "theFix": {
+    "what": "Each edge now contributes the exact region {p : dist(p, edge_i) <= d_i}: the rectangle plus an inscribed quarter-arc end cap of radius d_i at each endpoint. setbackStrip -> setbackStadium, SETBACK_JOIN_SEGMENTS = 15 (6 deg per chord).",
+    "whyDefinitionalAndNotConditional": "No reflex/convex test, no max() over neighbouring setbacks. The geometry decides: at a convex vertex the cap falls OUTSIDE the parcel and is differenced away, at a collinear vertex it lies inside the neighbouring rectangle, and only at a reflex vertex does it add area. That is what makes the straight-frontage control provably unchanged rather than hopefully unchanged.",
+    "whyRoundNotMitre": "The ordinance forbids what is within d of the property LINE, and distance-to-segment produces round joins. A mitre would forbid points MORE than d from every boundary segment, which the code permits, and is unbounded at a sharp reflex notch.",
+    "whyInscribedNotCircumscribed": "A circumscribed cap reaches d/cos(halfstep) at the normal direction and would bulge PAST the neighbouring rectangle on a perfectly straight boundary, moving every straight-frontage envelope by roughly 4 cm. Inscribed, the cap is a subset of the true disc. Cost: worst-case shortfall d*(1-cos(3 deg)) = 0.00137*d, about 1 cm on a 25 ft setback, against the 7.62 m defect removed."
+  },
+
+  "parcelsVerified": {
+    "note": "Distances measured by pure trigonometry (point-in-polygon plus point-to-segment distance on a grid, no boolean ops), an instrument sharing no machinery with the code under test.",
+    "48453:289990_2407_Princeton_Dr": {
+      "role": "the parcel named in the dispatch; curved frontage, 9 ring vertices, reflex joint at vertex 4",
+      "before": "7,524.8 sqft drawn, 0.5 sqft of it inside a setback, worst vertex intrusion 25.00 ft -- ON the front property line",
+      "after": "7,524.2 sqft drawn, 0.0 sqft inside a setback",
+      "envelopeVertices": "11 -> 8"
+    },
+    "48453:285377_1700_Sylvan_Dr": {
+      "role": "straight-frontage control; 4 vertices, ZERO reflex joints",
+      "before": "6,203.621 sqft",
+      "after": "6,203.621 sqft, ring BYTE-IDENTICAL (compared as JSON coordinate strings, not as rounded areas)",
+      "envelopeVertices": "5 -> 5"
+    },
+    "48453:284527_704_Wickford_Cir": {
+      "role": "second curved parcel, chosen INDEPENDENTLY by structural screen (highest total reflex turn among residential-scale parcels in an 869-parcel south-Austin sweep, computed before any envelope was derived); radius street, 44 vertices, 17 reflex joints, 170.84 deg total",
+      "before": "12,634.5 sqft drawn, 1,828.4 sqft of it inside a setback (14.5 percent of the drawn envelope)",
+      "after": "10,808.7 sqft drawn, 2.9 sqft inside a setback (the inscription residual)",
+      "envelopeVertices": "57 -> 146"
+    },
+    "48453:280239_17005_Simsbrook_Dr": {
+      "role": "the documented 2026-08-24 prior of the same class -- the parcel that produced stripRingSpikes",
+      "before": "3,797.1 sqft drawn, 555.1 sqft of it inside a setback, worst vertex intrusion 25.00 ft at the 25 ft front edge",
+      "after": "3,243.1 sqft drawn, 1.1 sqft inside a setback, worst vertex intrusion 0.03 ft",
+      "significance": "its envelope had been 14.6 percent too large, on the front setback, for three weeks; the draw-time compensation hid the symptom and a test assertion then froze the wrong number"
+    },
+    "48453:290277_2504_Huntwick_Dr": {
+      "role": "perf stress only, 200 ring vertices",
+      "perf": "254.4 ms/call before, 274.8 ms/call after (+8 percent)"
+    }
+  },
+
+  "falsifier": "Pre-registered in full at CP1 before any run. (1) Real-ring fixture fails before and passes after: WON -- Princeton FAILED pre-fix with 'worst intrusion 25.00 ft at ring edge 3 (applied 25 ft, measured clearance 0.00 ft)' and Wickford with the same at ring edge 39; both PASS post-fix; 2 failed/2 passed became 4 passed/4. (2) Straight-frontage parcel unchanged: WON -- the Sylvan ring is byte-identical. (3) Second, independently chosen curved parcel also correct: WON. (4) Area movement reconciled: LOST ON MAGNITUDE -- I predicted a sub-sqft decrease and Wickford moved 1,825.8 sqft; adjudicated by the independent trig audit, which showed the movement is illegal area being REMOVED, not the fix over-forbidding. (5) Honest refutation if the mechanism was wrong: not needed, but the mechanism was genuinely at risk -- two boundary-sampling probes REFUTED it before the area measurement confirmed it. The predicate also carries a permanent not-vacuous case (the parcel ring passed off as its own envelope must report >24 ft intrusion, and does).",
+
+  "contradicted": "Four things this lane contradicts. (1) P-226 and this dispatch both say the strip union under-covers at each CONVEX joint; it under-covers at each REFLEX joint, and convex joints are the safe case. (2) geometry.test.ts asserted the Simsbrook envelope at ~3,798 sqft as correct behaviour; 555.1 sqft of that envelope was inside a setback and its worst vertex was ON the front property line, so the assertion had converted the defect into a specification and made the fix read as a regression. Restated to ~3,243 with the audit recorded inline. (3) My own two initial probes reported the wedge fully covered and thus refuted the mechanism; both were sampling points ON the strip boundary, which polygonClipping.intersection counts as membership -- the instrument returned a confident wrong answer and was caught only because the result was convenient in the wrong direction and disagreed with the pipeline's observed output. (4) The prod envelope endpoint returning 503 property_brief_api_unconfigured is NOT an outage, which is how I first read it: brokerageAuth 503s when no static API key set is provisioned, which production has never done deliberately, and real customers pass a session JWT instead.",
+
+  "completionPredicate": "A stranger can evaluate this from the branch, in artifacts/api-server. (1) `pnpm exec vitest run src/lib/buildableEnvelope/setbackJoinCoverage.test.ts` -> 4 passed. (2) Revert geometry.ts alone (`git checkout origin/main -- src/lib/buildableEnvelope/geometry.ts`) and re-run the same file -> 2 FAILED, each reporting 'worst intrusion 25.00 ft ... measured clearance 0.00 ft', and the straight-frontage case and the not-vacuous case still pass. That is the check verified by violation in both directions. (3) `pnpm exec vitest run src/lib/buildableEnvelope` -> 16 files, 142 tests, all pass. (4) `pnpm run typecheck` at the repo root (NOT the vacuous root `tsc --build`) -> 9 projects, zero errors. (5) `gh api repos/empressaioemail-tech/legacy-design-tools/commits/6c4cc960e057420afe9a69311742c7750bb22f01/check-runs` -> every .conclusion is the string \"success\".",
+
+  "scopeBasis": "legacy-design-tools only. hauska-engine and hauska-map were NOT touched, per the dispatch; insetParcelBySetbacks in hauska-map remains dead and unwired (it computes a uniform inset and cannot produce a correct front setback by construction). Four files changed, all under artifacts/api-server/src/lib/buildableEnvelope/. No setback value, table row, jurisdiction routing, labeling rule or accessPolicy changed. No deploy, no merge, no Cloud Run, no Cloud Build, no database write, no bake. Formatting deliberately left baseline-equal: prettier flags all four files, but the three pre-existing ones are already prettier-unclean on origin/main (verified by stashing and re-checking) and pr-checks.yml has no prettier gate, so --write would have produced a large unrelated diff.",
+
+  "ciConclusions": {
+    "commit": "6c4cc960e057420afe9a69311742c7750bb22f01",
+    "readBy": "gh api repos/{owner}/{repo}/commits/<sha>/check-runs, .conclusion per run as a STRING, not an exit code",
+    "runs": {
+      "L17 ci-vintage-predicate": "success",
+      "L5 silent-fallback greps": "success",
+      "SS-W18 api-server boots": "success",
+      "L5 SF-26 hand hasWriter grep": "success",
+      "Typecheck": "success",
+      "cortex daily limit bake": "success",
+      "SS-W16 tier2 flood not served": "success",
+      "Test": "success",
+      "L5 SF-30 Cotality warm grep": "success",
+      "PR base is main": "success",
+      "L5 SF-24/SF-25 score greps": "success"
+    },
+    "allGreen": true
+  },
+
+  "testBaselineCompare": {
+    "method": "full api-server vitest run on the branch, then again in the same worktree with the change stashed and the new test file moved aside",
+    "main": { "tests": 2129, "passed": 2125, "failedTests": 0, "failedSuites": 190 },
+    "branch": { "tests": 2133, "passed": 2129, "failedTests": 0, "failedSuites": 190 },
+    "suitesFailingOnlyOnBranch": 0,
+    "suitesFailingOnlyOnMain": 0,
+    "note": "all 190 suite failures on both sides are 'DATABASE_URL must be set' -- the known local environment baseline, not assertion failures. The branch adds exactly 4 tests, all passing."
+  },
+
+  "seatGateEvent": {
+    "what": "The first Write-tool call into this worktree was REFUSED by SEAT-01 (.cursor/hooks/seat-gate.mjs): the worktree was not in _catalog/seat_register.json.",
+    "action": "Registered, not worked around, per ENFORCEMENT. Added as a repo entry under the PROPERTY seat (property owns legacy-design-tools), following the precedent the P-239 lane set earlier today for an identically-shaped path. _catalog/seat_register.json is MODIFIED IN THE WORKING TREE AND NOT COMMITTED -- the integration seat commits it.",
+    "twoThingsWorthTheOperatorsAttention": [
+      "PATH: the dispatch addendum prescribes P:/seat-worktrees/<row>/<repo>/, which is outside the owning seat's namespace directory (house style is P:/seat-worktrees/property/<repo>-<row>/). Two lanes today have now registered around it. Recommend the dispatch compiler emit the property-namespace path, or the register grow an explicit lane-worktree section.",
+      "SCOPE HOLE: SEAT-01 fires on the Write/Edit tools. It did NOT fire on file writes performed through Bash (heredoc, python, sed), which is how this lane's earlier edits landed. A lane that never touches the Write tool never meets the gate at all. Reported rather than exploited; this is the 'what bypasses it' answer the three-question gate asks for, and it is not 'none'."
+    ]
+  },
+
+  "leave_behind": [
+    {
+      "item": "branch fix/p235-envelope-front-line and PR #693, open and green, NOT merged and NOT deployed",
+      "owner": "integration seat",
+      "plan_row": "P-235"
+    },
+    {
+      "item": "LIVE MAP VERIFICATION IS OWED. The dispatch says verify on the map, not the API. This lane could not: the deployed envelope route requires a session JWT (brokerageAuth 503s for keyless callers because production provisions no static key set), this repo does not auto-deploy, and this lane may not deploy. After the deliberate workflow_dispatch canary with the full 40-char sha and shift-traffic, the check is 2407 Princeton Dr and a Wickford Cir address on the map plus the PDF export path, confirming the front edge stands off the frontage. Until then CODE-DONE, not CUSTOMER-DONE.",
+      "owner": "integration seat",
+      "plan_row": "P-235"
+    },
+    {
+      "item": "The conservation gate in geometry.ts is an INTERNAL-CONSISTENCY check, not a meaning-shaped one: conservationFailures derives both of its inputs from buildForbiddenStrips, so it passes by construction whatever shape the strips are, and it reported healthy for the entire life of this defect. This lane ships the second, independent derivation as a TEST only. The runtime path still has no meaning-shaped guard on this class.",
+      "owner": "property seat",
+      "plan_row": "backlog -- needs a row"
+    },
+    {
+      "item": "SEAT-01 does not fire on Bash-mediated file writes (heredoc/python/sed). A control whose scope is narrower than its claim.",
+      "owner": "integration seat",
+      "plan_row": "backlog -- needs a row"
+    },
+    {
+      "item": "derive.ts still does not read max_lot_coverage_pct's own not_specified provenance (it tests only typeof === 'number'), so a codified not-specified coverage still caps maxFootprintSqFt. Found by P-232, confirmed still present, deliberately NOT folded in per the dispatch.",
+      "owner": "property seat",
+      "plan_row": "backlog -- P-232 carry-over"
+    },
+    {
+      "item": "UNVERIFIED: Travis serving geometry reads the self-hosted txgio_parcel store (TxGIO StratMap), while these fixtures are the county's own published cadastral rings for the same parcels. A digitization difference between the two is possible and was not checked -- I could not reach the store from this lane. The fix is source-independent (it is a property of any ring with reflex joints), but the specific figures quoted here are against the county's rings.",
+      "owner": "property seat",
+      "plan_row": "backlog -- needs a row"
+    },
+    {
+      "item": "_catalog/seat_register.json modified and uncommitted in P:/doc_repo, plus this close and its two checkpoints under _inbox/. Subagents do not commit.",
+      "owner": "integration seat",
+      "plan_row": "P-235"
+    }
+  ],
+
+  "fleetMemory": {
+    "LESSON": [
+      "A per-edge offset built from finite RECTANGLES is correct only at convex joints. At a reflex joint the rectangles splay apart and the uncovered wedge's apex sits ON the boundary, so the defect always presents as 'the envelope touches the property line', never as a small error.",
+      "Inscribe, do not circumscribe, when adding a polygonal arc to a union that must not perturb the straight case. Inscribed keeps the cap a subset of the true disc and makes the no-change control provable rather than hopeful; circumscribed would have moved every straight frontage by about 4 cm.",
+      "A point-membership probe against a boolean union is the WRONG instrument for a boundary-anchored sliver: the sliver's legs ARE strip boundaries and polygonClipping.intersection counts boundary contact as membership. Measure AREA instead. This produced two false refutations of a mechanism that was in fact correct.",
+      "When a fix makes a pre-existing test go red, audit the test's expected value against the source authority before touching the fix. Here 555.1 sqft of the 'correct' 3,798 sqft Simsbrook envelope was inside a setback -- the assertion had frozen the defect as a specification.",
+      "A draw-time compensation that only DELETES vertices (stripReversalSpikes) is defeated by a sliver carrying an intermediate vertex on either leg, because the mouth is then measured between the wrong pair of neighbours."
+    ],
+    "DEAD-END": [
+      "Probing the inward normal at the reflex vertex, and probing along the observed spike leg, with a 1e-6 membership box: both reported FULL COVERAGE and appeared to refute the mechanism. Do not retry point-membership here.",
+      "Reaching the deployed envelope route without a session JWT: brokerageAuth returns 503 property_brief_api_unconfigured because prod provisions no static key set. This is auth, not an outage, and no header will get past it.",
+      "gcloud run services describe cortex-api --region=us-central1 --project=smartcity-os-prod: 'Cannot find service'. The prod URL cortex-api-tds7av26va-uc.a.run.app did not resolve to that project/region pair from this seat; not chased further because the fix did not need it."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-15: live facets for 48453:289990, 285377, 284527 and 280239 all return envelope: null and facetCoverage.envelope: false at tier 1 and tier 2; provenance.tierNote states the buildable-envelope product path is retired from that surface. No served envelope figure exists on facets for these parcels.",
+      "2026-09-15: resolveAuthoritativeSetbacks({austin-tx, SF-3}) = front 25 / side 5 / rear 10 / side_corner 15, sourceKind codified-ordinance, 'City of Austin, TX'.",
+      "2026-09-15: the Travis County public cadastral service gis.traviscountytx.gov/server1/rest/services/Boundaries_and_Jurisdictions/TCAD_public/MapServer/0 is live and serves PROP_ID, geo_id, situs_address and geometry as f=geojson. It is the pre-F4h source this repo flipped away from and remains a usable uniform public record for ring verification.",
+      "2026-09-15: api-server local test baseline on origin/main is 2129 tests, 0 failed, 190 failed SUITES, all 'DATABASE_URL must be set'."
+    ],
+    "OPEN": [
+      "Live map + PDF verification of P-235 after deploy (see leave_behind).",
+      "Whether other counties' rings carry large reflex joints like Wickford's; if so, envelope areas across the corpus have been systematically over-stated and the magnitude is per-parcel, not a constant.",
+      "The conservation gate's internal-consistency limitation."
+    ]
+  }
+}

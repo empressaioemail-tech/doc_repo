@@ -1,0 +1,41 @@
+{
+  "lane": "g131-tenant-resolution",
+  "planRows": ["G-131"],
+  "checkpoint": "CP1 (design / pre-build)",
+  "seat": "cente-g131",
+  "timestamp": "2026-09-15T01:05:00Z",
+  "premiseVerification": {
+    "exceptionReal": "repo_intents.md line 74 confirms a narrow, dated authorization (2026-09-03, extended 2026-09-14 for G-122 and a read-only pass for G-126) covering /api/platform/* only -- verified by reading the file directly, not by inheriting the dispatch's own claim.",
+    "laneFree": "lane_claims.json had no g131-tenant-resolution entry at claim time; claimed via scripts/lane-claim.mjs (exit 0).",
+    "g122CloseArtifactAnomaly": "The G-122 close artifact the dispatch named for coordination was not present in P:/doc_repo or the govtech seat worktree at investigation time. Raised to the operator before proceeding; the artifact was subsequently found to have been sitting uncollected in the incident lane's own worktree (P:/seat-worktrees/g122-v1-regression/doc_repo) and was pulled into P:/doc_repo/_inbox during this session. Its content confirms G-131 was explicitly out of scope for G-122 ('unrelated to this incident and was not touched, per the dispatch's explicit demotion of 0e5c41e')."
+  },
+  "routeEnumeration": {
+    "method": "grep for PLATFORM_INTERNAL_API_KEY and requirePlatformInternalKey across server/, then read every matched route handler's tenant-resolution logic directly (not inherited from G-126's prior count).",
+    "totalRoutes": 12,
+    "g126CountVerifiedWrong": "G-126 counted five/one/five (=11). Real split is five/one/six (=12): property-intel/layers (property-intelligence.ts:239) references no tenant field anywhere in its call chain -- it queries BASTROP_LAYER_REGISTRY (server/routes/esri.ts), a hardcoded single-city ArcGIS config -- and belongs in the tenant-blind group, which G-126 never separately counted.",
+    "groups": {
+      "nameBasedLookup": [
+        { "route": "/api/platform/mygov/permits", "file": "server/routes/mygov.ts:348" },
+        { "route": "/api/platform/mygov/work-orders", "file": "server/routes/mygov.ts:393" },
+        { "route": "/api/platform/mygov/inspections", "file": "server/routes/mygov.ts:424" },
+        { "route": "/api/platform/mygov/code-violations", "file": "server/routes/mygov.ts:441" },
+        { "route": "/api/platform/mygov/business-licenses", "file": "server/routes/mygov.ts:458" }
+      ],
+      "nameBasedMechanism": "getBastropTenantId() (server/routes/mygov.ts:303, private/unexported at investigation time): db.select({id:tenants.id}).from(tenants).where(eq(tenants.slug,'bastrop')).limit(1), module-cached, falls back to 1 only if no such row exists.",
+      "bareLiteral": [
+        { "route": "/api/platform/property-intel/summary", "file": "server/routes/property-intelligence.ts:152", "literal": "DEFAULT_TENANT_ID = 2 (property-intelligence.ts:13), passed directly into getPropertySummary() at line 185, which filters tenant-scoped Postgres tables" }
+      ],
+      "tenantBlind": [
+        { "route": "/api/platform/property-intel/layers", "file": "server/routes/property-intelligence.ts:239", "why": "queries BASTROP_LAYER_REGISTRY (esri.ts), a hardcoded Bastrop-only ArcGIS server config; no tenant param anywhere in the call chain" },
+        { "route": "/api/platform/samsara/vehicles", "file": "server/routes/samsara.ts:1154", "why": "single Samsara account token (getSamsaraToken()); zero 'tenant' references in the handler body, confirmed by full-file grep" },
+        { "route": "/api/platform/spireon/vehicles", "file": "server/routes/spireon.ts:657", "why": "single Spireon credential (getCredentials()); zero tenant references in the platform handler" },
+        { "route": "/api/platform/firstdue/apparatus", "file": "server/routes/firstdue.ts:577", "why": "single FirstDue OAuth token; zero tenant references" },
+        { "route": "/api/platform/goto/call-summary", "file": "server/routes/goto.ts:295", "why": "single GoTo account key; zero tenant references" },
+        { "route": "/api/platform/powerbi/cip-projects", "file": "server/routes/powerbi.ts:217", "why": "single PowerBI OAuth flow (getCIPProjectData()); zero tenant references" }
+      ]
+    }
+  },
+  "vendorRoutesVerdict": "Genuinely dimensionless, all six (property-intel/layers plus samsara/spireon/firstdue/goto/powerbi) -- confirmed by full-file grep for tenant/Tenant in each route file and by reading each platform handler body directly. Each calls one vendor's API or Bastrop's own ArcGIS server using a single account-level credential; there is no tenant dimension anywhere upstream to ignore. Not a leak waiting for a second city.",
+  "proposedFix": "Export getBastropTenantId() from mygov.ts; import and call it in property-intelligence.ts's platform summary handler in place of DEFAULT_TENANT_ID. Convergence onto the existing mechanism, not a fourth implementation, per the dispatch's explicit instruction. Do not touch the DEFAULT_TENANT_ID fallback still used by the session-gated (requireTenant) routes in the same file -- out of scope.",
+  "operatorCheckIn": "Presented this investigation (route count correction, vendor verdict, proposed fix) to the operator before writing any code or touching the live no-touch-exception repo, given: (1) the missing G-122 artifact anomaly, (2) live production customer risk, (3) a count correction changing the shape of what G-126 reported. Operator confirmed the G-122 gap (artifact existed, was uncollected, now read), approved the fix approach, approved proceeding through deploy, and named one adjacent-but-out-of-scope finding to report (platformOneClickAtPoint's silent-null swallow, G-122 close leave_behind) rather than fix."
+}

@@ -96,8 +96,54 @@ factory writer jobs af5fd158… / b35bc2d0…  (P-229)
 
 ## IN FLIGHT
 
-None. `g131-tenant-resolution` has shown as claimed since **2026-09-15T01:06Z** — treat as a
-stale claim and confirm before assuming a lane is live.
+None. Three lanes ran 2026-09-15 evening (P-235, P-236, P-239), all three closed, merged and
+verified by the integration seat. `g131-tenant-resolution`'s claim was STALE, not live: the lane
+had FINISHED (PR #56 `8bea7fa5`, deployed `smartcity-api-00142-yuv` at 100 percent, lease released)
+and only the claim was never released. Confirm a claim against its close artifact before treating
+it as a live lane.
+
+---
+
+## WAVE 2 — 2026-09-15 evening, three lanes, all verified by the integration seat
+
+| Row | State | Verified how |
+|---|---|---|
+| **P-239** canonical logo | **CUSTOMER-DONE.** PR #452 merged `746e7b9`; engine built from a clean checkout at that commit, deployed by DIGEST `sha256:38d2d040…0d00` as `hauska-engine-api-00232-dos`, traffic shifted under a P-170 lease taken and released | **Decoded a live dossier for `48021:34137` (908 PINE) through the real MCP export path.** Stroke `1.5789473684210527` = 4×30/76 exactly; all four ticks `7.10526` = 18×30/76 on the 30pt mark and `3.55263` = 18×15/76 on the 15pt running-header mark. The pre-fix build carries neither that stroke width nor four equal ticks, so this predicate cannot pass on the old geometry |
+| **P-236** county coverage floor | **ARMED IN PRODUCTION.** PR #155 merged `bfb7303`; publish jobs rebuilt from that commit, build `abaa0c62` SUCCESS, output digest `sha256:10e6911c…4425` matched by field to `factory-bastrop-publish` generation 46 | Refusal proven by violation in BOTH directions on fixtures (floor 0.00 → exit 1 on 4 mismatches; floor 1.01 → exit 1 on 2; 0.95 → exit 0). Call path read: `requireCountyCoverageFloor` runs inside `runBastropPublish` before `bakesFn`, records the verdict, then RETHROWS. **Residual, stated: the refusal has NOT been proven by violation on the deployed image**, because doing so means executing a production publish |
+| **P-235** envelope front line | **PRODUCER-DEPLOYED, NOT CUSTOMER-DONE.** PR #693 merged `0b498606`, 11/11 CI `success`, cortex-api `00807-wib` shifted to 100 percent under a lease taken and released. **The MCP surface still refuses the polygon** for `48453:289990`: `state: refused`, `reason: atom_path_pending`, on a bake dated `2026-09-10`. Two mechanisms, NOT discriminated: stale bake (P-230) or a genuine `austin-tx` atom-path refusal (P-233). Pattern 1, fourth instance in one day | Mechanism CORRECTED: the gap is at **reflex** joints, not convex as P-226 and the dispatch both said. On a CCW ring a convex vertex overlaps and is safe; a reflex vertex splays, and the uncovered wedge has its apex ON the parcel boundary. Fix is an INSCRIBED quarter-arc cap, provably a no-op where rectangles already meet, which is why the straight-frontage control came back **byte-identical** rather than merely close |
+
+**P-235's real finding is how large the error was.** 704 Wickford Cir drew **1,828.4 sqft (14.5 percent)**
+of envelope inside a setback, and Simsbrook — the very parcel that produced `stripRingSpikes` on
+2026-08-24 — has been **14.6 percent too large on its front setback ever since**. The lane's own two
+early probes REFUTED its hypothesis before an area measurement confirmed it; it distrusted the
+instrument because the answer was convenient in the wrong direction. Both bad probes sampled points
+ON the strip boundary, which `polygonClipping.intersection` counts as membership.
+
+**A test bound was restated, correctly.** `geometry.test.ts`'s Simsbrook range was asserted against
+this function's own output WHILE THAT OUTPUT WAS WRONG. `3,797.1 - 555.1 = 3,242.0` closes on the new
+`3,243.1`, adjudicated by an independent pure-trig audit sharing no machinery with the code under
+test. That is a second derivation, not a re-baseline.
+
+**Falsifiers changed the answer again.** P-239 scored its own falsifier 3 WRONG and said so (it
+predicted the wordmark would not decode on the `StandardFonts` hazard; the chrome already uses
+fontkit-embedded Barlow, so it decodes). P-235 lost falsifier 4 on magnitude, pre-registering a
+sub-sqft area change against an actual 1,825.8 sqft. Neither would have surfaced from re-reading a
+conclusion.
+
+**AND A NEW P-217 INSTANCE, number 8, found while verifying P-235.** `get_smart_site` contradicts
+ITSELF across depths on one parcel: depth **stub** reports `envelope: "present"` for `48453:289990`,
+depth **node** refuses the polygon on the same parcel in the same breath. Stub is the triage read an
+agent runs across a whole screen. Likely mechanism: stub reports the BRIEF SECTION disposition
+(`setbacks-envelope`, genuinely present 25/5/10/15 with a matched `setbackRulesFact`) while node
+reports the POLYGON state, two different things under one name. A second mechanism, a real
+inconsistency in one value, is not excluded without reading both producers. A consumer cannot tell
+them apart either way, which is the P-217 predicate.
+
+**A false verification claim was found and corrected in code.** `report-chrome-tokens.ts` recorded
+`--ss-print-gold #B87116` as **4.6:1** on paper from the day it landed. Measured against `--ss-paper`
+`#FCFBF9` it is **3.751:1**, recomputed independently by the integration seat: it FAILS the 4.5:1
+normal-text floor it claimed and passes only the 3:1 large-text floor. Same class as the
+`zoning-layers.ts` false "verified" claim still owed below.
 
 ---
 
@@ -232,3 +278,25 @@ base must be parsed off a prefix. **A naive split on `-` yields `CS` where the b
   a repo. Confirm by reading before treating a hit as the sole emitter.
 - **Read Cloud Run traffic BY FIELD**, never a positional `--format=value`, and never trust
   `latestReadyRevisionName` as the serving revision.
+
+- **The factory writer jobs are `factory-parcel-envelope-cells` and `factory-parcel-setback-cells`,
+  in project `hauska-prod-497015`, region `us-east4`.** Not `parcel-*-cells`, and not us-central1.
+  Measured 2026-09-15 by the integration seat: probing the short name in us-central1 returns
+  `ERROR: Cannot find job [parcel-envelope-cells]` and `gcloud run jobs list` returns `[]` — **a
+  false absence indistinguishable from a decommissioned job.** The authoritative record is
+  `cloudbuild.parcel-envelope-cells.yaml` at origin/main, which names both the job and `_REGION`.
+  Read the cloudbuild config before probing for a job. Confirmed by field once corrected:
+  envelope-cells generation 5 at `sha256:af5fd158…0520f`, setback-cells generation 4 at
+  `sha256:b35bc2d0…c235d`, both pinned by DIGEST rather than tag, matching P-229's close.
+- **`P:/hauska-factory`'s local `main` is rewound to `3653f12 "Initial commit"` — a working tree
+  holding only `README.md` — while `origin/main` carries the full repo.** Measured 2026-09-15. A
+  lane that cuts a worktree from local `main`, or that greps that checkout to establish what the
+  repo contains, gets a near-empty answer that looks like a finding. **Always cut from
+  `origin/main` after an explicit fetch, and read history with `git show origin/main:<path>`.**
+- **Asset existence is sound and was proven BY VIOLATION on the live PE alias**, 2026-09-15:
+  `smartsite.cloud/assets/index-BiEor6XQ.js` returns `application/javascript` at 2,052,673 bytes,
+  while a fabricated `index-ZZZZZZZZ.js` returns **HTTP 200** `text/html` at 1,856 bytes — the SPA
+  fallback. The negative control is what makes the instrument trustworthy; run it every time.
+  Note the limit of this particular read: it establishes WHICH ASSET the alias serves, and does
+  not by itself tie that asset to deployment `8r0btsuy9`. Pair it with the deployment's own asset
+  listing if the deployment identity is the claim.
