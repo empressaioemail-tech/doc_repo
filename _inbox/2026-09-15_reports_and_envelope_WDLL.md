@@ -172,10 +172,25 @@ the front setback and never crosses it; a straight-frontage parcel is unchanged.
 **Do not:** wire up `insetParcelBySetbacks` (confirmed dead code, uniform inset, cannot produce
 a correct front setback by construction).
 
-### Flood async port · hauska-engine
-**Scope it to cover SITE-PLAN EXPORT as well.** It is not flood-specific — see pattern 2.
-**Done:** the route returns immediately and the client polls a download, per P-155's pattern.
-**Instrument:** the engine's own request log, showing the client no longer aborts.
+### P-240 — the async port · hauska-engine · NEXT, DISPATCH COMPILED
+**Carded 2026-09-15 as P-240.** It was queued here without a row number, which is why it could
+not be dispatched: `dispatch.mjs` refuses a row that is not in the plan of record.
+**Scope covers SITE-PLAN EXPORT as well.** It is not flood-specific, see pattern 2.
+**Done:** both routes return immediately and the client polls a download, per P-155's pattern.
+**Instrument:** the engine's own request log, showing the client no longer aborts, plus a
+customer-surface generation of each artifact.
+
+### P-241 — ETJ and city limits · acquisition, hauska-map + hauska-engine
+From QA-04. The `etj` toggle already exists at `live: false`; the blocker was a missing source.
+**Austin publishes one**, measured anonymously 2026-09-15: 388 jurisdiction polygons including
+270 two-mile and 24 five-mile ETJ, plus FULL and LIMITED purpose city limits in the same layer,
+so one acquisition closes two rails. The §42.021 derivation ruling is recommended DEFERRED and
+converted into an enumeration of which footprint cities publish a layer.
+
+### P-242 — record request coming-soon · hauska-map PE + hauska-mcp-server
+From QA-05. Not a label: `ReportsTool.tsx` line 1 rules that coming-soon cannot sit on the
+purchase surface, and P-223's raw-Postgres error envelope plus its untested tier gate sit
+underneath. **Operator ruling owed on scope.** Fix the error envelope regardless.
 
 ### P-231 — the standalone site-plan caller · repo TBD, NOT hauska-engine
 **Done:** a customer-visible standalone site plan prints the parcel's real address and county.
