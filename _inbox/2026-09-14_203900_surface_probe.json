@@ -1,0 +1,48 @@
+{
+  "instrument": "hand-written, same PASS/FAIL/UNMEASURED discipline as scripts/surface-probe.mjs",
+  "basis": "scripts/surface-probe.mjs (named by this dispatch's close skeleton) is OPS-23's property-surface instrument (P-1xx rows, smartsite.cloud, cortex/GIS parcel legs). Run live: `node scripts/surface-probe.mjs --rows G-127`, 2026-09-14T20:33:52.608Z, returned PASS 0 FAIL 0 UNMEASURED 0 (artifact P:/doc_repo/_inbox/2026-09-14_203352_surface_probe.json, docRepoHead ca7fc26a) -- it has no predicate for this or any OPS-17/G-1xx row, the same out-of-domain finding the g126-tenant-isolation close already recorded on this same seat for this same repo family. Citing that vacuous run would read as measured when it measures nothing, so this lane wrote its own probe scoped to what G-127 actually has: whether a department-viewer dimension exists anywhere in the three products' identity/access code.",
+  "ranAt": "2026-09-14T20:39:00Z",
+  "rows": ["G-127"],
+  "predicates": [
+    {
+      "id": "P1-dashboards-identity",
+      "claim": "smartcity-dashboards' caller-identity resolver (resolveCaller, src/tenancy.mjs) carries a per-user or per-department claim, distinct from city tenant.",
+      "verdict": "FAIL",
+      "evidence": "resolveCaller returns exactly one of {kind:\"tenant\",tenant}, {kind:\"service\"}, {kind:\"anonymous\"}. resolveHauskaTenant reads only body.jurisdiction_tenant off the MCP /auth/whoami response and discards every other field. 0 of 3 caller kinds represent an individual or a department.",
+      "falsifier": "would be contradicted by any field read off whoami besides jurisdiction_tenant, or by any second identity dimension in resolveCaller's return shape. Neither exists in the file read in full."
+    },
+    {
+      "id": "P2-dashboards-route-gate",
+      "claim": "GET /api/domains/:id and GET /api/city-domains (the two routes serving department-scoped operational data, including work-orders' unredacted citizen free text) are gated by more than city-tenant membership.",
+      "verdict": "FAIL",
+      "evidence": "Both handlers (server.mjs:423-473, :480-519) call packContentReadStatus(pack, caller) as their only gate. A caller entitled to bastrop_tx reads all 11 domains at every department -- police-cameras, fire-apparatus, work-orders, code-violations, business-licenses included -- with one check.",
+      "falsifier": "would be contradicted by a second gate keyed to domain.lensId or any per-caller department claim inside either handler. None exists."
+    },
+    {
+      "id": "P3-plan-review-persona-department",
+      "claim": "plan-review's QA_PERSONAS carries a department field distinct from orgId/userId.",
+      "verdict": "FAIL",
+      "evidence": "5 entries total, 0 with a department field (src/actors.mjs, read in full). The single bastrop_tx entry is userId:\"staff\", label \"Development services staff / bastrop_tx\" -- one identity for every Bastrop staff member regardless of actual department."
+    },
+    {
+      "id": "P4-smart-files-persona-department",
+      "claim": "smart-files' QA_PERSONAS carries a department field distinct from orgId/userId.",
+      "verdict": "FAIL",
+      "evidence": "8 entries total, 0 with a department field (src/actors.mjs, read in full). Identical bastrop_tx/staff shape to plan-review, same monolithic label."
+    },
+    {
+      "id": "P5-dispatch-premise-smart-files-gap",
+      "claim": "smart-files still lacks a bastrop_tx QA_PERSONAS entry, as this dispatch's own 'What this replaces' section asserts.",
+      "verdict": "FAIL (dispatch premise contradicted -- DEV_PROCESS 3.2a correction, quoted at source)",
+      "evidence": "smart-files/src/actors.mjs:13 already carries `{ orgId: \"bastrop_tx\", userId: \"staff\", label: \"Development services staff / bastrop_tx\" }`, added at G-116 per the adjacent comment. The gap this dispatch names is stale as of this read."
+    },
+    {
+      "id": "P6-authoritative-roster",
+      "claim": "A document naming Bastrop's real departmental org chart exists in doc_repo.",
+      "verdict": "UNMEASURED",
+      "evidence": "Searched (case-insensitive) for 'org chart', 'department roster', 'staff roster', 'bastrop.*staff', 'staff directory' across doc_repo's *.md tree; none matched a real roster document. Absence is reported with this search as its basis, not asserted from silence alone (DEV_PROCESS 4.3)."
+    }
+  ],
+  "tally": { "PASS": 0, "FAIL": 5, "UNMEASURED": 1 },
+  "reading": "Every predicate that could be checked at source FAILED in the direction of 'no department-level enforcement point exists anywhere in the three products today, at the identity layer, the persona layer, or the route layer.' This is the evidentiary basis for this lane's close recommendation."
+}

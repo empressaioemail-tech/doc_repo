@@ -1,0 +1,126 @@
+{
+  "lane": "g126-tenant-isolation",
+  "planRows": ["G-126"],
+  "status": "closed",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-14_195500_surface_probe.json",
+    "basis": "scripts/surface-probe.mjs (named by this dispatch's close skeleton) is OPS-23's property-surface instrument (P-1xx rows, smartsite.cloud, cortex/GIS parcel legs). Confirmed empirically, not assumed: `node scripts/surface-probe.mjs --rows G-126`, run 2026-09-14T19:09:54Z, returned PASS 0 FAIL 0 UNMEASURED 0 -- it has no predicate for this or any OPS-17/G-1xx row. This is the same out-of-domain finding the prior g120-overview-lens close on this same seat already recorded for this repo, now confirmed a second time on a different lane. Citing that vacuous run would read as measured when it measures nothing for these rows, so this lane wrote its own probe artifact in the same PASS/FAIL/UNMEASURED discipline, scoped to what G-126 actually has (HTTP routes and a compose function, not GIS parcels): 9 PASS, 0 FAIL, 1 UNMEASURED (defect 3, a read-only source finding with no deployable surface)."
+  },
+
+  "falsifier": "Pre-registered per defect, all confirmed NOT contradicted: (1) if a bare-service-token, no-persona request to plan-review's /queue, /reviewer/engagements, or /findings still returned rows for more than one orgId after the fix, defect 1's fix would be wrong -- it returns 401 with zero rows instead. (2) if composeRealPermits or mapRealPermitRecord returned or stamped a record for a cityKey other than bastrop_tx without throwing, defect 2's fix would be wrong -- both throw before any data is returned, and composeRealPermits throws before the network call is even made (confirmed via a call-tracking spy). (3) defect 3 had no fix to falsify (read-only); the falsifier there was interpretive -- if the platform key or any single mechanism uniformly bound every /api/platform/* route to one tenant, a single sentence would answer the question. It does not: the 12 routes split three ways (name-based lookup, an accidental numeric-literal default, and no tenant concept at all), which is itself the finding.",
+
+  "contradicted": "Two things this dispatch's own text asserted turned out imprecise, both worth recording rather than smoothing over (DEV_PROCESS 3.2/3.2a). First, defect 3's premise names the binding question as 'is PLATFORM_INTERNAL_API_KEY bound to tenant_id=2' -- at source, the KEY itself is never bound to any tenant at all (it is one bearer secret gating all 12 /api/platform/* routes uniformly, confirmed via requirePlatformInternalKey's implementation and commit d2d3648's exemption of /platform from session-auth); tenant resolution is a per-ROUTE implementation choice downstream of the key, and it is not one answer but three different mechanisms across the 12 routes -- see defect3.answer below. Second, this dispatch's checkpoint-path section warns that lanes have written into the property seat's worktree by mistake; the mirror-image nearly happened here for a different reason -- a pre-existing empty local branch named g126-tenant-isolation sat in the RAW P:/smartcity-dashboards checkout (not a registered worktree, created 2026-09-14 13:49, zero unique commits), and only discovering the DEDICATED registered worktree at P:/smartcity-dashboards-worktrees/g126-tenant-isolation (via a 'branch already used by worktree' error, not by knowing to look) prevented defect 2's work from landing in the wrong checkout.",
+
+  "leave_behind": [
+    "Defect 2's honest residual, stated in the PR and the mygov-permits.mjs header rather than worked around: smartcity-os's dbPermitToApi drops the row's own tenantId from its response shape entirely, so no per-RECORD verification is possible from smartcity-dashboards' side today -- only a per-PACK guard (assertVerifiedMygovTenant) was buildable without touching the no-touch repo or inventing a field. Closing the upstream gap for real needs dbPermitToApi to surface tenantId (or a public-safe derived city identifier); that is smartcity-os feature work, out of this mission's authorization.",
+    "Defect 3's finding is a report, not a fix, by explicit mission design (ABSOLUTE NO-TOUCH, authorization scoped to reading and reporting). The concrete, nameable risk left standing: /api/platform/property-intel/summary resolves its tenant via the bare DEFAULT_TENANT_ID literal (=2), which already changed once (0e5c41e, 1->2, for an unrelated manager-load fix) and feeds a real SQL tenant_id filter (getPropertySummary -> getPropertyPermits/getPropertyViolations/getPropertyInspections, each `WHERE tenant_id = $1`). A second unrelated bump, or a tenant renumbering, would silently serve a different tenant's real property data through this one route with no error and no test catching it. Handed to whoever owns smartcity-os next (not G-122, which this mission was told not to touch the auth middleware alongside); the fix shape would be replacing that literal with the same getBastropTenantId()-style name-based lookup the five mygov.ts platform routes already use, closing rule 2.4's own paired-implementation-drift pattern inside that one file.",
+    "A minor free finding (DEV_PROCESS 1.4, not investigated further, out of this mission's authorized touch surface): getBastropTenantId()'s own not-found fallback is hardcoded 1, while the separately-named DEFAULT_TENANT_ID constant used elsewhere in the same file is 2 -- two different literals for conceptually the same 'no real tenant resolved' case, in the same file, and they disagree.",
+    "reviewer/engagements (plan-review) has zero frontend callers today (grepped web/app.js and the whole repo) -- fixed under the same tenant gate as /queue since it shares the exact defect, but it is dead-code-cleanup-shaped and was left registered rather than removed, since deleting a route was not this mission's mandate."
+  ],
+
+  "missionPremise": "G-115 item 5's operator ruling accepted persona-list access scoped to a small named set of invited Bastrop staff, 'revisited before any wider rollout.' Issuing real Bastrop staff credentials is that wider rollout, so the condition fired. This row is explicitly NOT RBAC (G-127, separate, after this) -- it closes three specific verified defects where one tenant's data can reach another, or where scoping that appears to hold is coincidental rather than enforced, per this dispatch's own framing.",
+
+  "completionPredicate": "Per DEV_PROCESS 4.4 (customer-done, not code-done) for defects 1-2, and per this mission's own explicit alternate bar for defect 3 (a plain, unsoftened source answer, since the repo is no-touch): (1) plan-review's three previously-ungated list routes (/queue, /reviewer/engagements, /findings) refuse an unrecognized-or-absent persona and scope to the caller's own org when a valid one is asserted, verified live in both directions on the deployed production surface, PR merged on green CI. (2) smartcity-dashboards' mygov real-feed refuses to stamp any pack but the one tenant it is verified correct for, verified at the unit level (the correct fidelity, since no live cross-tenant grant exists to reproduce over HTTP), PR merged on green CI, deployed and confirmed serving. (3) The plain answer to 'is the platform key bound to tenant 2' is delivered without softening: the key is not bound to any tenant; binding is a per-route choice, done robustly (name-based) in 5 routes, accidentally (a renumberable literal, already renumbered once) in 1, and not applicable (no tenant concept) in the remaining 6 -- stated, not fixed, per the no-touch constraint. All three predicates met.",
+
+  "scopeBasis": "RBAC by department (G-127), any change to the persona model itself, and the G-122 v1 regression were named explicitly out of scope and were not touched -- in particular, defect 1's by-id subtree (engagementCrossTenantRefusal) and its ruled no-persona pass-through were left byte-for-byte unchanged; only the previously-ungated list routes were gated, through the same persona-resolution primitive rather than a second one. Defect 2's fix stops at what is buildable inside smartcity-dashboards without inventing a field or touching smartcity-os, per the dispatch's own explicit instruction on that exact point. Defect 3 stayed strictly to reading the named handlers and reporting; no smartcity-os file was modified, no live request was made against smartcity-os (the operator's authorization covered reading the platform-route handlers, not live-probing them), and no auth-middleware change was proposed, since G-122 is working that same file and this mission was told not to collide with it."
+
+  ,
+  "constraintsHonored": [
+    "Read the authoritative record, never a proxy: every serving-revision claim in this close was confirmed via gcloud logging read on resource.labels.revision_name from real request log lines, never update-traffic's own echo or latestReadyRevisionName.",
+    "Never printed a secret value -- PR token, dashboards key, and platform key were fetched into shell variables and used directly in requests, never echoed; only env var NAMES appear anywhere in this close or the checkpoints.",
+    "Every verification command was exit-bounded (timeout N ...); no watch, no tail -f, no non-exiting server.",
+    "MERGED only on the CI check-run conclusion string 'SUCCESS', read via gh pr view --json statusCheckRollup, not gh pr checks's human-readable 'pass'.",
+    "One traffic shift at a time per Cloud Run service, each under a recorded lease at _catalog/leases/<service>.json in this lane's own rooted worktree, deleted immediately after the serving revision was confirmed by field name.",
+    "Investigated, never discarded, ambiguous repo state: two separate product repos (plan-review, smartcity-dashboards) presented ~20 files each of git-status-dirty working trees on `main` that turned out to be pure core.autocrlf line-ending noise (git diff showed zero real content, identical bulk-checkout mtimes) -- stashed with -u rather than reset in either case, and branched directly off origin/main to avoid the question entirely.",
+    "Found and used the dedicated per-lane worktree (P:/smartcity-dashboards-worktrees/g126-tenant-isolation) rather than building in the raw checkout, once its existence surfaced via a branch-name collision.",
+    "ENUMERATE BEFORE ASSERTING ABSENCE: all 15 HTTP routes in plan-review's server.mjs read top to bottom and individually verdicted (defect 1); all 12 requirePlatformInternalKey route registrations in smartcity-os found via grep across every server/routes/*.ts file and individually read (defect 3)."
+  ],
+
+  "defect1": {
+    "repo": "plan-review",
+    "enumerationOfCollectionRoutes": [
+      { "route": "GET /api/plan-review/queue", "verdict": "was vulnerable, fixed" },
+      { "route": "GET /api/plan-review/reviewer/engagements", "verdict": "was vulnerable, fixed (dead route, zero frontend callers, same root cause)" },
+      { "route": "GET /api/plan-review/findings?sectionId=", "verdict": "was vulnerable, fixed" },
+      { "route": "GET /api/plan-review/canned", "verdict": "not vulnerable -- plan_review_canned has no org_id column (sql/001_foundation.sql), global template library" },
+      { "route": "GET /api/plan-review/code", "verdict": "not vulnerable -- in-memory manifest lookup, no tenant field, no DB collection" },
+      { "route": "GET /api/icc/activity", "verdict": "not vulnerable, by design -- plan_review_activity has no org_id column at all; deliberately cross-tenant ICC licensor ledger (purge.jurisdictionTenant='icc-model-code' in its own response body); engagementId is a soft joinable footprint but is the documented purpose of the route" },
+      { "route": "GET /api/plan-review/applicant/room?token=", "verdict": "not vulnerable -- scoped by an unguessable per-share token, not tenant identity" },
+      { "route": "GET /api/plan-review/personas, /editions", "verdict": "not vulnerable -- static reference data" },
+      { "route": "/api/plan-review/engagements/:id/* subtree (matrix, briefing, letter, map-feature, documents, sheets, dataroom-atoms, override, share, edition, compliance-run, reports/*)", "verdict": "already correctly gated by engagementCrossTenantRefusal, confirmed by regression, not modified" }
+    ],
+    "violationTestBothDirections": {
+      "before_live_2026-09-14T18:5xZ": {
+        "queue_no_persona": "200, total=25, orgs=[bastrop_tx(8), icc-demo(6), template-city(11)]",
+        "reviewer_engagements_no_persona": "200, count=25, same 3 orgs",
+        "findings_sectionId_R311.7_no_persona": "200, 23 findings, orgs=[bastrop_tx(8), icc-demo(6), template-city(9)]"
+      },
+      "after_live_on_production": {
+        "queue_no_persona": "401 unauthorized",
+        "reviewer_engagements_no_persona": "401 unauthorized",
+        "findings_no_persona": "401 unauthorized",
+        "queue_bogus_persona": "400 unknown_persona",
+        "queue_bastrop_tx_staff": "200, total=8, orgs=[bastrop_tx] only",
+        "reviewer_engagements_template_city_staff": "200, count=11, orgs=[template-city] only",
+        "findings_bastrop_tx_staff": "200, count=8, orgs=[bastrop_tx] only",
+        "byIdSubtreeRegression": "no-persona pass-through 200, cross-tenant refusal 403 cross_tenant_refused, same-tenant success 200 -- all unchanged from pre-fix"
+      }
+    },
+    "changed": [
+      "src/actors.mjs: tenantListRefusal() -- reuses resolvePersona, the same primitive engagementCrossTenantRefusal already uses",
+      "src/store.mjs: listEngagements(orgId), queueBuckets(orgId), findBySection(sectionId, orgId) now require orgId and throw without it (fail-closed at the data layer)",
+      "src/server.mjs: wired the three routes through tenantListRefusal + the now-required orgId",
+      "web/api/g126-tenant-list-scope.test.mjs: 6 new tests"
+    ],
+    "testSuite": "npm test: 87/87 passing (81 pre-existing + 6 new)",
+    "pr": { "number": 15, "url": "https://github.com/empressaioemail-tech/plan-review/pull/15", "mergeSha": "59714c19d766c106baf7960fd27ae6f3e88a9a98", "ciConclusion": "SUCCESS (test)" },
+    "deploy": {
+      "canaryRevision": "plan-review-00025-ley",
+      "priorServingRevision": "plan-review-00014-bbg",
+      "trafficShiftedAt": "2026-09-14T19:03:00Z",
+      "servingRevisionConfirmedByFieldName": "resource.labels.revision_name = plan-review-00025-ley on live 401/200 request log lines at 2026-09-14T18:54Z, via gcloud logging read",
+      "gitTag": "deploy/g126-tenant-isolation-00025-ley"
+    }
+  },
+
+  "defect2": {
+    "repo": "smartcity-dashboards",
+    "sourceVerifiedFinding": "smartcity-os's /api/platform/mygov/permits (server/routes/mygov.ts, read-only) hardcodes eq(mygovPermits.tenantId, await getBastropTenantId()) server-side and accepts no caller tenant param; dbPermitToApi, the exact shape it returns, drops tenantId from its output entirely (verified by reading lines 131-160: no tenant/city/jurisdiction field of any kind). This is the dispatch's own named branch: 'if the upstream response carries no tenant field to compare against, that is the finding.'",
+    "theRealReachableGapClosedInstead": "platformGrantForKind gates the real feed on a pack merely HOLDING a {kind:'mygov'} object in grantedAdapters. PLATFORM_MYGOV_PERMITS_GRANT is one city-agnostic constant; a DB-backed pack's grantedAdapters comes straight off a granted_adapters column, settable by an ordinary row write with no code review or deploy. Nothing before this fix stopped a second pack from acquiring that grant and silently relabeling Bastrop's real permits as its own.",
+    "fix": "assertVerifiedMygovTenant(cityKey) in src/mygov-permits.mjs refuses unless cityKey === 'bastrop_tx'. Guarded in composeRealPermits (before the network call) and in mapRealPermitRecord itself, both through the one shared function.",
+    "violationTestBothDirections": {
+      "violationRefused": "mapRealPermitRecord(SAMPLE_ROW, 'template-city', ...) throws /mygov real feed is verified live for bastrop_tx only/; composeRealPermits(TEMPLATE_CITY, ...) rejects with the same message, and a call-tracking spy confirms fetchImpl is never invoked",
+      "legitimateCaseUnaffected": "all 11 pre-existing bastrop_tx-path tests still pass unchanged; full suite 633/633 green"
+    },
+    "whyNoLiveHttpRepro": "No pack besides bastrop_tx holds the mygov grant in production today, so there is no live cross-tenant call to reproduce a leak against over HTTP -- that absence is exactly the 'coincidental, not enforced' framing this mission's preamble uses. The unit-level test is the correct fidelity, matching the fixture side's own paired control (domains.test.mjs) being unit-level too.",
+    "testSuite": "npm test: 633/633 passing (628 pre-existing + 5 new)",
+    "pr": { "number": 59, "url": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/59", "mergeSha": "2c307fd77918f86db1c5ee7606462435323b2d53", "ciConclusions": { "test": "SUCCESS", "a11y": "SUCCESS" } },
+    "deploy": {
+      "canaryRevision": "smartcity-dashboards-00066-wed",
+      "priorServingRevision": "smartcity-dashboards-00064-foq",
+      "trafficShiftedAt": "2026-09-14T19:05:00Z",
+      "servingRevisionConfirmedByFieldName": "resource.labels.revision_name = smartcity-dashboards-00066-wed on live 200 request log lines at 2026-09-14T19:05:11-12Z, via gcloud logging read",
+      "regressionNote": "a pre-existing 403 on the bastrop_tx pipeline route (tenant-auth, G-11, unrelated to this fix) confirmed byte-identical on the currently-serving production revision before any change -- not a regression",
+      "gitTag": "deploy/g126-tenant-isolation-00066-wed"
+    }
+  },
+
+  "defect3": {
+    "repo": "smartcity-os",
+    "touchStatus": "read-only, ABSOLUTE NO-TOUCH honored -- zero files modified, zero live requests made against smartcity-os",
+    "enumerationOfPlatformRoutes": "12 GET routes across 7 files register requirePlatformInternalKey (grepped app.get(...requirePlatformInternalKey across server/routes/*.ts, confirmed no router-mounted /api/platform prefix exists elsewhere via a broader /api/platform text search across 8 files): firstdue.ts (apparatus), goto.ts (call-summary), mygov.ts x5 (permits, work-orders, inspections, code-violations, business-licenses), powerbi.ts (cip-projects), property-intelligence.ts x2 (summary, layers), samsara.ts (vehicles), spireon.ts (vehicles).",
+    "answer": "PLATFORM_INTERNAL_API_KEY itself is bound to no tenant at all -- it is one global bearer secret gating all 12 routes uniformly (requirePlatformInternalKey is a pure token-equality check, and commit d2d3648 (#40, verified at source) added /platform to routes.ts's publicPrefixes allowlist specifically to bypass session/tenant-context middleware, relying on the key alone). Tenant resolution downstream of the key is a per-route implementation choice and is NOT uniform: (1) the 5 mygov.ts platform routes resolve Bastrop by a dynamic, name-based lookup -- getBastropTenantId(), `WHERE tenants.slug = 'bastrop'`, cached after first resolution, falling back to literal 1 only if no such row exists -- a genuine, intentional, non-accidental binding. (2) /api/platform/property-intel/summary resolves its tenant via the bare DEFAULT_TENANT_ID literal (=2), NOT looked up by name, and feeds a real SQL `WHERE tenant_id = $1` filter in getPropertySummary's three sub-queries (getPropertyPermits/getPropertyViolations/getPropertyInspections, server/services/property-intelligence.ts). This is exactly the accidental-default pattern the dispatch flagged: DEFAULT_TENANT_ID was flipped 1->2 in commit 0e5c41e (verified at source) for an unrelated reason (a manager-load roster fix touching three files: mygov.ts, job-queue.ts, property-intelligence.ts), and this route inherited that change incidentally. A second unrelated bump, or a tenant-id renumbering, would silently serve a different tenant's real property data through this one route, with no error and no test to catch it. (3) /api/platform/property-intel/layers uses no tenant id at all -- it queries a Bastrop-specific ArcGIS layer registry directly, single-city by construction. (4) The remaining 5 vendor-integration platform routes (samsara/spireon/firstdue/powerbi/goto) have no tenant concept whatsoever -- each is a direct read from this deployment's own single vendor account/credential (Samsara token, Spireon creds, etc.), correct by construction today because smartcity-os is presently one deployment for one city, not by any tenant-row scoping that could later diverge the way (2) already has once.",
+    "sourceCitations": [
+      "server/routes/mygov.ts:303-308 (getBastropTenantId, name-based, fallback 1)",
+      "server/routes/mygov.ts:309 (DEFAULT_TENANT_ID = 2)",
+      "server/routes/mygov.ts:334-359 (requirePlatformInternalKey, /api/platform/mygov/permits using getBastropTenantId)",
+      "server/routes/property-intelligence.ts:5 (DEFAULT_TENANT_ID = 2, same file's own separate declaration) and :185 (getPropertySummary(DEFAULT_TENANT_ID, ...))",
+      "server/services/property-intelligence.ts:110-111,149-150,193 (real WHERE eq(...tenantId, tenantId) filters)",
+      "server/routes.ts:86-88 (publicPrefixes allowlist including '/platform')",
+      "commit d2d3648 (#40): exempts /platform from session-auth, own-key auth only",
+      "commit 0e5c41e: DEFAULT_TENANT_ID 1->2 across mygov.ts, job-queue.ts, property-intelligence.ts, for an unrelated manager-load-roster reason"
+    ],
+    "coordinationWithG122": "No auth-middleware change proposed or made; this defect's fix shape (replace property-intelligence.ts's DEFAULT_TENANT_ID with a getBastropTenantId()-style lookup) touches the same file G-122 is working on the v1 regression, so it is named here and handed off rather than done."
+  }
+}

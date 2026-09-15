@@ -1,0 +1,57 @@
+{
+  "lane": "g133-bastrop-verify-access",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-15T00:27:41Z",
+  "purpose": "Pilot/mid-work checkpoint: resolved CP1's open questions with live evidence -- Secret Manager enumeration across 2 GCP projects, a direct read-only DB query against the actual credential store (hauska-mcp-server's api_keys table, not smartcity-dashboards' own DB), and live curl reproduction of both surfaces. No secret VALUES printed anywhere in this artifact or in the commands that produced it -- key material was fetched into shell variables, used, and unset; never echoed.",
+
+  "cp1OpenQuestion1_globalGateOnV1": {
+    "finding": "server/routes.ts (smartcity-os) DOES apply a broader gate. Line ~68: `app.use('/api', tenantMiddleware)` then a second app.use('/api', ...) that runs `isAuthenticated` (Passport, session-cookie based -- see replit_integrations/auth/{replitAuth,googleAuth}.ts, `app.use(passport.session())`, backed by connect-pg-simple) for every /api/* path EXCEPT an explicit publicPrefixes allowlist: ['/auth','/demo','/feedback','/chat','/login','/logout','/grant-writer','/analytics','/verkada/webhook','/esri/geocode','/esri/suggest','/esri/geoenrichment','/public/county','/vfd','/calendar','/ai/morning-brief','/ai/city-snapshot','/platform']. Only three of the many /api/esri/* routes are on that list (geocode, suggest, geoenrichment) -- health, parcels, bastrop-parcels, bastrop-zoning, bastrop-city-boundary, bastrop-infrastructure and every other real-data route are NOT public and require a real logged-in session.",
+    "liveReproduction": [
+      { "cmd": "curl https://smartcityos.io/api/esri/health", "result": "HTTP 401, {\"message\":\"Unauthorized\"}" },
+      { "cmd": "curl https://smartcityos.io/api/esri/bastrop-city-boundary", "result": "HTTP 401, {\"message\":\"Unauthorized\"}" }
+    ],
+    "correctedConclusion": "CP1's carried-forward question is answered: v1 is NOT credential-free end-to-end. esri.ts's own middleware needs nothing, but routes.ts's global gate requires a real smartcity-os login session (Google OAuth via Passport) for every actual data route. v1 needs NO Hauska product key (true, and unchanged from CP1) -- but it DOES need its own, completely different credential: a logged-in smartcity-os session cookie. The operator's browser carries that cookie from having logged in; a lane's curl does not, which is exactly and fully sufficient to explain the 401 the operator has never personally seen and a lane always does, without needing to invoke any Hauska mechanism at all for v1."
+  },
+
+  "cp1OpenQuestion2_doesTheBastropTxKeyExist": {
+    "whereChecked": [
+      { "location": "Secret Manager, project smartcity-dashboards (666199866241)", "result": "31 secrets enumerated by name. None resembling a Hauska tenant/product key (dashboards-api-key, database-url, hauska-retrieval-api-key, platform-internal-api-key, smart-files-api-key and 26 unrelated vendor secrets present; no bastrop-anything)." },
+      { "location": "Cloud Run env, smartcity-dashboards service, serving revision smartcity-dashboards-00072-cow (100% traffic, confirmed by field name status.traffic[].revisionName + percent in `gcloud run services describe --format=json`, not the CLI summary line)", "result": "HAUSKA_MCP_URL is set (plain env, https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app) -- this is the ENDPOINT smartcity-dashboards calls to validate a presented key, not a key itself. No env var carries a bastrop_tx key value (correct by design -- this service validates a caller-presented key, it does not hold one of its own)." },
+      { "location": ".env.example, smartcity-dashboards", "result": "Does not even mention HAUSKA_MCP_URL or x-hauska-key at all -- a developer reading only this file would not learn this auth path exists." },
+      { "location": "smartcity-dashboards' own 'tenant-registry' Neon DB (secret database-url, project smartcity-dashboards)", "result": "\\dt shows exactly ONE table, city_packs. Schema has no key/credential/token column of any kind. Row for bastrop_tx: city_key=bastrop_tx, access_policy=tenant-private, environment=staging -- matches G-116's close exactly. This DB stores PACK DEFINITIONS, never Hauska product keys; the repo_intents.md line calling this 'the tenant-registry Neon store' is easy to misread as 'where tenant keys live' when it is actually 'where tenant PACKS live' -- a real naming trap, and very plausibly why G-116/G-128 never looked further once this DB came up empty of anything key-shaped." },
+      { "location": "hauska-mcp-server's OWN Neon DB (secret DATABASE_URL, project hauska-prod-497015) -- the ACTUAL authority /auth/whoami reads from (src/db.ts: api_keys table, findKeyByHash)", "result": "A row EXISTS. See below. This is a different repo, different GCP project, different database than anything any of the three prior lanes' own dispatch scope included -- G-116/G-127/G-128/G-132 were all scoped to smartcity-dashboards/plan-review/smart-files, never hauska-mcp-server." }
+    ],
+    "theKeyRow": {
+      "howChecked": "Read-only SELECT against hauska-prod-497015's DATABASE_URL, fetched via `gcloud secrets versions access` into a shell variable, used only as a psql connection argument, never echoed, unset immediately after. Only non-secret columns selected (key_id, tier, product, jurisdiction_tenant, platform_internal, status, owner_email, owner_name, notes, created_at, last_used_at) -- key_hash (the one column that is secret-shaped, a one-way hash of the actual key) was never selected or seen.",
+      "row": {
+        "key_id": "2a26c318-271d-414c-967d-caba619a6f73",
+        "tier": "team",
+        "product": "public",
+        "jurisdiction_tenant": "bastrop_tx",
+        "platform_internal": false,
+        "status": "active",
+        "owner_email": "empressaioemail@gmail.com",
+        "owner_name": "Nick (bastrop_tx staff pilot)",
+        "notes": "G-116 real staff auth for the bastrop_tx pack on smartcity-dashboards. Resolves via resolveHauskaTenant -> jurisdiction_tenant, for UI QA of the real Bastrop dashboard.",
+        "created_at": "2026-09-03T19:23:47.370573+00",
+        "last_used_at": "2026-09-14T20:31:55.605045+00"
+      },
+      "significance": "This key was created THE SAME DAY as G-116's close (2026-09-03), for exactly the purpose G-116/G-128 both said was blocked, and its own notes name G-116 explicitly. It is ACTIVE and was LAST USED TODAY (2026-09-14, ~3.5 hours before this dispatch's timestamps), meaning it authenticated successfully against hauska-mcp-server as recently as this afternoon. The credential is not missing. It has never been absent since 2026-09-03."
+    },
+    "decoyRuledOut": {
+      "row": { "key_id": "a135fdf7-98aa-4a88-81c7-71ec7f861a23", "jurisdiction_tenant": "bastrop-tx (HYPHEN, not underscore)", "status": "revoked", "created_at": "2026-07-07", "notes": "temp probe key, revoke after a4b verification" },
+      "why_not_the_answer": "Different tenant string entirely (hyphen vs underscore -- would fail callerIsPackSubject's exact-string comparison even if active), already revoked, predates G-116 by nearly two months, tied to an unrelated card (a4b). Checked and excluded rather than left ambiguous, since two near-identical strings for the same real city is exactly the kind of thing DEV_PROCESS's 'two values that should agree and don't' rule exists to catch -- in this case they were never meant to agree; they are two different keys for two different purposes, one dead."
+    }
+  },
+
+  "revisionVerification": {
+    "smartcityDashboards": "status.traffic[] read by field: revisionName=smartcity-dashboards-00072-cow, percent=100. Matches G-128's own close (filed ~22:44 today) exactly -- no drift since.",
+    "hauskaMcpServer": "status.latestReadyRevisionName=hauska-mcp-server-00092-pur (service URL https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app, matches smartcity-dashboards' own HAUSKA_MCP_URL exactly). Live-probed anonymously: GET /auth/whoami -> HTTP 200, {\"anonymous\":true,\"jurisdiction_tenant\":null} -- confirms the route exists, is deployed, and behaves exactly as tenancy.mjs's resolveHauskaTenant expects for a caller presenting no/invalid key."
+  },
+
+  "carriedToClose": [
+    "The crux is now fully resolved with live evidence, not inference: two unrelated auth mechanisms, both genuinely working, neither one broken -- a lane's curl satisfies neither.",
+    "The bastrop_tx Hauska key is a real, active, personally-owned (operator's own email) credential that has simply never reached any lane's own environment, Secret Manager, or documentation -- a pure distribution gap, located in a repo (hauska-mcp-server) none of the three blocked lanes' own dispatch scope ever included.",
+    "Recommendation shape for the close: do NOT provision a new key (one exists and is active) -- the follow-on is making the EXISTING key (or a purpose-built duplicate scoped to lane verification rather than reusing the operator's personal pilot credential) reachable from smartcity-dashboards' own Secret Manager / .env.example, which is a distribution/documentation fix, not a provisioning one."
+  ]
+}

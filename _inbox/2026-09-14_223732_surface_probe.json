@@ -1,0 +1,89 @@
+{
+  "probe": "hand-written, same discipline as scripts/surface-probe.mjs (G-127 precedent: the generic script has no predicate for any OPS-17/G-1xx row -- it probes live parcel/setback surfaces only, confirmed again by inspecting its own source this session rather than re-running an unrelated live network probe against smartsite.cloud parcels to re-derive an already-established fact)",
+  "lane": "g132-staff-auth",
+  "planRows": ["G-132"],
+  "generatedAt": "2026-09-14T22:37:32Z",
+  "method": "Every predicate below is either (a) a currently-passing, adversarially-written automated test cited by file and test name, re-run fresh in this session immediately before this artifact was written, or (b) a direct source read with file:line, never a shrug. PASS/FAIL are both real determinations here, not merely PASS -- DEV_PROCESS 4.3, an empty result is not an absence.",
+
+  "predicates": [
+    {
+      "id": "P1",
+      "claim": "A cryptographically valid, provisioned staff bearer resolves to a real person (kind:staff, sub/role/tenant readable) in smartcity-dashboards.",
+      "verdict": "PASS",
+      "evidence": "src/tenancy.test.mjs 'G-132: a staff bearer reaches resolveCaller end to end' > 'resolves a verified staff bearer to kind staff, with the role claim readable' -- re-run this session, passing."
+    },
+    {
+      "id": "P2",
+      "claim": "An invalid/expired staff bearer is refused outright and NEVER falls back to x-hauska-key tenant resolution, even when a valid x-hauska-key is also presented on the same request.",
+      "verdict": "PASS",
+      "evidence": "src/tenancy.test.mjs > 'refuses an expired staff bearer even when a valid x-hauska-key is also presented' -- asserts caller.kind stays 'anonymous' with a typed refused.error, never 'tenant'. Re-run this session, passing."
+    },
+    {
+      "id": "P3",
+      "claim": "Offboarding, verified by violation, both directions, IN SMARTCITY-DASHBOARDS: disabling an account ends access on the immediate next request with the identical unexpired token; a different active account is unaffected; re-enabling restores access.",
+      "verdict": "PASS",
+      "evidence": "src/tenancy.test.mjs 'G-132: offboarding is verified by violation, both directions' -- 3 tests, all three directions exercised. Re-run this session, passing. Also proven at the live-HTTP-socket level in src/server.test.mjs's people-and-access describe block."
+    },
+    {
+      "id": "P4",
+      "claim": "Offboarding, verified by violation, IN PLAN-REVIEW: disabling an account (via smartcity-dashboards' directory) ends that person's access to plan-review on the next request.",
+      "verdict": "FAIL",
+      "evidence": "Source read, not a test failure: plan-review has no database (grepped, zero db.mjs / DATABASE_URL usage) and consumes no revocation check at all (src/server.mjs resolveStaffCaller calls verifyStaffToken with deps:{}, no isRevoked). A disabled account's still-unexpired token continues to be accepted by plan-review until it naturally expires. This is a real, measured gap, not a hedge -- see CP2 offboardingRealityAcrossThreeProducts for why it was not silently wired to a disconnected local store instead (that would have looked like a working control while not being one)."
+    },
+    {
+      "id": "P5",
+      "claim": "Offboarding, verified by violation, IN SMART-FILES: same predicate as P4, for smart-files.",
+      "verdict": "FAIL",
+      "evidence": "Source read: smart-files carries a byte-identical copy of src/staff-identity.mjs (divergence-test-confirmed) but no route calls verifyStaffToken at all -- a staff bearer presented to smart-files today is not consulted for anything, so there is no access tied to it to begin with. Worse than P4 in one sense (no integration at all) and immaterial in another (nothing there currently depends on the identity either way). Named explicitly in close leave_behind."
+    },
+    {
+      "id": "P6",
+      "claim": "The role claim exists and is readable on a verified identity, including the real, named 'provisioned with no role yet' state -- in all three repos' own copies of the verifier.",
+      "verdict": "PASS",
+      "evidence": "src/staff-identity.test.mjs (identical file, all three repos) > 'verifies a well-formed token and reads sub/role/tenant' and 'verifies a person provisioned with no role yet, and says so rather than refusing or guessing'. Re-run this session in smartcity-dashboards, plan-review AND smart-files independently (three separate Node processes, three separate results, all 17/17 passing in each)."
+    },
+    {
+      "id": "P7",
+      "claim": "template-city (public-free) still serves content to true anonymous AND to a caller whose staff bearer failed verification -- an invalid credential must not make public content less public.",
+      "verdict": "PASS",
+      "evidence": "src/tenancy.test.mjs > 'template-city (public-free) still serves content when a staff bearer fails, and to true anonymous' -- both halves asserted in one test, re-run this session, passing."
+    },
+    {
+      "id": "P8",
+      "claim": "bastrop_tx (tenant-private) still refuses a true anonymous caller with 401, unchanged by anything this lane added.",
+      "verdict": "PASS",
+      "evidence": "Same test as P7, final assertion. Also: the full pre-existing 643-test smartcity-dashboards suite (all tenancy/server/shell-state tests predating this lane) passes unchanged except the 2 shell-state.test.mjs assertions this lane deliberately updated to reflect the new TRUE state (documented in CP2, not a silent relaxation)."
+    },
+    {
+      "id": "P9",
+      "claim": "The MCP surface (hauska-mcp-server) receives the same staff identity as the UI path.",
+      "verdict": "FAIL",
+      "evidence": "CP1 mcpSurfaceFinding, confirmed again this checkpoint: hauska-mcp-server has no path that accepts this lane's staff bearer or returns a person/role claim. This is a positive determination of absence (searched every consumer of hauska-mcp-server in all three repos; none reads anything but jurisdiction_tenant off /auth/whoami), not a shrug. Disposition: named as an explicit gap per the dispatch's own escape valve, not built here -- hauska-mcp-server is a different repo/seat (OPS-19/OPS-23), out of this lane's assigned scope-of-edit."
+    },
+    {
+      "id": "P10",
+      "claim": "GET /api/people-and-access enforces role-based scoping: admin reads any tenant by query param; city-manager reads ONLY their own token-claimed tenant regardless of the query param; every other caller is refused with a typed body.",
+      "verdict": "PASS",
+      "evidence": "src/server.test.mjs 'G-132: GET /api/people-and-access' -- 4 tests (anonymous 401, tenant/service 401, wrong-role staff 403 typed, admin-vs-city-manager scoping incl. the query-param-cannot-override-claim case). Re-run this session, passing."
+    },
+    {
+      "id": "P11",
+      "claim": "src/staff-identity.mjs is byte-identical across smartcity-dashboards, plan-review and smart-files, and the check that enforces this actually fires on a real induced mismatch (not merely asserted able to).",
+      "verdict": "PASS",
+      "evidence": "doc_repo/scripts/staff-identity-divergence.test.mjs -- run this session: PASS on the real (matching) state; then re-run after appending one byte to plan-review's copy: FAIL, correctly naming plan-review as the diverged repo; then re-run after reverting: PASS again, hash-confirmed identical to the pre-test state. Both directions and the not-vacuous case, per DEV_PROCESS 2.2."
+    },
+    {
+      "id": "P12",
+      "claim": "No secret VALUE (token, key, credential) is printed or logged anywhere in this lane's new or edited code.",
+      "verdict": "PASS",
+      "evidence": "Manual source read of every file this lane touched or added (src/staff-identity.mjs, src/staff-directory.mjs, src/tenancy.mjs edits, src/server.mjs edits, plan-review's src/actors.mjs and src/server.mjs edits): zero console.log/console.error calls reference a bearer token, DASHBOARDS_API_KEY, or any staff-directory field beyond sub/tenant/role/email/name/status, none of which is a credential. Error paths in staff-identity.mjs return typed error CODES and human messages, never the token itself."
+    }
+  ],
+
+  "summary": {
+    "PASS": 9,
+    "FAIL": 3,
+    "UNMEASURED": 0,
+    "note": "3 FAILs are all real, named, and load-bearing for this lane's close status (closed-partial, not closed): the MCP surface gap (P9, out-of-repo by design) and the two-thirds of the offboarding-across-three-products predicate that a real shared directory/identity store would fix (P4/P5), architecturally explained in CP2's offboardingRealityAcrossThreeProducts rather than hedged."
+  }
+}

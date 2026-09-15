@@ -1,0 +1,34 @@
+{
+  "lane": "g127-rbac",
+  "checkpoint": "CP2 pilot/mid-work -- in this lane's case, the design-constraint and gate analysis that determines whether to build or to stop",
+  "planRows": ["G-127"],
+  "probeArtifact": "_inbox/2026-09-14_203900_surface_probe.json",
+
+  "defaultRecommendation": {
+    "question": "Deny-by-default with grants, or allow-by-default with restrictions?",
+    "answer": "Deny-by-default. This is answerable now, without an operator ruling: the mission's own text already states the house position ('the standing posture here is that a control which cannot refuse is not a control'), and it is consistent throughout AGENT_CONTRACT/DEV_PROCESS (fail-closed language runs through both, e.g. AGENT_CONTRACT's write-slot law, DEV_PROCESS 4.3's 'silent fallbacks are the defect class this program hunts'). This is the one design constraint this lane resolves outright rather than routing to the operator."
+  },
+
+  "theThreeQuestionGate": {
+    "1_whatExecutes": "Nothing, today, for the DEPARTMENT dimension specifically. What DOES exist executes at a coarser grain: smartcity-dashboards' packContentReadStatus(pack, caller) (city-tenant only, src/tenancy.mjs + server.mjs:423-519); plan-review's and smart-files' resolvePersona/engagementCrossTenantRefusal (org-tenant only, both actors.mjs). None of these three is a middleware, query filter, or type keyed to department -- confirmed by full reads, not inferred.",
+    "2_whatTriggers": "For the tenant-level checks that exist: every request presenting x-hauska-key (dashboards) or x-persona (plan-review, smart-files). For department separation specifically: nothing, because there is no department claim anywhere in any request's identity resolution to trigger on.",
+    "3_whatFailsAndWhereItRuns": "Nothing fails, because nothing checks. Concretely, in production today: a Bastrop persona/tenant credential for ANY purpose reads ALL 11 smartcity-dashboards domains (via GET /api/domains/:id, server.mjs:480), including work-orders' unredacted citizen free text and code-violations' officer names and complaint addresses; and the single bastrop_tx Plan Review / Smart Files persona, literally labeled \"Development services staff,\" is what every real Bastrop staff member of every department authenticates as today, per G-115 item 5's own pilot ruling.",
+    "4_whatBypasses": "Not applicable in the usual sense (there is no control yet to bypass), but naming it per the mission's own instruction: even a well-built department gate on the three products' own routes would still face (a) smartcity-os's /api/platform/mygov/* routes, gated by ONE shared bearer key with no per-caller scoping beneath it at all (G-126 close, defect 3, read-only finding, unchanged by this lane); (b) the x-persona/x-hauska-key headers themselves, both client-asserted and, per plan-review's own actors.mjs comment, trivially settable by any caller; (c) any future export route, MCP tool, or cached response reading the same underlying stores outside the routes actually gated."
+  },
+
+  "sharedModelQuestion": {
+    "question": "Does the role model belong in one place all three products consume, or in each?",
+    "finding": "plan-review and smart-files ALREADY duplicate one persona list verbatim across repo boundaries -- both files carry an explicit comment that the two lists 'must match... exactly, or a write 400s.' This is the CTRL-1 shape DEV_PROCESS 2.4 names directly: 'when one rule has two implementations, the divergence test IS the control... adding [a value] means editing one data file, never two code paths.' A third, independently-maintained department-role copy in smartcity-dashboards (which today has no persona concept at all, only city tenancy) would make it three, compounding a pattern this program has already paid to fix once (CTRL-1/2/3 in the doc-repo control plane itself).",
+    "complication": "A genuinely single source of truth across THREE SEPARATE REPOS/SEATS (smartcity-dashboards, plan-review, smart-files) is not a data-file edit the way _catalog/plan_registry.json was for doc_repo's own dispatch/hook pair -- it requires either a shared package those repos import, a config file each reads at build/deploy time, or a runtime identity service one product issues and the others trust. None of that infrastructure exists today; building it is a larger undertaking than this dispatch scopes, and deciding its shape is exactly the kind of structural call DEV_PROCESS 5.4 assigns to the operator ('Propose; do not unilaterally remediate... retirements[,] and deletions are operator rulings' -- the retirement of the shared-QA_PERSONAS-copy pattern is the retirement in question here).",
+    "recommendation, not a ruling": "One shared source of truth is the right direction on the evidence above; this lane does not pick its concrete shape (package vs. config vs. service) because that shape depends on decisions the operator has not made yet (see below)."
+  },
+
+  "whyThisStopsHereRatherThanBuilding": [
+    "No staff-level authentication exists in ANY of the three products today. smartcity-dashboards can only tell you WHICH CITY a request claims (resolveCaller: tenant/service/anonymous, never a person). plan-review and smart-files can only tell you which of a handful of hardcoded QA personas a request asserts, and Bastrop has exactly one, undifferentiated by department. 'RBAC by department' presupposes a per-person identity to hang a department claim on; that identity layer does not exist, so this mission cannot build a role layer without first building (or being told where to plug into) real staff login -- a materially larger and different piece of work than authorization.",
+    "The department roster is not established (CP1 departmentRosterCheck: UNMEASURED, no authoritative source found) and the mission explicitly forbids inferring it from the product's own lens/domain list.",
+    "The shared-model question above resolves to 'probably one place, shape undetermined' -- undetermined because it depends on the identity-layer decision above, which is the operator's to make.",
+    "This is the exact scenario the mission's own Close section names by name: 'If the right answer is that this needs an operator ruling before it can be built... say that and stop, rather than picking one and building it. A permissions model chosen by an agent and discovered later by the operator is worse than a day of delay.'"
+  ],
+
+  "decision": "STOP. Do not build. File CLOSE with status blocked, carrying the specific questions the operator needs to rule on and this lane's recommendation for each, so the ruling requires no further investigation."
+}
