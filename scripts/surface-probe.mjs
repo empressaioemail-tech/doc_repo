@@ -562,7 +562,12 @@ export const ROWS = {
       const nodePropId = s.firstParcelNodeId.split(":")[1];
       const nodeOk = a.ids.includes(nodePropId);
       const label = f.composedAddress ?? f.situsAddress ?? "";
-      const labelOk = new RegExp("^" + a.houseNumber + "\\s+" + a.street + "\\b", "i").test(label);
+      // P-160 ruling 2026-09-14 (A-147): a lot whose roll carries no house number prints the roll's numberless situs;
+      // the card label is right when it is the numbered address OR the numberless street while the search hit carried the number.
+      const numbered = new RegExp("^" + a.houseNumber + "\\s+" + a.street + "\\b", "i");
+      const streetOnly = new RegExp("^" + a.street + "\\b", "i");
+      const hitNumbered = numbered.test(s.firstSitusAddress ?? "");
+      const labelOk = numbered.test(label) || (streetOnly.test(label) && hitNumbered);
       const distM = f.recordPoint ? Math.round(haversineM(f.recordPoint, a.point)) : null;
       const g = legs.gisRing;
       const ringId = g?.measured ? (g.containingFeatureId ?? null) : null;
@@ -851,6 +856,8 @@ function selfTest() {
   check("P-175 FAILS on the 2026-09-12 chimera (the lot's polygon, Mesa Verde label)", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit629, facets: chimera, gisRing: ringLot }, null).verdict === "FAIL");
   check("P-175 FAILS when the address is located but unbound (an address-point hit with no node id)", ROWS["P-175"].evaluate(k615, { situsSearchCity: { measured: true, http: 200, hitCount: 1, firstParcelNodeId: null }, facets: { measured: false } }, null).verdict === "FAIL");
   check("P-175 PASSES when the CAD-account node carries the lot's label, the county polygon at the point is the lot, and flood is present", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: ringLot }, null).verdict === "PASS");
+  check("P-175 PASSES on a numberless roll situs when the search hit carried the number (A-147 label leg)", ROWS["P-175"].evaluate(k615, { situsSearchCity: { measured: true, http: 200, hitCount: 1, firstParcelNodeId: "48209:97651", firstSitusAddress: "615 STURGEON DR, San Marcos, TX, 78666" }, facets: { ...fixed629, composedAddress: "STURGEON DR, SAN MARCOS, TX 78666" }, gisRing: { ...ringLot, containingFeatureId: "97651" } }, null).verdict === "PASS");
+  check("P-175 FAILS on a numberless label when the search hit carried no number either", ROWS["P-175"].evaluate(k615, { situsSearchCity: { measured: true, http: 200, hitCount: 1, firstParcelNodeId: "48209:97651", firstSitusAddress: "STURGEON DR" }, facets: { ...fixed629, composedAddress: "STURGEON DR, SAN MARCOS, TX 78666" }, gisRing: { ...ringLot, containingFeatureId: "97651" } }, null).verdict === "FAIL");
   check("P-175 PASSES on the TxGIO-id node too when its label is the lot's (either published identifier is the lot)", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit629, facets: fixed629, gisRing: ringLot }, null).verdict === "PASS");
   check("P-175 FAILS when the search resolves to a node that is none of the lot's identifiers", ROWS["P-175"].evaluate(k629, { situsSearchCity: { ...hit629, firstParcelNodeId: "48209:128076" }, facets: fixed629, gisRing: ringLot }, null).verdict === "FAIL");
   check("P-175 FAILS when the county layer names another parcel at the address point", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: ringOther }, null).verdict === "FAIL");

@@ -1,0 +1,78 @@
+{
+  "lane": "p167-strings",
+  "planRows": ["P-167"],
+  "status": "closed-partial",
+  "probe": {
+    "artifact": "_inbox/2026-09-13_215403_surface_probe.json",
+    "command": "node scripts/surface-probe.mjs --rows P-167 --observations _inbox/2026-09-13_p167-strings_observations.json --allow-unmeasured",
+    "summary": "PASS 0, FAIL 5, UNMEASURED 0 -- the row FAILS on all five probe parcels, on strings, not on missing legs. Every parity lock stays deleted and the package (1.34.0) is imported correctly by hauska-map and hauska-engine, but displayStringsIdentical reads false on all five: two real, precisely root-caused, currently-live divergences remain (legacy-design-tools has not consumed 1.34.0; the zoningProvenance allowlist gate is not open for the probe parcels' county), plus the PDF leg could not be measured fresh due to an apparent stuck async export job unrelated to this fix. This lane ran the instrument itself against its own live post-deploy observations so the close cites a concrete, reproducible artifact rather than a promise."
+  },
+  "prs": [
+    {
+      "repo": "hauska-atom-contract",
+      "number": 31,
+      "title": "feat(display): no-zoning-stamp vocabulary entry (1.34.0)",
+      "mergeCommit": "7450249b97403c4e80a7f3c094f70a903a994ac2",
+      "mergedAt": "2026-09-13T21:01:32Z",
+      "ciConclusions": "gh pr checks 31: lint+typecheck+test (18.x, 20.x, 22.x) -- 3 of 3, unique conclusion set [\"pass\"]"
+    },
+    {
+      "repo": "hauska-engine",
+      "number": 440,
+      "title": "fix(P-167): PDF labels read from shared vocabulary, not hardcoded literals",
+      "mergeCommit": "3a4874a8aceec09cb313cf23fbc333802efa2af1",
+      "mergedAt": "2026-09-13T21:30:23Z",
+      "ciConclusions": "gh pr checks 440: typecheck + test -- 1 of 1, conclusion [\"pass\"] (branch was merged with origin/main mid-flight after a sibling lane's PR #439 landed first; CI re-ran clean on the merge commit before this lane merged)"
+    },
+    {
+      "repo": "hauska-map",
+      "number": 399,
+      "title": "feat(P-167): zoningProvenance wire field + no-zoning-stamp vocabulary convergence",
+      "mergeCommit": "9841c1bc0b86d450642d4617a9dca99c9a603b25",
+      "mergedAt": "2026-09-13T21:35:00Z",
+      "ciConclusions": "gh pr checks 399: No double-encoded source, Typecheck, test -- 3 of 3, unique conclusion set [\"pass\"]"
+    }
+  ],
+  "npmVersion": {
+    "packageVersion": "1.34.0",
+    "publishMethod": "git tag v1.34.0 pushed against the merge commit -> .github/workflows/publish.yml (push-on-tag trigger), run 34782658177, conclusion success",
+    "verifiedLive": "npm view @empressaio/atom-contract dist-tags --json => {\"latest\":\"1.34.0\"} (confirmed after a ~15s registry-propagation delay; the check taken immediately after the workflow completed still 404'd on 1.34.0 and showed latest=1.33.1)",
+    "reportedToPlannerPromptly": true
+  },
+  "revisionsAndDeploysByField": {
+    "hauska-engine-api": {
+      "lease": "_catalog/leases/hauska-engine-api.json, taken 2026-09-13T21:32:07Z, deleted 2026-09-13T21:55:00Z after verification",
+      "build": "gcloud builds submit --config cloudbuild.engine-api.yaml . (from the dedicated P:/seat-worktrees/dispatch-planner/hauska-engine-api-deploy worktree, updated to merge commit 3a4874a8 first) -> build c758fc9c-c5ae-48f4-a659-2a05ec7596c1, SUCCESS, image sha256:4b0daaf835faddc12eba6b348f0a58abb8a4f38c59786a3351a57c50045d56d6",
+      "deploy": "gcloud run deploy hauska-engine-api --image=...@sha256:4b0daaf8... --no-traffic --tag=p167-strings -> revision hauska-engine-api-00217-gir created serving 0%; smoke-probed /health on the canary tag URL (status ok) before shifting; gcloud run services update-traffic hauska-engine-api --to-revisions=hauska-engine-api-00217-gir=100",
+      "servingRevisionByFieldName": "gcloud run services describe hauska-engine-api --format=value(status.latestReadyRevisionName) => hauska-engine-api-00217-gir; status.traffic shows percent:100 on that revision. Production /health (https://hauska-engine-api-h7gvu7rgcq-uc.a.run.app/health) returns status ok with startedAt matching this deploy's timestamp.",
+      "contentVerification": "Downloaded the EXACT Cloud Build source tarball for build c758fc9c (gs://hauska-prod-497015_cloudbuild/source/1789335137.612464-...tgz#1789335153279121, the generation named in the build's own sourceProvenance) and confirmed by direct file inspection: packages/engine-core/src/site-plan/author.ts contains the new absence.reason-preferring read (not the old raw absence.kind read); packages/atom-contract-pin/package.json and packages/engine-core/package.json both pin @empressaio/atom-contract@^1.34.0. This is the same content-not-timestamp verification method AGENT_CONTRACT and the wave-4 close used.",
+      "postDeployFinding": "The feasibility-export async job pipeline (POST .../feasibility-export/refresh, GET .../feasibility-export/download) served byte-identical, pre-deploy-timestamped PDFs on 4 separate calls across 3 parcels in this session despite refresh triggers and real wall-clock gaps between calls -- consistent with a stuck job never leaving state:'running' for these specific parcels (a pre-existing characteristic this lane did not cause and could not resolve within session; the direct HTTP refresh/status endpoints 401 with gate_front_context_required for any caller outside the gate-proxied path, so this lane could not inspect job state directly). Flagged as leave_behind, not silently worked around and not claimed fixed."
+    },
+    "hauska-map": {
+      "lease": "_catalog/leases/hauska-map.json, taken 2026-09-13T21:52:00Z, deleted 2026-09-13T21:55:00Z after verification",
+      "deploy": "npx vercel deploy --yes (preview) from the repo root, linked to the existing property-explorer project (prj_vcZGXbqdffk5C20WzaplEpzFynK3); smoke-tested the preview URL's /api/spine/property-atoms/48453:474034/facets before promoting; npx vercel deploy --prod --yes promoted and re-aliased https://smartsite.cloud",
+      "servingRevisionByFieldName": "vercel deploy --prod output: deployment dpl_Dg4QKryToyhmnCu3x8o7XAwTFsWM, readyState READY, target production, aliased to smartsite.cloud",
+      "postDeployHealthCheck": "curl https://smartsite.cloud/api/spine/property-atoms/48453:474034/facets returns facets.envelope.disclosure = 'No zoning district observed for parcel — honest absence, no fallback district invented.' -- the exact new vocabulary sentence, live, on production, confirmed after the deploy.",
+      "buildWarningNote": "The Vercel build logged ~15 pre-existing TypeScript narrowing errors in files this lane did not touch (api/pe-terrain-export.ts, api/pe-who-serves.ts, api/_lib/pe-bastrop-per-parcel-setback.ts) plus two in verdict-layer-merge.ts that are pre-existing (LayerAbsenceWire has never had a district field; this lane only added an OPTIONAL provenance field, which cannot itself make a previously-valid assignment invalid). This lane's own `npx tsc --noEmit` from apps/property-explorer (the same scope + tsconfig the app's own CI Typecheck job uses, which PASSED on PR #399) was clean both before and after these observations; the Vercel build treats these as non-fatal (readyState READY both times, real JS shipped) -- a Vercel-specific per-file compilation quirk, not a regression this lane introduced, confirmed by the live facets probe above actually working."
+    }
+  },
+  "table": {
+    "48021:34049": "Not exercising this lane's three reasons directly (has a resolved district; setback-source divergence is P-152/P-154 territory). PDF leg unmeasured fresh (stale cache).",
+    "48021:33223": "Not exercising this lane's three reasons directly. PDF leg unmeasured fresh (not attempted).",
+    "48453:113408": "no-zoning-stamp: panel CORRECT (live, humanized disclosure); MCP still raw (legacy-design-tools not updated this wave, leave_behind). PDF leg unmeasured fresh (stale cache, pre-dates deploy).",
+    "48453:474034": "no-zoning-stamp: panel CORRECT (live, humanized disclosure, confirmed 3x); MCP still raw (same leave_behind). PDF leg unmeasured fresh (stale cache x3, byte-identical across calls).",
+    "48453:367134": "atom_path_pending buildable text: MCP already correct and unchanged ('Withheld, setbacks unruled'); this lane's PDF fix makes the same call (proven by unit test + source-content inspection), not confirmed on a fresh live PDF. zoningProvenance: MCP HAS the citation URL for this parcel; panel does NOT show it yet because the zoningProvenance rail is not allowlisted as record-served for Travis county (a separate gating decision, not this lane's wiring, which is unit-tested correct with real fixtures)."
+  },
+  "falsifier": "Pre-registered at CP1 (three falsifiers): (1) 'if any string differs on any surface, name the surface, disposition and string' -- true on all 5 parcels, named precisely above and in the observations file, root-caused rather than hand-waved. (2) 'if the parity guard passes while a consumer hardcodes a defined token, the guard is vacuous' -- this lane's own new atom-contract test (wire.test.ts, 'no-zoning-stamp has its own VOCABULARY row') and hauska-engine tests (feasibility-author.test.ts, author.test.ts) were verified to FAIL against the pre-fix code before being committed, so they are not vacuous. (3) 'naively substituting buildableVocab.pdfLabel for the site-model.ts hardcode would leak a raw figure (R-2 violation)' -- confirmed TRUE by reading buildable.ts's pdfLabel branches before writing any diff; the actual fix routes through envelopeHuman('atom_path_pending') instead, which was the CP1-predicted resolution and holds.",
+  "contradicted": "Two things the dispatch/mission implicitly assumed turned out to need correction, both caught before being acted on wrongly: (1) 'site-model.ts:658-660 reads pdfLabel from the vocabulary' cannot mean a literal substitution of buildableVocab.pdfLabel for those two dispositions -- that field IS the raw figure for buildable-with-area/provisional and substituting it would violate R-2; the actual fix reads a DIFFERENT vocabulary call (envelopeHuman('atom_path_pending')) that describes the same real-world situation without leaking a number. (2) The dispatch's phrase 'bump the three consumers' pins' cannot be completed by this lane alone -- legacy-design-tools is not a registered worktree for wave 5 (only hauska-atom-contract, hauska-engine and hauska-map are), and bumping its package.json pin (already done in wave 4, caret-compatible) does not by itself move its committed pnpm-lock.yaml off the exact 1.33.1 resolution; that needs a lockfile refresh and redeploy in a repo this lane has no write path to this wave. Everything else in the dispatch's own 'what is true today' and CP1's own source investigation held.",
+  "leave_behind": [
+    "legacy-design-tools (artifacts/smartsite-mcp): its 7 importers are pinned ^1.33.1 (caret, satisfies 1.34.0) but its committed pnpm-lock.yaml still resolves the exact 1.33.1 tarball, confirmed live this session (get_smart_site still shows the raw 'no-zoning-stamp' code on two parcels). It already imports envelopeHuman generically from the package (tool-honesty.ts), so the fix needs ONLY a pnpm-lock.yaml refresh to 1.34.0 + a redeploy -- no code change. This lane has no registered worktree there this wave; needs a small dedicated lane or fold-in.",
+    "hauska-engine-api's feasibility-export async job pipeline appears to have one or more stuck jobs (state never leaving 'running') for at least 48453:474034 (confirmed stale across 3 calls with real time gaps), 48453:113408, and 48021:34049. This blocked live PDF verification for this lane's own fix and will block every future lane's PDF-leg probes on these parcels until whichever lane owns retrieval-api storage clears or expires the stuck job rows. Not this lane's storage schema to touch blind.",
+    "zoningProvenance is wired correctly end-to-end (unit-tested with real Bastrop parcel_record_cell fixtures) but has zero live customer-visible effect on any of the 5 probe parcels today, because the zoningProvenance rail is not allowlisted as record-served for Bastrop or Travis county in parcelRecordAllowlist.ts. Whichever lane owns that allowlist should flip it once ready; this lane's wiring will pick it up with no further code change.",
+    "The P-152/P-154 setback-number and P-153 figure-in-payload/wrong-parcel divergences on 48021:34049 and 48021:33223, reconfirmed live by this session's own surface-probe run (FIGURE-IN-PAYLOAD and WRONG-PARCEL findings), are unchanged and not this lane's to fix -- cited here only because the probe surfaced them again.",
+    "This close's probe artifact used --allow-unmeasured for the non-P-167 legs (cortex node, situs city) that require CORTEX_API_BASE/CORTEX_SERVICE_API_KEY/CORTEX_API_KEY_HEADER env vars this session did not have configured; these do not affect the P-167 row's own predicate, which reads only facets + _vocab."
+  ],
+  "missionPremise": "OPS-23 P-167 wave 5: the same display vocabulary, published as @empressaio/atom-contract@1.34.0 and consumed identically by the panel, the MCP and the PDF, closes the three remaining named reasons the strings differ (no-zoning-stamp unhumanized; hauska-engine's hardcoded PDF buildable-refusal literal; a missing zoningProvenance wire field) -- the row's completion predicate is byte-for-byte string identity across all three surfaces for the fixed parcel set (R-4).",
+  "completionPredicate": "PASS requires, per parcel: displayStringsIdentical=true AND globally: parityLockDeleted=true, packageVersion=1.34.0, importers=[hauska-map,hauska-engine,legacy-design-tools] all verified at pin. This lane closes the code-correctness half of all three reasons in the two repos it owns (hauska-atom-contract, hauska-engine, hauska-map), verified by new regression tests that fail against the pre-fix code and by direct inspection of deployed, running production content -- but the row's own predicate still reads FAIL on all five parcels today, for two named, root-caused, currently-live reasons entirely outside this lane's registered scope (legacy-design-tools' lockfile; the zoningProvenance allowlist gate) plus one unmeasured leg (a pre-existing stuck async job blocking fresh PDF probes). This close reports closed-partial rather than closed because the customer surface, not the merged code, is the predicate (R-4), and the customer surface still disagrees.",
+  "scopeBasis": "OPS-23 sections 0, 2 (F19), 3 (R-1..R-6), 7; the wave-5 dispatch's explicit three build items and 'Where you work' (three registered worktrees only, excluding legacy-design-tools) and its out-of-scope list (no new dispositions, no setback values). The R-2 figure-leak avoidance in the site-model.ts fix and the allowlist-gating boundary on zoningProvenance are both scoped by the dispatch's own 'do not widen a check to admit a value it does not satisfy' and 'do not fix a naming mismatch by renaming' instructions, applied to a real tension this lane found rather than a hypothetical one."
+}

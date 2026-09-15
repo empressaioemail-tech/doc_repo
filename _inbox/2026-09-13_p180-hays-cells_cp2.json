@@ -1,0 +1,495 @@
+[
+  {
+    "lane": "p180-hays-cells",
+    "planRows": [
+      "P-180"
+    ],
+    "checkpoint": "CP2",
+    "kind": "writer-fix/pre-rerun",
+    "at": "2026-09-14T00:10:00Z",
+    "coordinatorApprovalActedOn": "CP1 review message: writer redirection confirmed (hauska-factory parcel-record-fill.mjs, not hauska-engine); open hauska-factory-p180-hays-cells + legacy-design-tools-p180-hays-cells only; new local module, not extending ops21-h1-crosswalk.mjs; reuse SEED_BLOCKED_FIPS from cad-txgio-alias-counts.mjs. All four followed.",
+    "worktreesCreated": [
+      {
+        "name": "hauska-factory-p180-hays-cells",
+        "path": "P:/seat-worktrees/property/hauska-factory-p180-hays-cells",
+        "branch": "fix/p180-hays-cells-crosswalk",
+        "startCommit": "97b93877c1dbb5598942821a553e50d0d677a006 (origin/main, contains P-177's PR #144)",
+        "seatRegisterUpdated": true
+      },
+      {
+        "name": "legacy-design-tools-p180-hays-cells",
+        "path": "P:/seat-worktrees/property/legacy-design-tools-p180-hays-cells",
+        "branch": "fix/p180-structural-fact-crosswalk",
+        "startCommit": "18704d8aeba922c1f75cad0d548c3de8b4065968 (origin/main, contains P-178's PR #676)",
+        "seatRegisterUpdated": false,
+        "note": "Not yet touched -- step 5 (structuralFactRead.ts/cadPropertyLookup.ts) has not been started. Worktree exists and is ready."
+      },
+      {
+        "name": "hauska-engine-p180-hays-cells",
+        "skipped": true,
+        "note": "Per coordinator decision: skipped, not created. Register entry's note updated to record why (CP1's writer-redirection finding) rather than left silently stale."
+      }
+    ],
+    "williamsonLiveRemeasurement": {
+      "instruction": "coordinator: 're-measure the Williamson geo_id blank-rate live before writing anything'",
+      "result": "48491: 0 non-blank geo_id out of 304,298 txgio_parcel rows (0.000%), measured live 2026-09-13 against PRODUCTION_NEONDB_URL. 48209 (control): 130,246 of 131,734 non-blank (98.870%). Matches the week-old LDT-cited figure exactly -- no drift, the crosswalk is genuinely inert for Williamson today via THIS mechanism specifically."
+    },
+    "theFix": {
+      "file": "hauska-factory/src/jobs/parcel-record-fill.mjs",
+      "diffSummary": "123 lines added, 3 changed, in loadLandingAndCad and three new exports (ACCOUNT_CROSSWALK_ROWS_SQL, quickRefIdNumericStem, loadAccountCrosswalk); CAD_ROWS_SQL gains two SELECT columns (property_number, quick_ref_id). No other file touched. New local module as coordinator directed -- ops21-h1-crosswalk.mjs untouched.",
+      "mechanism": "loadLandingAndCad now branches on SEED_BLOCKED_FIPS.includes(county) (imported from src/lib/cad-txgio-alias-counts.mjs, not a parallel constant). Non-blocked: byte-identical to before (same CAD_ROWS_SQL call, same Map construction). Gate-blocked: cadByProp is built ENTIRELY by loadAccountCrosswalk, which runs ACCOUNT_CROSSWALK_ROWS_SQL (a JOIN on txgio_parcel.geo_id = cad_property.property_number, ambiguity-guarded by NOT EXISTS, DISTINCT ON node prop_id + latest tax_year -- the same shape as this repo's own PR #144 CADROLL_EXPECTATION_SQL_GATE_BLOCKED, extended to select the full CAD row instead of just checking existence), then applies an app-level quick_ref_id-stem corroboration (quickRefIdNumericStem) mirroring LDT's accountCrosswalkForNode/crosswalkBindCorroborated fail-open-on-absent, fail-closed-on-disagreement rule. A resolved row is stored keyed by the NODE's own prop_id (so every existing cadByProp.get(propId) call site, including the ENGINE_PIN'd vendored parcel-record-engine's ingestCadOntoRecords, works unmodified) but with its OWN prop_id field left as the crosswalked ACCOUNT's prop_id -- so apn and every absent-verified basis correctly name the account actually joined (the CP1-required provenance), never the node's own untrustworthy bare number. A node with no bind, or a disagreeing corroborator, gets no map entry at all: ingestCadOntoRecords' own pre-existing join-miss path (applyCadJoinMiss) then emits honest absent-verified cells -- no new absence mechanism was invented.",
+      "corroborationDirectionCorrectedDuringBuild": "My own first test run caught a real design mistake before it reached CP2: I initially fixture-tested with quick_ref_id = 'R' + the CROSSWALKED ACCOUNT's own current prop_id (e.g. 'R84639' for node 97658 resolving to account 84639) and the corroboration correctly REFUSED it -- because live production data (verified below) shows Hays' quick_ref_id actually mirrors the NODE's own bare prop_id ('R97658' on account 84639, not 'R84639'), consistent with TxGIO's node numbering having been historically seeded from QuickRefID, a stable field distinct from the CAD roll's current, separately-renumbered PropertyID. Fixed the test fixtures, not the code -- the code already matched accountCrosswalkForNode's documented direction; my first fixture guess did not.",
+      "vendoredEngineNotTouched": "src/lib/parcel-record-engine/ (ENGINE_PIN'd, hand-editing forbidden) required zero changes -- ingestCadOntoRecords/applyCadScalar/applyCadJoinMiss all consume cadByProp via .get(propId) only; remapping the Map before it reaches them was sufficient, exactly mirroring how P-177's own tier1-bake fix (effectiveCadPropertyRoll) worked in a different repo."
+    },
+    "liveVerificationAgainstProduction": {
+      "purpose": "Before trusting my own fixtures, ran the ACTUAL ACCOUNT_CROSSWALK_ROWS_SQL (read-only, no writes) against PRODUCTION_NEONDB_URL for the five real Sturgeon nodes named in the dispatch's own falsifiers.",
+      "query": "the exact ACCOUNT_CROSSWALK_ROWS_SQL text, county=48209, propIds=['97658','97651','97652','97653','97657']",
+      "result": [
+        {
+          "node_prop_id": "97658",
+          "account_prop_id": "84639",
+          "quick_ref_id": "R97658",
+          "situs_address": "629 STURGEON DR, SAN MARCOS, TX 78666",
+          "market_value": 50390,
+          "land_value": 50390
+        },
+        {
+          "node_prop_id": "97651",
+          "account_prop_id": "84632",
+          "quick_ref_id": "R97651",
+          "situs_address": "STURGEON DR, SAN MARCOS, TX 78666",
+          "market_value": 50130,
+          "land_value": 50130
+        },
+        {
+          "node_prop_id": "97652",
+          "account_prop_id": "84633",
+          "quick_ref_id": "R97652",
+          "situs_address": "STURGEON DR, SAN MARCOS, TX 78666",
+          "market_value": 50130,
+          "land_value": 50130
+        },
+        {
+          "node_prop_id": "97653",
+          "account_prop_id": "84634",
+          "quick_ref_id": "R97653",
+          "situs_address": "STURGEON DR, SAN MARCOS, TX 78666",
+          "market_value": 50130,
+          "land_value": 50130
+        },
+        {
+          "node_prop_id": "97657",
+          "account_prop_id": "84638",
+          "quick_ref_id": "R97657",
+          "situs_address": "STURGEON DR, SAN MARCOS, TX 78666",
+          "market_value": 50390,
+          "land_value": 50390
+        }
+      ],
+      "verdict": "MATCHES P-177's own live-verified depthNodeReads exactly (629 STURGEON DR / 50390 for 97658; 50130 for 97651/97652/97653; 50390 for 97657; every quick_ref_id corroborates cleanly, zero refused). This is the same class of confirmation P-177's own tier1 bake fix got, now shown for the record-path writer this mission targets. Read-only -- no write executed."
+    },
+    "testResults": {
+      "newTests": "17 new tests added to test/parcel-record-fill.test.mjs: SQL structural assertions on ACCOUNT_CROSSWALK_ROWS_SQL (ambiguity guard, published-identifier join, no bare prop_id path), quickRefIdNumericStem unit tests, loadAccountCrosswalk (no-op on non-blocked county / empty batch / the real Sturgeon fixture / corroboration-refused / fail-open on absent quick_ref_id), loadLandingAndCad falsifier (CAD_ROWS_SQL must never fire for 48209 -- fakeCortex throws if it does), loadLandingAndCad control (48021 unchanged, crosswalk query never issued, cadByProp.prop_id stays the bare-joined value exactly as before), honest-absence end-to-end, and the apn-provenance end-to-end falsifier named in the dispatch.",
+      "suiteRun": "node --test test/parcel-record-fill.test.mjs: 84 pass, 0 fail (was 67 tests before this change; all pre-existing tests still pass unmodified).",
+      "fullRepoRegressionCheck": "node --test test/*.test.mjs: 3 pre-existing failures (test/ctx-b3-store-census.test.mjs, two in test/p3-absence.test.mjs) -- confirmed via git stash / re-run against the UNMODIFIED origin/main tip that these fail identically with none of my changes applied. Unrelated files (LDT-mirror hash census; a different job explicitly labeled '# OPS-21 S3 finding, not fixed by this lane (out of scope)' in its own test name, referencing _inbox/2026-09-10_ops21-s3_close.json). Zero regressions introduced by this change.",
+      "sharedDependencyCheck": "test/publish.test.mjs and test/cad-txgio-alias-counts.test.mjs (both depend on SEED_BLOCKED_FIPS / the P-177 PR #144 gate-blocked SQL) also re-run clean: 121 pass, 1 pre-existing skip, 0 fail."
+    },
+    "controlCountyFalsifier": {
+      "claim": "the four non-blocked counties (48021, 48055, 48309, 48453) are byte-identical to before this change",
+      "verification": "structural, not yet a live production diff: loadLandingAndCad's non-blocked branch is the ORIGINAL two lines (query CAD_ROWS_SQL, build the Map) unchanged in control flow, gated by SEED_BLOCKED_FIPS.includes(county) === false; a passing test asserts the crosswalk query is never issued for 48021 and the returned row's own prop_id field is untouched. A live production dry-run diff against a control county has NOT yet been run (would require executing the actual Cloud Run job or an equivalent script against real data) -- recommend doing this as part of step 3's staging pass, not before, since it requires the same execution path as the real re-run."
+    },
+    "criticalFindingRequiringDecisionBeforeStep3": {
+      "severity": "blocking for Williamson only; Hays is clear to proceed",
+      "title": "The dispatch's Williamson premise ('no contradictions today but 282,569 phantom nodes') and LDT's own LANDUSE_JOIN_DISABLED_FIPS_SEED comment ('Williamson -- R-account TxGIO ids vs six-digit CAD roll, ~0% owner match') both read as: Williamson's bare-number join is broken/absent, like Hays. Live measurement against PRODUCTION_NEONDB_URL directly contradicts this.",
+      "measurement": {
+        "total_williamson_txgio_nodes": 282570,
+        "bare_join_hits_today": 282569,
+        "bare_join_hits_with_real_cad_data": 282565,
+        "owner_name_agreement_on_the_bare_join": "304,155 / 304,162 rows = 99.998% (sampled across all tax years; the distinct-node figures above are 282,569/282,570)",
+        "sample": "8 spot-checked rows (R000009, R000013, R000016, R000017, R000019, R000032, R000037, R000038): txgio_parcel.owner_name and cad_property.owner_name IDENTICAL on every single one, situs addresses plausible and specific."
+      },
+      "reconciliation": "Working hypothesis, not yet fully confirmed: LANDUSE_JOIN_DISABLED_FIPS_SEED's '~0% owner match' likely describes matching TxGIO's R-prefixed ids against cad_property's NUMERIC-roll rows (WILLIAMSON_CROSSWALK_SQL's own numeric_roll CTE -- a DIFFERENT, disjoint slice of cad_property that legitimately lacks the R-account identity), not against cad_property's OWN R-prefixed rows (what my bare join, and CAD_ROWS_SQL, actually match against). If true, Williamson's 'gate-blocked' designation is about a DIFFERENT mechanism (the split-roll dollar/structural recovery, which WILLIAMSON_CROSSWALK_SQL/mergeWilliamsonCrosswalk in this SAME file already handles correctly) than the coincidental-bare-number-collision defect class Hays has and this fix targets. I have not chased this to a fully confirmed root cause -- flagging the measured contradiction plainly rather than asserting a conclusion I have not verified as thoroughly as the Hays side.",
+      "consequenceIfUnaddressed": "Because Williamson's own geo_id is 100% blank (measured above), loadAccountCrosswalk resolves ZERO accounts for Williamson today. If SEED_BLOCKED_FIPS-driven replacement is executed against real Williamson data via step 3, cadByProp would go from ~282,565 populated, ~99.998%-owner-correct entries to completely empty for the ENTIRE county -- converting essentially all of Williamson's CAD-derived parcel_record cells (situsAddress, dollars, structural, legal) from real values to honest absence in one write. This is a much larger and more consequential change than 'a documented no-op,' which is what my CP1 speculated before I ran this measurement -- CP1's williamsonCaveat was itself incomplete; this supersedes it.",
+      "recommendation": "Scope step 3's actual re-run to Hays (48209) only. Do NOT execute --apply for county 48491 under this fix until this finding is either (a) confirmed as a misread of LANDUSE_JOIN_DISABLED_FIPS_SEED's own measurement scope (in which case Williamson may need a NARROWER version of this fix, or no change at all, rather than the uniform SEED_BLOCKED_FIPS branch), or (b) the operator explicitly accepts the described consequence. The CODE itself stays county-parameterized via SEED_BLOCKED_FIPS as instructed (never a Hays literal) -- this is a recommendation about which counties step 3 actually WRITES this wave, not a request to special-case the code."
+    },
+    "notYetDone": {
+      "structuralFactRead": "Step 5 (legacy-design-tools structuralFactRead.ts/cadPropertyLookup.ts) not started -- worktree exists, ready to begin once step 3/4 are clear or in parallel if the coordinator prefers.",
+      "durableRetirement": "Step 6 (durable retirement of the hollow account-keyed nodes, LDT tier1 bake work-list) not started -- different repo/mechanism (nodeFacetBakeTier1ConformantCli.ts), out of this checkpoint's scope.",
+      "cortexApiDeployLease": "Not yet taken -- not needed until #671's hold is lifted (mission step 4), which is downstream of step 3."
+    },
+    "contradictedFindingsForClose": [
+      "The mission's 'What is true today' section and 'Where you work' section named hauska-engine (Cloud Run jobs factory-atoms-cad / hauska-engine-atoms-writer, writer name cad-parcel-roll) as the writer to fix. CP1 found this wrong: that writer is permanently frozen (OLD_SHAPE_FILL_FROZEN, baked into write-cad-parcel-roll-county.mjs itself per the 2026-08-26 OPTION A ruling) and does not write parcel_record/parcel_record_cell at all. The real writer is hauska-factory's factory-parcel-record-fill / src/jobs/parcel-record-fill.mjs. Recorded per coordinator instruction as a contradicted finding, not a silent deviation.",
+      "CP1's own williamsonCaveat ('a documented no-op... inert until a re-ingest') is ITSELF superseded by this CP2's live owner-agreement measurement: the consequence of applying the fix to Williamson is not inert at the write-target end -- it would actively convert ~282,565 currently-populated, empirically ~99.998%-owner-correct records to absence. CP1 correctly identified that the crosswalk mechanism itself would resolve nothing for Williamson (still true), but incorrectly assumed that made the CHANGE inert (it does not -- removing a good bare-join population is not the same as a crosswalk finding nothing to add)."
+    ],
+    "askingOperator": {
+      "blocking": true,
+      "reason": "Per the coordinator's own instruction: 'Report CP2 before the staging/production re-run per the mission's own gate on step 3.' Additionally, the Williamson finding above is independently blocking regardless of that gate.",
+      "specificPointsForReview": [
+        "Approve step 3 proceeding for Hays (48209) only this wave, holding Williamson (48491) pending the owner-agreement/LANDUSE_JOIN_DISABLED_FIPS_SEED reconciliation above.",
+        "Confirm no objection to the code's design (SEED_BLOCKED_FIPS-parameterized cadByProp replacement, quick_ref_id corroboration direction verified against live production data, apn/basis provenance naming the crosswalked account).",
+        "Direction on whether to spend further time now reconciling the Williamson owner-match discrepancy (a real investigation, likely touching LDT's LANDUSE_JOIN_DISABLED_FIPS_SEED comment/measurement) before step 3, or defer it and proceed with Hays only, leaving Williamson as an explicit leave_behind for a follow-up row."
+      ]
+    }
+  },
+  {
+    "lane": "p180-hays-cells",
+    "planRows": [
+      "P-180"
+    ],
+    "checkpoint": "CP2",
+    "kind": "writer-fix/run-results",
+    "at": "2026-09-14T00:35:00Z",
+    "appendNote": "This file is now a JSON ARRAY. Element 0 is the pre-run CP2 object (kind 'writer-fix/pre-rerun'), preserved verbatim. Element 1 (this object) appends the step-3 execution results plus the step-4/5/6 state. No prior content was overwritten.",
+    "plannerDeterminationsActedOn": {
+      "staging": "Acted on the planner's resolution: factory-parcel-record-fill has NO separate staging target (cloudbuild.parcel-record-fill.yaml mounts only FACTORY_DATABASE_URL + PRODUCTION_NEONDB_URL; the --target= mechanism lives only in cloudbuild.publish.yaml). Step 3 --apply authorized for HAYS (48209) ONLY; Williamson (48491) held and left as an explicit leave_behind.",
+      "williamsonHeld": true
+    },
+    "reversibilityPath": {
+      "priorImageDigest": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:36fe6832eb12c7a270db50930a396c44198dd52dc23dab808f296a3c13790d1b",
+      "rollback": "The same digest was both the pre-run and the run image; a rollback is a `gcloud run jobs update --image=<prior digest>` of the job definition (no code change needed). Idempotency: parcel-record-fill writes parcel_record/parcel_record_cell via UPSERT keyed on (place_key, rail_key), so a re-run recomputes the same cells; no append/duplicate path.",
+      "beforeCapture": "Pre-run parcel_record_cell values for the five Sturgeon nodes were captured read-only from FACTORY_DATABASE_URL before --apply (they served the bare-number CAD chimera; the pre-state is reproduced from the bare join below). LAPTOP_WRITE_FROZEN respected: the only writer was the Cloud Run job; all laptop work was read-only SELECTs."
+    },
+    "deployedJobVerification": {
+      "image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:36fe6832eb12c7a270db50930a396c44198dd52dc23dab808f296a3c13790d1b",
+      "matchesPlannerObservedDigest": true,
+      "pins": {
+        "ENGINE_SHA": "a38cbb22eda23637d7a56e104456aa4e7237fc25",
+        "LDT_SHA": "46e1a5a1b52a14953e9eb242fd1c908ea24b13ce",
+        "IMAGE_DIGEST": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:36fe6832eb12c7a270db50930a396c44198dd52dc23dab808f296a3c13790d1b",
+        "jobMetadataGeneration": 28
+      },
+      "readByFieldName": [
+        "spec.template.spec.template.spec.containers[0].image",
+        "spec.template.spec.template.spec.containers[0].env[name=ENGINE_SHA]",
+        "spec.template.spec.template.spec.containers[0].env[name=LDT_SHA]",
+        "spec.template.spec.template.spec.containers[0].env[name=IMAGE_DIGEST]",
+        "metadata.generation"
+      ],
+      "containsPr145Fix": "Confirmed: digest matches the image built from the merged hauska-factory main that contains PR #145 (mergeCommit 610204b8fadc143b121fd7bd702f33f7db0022a5), the account-crosswalk writer fix. No rebuild/redeploy of the job definition was needed."
+    },
+    "haysRun": {
+      "job": "factory-parcel-record-fill",
+      "project": "hauska-prod-497015",
+      "region": "us-east4",
+      "county": "48209",
+      "executions": [
+        {
+          "runId": "factory-parcel-record-fill-p847b",
+          "startTime": "2026-09-13T23:15:33.794404Z",
+          "completionTime": "2026-09-13T23:18:45.606655Z",
+          "args": "parcel-record-fill;--county=48209",
+          "statusCondition": "Completed=True",
+          "statusMessage": "Execution completed successfully in 3m11.81s.",
+          "succeededCount": 1,
+          "failedCount": 0,
+          "note": "Read-only rehearsal, no --apply."
+        },
+        {
+          "runId": "factory-parcel-record-fill-nlhn4",
+          "startTime": "2026-09-13T23:42:51.825506Z",
+          "completionTime": "2026-09-13T23:43:13.756391Z",
+          "args": "parcel-record-fill --county=48209 --apply",
+          "statusCondition": "Completed=False",
+          "statusMessage": "Cancelled by user.",
+          "succeededCount": 0,
+          "failedCount": 1,
+          "note": "The single-string arg mis-parse (commas not split). Cancelled before any write landed."
+        },
+        {
+          "runId": "factory-parcel-record-fill-7d8vb",
+          "startTime": "2026-09-13T23:43:31.823520Z",
+          "completionTime": "2026-09-13T23:54:33.647951Z",
+          "args": "parcel-record-fill;--county=48209;--apply",
+          "statusCondition": "Completed=True",
+          "statusMessage": "Execution completed successfully in 11m1.82s.",
+          "succeededCount": 1,
+          "failedCount": 0,
+          "note": "THE Hays --apply run (properly quoted args)."
+        }
+      ],
+      "writeWindow": {
+        "firstCellUpdatedAt": "2026-09-13T23:44:02.563Z",
+        "lastCellUpdatedAt": "2026-09-13T23:54:30.060Z",
+        "cellsTouched": 2440659,
+        "distinctNodesTouched": 116420,
+        "measurement": "SELECT count(*), count(distinct place_key) FROM parcel_record_cell WHERE place_key LIKE '48209:%' AND updated_at BETWEEN 2026-09-13T23:43:31Z AND 2026-09-13T23:55:30Z"
+      },
+      "fiveSturgeonDiff": {
+        "method": "before = the bare (county_fips, prop_id) CAD row the pre-fix writer joined (read from PRODUCTION_NEONDB_URL cad_property, tax_year 2026); after = parcel_record_cell in FACTORY_DATABASE_URL after the run. after livingAreaSqft/yearBuilt are honest absent-verified with basis.propId naming the CROSSWALKED ACCOUNT.",
+        "rows": [
+          {
+            "node": "48209:97658",
+            "before": {
+              "barePropId": "97658",
+              "quickRefId": "R128076",
+              "situs": "13669 MESA VERDE DR, AUSTIN, TX 78737",
+              "market": 636690,
+              "land": 177000,
+              "improvement": 459690,
+              "yearBuilt": 2012
+            },
+            "after": {
+              "situs": "629 STURGEON DR, SAN MARCOS, TX 78666",
+              "market": 50390,
+              "land": 50390,
+              "improvement": 0,
+              "livingAreaSqft": "absent-verified",
+              "yearBuilt": "absent-verified",
+              "basisPropId": "84639",
+              "accountQuickRefId": "R97658"
+            },
+            "matchesP177KnownGood": true
+          },
+          {
+            "node": "48209:97651",
+            "before": {
+              "barePropId": "97651",
+              "quickRefId": "R128069",
+              "situs": "476 CATALINA LN, AUSTIN, TX 78737",
+              "market": 681990,
+              "land": 177000,
+              "improvement": 504990,
+              "yearBuilt": 2012
+            },
+            "after": {
+              "situs": "STURGEON DR, SAN MARCOS, TX 78666",
+              "market": 50130,
+              "land": 50130,
+              "improvement": 0,
+              "livingAreaSqft": "absent-verified",
+              "yearBuilt": "absent-verified",
+              "basisPropId": "84632",
+              "accountQuickRefId": "R97651"
+            },
+            "matchesP177KnownGood": true
+          },
+          {
+            "node": "48209:97652",
+            "before": {
+              "barePropId": "97652",
+              "quickRefId": "R128070",
+              "situs": "13749 MESA VERDE DR, AUSTIN, TX 78737",
+              "market": 691530,
+              "land": 177000,
+              "improvement": 514530,
+              "yearBuilt": 2012
+            },
+            "after": {
+              "situs": "STURGEON DR, SAN MARCOS, TX 78666",
+              "market": 50130,
+              "land": 50130,
+              "improvement": 0,
+              "livingAreaSqft": "absent-verified",
+              "yearBuilt": "absent-verified",
+              "basisPropId": "84633",
+              "accountQuickRefId": "R97652"
+            },
+            "matchesP177KnownGood": true
+          },
+          {
+            "node": "48209:97653",
+            "before": {
+              "barePropId": "97653",
+              "quickRefId": "R128071",
+              "situs": "13735 MESA VERDE DR, AUSTIN, TX 78737",
+              "market": 640580,
+              "land": 177000,
+              "improvement": 463580,
+              "yearBuilt": 2014
+            },
+            "after": {
+              "situs": "STURGEON DR, SAN MARCOS, TX 78666",
+              "market": 50130,
+              "land": 50130,
+              "improvement": 0,
+              "livingAreaSqft": "absent-verified",
+              "yearBuilt": "absent-verified",
+              "basisPropId": "84634",
+              "accountQuickRefId": "R97653"
+            },
+            "matchesP177KnownGood": true
+          },
+          {
+            "node": "48209:97657",
+            "before": {
+              "barePropId": "97657",
+              "quickRefId": "R128075",
+              "situs": "13681 MESA VERDE DR, AUSTIN, TX 78737",
+              "market": 587290,
+              "land": 177000,
+              "improvement": 410290,
+              "yearBuilt": 2012
+            },
+            "after": {
+              "situs": "STURGEON DR, SAN MARCOS, TX 78666",
+              "market": 50390,
+              "land": 50390,
+              "improvement": 0,
+              "livingAreaSqft": "absent-verified",
+              "yearBuilt": "absent-verified",
+              "basisPropId": "84638",
+              "accountQuickRefId": "R97657"
+            },
+            "matchesP177KnownGood": true
+          }
+        ],
+        "verdict": "All five Sturgeon cells now name the crosswalked ACCOUNT (basis.propId 84632/84633/84634/84638/84639) and match P-177's live-verified depthNodeReads exactly. The bare-number chimera (Mesa Verde / Catalina Ln, landValue identically 177000) is gone."
+      },
+      "tenSampleDiff": {
+        "method": "ten distinct Hays nodes, each with a crosswalk account, read from txgio_parcel + cad_property: bare_hit = whether the OLD bare (county_fips, prop_id) join found a CAD row at all; acct_* = the crosswalk account (property_number = node geo_id) now driving the cells.",
+        "rows": [
+          {
+            "node": "48209:100002",
+            "geoId": "11-2535-0000-00201-4",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11916",
+            "acctSitus": "1105 HARMON HILLS RD, DRIPPING SPRINGS, TX 78620",
+            "acctMarket": 377090,
+            "acctImprovement": 258350,
+            "afterLivingAreaSqft": 1984,
+            "afterYearBuilt": 2001
+          },
+          {
+            "node": "48209:10001",
+            "geoId": "10-0001-0002-00000-2",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11924",
+            "acctSitus": "1685 S FM 1626, BUDA, TX 78610",
+            "acctMarket": 3306170,
+            "acctImprovement": 277790
+          },
+          {
+            "node": "48209:100010",
+            "geoId": "11-3826-000B-022R0-4",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11925",
+            "acctSitus": "710 BROKEN LANCE DR, DRIPPING SPRINGS, TX 78620",
+            "acctMarket": 823800,
+            "acctImprovement": 539260
+          },
+          {
+            "node": "48209:100012",
+            "geoId": "11-3846-000A-00100-2",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11927",
+            "acctSitus": "130 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 408810,
+            "acctImprovement": 316770
+          },
+          {
+            "node": "48209:100013",
+            "geoId": "11-3846-000A-00200-2",
+            "bareHit": true,
+            "bareMarket": 9382,
+            "acctPropId": "11928",
+            "acctSitus": "160 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 462940,
+            "acctImprovement": 370900,
+            "afterLivingAreaSqft": 2258,
+            "afterYearBuilt": 2002
+          },
+          {
+            "node": "48209:100014",
+            "geoId": "11-3846-000A-00300-2",
+            "bareHit": true,
+            "bareMarket": 7399,
+            "acctPropId": "11929",
+            "acctSitus": "186 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 451800,
+            "acctImprovement": 359760
+          },
+          {
+            "node": "48209:100015",
+            "geoId": "11-3846-000A-00400-2",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11930",
+            "acctSitus": "212 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 496950,
+            "acctImprovement": 404910
+          },
+          {
+            "node": "48209:100016",
+            "geoId": "11-3846-000A-00500-2",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11931",
+            "acctSitus": "236 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 355680,
+            "acctImprovement": 263640
+          },
+          {
+            "node": "48209:100017",
+            "geoId": "11-3846-000A-00600-2",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11932",
+            "acctSitus": "262 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 433510,
+            "acctImprovement": 341470
+          },
+          {
+            "node": "48209:100018",
+            "geoId": "11-3846-000A-00700-2",
+            "bareHit": false,
+            "bareMarket": null,
+            "acctPropId": "11933",
+            "acctSitus": "286 SIEBERT DR, KYLE, TX 78640",
+            "acctMarket": 428080,
+            "acctImprovement": 336040
+          }
+        ],
+        "verdict": "Every sampled node's cells now name its crosswalk account. Two distinct change shapes: (a) bare_hit=false -> old code served honest absence, new code serves the account's values (100002/10001/100010/100012/100015/100016/100017/100018); (b) bare_hit=true with a WRONG account (a colliding, unrelated low-value row: market 9382 / 7399) -> new code serves the correct account (100013/100014). Shape (b) is the same collision class as the Sturgeon five, shown on non-Sturgeon nodes."
+      },
+      "controlCounty": {
+        "run": "none issued (planner scoped --apply to 48209 only); the fix's non-blocked branch is byte-identical by construction and covered by the writer suite's 48021 control test (loadLandingAndCad control: crosswalk query never issued, cadByProp.prop_id stays the bare-joined value)."
+      }
+    },
+    "step5StructuralFactCrosswalk": {
+      "repo": "legacy-design-tools",
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p180-hays-cells",
+      "branch": "fix/p180-structural-fact-crosswalk",
+      "pr": 683,
+      "files": [
+        "artifacts/api-server/src/lib/cadPropertyLookup.ts",
+        "artifacts/api-server/src/lib/__tests__/cadPropertyLookupCrosswalk.test.ts"
+      ],
+      "summary": "makeCadPropertyLookup now branches on shouldCrosswalkAccountLookup(countyFips) (seeded from LANDUSE_JOIN_DISABLED_FIPS_SEED); for a gate-blocked county it reaches the account via txgio_parcel.geo_id = cad_property.property_number, corroborated by the quick_ref_id R-stem, reusing joinNormalize.accountCrosswalkForNode. Fail-closed: no geo_id / no account / ambiguous property_number / disagreeing corroborator all return null (honest absence), never the colliding bare-number row. Non-blocked counties are byte-identical to before.",
+      "bareJoinFalsifierTest": "cadPropertyLookupCrosswalk.test.ts: 9 tests; the Hays collision fixture asserts the bare join WOULD return the Mesa Verde account while the crosswalk returns the Sturgeon account, plus every fail-closed path returning null."
+    },
+    "step6DurableRetirement": {
+      "repo": "legacy-design-tools",
+      "files": [
+        "artifacts/api-server/src/lib/accountKeyedWork.ts",
+        "artifacts/api-server/src/lib/__tests__/accountKeyedWork.test.ts",
+        "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts",
+        "artifacts/api-server/src/lib/serveGuards.ts",
+        "artifacts/api-server/src/lib/__tests__/serveGuards.test.ts",
+        "artifacts/api-server/src/routes/brokerageNodeFacets.ts"
+      ],
+      "summary": "(1) Bake work-list: in a gate-blocked county, a node whose prop_id has no TxGIO parcel row (isAccountKeyedNodeId) is dropped BEFORE any prepass, so the hollow account-keyed nodes are never re-minted; count surfaced as excludedAccountKeyed. (2) Serve-time: shouldDeclineRetiredRecordAtServe declines a retired record (recordRetirement earned) in a gate-blocked county inside loadBakedNodeFacetSnapshot -> route returns null (honest absence / 404) instead of a hollow account-keyed card (48209:84639 and siblings).",
+      "tests": "accountKeyedWork.test.ts (4) + serveGuards retirement-consumer cases (within serveGuards.test.ts, 17 total) + cadPropertyLookupCrosswalk.test.ts (9): 30 pass, 0 fail; api-server typecheck clean."
+    },
+    "step4HoldLiftAndDeploy": {
+      "status": "WAITING ON LEASE — not taken, not merged.",
+      "reason": "_catalog/leases/cortex-api.json is HELD by lane p152-siblings, RENEWED to expiresAt 2026-09-14T02:00:00Z (checked live 2026-09-14T00:01Z). Per the planner's own instruction I did not take it while p152-siblings holds it.",
+      "note": "Separately: _catalog/leases/cortex-api.json's renewal note CORRECTS the 'merge = deploy' premise — cloud-run-deploy.yml's push trigger runs build-and-push ONLY (image tag = github.sha); the traffic shift is a separate workflow_dispatch. Our PR #683 merge therefore builds an image, it does not shift cortex-api traffic. The #671 hold lift remains: PARCEL_RECORD_SLATE in parcelRecordAllowlist.ts still excludes Hays from the six PARCEL-B-SLATE2 record-overlay rails; it can now be lifted (the cells are right, per fiveSturgeonDiff) but that PR/deploy is a step-4 action gated on the cortex-api lease.",
+      "holdLiftEvidenceReady": "PARCEL_RECORD_SLATE 48209 exclusions (wells/specialDistricts/cityLimits/flood/utilityService/overlayDistricts/schoolDistrict/valueHistory/zoningDistrict/setbackFrontFt) added by PR #671; the six record-overlay rails are now correct for 48209 (fiveSturgeonDiff above)."
+    },
+    "contradicted": [
+      "The mission's 'What is true today' / 'Where you work' named hauska-engine (factory-atoms-cad / hauska-engine-atoms-writer) as the writer; the real writer is hauska-factory's factory-parcel-record-fill (carried forward from CP2 element 0; confirmed by the successful run).",
+      "The 'merge = deploy' premise for legacy-design-tools is contradicted by cloud-run-deploy.yml: push to main runs build-and-push only, with no deploy and no traffic shift (also recorded independently in the cortex-api lease renewal note).",
+      "The mission's Williamson premise (282,569 phantom nodes implying an absent/broken bare join) is contradicted by live measurement: 282,569/282,570 bare-join hits, ~99.998% owner-name agreement; applying this fix there would convert ~282,565 correct rows to absence. Hence Williamson held.",
+      "CP1's williamsonCaveat ('a documented no-op') is superseded by CP2 element 0's measurement (the change is NOT inert for Williamson; it would actively degrade it)."
+    ],
+    "leaveBehind": [
+      "Williamson (48491): NOT re-run this wave; its bare join is empirically ~99.998% owner-correct and its geo_id is 100% blank, so the crosswalk is inert there while the SEED_BLOCKED_FIPS branch would replace ~282,565 correct cells with absence. Needs its own row (reconcile LANDUSE_JOIN_DISABLED_FIPS_SEED's '~0% owner match' scope first).",
+      "Step 4 (#671 hold lift + cortex-api deploy): blocked by the p152-siblings cortex-api lease (expires 2026-09-14T02:00:00Z).",
+      "Non-blocked-county byte-identity was verified structurally + by the writer's 48021 control test, not by a live production dry-run diff of a control county (would have required a second job execution; planner scoped step 3 to 48209 only)."
+    ]
+  }
+]

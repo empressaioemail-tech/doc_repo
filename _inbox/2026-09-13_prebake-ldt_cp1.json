@@ -1,0 +1,54 @@
+{
+  "lane": "PREBAKE-LDT",
+  "checkpoint": "CP1",
+  "planRows": ["P-181"],
+  "at": "2026-09-13",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "readRef": "origin/main",
+    "sha": "31d181c2f9ee1d2fe998eea86a1db1d43dfca230",
+    "shaMatchesDispatch": true,
+    "localHeadIgnored": "10069854f5aa840cc94e6eadbd625c61d3e48010 (stale local checkout; never read)",
+    "docRepoWorktree": "P:/doc_repo",
+    "docRepoHead": "9eef6a6c4a5c5c7e6baa363800257482b9a8a70d"
+  },
+  "designDecision": {
+    "unitOfWork": "one register row per BELIEF-ABOUT-INPUT, not per function and not per file",
+    "orderingRule": "silent-wrong-value and silent-truncation first, then silent-skip, then vacuous/unfireable guards, then loud-throw (already-safe) rows last",
+    "citationRule": "every WHERE quotes lines opened via `git show origin/main:<path>`; anything not opened is CONFIDENCE: inferred with the reason stated",
+    "preBakeDetectableRule": "a probe against the SOURCE artifact (the StratMap zip, the county ArcGIS FeatureServer, the CAD export drop) or against a doc_repo catalog file, never against our own store"
+  },
+  "filesOpenedSoFar": [
+    "lib/cad-ingest/src/txgio/shapefile-discover.ts",
+    "lib/cad-ingest/src/txgio/parse.ts",
+    "lib/cad-ingest/src/txgio/geo.ts",
+    "lib/cad-ingest/src/txgio/reproject.ts",
+    "lib/cad-ingest/src/txgio/cli.ts (sections 140-210, 310-520)",
+    "lib/cad-ingest/src/txgio/ingest.ts (1-120)",
+    "lib/cad-ingest/src/zip.ts",
+    "lib/cad-ingest/src/download.ts",
+    "lib/cad-ingest/src/vintage.ts",
+    "artifacts/api-server/src/lib/verdictLayerServe.ts (70-120)"
+  ],
+  "candidateFindingsAtCP1": [
+    "DBF text encoding is hardcoded utf8 at cli.ts:168 and the .cpg is never extracted (TXGIO_ENTRY_FILTER is shp|dbf|prj only) — a non-UTF8 county silently mojibakes owner and situs strings",
+    "DBF attribute keys are read by exact case (p.Prop_ID, p.GEO_ID) — a county whose DBF header uppercases PROP_ID yields null identity for every feature with no guard counting it",
+    "extractZipEntries flattens every entry to basename — same-basename entries in different zip directories overwrite each other silently and can double-count under --multi-shp=concat",
+    "DECLARED_CAD_VINTAGES (vintage.ts:46) is a hand-typed 15-county mirror of _catalog/tx_cad_source_registry.json, which lives in a DIFFERENT REPO (doc_repo) and is read by no code; two further mirrors exist (routing.ts:26, verdictLayerServe.ts:82). Measured 0 divergences at this snapshot; there is no mechanism keeping it that way",
+    "isWebMercatorPosition (reproject.ts:100) documents that it catches a degree pair fed in by mistake; a degree pair passes it (|-97.7| <= 20037508). The guard cannot fire for its documented purpose"
+  ],
+  "adversarialReviewOfOwnPlan": {
+    "riskAccepted": "a broad read at a few minutes per file will miss depth in the vendor parsers; the dispatch prices this explicitly (15-30 rows broad beats 5 exhaustive)",
+    "falsifierForThisCheckpoint": "if the remaining files (p78Merge, normalize, pacs/orion/dcad/tad parsers, the Tier-1 bake) yield no silent-class row, the register is a restatement of the four already-fixed guards and is worth little",
+    "instrumentRisk": "grep over a git ref can miss a symbol spelled differently; every claim of ABSENCE below is backed by an enumeration (git ls-tree / git grep -l over origin/main), never by an empty grep alone"
+  },
+  "remaining": [
+    "lib/cad-ingest/src/p78Merge.ts", "lib/cad-ingest/src/normalize.ts",
+    "lib/cad-ingest/src/txgio/landuse.ts", "lib/cad-ingest/src/txgio/zoning-stamp.ts",
+    "lib/cad-ingest/src/txgio/zoning-layers.ts", "lib/cad-ingest/src/txgio/zoning-service.ts",
+    "lib/cad-ingest/src/pacs/parser.ts", "lib/cad-ingest/src/pacs/layout.ts",
+    "lib/cad-ingest/src/orion/parser.ts", "lib/cad-ingest/src/vendors/dcad-certified/parser.ts",
+    "lib/cad-ingest/src/vendors/tad-propertydata/parser.ts",
+    "the Tier-1 bake: nodeFacetBakeTier1 / computeTier1Envelope / mergeBakedBaseFacts / brokeragePlaceBuildableEnvelope"
+  ]
+}

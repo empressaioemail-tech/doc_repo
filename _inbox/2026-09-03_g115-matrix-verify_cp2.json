@@ -1,0 +1,60 @@
+{
+  "checkpoint": "CP2",
+  "lane": "g115-matrix-verify",
+  "planRow": ["G-115"],
+  "date": "2026-09-03",
+  "phase": "post-execution / results checkpoint",
+  "note": "Not applicable: PR number, merge SHA, CI conclusion string, diffstat (verification-only lane, no code touched, no branch created).",
+  "engagement": {
+    "id": "992c3f9b-804c-443e-a26f-0da0969a2f32",
+    "orgId": "bastrop_tx",
+    "userId": "staff",
+    "parcelNodeId": "48021:34737",
+    "jurisdiction": "Bastrop County, TX",
+    "createdVia": "POST https://plan-review-app-ten.vercel.app/api/backend?path=/api/plan-review/engagements (the real BFF-proxied path web/app.js's api() uses; not the raw Cloud Run URL, which correctly refuses unauthenticated callers)",
+    "createdAt": "2026-09-03T13:29:34.107Z"
+  },
+  "results": {
+    "passCase": {
+      "input": "POST .../edition {editionId: bastrop_tx-bdc-2026-adopted, proposedSetbackFrontFt: 30}, header x-persona: bastrop_tx/staff",
+      "row14_02_003": {
+        "determination": "Pass",
+        "absence": null,
+        "citation": "City of Bastrop Building Block B3 Section 14-02-003 (bastrop_tx-bdc-2026-adopted)",
+        "editionId": "bastrop_tx-bdc-2026-adopted",
+        "bookId": "BASTROP-UDC",
+        "sectionId": "14-02-003",
+        "analysis": "Proposed front setback 30 ft meets the 25 ft minimum."
+      },
+      "row14_02_008": {
+        "determination": "Unchecked",
+        "absenceStatus": "unchecked",
+        "citation": "City of Bastrop Building Block B3 Section 14-02-008 (bastrop_tx-bdc-2026-adopted)",
+        "analysis": "Zoning-fact district SF-1 on 48021:34737 against the permitted-use table. No use-adjudication logic exists yet; not a fabricated Pass.",
+        "note": "Confirms item 4's fix did not regress under this tenant: absence status is the honest unchecked, not source-unavailable."
+      }
+    },
+    "failCase": {
+      "input": "POST .../edition {editionId: bastrop_tx-bdc-2026-adopted, proposedSetbackFrontFt: 15} on the SAME engagement, header x-persona: bastrop_tx/staff",
+      "row14_02_003": {
+        "determination": "Fail",
+        "absence": null,
+        "citation": "City of Bastrop Building Block B3 Section 14-02-003 (bastrop_tx-bdc-2026-adopted)",
+        "editionId": "bastrop_tx-bdc-2026-adopted",
+        "bookId": "BASTROP-UDC",
+        "analysis": "Proposed front setback 15 ft is below the 25 ft minimum."
+      }
+    }
+  },
+  "verifyByViolation": [
+    { "case": "direct unauthenticated call to Cloud Run URL", "result": "401 unauthorized, 'Bearer service token required' -- confirms the API is not openly reachable, chose the real BFF path instead of trying to obtain the backend key" },
+    { "case": "Pass reachable on 14-02-003 under the real bastrop_tx tenant, not just template-city fixtures", "result": "confirmed, 30ft input" },
+    { "case": "Fail reachable on the same section, same tenant, same parcel, only the proposed value changed", "result": "confirmed, 15ft input -- rules out a mechanism that only ever returns Pass" },
+    { "case": "citation fields are real, not fabricated", "result": "editionId/bookId/sectionId match AVAILABLE_EDITIONS/CODE_BOOKS exactly; citation text passes through buildCitation()/renderCitationText(), which G-113's CI gate refuses to construct without all three fields present" },
+    { "case": "14-02-008 stays honest-Unchecked under the new tenant, not silently broken to source-unavailable", "result": "confirmed -- absence.status is 'unchecked' with the same real analysis text the code's design comment describes, not a fetch-failure classification" }
+  ],
+  "howThisCouldStillGoWrong": [
+    "This engagement (992c3f9b-...) is left in production, not deleted -- consistent with G-112's own precedent of leaving a clearly-labelled diagnostic row rather than deleting evidence of a verification pass. It is a real, additive row under the real bastrop_tx tenant; it does not collide with or alter any other engagement.",
+    "requiredMinFt (25ft) for parcel 48021:34737 was taken on trust from A-095's prior live read, not re-derived from the raw setback-rule atom in this lane -- reasonable given the Pass/Fail boundary crossing at exactly 25ft (30 Pass, 15 Fail) is itself consistent with that number, but the atom was not independently re-fetched and inspected here."
+  ]
+}

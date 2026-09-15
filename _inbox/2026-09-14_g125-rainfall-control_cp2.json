@@ -1,0 +1,43 @@
+{
+  "lane": "g125-rainfall-control",
+  "planRows": ["G-125"],
+  "checkpoint": "CP2 pilot/mid-work",
+  "filedAt": "2026-09-14T00:00:00Z",
+  "seat": "cente-g125",
+  "status": "build complete on both branches, tests green, about to push/PR",
+  "commits": {
+    "hauska-engine": {
+      "branch": "fix/g125-rainfall-control",
+      "baseSha": "45ba9d21015f1d329c8ebdba420ccb26f3df55b6",
+      "commitSubject": "feat(flood-drainage): capture the NOAA Atlas 14 curve for the G-125 rainfall control",
+      "filesChanged": [
+        "packages/engine-core/src/site-plan/flood-drainage-study.ts",
+        "packages/engine-core/src/site-plan/drainage-gradient.ts",
+        "packages/engine-core/src/site-plan/pdf/flood-drainage.ts",
+        "packages/engine-core/src/site-plan/__tests__/flood-drainage-study.test.ts"
+      ]
+    },
+    "hauska-map": {
+      "branch": "fix/g125-rainfall-control",
+      "baseSha": "848ec0aab141ce98f308e152c5f3cb1a076716ee",
+      "commitSubject": "feat(flood-drainage): the four-inch question -- a real rainfall depth / return-period control (G-125)",
+      "filesChanged": [
+        "apps/property-explorer/src/lib/floodDrainageClient.ts",
+        "apps/property-explorer/src/lib/floodDrainageClient.test.ts",
+        "apps/property-explorer/src/workbench/tools/FloodTool.tsx",
+        "apps/property-explorer/src/workbench/tools/flood-tool.test.tsx"
+      ]
+    }
+  },
+  "verification": {
+    "engineCore": "vitest: 1636 passed, 0 failed (4 pre-existing, unrelated script-test files fail to PARSE -- scripts/__tests__/{cert-grade-and-report,detect-placeholder-setback-citation,preflight-and-report,retire-road-class-setback-table}.test.ts -- none touch flood/rainfall/drainage; not caused by this change, not chased further). tsc --noEmit clean.",
+    "propertyExplorer": "vitest: full suite 3027 passed, 0 failed, 1 pre-existing todo, across 206 files. tsc --noEmit clean (after building the local packages/map-renderer workspace package, a pre-existing fresh-worktree setup step unrelated to this change)."
+  },
+  "newTestsAdded": {
+    "hauska-engine": "9 tests: curve capture on parameter runs, honest-absence when NOAA fetch fails, default-path byte-identical assertion, plus a new describe block (6 tests) for the interpolation helpers (round-trip, clamping at curve ends, empty-curve null, source-based label branching).",
+    "hauska-map": "floodDrainageClient.test.ts +7 (body-builder default/override/no-address, interpolation round-trip/clamp/null); flood-tool.test.tsx +5 (control renders pre-run, honesty disclaimer visible before the collapsed disclosure on both result and honest-empty states, parameter-sourced study with/without curve)."
+  },
+  "regressionCaughtByOwnTests": "The depth control was initially gated behind `!embed`; ReportsTool.tsx mounts FloodDrainageSection with embed always true, so the control would have shipped invisible in the real app. Caught by the first new flood-tool.test.tsx assertion, fixed before commit.",
+  "remainingWork": ["push both branches", "open PRs", "poll CI to conclusion string SUCCESS before any merge decision", "file CLOSE with the full end-to-end trace, the empirical violation test, the timeout/cache-miss determination, and the NOAA-parser leave-behind finding"],
+  "leaveBehindPreview": "A significant, pre-existing, OUT-OF-SCOPE defect surfaced as a side effect: the live NOAA HDSC endpoint currently returns a JavaScript array-literal response (quantiles=[[...]]), not the <tr><td> HTML table packages/adapters/src/hydrology/noaaAtlas14.ts's parsePfdsDepthTable expects -- confirmed via a direct curl of the real endpoint. Every rainfallSource='noaa-atlas14' path is therefore currently unreachable in production; every no-param run silently falls to rainfallSource='default' (the Bastrop-specific 9.5in citation) regardless of actual parcel location. This is NOT fixed by this row (a real parser rewrite against an undocumented third-party response shape, unrelated to exposing the depth control) but is named precisely for the operator per scope-discipline practice; full detail goes in CLOSE."
+}

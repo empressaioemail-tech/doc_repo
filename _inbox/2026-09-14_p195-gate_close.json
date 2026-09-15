@@ -1,0 +1,82 @@
+{
+  "lane": "P195-GATE (closed by the integration seat from source, not by the lane that built it)",
+  "planRows": ["P-195"],
+  "status": "closed",
+  "closedBy": "integration seat (overseer). The lane did the work and never wrote a close; the handoff asserted it done in prose. OPS-24 reads 'P-195 is the first build row; every other build row waits on it', so an unwritten close blocked the whole program by the program's own rule. Every claim below was re-verified at source by this seat; claims that could not be verified are marked, not assumed.",
+  "snapshot": {"repo": "doc_repo", "branch": "main", "commit": "fdd3c4d3", "measuredAt": "2026-09-14T18:30Z approx", "store": "FACTORY_DATABASE_URL_RO (read-only handle, deliberately; a verification read must not be able to write)"},
+  "probe": {
+    "notApplicable": "P-195 is inside the OPS-24 PREDICATE DEBT range (186-198): surface-probe.mjs carries ZERO OPS-24 predicates, verified this session (it holds P-151..P-175 only). The debt is real and is row P-197. The gate's own verdict table is the instrument used here instead."
+  },
+  "completionPredicate": "OPS-24 row 9 / P-195: 'an empty county cannot earn a pass; partial and total absence refuse alike; proven by violation on a county with zero earned cells.'",
+  "claimsVerifiedAtSource": {
+    "1_merges_exist": {
+      "verified": true,
+      "detail": "Two engine PRs, not one. hauska-engine #443 'fix(P-195): evaluateRailGate refuses total absence instead of passing it' merged 2026-09-14T15:52:24Z, then #444 'fix(P-195): narrow evaluateRailGate's refusal to structural empty-county only' merged 16:36:38Z. hauska-factory #150 'fix(P-195): publish gate refuses total absence (evaluateRailGate + evaluatePopulation)' merged 16:42:21Z.",
+      "note": "#444 NARROWS #443. That is the lane refusing the dispatch's literal fix so a deliberately single-county rail such as maxImperviousCoverPct keeps ratified behaviour. Recorded because a narrowing after a refusal-widening is exactly where an admitted-known-bad-value defect hides, and because it means 'the gate refuses total absence' is true only in the narrowed, structural sense."
+    },
+    "2_deployed": {
+      "verified": true,
+      "detail": "factory-publish-gate-sched (hauska-prod-497015, us-east4) runs image digest sha256:f547df0301649f9bd499b291d82b453827bfd9b9cc52e1fdac62c744874f1882, matching the claimed f547df0. Read by field name from describe JSON, never a positional formatter.",
+      "regionTrap": "The job is in us-east4. A first query against us-central1 returned an empty list, which reads as 'no jobs exist' and is a FALSE ABSENCE. Recorded so the next seat does not conclude from an empty region."
+    },
+    "3_dallas_refuses": {
+      "verified": true,
+      "detail": "parcel_gate_verdict county_fips 48113: rail_key 'flood', verdict 'refuse', unaccounted_count 0, evaluated_at 2026-09-14 16:57:42.048+00. That timestamp matches execution factory-publish-gate-sched-9flw4, which is after factory #150 merged at 16:42. Dallas is a genuinely never-acquired county and it does not earn a pass."
+    },
+    "4_bastrop_unchanged": {
+      "verified": false,
+      "why": "NOT PROVEN, and not asserted. Bastrop 48021 today reads 38 pass / 26 excluded / 1 refuse across 65 rails. 'Unchanged' is a claim about a baseline this seat never measured, and no pre-fix snapshot of the verdict table was found. What IS true is recorded: Bastrop is not wholesale refusing, and its single refuse is a real one (landUseSource, unaccounted_count 21398).",
+      "rule": "An unmeasured claim is not a passing claim. Recorded as unmeasured rather than rounded to the lane's wording."
+    }
+  },
+  "predicateVerdict": "SATISFIED. Dallas (total absence) refuses. Bastrop (partial absence on landUseSource, 21,398 unaccounted) also refuses. Partial and total absence refuse alike, and no empty county earned a pass. P-195 closes.",
+  "findingsTheLaneDidNotReport": {
+    "F26_gate_coverage_scales_with_acquisition": {
+      "measured": "Distinct rails evaluated per county: 48209 Hays 65, 48055 Caldwell 65, 48491 Williamson 65, 48021 Bastrop 65, 48309 McLennan 65, 48453 Travis 65 — and 48113 Dallas 1.",
+      "reading": "A never-acquired county produces ONE verdict row. The other 64 rails emit no row at all, and a missing row is invisible where an unaccounted cell would be countable (ENFORCEMENT: every record starts with its full shape). So the gate refuses Dallas on the one rail it happens to evaluate and is silent on the rest. The protection scales with how much has already been acquired, which is backwards: the county most needing a refusal generates the fewest verdicts.",
+      "notAContradictionOfP195": "P-195's predicate is that no empty county EARNS A PASS, and Dallas earns none. This finding is about the width of the refusal surface, not its correctness. It is a separate row, not a reopening.",
+      "supersedes": "The standing note 'gate grades 17 of 65 rails' is stale. Acquired counties now grade 65 of 65."
+    },
+    "F27_gate_and_serve_disagree_on_owner_and_land_use": {
+      "measured_gate": "parcel_gate_verdict: rail 'owner' = pass with unaccounted_count 0 on all six counties. Rail 'landUseCode' = pass with unaccounted_count 0 on all six.",
+      "measured_serve": "Production get_smart_site depth node on 48209:97658 (the P-178 gold parcel), same day: ownerFact state 'absent', absence.kind 'join-hold', reason 'LANDUSE_JOIN_HOLD county 48209 — TxGIO prop_id does not join the CAD account'. landUseFact identical shape against CAD property_use_code.",
+      "reading": "The gate says owner and land-use code are fully accounted on Hays. The serving surface says both are absent on Hays' own gold parcel, for a join that does not bind. Both cannot be true of the same population.",
+      "mechanism_A": "The gate measures cells in the factory store while the serve path re-derives the join at request time, so the gate's pass is about stored cells and the serve failure is about binding them. The gate would then be correct and narrow, and the customer-visible absence is a serve-path defect.",
+      "mechanism_B": "The owner and landUseCode rails pass vacuously: evaluated against something that cannot fail, so unaccounted_count is 0 because nothing was counted.",
+      "notDistinguished": "Neither is eliminated from doc_repo. Distinguishing them requires reading the write path for these two rails, not measuring more output. This is the sharpest open question found this session and it is the p190-identity lane's real target.",
+      "corroborating_oddity": "rail 'landUseSource' REFUSES on five of six counties with large counts (48021 21398, 48309 23182, 48491 25775, 48209 636, 48055 196; 48453 passes) while 'landUseCode' passes at 0 unaccounted on all six, and 'landUseDescription' is EXCLUDED on all six. A value rail fully accounted while its own provenance rail refuses on tens of thousands of parcels is the shape commitment 1 exists to forbid."
+    },
+    "F28_excluded_is_41_percent_of_the_grid": {
+      "measured": "Verdict totals across parcel_gate_verdict: pass 220, excluded 160, refuse 11.",
+      "reading": "160 of 391 county-rail cells are excluded from grading. Some exclusions are legitimate and were deliberately protected by engine #444 (single-county rails such as maxImperviousCoverPct). Whether all 160 are legitimate is unmeasured. ENFORCEMENT's warning applies directly: a state that is legitimate at rest becomes cover if it stops being interrogated. Not a defect claim; a denominator nobody has audited."
+    },
+    "F29_verify_walk_runs_a_different_image_than_the_gate": {
+      "measured": "factory-verify-walk runs sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51. factory-publish-gate-sched runs sha256:f547df03...",
+      "reading": "'The P-195 fix is deployed' is verified for the gate job and UNVERIFIED for the walk job; they are different builds. This matters immediately to OPS-23 wave 6, where a lane proposes to prove a walk fix by re-running factory-verify-walk. Re-running a job whose image predates the fix exercises the old code and would return a confident wrong answer."
+    },
+    "F30_remint_wrapper_is_already_deployed": {
+      "measured": "Job hauska-engine-depth-warm-remint exists in hauska-prod-497015/us-east4, image atoms-writer@sha256:7561dafaa7fec04f99d4c2197a4dc2cc8b832add5a7089fbd63cbe36c8e16cb2, last modified 2026-09-14T18:28:08.355319Z, which is after engine PR #445 merged at 17:08:08Z.",
+      "reading": "Wave 6 step 2's wrapper deploy appears already done. The open half is the invocation, which is gated on the CONTRACT_VERSION question (a writer validating at 1.30.0 against a newer contract could accept the write and silently drop the payload). Deploy state and invocation safety are different questions and only the first is answered."
+    },
+    "F31_id_collision_live_in_a_merged_pr": {
+      "measured": "OPS-16 row P-186 is 'OPS-24 stage 0: source recon and the per-place coverage gate'. hauska-engine PR #445, merged 2026-09-14T17:08:08Z, is titled '(P-186, OPS-23 wave 6; P-154)' for a depth-warm re-mint job wrapper.",
+      "reading": "Two different pieces of work carry P-186. This is the duplicate-row-ID collision the operator is owed a ruling on, now merged into a PR title. It is evidence for the durable fix (row allocation as a claim against plan_registry.json with a gate refusing duplicates), not for picking a session."
+    }
+  },
+  "controlFixedWhileClosing": {
+    "what": "probe-close-gate's drift check was VACUOUS and is now fixed and proven in both directions.",
+    "how_found": "By violation, not by reading. The OPS-24 program range in _catalog/plan_registry.json was extended with a second range (200-210) to hold rows carded after 198. The self-test check named 'GATED_RANGES equals the registry's OPS-23 and OPS-24 ranges' then PASSED, despite the hook's literal ranges no longer matching.",
+    "cause": "The check read reg.programs[id].rows[0] — the FIRST range of each program only. Any additional range was structurally invisible to it. A check narrower than its name.",
+    "consequence_if_unfixed": "Closes for P-200 and P-201 would have been ungated, exactly as P-169..P-174 were ungated before the OPS-24 teardown found that. The control built to stop that recurrence could not see it recurring.",
+    "fix": "Ranges named per program (OPS23_RANGES, OPS24_RANGES) and composed; PREDICATE_DEBT derived from OPS24_RANGES instead of a hardcoded 13-long sequence; the comparison extracted as registryRangesMatch() over EVERY range. Four self-tests added including two that must FAIL (registry has a range the hook lacks; hook has a range the registry lacks) plus P-200-is-gated and P-199-is-not. All pass.",
+    "ranges_left_literal_deliberately": "The hook still hardcodes its ranges so it never depends on a file it might fail to read. That was the original design intent and it is correct; the defect was the drift check, not the literals."
+  },
+  "leave_behind": [
+    {"item": "F27 gate-vs-serve disagreement on owner and landUseCode, two mechanisms undistinguished", "owner": "integration", "plan_row": "P-190 (retargeted; this is the lane's real hypothesis)"},
+    {"item": "F26 gate coverage scales with acquisition; a never-acquired county gets 1 of 65 rails", "owner": "integration", "plan_row": "to be carded"},
+    {"item": "F28 160 of 391 grid cells excluded, legitimacy unaudited", "owner": "integration", "plan_row": "to be carded"},
+    {"item": "F29 factory-verify-walk image predates the gate image; affects OPS-23 wave 6's proof method", "owner": "dispatch planner (wave 6)", "plan_row": "OPS-23 wave 6, communicated out of band"},
+    {"item": "F31 P-186 used for two different pieces of work", "owner": "operator", "plan_row": "the standing duplicate-ID ruling"},
+    {"item": "Bastrop 'unchanged' has no measured baseline and stays unproven", "owner": "integration", "plan_row": "none; recorded as unmeasured"}
+  ]
+}

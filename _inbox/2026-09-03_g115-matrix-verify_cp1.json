@@ -1,0 +1,37 @@
+{
+  "checkpoint": "CP1",
+  "lane": "g115-matrix-verify",
+  "planRow": ["G-115"],
+  "date": "2026-09-03",
+  "phase": "design / pre-execution adversarial checkpoint",
+  "note": "Filed after reading the relevant source (mcp.mjs, adjudication.mjs, code-lookup.mjs, actors.mjs, server.mjs, backend.js) and forming the exact call plan, ahead of any live call against production. No code change in this lane -- see missionPremise. Not applicable: PR number, merge SHA, CI conclusion string (verification-only lane, no diff).",
+  "snapshot": {
+    "docRepo": { "repo": "doc_repo", "worktree": "P:/seat-worktrees/govtech/doc_repo", "branch": "seat/govtech", "head": "ed8803d" },
+    "workRepo": {
+      "repo": "plan-review",
+      "worktree": "P:/seat-worktrees/govtech/plan-review",
+      "seat": "govtech",
+      "note": "No branch created, no file edited. This lane calls the already-deployed production API; nothing in this repo's working tree is touched."
+    },
+    "servingRevision": { "service": "plan-review", "project": "plan-review-505715", "region": "us-east1", "revision": "plan-review-00014-bbg", "trafficPercent": 100, "confirmedVia": "gcloud run services describe plan-review --format=value(status.traffic), read live before any call" }
+  },
+  "missionPremise": "Mission _inbox/2026-09-03_g115_matrix_verify_mission.md, item 2 of the Bastrop PermitFlow island-cut WDLL (approved 2026-09-02, _inbox/2026-09-02_bastrop_permitflow_islandcut_WDLL.md). Items 1, 4, 5 already MET per OPS-17 A-108 (2026-09-02/03) -- the bastrop_tx/staff persona and its cross-tenant refusal are live; the IBC live-citation path is wired. Item 2 re-verifies UDC edition selection and citation resolution specifically THROUGH that real tenant on a real Bastrop parcel, not template-city's fixtures and not the mechanism-only proof items 1/4 already gave.",
+  "completionPredicate": "A live engagement created as bastrop_tx/staff against a real Bastrop parcel, with edition bastrop_tx-bdc-2026-adopted declared, produces a genuine Pass or Fail on section 14-02-003 with a citation carrying real editionId/bookId/sectionId (not fabricated), demonstrated for BOTH determinations (Pass and Fail are each independently reachable, not just one observed and the other assumed) -- against the live deployed service, not a unit test.",
+  "scopeBasis": "Bounded to item 2 only. Items 3 (coverage measurement) and 6 (staff go-live) explicitly depend on this landing first, per the WDLL's own dependency field, and are separate missions. Item 5 (tenancy ruling) already closed by direct operator ruling, unrelated to this item's mechanics.",
+  "sourceCheckedCorrection": "The WDLL's literal check text asks for 'a genuine Pass or Fail on 14-02-003/14-02-008'. Read src/mcp.mjs's matrixFromChain (the only place these two rows are built) before treating that as two adjudicable rows: 14-02-003 (district requirements / front setback) is wired to adjudicateMinimumSetback() and genuinely reaches Pass or Fail. 14-02-008 (permitted-use table) has NO adjudication logic at all, by the code's own explicit design comment ('No use-adjudication logic exists yet; not a fabricated Pass' -- Uncertain is reserved for a genuine authority conflict per the transaction contract, missing logic is honestly Unchecked). This is a correction to the WDLL's shorthand, not a reinterpretation performed silently: the completion predicate above targets 14-02-003 for Pass/Fail and treats 14-02-008's continued real-citation Unchecked behaviour as the thing to confirm unchanged, not a determination to force.",
+  "callPlan": {
+    "authPath": "Direct curl against the Cloud Run URL (https://plan-review-ozx33wafia-ue.a.run.app) returns 401 unauthorized -- confirmed live before proceeding: 'Anonymous callers are refused. Bearer service token required.' The service-held bearer key (PLAN_REVIEW_API_KEY) lives only in the Vercel BFF's environment (web/api/backend.js), not held by this session. Calling through https://plan-review-app-ten.vercel.app/api/backend?path=<...> with an x-persona header is the real, browser-shaped path a Bastrop staff member's session would actually use -- chosen over trying to obtain or print the raw backend key, which this repo's own convention (see g115-tenant-icc close's constraintsHonored) treats as a thing to avoid holding or exposing unnecessarily.",
+    "parcel": "48021:34737 -- Bastrop County FIPS 48021, the same real parcel already proven live under a different persona in OPS-17 A-095's G-108 walk (2026-09-02). Reused because parcelNodeId identity is not tenant-scoped and its setback-rule.front atom (25 ft minimum, per A-095) is a property fact independent of which org creates the engagement.",
+    "steps": [
+      "POST /api/plan-review/engagements {orgId:bastrop_tx, userId:staff, parcelNodeId:48021:34737, projectType:setback-review} -- confirm response orgId is bastrop_tx and jurisdiction resolves from the real parcel.",
+      "POST .../edition {editionId:bastrop_tx-bdc-2026-adopted, proposedSetbackFrontFt:30} with x-persona: bastrop_tx/staff -- expect accepted (25ft minimum per A-095, 30 should Pass).",
+      "GET .../matrix with x-persona: bastrop_tx/staff -- inspect 14-02-003 (expect Pass, absence null, real citation) and 14-02-008 (expect Unchecked, real citation, absence.status unchecked -- NOT source-unavailable, which would mean item 4's fix regressed under this tenant).",
+      "Re-POST .../edition with proposedSetbackFrontFt:15 on the same engagement -- expect Fail this time, proving both outcomes reachable, not just one."
+    ]
+  },
+  "adversarialPreCheck": {
+    "q1_couldPassBeVacuous": "Only if 30ft were also below whatever the real requiredMinFt turns out to be, or if the row silently defaulted to Pass regardless of input. Guarded by also proving Fail at 15ft on the same parcel/engagement in the same call sequence, not assumed from A-095's number alone.",
+    "q2_couldTheCitationBeFabricated": "buildCitation()/renderCitationText() (unchanged by this lane, read at CP1) refuse construction without editionId/bookId/sectionNumber all present (G-113's CI gate). A citation string appearing on the row is itself evidence those three fields were real, not a separate thing to re-verify from scratch.",
+    "q3_whatWouldFalsifyTheSourceCheckedCorrection": "Finding real adjudication logic reachable for 14-02-008 elsewhere in the codebase that matrixFromChain simply doesn't call. Not found: grepped for any second adjudicate* function beyond adjudicateMinimumSetback in src/adjudication.mjs -- none exists."
+  }
+}

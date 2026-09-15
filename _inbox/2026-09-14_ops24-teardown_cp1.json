@@ -1,0 +1,42 @@
+{
+  "lane": "ops24-teardown",
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "timestamp": "2026-09-14T00:00:00Z",
+  "seat": "dispatch-planner",
+  "seatWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo",
+  "branch": "seat/dispatch-planner",
+  "snapshot": {
+    "doc_repo_seat_HEAD": "aacefa149048e822cc376b5aa11fdb68f52a10a4",
+    "doc_repo_origin_main": "cd1d798e8d9dd4f49526aad9473dd96b9d3caf21",
+    "hauska_engine_origin_main": "14c7e8500cad8a5947bdf4e6fe4391fe33b9d22c",
+    "hauska_factory_origin_main": "84642360184a685596417f2e0b066cd8a56cacaf",
+    "legacy_design_tools_origin_main": "bae48d406f7595af3d47111b558d0ebc3efd9c56",
+    "hauska_map_origin_main": "848ec0aab141ce98f308e152c5f3cb1a076716ee"
+  },
+  "deviationDeclared": {
+    "item": "doc_repo seat branch was NOT fast-forwarded to origin/main as the dispatch instructs, because the seat has 4 local checkpoint commits (09109127, 05586acf, 844cb7a5, aacefa14) not present on origin/main, and origin/main has 1 commit (cd1d798e, the OPS-24 program commit this mission reviews) not present on the seat branch. A literal fast-forward is impossible without either rewriting the seat's own history or merging -- both are writes the mission does not ask for and the contract reserves structural changes for the planner/operator, not a read-only teardown lane.",
+    "resolution": "Read OPS-24's own target files (90_operations/OPS-24_county_to_serving_program.md, _inbox/2026-09-14_county_to_serving_program_map.md, _catalog/program_preambles/OPS-24.md) and the precedent files via `git show origin/main:<path>` from inside the seat worktree, exactly as the dispatch mandates for the four product repos, rather than merging. The seat's own working tree (checkpoint files under _inbox/, _scratch/) is left untouched. No commit, merge, or rebase performed.",
+    "flagged": "STOP-and-report per dispatch section: 'where this dispatch and the contract disagree, STOP and report' -- this is not strictly a contract/dispatch disagreement but an unstated assumption (that the seat branch has no unmerged local history) that did not hold; reporting it here per the same spirit."
+  },
+  "methodology": {
+    "reads": "git -C P:/<repo> show origin/main:<path> and git -C P:/<repo> grep, against the SHAs declared above, for hauska-engine, hauska-factory, legacy-design-tools, hauska-map. Never a working tree in those four repos, never another seat's checkout, never a write.",
+    "instrumentTesting": "The dispatch's own product repos are off-limits as working trees (git-show/grep only), so no script named as an 'instrument' in the OPS-24 stage table can be literally executed by this lane. Where the mission asks 'run its instrument if it has one,' this is satisfied by static trace: read the instrument's source, follow its branches on an empty-input / zero-row case, and state whether that branch can produce a FAIL/refuse verdict or whether the code path structurally cannot fail (always returns pass/ok on empty or trivial input). This is declared explicitly rather than silently narrowed, per DEV_PROCESS 3.3 (name what is out of scope).",
+    "citationStandard": "Every claim in the review carries file + line (or line range) against the SHA in this checkpoint's snapshot block, or is explicitly marked as a hypothesis per DEV_PROCESS 3.2a."
+  },
+  "planForSixTests": [
+    "1. Stage table existence: for each of 13 rows (P-186..P-198), locate the named file(s), confirm they exist at the declared SHA, and trace the instrument's empty/zero-input branch.",
+    "2. Order (OPS-24 section 3): check whether stages 3-5 (acquire, identity, record instantiation) have any code dependency on stage 6's farm concept or on the gate (P-195) being fixed in the specific way P-195 prescribes; check whether a declaration/completeness check (P-186/P-194) could plausibly be trusted without the gate fix landing first.",
+    "3. Six laws (_catalog/program_preambles/OPS-24.md): for each law, find one concrete violation in the current pipeline with file+line, and classify enforceability (hook / type / person-only) per ENFORCEMENT's three-question gate.",
+    "4. Four holes (map's final section: atoms not county-partitioned; address points outside CAPCOG; no retract-by-run-id; no per-place gate): verify each at source (atoms lease code, txgio_address loader, publish run records, the roster) and judge whether OPS-24 section 4's treatment is sufficient.",
+    "5. What is missing: cost metering, per-county access policy, calibration hook, operator stop points -- check whether each is a row, a law, or neither, and name anything Burnet will trip on that no row covers.",
+    "6. Burnet choice: read t6_cad_probe, the roster, StratMap coverage and address-point coverage for Burnet (48053) and judge whether stages 3-12 can run at all, or whether a different seventh county is the honest prototype."
+  ],
+  "boundsHonored": [
+    "No sub-agent spawned.",
+    "No code written, no store changed.",
+    "No working tree touched in hauska-engine/hauska-factory/legacy-design-tools/hauska-map.",
+    "No production surface read (unlike the 2026-09-10 CTX-teardown precedent, this dispatch's read set is git-only; no gh/gcloud/psql/curl reads are authorized here and none will be attempted).",
+    "Exit-bounded commands only; no watch, tail, or dev server left running."
+  ]
+}

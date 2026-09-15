@@ -102,6 +102,26 @@ if (sdBody === null) {
 }
 const preambleHash = createHash('sha256').update(sdBody, 'utf8').digest('hex').slice(0, 8);
 const today = new Date().toISOString().slice(0, 10);
+
+/* Second net, not the control. The real claim is taken at EXECUTION start by
+ * scripts/lane-claim.mjs — a compile-time check could not have caught 2026-09-14,
+ * where one compiled dispatch was handed to two sessions. This only warns when a
+ * lane is ALREADY open at recompile time, which is the cheaper half of the same
+ * mistake. It never blocks: recompiling a live lane is legitimate. */
+try {
+  const { load: loadClaims, evaluate: evalClaim } = await import('./lane-claim.mjs');
+  const v = evalClaim(loadClaims(), lane, '__compiler__');
+  if (v.state === 'held' || v.state === 'stale') {
+    console.error(
+      `\n[dispatch.mjs] WARNING — lane "${lane}" has an OPEN claim: seat=${v.claim.seat} row=${v.claim.planRow} started=${v.claim.startedAt}` +
+      `${v.state === 'stale' ? ' (STALE)' : ''}\n` +
+      `  Compiling anyway. Before handing this to a session, confirm that seat is not still on it.\n` +
+      `  node scripts/lane-claim.mjs status\n`,
+    );
+  }
+} catch (err) {
+  console.error(`[dispatch.mjs] note: lane-claim check unavailable (${err.message}). Compiling without it.`);
+}
 writeFileSync(
   join(root, '_catalog', 'DISPATCH_PREAMBLE.md'),
   `<!-- CANON-PREAMBLE v${preambleHash} generated ${today} from _STATE.md -->\n\n## STANDING DECISIONS (paste into every executor dispatch)\n\nCANON-PREAMBLE v${preambleHash}\n\n${sdBody}\n`,
@@ -237,7 +257,22 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 ${m0Block}
 
 PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
-${repo ? `repo: ${repo}\n` : ''}${programPreambleBlock}
+${repo ? `repo: ${repo}\n` : ''}
+CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
+more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
+
+  node scripts/lane-claim.mjs claim --lane ${lane} --seat <your-seat-id> --plan-row ${planRows[0]} --dispatch _dispatches/${today}_${lane}_dispatch.md
+
+Exit 0 means proceed. **Exit 3 means another seat is already executing this lane:
+STAND DOWN, do not execute, and report which seat holds it.** Exit 4 means the claim
+is stale — confirm the holder is gone before re-running with --force. Release when
+your close is filed:
+
+  node scripts/lane-claim.mjs release --lane ${lane} --seat <your-seat-id>
+
+On 2026-09-14 this exact dispatch shape was handed to two sessions at once. One found
+out mid-execution from a merged commit appearing in its own fetch.
+${programPreambleBlock}
 
 ${mission}
 

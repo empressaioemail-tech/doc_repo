@@ -30,6 +30,26 @@ A control whose scope is broader than its claim is a defect too, and a worse one
 
 Every operation that mutates durable state emits a durable record naming the items acted on, the timestamp, and the invocation. A count is not a record. If the record cannot be written, the mutation does not run. Refusals of a state changing verb are recorded the same way, because a refuse that leaves no name is how an unattributed mutation becomes unanswerable.
 
+## A mass state change refuses before it lands
+
+A writer that would flip a destructive status on a large share of a population refuses, writes nothing, and says what it would have done. The threshold is a declared number, not a judgement call, and crossing it requires explicit authorisation rather than a warning nobody reads.
+
+This is not the same rule as leaving a record. A record tells you what happened after it happened. Twelve days of correct records would not have helped here, because nobody was reading them.
+
+Instance 2026-09-15, Bastrop 48021. A parcel-node reconcile marked **57,704 of 62,394 parcel-node atoms retired, 92.5 percent of the county**. Nineteen of twenty randomly sampled retirements were live at the county's own public cadastral service. The prop_ids were present the whole time: `txgio_parcel` held 62,257 distinct ids for Bastrop with zero null geometry, against 62,394 atoms. Nothing was missing. The comparison was wrong.
+
+Four controls should have caught it and each failed differently, which is why this instance is worth keeping:
+
+The retirement decision was **presence shaped**. A set-difference against one upstream let a single source decide both what exists now and therefore what is gone. The second, independently derived source existed in the same script — `parcelCurrencyFromBcadMap`, a live county check — and sat AFTER the gate in the loop, so it never ran once the gate had declined. **The capability was present and the control order made it unreachable.** Before trusting an ordered pipeline, ask what the later stages can no longer see.
+
+Nothing refused the write. A job that retires 92.5 percent of a county should not need to know what went wrong in order to stop; the share alone is disqualifying. A blast-radius refusal is generic, protects every writer, and is the control that would have stopped this at write time with no knowledge of the defect.
+
+Nobody watched the derived aggregate. Retired-share per county is one number and it moved from approximately zero to 92.5 in a single run.
+
+**And it produced no customer symptom, which is why it survived twelve days.** The serve path never consults parcel-node status, so the corruption was invisible. That blindness is itself a defect, and it was also the only thing preventing the county from going dark — so the obvious fix, making the serve honour retirement, would have converted a silent defect into an outage. A defect with no symptom needs a deliberate instrument, because nothing else will find it. This one was found by accident, by a lane chasing a single parcel for an unrelated row.
+
+Prefer a refusal to a detector. This operation has a long record of building detectors that were later found dormant, starved, or vacuous. A refusal that fires beats a report nobody reads, and when only one is affordable, build the refusal.
+
 ## How to write a check that actually checks
 
 A presence shaped check has one input. A meaning shaped check has two or more independently derived inputs and asks whether they agree. No sentinel can satisfy a consistency requirement across two separate derivations.

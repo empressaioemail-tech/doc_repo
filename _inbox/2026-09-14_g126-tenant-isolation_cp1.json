@@ -1,0 +1,70 @@
+{
+  "lane": "g126-tenant-isolation",
+  "planRows": ["G-126"],
+  "checkpoint": "CP1",
+  "timestamp": "2026-09-14T19:10:00Z",
+  "workerModel": "no sub-agents spawned; dispatch mandates solo execution",
+  "worktreeRoot": "P:/seat-worktrees/govtech/doc_repo (branch seat/govtech)",
+  "missionPremise": "G-115 item 5's operator ruling accepted persona-list scoping 'revisited before any wider rollout'; issuing real Bastrop staff logins is that wider rollout, so the condition fired. Three specific verified defects, not RBAC (G-127).",
+  "preExistingRepoState": {
+    "plan-review": "16 commits behind origin/main as the dispatch said; local main also carried ~20 files of pure CRLF/LF autocrlf noise (git status flagged them modified, git diff showed zero real content, all same mtime 2026-09-10 08:01 -- a bulk-checkout artifact, not another lane's WIP). Stashed (not discarded) as 'pre-g126 CRLF noise on main, autocrlf artifact' rather than reset --hard. Branched g126-tenant-isolation directly off origin/main (1af5ac5) to avoid it entirely."
+  },
+  "defect1": {
+    "repo": "plan-review",
+    "status": "closed",
+    "enumeration": [
+      { "route": "GET /api/plan-review/queue", "verdict": "was vulnerable", "fix": "tenantListRefusal gate + org_id filter" },
+      { "route": "GET /api/plan-review/reviewer/engagements", "verdict": "was vulnerable (dead route, zero frontend callers, same root cause: listEngagements() had no org filter)", "fix": "tenantListRefusal gate + org_id filter" },
+      { "route": "GET /api/plan-review/findings?sectionId=", "verdict": "was vulnerable (findBySection joined engagements with no org_id predicate)", "fix": "tenantListRefusal gate + org_id filter" },
+      { "route": "GET /api/plan-review/canned", "verdict": "not vulnerable", "basis": "plan_review_canned has no org_id column (sql/001_foundation.sql); global template library" },
+      { "route": "GET /api/plan-review/code", "verdict": "not vulnerable", "basis": "in-memory manifest lookup, no tenant field, no DB collection" },
+      { "route": "GET /api/icc/activity", "verdict": "not vulnerable, by design", "basis": "plan_review_activity has no org_id column at all; actor_did is always the ICC licensor actor. Deliberately cross-tenant audit ledger (purge.jurisdictionTenant='icc-model-code' in the response body). engagementId is a soft joinable footprint but is the documented purpose of this route, not a tenant leak. Not modified." },
+      { "route": "GET /api/plan-review/applicant/room?token=", "verdict": "not vulnerable", "basis": "scoped by unguessable per-share token (smart-files share), not tenant identity; returns exactly one folder" },
+      { "route": "GET /api/plan-review/personas, /editions", "verdict": "not vulnerable", "basis": "static reference data" },
+      { "route": "/api/plan-review/engagements/:id/* subtree (matrix, briefing, letter, map-feature, documents, sheets, dataroom-atoms, override, share, edition, compliance-run)", "verdict": "already correctly gated", "basis": "engagementCrossTenantRefusal runs once ahead of the whole subtree, confirmed by the dispatch and re-verified live on canary; NOT modified per 'do not widen the by-id gate'" }
+    ],
+    "falsifier": "If, after the fix, a request bearing only the service Bearer token (no x-persona) still returned engagements/findings for more than one orgId from /queue, /reviewer/engagements, or /findings, the fix would be contradicted.",
+    "contradicted": "no -- confirmed both directions live on canary plan-review-00025-ley before shifting traffic: no-persona -> 401 (0 rows) on all three routes; unknown persona -> 400; bastrop_tx/staff persona -> exactly its own 8 rows; template-city/staff persona -> exactly its own 11 rows. Regression pass confirmed the by-id gate's no-persona pass-through, cross-tenant refusal, and same-tenant success are all byte-for-byte unchanged, plus health/personas/editions/canned/icc-activity all still 200.",
+    "violationTestBothDirections": {
+      "beforeFix_live_2026-09-14": {
+        "queue_no_persona": "200, total=25, orgs=[bastrop_tx(8), icc-demo(6), template-city(11)]",
+        "reviewer_engagements_no_persona": "200, count=25, same 3 orgs",
+        "findings_sectionId_R311.7_no_persona": "200, count=23 findings, orgs=[bastrop_tx(8), icc-demo(6), template-city(9)]"
+      },
+      "afterFix_live_on_canary_then_production": {
+        "queue_no_persona": "401 unauthorized",
+        "reviewer_engagements_no_persona": "401 unauthorized",
+        "findings_no_persona": "401 unauthorized",
+        "queue_bogus_persona": "400 unknown_persona",
+        "queue_bastrop_tx_staff": "200, total=8, orgs=[bastrop_tx] only",
+        "reviewer_engagements_template_city_staff": "200, count=11, orgs=[template-city] only",
+        "findings_bastrop_tx_staff": "200, count=8, orgs=[bastrop_tx] only"
+      }
+    },
+    "changed": [
+      "src/actors.mjs: added tenantListRefusal() -- same persona-resolution primitive as engagementCrossTenantRefusal, refuses (not pass-through) when no/unknown persona is asserted",
+      "src/store.mjs: listEngagements(orgId), queueBuckets(orgId), findBySection(sectionId, orgId) now require orgId and throw without it (fail-closed at the data layer, not just the route)",
+      "src/server.mjs: wired the three routes through tenantListRefusal + the now-required orgId param",
+      "web/api/g126-tenant-list-scope.test.mjs: 6 new tests mirroring g115-tenant-scope.test.mjs's pattern"
+    ],
+    "notChanged": "engagementCrossTenantRefusal and the entire /engagements/:id subtree; the by-id no-persona pass-through stays exactly as G-115 (operator ruling 2026-09-02) left it, per this mission's explicit 'do not widen the by-id gate' and 'no change to the persona model' scope limits.",
+    "testSuite": "npm test: 87/87 passing (81 pre-existing + 6 new)",
+    "deploy": {
+      "canary": "plan-review-00025-ley, tag g126-tenant-isolation, deployed --no-traffic, smoke-tested both directions before any traffic shift",
+      "trafficLease": "recorded at _catalog/leases/plan-review.json before the shift (service plan-review, lane g126-tenant-isolation, revision plan-review-00025-ley), deleted immediately after the serving revision was confirmed by field name",
+      "servingRevisionVerifiedByFieldName": "gcloud logging read on resource.labels.revision_name + httpRequest.status, not update-traffic's own echo and not latestReadyRevisionName: plan-review-00025-ley serving both the 401 (no-persona) and 200 (scoped) live requests at 2026-09-14T18:54Z",
+      "trafficSplit": "100% plan-review-00025-ley; all prior tagged canaries (g60b..g112-recon) remain at 0%, untouched"
+    },
+    "pr": "https://github.com/empressaioemail-tech/plan-review/pull/15 (branch g126-tenant-isolation, commit e0ffa33), CI test check pending at time of this checkpoint, not yet merged"
+  },
+  "openThreads": [
+    "PR #15 CI pending -- will merge on green (test check conclusion string 'success'), report merge SHA in close",
+    "Defect 2 (smartcity-dashboards mapRealPermitRecord stamping) not yet started",
+    "Defect 3 (smartcity-os platform key binding, read-only) not yet started"
+  ],
+  "fleetMemory": {
+    "LESSON": "core.autocrlf=true on a Windows checkout can make git status show ~20 files as modified with zero real diff content (git diff shows nothing) -- confirm with `git diff --stat` before assuming uncommitted work exists; stash -u rather than reset regardless.",
+    "GROUND_TRUTH": "(2026-09-14 18:54 live) plan-review serving plan-review-00025-ley @ 100%, GCP plan-review-505715 us-east1, verified by field name from request log lines.",
+    "OPEN": "reviewer/engagements has zero frontend callers as of this session -- worth flagging to the planner as dead-code cleanup candidate outside this mission's scope."
+  }
+}

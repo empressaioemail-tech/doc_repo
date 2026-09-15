@@ -1,0 +1,103 @@
+{
+  "lane": "p208-remint-noop",
+  "planRows": ["P-208"],
+  "status": "closed-partial",
+  "at": "2026-09-14",
+
+  "probe": {
+    "notApplicable": "This is a diagnosis lane per its own dispatch (no --promote authorised; no code touched). scripts/surface-probe.mjs was not run. In its place, a direct, read-only, at-source live check was made against the true authority the contradiction turns on -- Bastrop County's own public cadastral GIS service (BASTROP_BCAD_PARCELS_URL, the exact endpoint the engine's own currency-check code already uses) -- rather than trusting either subsystem's derived state. See decisiveRead below."
+  },
+
+  "missionPremise": "depth-warm-remint's real dry-leg execution (hauska-engine-depth-warm-remint-7gjxg, exit 0, 2026-09-14, image atoms-writer@sha256:7561dafa) declined its own named canary parcel 48021:34049 with parcel-node-retired -> wouldWrite: [], while the same parcel serves a complete card today through retrieval-api's /property-nodes/:id/record path (bakedAt 2026-08-05, zoning SF-1, envelope ok, setbacks 30/10/30/20). The dispatch requires resolving which subsystem is right with a named mechanism and a rejected alternative, per _dispatches/2026-09-14_p208-remint-noop_dispatch.md.",
+
+  "completionPredicate": "Met: the contradiction is resolved with a named mechanism, a rejected alternative, the reads that settle it (including one live, at-source read independent of both code paths), and a fix proposal that would make a zero-write --promote run FAIL rather than pass, without weakening the guard that must keep a genuinely retired node refused. Not fully met: the fix is a proposal only (no code touched, per mission constraints, and DEV_PROCESS 5.4 -- propose, do not unilaterally remediate), and the root-cause repair (why this specific reload/reconcile pass corrupted this account's identity token) is named as the highest-value unrun follow-up rather than run inside this bounded lane. status is closed-partial for that reason, not closed.",
+
+  "scopeBasis": "Bounded to exactly what the dispatch asked: resolve the contradiction for 48021:34049, name the mechanism, propose a fix or escalate. Deliberately excluded, per explicit 'Do not': running --promote or any write, touching the serve path, touching smartcity-os/smartcity-dashboards, deploying anything. Also excluded, as genuinely out of this lane's power: re-running the parcel-node reconcile to actually un-retire the atom (an operator-ruled remediation, proposed not executed) and a full audit of how many OTHER Bastrop (or other-county) accounts the same reload/reconcile pass may have silently mis-orphaned (named as the standing risk below, not sized).",
+
+  "falsifier": "Pre-registered at CP1: (a) if the decline is correct AND the serve path is also correct, two subsystems disagree about currency with no propagation, and the serve path is the defect -- escalate, do not fix the re-mint. (b) if the decline is spurious, name the two identity/currency signals and where each is read, and the fix belongs upstream of the gate. (c) a fix that lets --promote write here without being able to say what still refuses a GENUINELY retired node is a removed guard, not a fix.",
+
+  "contradicted": "Falsifier (a) is REJECTED by a live, at-source, out-of-band read: Bastrop County's own public cadastral ArcGIS service (BASTROP_BCAD_PARCELS_URL = https://maps.co.bastrop.tx.us/server/rest/services/Cadastral_BP/Bastrop_County_Parcels/FeatureServer/0 -- the identical public-record endpoint the engine's own parcelCurrencyFromBcadMap/fetchBcadParcelRings already queries elsewhere in this same script) was queried directly, read-only, at 2026-09-14 during this lane: `.../query?where=prop_id IN (34049)&outFields=prop_id&returnGeometry=false&f=json` returned exactly one live feature, `{\"attributes\":{\"prop_id\":34049}}`. The authoritative county source has NOT stopped publishing this account. Mechanism (a)/dispatch-option-2 (genuinely retired, serve path is the defect) is therefore REJECTED. Falsifier (b) is CONFIRMED: the decline is spurious.",
+
+  "decisiveRead": {
+    "what": "Direct HTTP GET, read-only, no auth, public government GIS endpoint (canon rule: 'NO PRIVILEGED DATA -- everything via uniform public-record').",
+    "url": "https://maps.co.bastrop.tx.us/server/rest/services/Cadastral_BP/Bastrop_County_Parcels/FeatureServer/0/query?where=prop_id%20IN%20(34049)&outFields=prop_id&returnGeometry=false&f=json",
+    "response": "{\"objectIdFieldName\":\"objectid\",\"globalIdFieldName\":\"globalid\",\"geometryType\":\"esriGeometryPolygon\",\"spatialReference\":{\"wkid\":102739,\"latestWkid\":2277},\"fields\":[{\"name\":\"prop_id\",\"alias\":\"prop_id\",\"type\":\"esriFieldTypeInteger\"}],\"features\":[{\"attributes\":{\"prop_id\":34049}}]}",
+    "readAt": "2026-09-14, this lane, this session",
+    "significance": "This is the same source-of-truth the codebase itself already trusts for parcel currency (BASTROP_BCAD_PARCELS_URL is literally imported and queried by packages/engine-core/src/boundary-primitive/lot-line-scrub.ts's fetchBcadParcelRings, consumed by bastrop-batch-bulk-prefetch.mjs's parcelCurrencyFromBcadMap). It is independent of the atoms table, independent of the Factory's parcel_record bake, and independent of TxGIO/StratMap (the source that IS re-acquired and IS the input to the reconcile that retired this atom). It settles the question without relying on either side of the original contradiction."
+  },
+
+  "mechanism": {
+    "named": "The re-mint's decline is a faithful, correctly-computed readout of the stored parcel-node atom (packages/engine-core/src/parcel-node/warm-preflight-gate.ts:112-121: status === 'retired' -> decline, a total function, no bug in the gate itself). The atom's retired STATUS is itself a false orphan. Status is flipped to 'retired' exclusively by reconcileCountyParcelNodes (packages/engine-core/src/parcel-node/reconcile-county-parcel-nodes.ts), a SET-DIFFERENCE against a freshly re-derived TxGIO plan: any previously-active parcel-node atom whose id does not appear in the new plan is classified an orphan and retired, on the premise that 'the source no longer publishes this account.' That premise is false here -- Bastrop County's own live cadastral roll still publishes prop_id 34049 today (decisiveRead above). The most probable proximate cause, evidenced rather than assumed: the 2026-09-03 Bastrop TxGIO re-acquisition (_inbox/2026-09-03_parcel-txgio-reacq_close.json) was a full DELETE-then-INSERT reload of all 74,729 rows, verified ONLY at the coarse row-count level (74729=74729 before/after), and independently proven, in that same close, to have silently corrupted a different per-row/per-column field across all six reloaded counties (the geom column, wiped to NULL, caught only because Caldwell's count happened to be checked). No per-row field-fidelity check (e.g., that every feature's prop_id token round-tripped byte-for-byte) was performed or claimed for that reload. A parcel-node reconcile run against that reload's output, comparing account-key strings, would silently misclassify any feature whose prop_id token was similarly degraded as an orphan -- indistinguishable, from inside the reconcile's own narrow logic, from a genuine disappearance. This is corroborated, not proven beyond doubt, by _inbox/2026-09-13_prebake-eng_close.json's independent, dated finding ENG-03: this exact identity-continuity machinery (plan-county-parcel-nodes.ts vs. parcel-geometry-resolver.ts's SQL-side normalization) has a live, verified, currently-unfixed divergence-bug class, found one day before this retirement was observed.",
+    "twoIdentitySignalsNamed": {
+      "signalA_usedByTheReMint": "parcel-node lifecycle status, read from `SELECT body FROM atoms WHERE entity_type='parcel-node'` (depth-warm-city-batch.mjs:609-628, the same canonical atoms table OPS-24's own preamble calls authoritative). Populated/mutated only by reconcileCountyParcelNodes's set-difference against the latest TxGIO-derived plan -- a signal that depends on the fidelity of the most recent county-wide bulk reload and on exact-string account-key continuity across it.",
+      "signalB_usedByNoOneForThisDecision": "live CAD currency, read from Bastrop County's own public ArcGIS FeatureServer (BASTROP_BCAD_PARCELS_URL). The very same depth-warm-city-batch.mjs script ALREADY bulk-loads this into `bcadByPropId` (bastrop-batch-bulk-prefetch.mjs) and already has parcelCurrencyFromBcadMap(propId, bcadByPropId) ready to consult it -- but that check sits AFTER the parcel-node preflight gate in the per-parcel loop (line ~740 gate, line ~782 BCAD check) and the gate's `continue` on decline means signal B is never reached once signal A has already declined. The serve path (retrieval-api's /record route) consults NEITHER signal at request time -- it reads a bake frozen 2026-08-05, architecturally blind to both."
+    },
+    "rejectedAlternative": "Dispatch mechanism 2 (the node genuinely is retired and the serve path is serving a stale snapshot to a retired parcel) -- REJECTED on the decisive live read: the county's own current cadastral roll still lists this account, so 'the source no longer publishes it' is false, and there is no live-serving-a-genuinely-dead-parcel defect to escalate."
+  },
+
+  "fixProposal": {
+    "guardPreserved": "Nothing here proposes bypassing or weakening parcelNodeWarmEligibility or the S3 invariant. A genuinely retired node -- one BCAD also confirms is gone -- must and would still refuse under this proposal.",
+    "immediate_makeZeroWriteFail": "For the bounded single-`--parcel` arm ONLY (never the cohort arm, where declines are expected, counted, and must stay a soft outcome): when the named parcel is declined by the warm-preflight gate, do not exit 0. remint-preview.ts's own docstring already says, of this exact parcel, 'it is the whole point of the run' -- a targeted run against an operator-named parcel that writes nothing has definitionally failed its purpose. Concretely: in depth-warm-city-batch.mjs, when `args.parcel` is set and the single targeted parcel is declined (any warmGate decline code, not only parcel-node-retired), set a distinct nonzero exit code (e.g. 2, distinguishable from a genuine runtime failure) instead of the current exit 0. This alone closes the 'vacuous-write-path' class this mission was dispatched to catch, independent of the root cause below.",
+    "targeted_crossCheckBeforeTrustingRetirement": "The exact machinery to distinguish a false orphan from a genuine one already exists in this same script and is simply never reached for a parcel-node-retired decline. Proposal: when the gate's decline code is specifically parcel-node-retired (not the other five decline codes, which do not carry this ambiguity), run parcelCurrencyFromBcadMap(propId, bcadByPropId) before finalizing the decline. If BCAD confirms the account is still live, emit a NEW, louder, distinct decline/alarm code (e.g. parcel-node-retired-contradicted-by-live-cad) that fails the run (per the immediate fix above) and names the contradiction explicitly, rather than folding it into the ordinary, expected parcel-node-retired bucket -- so an operator or the next lane is routed straight to 'this atom's retirement needs re-verification,' not left to re-discover the same contradiction from scratch. If BCAD agrees the account is gone, the existing decline stands unchanged.",
+    "rootCause_upstream": "The real repair is in reconcileCountyParcelNodes / the parcel-node writer: an orphan classification derived purely from TxGIO reload set-difference should not flip an atom to 'retired' without the same live-CAD cross-check parcelCurrencyFromBcadMap already implements, given (a) a proven, dated per-row corruption defect in the exact reload this retirement most likely traces to, and (b) an independently-audited, currently-unfixed normalization-divergence bug (ENG-03) in the same identity-continuity code. This is upstream of and outside this lane's write path (it lives in write-parcel-node-county.mjs / reconcile-county-parcel-nodes.ts, not in the remint wrapper), named here as the follow-on, not implemented.",
+    "operationalRemediation_proposedNotExecuted": "48021:34049's own parcel-node atom should be re-verified against BCAD and, on confirmation, un-retired (status flipped back to active) by whoever owns the atoms-writer lease for Bastrop -- an operator-ruled remediation per DEV_PROCESS 5.4, proposed here, not executed by this lane."
+  },
+
+  "standingRiskNotSized": "The 2026-09-03 TxGIO reacquisition reloaded 74,729 Bastrop rows and is independently proven to have silently corrupted at least one field class (geom) across all six reloaded counties, caught only by chance. If it also degraded other accounts' prop_id tokens the way it evidently did for 34049, there may be an UNKNOWN NUMBER of other silently-orphaned-but-actually-live parcel-node atoms in Bastrop (and possibly the other five re-acquired counties: Caldwell, Hays, McLennan, Travis, Williamson). This lane did not size that population -- doing so needs exactly one bounded query (count of parcel-node atoms with status='retired' and a retiredAt near the 2026-09-03 reconcile, cross-checked in bulk against BCAD/each county's equivalent live service) and is the single highest-value follow-up, named per DEV_PROCESS 6.4 ('ask what would VANISH') rather than sized here.",
+
+  "leave_behind": [
+    {
+      "item": "Size the standing risk: bulk cross-check every parcel-node atom retired at/after the 2026-09-03 Bastrop TxGIO reacquisition against BCAD's live cadastral service (same public endpoint used here), to learn whether 48021:34049 is an isolated false orphan or one of many.",
+      "owner": "next property-seat claimant / OPS-24 planner",
+      "plan_row": "P-208 follow-on or a new OPS-24 row"
+    },
+    {
+      "item": "Implement the immediate fix (bounded single-parcel arm exits nonzero on any decline) and the targeted BCAD cross-check for parcel-node-retired declines specifically, in packages/engine-core/scripts/depth-warm-city-batch.mjs.",
+      "owner": "next hauska-engine code-touching lane",
+      "plan_row": "P-208 follow-on"
+    },
+    {
+      "item": "Root-cause the reconcile: add a live-CAD cross-check to reconcileCountyParcelNodes / write-parcel-node-county.mjs before flipping any atom to retired, reusing parcelCurrencyFromBcadMap rather than inventing a new mechanism. Independent unfinished input: PREBAKE-ENG's ENG-03 normalization-divergence fix (parcel-geometry-resolver.ts:176 needs the same all-digit guard/one-digit floor plan-county-parcel-nodes.ts's JS side already has).",
+      "owner": "next hauska-engine code-touching lane",
+      "plan_row": "P-181 (ENG-03) / new OPS-24 row for the reconcile cross-check"
+    },
+    {
+      "item": "Operator ruling requested: re-verify and, if BCAD confirms, un-retire 48021:34049's parcel-node atom.",
+      "owner": "operator / integration seat",
+      "plan_row": "P-208"
+    }
+  ],
+
+  "constraintsHonored": [
+    "No --promote or any write run or proposed to run.",
+    "Serve path not touched.",
+    "smartcity-os and smartcity-dashboards not touched.",
+    "Nothing deployed.",
+    "No sub-agents spawned; this lane did its own work throughout.",
+    "Every command exit-bounded (grep/read/one curl GET with --max-time); nothing backgrounded, no watch or tail.",
+    "The one live network call made was a read-only GET against a public government GIS endpoint already used elsewhere in this codebase for the identical purpose -- no credential, no privileged data, consistent with canon rule 3/4."
+  ],
+
+  "gitStatus": "No repository edits made in hauska-engine or any product repo -- read-only investigation throughout (P:/hauska-engine, P:/hauska-engine-worktrees/p186-remint-wrapper). doc_repo: this close plus its two checkpoint JSONs are new, uncommitted files under _inbox/, left for the dispatch planner per AGENT_CONTRACT section 6.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-14_p208-remint-noop_cp1.json",
+    "_inbox/2026-09-14_p208-remint-noop_cp2.json"
+  ],
+
+  "fleetMemoryScratch": {
+    "LESSON": [
+      "When a write-path gate declines and a serve path disagrees, check whether the SAME script already contains a second, better currency signal it simply never reaches on that code path (depth-warm-city-batch.mjs already loads bcadByPropId and has parcelCurrencyFromBcadMap ready; the parcel-node gate's early `continue` just never lets it run for a parcel already declined). Look for the dormant check before assuming one needs to be built.",
+      "A bulk county GIS reload verified only at row-count granularity ('N=N, not a loss') can still silently corrupt individual fields per row. The 2026-09-03 TxGIO close proved this for the geom column across all six counties; treat 'row count matched' as necessary, never sufficient, evidence that a reload preserved every account's identity.",
+      "A public, unauthenticated ArcGIS FeatureServer belonging to the county itself (BASTROP_BCAD_PARCELS_URL, already imported in this exact codebase) is a genuinely decisive, zero-risk, at-source read for 'is this CAD account still current' -- faster and more authoritative than inferring an answer from either side of an internal contradiction."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-14 (this lane, live query): Bastrop County's public cadastral ArcGIS FeatureServer (BASTROP_BCAD_PARCELS_URL) returns exactly one live feature for prop_id=34049. The account is current at the authoritative source.",
+      "2026-09-14: depth-warm-city-batch.mjs's parcel-node preflight gate runs strictly before its own BCAD currency check (parcelCurrencyFromBcadMap) in the per-parcel loop, so the latter never fires for a parcel the former has already declined, as of the p186-remint-wrapper worktree's checked-out commit."
+    ],
+    "OPEN": [
+      "Whether other Bastrop (or Caldwell/Hays/McLennan/Travis/Williamson) accounts were similarly mis-orphaned by the 2026-09-03 reload -- unsized, named in leave_behind.",
+      "Whether ENG-03's normalization divergence is the specific mechanism that corrupted 34049's token, or a separate, still-unidentified defect in the same reload -- not disambiguated; both point the same direction (spurious orphan) and neither changes the fix proposal."
+    ]
+  }
+}

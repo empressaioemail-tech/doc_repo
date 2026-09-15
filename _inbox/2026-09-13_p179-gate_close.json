@@ -1,0 +1,63 @@
+{
+  "lane": "p179-gate",
+  "planRows": ["P-179"],
+  "status": "closed-partial",
+  "statusReason": "Steps 1-3 of the mission (CP1 design, precondition confirmation, execution of the amended plan) are complete and verified live. Step 4 (removing allUsers invoker, changing ingress) was deliberately NOT attempted -- it requires its own separate operator go per both the original decision record and its amendment, and the planner's briefing explicitly said not to touch it. This is a scoped exclusion, not a failure, but the mission as a whole (all 4 steps) is not fully done, so this close is closed-partial rather than closed.",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-13_p179-gate_cp2.json",
+    "note": "P-179 is a credential/IAM-gate mission, not a parcel-data-correctness row; scripts/surface-probe.mjs measures setback/facts parity across parcels and does not apply here. The verification instrument for this row is the violation test in CP2 (auth-check state before/after, plus real live credentialed reads through property-explorer and cortex-api before/after the mount). Cited here in place of a surface-probe artifact, by design, not by omission."
+  },
+
+  "worktreesUsed": [
+    {"name": "hauska-engine-p179-gate", "path": "P:/seat-worktrees/property/hauska-engine-p179-gate", "branch": "fix/p179-engine-gate-token", "startCommit": "112bccb8bed29da639955219511975bddbb425b4", "finalState": "clean, no commits -- read-only use this wave; the amended plan needed no code change in this repo (mount was a direct gcloud service update, not a code/workflow PR, since option 1 required no caller-side changes)"},
+    {"name": "legacy-design-tools-p179-gate", "path": "P:/seat-worktrees/property/legacy-design-tools-p179-gate", "branch": "chore/p179-engine-gate-callers", "startCommit": "18704d8aeba922c1f75cad0d548c3de8b4065968", "finalState": "clean, no commits -- read-only use this wave; cortex-api and smartsite-mcp already carried the correct wiring live, confirmed rather than changed"}
+  ],
+
+  "prsAndMergeSHAs": "None opened. The original mission (mint a new dedicated secret) would have needed PRs on both worktrees to switch cortex-api and smartsite-mcp to a new secret reference. The operator's amendment (option 1: reuse the existing HAUSKA_ENGINE_API_KEY secret) made those PRs unnecessary -- CP2's per-caller code+live confirmation shows cortex-api, smartsite-mcp, hauska-mcp-server and property-explorer already resolve that exact secret today. Zero code changes were required or made in either worktree; both branches exist (per the mission's 'declare start commits' instruction) but carry no commits.",
+
+  "operatorGosQuoted": [
+    "Original approval, commit 33b7f27d, _decisions/2026-09-13_engine_gate_token_minted_and_mounted.md: 'The operator approves minting ENGINE_API_GATE_TOKEN in Secret Manager in hauska-prod-497015 ... and legacy-design-tools-prod ... with one value ... mounting it on hauska-engine-api through its deploy workflow, and switching the two callers from a plain env var to the Secret Manager reference, in the order callers first, engine last, one traffic shift per service under a lease.' -- NOT executed as written: this lane's CP1 found the caller picture behind this approval was materially incomplete/stale (see _inbox/2026-09-13_p179-gate_cp1.json cp1_CONTRADICTED_PREMISES_CRITICAL) and escalated rather than proceeding.",
+    "Amendment, commit c2d5cda0, same file, AMENDMENT section, decided_by nick (operator) 'agreed': 'mount ENGINE_API_GATE_TOKEN on hauska-engine-api FROM THE EXISTING HAUSKA_ENGINE_API_KEY secret, after the lane confirms from code that all four callers send that key in the header the engine's check reads; verify by violation (401 without the key on a gated route on the public URL; reads of 48021:34049 through all four callers unchanged). No new secret is minted this wave... The IAM step (removing allUsers invoker) still takes its own go.' -- EXECUTED exactly as amended, after independently reading this record at c2d5cda0 (confirmed an ancestor of doc_repo HEAD) and after satisfying its explicit precondition for all four callers (see CP2)."
+  ],
+
+  "revisionsByField": {
+    "hauska-engine-api": {
+      "before": "hauska-engine-api-00215-niv (per this lane's original CP1 read) -- superseded mid-session by sibling lane p167-strings' own deploy to hauska-engine-api-00217-gir (100% traffic) before this lane's mount; this lane's --update-secrets built on top of 00217-gir's spec",
+      "after": "hauska-engine-api-00219-huf, 100% traffic, tags [envelope-canary, p179-gate-canary]",
+      "change": "Added ENGINE_API_GATE_TOKEN env var, sourced from Secret Manager secret HAUSKA_ENGINE_API_KEY:latest (existing secret, no new value). No image change, no other config change."
+    },
+    "cortex-api": {"before": "cortex-api-00790-hin", "after": "cortex-api-00790-hin (unchanged, no deploy needed)"},
+    "smartsite-mcp": {"before": "smartsite-mcp-00115-wic", "after": "smartsite-mcp-00115-wic (unchanged, no deploy needed)"},
+    "hauska-mcp-server": {"before": "hauska-mcp-server-00092-pur", "after": "hauska-mcp-server-00092-pur (unchanged, no deploy needed, not this lane's worktree)"},
+    "property-explorer (hauska-map, Vercel)": {"before": "no code/config change made or needed", "after": "unchanged -- verified live, not modified"}
+  },
+
+  "iamPolicyBeforeAndAfter_membersOnly": {
+    "hauska-engine-api_roles/run.invoker": {"before": ["allUsers"], "after": ["allUsers"], "changed": false, "note": "Step 4 untouched by design."},
+    "HAUSKA_ENGINE_API_KEY_secret_roles/secretmanager.secretAccessor_hauska-prod-497015": {
+      "before": ["serviceAccount:172690833726-compute@developer.gserviceaccount.com", "serviceAccount:hauska-mcp-runtime@hauska-prod-497015.iam.gserviceaccount.com", "serviceAccount:hauska-pe-key-sync@hauska-prod-497015.iam.gserviceaccount.com"],
+      "after": ["serviceAccount:172690833726-compute@developer.gserviceaccount.com", "serviceAccount:hauska-mcp-runtime@hauska-prod-497015.iam.gserviceaccount.com", "serviceAccount:hauska-pe-key-sync@hauska-prod-497015.iam.gserviceaccount.com"],
+      "changed": false,
+      "note": "engine-api's runtime SA (default compute SA) already had secretAccessor on this exact secret (used for its pre-existing RETRIEVAL_API_KEY mount), so no new grant was needed."
+    }
+  },
+
+  "violationReads": "Full before/canary/after reads in _inbox/2026-09-13_p179-gate_cp2.json.violationTest and .callerReads_beforeAndAfter_unchanged. Summary: gated route (GET /v1/site-context/registry) with shape-only gate-front headers and no bearer flipped from 200 (F22, pre-mount) to 401 {\"error\":\"unauthorized\"} (post-mount), confirmed first on a 0%-traffic canary revision, then on the 100%-traffic public URL. /health and /ready stayed open (200) throughout. property-explorer's real credentialed call to the same gated route family (POST /api/pe-topography -> engine /v1/map-layers/assemble) returned identical successful GeoJSON before and after. cortex-api's engine connectivity and smartsite-mcp/hauska-mcp-server's liveness were unaffected; see CP2's rigor_note for the honestly-stated difference in verification depth across the four callers.",
+
+  "falsifier": "If a caller loses its reads at any point in the rollout, the order was wrong; roll the engine back first. If a token-less call still returns data after the mount, the check is not on that route. If the secret resolves in one project and not the other, the next deploy of the other fails.",
+  "contradicted": "None of the three falsifiers tripped. A related premise WAS contradicted earlier in the mission (CP1): the original mission text's caller inventory (cortex-api, smartsite-mcp only) and its description of cortex-api's token as 'a plain env var' were both factually wrong against live deploy configs and the F22 finding the mission cites -- this is why the mission was amended before execution rather than executed as originally written.",
+
+  "leave_behind": [
+    "hauska-engine-api has no CI/CD deploy workflow (no GH Action, no Cloud Build trigger) -- this mount was applied via a direct `gcloud run services update`, not through a workflow, because none exists to put it in. Building one is future work; until then, a future by-hand `gcloud run deploy` that omits --update-secrets could silently drop this mount.",
+    "Confirm whether sibling lane p167-strings released its hauska-engine-api lease cleanly -- no lease file was present at this lane's pre-deploy check even though p167-strings had just shifted 100% traffic to revision 00217-gir; not this lane's contract to resolve, flagged for wave hygiene.",
+    "smartsite-mcp and hauska-mcp-server were confirmed for this mount via live secretRef identity plus basic liveness, not an additional full live business-route call (property-explorer and cortex-api's engine connectivity got the deeper live check). If the operator wants full parity of evidence across all four callers, a real MCP tool-call-level probe against both is the natural next step.",
+    "A dedicated, independently rotatable ENGINE_API_GATE_TOKEN is explicitly deferred to a later row per the amendment -- HAUSKA_ENGINE_API_KEY now does quadruple duty (retrieval-api auth, MCP-server auth, cortex-api's prior engine gate, and now the engine's own gate). OPS-23/OPS-16 should carry that row so the deferral isn't lost.",
+    "Step 4 (removing allUsers invoker, changing ingress to internal-and-load-balancer where possible) is unstarted. Its own CP1-equivalent should read how each of the four callers reaches the engine over the network (property-explorer is Vercel-hosted and cannot use internal ingress) before any go is sought, per the mission's own text.",
+    "The mission's F22-citing caller inventory should be corrected in OPS-23 tracking so a future wave does not re-inherit the two-caller assumption this lane found stale."
+  ],
+
+  "missionPremise": "The engine's bearer check should be armed and its production door closed to callers who merely self-declare gate-front headers (F22), without breaking any legitimate live caller in the process.",
+  "completionPredicate": "For this close: the bearer check is armed and live-verified by violation on the public URL; all four real callers identified in this lane's own research (beyond the mission's original two) were confirmed, either end-to-end live or via live secretRef identity, to continue working; no new secret was minted (per amendment); IAM is unchanged and documented before/after; step 4 is explicitly excluded from this close's completion, pending its own go.",
+  "scopeBasis": "Held to the amended decision (option 1) as quoted and independently verified at c2d5cda0. Did not mint a new secret (amendment forbids it this wave). Did not touch step 4 (IAM invoker/ingress), per explicit instruction. Did not edit hauska-mcp-server or hauska-map/property-explorer code (outside my two registered worktrees) -- read-only recon and live HTTP verification only, consistent with the mission's own instruction to grep for callers and DEV_PROCESS's falsifier-first discipline."
+}

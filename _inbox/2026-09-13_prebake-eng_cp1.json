@@ -1,0 +1,51 @@
+{
+  "lane": "PREBAKE-ENG",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "at": "2026-09-13",
+  "planRows": ["P-181"],
+  "snapshot": {
+    "repo": "hauska-engine",
+    "readVia": "git show origin/main:<path> (READ-ONLY, no checkout)",
+    "originMainSha": "112bccb8bed29da639955219511975bddbb425b4",
+    "dispatchStatedSha": "112bccb",
+    "agree": true,
+    "localHead": "8d8e8803550f6f7fdaae42c59a25c4a2d9acc71c",
+    "localHeadNote": "local checkout is STALE and detached; never read from it",
+    "docRepoSeat": "integration (P:/doc_repo, branch main) — the worktree this session is rooted in; dispatch was compiled here, so checkpoint paths resolve here"
+  },
+  "designOfTheInstrument": {
+    "what": "A register of beliefs the write path holds about its INPUT, derived by reading write paths, not by measuring output (ENFORCEMENT: code reading outranks output measuring).",
+    "method": "Open each writer/planner file at origin/main, quote the decisive lines, classify the failure mode, then enumerate call sites for every guard before scoring it as a guard.",
+    "rankingRule": "silent-* ranks above loud-throw; a guard that cannot fire ranks above a guard that fires wrongly",
+    "whatWouldMakeThisWrong": "If a belief I record as unguarded turns out to be guarded at a call site I did not open, the row is wrong. Mitigation: every GUARDED verdict names the file:line of the guard AND I grep the call sites of that guard before scoring it. Rows I could not establish that way go in COULD NOT ESTABLISH, not into the register at lower confidence."
+  },
+  "adversarialReviewOfTheMissionPremise": {
+    "premise": "Reading the engine write path predicts what breaks on an unprocessed county.",
+    "challenge1": "A register of code beliefs cannot rank rows by POPULATION — how many counties actually violate each belief is a store question, and this lane is forbidden the database. Recorded as a structural limit: every row carries PRE-RUN DETECTABLE with the exact query, which is the deliverable's real value; the register predicts CLASSES, and the queries measure POPULATIONS.",
+    "challenge2": "The engine is not the only writer. OPS-19 says the Factory is the only writer path. If the engine paths I read are retired-by-Factory, the register describes a dead path. Mitigation: I record for each row whether the module is imported by a live county script under packages/engine-core/scripts/, and I flag the engine/Factory seam (declared vintage vs latest tax_year) as its own row rather than assuming either side is canonical.",
+    "challenge3": "Verified context handed to me could be stale at this SHA. I re-verified each of the four items against the SHA rather than restating them; findings that are now FIXED are recorded as findings."
+  },
+  "earlyFindingsAtCp1": [
+    "assertDidNamespace (packages/atoms/src/write-boundary.ts:74,78) returns early on an empty body.atomDid and on any id not starting with 'did:'. Every property-fact atomDid minted in fact-writer-ids.ts is a prefixed FNV token (cadroll_, lufact_, ownfact_, fhfact_, ...), so the guard is vacuous for that entire family. Call-site enumeration owed before this is scored.",
+    "resolveDeclaredCadVintage (packages/engine-core/src/cad-vintage/resolve-declared-cad-vintage.ts:25-41) has exactly 15 counties. 239 Texas counties throw FAIL CLOSED. Loud, so safe, but it is a hard statewide blocker and the map is hand-declared, mirrored by hand from LDT.",
+    "FOUR separate implementations of the same leading-zero normalization now exist: normalizeForJoin (fact-writer-ids.ts:165), normalizeParcelKeyToken (plan-county-parcel-nodes.ts:169), resolveCanonicalParcelKey's decimal-pad strip (parcel-write-identity.ts:126), and a SQL regexp_replace(prop_id,'^0+','') in parcel-geometry-resolver.ts:176. The SQL one is NOT equivalent: it has no all-digit guard and no lookahead.",
+    "verifyStoredParcelNodeAtom (parcel-node-atoms.ts:243) compares geometryStoreRef.propId against atom.parcelNodeId — two fields of the SAME body. Its docstring claims it proves the pointer resolves in txgio_parcel. It does not: it is internal consistency, which one upstream can satisfy alone."
+  ],
+  "remainingToRead": [
+    "packages/storage/src/property-atom-batch-write.ts",
+    "packages/storage/src/atoms-writer-lease.ts",
+    "packages/engine-core/scripts/writer-apply-lease.mjs",
+    "packages/engine-core/src/owner-fact/plan-county-owner-facts.ts",
+    "packages/engine-core/src/land-use-fact/plan-county-land-use-facts.ts",
+    "packages/atoms/src/flood-hazard-fact-writer.ts",
+    "services/retrieval-api reader input assumptions",
+    "packages/engine-core/scripts/write-owner-fact-county.mjs (scale / batching)"
+  ],
+  "constraintsHonored": [
+    "read-only: no commit, no checkout, no branch, no network, no database",
+    "no sub-agents spawned",
+    "every command exit-bounded",
+    "no repo-wide grep returning hundreds of hits"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "lane": "p178-hays-roll",
+  "planRows": ["P-178"],
+  "checkpoint": "CP7",
+  "kind": "PIN BUMP IS CORRECT AND ITS MARKER WORKS; but it SURFACED a real P-180/walk conflict that blocks Hays' publish walk. Production untouched. Operator ruling needed.",
+  "at": "2026-09-14T05:1xZ",
+
+  "stagingRun_fwv5s": {
+    "execution": "factory-bastrop-publish-fwv5s",
+    "publishRunId": "12f464a9-66af-4cc9-ad17-95e5b82f0011",
+    "startedAt": "2026-09-14T04:33:47Z",
+    "endedAt": "2026-09-14T05:02:38Z",
+    "outcome": "FAILED (exit 1), WALK_FAILED",
+    "goldNowPasses": "The corrected gold 48209:97658 GRADED PASS (BP-MEANING-01), as did 97648/97649/97650/97655. So the CP6 gold-anchor fix was correct and the post-#677 bake is healthy on real nodes.",
+    "newFailures": {
+      "parcels": ["48209:84629", "48209:84630", "48209:84631", "48209:84635", "48209:84636", "48209:84637", "48209:84639"],
+      "grade": "BP-PUBLISH-RUN-01",
+      "reason": "facets not stamped with publish run 12f464a9-66af-4cc9-ad17-95e5b82f0011"
+    }
+  },
+
+  "rootCause_theRealOne": {
+    "mechanism": [
+      "P-180 (hauska-factory #145 + LDT #683/#684, all inside the new pin range) drops 'hollow account-keyed nodes' from the bake's work list on a gate-blocked county: nodeFacetBakeTier1ConformantCli.ts ~379-403 keeps only work items whose prop_id IS in txgio_parcel (isAccountKeyedNodeId).",
+      "An excluded node is never rewritten by the bake, so it keeps the PREVIOUS run's publishRunId.",
+      "The walk grades the SERVED body and requires the CURRENT run id (verify-walk.mjs responseCarriesPublishRunId) -- and it requires it on RETIRED rows too: the RECORD_RETIRED branch checks the stamp BEFORE returning pass (verify-walk.mjs 508-511).",
+      "The street sweep ('same-situs-street:multi-anchor', anchors = gold + the county's smoke parcels) samples whatever parcels share a street with the anchors, and hollow nodes live on the same streets, so the sweep inevitably includes some. They fail the stamp check and the whole walk fails."
+    ],
+    "measuredState": {
+      "stampDistribution_48209_tier1": {"12f464a9-current": 116421, "e0f6e487-previous": 56629},
+      "node84629": {"inTxgioParcel": false, "stamp": "e0f6e487 (previous run)", "recordRetirement": "PRESENT and EARNED: {status:retired, verdict:absent-verified, lastSeenTaxYear:2025, asOf:2026-09-14T03:31:56Z}"},
+      "reading": "84629 is not a TxGIO parcel, so P-180 excludes it. It already carries an EARNED retirement -- written by the FIRST run under the OLD pin, which still baked every node. Under the new pin it is no longer baked at all, so that retirement can never carry a fresh stamp."
+    },
+    "notTheMarkedAccounts": "84629-84639 are NOT in the marked-390 (checked). They are the broader 'left the declared roll, last seen 2025' population. The marker itself is unaffected.",
+    "therefore": "Hays' publish walk CANNOT pass under the new pin: any sweep that touches an excluded node fails on a stamp that, by construction, will never be refreshed. This was previously invisible because the old pin baked all 173050 nodes with one stamp."
+  },
+
+  "whatIsProvenGood": {
+    "markerWorks": "Confirmed in CP6 and unchanged: marked account 100780 (mv 395, property_number NULL) has its own dollars served NOWHERE, while node 48209:100780 serves 311000 -- account 12717's certified value via the property_number<->geo_id crosswalk.",
+    "bakeIsPostP677": "vintage label '2026-08-26 certified export' on 90958 rows.",
+    "goldFixCorrect": "97658 and neighbours now grade BP-MEANING-01 pass."
+  },
+
+  "options": {
+    "A_fixTheWalk": "hauska-factory: have the walk not require a fresh stamp on a node the bake no longer owns (or accept an EARNED retirement whose stamp is older than the run). Most surgical; but it weakens the walk's own freshness semantics and is a design call.",
+    "B_fixP180Exclusion": "hauska-factory/LDT: keep excluding hollow nodes from the fact build, but still RETIRE them with the current run id in a cheap pass, so they carry the stamp the walk wants. Preserves both invariants.",
+    "C_pinBelowP180": "Pin to e59f3541 (#680), which carries the full marker chain (#675/#676/#677/#680) but PREDATES #683/#684 -- so no exclusion, so the walk keeps working as it did. Costs #681 (the vintage label, cosmetic) and any P-180 Hays benefit, and departs from the pin-to-main convention.",
+    "D_shipViaPatchCli": "Skip the publish path; run LDT's nodeFacetPatchCadRollFromCadPropertyCli from a post-#677 image against production to re-null marked cadRoll. Narrow, but bypasses the publish walk entirely."
+  },
+
+  "production": "NOT touched. No production write of any kind.",
+  "note": "All of this is staging-only Hays writes. Two bakes are now mixed in staging 48209 tier1 (116421 new / 56629 old)."
+}
