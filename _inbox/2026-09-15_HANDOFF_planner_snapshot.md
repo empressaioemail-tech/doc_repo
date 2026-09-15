@@ -13,6 +13,37 @@ audience: the planner picking up the doc_repo integration seat
 > **Snapshot: `doc_repo` main, branch `main`.** Verify with `git log -1` before trusting
 > anything here. This session ran ~57 commits to `origin/main`.
 
+## SUPERSEDED 2026-09-15 AFTERNOON — READ THIS BEFORE THE BLOCK BELOW (A-157)
+
+Four load-bearing claims in this handoff were refuted by measurement. The block below is kept
+verbatim as the record of what was believed; these corrections govern.
+
+1. **"P-214 LIVE (LDT auto-deploys)" is FALSE. legacy-design-tools does NOT auto-deploy.**
+   `cortex-api` serves `cortex-api-00801-zow` created 00:44:11Z; P-214 merged 13:09:57Z, 12.4h
+   later, and no revision followed. The workflow header says push "runs build-and-push only ...
+   Does NOT deploy, NOT migrate, NOT touch traffic"; the 13:09:56Z run shows all four deploy jobs
+   SKIPPED. A workflow NAMED "Cloud Run Deploy" reports success on every merge and ships nothing.
+   **ZERO of the four merged fixes are live.**
+
+2. **`Age:` is a FALSE INSTRUMENT for which build is serving.** The CDN cache object is keyed to
+   the deployment and shared with the alias, so the rollback target returns the same `Age` and
+   `Etag`. Use asset existence instead: request each build's unique `/assets/index-*.js` against
+   the alias. The live build returns `application/javascript`; every other build falls through to
+   the SPA handler as `text/html` with HTTP 200.
+
+3. **"P-216 suppressed the envelope MAP-WIDE" is NOT SUPPORTED.** Its `declined` branch is gated
+   on `outcomeKind === "no-buildable-area"`, which already failed `facetsNeedLiveEnvelopeDerive`
+   before the change; its positive branch still sets `status: "ok"` and gates only the AREA
+   FIGURES. Measured on the unaliased P-216 build: Bastrop SF-1/GC/MU unchanged, only the four
+   San Marcos parcels moved to `declined`. **P-216 already keeps the envelope drawn and withholds
+   only the figure — the fix this handoff demands is already in it.**
+
+4. **The map-wide envelope outage was a stale TAB, not a server regression.** The only
+   infrastructure event in the window was the Vercel deploy at 13:49:47Z and its rollback before
+   14:00:26Z. Zero Cloud Run revisions across seven services, zero audit-log mutations, zero
+   secret versions, zero env-var changes, no writer job. Confirmed resolved by the operator on
+   reload. **A rollback restores the server; it does not reload an open tab.**
+
 ## STOP. PRODUCTION STATE AS OF 2026-09-15 MORNING — READ BEFORE YOU TOUCH ANYTHING
 
 **`smartsite.cloud` is serving a ROLLED-BACK build and that is deliberate.** Deployment
