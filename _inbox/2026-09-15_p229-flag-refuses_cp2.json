@@ -1,0 +1,80 @@
+{
+  "lane": "p229-flag-refuses",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRows": ["P-229"],
+  "seat": "cente-p229",
+  "filedAt": "2026-09-15T17:40:00Z",
+
+  "snapshot": {
+    "hauska-factory": {
+      "worktree": "P:/seat-worktrees/p229-flag-refuses/hauska-factory",
+      "branch": "seat/p229-flag-refuses",
+      "workCommit": "3f729f6a021d51e6fb8d3e34f99209bfc5404d6e",
+      "baseCommitAtClaim": "31aa5413f7e87fc49ddb9ec4d18d16ca07f93f5b"
+    },
+    "doc_repo": {
+      "worktree": "P:/seat-worktrees/p229-flag-refuses/doc_repo",
+      "branch": "seat/p229-flag-refuses"
+    }
+  },
+
+  "changesMade": {
+    "src/lib/cli-flags.mjs": "Added assertKnownFlags(argv, knownFlags) + UNKNOWN_ARGUMENT code. Refuses on the first argv token that is not a recognized flag name (--name or --name=value) and is not the value-slot of a preceding takesValue flag in space-separated form. Existing exports (flagValue, flagValues, hasFlag, requireCountyFips, COUNTY_REQUIRED, COUNTY_UNKNOWN) untouched.",
+    "src/jobs/parcel-setback-cells.mjs": "Added KNOWN_FLAGS (the shared closed list: --city, --county, --page-size, --apply), COUNTY_NOT_IN_SCOPE, resolveCountyScope(countyFilter) (validates each value via requireCountyFips then membership in IN_SCOPE_COUNTIES). parseParcelSetbackCellsFlags now calls assertKnownFlags first and returns flags.countyScope (resolved, defaults to IN_SCOPE_COUNTIES when --county absent). runParcelSetbackCells now scopes CITY_ALL_PARCELS_SQL's county parameter and the run-record's scope.counties to flags.countyScope instead of the hardcoded IN_SCOPE_COUNTIES; countyScope added to the returned summary object.",
+    "src/jobs/parcel-envelope-cells.mjs": "Imports and reuses KNOWN_FLAGS + resolveCountyScope from parcel-setback-cells.mjs (no second implementation). Same wiring as the setback job: parseParcelEnvelopeCellsFlags calls assertKnownFlags first and returns flags.countyScope; runParcelEnvelopeCells scopes its own CITY_ALL_PARCELS_SQL call and run-record scope to flags.countyScope; countyScope added to the returned summary.",
+    "test/cli-flags.test.mjs": "NEW. 11 tests directly exercising assertKnownFlags: empty argv, both flag forms, misspelled/invented flags, unconsumed bare values, space-form value skipping, a bogus flag positioned after valid ones, offender identification, --apply=true form, trailing-value array-bounds safety, and non-interference with flagValues/hasFlag.",
+    "test/parcel-setback-cells.test.mjs": "Added 10 tests: countyScope default, --county narrowing, falsifier 1 (COUNTY_UNKNOWN), out-of-program real FIPS (COUNTY_NOT_IN_SCOPE), falsifier 2 x2 (UNKNOWN_ARGUMENT), KNOWN_FLAGS content, resolveCountyScope unit tests x3, and falsifier 3 (valid --county runs to completion with the scope verified reaching the actual query params, not just the summary).",
+    "test/parcel-envelope-cells.test.mjs": "Same shape, 8 tests, confirming the job correctly reuses parcel-setback-cells.mjs's shared logic rather than diverging."
+  },
+
+  "afterFixFalsifierResults": {
+    "falsifier1_county99999": {
+      "setback_parse": "REFUSED code=COUNTY_UNKNOWN message='county 99999 is not a Texas county FIPS'",
+      "setback_run": "REFUSED code=COUNTY_UNKNOWN (same -- refuses at parse, run never invoked)",
+      "envelope_parse": "REFUSED code=COUNTY_UNKNOWN",
+      "envelope_run": "REFUSED code=COUNTY_UNKNOWN",
+      "verdict": "FIRED as pre-registered. Before: ran silently. After: refuses before any store opens."
+    },
+    "falsifier2_bogusFlags": {
+      "countyy_48209": {
+        "setback_parse": "REFUSED code=UNKNOWN_ARGUMENT message='unrecognized argument: --countyy=48209'",
+        "envelope_parse": "REFUSED code=UNKNOWN_ARGUMENT"
+      },
+      "not_a_flag": {
+        "setback_parse": "REFUSED code=UNKNOWN_ARGUMENT message='unrecognized argument: --not-a-flag'",
+        "envelope_parse": "REFUSED code=UNKNOWN_ARGUMENT"
+      },
+      "verdict": "FIRED as pre-registered, both bogus shapes, both jobs. This is the specific case the dispatch called out as the same shape as the original defect (--county on the deployed image WAS a bogus flag name from the parser's point of view) -- confirmed fixed."
+    },
+    "falsifier3_validCounty": {
+      "setback": "runParcelSetbackCells with --county=48209 returned ok:true, countyScope:['48209']; the fake cortex asserted the exact county-scope array actually reached CITY_ALL_PARCELS_SQL's own query params (not just the returned summary) -- confirmed, not merely observed.",
+      "envelope": "Same result, same assertion, same pass.",
+      "controls_also_checked": [
+        "No --county at all -> countyScope defaults to the unchanged full six-county IN_SCOPE_COUNTIES (byte-identical array), run still succeeds.",
+        "--county=48001 (Anderson -- a REAL Texas county FIPS, but outside this program's six) refuses COUNTY_NOT_IN_SCOPE rather than silently matching nothing.",
+        "--city=Bastrop --county=48021 --page-size=500 --apply together parse correctly as a combined realistic invocation."
+      ],
+      "verdict": "Confirmed: this is not a refusal that refuses everything. A correctly-formed request still runs and is correctly bounded."
+    }
+  },
+
+  "testSuiteResults": {
+    "scopedRun": "node --test test/parcel-setback-cells.test.mjs test/parcel-envelope-cells.test.mjs -- 44/44 pass, 0 fail, before any repo-wide run (this is the count from the ORIGINAL two files before this lane's additions; see totals below for the post-addition count).",
+    "fullRepoRun": "node --test test/*.test.mjs -- 1391 tests, 1384 pass. The only failures: CTX-B3 leaf-list live-network LDT-pin test (needs a live checkout not available in this sandboxed run) and p3-absence.test.mjs's two pre-registered OPS-21 S3 non-vacuity tests -- BOTH pre-existing and explicitly out of scope, matching P-211's own close verbatim ('3 pre-existing failures unrelated to these files ... p3-absence.test.mjs's two pre-registered OPS-21 S3 non-vacuity tests, explicitly labeled not fixed by this lane, out of scope'). Confirmed by git diff --stat: this lane touched exactly src/lib/cli-flags.mjs, src/jobs/parcel-{setback,envelope}-cells.mjs, and their three test files -- none of the failing files.",
+    "gate8": "node scripts/gate8/selftest.mjs -- exit 0, failedToFail: []."
+  },
+
+  "pr": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "number": 154,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/154",
+    "headSha": "3f729f6a021d51e6fb8d3e34f99209bfc5404d6e",
+    "base": "main",
+    "state": "OPEN",
+    "merged": false,
+    "mergeable": "MERGEABLE",
+    "ciConclusion": "success (test, gate8, ldt-sha-comment-presence -- verified via gh api .../check-runs' conclusion field for the PR head SHA, not gh pr checks' printed label, per AGENT_CONTRACT verification rule 5.2)"
+  },
+
+  "openRisk_notedNow": "PR #153 (open, unmerged, repo empressaioemail-tech/hauska-factory, seat/p211-six-county-circle-back) independently adds a working --county to the same two functions this lane touched, via its own resolveCountyScope/COUNTY_NOT_IN_SCOPE of the same shape. #154 does not build on #153 (different base commit, independently written). Merging both as-is will very likely produce a real merge conflict on the same lines. This is carried into the close's leave_behind rather than resolved unilaterally -- deciding which PR lands, or how to reconcile them, is the integration seat's call, not this lane's (this lane does not merge anything)."
+}

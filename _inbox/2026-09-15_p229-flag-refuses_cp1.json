@@ -1,0 +1,62 @@
+{
+  "lane": "p229-flag-refuses",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRows": ["P-229"],
+  "seat": "cente-p229",
+  "filedAt": "2026-09-15T17:20:00Z",
+
+  "snapshot": {
+    "hauska-factory": {
+      "worktree": "P:/seat-worktrees/p229-flag-refuses/hauska-factory",
+      "branch": "seat/p229-flag-refuses",
+      "baseCommitAtClaim": "31aa5413f7e87fc49ddb9ec4d18d16ca07f93f5b (== origin/main HEAD at worktree creation, == P-200's own merge SHA #152)"
+    },
+    "doc_repo": {
+      "worktree": "P:/seat-worktrees/p229-flag-refuses/doc_repo",
+      "branch": "seat/p229-flag-refuses",
+      "baseCommitAtClaim": "61826424 (origin/main HEAD at worktree creation)"
+    }
+  },
+
+  "missionPremise": "P-211 close (_inbox/2026-09-15_p211-six-county-circle-back_close.json, member 3 caveat_undeployedFix): the deployed parcel-envelope-cells image accepted --county=48209 on a real production apply and silently discarded it -- Hays-only scoping in that apply was achieved entirely by the pre-existing unaccounted-only write gate, not the flag the operator believed was bounding the write. This dispatch's own framing: merging PR #153 (a working --county on both jobs) is NOT the fix, because a flag that works is not a flag that refuses when it is not understood -- the defect class is permissive argument parsing, and it returns the moment the image drifts behind the caller again.",
+
+  "deployedDigests": {
+    "factory-parcel-envelope-cells": {
+      "digest": "sha256:ec2cd3bff4f3838768db5a896bd8cee0cf9d70a48f4db0e4b9bd1ec798e1643a",
+      "generation": 4,
+      "confirmedVia": "gcloud run jobs describe factory-parcel-envelope-cells --project=hauska-prod-497015 --region=us-east4, 2026-09-15T17:xx. Matches the digest named in this dispatch verbatim."
+    },
+    "factory-parcel-setback-cells": {
+      "digest": "sha256:2899bbaeef4e47102d6ae5bfd5d293ac8e10636f8dbfb7d57b25feef17d8a301",
+      "generation": 3,
+      "confirmedVia": "gcloud run jobs describe factory-parcel-setback-cells --project=hauska-prod-497015 --region=us-east4, 2026-09-15T17:xx. Not named in the dispatch (only the envelope digest was); measured directly."
+    },
+    "digestToCommitCorrelation": "Cloud Build 5117ed22-f3dd-44be-b2c5-a1ed4382b4b8 (createTime 2026-09-14T22:45:34Z) produced image tag parcel-envelope-cells-5117ed22... whose resolved digest is byte-identical to the deployed envelope digest above. Cloud Build b5d35184-d614-472c-bd6a-a4d529c1722a (createTime 2026-09-14T22:45:25Z, nine seconds earlier, same merge event) produced the setback digest above. Both builds' timestamps fall inside P-200's own merge window (PR #152, canon preamble: 'merge to main in this repo auto-redeploys both Cloud Run job images'). This worktree's hauska-factory branch was cut from origin/main at 31aa5413f7 (P-200's own merge SHA, confirmed by 'git worktree add ... origin/main' resolving to that exact commit before any edit was made) -- i.e. the code in this worktree, PRE-EDIT, is the exact source both deployed digests were built from. This is the before-state basis: falsifiers 1/2 were run directly against this unmodified checkout, not inferred."
+  },
+
+  "falsifiersPreRegistered": [
+    "1. Pass --county=99999 (a FIPS that does not exist). If the job runs and writes anything, the fix has not landed.",
+    "2. Pass a bogus flag name (--countyy=48209, --not-a-flag). If the job runs at all, the fix has not landed -- this is the exact shape of the original defect (--county on the deployed image WAS a bogus flag name from the parser's point of view).",
+    "3. Pass a valid --county and confirm the job still does the correct, bounded thing. A refusal that refuses everything is not a fix either.",
+    "4. Run 1 and 2 against the CURRENT deployed image first and record that they pass silently -- the before-state, proof the defect is real, not inferred."
+  ],
+
+  "beforeStateResult": {
+    "method": "Both jobs' parseParcelSetbackCellsFlags/parseParcelEnvelopeCellsFlags and full runParcelSetbackCells/runParcelEnvelopeCells were invoked directly (hermetic fakes for cortex/factory -- no live network calls, no production credentials used) against the unmodified checkout confirmed above to be the exact source of both deployed digests. writerJobs was the REAL WRITER_JOBS export (src/control/writer-allowlist.mjs), not a stub, so the run-level result is not an artifact of a loose test double.",
+    "falsifier1_county99999": "RAN to completion, ok:true, on both jobs, at both the parse and the full-run level. No refusal.",
+    "falsifier2_bogusFlags": "RAN to completion, ok:true, on both jobs, for both --countyy=48209 and --not-a-flag, at both the parse and the full-run level. No refusal.",
+    "verdict": "Defect confirmed real at source, not inferred: parseParcelSetbackCellsFlags/parseParcelEnvelopeCellsFlags read only the flags they were explicitly told to look for (flagValues/hasFlag never scan for anything unrecognized) and return a normal flags object regardless of what else is in argv. Full raw output pasted verbatim in CP2 (which also carries the after-fix comparison)."
+  },
+
+  "designPlan": {
+    "approach": "A shared, closed-list strict-parsing gate (assertKnownFlags, src/lib/cli-flags.mjs), called FIRST inside both jobs' own parse functions, before any other flag is read -- so refusal happens before any store connection opens, satisfying 'exit non-zero and write nothing' trivially (parsing never gets far enough to open a connection). --county is added as a real, validated flag (resolveCountyScope, defined once in parcel-setback-cells.mjs per this codebase's own 'one determination, never a second hand-typed list' discipline already used for IN_SCOPE_COUNTIES/CITY_ALL_PARCELS_SQL/loadCityRuledTableIndex, reused verbatim by parcel-envelope-cells.mjs): each value must be a genuine Texas county FIPS (reusing the already-established requireCountyFips convention used by ~20 other job files in this repo, e.g. parcel-r4-companions.mjs, parcel-owner.mjs) AND inside IN_SCOPE_COUNTIES, or the run refuses COUNTY_NOT_IN_SCOPE.",
+    "notBuildingOnPr153": "PR #153 (open, unmerged, seat/p211-six-county-circle-back) already adds a working --county via its own resolveCountyScope/COUNTY_NOT_IN_SCOPE -- same shape, independently arrived at. This lane does not check out or build on that branch; it writes its own equivalent county-validation logic from a fresh branch off origin/main, because (a) PR #153's own row (P-211) is not this lane's to modify, and (b) this dispatch's mission is the strict-parsing control specifically, with --county validation as one required instance of it, not a port of #153. The two PRs will very likely conflict on merge (same lines, same shape) -- flagged explicitly in the close's leave_behind for the integration seat to resolve, not silently avoided.",
+    "testStrategy": "New test/cli-flags.test.mjs (assertKnownFlags unit coverage) + additions to the two existing job test files covering all four falsifiers, the unchanged-default case, the out-of-program-but-real-FIPS case, and a combined-flags realistic invocation. Full npm test run before AND after to catch any regression in the ~20 other files that import cli-flags.mjs's existing exports (unaffected, since assertKnownFlags is new and additive)."
+  },
+
+  "knownTraps_acknowledged": [
+    "The deployed digest is the authority, not the branch -- both digests measured directly via gcloud, not assumed from git HEAD, then cross-checked against git HEAD via Cloud Build timing (belt and suspenders, not either alone).",
+    "Do not weaken the unaccounted-only write gate (UPDATE_SETBACK_CELLS_SQL/UPDATE_ENVELOPE_CELLS_SQL) -- not touched by this change; only the flag-parsing layer above it is.",
+    "A control verified by violation generates events shaped like the ones being counted -- all falsifier invocations in this lane ran with apply=false against hermetic fakes, never against a real store, so none of them could be mistaken for real production write activity."
+  ]
+}

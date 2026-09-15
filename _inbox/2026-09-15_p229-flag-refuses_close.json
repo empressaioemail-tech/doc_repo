@@ -1,0 +1,67 @@
+{
+  "lane": "p229-flag-refuses",
+  "planRows": ["P-229"],
+  "status": "closed-partial",
+  "seat": "cente-p229",
+  "closedAt": "2026-09-15T17:50:00Z",
+
+  "snapshot": {
+    "hauska-factory": {
+      "worktree": "P:/seat-worktrees/p229-flag-refuses/hauska-factory",
+      "branch": "seat/p229-flag-refuses",
+      "baseCommitAtClaim": "31aa5413f7e87fc49ddb9ec4d18d16ca07f93f5b (== origin/main HEAD at worktree creation, == P-200's own merge SHA #152, == the exact source of both currently-deployed job digests)",
+      "workCommit": "3f729f6a021d51e6fb8d3e34f99209bfc5404d6e"
+    },
+    "doc_repo": {
+      "worktree": "P:/seat-worktrees/p229-flag-refuses/doc_repo",
+      "branch": "seat/p229-flag-refuses",
+      "baseCommitAtClaim": "61826424"
+    }
+  },
+
+  "digests": {
+    "beforeState_measuredAgainst": {
+      "factory-parcel-envelope-cells": "sha256:ec2cd3bff4f3838768db5a896bd8cee0cf9d70a48f4db0e4b9bd1ec798e1643a (gen 4) -- matches this dispatch's own cited digest verbatim",
+      "factory-parcel-setback-cells": "sha256:2899bbaeef4e47102d6ae5bfd5d293ac8e10636f8dbfb7d57b25feef17d8a301 (gen 3) -- measured directly via gcloud, not named in the dispatch"
+    },
+    "afterFix_digestThatWillCarryTheFix": "NOT BUILT YET. PR #154 (headSha 3f729f6a021d51e6fb8d3e34f99209bfc5404d6e) is open and CI-green but deliberately NOT merged, per this dispatch's own instruction ('Do not merge PR #153, and do not merge your own branch... The integration seat owns the merge and the deploy'). No Cloud Build has run against this fix; no new digest exists. The two digests above remain the live, deployed, still-vulnerable state until the integration seat merges #154."
+  },
+
+  "probe": {
+    "artifact": "_inbox/2026-09-15_172517_surface_probe.json",
+    "note": "scripts/surface-probe.mjs --rows P-229, run live from this lane's own doc_repo worktree, 2026-09-15T17:25:17Z. Result: PASS 0 FAIL 0 UNMEASURED 0 -- same predicate debt P-200/P-211 already found and named (OPS-24 law 1): the generic probe has no P-229-specific leg, because this row is an internal CLI argument-parsing defect on a batch writer job, not a customer-facing rail this probe's leg set measures. Real completion evidence is the direct falsifier reads (parse-level and full-run-level, hermetic, against both the unmodified pre-fix checkout and the fixed checkout) cited below and detailed in CP1/CP2."
+  },
+
+  "missionPremise": "P-211's close (_inbox/2026-09-15_p211-six-county-circle-back_close.json, member 3 caveat_undeployedFix) found that the deployed parcel-envelope-cells image accepted --county=48209 on a real production apply and silently discarded it; Hays-only scoping in that real apply was achieved entirely by the pre-existing unaccounted-only write gate, not the flag the operator believed was bounding the write. This dispatch's own framing, stated explicitly and honored here: merging PR #153 (which gives --county a working implementation on both jobs) is NOT the fix, because a flag that works today is not a flag that refuses when it is not understood -- if the image ever drifts behind the caller again, a merged-and-working flag returns to being silently discarded. The actual defect is permissive argument parsing (flagValues/hasFlag read only what they are told to look for and never notice anything else), and the fix is strict parsing: an unknown, misspelled, or unconsumed flag must cause the job to exit non-zero and write nothing, on both writer jobs, with --county's own validation as one required instance of that control.",
+
+  "completionPredicate": "Both jobs refuse (non-zero exit, no store opened) on: (a) --county naming a FIPS that does not exist, (b) any unrecognized or misspelled flag name -- verified against the CURRENT deployed image's own source as the before-state and against this lane's fix as the after-state, on both the parse function directly and the full run function with hermetic (non-network) fakes. A valid, in-scope --county must still let the job run to completion and correctly bound its query scope, not blanket-refuse. THIS IS SATISFIED AND VERIFIED FOR THE CODE: PR #154 is open, every check-run's conclusion field reads 'success' (test, gate8, ldt-sha-comment-presence -- read via gh api, not the printed gh pr checks label), and all four pre-registered falsifiers behaved exactly as designed. IT IS NOT YET SATISFIED FOR THE DEPLOYED SURFACE: the two running Cloud Run jobs still carry the pre-fix digests named above and remain silently permissive to an unknown flag in production RIGHT NOW. Per AGENT_CONTRACT/DEV_PROCESS 4.4 ('code-done is not customer-done... a new revision is not the serving revision until verified'), that gap is real and is the reason this closes closed-partial rather than closed -- not a hedge, a fact: closing the gap requires a merge and a deploy, both explicitly reserved for the integration seat by this dispatch's own 'Do not' list.",
+
+  "scopeBasis": "repo: hauska-factory per the dispatch's PLAN-ROW header. Scope is exactly the two writer jobs the dispatch names (parcel-envelope-cells.mjs, parcel-setback-cells.mjs) and the shared parsing utility they both already imported from (cli-flags.mjs) -- no other job's flag parser was touched, even though the identical permissive-parsing pattern (flagValues/hasFlag, no unknown-argument check) is structurally present in every other job file that imports from cli-flags.mjs (roughly 20 files, grep-confirmed). Extending assertKnownFlags to the rest of the CLI surface is a distinct, larger-blast-radius follow-on named in leave_behind, not undertaken here -- this dispatch's own falsifiers and 'Done looks like' section name only these two jobs. PR #153's own --county implementation was deliberately NOT reused, checked out, or merged, per the dispatch's explicit 'do not close this row by merging #153': this lane wrote its own equivalent county-validation logic (resolveCountyScope/COUNTY_NOT_IN_SCOPE) on a fresh branch cut from origin/main, a deliberate choice recorded in CP1, not an oversight -- the two PRs independently arrived at the same shape and will very likely conflict on merge (see leave_behind).",
+
+  "falsifier": "All four pre-registered falsifiers ran as designed. (1) --county=99999 (nonexistent FIPS): before-state ran silently (ok:true, both jobs, parse and full-run level); after-fix refuses COUNTY_UNKNOWN before any store opens. FIRED as anticipated. (2) --countyy=48209 / --not-a-flag (bogus/misspelled flags): before-state ran silently (ok:true, both jobs, both bogus shapes); after-fix refuses UNKNOWN_ARGUMENT. FIRED as anticipated -- this is the exact shape the dispatch called out as identical to the original defect. (3) --county=48209 (valid, in-scope): after-fix runs to completion (ok:true), and the resolved county scope was confirmed (not merely observed) to actually reach CITY_ALL_PARCELS_SQL's own query parameters, not just the returned summary object -- a refusal that refuses everything did NOT happen. (4) Before-state basis: git HEAD of this lane's hauska-factory worktree at claim time (31aa5413f7) matches P-200's own merge SHA and was cross-confirmed via Cloud Build timing (builds 5117ed22/b5d35184, same merge event, same two deployed digests) to be the exact, unmodified source both currently-deployed job images were built from -- the before-state falsifier runs targeted this checkout directly, not an inference.",
+
+  "contradicted": "Nothing in this lane's own plan (CP1) was contradicted. The before-state falsifier run confirmed the dispatch's own claim exactly, at both the parse level and the full-run level: both jobs ran to completion (ok:true) under both falsifier-1 and falsifier-2 conditions on the unmodified pre-fix checkout, with no unexpected behavior in between.",
+
+  "leave_behind": [
+    {"item": "PR #154 (hauska-factory, the strict-parsing + --county fix) is open, every check-run's conclusion field reads success, deliberately NOT merged. Merging redeploys both parcel-setback-cells and parcel-envelope-cells Cloud Run job images (this repo's own canon: merge to main auto-redeploys). Needs the integration seat's merge and to own the resulting deploy -- and to capture the new post-merge digests and re-run falsifiers 1-3 live against the ACTUAL deployed surface as the true production-verification step this lane could not itself perform (it may not deploy).", "row": "P-229"},
+    {"item": "PR #153 (hauska-factory, P-211's own --county fix, seat/p211-six-county-circle-back, still open) independently adds --county validation of the same shape (resolveCountyScope/COUNTY_NOT_IN_SCOPE) to the SAME two functions #154 touches. The two PRs were not reconciled with each other (deliberately -- see scopeBasis) and will very likely produce a real merge conflict if both are merged as-is. Deciding which lands, or how to reconcile them (#154 functionally supersedes #153's scope, since it includes equivalent --county validation plus the strict-parsing control #153 does not have), is the integration seat's call.", "row": "P-211 / P-229, integration seat decision owed"},
+    {"item": "The permissive-parsing pattern this row fixed on two jobs (flagValues/hasFlag with no unknown-argument check) is structurally identical in every other job file that imports from cli-flags.mjs (~20 files, e.g. parcel-r4-companions.mjs, parcel-owner.mjs, restamp-access.mjs, dollar-fields-patch.mjs). assertKnownFlags now exists and is reusable, but was deliberately scoped to only the two jobs this dispatch named. Extending it repo-wide is a distinct, larger-blast-radius row, not undertaken here.", "row": "UNCARDED, candidate future P-row"}
+  ],
+
+  "constraintsHonored": [
+    "Did not merge PR #153.",
+    "Did not merge this lane's own branch/PR (#154) -- opened, verified CI-green by check-run conclusion string, left open for the integration seat.",
+    "Did not deploy anything.",
+    "Did not run any --apply against a production store -- every falsifier and test invocation used hermetic (non-network) fakes for cortex/factory, apply=false throughout.",
+    "Did not weaken the unaccounted-only write gate (UPDATE_SETBACK_CELLS_SQL / UPDATE_ENVELOPE_CELLS_SQL) -- untouched.",
+    "Did not spawn any sub-agent -- all investigation, implementation, and verification performed directly by this lane, per the dispatch's own 'you own your fan' instruction.",
+    "Excluded this lane's own test/falsifier invocations from being mistaken for real production write activity -- all ran with apply=false against hermetic fakes, never a real store."
+  ],
+
+  "fleetMemoryScratch": [
+    {"kind": "GROUND-TRUTH", "text": "2026-09-15T17:2x live: factory-parcel-envelope-cells deployed digest sha256:ec2cd3bff... gen 4; factory-parcel-setback-cells deployed digest sha256:2899bbae... gen 3 (project hauska-prod-497015, region us-east4). Both confirmed via gcloud run jobs describe, cross-checked against Cloud Build history (builds 5117ed22/b5d35184, both created ~2026-09-14T22:45:2x-34Z, the same P-200 merge event #152)."},
+    {"kind": "LESSON", "text": "A job's own flag-reading helpers (flagValue/flagValues/hasFlag in this repo's cli-flags.mjs) can be individually correct and still compose into a permissive parser: each helper only ever looks for what it is told to look for, so nothing in the existing code path ever notices an argv token none of them were asked about. A strict-parsing gate (assertKnownFlags here) has to be a SEPARATE, explicit, closed-list check called first -- it cannot be retrofitted by auditing individual flag readers one at a time, since none of them are wrong in isolation."},
+    {"kind": "LESSON", "text": "To establish a real before-state for a 'the deployed image silently accepts X' finding without executing a live Cloud Run job (expensive, and --apply=false dry runs still hit production Neon databases for reads): confirm the worktree's git HEAD at branch-cut time against the deployed digest via TWO independent signals (git commit identity + Cloud Build image-tag timing/digest correlation), then invoke the actual parse/run functions directly with hermetic fakes. This reproduces the deployed code's real behavior with zero network calls and zero production credentials, and is far cheaper than a live job execution for proving an argument-parsing defect specifically (the defect lives entirely before any I/O)."},
+    {"kind": "OPEN", "text": "PR #153 and PR #154 both add equivalent --county validation to the same two functions, arrived at independently by two different lanes (P-211 and P-229) on the same day. Neither lane reconciled with the other, per each dispatch's own scope boundary. Whoever merges either PR first will very likely hit a real conflict when merging the second -- this is a live coordination gap in how OPS-24 dispatches were sequenced (P-211 dispatched 2026-09-15 morning per its own snapshot, P-229 dispatched later the same day, both touching the same lines), not something either lane could have resolved unilaterally."}
+  ]
+}
