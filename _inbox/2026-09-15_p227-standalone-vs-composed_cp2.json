@@ -1,0 +1,27 @@
+{
+  "lane": "p227-standalone-vs-composed",
+  "planRows": ["P-227"],
+  "checkpoint": "CP2 (pilot/mid-work, self-adversarial since no sub-agent was spawned)",
+  "timestamp": "2026-09-15",
+  "mechanismsEstablished": [
+    {
+      "leg": "x-ray / P-221",
+      "verdict": "H1 confirmed",
+      "evidence": "dossier-author.ts's authorParcelPropertyDossierExport never calls composeParcelReportFacts; verdict/brief content is caller-supplied (content param, module doc lines 15-37). feasibility-author.ts's authorParcelFeasibilityExport calls composeParcelReport -> composeParcelReportFacts, which resolves verdict internally via composeVerdict (report-model.ts:282). Genuine engine-side asymmetry."
+    },
+    {
+      "leg": "flood / QA-01, QA-03",
+      "verdict": "H2 confirmed, H1 wrong for this leg",
+      "evidence": "flood-drainage.ts:85-129 POST /flood-drainage/refresh is synchronous (awaits authorParcelFloodDrainageReport in-request). parcel-terrain.ts:792-856 POST /feasibility-export/refresh is asynchronous (202/jobRef/poll/download, P-155 pattern, 'Deliberately not awaited' at line 847). LIVE-VERIFIED via gcloud logging read (project hauska-prod-497015, hauska-engine-api): 3 POST .../48453:289990/flood-drainage/refresh calls on 2026-09-15 at 15:55:43Z/15:57:31Z/16:01:36Z, latencies 75.2s/69.6s/56.2s, ALL status 201. Engine never fails; times out only client-side. Matches P-155's documented pre-fix feasibility profile (85-154s)."
+    },
+    {
+      "leg": "site plan / P-222 D3",
+      "verdict": "neither H1 nor H2 -- no hauska-engine-side mechanism found",
+      "evidence": "Both routes build descriptor from caller-supplied request-body fields only (parcel-terrain.ts:419-422 standalone vs :726 composed) and both call the SAME function, author.ts's composeSitePlanModelForParcel, whose own doc says descriptor is 'Caller-supplied only' (author.ts:246-247), with no live resolver fallback on either path. pdf/feasibility.ts:1267-1268 confirms the composed header reads the same descriptor-derived field, not a richer one. Falsifier 2 applied literally: same resolver, same (absent) vintage handling -> H1 abandoned for this leg."
+    }
+  ],
+  "secondMechanismCheck": "server.ts:174-186 mounts buildParcelTerrainRoutes() (site-plan/feasibility/dossier/terrain) and buildFloodDrainageRoutes() (flood) on the SAME v1 sub-app / SAME hauska-engine-api service / SAME revision. Ruled OUT for all three legs: no different service, adapter, or vintage is in play.",
+  "adversarialCheck": "Re-read own conclusion against Falsifier 3 ('a one-cause conclusion without file+function per symptom is pattern-matching'): verdict here is explicitly NOT one cause -- two distinct confirmed mechanisms (x-ray, flood) plus one leg with no engine-side mechanism (site plan), each independently cited to file+function. Re-checked that the flood log evidence is the AUTHORITATIVE record (Cloud Run's own httpRequest.latency/status fields, not app-level logs or a proxy metric) per the dispatch's 'known traps' section.",
+  "openRisk": "Site plan's true cause (a caller-side payload difference) is asserted as the most parsimonious remaining explanation given engine-side symmetry, but the actual caller code (PE / smartsite-mcp / app backend, whichever constructs the /site-plan-export/refresh body) was not read -- named explicitly as out of this lane's repo scope rather than guessed at.",
+  "nextStep": "Write the full ruling doc and close artifacts; no further code changes; no deploy."
+}
