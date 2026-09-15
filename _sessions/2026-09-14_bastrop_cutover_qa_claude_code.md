@@ -59,12 +59,45 @@ already shipped.
 | G-130 | Flood authority ruled. |
 | G-132 | Staff auth, closed-partial. Verifier provider-agnostic, 812/812. |
 
-## Live lanes at capture
+## What landed — final, post-restart audit 2026-09-15
 
-`g122-v1-regression`, `g133-bastrop-verify-access`, `g129-flood-mount` — all claimed 2026-09-15
-~00:16 UTC. Plus `p200-hays-rails` and `p205-coverage-refusal` from other sessions.
+The machine restarted overnight. **Nothing was lost.** Every lane released its claim cleanly,
+which means each completed rather than dying mid-flight.
 
-**G-134 compiled and not yet fired.** `_dispatches/2026-09-15_g134-workos-wiring_dispatch.md`.
+| Row | Status | Evidence |
+|---|---|---|
+| G-120 Overview | closed | deployed, verified |
+| G-122 v1 incident | closed | PR #55, cause was EXTERNAL |
+| G-123 Dev services | closed | 20/20 live checks, PII leak closed |
+| G-125 rainfall control | closed | live at two depths on a real parcel |
+| G-126 tenant isolation | closed | three unguarded list routes fixed |
+| G-128 map dock | closed-partial | Place retired to a rail |
+| G-129 flood mount | **closed-partial, DEPLOYED** | `00074-sil` @100%, tag `g129-flood` |
+| G-130 flood authority | closed | ruled |
+| G-131 tenant resolution | **closed** | literal replaced by `getBastropTenantId()` |
+| G-132 staff auth | closed-partial | verifier provider-agnostic, 812/812 |
+| G-133 verification access | closed | the key was never missing |
+| G-134 WorkOS | closed-partial | built; blocked on the org existing |
+| G-135 key distribution | closed-partial | mint request + credential index filed |
+
+**Sylvia's flood study is live.** G-129 verified by violation in both directions including
+revert-on-close, and the PE embed auto-opened the Reports dock in production for a real Bastrop
+parcel.
+
+## TWO THINGS ONLY THE OPERATOR CAN DO — the whole soft launch waits on the first
+
+**1. Create the WorkOS organization, client id and API key.** G-134's own words: *"Nothing in
+this lane can substitute for this; it is the one thing that turns 'build now, verify later' into
+'verified.'"* Then enable Require MFA at org level (dashboard-only, no API found) and configure
+the claim mapping.
+
+**2. Mint the verification-scoped `bastrop_tx` key** per
+`_inbox/2026-09-15_g135_substrate_mint_request.md`. G-135 could not — the seat boundary held, as
+predicted — so it wrote the request and built `_catalog/credential_access_index.json` (five
+entries, explicitly declared incomplete).
+
+**Also open:** `smartcity-dashboards` PR #64, both checks green, documenting the corrected
+credential mechanism. Not the integration seat's to merge.
 
 ## Rulings made
 
@@ -141,6 +174,19 @@ Both ranked hypotheses tested clean on diff review. **The dispatch's insistence 
 than assuming, and on naming a second mechanism, is what found it** — the process worked while the
 planner's hypothesis did not.
 
+**Named an environment variable that does not exist, from a truncating regex.** I told G-135 to
+document `HAUSKA_TENANT_KEY`. The real name is `HAUSKA_TENANT_KEYS` — plural, a JSON map — and
+even that is local and unit-test only, because `src/tenancy.mjs` resolves production via a
+per-request `x-hauska-key` header against MCP `/auth/whoami`. My grep was
+`[A-Z][A-Z0-9_]*(KEY|TOKEN)`; the greedy class backtracks so the group can match, **silently
+dropping the trailing S**. The truncated name reached a dispatch, a plan row and a commit message.
+Same shape as the `\Z` regex bug already on record. Caught by the lane reading source rather than
+trusting the paraphrase — including G-133's close, which had propagated the same singular name.
+
+**Two further corrections from lanes:** G-131 found the tenant-blind route group is SIX, not the
+five G-126 stated; G-134 found smart-files' read path resolves an opaque
+`SMART_FILES_SERVICE_TOKENS` bearer, not the `x-persona` gate my dispatch described.
+
 Common shape: **a conclusion travelled and its caveat did not.**
 
 ## Designs — `_design/`, with `README.md` and `INDEX.md`
@@ -178,3 +224,12 @@ scannable list, none on a public rail.** Dashboards embeds, does not compute. Bu
 REFUSED per R-2. The frozen `sc-kit.css`, byte-identical across three repos. Honest-empty states
 keep their `.basis` line. `smartcity-os` no-touch outside named exceptions — **and under soft
 launch it is live production, so changes there carry customer risk.**
+
+## The gap that is now four-for-four
+
+Four artifacts this session sat outside `main`: the stranded `seat/govtech` branch, the govtech
+closes, G-122's close (which **blocked a live lane**), and G-129's close (found by the post-restart
+audit). The contract says lanes do not commit doc_repo, and **nothing makes the planner collect
+what they leave.** Each time it was caught by accident or by someone tripping over it.
+
+That is a handoff gap with no control, and it has earned one.
