@@ -1,0 +1,69 @@
+{
+  "lane": "p207-payload-contradiction",
+  "planRows": ["P-207"],
+  "checkpoint": "CP2",
+  "stage": "pilot/mid-work",
+  "timestamp": "2026-09-14T20:55:00Z",
+  "seat": "property",
+  "seatSessionId": "cente-p207",
+  "fixApplied": {
+    "file": "artifacts/api-server/src/lib/r1BriefCompose.ts",
+    "function": "buildR1Brief",
+    "change": "Added a landUseAddressRecovered check (asRecord(root.provenance)?.landUseAddressRecovered === true) that, when true, routes the land-use section to the recovered baseFacts.landUse instead of the atom -- placed ahead of the existing atom-vs-legacy branch, which is otherwise untouched.",
+    "diffstat": "2 files changed, 95 insertions(+), 2 deletions(-)"
+  },
+  "testWork": {
+    "file": "artifacts/api-server/src/lib/r1BriefComposeLandUse.test.ts",
+    "newTests": [
+      "FALSIFIER control: a join-hold absence with NO address recovery is unaffected -- absence still wins",
+      "the real P-207 case: an address-recovered baked value outranks the atom's join-hold absence"
+    ],
+    "fixtureSource": "Built from the live 48209:97658 read (CP1) verbatim: same absence.kind/reason text, same recovered code/source/vintage.",
+    "falsifierProven": {
+      "method": "git stash push -- the fix file only (tests kept in the working tree), ran vitest, then git stash pop",
+      "beforeFix": "9 passed, 1 failed -- the real P-207 case test failed with 'expected absent to be present', control test passed",
+      "afterFix": "10 passed, 0 failed",
+      "conclusion": "The fixture fails before the fix and passes after it, and does not pass vacuously (the control test proves the fix is scoped, not a general softening)."
+    },
+    "regressionCheck": {
+      "filesRun": [
+        "src/lib/r1BriefCompose.test.ts",
+        "src/lib/r1BriefComposeLandUse.test.ts",
+        "src/lib/smartSiteStub.test.ts",
+        "src/lib/structuralFactToFacetsWire.test.ts",
+        "src/routes/__tests__/propertyExplorerBriefNodeFacetParity.test.ts",
+        "src/__tests__/pe-r1-brief-flood.test.ts"
+      ],
+      "result": "84/84 passed, 0 regressions",
+      "unrelatedPreExistingFailures": "src/__tests__/landUseSmoke.test.ts, src/lib/verdictLayerServe.test.ts, src/__tests__/pe-property-entitlement.test.ts fail in this shell on 'DATABASE_URL must be set' -- a local-shell env-provisioning issue for DB-backed CLI/route tests, unrelated to r1BriefCompose.ts and not touched by this change. Full CI (below) proves these are not blocking."
+    }
+  },
+  "pr": {
+    "number": 689,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/689",
+    "branch": "fix/p207-payload-contradiction",
+    "headSha": "2f83760a25a8e58fbbcc7da6089f9e05812fd77a"
+  },
+  "ciCheckRunConclusions": {
+    "verifiedVia": "gh api repos/empressaioemail-tech/legacy-design-tools/commits/2f83760a25a8e58fbbcc7da6089f9e05812fd77a/check-runs (conclusion STRING, not gh pr checks' pass label, per AGENT_CONTRACT section 5)",
+    "runs": {
+      "L17 ci-vintage-predicate": "success",
+      "PR base is main": "success",
+      "SS-W16 tier2 flood not served": "success",
+      "Test": "success",
+      "L5 silent-fallback greps": "success",
+      "L5 SF-24/SF-25 score greps": "success",
+      "SS-W18 api-server boots": "success",
+      "L5 SF-26 hand hasWriter grep": "success",
+      "Typecheck": "success",
+      "cortex daily limit bake": "success",
+      "L5 SF-30 Cotality warm grep": "success"
+    }
+  },
+  "blockedOn": "This dispatch's own text ('Do not: Deploy without the operator's go') supersedes the general canon-preamble's 'deploys are planner-owned' for this row. legacy-design-tools' cloud-run-deploy.yml triggers on push to main, so merging this PR IS deploying. Holding the merge pending the operator's explicit go-ahead before shipping a change to what land-use code a real government/property customer surface serves.",
+  "remainingWork": [
+    "Operator go-ahead to merge PR #689 (== deploy).",
+    "After deploy: a live get_smart_site depth-node read of 48209:97658 confirmed to show brief and draw agreeing (the mission's own named completion evidence).",
+    "Check whether 48491 (Williamson, the other LANDUSE_JOIN_DISABLED_FIPS_SEED county) has any node with the same landUseAddressRecovered=true shape -- if so the same fix applies there too; not yet spot-checked live."
+  ]
+}
