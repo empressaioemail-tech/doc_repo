@@ -1,0 +1,73 @@
+{
+  "lane": "p207-payload-contradiction",
+  "planRows": ["P-207"],
+  "checkpoint": "CP1",
+  "stage": "design/pre-build",
+  "timestamp": "2026-09-14T20:30:00Z",
+  "seat": "property",
+  "seatSessionId": "cente-p207",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-p207",
+  "branch": "fix/p207-payload-contradiction",
+  "baseCommit": "803cd0d564349f3a67fd1d2be7985f3d25a8888b",
+  "missionPremise": "One get_smart_site depth-node call for 48209:97658 returns brief.sections[land-use] as absent/join-hold in the same payload as draw.attrs.landUse present (C1). The root cause of the join being disabled (LANDUSE_JOIN_DISABLED_FIPS_SEED, Hays 48209 + Williamson 48491) is P-180's finding and is not re-derived here.",
+  "liveReproduction": {
+    "tool": "mcp__claude_ai_Smart_Site__get_smart_site",
+    "parcelNodeId": "48209:97658",
+    "depth": "node",
+    "calledAt": "2026-09-14T17:49:46.118Z (bakedAt on the response)",
+    "briefLandUse": {
+      "state": "absent",
+      "source": "land-use-fact",
+      "absence": {
+        "kind": "join-hold",
+        "reason": "LANDUSE_JOIN_HOLD county 48209 — TxGIO prop_id does not join CAD property_use_code"
+      }
+    },
+    "drawAttrsLandUse": { "v": "C1", "desc": "Vacant lot or tract", "state": "present" },
+    "ownerFact": {
+      "state": "absent",
+      "absence": {
+        "kind": "join-hold",
+        "reason": "LANDUSE_JOIN_HOLD county 48209 — TxGIO prop_id does not join the CAD account"
+      }
+    }
+  },
+  "sourceTrace": {
+    "briefPath": "artifacts/api-server/src/lib/r1BriefCompose.ts buildR1Brief() land-use section (composeLandUseBriefSectionFromAtom over options.landUseFact, a live loadLandUseFactAtom read of the land-use-fact atom)",
+    "drawPath": "artifacts/api-server/src/lib/parcelDrawFromReads.ts tryAssembleParcelDrawFromReads() -- landUse: baseFacts.landUse ?? null, i.e. the Tier-1 bake's OWN baked field, with no reference to the atom at all",
+    "atomLiveRead": {
+      "store": "ATOMS_DATABASE_URL (hauska_mcp db, same Neon project as DEPLOYMENT_DATABASE_URL per CTX-F precedent)",
+      "query": "SELECT entity_id, body FROM atoms WHERE entity_type='land-use-fact' AND entity_id LIKE '48209:97658%'",
+      "result": "entity_id 48209:97658:2026, sourceAdapter cad-property-land-use-v1, sourceUrl cad_property.property_use_code, evaluatedAt 2026-08-12T16:29:27.759Z, absence.kind join-hold -- unconditional for any FIPS in the writer's own disabled set, no address-join recovery mechanism"
+    },
+    "bakedSnapshotLiveRead": {
+      "store": "DEPLOYMENT_DATABASE_URL (neondb, legacy-design-tools-prod project) -- NOT the hauska-prod-497015 DATABASE_URL secret, which points at a different db (hauska_mcp) with no place_layer_snapshots table; verified by connecting to both and listing tables",
+      "query": "SELECT payload_json FROM place_layer_snapshots WHERE adapter_key='node-facets:tier1' AND place_key='node:48209:97658'",
+      "result": {
+        "bakedAt": "2026-09-14T17:49:46.118Z",
+        "baseFacts.landUse": {
+          "code": "C1",
+          "source": "cad-roll-address-join",
+          "vintage": "tier:cad-export;adapter:orion;drop:hays_20260826_certified",
+          "description": "Vacant lot or tract"
+        },
+        "provenance.landUseGateBlocked": false,
+        "provenance.landUseAddressRecovered": true
+      }
+    }
+  },
+  "rootCauseOfTheDisagreement": "buildTier1Payload (nodeFacetBakeTier1Cli.ts) implements a SECOND, independent, owner-gated situs-address join (resolveAddressLandUse) that legitimately recovers a real land-use code for a gate-blocked county from the certified 2026-08-26 Hays CAD drop -- distinct from, and never re-enabling, the disabled prop_id join. draw.attrs.landUse reads this recovered value directly (baseFacts.landUse) and is correct. The land-use-fact atom that the brief section trusts (evaluated 2026-08-12, BEFORE the certified drop existed) has no equivalent recovery logic and always reports join-hold for any FIPS in its disabled set. r1BriefCompose.ts's buildR1Brief (2026-09-07 D2 fix) made the brief trust the atom unconditionally whenever its state is not 'refused', which is correct everywhere the atom's absence really is the final word, but wrong here: the atom's absence is stale relative to a recovery mechanism it cannot see.",
+  "whichHalfIsWrong": "The brief's absent is the wrong half for this specific case. draw.attrs.landUse is right -- the value is legitimately available from a second, independently-sourced derivation (owner-verified situs-address match against the same CAD roll), not a fabrication and not a re-derivation of the disabled prop_id join.",
+  "f27Read": "Read, not chased (per dispatch instruction). F27 (parcel_gate_verdict passing landUseCode/owner rails on the same day the serve reports join-hold) is a THIRD, still-open question about whether the gate measures stored cells vs re-derives at request time, or passes vacuously. This lane's finding does not eliminate either F27 mechanism: parcel_gate_verdict is a parcel_record-cell gate, entirely orthogonal to the Tier-1 bake / land-use-fact-atom pair this lane traced. Reported as an open question, not resolved.",
+  "plannedFix": {
+    "file": "artifacts/api-server/src/lib/r1BriefCompose.ts",
+    "change": "In buildR1Brief's land-use section, when root.provenance.landUseAddressRecovered === true, prefer baseFacts.landUse (the recovered value, matching what draw already reads) over the atom, regardless of the atom's state. Every other absent/refused/present shape is unchanged -- narrowly scoped to the one evidenced signal, not a general downgrade of atom trust.",
+    "outOfScope": "LANDUSE_JOIN_DISABLED_FIPS_SEED (untouched), the land-use-fact atom writer (lives outside legacy-design-tools per this repo's own grep -- not re-derived per dispatch instruction), smartcity-os/smartcity-dashboards (untouched)."
+  },
+  "falsifiersPreRegistered": [
+    "If the fix makes brief and draw agree by deleting/nulling the draw value while the value was actually legitimate and sourced, that is removing a working rail -- REJECTED as a fix shape before writing any code.",
+    "If the fix makes brief and draw agree by softening the brief's absent to something weaker (e.g. always trusting baked value over the atom), that converts a real finding (join-hold) into a label for every OTHER case too -- REJECTED; the fix must be scoped to exactly the address-recovered signal.",
+    "A fixture that passes both before and after the change does not test the disagreement -- the fixture must be run against the pre-fix code (via git stash of the fix commit alone) and shown to fail there, then pass after.",
+    "This is internal consistency within one payload (our own doctrine's warning: it looks meaning-shaped and may not be). The second, independent derivation this lane found is buildTier1Payload's own owner-gated situs-address join against a named, real CAD drop (hays_20260826_certified) -- named explicitly rather than asserted; if that provenance did not check out, the recovered value would have to be treated as no more independent than the atom, and the fix would not be justified."
+  ]
+}
