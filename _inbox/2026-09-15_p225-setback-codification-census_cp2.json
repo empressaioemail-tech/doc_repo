@@ -1,0 +1,41 @@
+{
+  "lane": "p225-setback-codification-census",
+  "checkpoint": "CP2 (pilot/mid-work, adversarial)",
+  "planRows": ["P-225"],
+  "seat": "cente-p225",
+  "at": "2026-09-15T17:35:00.000Z",
+  "instrumentRun": {
+    "path": "_inbox/2026-09-15_p225_census_instrument.mjs",
+    "outputArtifact": "_inbox/2026-09-15_p225_census.json",
+    "citiesInScope": 18,
+    "citiesMeasured": 16,
+    "citiesErrored": [
+      { "cityKey": "austin-tx", "county": "Travis", "error": "HTTP 499 'Token Required' -- the Publish_Zoning_AGOL FeatureServer/0 service, on the SAME URL the registry's own 2026-07-24 comment calls 'LIVE-VERIFIED', now requires an ArcGIS token even for the service-root metadata request (not just the query). This is a real access-gating change since the registry entry was written, not a query bug on my side (confirmed: a bare unauthenticated GET to the service root and to layer 0's metadata both return the same 499 with no query parameters at all). Travis county's Austin districts are UNMEASURED in this census, not zero -- Austin is the single largest city in the six-county scope, so this is a material gap.", "productionImpact": "If this token gate is new (not a transient outage), legacy-design-tools' own zoning-stamp.ts job for Austin would fail against this same URL in production, unrelated to this census -- worth a separate finding, not fixed here." },
+      { "cityKey": "lockhart-tx", "county": "Caldwell", "error": "HTTP 400 'Invalid URL' at the service root itself. Confirmed the service no longer exists: listing every service under org kPfGI7KGlXn5IaHL (https://services3.arcgis.com/kPfGI7KGlXn5IaHL/ArcGIS/rest/services?f=json) returns only 'Parcels_with_CCAD_info' and 'Road_Centerlines' -- 'Lockhart_City_Zoning_Online' has been removed or renamed since the registry entry was written. Caldwell county returns ZERO rows in this census, entirely because of this dead URL, not because Lockhart has no uncodified districts -- exactly the falsifier-3 trap the dispatch warned about ('a county returns zero uncodified districts, suspect your enumeration'). I did not guess a replacement URL." }
+    ]
+  },
+  "falsifierResults": {
+    "falsifier1_codifiedDrawsPolygon": {
+      "verdict": "PASS",
+      "evidence": "Bastrop SF-1 (ZoneTypeClass=3, codified via bastrop-development-code, matched), three live centroids sampled from the public Zoned_Parcels/FeatureServer/83 layer, POSTed as {lat,lng} to https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/buildable-envelope: sample #2 returned HTTP 200 status=ok with a real 7-vertex polygon; samples #1 and #3 returned HTTP 200 status=no-buildable-area (a real per-parcel geometric refusal, distinct from a codification gap -- the setback source DID resolve; the specific lot's derived buildable area came out empty). None returned a 404/no-district. This reproduces the dispatch's own opening exhibit (48021:34873 SF-1 -> 200 real Polygon) on freshly independently sampled parcels, not the same parcel."
+    },
+    "falsifier2_uncodified404s": {
+      "verdict": "PASS",
+      "evidence": "Two independent samples: (1) Bastrop GC (ZoneTypeClass=7, uncodified, disposition serve-from-atom-chain) -> HTTP 404 {status:'no-district', reason:'No authoritative setback source covers this district — geometry not derived.'} -- this is the EXACT string from the dispatch's own live measurement, reproduced independently. (2) Leander PUD-SF (uncodified, disposition ruled-out-of-scope), sampled twice -> HTTP 404 {status:'no-district'} both times."
+    },
+    "falsifier3_noZeroCounties": {
+      "verdict": "TRIPPED, as designed",
+      "evidence": "Caldwell county (Lockhart, its only wired city) returned zero rows -- investigated per the falsifier's own instruction rather than accepted at face value, and traced to a dead ArcGIS service URL (see citiesErrored above), not a genuinely clean county. Travis county's count (28 districts, 12 uncodified) is real but INCOMPLETE -- it excludes Austin entirely, the largest city in the county, for the same reason (token gate). Both are reported as UNMEASURED-affected, not folded into the clean per-county totals without flagging."
+    }
+  },
+  "adversarialChecks": [
+    "Georgetown zoning-layers.ts:22 comment claims 'RL' was one of 12 live-verified-covered setback districts (2026-07-20); the real georgetown-tx.json table has no RL row (RT and RM exist instead). Live re-check confirms RL (3 parcels) is genuinely uncodified today -- either the comment always had a typo or the table changed since; either way the comment cannot be trusted as ground truth over the live re-derivation, which is what this census is built to do instead of trusting comments.",
+    "Leander PUD-SF (7,815 parcels, the single largest uncodified row in the whole census, ~42% of Williamson county's uncodified parcel count) was initially classified by a blind code-shape heuristic (PUD-prefix -> ruled-out-of-scope). Before accepting that, live-fetched the layer's own Use_/Descr pairs (2026-09-15): every PUD-prefixed code carries dozens of distinct per-project development names (Lakeline Ranch, Travisso, Connelly's Crossing, ...), confirming these are genuinely individually-negotiated planned-development composites rather than a shared citywide district -- the heuristic's conclusion held, but now rests on live evidence instead of a guess. The same check surfaced a second finding: Leander's T4/T5/T6 codes carry AMBIGUOUS descriptions (mixed TOD/transect and plain-base-use text) and were downgraded from a confident call to an explicitly low-confidence 'acquire', rather than forced into a category the evidence does not clearly support.",
+    "docs/property-explorer-setback-coverage-central-tx.md:29 (2026-07-23) asserts 'getSetbackTableForZoning resolves every B3 P-* code to bastrop-city-tx' -- this is STALE against the current index.ts, which routes City-of-Bastrop to bastrop-development-code and returns null (honest-decline) for the repealed P-1..P-5/P-CS/P-EC codes per WDLL STEP 3 / isRepealedB3PlaceType. Not used as a source for this census; flagged as a documentation-staleness finding for the close's leave_behind."
+  ],
+  "remainingWork": [
+    "Write the close artifact with full counts, disposition summary, and leave_behind items (dead Lockhart URL, Austin token gate, two stale docs).",
+    "Commit _inbox/ artifacts (CP1, CP2, instrument script, census JSON, surface-probe citation artifact, close) to the doc_repo lane worktree and push to origin/main, fast-forwarded past any concurrent lane commits (p229-flag-refuses is known live-claimed concurrently per _catalog/lane_claims.json).",
+    "Release the lane claim."
+  ]
+}
