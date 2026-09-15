@@ -1,0 +1,31 @@
+{
+  "lane": "p208-remint-noop",
+  "checkpoint": "CP1 (design/pre-build — investigation plan and falsifiers pre-registered)",
+  "planRows": ["P-208"],
+  "at": "2026-09-14",
+
+  "missionPremise": "depth-warm-remint's real dry-leg execution (hauska-engine-depth-warm-remint-7gjxg, exit 0, 2026-09-14) declined its own named canary parcel 48021:34049 with parcel-node-retired, yet the parcel serves a complete card today through the retrieval-api /record path. Both cannot be right about the same node; the dispatch names exactly two candidate mechanisms and requires eliminating one with evidence.",
+
+  "planPreRegistered": [
+    "1. Read warm-preflight-gate.ts to find the exact decline predicate for parcel-node-retired.",
+    "2. Read the serve path (retrieval-api /property-nodes/:id/record) to see whether it consults the same parcel-node lifecycle at all, or a different store entirely.",
+    "3. If the two paths read different stores, find where each store's notion of currency is derived and whether they can diverge without either being 'wrong' in isolation.",
+    "4. Search doc_repo for prior, dated evidence of this exact parcel being read live, to bound when (if ever) it stopped being current.",
+    "5. If a live, low-risk, read-only source-of-truth check exists (e.g. the county's own public CAD/GIS service), run it directly rather than trusting either subsystem's derived state."
+  ],
+
+  "falsifiersPreRegistered": [
+    "If the re-mint's decline is correct (the account is genuinely gone from the authoritative CAD source) AND the serve path is also correct in the narrow sense that its cells were valid AS OF THEIR BAKE TIME, the finding is: two subsystems disagree about currency with no propagation between them, and the serve path is the defect (escalate per the dispatch, do not propose a re-mint fix).",
+    "If the decline is spurious (the account is still live at the authoritative source), the fix belongs in the re-mint's/reconcile's identity-continuity determination, not in the serve path, and I must name exactly where each identity/currency signal is read.",
+    "A fix that makes --promote write for this parcel without being able to state what still makes a GENUINELY retired node refuse is a removed guard, not a fix, and is disqualified regardless of how it tests."
+  ],
+
+  "firstPassFindings": [
+    "warm-preflight-gate.ts: parcel-node-retired fires only when the stored atom's own status field equals 'retired' (packages/engine-core/src/parcel-node/warm-preflight-gate.ts:112-121). This is a total, no-fallthrough function — the decline is a faithful readout of the stored atom, not a bug in the gate itself.",
+    "reconcile-county-parcel-nodes.ts: status is flipped to 'retired' exclusively by a county re-acquisition's SET-DIFFERENCE reconcile — any previously-active parcel-node atom whose id is absent from a freshly-derived TxGIO plan is classified an orphan and retired (invariant S2). Retirement is scoped to the parcel-node entity type only; it does not cascade to sibling atoms (zoning-fact, setback-rule, buildable-envelope) minted under the same parcelNodeId.",
+    "retrieval-api's GET /property-nodes/:parcelNodeId/record (services/retrieval-api/src/parcel-record-reader.ts, readParcelRecord/buildRailResponse) resolves a placeKey via the Factory's own crosswalk (store.resolvePlaceKey) and loads parcel_record_cell rows and their dereferenced atoms. Exhaustive grep across services/retrieval-api and packages/storage's parcel-record-db.ts for any reference to the parcel-node entity type or its status/retiredAt fields: ZERO hits outside one unrelated hint string. The serve path CANNOT see a parcel-node retirement at all — it is architecturally blind to it, not merely stale.",
+    "This confirms the dispatch's contradiction is real and is not a typo/formatting mismatch: both systems use the identical id string '48021:34049'; they consult entirely separate stores (the canonical atoms table's parcel-node row vs. the Factory's parcel_record_cell, baked 2026-08-05) with no propagation between them in either direction."
+  ],
+
+  "openQuestionCarriedToCp2": "Whether the parcel-node row's retired status is itself CORRECT (the true CAD/county source stopped publishing this account, making this materially the worse, escalate-now finding) or SPURIOUS (a reload/reconcile artifact, making this a re-mint identity-resolution fix). Neither the gate's code nor the serve path's code answers this — both are consistent with either hypothesis. Next: search doc_repo for contemporaneous live evidence, and identify whether any live, authoritative, out-of-band source can be read directly."
+}
