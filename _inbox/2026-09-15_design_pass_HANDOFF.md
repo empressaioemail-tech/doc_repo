@@ -2,7 +2,7 @@
 id: 2026-09-15_design_pass_HANDOFF
 title: HANDOFF — the design pass, what is left to design, and the road to Bastrop's approval
 date: 2026-09-15
-status: handoff — read before designing anything else
+status: SUPERSEDED 2026-09-15 by _inbox/2026-09-15_design_thread_HANDOFF.md. Kept for history; do not plan from it.
 kind: handoff
 owner: nick
 programs: [OPS-17]

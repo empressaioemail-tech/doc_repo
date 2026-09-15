@@ -78,6 +78,12 @@ const ROWS = [
     boards: [['Main.dc.html', 'FinanceReconciled', 'Reconciled — the default view'], ['Exceptions.dc.html', 'FinanceExceptions', 'Exceptions — the worklist'], ['Lodging.dc.html', 'FinanceLodging', 'Lodging economy'], ['Unlabelled.dc.html', 'FinanceUnlabelled', 'Unlabelled — tax type unconfirmed'], ['Empty.dc.html', 'FinanceEmpty', 'Empty — no grant']],
   },
   {
+    surface: 'Smart Files',
+    note: "SMART FILES — DRAFT 2026-09-15, not ratified. Drawn against the smart-files repo at origin/main 61c84f6: its own repo, its own database, its own serving process.\nTHE DASHBOARDS \"FILES\" NAV ITEM IS A MOUNT POINT and says so on itself, so designing it there would be designing a frame.\nSmart Files is NOT a file browser, and its best properties are exactly the ones a browser has nowhere to put: whether a document text is searchable and WHY NOT (three named reasons), that a second upload under the same slug is a REVISION of one document rather than a sibling, who captured it in what declared role (five keys, and the write REFUSES without them), and what it is placed against rather than only which folder it sits in.\nCOVERAGE BEFORE RESULTS is the strongest move: a search box over a corpus where some documents were never indexed lies by omission. Here 12 searched, 19 not — and six of the seven with no text layer are plan sets, which is exactly where a drainage easement would be drawn.",
+    from: 'smart-files',
+    boards: [["Main.dc.html","SmartFilesRoom","The room — the row carries what the product knows"], ["Search.dc.html","SmartFilesSearch","Search — coverage before results"], ["Document.dc.html","SmartFilesDocument","One document — a revision, not a sibling"], ["Refusals.dc.html","SmartFilesRefusals","Two refusals, drawn as first class"], ["Gaps.dc.html","SmartFilesGaps","Built in the service, no surface"]],
+  },
+  {
     surface: 'Place tab',
     note: 'PLACE TAB — SUPERSEDED 2026-09-14, kept on purpose.\nThe v1-parity option, replaced when the map became a persistent rail. It stays on this canvas so the next person can see the option not taken and why, rather than re-proposing it.',
     from: 'smartcity-place-tab',

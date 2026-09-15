@@ -1,0 +1,84 @@
+{
+  "_source": {
+    "repo": "smart-files",
+    "ref": "origin/main",
+    "commit": "61c84f6",
+    "read": "2026-09-15",
+    "files": ["README.md", "src/identity.mjs", "src/extract.mjs", "web/index.html"],
+    "note": "Closed vocabularies read out of the code, not out of the README prose. A canvas showing a value that is not in one of these lists is a fabrication, and check.mjs refuses it."
+  },
+
+  "scopeTypes": {
+    "all": ["jurisdiction", "tenant", "site", "instrument"],
+    "writable": ["tenant", "instrument"],
+    "cite": "src/identity.mjs:3 SMART_FILE_SCOPE_TYPES, :10 WRITABLE_SCOPE_TYPES",
+    "note": "All four are readable behind the caller-scope gate. Write accepts two."
+  },
+
+  "searchIndexReasons": {
+    "values": ["content-type-not-indexable", "no-text-layer", "extraction-failed"],
+    "cite": "src/extract.mjs:30, :37, :41",
+    "nullMeans": "indexed successfully",
+    "note": "THREE named reasons a document is not searchable, and they are not the same thing. A JSON record was never eligible. A scanned PDF has no text layer. A corrupt PDF failed extraction. Every file browser in the world collapses these into absence from the result set."
+  },
+
+  "provenanceRequiredKeys": {
+    "values": ["capturedBy", "capturedAt", "sourceKind", "originalFilename", "declaredRole"],
+    "cite": "src/identity.mjs:188 PROVENANCE_REQUIRED_STRING_KEYS",
+    "note": "A missing or invalid key REFUSES the write with 400. It does not default."
+  },
+
+  "provenanceSourceKinds": {
+    "values": ["staff-upload", "applicant-upload", "feed", "instrument-write"],
+    "cite": "src/identity.mjs:181 PROVENANCE_SOURCE_KINDS"
+  },
+
+  "revisionRule": {
+    "cite": "README.md, G-107",
+    "verbatim": "Uploading a SECOND time with the identical docSlug is a new VERSION of the SAME document (currentVersion increments, entityId is unchanged, response carries revision: true) rather than a counter-suffixed sibling document",
+    "note": "This is what makes a submittal identity stable across revisions."
+  },
+
+  "readGate": {
+    "cite": "README.md G-106 defect #3, src/identity.mjs parseServiceIdentities / identityAllowsAnyScope",
+    "verbatim": "A read refuses with 403 -- anonymous or a token scoped to a different tenant alike -- unless the bearer token resolves to a SMART_FILES_SERVICE_TOKENS identity holding a grant for the resource actual (scopeType, scopeId).",
+    "defaultDeny": "SMART_FILES_SERVICE_TOKEN is deliberately NOT auto-granted read access to every scope; an environment that has not configured SMART_FILES_SERVICE_TOKENS reads nothing, by design, rather than keeping the old defect as a silent default."
+  },
+
+  "searchRoute": {
+    "cite": "README.md, search wave",
+    "facts": [
+      "requireReadScope runs BEFORE any data is touched, so the search gate is exactly as strict as every other read route.",
+      "Only the CURRENT version of a document is searched.",
+      "Results carry entityId, title, snippet and rank metadata only, never blob bytes.",
+      "search_text IS NULL, never the empty string, is the one honest not-indexed value.",
+      "The tsvector column is STORED and generated, not trigger maintained, so the index cannot drift out of sync with search_text."
+    ]
+  },
+
+  "placements": {
+    "cite": "README.md, placement target",
+    "verbatim": "Every uploadFileToFolder write used to hard-code a folder placement, even when the real target was already knowable -- e.g. smartcity-dashboards municode calendar scraper uploads a meeting documents with no way to say which meeting.",
+    "note": "targetType and targetId now travel together and are validated against the smart_file_placements CHECK constraint. Wiring the municode scraper to actually pass targetType meeting is a separate change in that repo and is NOT done."
+  },
+
+  "shippedTable": {
+    "cite": "web/index.html:92-101",
+    "columns": ["Name", "Kind", "Version", "Who can see it", "Last revised", "Referenced"],
+    "note": "The shipped table already carries three of the good properties: Version, Who can see it, and Referenced (placements). It carries NOTHING about searchability and NOTHING about provenance, and those are the two the product is strongest on."
+  },
+
+  "shippedCopy": {
+    "peopleView": "Every grant, every link, every revoke, with a name and a time. This is the page a city attorney opens.",
+    "accessRail": "A share link is a row in this list with a name and a time, not a URL that exists off the record. Revoke sits at the same weight as the grant.",
+    "emptyRoom": "Files are private to the tenant that owns them. Nothing has been created here, and nothing has been shared with it.",
+    "navFoot": "Your data is yours",
+    "bringCaveat": "This page is chrome against fixture data. It is not a live Drive sync."
+  },
+
+  "mountedAt": {
+    "cite": "smartcity-dashboards origin/main f776b4bf web/index.html:1419-1445",
+    "verbatim": "This view mounts the serving Smart Files host with its own product top bar suppressed. It does not copy the browser.",
+    "note": "The dashboards Files surface is a MOUNT POINT, not a second implementation. Designing Files in dashboards would be designing a frame. The product is here."
+  }
+}
