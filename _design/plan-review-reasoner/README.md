@@ -5,7 +5,9 @@
 system. No markup, no batch stamping, no measurement tools, no document workflow.
 **Relation to `_design/plan-review/`:** that folder is the earlier pass (queue, console,
 Dashboards embed) and stands. This one goes deep on the reasoning and its output.
-**Status:** draft, 2026-09-15. Not ratified, not dispatched.
+**Decision:** RATIFIED 2026-09-15, `_decisions/2026-09-15_design_ratification_pass.md`.
+**Status:** RATIFIED 2026-09-15. Not dispatched. Which of the three plan-review designs a city
+is shown is a separate call and is still owed.
 
 Five artboards: console, one finding's derivation, coverage, the correction notice, cycle 2.
 

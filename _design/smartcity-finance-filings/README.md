@@ -1,12 +1,34 @@
 # SmartCity Finance lens — Localgov filings
 
 **Artifact:** https://claude.ai/artifact/Vo3LW9rEKzPsLtMo7QzQRw
-**Decision:** none yet — operator review owed
+**Decision:** AMEND, ruled 2026-09-15, `_decisions/2026-09-15_design_ratification_pass.md`
 **Scope:** `_inbox/2026-09-15_localgov_filings_integration_scope.md`
 **Plan rows:** OPS-17, allocate at dispatch (scope card 4 is the Finance lens)
-**Status:** draft, 2026-09-15. Not ratified, not dispatched.
+**Status:** AMEND. NOT ratified and may not be until the two citations below are sourced or
+badged. Not dispatched.
 
 Five artboards: reconciled, exceptions, lodging economy, unlabelled, empty.
+
+## The amendment owed before this can be ratified
+
+Two figures are printed with citations to external authorities and neither is traceable to any
+source in this repository. This was the only one of the four drafts whose record showed no
+adversarial pass against source, and this is what the pass found.
+
+**`Ordinance rate 7.00%`, attributed on the artboard to "Bastrop code of ordinances".** It is
+load bearing, not decorative: the exceptions worklist divides tax due by taxable revenue and
+scores three of Bastrop's filings as "Rate does not match ordinance" against it. If the rate is
+wrong, the product hands the city a worklist accusing its own taxpayers of filing at the wrong
+rate, citing a rate we invented, attributed to their own law. Texas caps municipal hotel
+occupancy tax at seven percent, so 7.00% is plausible, and that is exactly the property that let
+a nonexistent code section survive six citations on another canvas the same week.
+
+**`Fund 108`, attributed to "City ledger, OpenGov".** Asserted in this design and in its own
+scope card, and nowhere else. Two of our own documents is one derivation, not two.
+
+Either source both at Bastrop's published ordinance and adopted budget, or badge both unverified
+on the page in the way the `FIXTURE` badge already works. Until then this design is not ratified
+and does not enter a customer-facing artefact.
 
 ## No figure here is measured
 

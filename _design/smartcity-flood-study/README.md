@@ -1,11 +1,11 @@
 # SmartCity Flood study
 
 **Artifact:** https://claude.ai/artifact/2jGyRNawCuUyCSfffGMSuB
-**Decision:** none yet — operator review owed. Governed by
+**Decision:** RATIFIED 2026-09-15, `_decisions/2026-09-15_design_ratification_pass.md`. Governed by
 `_decisions/2026-09-14_flood_determination_authority.md` (G-130).
 **Plan rows:** OPS-17 G-125 (rainfall control, closed), G-129 (flood mount, closed-partial,
 deployed). Implementation row for this design: allocate at dispatch.
-**Status:** draft, 2026-09-15. Not ratified, not dispatched.
+**Status:** RATIFIED 2026-09-15. Not dispatched; implementation row to allocate.
 
 Five artboards: screening, one parcel, depth comparison, running, unavailable.
 
