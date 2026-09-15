@@ -23,7 +23,16 @@ verbatim as the record of what was believed; these corrections govern.
    later, and no revision followed. The workflow header says push "runs build-and-push only ...
    Does NOT deploy, NOT migrate, NOT touch traffic"; the 13:09:56Z run shows all four deploy jobs
    SKIPPED. A workflow NAMED "Cloud Run Deploy" reports success on every merge and ships nothing.
-   **ZERO of the four merged fixes are live.**
+   **ZERO of the four merged fixes were live when this was written.**
+
+   **UPDATE 2026-09-15 ~16:15Z: ALL FOUR ARE NOW LIVE.** Shipped and verified by the
+   integration seat, close at `_inbox/2026-09-15_phase1-deploy_close.json`:
+   `cortex-api-00803-yod` (P-214, created 15:54:04Z), `property-explorer-8r0btsuy9`
+   (P-216 + P-218), `hauska-engine-api-00226-yew` (P-219). P-219 verified by regenerating
+   the site plan and decoding the PDF: FRONT 30 / SIDE 10 / REAR 30 cited to Ord. 2026-06,
+   with ZERO occurrences of the repealed 2019-51, the stale 19,052 figure, or the retired
+   `bastrop-per-parcel` namespace. legacy-design-tools still does NOT auto-deploy, and
+   hauska-engine still has no deploy workflow at all.
 
 2. **`Age:` is a FALSE INSTRUMENT for which build is serving.** The CDN cache object is keyed to
    the deployment and shared with the alias, so the rollback target returns the same `Age` and
