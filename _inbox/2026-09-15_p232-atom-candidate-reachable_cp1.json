@@ -1,0 +1,41 @@
+{
+  "lane": "p232-atom-candidate-reachable",
+  "checkpoint": "CP1",
+  "type": "design/pre-build adversarial checkpoint",
+  "planRows": ["P-232"],
+  "seat": "cente-p232",
+  "at": "2026-09-15T18:20:00Z",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p232",
+    "branch": "fix/p232-atom-candidate-reachable",
+    "baseCommit": "b5dfb508 (origin/main at worktree creation, PR #691)",
+    "docRepoSeatWorktree": "C:/Users/cente/doc_repo"
+  },
+  "laneClaim": "node scripts/lane-claim.mjs claim --lane p232-atom-candidate-reachable --seat cente-p232 --plan-row P-232 -- exit 0, CLAIMED",
+  "readBeforeWork": [
+    "90_runbooks/AGENT_CONTRACT.md",
+    "90_runbooks/DEV_PROCESS.md",
+    "90_runbooks/fleet_memory_practice.md",
+    "_dispatches/2026-09-15_p232-atom-candidate-reachable_dispatch.md (full)"
+  ],
+  "investigation": {
+    "targetFile": "artifacts/api-server/src/lib/buildableEnvelope/authoritativeSetbackSource.ts",
+    "confirmedGate": "resolveAuthoritativeSetbacks builds `codifiedCandidate` and checks `!table?.districts.length` / `!mapped || mapped.kind === \"fallback-conservative\"` and returns null on either BEFORE `args.atomRule ? atomCandidate(args.atomRule) : null` is ever evaluated -- the atom candidate is constructed only on the line after both early returns.",
+    "correctionToDispatch": "The dispatch's quoted excerpt marks the `mapped.kind === \"fallback-conservative\"` line as where GC returns. Read districtMapping.ts's mapDistrict: `fallback-conservative` only fires when the zoningCode ARGUMENT is blank (no stamp). resolveAuthoritativeSetbacks already guards `districtCode` non-blank before calling mapDistrict, so for GC (an explicit non-blank code with no table row) mapDistrict takes the `if (code) {...}` branch and returns null via 'Explicit GIS stamp with no table row: decline rather than invent' -- `mapped` is `null`, not `kind: \"fallback-conservative\"`. Same overall gate/return line, same fix location; the dispatch's specific sub-condition attribution was imprecise. Per DEV_PROCESS 3.2, reporting this is a successful outcome, not a contradiction of the mission.",
+    "confirmedRootCause": "artifacts/api-server/src/lib/adapters (via @workspace/adapters) local/setbacks/bastrop-development-code.json's own note: 'MU/GC/PI/IND/PDD/P/OS intentionally ABSENT (CORRECTION C honest-decline: conditional/contextual standards the flat model cannot hold) ... Do not invent scalars for omitted districts.' getSetbackTableForZoning routes GC/MU/PDD/PI/IND/OS to this exact table (isBdcPerParcelDistrictCode), which has zero rows for them -- confirms the P-225 census premise exactly: codified table genuinely has no row, atom/GIS-layer-23 is the only source.",
+    "requiredFieldsTension": "AuthoritativeSetbackResolution.district is a DistrictMappingResult wrapping a SetbackDistrict, which types max_height_ft/max_lot_coverage_pct/max_impervious_pct/citation_url as required (non-optional) numbers/string. The atom wire shape (AtomChainSetbackWire) carries none of these -- only front/side/rear/side_corner. Do-not-invent forbids fabricating a real height/coverage/impervious number. Resolution: verified the codebase ALREADY has a real, working convention for this -- bastrop-development-code.json's own SF-1..RR rows set max_lot_coverage_pct: 0 paired with provenance.max_lot_coverage_pct.not_specified: true (confirmed by reading the live JSON), and derive.ts's fieldNotSpecified() already reads that provenance flag for side_corner_ft/front_ft/side_ft/rear_ft (not yet for the three bulk-standard fields -- see CP2 finding). Design: districtFromAtomOnly() sets height/coverage/impervious to 0 with not_specified:true provenance and citation_url to \"\" (empty, not fabricated), following this existing convention rather than inventing one."
+  },
+  "plannedFix": {
+    "reorder": "Build atomC = args.atomRule ? atomCandidate(args.atomRule) : null BEFORE the codified-row gate can return. hasCodifiedRow = !!mapped && mapped.kind !== \"fallback-conservative\". If neither hasCodifiedRow nor atomC: return null (falsifier 1 preserved). Otherwise build candidates[] conditionally and resolve via the UNCHANGED resolveMostCurrentSetback/R-1 path.",
+    "newHelper": "districtFromAtomOnly(districtCode, winner: SetbackCandidate): DistrictMappingResult -- built only when hasCodifiedRow is false; districtFromScalars (existing, unchanged) still handles every case where a codified row exists, including atom-wins-by-date-over-codified, preserving current behavior exactly.",
+    "newKind": "DistrictMatchKind gains \"atom-sourced\" (additive). Checked: absentZoningHonesty.ts's isAbsentZoningFallback only tests === \"fallback-conservative\", so the new kind is correctly NOT treated as a no-stamp conservative guess. envelopeJurisdiction.ts's own fallback-conservative check is a separate function/report, untouched.",
+    "doNotTouch": "getSetbackTableForZoning jurisdiction routing, any setback table JSON, districtMapping.ts's mapDistrict matching logic (only its DistrictMatchKind union gains a value)."
+  },
+  "adversarialSelfCheck": [
+    "Q: does building atomC before the gate change behavior for a district WITH a codified row? A: no -- candidates[] still only includes atomC when args.atomRule is non-null AND it produces a usable candidate, same construction as before, just relocated earlier; resolveMostCurrentSetback and its R-1 date-first logic are byte-identical, unchanged file.",
+    "Q: can this route a value where NEITHER side is usable? A: no -- explicit `if (!hasCodifiedRow && !atomC) return null` guard added, tested as falsifier 1.",
+    "Q: single-candidate resolution -- does an atom-only candidate with an unreadable sourceVintage still resolve (not stuck in conflict)? A: read @empressaio/setback-corpus/resolve's dist source directly: `if (candidates.length === 1) return { status: \"resolved\", winner: candidates[0], superseded: [] }` -- a lone candidate always resolves regardless of date readability, confirmed before writing the fix."
+  ],
+  "fanModel": "No sub-agents spawned. Task is a single ~35-line reorder in one file plus one new type-union value; owned directly per AGENT_CONTRACT 1's allowance to not fan when unneeded, and per the dispatch's own 'do not spawn sub-agents that themselves spawn sub-agents. You own your fan.'"
+}
