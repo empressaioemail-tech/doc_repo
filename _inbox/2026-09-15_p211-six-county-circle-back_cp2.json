@@ -1,0 +1,49 @@
+{
+  "lane": "p211-six-county-circle-back",
+  "planRows": ["P-211"],
+  "checkpoint": "CP2",
+  "seat": "cente-p211",
+  "at": "2026-09-15T17:00:00Z",
+  "member3_result": {
+    "fix": "resolveCountyScope + --county flag in both writer jobs, PR https://github.com/empressaioemail-tech/hauska-factory/pull/153, commit c7e0334192f4300676936e38d3b34ee3a992e4c4, CI check-run conclusions all \"success\" (test, gate8, ldt-sha-comment-presence, verified via gh api, not just gh pr checks' printed label).",
+    "notMerged": "Deliberate. Merging redeploys both Cloud Run job images (P-200's own PR #152 bumped both digests on merge) and the dispatch says do not deploy. Reported to the integration seat in the close."
+  },
+  "member1_applyOutcome": {
+    "userGoConditions": "User authorized --apply county-scoped to 48209 only, under 4 conditions: (1) pre-register the delta before applying, (2) prove county scope with a second, independent derivation (not the same --city filter), (3) do not treat an unchanged get_smart_site runId/bakedAt as pass or fail -- report cells-written/customer-surface-unverified plainly, (4) measure additive-only as an outcome by area sweep, not assume it.",
+    "condition1_preRegisteredDelta": {
+      "predicted": 107544,
+      "perCity": {"Austin": 1692, "Buda": 23728, "Creedmoor": 16, "Niederwald": 2908, "San Marcos": 75020, "Uhland": 4180},
+      "basis": "Local dry-run (apply=false) against the real store using this lane's own --county=48209 fix, run from the lane's own worktree (not the deployed job)."
+    },
+    "condition2_independentDerivation": {
+      "method1": "This lane's own --county-scoped dry-run (job code): Austin 423, Buda 5932, Creedmoor 4, Niederwald 727, San Marcos 18755, Uhland 1045 Hays-only parcels.",
+      "method2": "P-200's own close, cross-county-safe apply reconciled via cellsMoved/5 (setback writes 5 cells/parcel): identical numbers.",
+      "method3": "A fresh hand-written SQL query (not reusing CITY_ALL_PARCELS_SQL) against landing_parcel_jurisdiction: identical numbers again.",
+      "verdict": "All three independent methods agree exactly on all six cities. County scope proven correct, not merely observed to match."
+    },
+    "applyInvocation": "gcloud run jobs execute factory-parcel-envelope-cells --project=hauska-prod-497015 --region=us-east4 --wait --args=\"parcel-envelope-cells,--apply,--county=48209,--city=Austin,--city=Buda,--city=Creedmoor,--city=Niederwald,--city=San Marcos,--city=Uhland\" -- execution factory-parcel-envelope-cells-7dwq5, exit 0.",
+    "importantCaveat": "The DEPLOYED job image (digest ec2cd3bff4f3838768db5a896bd8cee0cf9d70a48f4db0e4b9bd1ec798e1643a, generation 4 -- unchanged since P-200, this lane did not deploy its own --county fix) does NOT contain this lane's --county flag. --county=48209 was silently ignored by the running container (an unrecognized flag, not an error). Hays-only scoping in this real apply was achieved entirely by the PRE-EXISTING unaccounted-only write gate (the same 'safe by construction' mechanism P-200 already relied on for the setback group), not by this lane's new code. The code fix is real, unit-tested, and dry-run-verified against live data from this lane's own worktree -- but this specific apply is not a live-production exercise of it.",
+    "actualCellsMovedByCity": {"Austin": 1692, "Buda": 23728, "Creedmoor": 16, "Niederwald": 2908, "San Marcos": 75020, "Uhland": 4180, "total": 107544},
+    "condition1_verdict": "MATCHED EXACTLY. Predicted 107544, actual 107544, per-city identical to the pre-registration. No discrepancy to report.",
+    "condition4_additiveOnlyMeasured": {
+      "method": "Full-Hays-county (not a sample) direct SQL sweep of the 4 envelope rails' cell_state kinds, before and after, split_part(place_key,':',1)='48209'.",
+      "before": {"parcelAreaSqFt": {"not-applicable": 61585, "unaccounted": 54835}, "maxHeightFt": {"not-applicable": 61585, "unaccounted": 54835}, "maxLotCoveragePct": {"not-applicable": 61585, "unaccounted": 54835}, "maxFootprintSqFt": {"not-applicable": 61585, "unaccounted": 54835}},
+      "after": {
+        "parcelAreaSqFt": {"not-applicable": 61585, "unaccounted": 27949, "value": 26886},
+        "maxHeightFt": {"not-applicable": 61807, "unaccounted": 27949, "absent-verified": 8984, "value": 17680},
+        "maxLotCoveragePct": {"not-applicable": 61807, "unaccounted": 27949, "absent-verified": 22345, "value": 4319},
+        "maxFootprintSqFt": {"not-applicable": 61807, "unaccounted": 27949, "absent-verified": 22345, "value": 4319}
+      },
+      "reconciliation": "parcelAreaSqFt's not-applicable is bit-for-bit unchanged (61585 -> 61585, zero regression -- this rail has no not-applicable write path at all, so this is the cleanest zero-touch proof). The other three rails' not-applicable grew by exactly 222 (61585 -> 61807) -- NOT a changed pre-existing cell; this is 222 real parcels whose zoningDistrict cell is itself not-applicable (OPS-21 Z2 propagation), a first-time unaccounted-to-not-applicable write, matching the dry-run's own predicted notApplicable=666 total (222 x 3 rails). unaccounted dropped by exactly 26886 on every rail (54835 -> 27949), matching the six-city target population exactly, leaving the other seven Hays-only cities' 27949 parcels genuinely untouched and still unaccounted. Every rail's new-kind total (value+absentVerified+notApplicable delta) sums to exactly 26886, matching 107544/4. Verdict: additive-only CONFIRMED as a measured outcome, full area sweep, not a parcel sample -- zero already-earned cell (the only pre-existing earned kind here was not-applicable) was altered."
+    },
+    "condition3_customerSurface": {
+      "method": "mcp__claude_ai_Smart_Site__get_smart_site depth=node on 48209:100226 (Buda, one of the six touched cities, real parcel with a freshly-written maxHeightFt=25 value confirmed by direct SQL read first).",
+      "result": "maxHeightFtFact, maxLotCoveragePctFact, maxFootprintSqFtFact, parcelAreaSqFtFact ALL still read {state:'refused', code:'not-cut-over', reason:'...served only from parcel_record, and only once this (county, rail) pair is slated with a passing gate verdict. Not there yet for this parcel.'}. bakedAt/runId (2026-09-14T17:09:01.335Z) PREDATE this apply.",
+      "verdictPerCondition3": "Recorded plainly, per the user's explicit instruction: cells written (verified by direct store read), customer surface UNVERIFIED pending a re-bake. This is not reported as a pass, and not reported as a failure of the apply itself -- it reproduces P-200's own falsifier 3 finding for a second row."
+    },
+    "gateReadingNuance_notInTheOriginalFalsifier": {
+      "finding": "The pre-registered falsifier 1 anticipated 'a Hays rail moves from excluded to pass at the gate.' That is NOT what happened, and this is a distinct, arguably more important finding: a live gate-rail-cli.mjs read for maxHeightFt post-apply (bypassing the parcel_gate_verdict stored table, which has not been refreshed since this apply -- see member 5) returns ok:false, unaccountedCount:27949, excludedDeclaredAhead:[] -- i.e. REFUSE, not PASS and no longer EXCLUDED either. Applying only the six contaminated cities cannot reach PASS for these four rails while the other seven Hays-in-city jurisdictions (27,949 parcels) remain unaccounted; the honest three-state read here (A-153's own 'excluded is three states wearing one word' finding) moved from the illegitimate EXCLUDED (zero coverage, invisible to grading) to the honest REFUSE (real, partial, correctly-failing coverage) -- real forward progress that will not read as an improvement in a pass/excluded aggregate count until the remaining seven cities are also written.",
+      "scopeNote": "Writing the remaining seven Hays-only cities (Bear Creek, Dripping Springs, Hays, Kyle, Mountain City, Wimberley, Woodcreek -- none shared with another in-scope county, so none carry the --county risk) was NOT part of the user's go for this apply and is not done here. Named in leave_behind."
+    }
+  }
+}
