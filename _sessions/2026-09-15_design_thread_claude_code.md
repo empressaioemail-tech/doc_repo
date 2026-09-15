@@ -138,3 +138,75 @@ than left to read as enforced.
 
 The `_design/plan-review/gen.mjs` vocabulary defect is still translated at build time rather
 than fixed at source.
+
+---
+
+# Continued: exports, the demo, and the Jaime call
+
+## The demo was built, shipped broken, rebuilt, and then set aside
+
+The operator asked for a clickable prototype for the city. It was built, deployed to Vercel, and
+**it was not good enough**. The planner had said plainly that it had not been rendered, and
+shipped it anyway. That was the wrong call: naming a risk is not the same as clearing it.
+
+The rebuild was architectural. The first attempt treated every artboard as an interchangeable
+full-app screen; three different product shells are in play, so screens lost their chrome and the
+navigation went dead. The second generates the shell once in code and injects each artboard's
+content region, with mounted products keeping their own inner nav exactly as the real product
+does.
+
+**Two defects were found only by rendering the page and reading it.**
+
+The exclusion filter removed the wrong element. It searched backwards from a label and found the
+innermost `div` -- the label -- so the marker string vanished, **the guard passed, and the box
+body stayed on the page**. A check reporting success while the thing it protects against survives.
+
+And stripping boxes was never enough: the excluded framing survived in prose. Measured at **31
+internal-vocabulary hits**, fixed with sentence-level rewrites rather than a scrub, because a
+scrub would have corrupted the Smart Files version column where `v1` legitimately means version
+one of a document.
+
+The planner's own guard then had to be **narrowed**: it flagged "a phrase that appeared in v1 and
+was removed in v2", which is a true sentence about versioning. A control wider than its claim is
+its own defect.
+
+The operator set the prototype aside in favour of screenshots and a document. The demo build
+survives at `_design/demo/` and the site is live, but it is not the deliverable.
+
+## What the operator actually needed
+
+**96 images at `_design/exports/`** -- 48 screens in dark and light, 3200 x 2080, numbered in
+reading order. 37 cleared to show a city, 11 held back with a stated reason each.
+
+**22 carry a placeholder strip** in both themes, worded for what is drawn: map, drainage model, or
+plan sheet. The list was derived by grepping the artboards for their actual render content, not
+from memory. A table of sample rows reads as sample; a picture of a map does not, which is why the
+strip exists at all.
+
+**Two customer documents.** A first pass framed around data integrity was rejected by the operator
+-- *"accurate data is expected"* -- and rewritten around what staff can do. A second, focused
+document covers the three capabilities the customer conversation actually turned on.
+
+## The Jaime call changed the roadmap
+
+The operator supplied a transcript of a call with Bastrop's IT director. It confirmed several
+design decisions and moved the sequencing. Full reconciliation at
+`_inbox/2026-09-15_roadmap_reconciliation.md`. The headlines:
+
+**v1 is being retired**, stated to the customer. That makes six undesigned lenses a migration
+obligation rather than a backlog.
+
+**Role-based access and MFA are now a verbal commitment.** Neither is built. This is the largest
+gap between what has been said and what exists.
+
+**Hotel occupancy tax is the customer's priority** and separately billable, which puts the Finance
+filings design -- currently under an AMEND ruling for an untraceable ordinance rate -- on the
+critical path rather than parked.
+
+**And one gap worth catching before it is demonstrated:** Smart Files "drop any link, Google Drive
+or OneDrive, into one database" was described as a capability. The Bring files page is fixture
+chrome and says so on itself. Nothing improper was said, but it is the item most likely to be
+clicked in a demo.
+
+Two live defects surfaced and neither is carded: the camera API connection is broken, and GIS
+zoning gaps mean a changed zoning district is not showing on the map.
