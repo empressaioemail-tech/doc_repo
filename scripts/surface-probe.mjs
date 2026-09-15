@@ -68,6 +68,7 @@ export const PARCELS = [
   { id: "48453:113408", fips: "48453", label: "414 Spiller Ln, West Lake Hills; split situs; unplaceable card on 2026-09-11" },
   { id: "48453:474034", fips: "48453", label: "2601 Sterling Panorama Ct; unincorporated, Lake Pointe MUD; feasibility 154 s" },
   { id: "48453:367134", fips: "48453", label: "5833 Taylor Draper Cv, Austin SF-2; declared-complete city" },
+  { id: "48021:8723767", fips: "48021", label: "P-214: 7-digit split-node half of 1009 Pecan St, Bastrop; bare 'TX' situs sentinel; customer saw a raw hauska-engine R32 mechanical-verify diagnostic under More facts" },
 ];
 
 // P-175 (Hays online): address-keyed subjects. A customer reaches a parcel through the Find box, so the
@@ -188,6 +189,13 @@ export function extractEnvelope(resp) {
     vertexCount: firstPolygonVertexCount(rec(j.payload)?.geojson ?? j.geometry ?? null),
     buildableAreaSqFtInPayload: num(rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties)?.buildableAreaSqFt),
     message: str(j.message ?? j.reason),
+    // P-214: the customer-facing disclosure/emptyReason strings on the envelope
+    // feature's properties — where a raw hauska-engine mechanical-verify
+    // diagnostic (per-edge inset remeasure text, "R32", "!=", full-precision
+    // floats) leaked through unsanitized. Read from the same nested properties
+    // buildableAreaSqFtInPayload already reads.
+    disclosure: str(rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties)?.disclosure),
+    emptyReasonText: str(rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties)?.emptyReason),
   };
 }
 
@@ -578,6 +586,31 @@ export const ROWS = {
       if (g?.measured && ringId != null && !ringOk) return { verdict: "FAIL", basis: basis + " -- the county layer names a different parcel at the address point" };
       if (!(g?.measured && ringId != null) && distM == null) return { verdict: "UNMEASURED", basis: basis + " -- neither an anchor nor a containing polygon was readable" };
       if (!floodOk) return { verdict: "FAIL", basis: basis + " -- flood fact not present on the record" };
+      return { verdict: "PASS", basis };
+    },
+  },
+  "P-214": {
+    title: "no customer-facing envelope string carries an internal identifier, an unrounded float, or assertion syntax",
+    parcels: ["48021:8723767"],
+    evaluate(id, legs) {
+      const pt = legs.envelopeByPoint;
+      if (!pt?.measured) return { verdict: "UNMEASURED", basis: "envelope-by-point leg did not run" };
+      const text = [pt.disclosure, pt.emptyReasonText].filter(Boolean).join(" | ");
+      if (!text) {
+        return {
+          verdict: "UNMEASURED",
+          basis: `no disclosure/emptyReason text in the response (status ${pt.status ?? "?"}, http ${pt.http})`,
+        };
+      }
+      const violations = [];
+      if (/\bR\d+\b/.test(text)) violations.push("internal rule/gate identifier (R\\d+)");
+      if (/!=/.test(text)) violations.push("assertion syntax (!=)");
+      if (/\d+\.\d{4,}/.test(text)) violations.push("unrounded float (4+ decimal places)");
+      if (/\bedge\s+\d+:/i.test(text)) violations.push("raw per-edge diagnostic prefix");
+      const basis = `envelope-by-point disclosure/emptyReason: "${text}"`;
+      if (violations.length) {
+        return { verdict: "FAIL", basis: `${basis} -- violations: ${violations.join(", ")}` };
+      }
       return { verdict: "PASS", basis };
     },
   },

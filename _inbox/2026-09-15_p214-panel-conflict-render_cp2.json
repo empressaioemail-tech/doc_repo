@@ -1,0 +1,48 @@
+{
+  "lane": "p214-panel-conflict-render",
+  "planRows": ["P-214"],
+  "checkpoint": "CP2",
+  "stage": "pilot/mid-work",
+  "timestamp": "2026-09-15T01:45:00Z",
+  "seatSessionId": "cente-p214",
+  "codeChange": {
+    "file": "artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.ts",
+    "repo": "legacy-design-tools",
+    "change": "In reconcileWithAtomEnvelope()'s 'no-buildable-area' branch: added isMachineVerifyDiagnostic(reason) (three independent signals -- '; ' clause-join, an 'edge N:'/'road N:' gate-diagnostic prefix, or a full-precision float with 4+ decimal places -- matching exactly how hauska-engine's honest-decline-promote.ts assembles verifyReasons.slice(0,3).join('; ')). When the atom's outcome.reason matches: (a) if derive.ts's own live pass already produced a real, non-empty envelope, keep it unchanged (same as the pre-existing 'unknown/pending kind' branch -- a stale mechanical-cert failure is not a measurement the atom can correct a good live result WITH); (b) otherwise, classify as emptyKind 'validation-failed' (not 'consumed' -- matching derive.ts's own established distinction that a validation failure is a fact about the check, never a consume-lot measurement) and substitute a fixed, honest, customer-safe disclosure instead of the raw text. A genuine human-authored engine reason (no '; ', no per-edge prefix, no long float) is unaffected -- existing behavior for that case is untouched byte-for-byte.",
+    "diffstat": "1 file changed (+35/-9 approx)"
+  },
+  "testWork": {
+    "file": "artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.test.ts",
+    "newTests": [
+      "keeps a good live-derived envelope instead of clobbering it with the engine's stale cert failure (uses the exact live P-214 string)",
+      "never prints the raw diagnostic when the live pass has nothing to fall back on either (hand-built empty-but-not-consumed fixture; asserts no R32/no !=/no unrounded float anywhere in what is shown)",
+      "still serves a genuine, human-authored engine reason unchanged (falsifier: must not over-fire)"
+    ],
+    "fixtureSource": "LIVE_R32_DIAGNOSTIC constant is the exact string captured live from production in CP1 (curl against smartsite.cloud's own buildable-envelope endpoint for 48021:8723767), not a paraphrase.",
+    "falsifierProven": {
+      "method": "git stash push -- the fix file only (reconcileAtomEnvelope.ts), keeping the new tests in the working tree; ran vitest; git stash pop to restore.",
+      "beforeFix": "9 passed, 2 failed. Failure 1: 'keeps a good live-derived envelope...' -- expected the same reference back, got a clobbered empty/consumed/0-sqft result carrying the raw R32 string as disclosure. Failure 2: 'never prints the raw diagnostic...' -- expected emptyKind 'validation-failed', got 'consumed' (i.e. pre-fix code, even on a hand-built empty local result, still forces every no-buildable-area atom reason into a consume-lot claim).",
+      "afterFix": "11 passed, 0 failed.",
+      "notVacuous": "The third new test (genuine human-authored reason) asserts the ORIGINAL behavior is preserved for non-diagnostic reasons -- proves the detector is scoped, not a blanket softening of every no-buildable-area outcome."
+    },
+    "regressionCheck": {
+      "command": "npx vitest run src/lib/buildableEnvelope/",
+      "result": "11 suites collected; 109 tests passed, 0 failed, 0 regressions in every file that actually ran.",
+      "unrelatedPreExistingFailures": "4 suites (authoritativeSetbackSource.test.ts, authoritativeSetbackSourceEngineDivergence.test.ts, envelopeJurisdiction.test.ts, parcelDrawEnvelopeModel.test.ts) fail to even COLLECT in this shell: 'Cannot find package @empressaio/setback-corpus/resolve' -- a missing pnpm-installed workspace dependency in this ad hoc seat's checkout, confirmed unrelated by import-graph (none of the 4 import reconcileAtomEnvelope.ts, and the error is a module-resolution failure at collection time, before any test body runs)."
+    },
+    "typecheck": {
+      "command": "npx tsc --noEmit -p tsconfig.json",
+      "result": "Zero errors attributable to reconcileAtomEnvelope.ts or its new import (InsetEmptyKind from ./geometry). All reported errors are pre-existing, unrelated (missing @workspace/db/manifest exports, drizzle schema mismatches, missing @empressaio/setback-corpus and @empressaio/atom-contract/display packages, @google-cloud/storage) and predate this change."
+    }
+  },
+  "surfaceProbeInstrumentWork": {
+    "file": "doc_repo scripts/surface-probe.mjs",
+    "change": "Added PARCELS entry for 48021:8723767; extended extractEnvelope() with two additive fields (disclosure, emptyReasonText) read from the same nested payload.geojson.features[0].properties buildableAreaSqFtInPayload already reads (does not touch any existing field or any other row's evaluate()); added ROWS['P-214'] with a real predicate: FAIL if the live envelope-by-point disclosure/emptyReason text contains an internal rule identifier (R\\d+), assertion syntax (!=), an unrounded float (4+ decimals), or a raw per-edge diagnostic prefix.",
+    "selfTest": "node scripts/surface-probe.mjs --self-test -- all checks pass, including the generic 'P-214 does not PASS on an empty payload' vacuousness check the harness runs automatically for every row.",
+    "liveRun": "node scripts/surface-probe.mjs --rows P-214 -- FAIL (honest: production is NOT yet patched, this local fix has not been deployed). Artifact: _inbox/2026-09-15_013612_surface_probe.json. basis quotes the exact live raw string and names all four violated signals."
+  },
+  "notYetDone": [
+    "PR not yet opened -- branch not yet pushed to origin (about to push as a self-service commit per seat_loop.md; merge/deploy explicitly held for the operator's go per this dispatch's own 'Do not: Deploy without the operator's go').",
+    "Defect 2 (brief-vs-overlay self-contradiction) and defect 3 (F25 vintage lie) remain root-caused-but-unfixed from CP1 -- see close leave_behind."
+  ]
+}
