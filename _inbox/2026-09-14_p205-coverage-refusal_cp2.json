@@ -1,0 +1,35 @@
+{
+  "lane": "p205-coverage-refusal",
+  "planRows": ["P-205"],
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "filedAtUtc": "2026-09-14T22:50:00Z",
+  "derivationInvestigation": {
+    "question": "Can legacy-design-tools derive, on find_parcel's read path, which county FIPS have >=1 row in the Factory serving ledger (parcel_record / parcel_gate_verdict), without a hardcoded list?",
+    "candidatesRuled out": [
+      {
+        "candidate": "Hardcode / reuse CONSTRAINT_SEARCH_COUNTIES or any equivalent literal six-FIPS array",
+        "ruledOutBecause": "This is exactly the trap the dispatch names verbatim: 'correct today and wrong the moment Burnet lands, and nobody will notice.' Confirmed this pattern already exists in at least three independent places (parcelConstraintSearch.ts, packages/engine-core/src/parcel-record/config.ts's texasCtxProgramConfig, and retrieval-api's own vendored parcel-record-slate.json) -- none of them a query, all hand-maintained, none kept in sync automatically with Factory onboarding."
+      },
+      {
+        "candidate": "Derive from txgio_parcel/txgio_address row-presence per county (the table find_parcel's own query mode already searches, via @workspace/db, no new repo needed)",
+        "ruledOutBecause": "LIVE-FALSIFIED, not merely theorized. Called the live, authenticated find_parcel MCP tool for '100 Military Plaza, San Antonio, TX 78205' (Bexar County, FIPS 48029 -- NOT one of the six serving-ledger counties) and got a real hit: {\"hits\":[{\"parcelNodeId\":\"48029:109766\",...,\"countyFips\":\"48029\",\"source\":\"parcel-situs\"}]}. This proves txgio_parcel/txgio_address holds real address data for at least one county broader than the serving ledger, so a presence check against that table would wrongly call Bexar 'covered' -- meaning a genuine no-match address inside Bexar would still fall through to bare no-hit, which the mission's own 'done looks like' section forbids (an address in a county absent from the serving ledger must get the coverage refusal, full stop, not only for counties with zero geocoding data too). Full raw result and two more corroborating live reads in _inbox/2026-09-14_224347_surface_probe.json."
+      },
+      {
+        "candidate": "Reuse the existing retrieval-api endpoint GET /parcel-record-gate-verdict/:countyFips/:railKey (already client-wired in this repo via parcelRecordReaderClient.ts's fetchGateVerdict) as an existence probe",
+        "ruledOutBecause": "Confirmed by reading the live handler (hauska-engine services/retrieval-api src/server.ts:441-476 and parcel-record-db.ts:148-170): a county+rail with ZERO rows returns HTTP 200 with body {countyFips, railKey, verdict: null} -- the exact same shape as an ONBOARDED county whose gate simply hasn't evaluated that one rail yet, and the same shape a swallowed DB read failure also produces (the query's own try/catch collapses all three cases to null). This is a presence-shaped check on an empty result that can be empty for multiple reasons, which is precisely the dispatch's falsifier #3: 'If your coverage check passes on an empty result from a query that could also be empty for another reason, you have a presence-shaped check.' No companion 'which counties/rails should exist' roster exists as live data to disambiguate it (see next candidate)."
+      },
+      {
+        "candidate": "A live 'which counties are onboarded' roster/endpoint anywhere in hauska-engine, hauska-factory, hauska-map, or smartcity-dashboards",
+        "ruledOutBecause": "Does not exist. Exhaustive search (full route table of retrieval-api's src/server.ts; grep across hauska-factory's origin/main since the local clone is 267 commits stale; hauska-map and smartcity-dashboards in full) found no such artifact. The one thing that used to serve this exact purpose, a Neon table `county_facet_coverage`, is explicitly documented in hauska-factory as 'confirmed dead -- zero recompute activity since 2026-08-23... Nobody should scope from it,' retired without a live replacement ever being wired to any surface. The one thing that CAN compute it correctly today, hauska-factory's county-rail-coverage-report.mjs, requires direct Postgres credentials to two Neon stores this repo lost at P-152, and takes counties as an input flag rather than producing the roster as output -- it is a report generator for someone who already knows what to ask about, not a discovery mechanism."
+      }
+    ],
+    "conclusion": "No read path reachable from legacy-design-tools today can DERIVE county-level serving-ledger coverage without either (a) a hand-maintained list -- the dispatch's own named anti-pattern, now confirmed to already exist in three places and confirmed live-unsound in one more (txgio_parcel) -- or (b) a new capability in hauska-engine's retrieval-api, a repo this dispatch does not name as owned by this lane ('repo: legacy-design-tools'; the dispatch's own Do-not list separately forbids writing to a repository not owned by the lane). This is the exact situation the dispatch pre-authorizes reporting rather than working around: 'If you cannot derive it on the read path for a real reason, that reason is a finding and you report it rather than hardcoding around it.'"
+  },
+  "decision": "STAND DOWN on shipping any find_parcel code change. Close this lane as blocked rather than ship a class that cannot fire correctly. Recommend (not implement) a new, narrow retrieval-api endpoint as the actual unblocking work -- see close leave_behind for the exact shape.",
+  "designRecommendationForWhenUnblocked": {
+    "classChoice": "New, narrower class (option (b) from CP1): 'county_out_of_coverage' (name for the reviewing planner to bless or rename), distinct from the existing state-level 'out_of_coverage' -- keeps 'which axis' (state vs county) legible to a caller, matching how out_of_coverage already carries outOfCoverageState for its own axis; this one would carry countyFips + county display name + state.",
+    "derivationShapeRecommended": "A new retrieval-api endpoint, e.g. GET /parcel-record-gate-verdict/coverage or GET /counties, backed by something like SELECT DISTINCT county_fips FROM parcel_gate_verdict (unioned with parcel_record if a county could have record rows before any gate verdict exists), cacheable with a short TTL since it changes only on a Factory publish. legacy-design-tools would call this once (cached in-process) rather than per-request, and the check becomes a real DERIVED set-membership test instead of a presence-shaped single-rail probe.",
+    "vocabularyImpact": "Would need a new token in @empressaio/atom-contract/display's VOCABULARY (hauska-atom-contract repo, also not owned by this lane) plus a version bump in legacy-design-tools -- not attempted, since there is nothing to enrich yet with no class ever firing."
+  }
+}

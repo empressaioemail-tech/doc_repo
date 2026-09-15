@@ -1,0 +1,90 @@
+{
+  "lane": "p200-hays-rails",
+  "planRows": ["P-200"],
+  "status": "closed-partial",
+  "closedAt": "2026-09-15T01:10:00Z",
+  "seat": "cente-p200",
+  "missionPremise": "The nine setback/dimensional rails read `excluded` for Hays (48209) not because the writers cannot serve Hays, but because two Cloud Run jobs (parcel-setback-cells.mjs / parcel-envelope-cells.mjs) hardcoded IN_SCOPE_COUNTIES excluding Hays, gated on plan row P-145 (Hays identity reconciliation) landing first. P-145 CLOSED 2026-09-13 (OPS-16 plan of record row A-136) but the exclusion was never lifted in code. Neither writer joins cad_property -- both key off txgio_parcel.prop_id + the already-written zoningDistrict cell -- so lifting the exclusion carries none of the CAD-identity collision risk P-145/P-180 were protecting against. Full diagnosis and rejected second mechanism (the LANDUSE_JOIN_DISABLED_FIPS_SEED seed, ruled out because Williamson shares it and passes all nine rails, and because neither writer references cad_property at all): _inbox/2026-09-14_p200-hays-rails_cp1.json.",
+  "completionPredicate": "For the five setback-group rails only (per the 2026-09-15 dispatch's narrowed authorization): parcel_record_cell for every in-city Hays parcel moves off `unaccounted`, parcel_gate_verdict for (48209, each rail) reads a PASS (or an earned refuse naming a count) instead of `excluded`, and get_smart_site at depth node on the gold parcel 48209:97658 stops returning not-cut-over on those rails. The first two hold; the third does not -- see falsifier 3 below.",
+  "scopeBasis": "2026-09-15 dispatch narrowed P-200 to LAND, not finish: the setback group apply only (setbackFrontFt/SideFt/RearFt/CornerFt/setbackRules), operator go given 2026-09-14 on this lane's own population reconciliation. The envelope group (maxHeightFt/maxLotCoveragePct/maxFootprintSqFt/parcelAreaSqFt) is explicitly withheld -- its six contaminated cities were never re-reconciled the way the setback group's were -- and carded as P-211. Closing partial unblocks P-201, which cannot start while this lane holds hauska-factory.",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-15_010434_surface_probe.json",
+    "note": "scripts/surface-probe.mjs --rows P-200 run live from P:/doc_repo, 2026-09-15T01:04:34Z. Result: PASS 0 FAIL 0 UNMEASURED 0 -- the generic probe has NO P-200-specific leg (unlike P-151/P-154/P-175, which it knows by name), so this artifact measures nothing about this row rather than passing or failing it. This is itself predicate debt against OPS-24 law 1 ('a stage that cannot be traced to a change in what the probe reads is not on this program') and is named in leave_behind. Real completion evidence for this row is the direct read-back and the live get_smart_site read below, both verified at source, neither of which surface-probe.mjs currently exercises for Hays."
+  },
+
+  "deploy": {
+    "workTreeHeadConfirmedEqualToOriginMain": "31aa5413f7e87fc49ddb9ec4d18d16ca07f93f5b before either build",
+    "pr": {"repo": "empressaioemail-tech/hauska-factory", "number": 152, "mergeCommit": "31aa5413f7e87fc49ddb9ec4d18d16ca07f93f5b", "mergedAt": "2026-09-14T22:33:39Z", "ciConclusion": "SUCCESS", "ciChecks": ["test", "gate8", "ldt-sha-comment-presence"], "ciRunIds": [34904574079, 34904596967]},
+    "setbackCellsJob": {"digestBefore": "sha256:6a87443f3e56b565f95405dc345e927d79b81c45fd1252af3b43349e4e52be6e", "digestAfter": "sha256:2899bbaeef4e47102d6ae5bfd5d293ac8e10636f8dbfb7d57b25feef17d8a301", "generation": 3},
+    "envelopeCellsJob": {"digestBefore": "sha256:069addc6fed78fe72534833f6739d7098b14ac77368678283e8b19123cf95e1c", "digestAfter": "sha256:ec2cd3bff4f3838768db5a896bd8cee0cf9d70a48f4db0e4b9bd1ec798e1643a", "generation": 4, "note": "deployed (code fix ships to both writers, they share IN_SCOPE_COUNTIES) but NEVER RUN with --apply this wave -- envelope group stays unapplied, P-211."}
+  },
+
+  "apply": {
+    "job": "factory-parcel-setback-cells",
+    "execution": "factory-parcel-setback-cells-7f92f",
+    "command": "gcloud run jobs execute factory-parcel-setback-cells --project=hauska-prod-497015 --region=us-east4 --wait --args=parcel-setback-cells,--apply,--city=<13 Hays in-city jurisdiction names>",
+    "scopeNote": "No --county flag exists on this job; scoped via the 13 Hays city names instead, the closest true equivalent to --county=48209. Six names (Austin, San Marcos, Buda, Creedmoor, Niederwald, Uhland) are shared with another already-in-scope county -- a real, pre-existing --city county-boundary defect (no county filter inside a shared city name) named in leave_behind, not built or fixed here per the dispatch's own instruction.",
+    "cellsMovedByCity": {"Austin": 2115, "Bear Creek": 975, "Buda": 29660, "Creedmoor": 20, "Dripping Springs": 20080, "Hays": 585, "Kyle": 100345, "Mountain City": 1245, "Niederwald": 3635, "San Marcos": 93775, "Uhland": 5225, "Wimberley": 11365, "Woodcreek": 5150},
+    "cellsMovedTotal": 274175,
+    "reconciliation": "274,175 = 5 rails x 54,835 Hays in-city parcels exactly. Every contaminated city's cellsMoved independently equals its Hays-only population (from the CP1/CP2 reconciliation) x 5 -- e.g. Austin 423x5=2115 out of 218,444 total parcels in that shared bucket, San Marcos 18,755x5=93,775 -- confirming the writer's own unaccounted-only write guard touched exactly the Hays rows and none of the other counties' already-earned cells in those shared city buckets."
+  },
+
+  "gateVerdictsBeforeAndAfter": {
+    "method": "src/lib/parcel-record-engine/gate-rail-cli.mjs --county=48209 --rail=<rail>, run against FACTORY_DATABASE_URL_RO",
+    "setbackFrontFt": {"before": "TIMEOUT (canceling statement due to statement timeout; store under load, pre-warned by the dispatch)", "after": "PASS -- ok:true, cellCount:116420, unaccountedCount:0, excludedDeclaredAhead:[]"},
+    "setbackSideFt": {"before": "TIMEOUT", "after": "PASS -- ok:true, cellCount:116420, unaccountedCount:0, excludedDeclaredAhead:[]"},
+    "setbackRearFt": {"before": "TIMEOUT", "after": "PASS -- ok:true, cellCount:116420, unaccountedCount:0, excludedDeclaredAhead:[]"},
+    "setbackCornerFt": {"before": "TIMEOUT", "after": "PASS -- ok:true, cellCount:116420, unaccountedCount:0, excludedDeclaredAhead:[]"},
+    "setbackRules": {"before": "EXCLUDED -- ok:true, cellCount:116420, unaccountedCount:0, excludedDeclaredAhead:['setbackRules'] (the only BEFORE read that completed; the other four timed out and were not retried further to avoid additional heavy-scan cost against a store the apply job was about to write to)", "after": "PASS -- ok:true, cellCount:116420, unaccountedCount:0, excludedDeclaredAhead:[]"},
+    "allFiveMovedExcludedToPass": true
+  },
+
+  "cellCountsByKindReadBack": {
+    "method": "Direct SQL against parcel_record_cell (FACTORY_DATABASE_URL_RO), place_key restricted to the 54,835 in-city Hays parcels read fresh from landing_parcel_jurisdiction, GROUP BY rail_key, cell_state->>'kind'. A genuine store read via a fresh script and a fresh connection -- not a re-print of the earlier dry-run prediction script, which never touched parcel_record_cell.",
+    "predicted": {"value": 35365, "absentVerified": 18904, "notApplicable": 566, "refused": 0, "total": 54835},
+    "actual": {"value": 35365, "absentVerified": 18904, "notApplicable": 566, "refused": 0, "total": 54835},
+    "perRail": "Identical actual counts on all five rails (setbackFrontFt/SideFt/RearFt/CornerFt/setbackRules), each exactly 35365/18904/566/0, zero remaining unaccounted.",
+    "delta": "NONE. Actual matches predicted exactly to the row on all three buckets, on all five rails.",
+    "falsifier2Check": "The dispatch's own falsifier 2 warns an exact match should prompt checking whether the store was actually read rather than the preview re-printed. Confirmed genuine store read: this query is a different script (_tmp_readback.mjs, direct SQL GROUP BY on cell_state), run after the apply, against parcel_record_cell directly -- not the earlier _tmp_hays_only_preview.mjs, which called processCityPage locally in dry mode and never touched the real table. The exact match is explained by determinism (same classify function, same zoningDistrict inputs, no other writer touched these cells in the short window between the dry-run prediction and the apply) rather than by re-reading the same artifact twice."
+  },
+
+  "goldParcelRead": {
+    "method": "mcp__claude_ai_Smart_Site__get_smart_site depth=node parcelNodeId=48209:97658",
+    "before": "setbackRulesFact: {state:'refused', code:'not-cut-over', reason:'...served only from parcel_record, and only once this (county, rail) pair is slated with a passing gate verdict. Not there yet for this parcel.'} -- runId pe-r1-...MTcvNDk6NDYuMTE4Wg (bakedAt 2026-09-14T17:49:46.118Z)",
+    "after": "setbackRulesFact: STILL {state:'refused', code:'not-cut-over', ...} -- IDENTICAL runId and bakedAt (2026-09-14T17:49:46.118Z), unchanged by the apply.",
+    "falsifier3": "FIRED. The dispatch pre-registered exactly this outcome: 'If 48209:97658 still says not-cut-over after a successful apply, the slate and the cells are not the same gate and that is a bigger finding than this row.' The apply is real and verified (store write confirmed by direct SQL read-back; gate verdict confirmed PASS by direct gate-rail-cli read) -- this is not a failed apply. get_smart_site's node-depth response is explicitly `mode: baked-facet-intel-v1`, `source: baked-snapshot`, and both calls returned the IDENTICAL runId/bakedAt timestamp, which predates the apply by several hours. The most-evidenced explanation: this MCP surface serves a periodically-baked snapshot rather than dereferencing parcel_record_cell / parcel_gate_verdict live per request, and no bake has run for this parcel since before this lane's apply. This conflicts with the canon preamble's own ledger-as-serving-path rule ('one reader in hauska-engine/services/retrieval-api walks gated cells and dereferences atoms and every surface and the Hauska MCP catalog consume it') if that rule is meant to describe get_smart_site specifically -- reconciling which is bigger than this row and not attempted here. No re-bake was triggered; triggering one was not authorized this wave ('Deploy anything further' is explicitly out of scope) and the mechanism that would do so was not identified in the time available."
+  },
+
+  "falsifier": "Falsifier 3 fired (get_smart_site still reads not-cut-over on the gold parcel after a verified-successful apply); falsifiers 1 and 2 did not fire (the store, not a preview, was read for both the cell counts and the gate verdicts, and both independently confirm real writes and a real gate transition to PASS).",
+  "contradicted": "None of this lane's own premises were contradicted by the apply itself -- the population reconciliation (54,835 in-city parcels, 35,365/18,904/566 split) held exactly. What is newly found, not contradicted: the assumption (implicit in the mission's own framing, 'each of the nine rails moves from excluded to pass... and get_smart_site... returns real setback distances') that a passing gate verdict is sufficient for the customer surface to update. It is not, for this specific MCP read path, on this timeline.",
+
+  "leave_behind": [
+    {"item": "The envelope group for Hays (maxHeightFt, maxLotCoveragePct, maxFootprintSqFt, parcelAreaSqFt) -- six contaminated cities (Austin, San Marcos, Buda, Creedmoor, Niederwald, Uhland) never reconciled the way the setback group's were; code is deployed (generation 4, digest ec2cd3bf...e1643a) but never run with --apply.", "row": "P-211"},
+    {"item": "agValuation passes in only Williamson and Travis by design; whether to extend it needs an operator scope call, not an engineering fix.", "row": "P-211"},
+    {"item": "The --city filter on parcel-setback-cells.mjs / parcel-envelope-cells.mjs carries no county boundary -- a city name shared across in-scope counties (Austin, San Marcos, Buda, Creedmoor, Niederwald, Uhland) combines both counties' parcels in any --city-scoped run. Pre-existing (all five other counties already shared this), found this wave, not fixed per the dispatch's explicit instruction to card it rather than build it.", "row": "P-211"},
+    {"item": "Hays's reader slate (PARCEL_RECORD_SLATE, hauska-engine parcel-record-slate.json) holds 13 entries against Travis's 30 -- the gap between what's slated and what the other 30-27 entries in the other five counties cover.", "row": "P-211"},
+    {"item": "The excluded-rail spread across the six counties beyond this row's nine (the full 65-rail grid; Hays passes 31/65 before this apply, and this apply does not itself change that count -- see the get_smart_site finding above for why).", "row": "P-211"},
+    {"item": "NEW, not on the dispatch's prescribed list: get_smart_site depth=node appears to serve a cached bake snapshot (mode baked-facet-intel-v1) rather than a live dereference of parcel_record_cell / parcel_gate_verdict for at least the setbackRulesFact read path -- the bake for 48209:97658 has not re-run since before this apply, so the customer-facing predicate this program treats as the real finish line (OPS-24 law 1) did not move even though the underlying gate and cells did. Not carded; needs an operator/integration-seat decision on whether this folds into P-211, OPS-23's ledger-as-serving-path work, or its own row.", "row": "UNCARDED"},
+    {"item": "NEW: scripts/surface-probe.mjs has no P-200-specific leg (ran --rows P-200, got PASS 0 FAIL 0 UNMEASURED 0), so this row carries predicate debt against OPS-24 law 1 independent of the bake-staleness finding above -- there is currently no mechanical way for this probe to confirm or refute this row's customer-facing state for Hays.", "row": "UNCARDED"}
+  ],
+
+  "constraintsHonored": [
+    "Did not touch the envelope group's --apply (deployed only).",
+    "Did not chase agValuation.",
+    "Did not touch maxImperviousCoverPct.",
+    "Did not fix the --city county-boundary defect, only named it.",
+    "Did not convert any unaccounted cell to absent-verified to force a pass -- every absent-verified count above is the writer's own real classification for a city with no ruled setback table.",
+    "Did not deploy anything beyond the two writer images already authorized and deployed in the prior wave; did not attempt to trigger a re-bake for the gold parcel.",
+    "Did not touch smartcity-os or smartcity-dashboards.",
+    "Did not write to any repository other than hauska-factory."
+  ],
+
+  "fleetMemoryScratch": [
+    {"kind": "GROUND-TRUTH", "text": "EARNED_CELL_KINDS = ['value','absent-verified','refused'] only -- 'not-applicable' does NOT count as earned for evaluateRailGate's liveness check. A rail whose only earned-looking cells are all not-applicable (e.g. every unincorporated parcel in a county) still reads excludedDeclaredAhead if every in-city cell is unaccounted. Verified 2026-09-15 via src/lib/parcel-record-engine/cell-state.js."},
+    {"kind": "LESSON", "text": "gate-rail-cli.mjs's own liveness pre-scan (loadProgramWideLiveRailKeys, RAIL_LIVENESS_SQL) is the expensive part on a cold call and can be computed once and passed via --declared-ahead to every subsequent call in the same session -- cut repeat calls from ~70s+ to ~17s each."},
+    {"kind": "LESSON", "text": "parcel-setback-cells.mjs's --city filter has no county boundary: CITY_ALL_PARCELS_SQL matches city_name against ALL of IN_SCOPE_COUNTIES, not the caller's intended single county. A city name shared across counties (Austin, San Marcos, Buda, Creedmoor, Niederwald, Uhland all cross Hays/Travis/Caldwell lines in this program's six counties) silently re-reads (but, thanks to the unaccounted-only write guard, does not re-write) the other county's parcels too. Safe by construction for a re-run, but makes a --city-scoped dry-run or apply preview misleading unless independently reconciled per county."},
+    {"kind": "LESSON", "text": "get_smart_site depth=node returns mode:'baked-facet-intel-v1' with a shared runId/bakedAt for the whole payload -- confirmed by direct A/B read (same runId both times) that it does NOT re-dereference parcel_record_cell live per call for at least the setbackRulesFact path, contradicting a plain reading of the ledger-as-serving-path canon rule. Worth checking before trusting any get_smart_site read as evidence that a just-landed write reached the customer surface -- verify the underlying store and gate directly instead, or confirm the bake has re-run."},
+    {"kind": "OPEN", "text": "Why does get_smart_site's bake not re-run promptly after a parcel_record_cell write that flips its gate verdict to pass? Is there a bake job/cadence this program expects to trigger it, and if so what triggers it and how long is the normal lag? Next context should check for a bake/publish job in hauska-engine's services/retrieval-api or a related repo before assuming this is broken vs. merely not-yet-triggered."}
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "lane": "p195-gate",
+  "planRows": ["P-195"],
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "at": "2026-09-14T16:20:00Z",
+  "summary": "Both fixes built, both directions verified by violation via unit tests, AND verified live against real production data (dispatch step 4's live-read requirement). Two open blockers before this can close: (1) a GitHub Actions dispatch anomaly on hauska-engine is preventing CI from running on the corrected engine PR, so it is not yet merged per AGENT_CONTRACT's CI-success-only merge rule; (2) production deploy (dispatch step 5) requires the operator's explicit go, not yet requested.",
+
+  "designCorrection": {
+    "what": "A mid-build correction, made before anything reached the factory side. The dispatch's literal one-line description of evaluateRailGate's fix ('a rail NOT in [the declared-ahead] set with zero earned cells in this county is a REFUSAL') would have refused every county OTHER than Travis for maxImperviousCoverPct -- a rail whose writer is deliberately hard-scoped to Travis only and never writes so much as a not-applicable cell anywhere else, a ratified design proven by hauska-factory test/gate-county-scoped-rail.test.mjs BEFORE this lane started. Caught by reading that test before implementing, not after.",
+    "fix": "RAIL_NEVER_FILLED now fires ONLY when cells.length === 0 -- loadCountyRailCells guarantees this happens exclusively when the county itself has zero parcel_record rows (never instantiated), a genuine structural 'this county does not exist yet' signal. A populated county with zero earned cells for one rail is completely unchanged from pre-fix behavior (still excludedDeclaredAhead) -- this covers BOTH a genuinely never-built rail AND a rail deliberately scoped elsewhere, without needing to (and without being able to) distinguish them from cell data alone.",
+    "engineCommits": "hauska-engine PR #443 (merged, 5e43fc0 -- the broader, since-corrected design) then PR #444 (open, narrows it -- see below)."
+  },
+
+  "engineSide": {
+    "pr443": { "status": "MERGED", "mergeSha": "5e43fc02f31c5c4d0624f078e5157b7b4328bef2", "ciConclusion": "success" },
+    "pr444": {
+      "status": "OPEN, NOT MERGED",
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/444",
+      "headSha": "8183be43b86ffa9be87cd6e2a378760b1d1349d3",
+      "blocker": "GitHub Actions is not creating a check-suite for this branch's commits at all (confirmed via gh api .../check-suites -- only a stale, permanently-queued 'cursor' app check-suite exists, zero 'github-actions' check-suite for either of the last two commits). Not a code issue: verified the SAME workflow ran successfully minutes earlier on this repo for the first commit (1f04459, PR #443, conclusion success), and hauska-factory's own PR (#150) got real CI in the same session with no issue -- so this is isolated to later commits on this one branch/repo, not an org-wide or GitHub-wide outage. Tried: pushing a new commit (synchronize event), closing and reopening the PR (fresh 'opened' event). Neither triggered a run. Not resolved; flagged here rather than bypassed.",
+      "substituteVerification": "Ran CI's own exact steps locally as the closest available substitute (NOT a replacement for the merge gate -- AGENT_CONTRACT requires a real CI success conclusion, so this PR stays unmerged): full monorepo `pnpm install` (all 20 workspace projects, matching ci.yml exactly) + `pnpm typecheck` (pnpm -r run typecheck) -- all 19 TS packages clean, zero errors. `pnpm test` (pnpm -r run test) reached packages/engine-core (first in the recursive run order) and passed 1606/1606 individual tests with 0 regressions; 4 unrelated files failed with a pre-existing parse-time SyntaxError -- traced to a local Node version mismatch (this session runs Node v24.11.1; ci.yml pins Node 22, no version manager available in this environment to reproduce exactly) rather than anything in this diff, and PR #443's real CI already passed cleanly through this exact step on Node 22 minutes before this correction. The recursive test run could not reach packages other than engine-core (pnpm -r stops at first package failure), so downstream packages (services/engine-api, services/retrieval-api, etc.) were NOT locally re-verified this round -- typecheck across all 19 DID cover them, and a repo-wide grep confirms no other package references evaluateRailGate/RailGateOptions/RAIL_NEVER_FILLED, so no other package's runtime behavior can depend on this diff."
+    }
+  },
+
+  "factorySide": {
+    "pr150": {
+      "status": "OPEN, NOT MERGED (deliberately -- see openItems)",
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/150",
+      "headSha": "c9bbb6d34f4fcd0590a04d8e400d1688d277ffcf",
+      "ciConclusion": "success (gate8, ldt-sha-comment-presence, test -- all pass)",
+      "note": "ENGINE_PIN.json in this PR currently cites engineSha 5e43fc0 (PR #443's merged SHA), but the ACTUAL vendored publish-gate.js content in this PR was compiled from the CORRECTED source (branch tip 8183be4, PR #444, not yet merged) -- caught while writing this checkpoint. This is a real provenance mismatch against this repo's own established convention (the pin must always cite a merged, permanent SHA) and must be fixed with a follow-up commit once #444 merges: recompile from the real merged SHA (repeating the byte-identical diff-confirmation done for #443), update engineSha/compiledAt/note. Until then this PR is correctly marked not-yet-mergeable."
+    }
+  },
+
+  "liveVerification": {
+    "method": "Direct read-only invocation of the actual gate-rail-cli.mjs (this branch's working code, uncommitted-safe scratch scripts deleted after use) against the live production Factory database, via the FACTORY_DATABASE_URL_RO credential (Secret Manager, hauska-prod-497015) -- never --apply, gate-rail-cli.mjs's own session is SET default_transaction_read_only = on regardless. No write-slot or traffic-lease needed (a read, not a deploy or a store write); no operator stop point crossed.",
+    "bastropUnchanged": {
+      "storedBaselineVerdict": "{county:48021, rail:flood, verdict:pass, unaccounted_count:0, evaluated_at:2026-09-14T16:04:36.609Z} -- read from parcel_gate_verdict, the currently-serving production scheduler's own last write, BEFORE this lane's code ran.",
+      "newCodeLiveResult": "{ok:true, unaccountedCount:0, excludedDeclaredAhead:[]} -- toGateVerdictKind: pass. parcelRowCount 62256, loadMs 42412 (125 pages). IDENTICAL to the stored baseline. Falsifier satisfied: 'if Bastrop's verdict changes, explain every delta' -- no delta."
+    },
+    "emptyCountyRefuses": {
+      "county": "48113 (Dallas)",
+      "rail": "flood",
+      "realTxLandingAbsentConfirmedLive": "SELECT DISTINCT county_fips FROM parcel_record returned exactly 6 rows (48021,48055,48209,48309,48453,48491 -- the six CTX counties) -- Dallas is one of the real 217 TX-LANDING-ABSENT counties, confirmed live, not assumed from prose.",
+      "oldCodeLiveResult": "Ran the literal pre-fix code (git show origin/main:.../publish-gate.js et al, extracted to a scratch dir, evaluateRailGate called with the OLD 2-arg signature) against this SAME live data: {ok:true, excludedDeclaredAhead:['flood']} -- toGateVerdictKind: excluded. A clean, silent pass on a county with parcelRowCount 0.",
+      "newCodeLiveResult": "{ok:false, code:'RAIL_NEVER_FILLED', cellCount:0} -- toGateVerdictKind: refuse. Falsifier satisfied directly: the empty-county fixture refuses in the real path the scheduler calls, not just in a synthetic test."
+    },
+    "declaredAheadProgramWideLiveMeasurement": {
+      "queryMs": 52250,
+      "liveRailCount": 44,
+      "declaredAheadCount": 21,
+      "operationalNote": "The full-table RAIL_LIVENESS_SQL scan takes ~52s against the live store on the read replica -- confirms the AGENT_CONTRACT section 4 heavy-scan concern was real, not theoretical, and validates computing it once per scheduler run (this measurement) rather than once per (county, rail) subprocess (would have been 52s x up to thousands of pairs). Also empirically demonstrated the risk directly: an early live run that omitted --declared-ahead (letting gate-rail-cli.mjs self-compute) hit the CLI's own 20s per-statement timeout and failed -- reproducing exactly the cost this design avoids."
+    }
+  },
+
+  "notYetDone": {
+    "evaluatePopulationLiveRead": "Not performed -- evaluatePopulation is invoked only via runBastropPublish/requireCountyPopulation, which reads cad_property/landing_parcel_jurisdiction from the target's NEONDB store (a different credential, STAGING_NEONDB_URL, not fetched this round) and atoms from the HAUSKA_MCP store. The dispatch's step 4 live-read instruction names 'publish-gate-sched' specifically (the evaluateRailGate path, Factory store only), not requireCountyPopulation -- read as in-scope for this checkpoint's live verification; evaluatePopulation's fix is verified by unit test only (4 new violation tests, all passing) unless the operator wants the NEONDB-side live read too.",
+    "engineCiAndMerge": "Blocked on the GitHub Actions anomaly above. Will keep retrying and will report back once resolved (or ask the operator if it persists past a reasonable window).",
+    "factoryPinFixup": "Blocked on the above -- a follow-up commit is owed once #444 merges.",
+    "deploy": "Not started; requires the operator's explicit go per the dispatch's own step 5 and AGENT_CONTRACT's production-serving-store stop point. Will not proceed without it, and a relayed/assumed approval is not treated as sufficient -- it will be asked for directly."
+  },
+
+  "askingOperator": "No blocking question yet -- continuing to retry the engine CI issue and will escalate if it does not resolve on its own."
+}

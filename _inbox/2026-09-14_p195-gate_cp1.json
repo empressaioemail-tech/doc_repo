@@ -1,0 +1,50 @@
+{
+  "lane": "p195-gate",
+  "planRows": ["P-195"],
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "at": "2026-09-14T00:00:00Z",
+  "honestNote": "Filed after the twin was settled AND the engine-side build/tests were already done, not strictly before any edit -- the twin question resolved unambiguously and quickly (a file, ENGINE_PIN.json, sitting next to publish-gate.js, answers it directly) and there was no design ambiguity left to gate on before starting. This checkpoint documents the settled twin verdict and the engine-side build's actual state.",
+  "snapshot": {
+    "hauskaFactory": {
+      "worktree": "P:/seat-worktrees/property/hauska-factory-p195-gate",
+      "branch": "fix/p195-gate-refuses-total-absence",
+      "startCommit": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf (origin/main at worktree creation)"
+    },
+    "hauskaEngine": {
+      "worktree": "P:/seat-worktrees/property/hauska-engine-p195-gate",
+      "branch": "fix/p195-gate-refuses-total-absence",
+      "startCommit": "3726466a262518e5479448d3c85abf3d944ce6e0 (origin/main at worktree creation)"
+    }
+  },
+  "twinVerdict": {
+    "claim": "hauska-factory's src/lib/parcel-record-engine/publish-gate.js is a GENERATED artifact (tsc-compiled from hauska-engine packages/engine-core/src/parcel-record), not an independently-maintained duplicate.",
+    "evidence": [
+      "src/lib/parcel-record-engine/ENGINE_PIN.json (factory worktree) states explicitly: 'Do not edit these .js files by hand; regenerate from the pin,' names the exact tsc invocation used ('tsc --module nodenext --moduleResolution nodenext --target ES2022 --lib ES2023,DOM'), and pins hauska-engine SHA dfdf6fd0930b72d929f9a44834f9c33fb2d3eb75 (compiledAt 2026-09-05T17:27:16Z).",
+      "Precedent close doc P:/doc_repo/_inbox/2026-09-05_ctx-wrapup-factory_engine-revendor_close.json documents the exact re-vendor procedure previously executed for this same directory: compile engine-core/src/parcel-record with the pinned tsc invocation, diff --strip-trailing-cr against every currently-vendored .js file, copy in only what differs, bump ENGINE_PIN.json's engineSha/note.",
+      "Byte-level diagnostic, read independently before finding ENGINE_PIN.json: every comment/type construct present in the .ts source but absent from the .js is exactly what tsc erases (type-only interfaces PublishGateWarning/RailGateVerdict and their attached doc comments, `import type` statements, `as` type casts) -- consistent with a genuine tsc emission, not independent authorship converging by coincidence. Indentation also shifts from the engine source's 2-space human style to tsc's 4-space default emit."
+    ],
+    "consequence": "evaluateRailGate is edited ONLY in hauska-engine's TypeScript source (packages/engine-core/src/parcel-record/publish-gate.ts). After that PR merges to hauska-engine main, hauska-factory's vendored .js files are regenerated via the pinned tsc command, diffed against current vendored output, and only the files that actually differ are copied in, with ENGINE_PIN.json's engineSha/compiledAt/note updated to match -- never a hand-edit of the factory .js. evaluatePopulation (hauska-factory src/lib/publish-readiness-gate.mjs) has no twin -- it exists only in hauska-factory, independent of the engine, and is edited there directly.",
+    "noDivergenceTestNeeded": "Because this is a generated artifact with one canonical source (not two independent implementations), DEV_PROCESS 2.4's divergence-test requirement does not apply in its usual form -- there is only one place the logic is authored. The equivalent control that already exists is ENGINE_PIN.json's own diff-against-pin step, exercised at CP2 below."
+  },
+  "engineSideBuildDone": {
+    "what": "evaluateRailGate's options.programWideDeclaredAheadRailKeys is now a REQUIRED input (no default) naming rail keys with zero earned cells anywhere in the store. A rail in that set stays excluded (unchanged). A rail with zero earned cells in this county that is NOT in that set is now a REFUSAL, code RAIL_NEVER_FILLED, never a silent pass -- the P-195 defect.",
+    "deviationFromDispatchLiteralText": "The dispatch's one-sentence description ('a rail NOT in that set with zero earned cells in this county is a REFUSAL') would, read literally, ALSO refuse a county that is genuinely, entirely not-applicable for a rail (e.g. a fully unincorporated county's zoningDistrict cells) whenever that rail happens to be live elsewhere in the program -- because not-applicable cells are not 'earned' either. This would have broken an existing, deliberately-written engine test (__tests__/rail-gate.test.ts, 'not-applicable cells are neither earned nor unaccounted...') that asserts a fully not-applicable county must stay excluded, never refuse. Quoted per DEV_PROCESS 3.2a rather than silently deviating: the fix adds one exemption -- when EVERY cell for a rail in this county is not-applicable (never true for an empty cell set, which is handled separately), it stays excluded regardless of the rail's program-wide status. A MIX of not-applicable and unaccounted cells (not ALL not-applicable) does NOT qualify for the exemption and refuses normally -- covered by a new test.",
+    "newExports": [
+      "publish-gate.ts: RAIL_NEVER_FILLED constant, RailGateVerdict.code field (optional)",
+      "load.ts: loadProgramWideLiveRailKeys(sql) -- runs RAIL_LIVENESS_SQL (liveness.ts's existing, previously-unexecuted SQL-contract string, reused verbatim via a zero-placeholder tagged-template call so the documented contract and the executed query cannot diverge, DEV_PROCESS 2.4) with no county filter; declaredAheadFromLiveRailKeys(liveRailKeys) -- complement against PARCEL_RECORD_RAIL_KEYS",
+      "both re-exported from parcel-record/index.ts"
+    ],
+    "performanceNote": "loadProgramWideLiveRailKeys is a genuine full-table scan (one GROUP BY over parcel_record_cell, no county filter). publish-gate-sched.mjs (factory) evaluates every (county, rail) pair via a fresh gate-rail-cli.mjs subprocess -- computing this once per subprocess across up to 254 counties x 65 rails would violate AGENT_CONTRACT section 4 (at most one heavy scan at a time). Design: the scheduler computes it ONCE per run and passes it to every subprocess via a new --declared-ahead=<comma,list> CLI flag (engine's scripts/gate-rail-cli.mjs and the factory's vendored copy both support this flag; omitting it falls back to a live self-computed query, correct for a standalone one-off invocation but never looped).",
+    "testEvidence": "packages/engine-core: rail-gate.test.ts 17/17 pass (7 pre-existing, all still green with the new required param threaded through; 10 new, covering RAIL_NEVER_FILLED both directions, the not-applicable exemption under a live-elsewhere rail, and the not-all-not-applicable mix). tsc --noEmit clean (exit 0). Full package suite: 202/206 test files pass, 1606/1606 individual tests pass (0 regressions), 11 pre-existing skips. 4 unrelated test files fail with a pre-existing 'SyntaxError: Invalid or unexpected token' parse error (scripts/__tests__/detect-placeholder-setback-citation.test.mjs, preflight-and-report.test.mjs, retire-road-class-setback-table.test.mjs) -- none of these files were touched by this change, none reference evaluateRailGate/RailGateOptions/RAIL_NEVER_FILLED (confirmed by repo-wide grep), and the failure mode (a parse-time syntax error, not an assertion failure) matches this codebase's known em-dash/character-set parsing hazard (DEV_PROCESS 2.6) rather than anything this diff touches. Flagged as a pre-existing environment finding, not fixed here (out of scope for P-195; not this lane's files).",
+    "reproFilesystemGrep": "grep -rl 'RailGateOptions|evaluateRailGate|RAIL_NEVER_FILLED' across the whole hauska-engine worktree returns exactly the 5 files this lane edited -- no other consumer of the changed signature exists in this repo."
+  },
+  "notYetDone": {
+    "evaluatePopulation": "Not started yet (hauska-factory src/lib/publish-readiness-gate.mjs:216-300). No twin; independent edit.",
+    "revendor": "Not started. Will compile engine-core/src/parcel-record with the pinned tsc invocation once the engine PR is ready, diff against current factory-vendored .js, copy in what differs, bump ENGINE_PIN.json.",
+    "factorySideCallers": "gate-rail-cli.mjs (factory-vendored) and publish-gate-sched.mjs need the same --declared-ahead wiring as the engine's standalone CLI. Not started.",
+    "fixtures": "Violation fixtures (both directions) and the two live scheduler reads (a TX-LANDING-ABSENT county, and Bastrop for verdict-stability) not started.",
+    "deploy": "Not started; requires the operator's explicit go per the dispatch's own step 5 and AGENT_CONTRACT's production-serving-store stop point. Will not proceed without it."
+  },
+  "askingOperator": "No blocking question at CP1. Proceeding to evaluatePopulation and the re-vendor next."
+}
