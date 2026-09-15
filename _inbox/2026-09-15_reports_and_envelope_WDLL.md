@@ -77,24 +77,27 @@ unmerged for fear of a deploy that cannot happen (PR #154).
 | P-219 | `hauska-engine-api-00228-zat` | decoded PDF: 30/10/30 cited Ord. 2026-06; **0** occurrences of repealed `2019-51`, stale `19,052`, retired `bastrop-per-parcel` |
 | P-229 | both writer jobs, `af5fd158…` / `b35bc2d0…` | proven BY VIOLATION on the deployed image: `UNKNOWN_ARGUMENT` exit(1), `COUNTY_UNKNOWN` exit(1), and a valid `--county` still runs scopedly |
 | **P-232** | `cortex-api-00805-jil` | **1010 Chestnut St (GC): 404 no-district → 200 ok, Polygon, 20/5/20, 16,965 sq ft matching the facets route.** 3,825 Bastrop parcels |
+| P-221 + P-234 | `hauska-engine-api-00230-cic` + `hauska-mcp-server-00094-nis` | **the X-ray generates**: `pdf-dossier`, 3 sheets, verdict verbatim, `FRONT SETBACK 30'` agreeing with Feasibility, and **all 10 Studio-only markers ABSENT** from the Solo SKU |
+| P-228 | `hauska-engine-api-00230-cic` | chrome masthead renders on the dossier; footer counter verified `01/10`..`10/10` on a 10-sheet Feasibility by the lane. Dossier footer gap → **P-238** |
 
 ---
 
-## MERGED, NOT DEPLOYED
+## MERGED AND DEPLOYED — nothing is sitting unshipped
 
-| Row | PR | Blocker |
-|---|---|---|
-| P-221 | #450 merged, **deployed** `00228-zat` | Engine is correct and live; **the product is still blocked by P-234** |
-| P-228 | #451 open, green, not merged | hauska-engine has no deploy workflow; needs manual Cloud Build after merge |
+As of 2026-09-15 evening every merged row is live. Serving revisions, read by field:
 
----
+```
+hauska-engine-api   00230-cic   (P-219 + P-221 + P-228)
+hauska-mcp-server   00094-nis   (P-234)
+cortex-api          00805-jil   (P-214 + P-232)
+property-explorer   8r0btsuy9   (P-216 + P-218)
+factory writer jobs af5fd158… / b35bc2d0…  (P-229)
+```
 
 ## IN FLIGHT
 
-- **P-234** — the X-ray export gate, hauska-mcp-server. CP1/CP2 landed.
-
-`g131-tenant-resolution` has shown as claimed since **2026-09-15T01:06Z**. Treat as a stale
-claim and confirm before assuming a lane is live.
+None. `g131-tenant-resolution` has shown as claimed since **2026-09-15T01:06Z** — treat as a
+stale claim and confirm before assuming a lane is live.
 
 ---
 
@@ -169,6 +172,22 @@ base must be parsed off a prefix. **A naive split on `-` yields `CS` where the b
 **STANDING RULE until P-236 exists: Travis stays OUT of any bake while Austin is unmeasured.**
 
 ---
+
+## RULINGS IN FORCE
+
+- **PUD parcels** (operator, 2026-09-15): an honest *"your setbacks come from your PUD
+  ordinance"* message for now, **not** per-parcel acquisition. Disposes of P-233's largest
+  bucket — 35 districts, 9,485 parcels — without acquiring anything.
+- **X-ray metering** (operator, 2026-09-15, P-237): **accept** the meter tick on a hollow
+  refresh. A tick costs nothing today — verified on deployed main: `handleSettledOveragePayment`
+  has zero call sites, `amount_minor` lands `null` with `graceTerms: "pending-rate"`.
+  **TRIGGER, and it is unenforced today: moving metering after the engine's verdict must land
+  BEFORE any real `perReferenceRateMinor` is set.** The moment a rate exists those rows stop
+  being free and start being wrong. "Someone remembers" is not a control — the enforcing check
+  (CI fails when a finite rate resolves while the metering order is unchanged) is owed.
+  Option (c), a cheap pre-engine hollow pre-check, is **refused**: it is the shape of the
+  defect P-234 removed.
+- **Travis stays OUT of any bake** while Austin is unmeasured, until P-236 exists.
 
 ## OWED, and not to be quietly folded into something else
 
