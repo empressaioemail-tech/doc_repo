@@ -1,0 +1,48 @@
+{
+  "lane": "g134-workos-wiring",
+  "checkpoint": "CP2 pilot/mid-work -- what got built, what got live-verified locally, and the one thing that did not get verified against a real provider and why",
+  "planRows": ["G-134"],
+
+  "designDecided": {
+    "gap1": "staff-admin-client.mjs, smartcity-dashboards only (the seat staff-directory.mjs already names as its own admin-side). provisionStaffAccount(email,name,tenant,role) creates a WorkOS user + organization membership, then calls upsertStaffAccount; offboardStaffAccount(sub) removes the WorkOS membership then calls disableStaffAccount. A one-time random temporaryPassword is generated and returned exactly once, matching hauska-mcp-server's own raw_key-shown-once admin.ts convention.",
+    "gap3": "STAFF_TOKEN_MAX_AGE_SECONDS (default 900s), checked against iat in the shared staff-identity.mjs verifier, identical across all three repos. Chosen over a purely-recommended provider-side TTL setting because it is verifiable and enforced by code this program controls, not a WorkOS dashboard setting that could silently drift.",
+    "gap4": "smart-files' requireReadScope tries a verified staff bearer FIRST (mirroring plan-review's resolveStaffCaller/staffEngagementRefusal exactly), terminal in both directions, falling through to the existing SMART_FILES_SERVICE_TOKENS path only when no staff bearer (JWT-shaped) is presented at all. staffFileScopeRefusal grants tenant-scope matches only; non-tenant scope types (e.g. instrument) are refused for a staff caller as a deliberate, narrow no -- not decided anywhere that a staff person should reach an instrument room.",
+    "gap5": "staff-signin.mjs: /auth/sign-in (redirect to WorkOS AuthKit authorize, CSRF state minted into its own short cookie), /auth/callback (state checked byte-for-byte BEFORE any WorkOS call; on match, exchanges the code and sets the staff bearer as an HttpOnly/Secure/SameSite=Lax cookie), /auth/sign-out (clears it). tenancy.mjs's resolveCaller reads that cookie as a fallback when no Authorization header is present, since a page load has no header to set. The People-and-access LENS (UI) was not built -- the dispatch's own priority names sign-in first."
+  },
+
+  "builtAndVerifiedLocally": {
+    "unitTests": "smartcity-dashboards test count, in order: 666 (after landing G-132's backlog and rebasing onto origin/main's newer G-123/G-128 commits) -> 671 (+5 GAP3 max-age tests) -> 679 (+8 staff-admin-client/GAP1 tests) -> 693 (+2 tenancy.mjs cookie-fallback tests, +12 staff-signin.mjs/GAP5 tests). Final: 693/693 passing.",
+    "planReview": "108->113 (+5 GAP3 tests). 113/113 passing.",
+    "smartFiles": "55->62 (+7 GAP4 tests, staffFileScopeRefusal). Then merged forward against origin/main (real add/add conflict against G-132's own just-landed squash-merge commit, resolved by taking the superset -- confirmed byte-identical to origin/main's pre-lane content via a direct diff before resolving). 62/62 passing post-merge.",
+    "divergenceGuard": "scripts/staff-identity-divergence.test.mjs: PASS after every edit round, including after fixing a REAL pre-existing CRLF-vs-LF byte divergence between smart-files' copy and the other two (found while making the GAP 3 edit; zero logical difference, confirmed by a line-ending-normalized diff before treating it as fixed).",
+    "liveLocalSmokeTests": "Two, both against a real running `node src/server.mjs` process (not a unit-test mock): (1) smart-files' GAP4 wiring -- wrong tenant 403, expired 401, no-bearer unchanged 403, matching-tenant passes the auth gate (fails only downstream on an absent local DATABASE_URL, unrelated). (2) smartcity-dashboards' full GAP5 chain -- /auth/sign-in redirect + state cookie, wrong-state callback refused before any WorkOS call, matching-state callback sets a real session cookie via a fake WorkOS token-exchange endpoint, that cookie resolves through resolveCaller and correctly hits the default-deny-on-unprovisioned-sub rule, sign-out clears the cookie. See surface_probe.json P3-P10 for the full predicate list."
+  },
+
+  "theOneThingNotVerified": {
+    "what": "This lane's actual WorkOS HTTP calls (create user, create organization membership, delete membership, exchange authorization code for a token) have never run against a real WorkOS organization. Every test of them uses an injectable fetch mock.",
+    "why": "No WorkOS account or API key exists anywhere this session could reach -- enumerated in CP1 (Secret Manager in two GCP projects, every repo's own env/code/docs, the decision doc itself). Creating a WorkOS organization is a real signup/billing action outside what this session can do on the operator's behalf.",
+    "whatWouldChangeIfWrong": "If WorkOS's actual endpoint shapes differ from what this lane assumed (e.g. a different path, a different required field, MFA enforcement reachable via API after all), the injectable-fetch-mock tests would still pass (they assert against the shape THIS code sends, not against WorkOS's real contract) while the real integration would fail on the first live call. This is named explicitly rather than presented as more-verified than it is."
+  },
+
+  "theThreeQuestionGate": {
+    "whatExecutesGap3": "staff-identity.mjs's own verifyStaffToken, on every request through resolveCaller/resolveStaffCaller in all three repos -- not a separate gate that could be bypassed by calling a different function.",
+    "whatTriggersGap4": "smart-files' requireReadScope, called from every read route (folders, search, blob, share-adjacent) before the underlying store function runs.",
+    "whatFailsGap5": "A CSRF state mismatch, a WorkOS exchange failure, or a resolveCaller refusal on the resulting cookie all produce typed, non-2xx responses -- verified live for all three in the smoke test, not merely asserted possible.",
+    "whatBypassesIt": "Named plainly: an operator or script calling staff-admin-client.mjs's functions directly (Node-level, not an HTTP route) bypasses nothing since there is no HTTP route to bypass -- provisioning was never meant to be reachable except by an admin action already inside this codebase's trust boundary. The one real bypass risk is GAP 2: hauska-mcp-server does not consult any of this, so a caller reaching that MCP surface directly is unaffected by anything G-134 built -- named in the dispatch as NOT this lane's scope, reported, not fixed."
+  },
+
+  "operatorDecisionsNamedRatherThanChosen": [
+    "MFA enforcement at the WorkOS-organization level is a dashboard-only setting with no documented per-call API this client can invoke. Must be turned on by hand once the organization exists. Named in staff-admin-client.mjs's own header, not silently assumed done.",
+    "The WorkOS-side claim mapping (making STAFF_ROLE_CLAIM/STAFF_TENANT_CLAIM actually appear in the issued JWT) is a WorkOS dashboard/organization configuration this lane cannot set without a real organization to configure. staff-identity.mjs already reads whatever claim names the deployment configures; the provider-side mapping that populates them is unset today and is an operator/deployment task, not a code gap.",
+    "Whether the People-and-access LENS (as opposed to its already-built read API) is the next row, and who builds it, is left for the operator/planner to sequence -- not decided here, per the dispatch's own stated priority order."
+  ],
+
+  "leaveBehindNotBuiltThisLane": [
+    "People-and-access lens UI (frontend only; the read API already existed from G-132 and is unchanged by this lane).",
+    "GAP 2 (hauska-mcp-server accepting the staff bearer) -- explicitly out of scope, OPS-19/OPS-23 territory, reported not touched.",
+    "G-135 (distributing/documenting the bastrop_tx verification credential mechanism G-133 found) -- explicitly named by the operator mid-session as a separate lane, not this one's to do.",
+    "The real WorkOS organization itself and its client id / API key -- an operator action, not an agent one."
+  ],
+
+  "decision": "BUILD, per operator direction (build now, verify later). Filed as closed-partial: GAP 1, GAP 3, GAP 4 and GAP 5's redirect/callback/cookie mechanics are built, tested, and (where a live provider was not required) live-verified locally; GAP 5's lens UI is not built; the mission's own required violation test against a real WorkOS organization has not run for want of an account. See close.leave_behind and the surface probe for exactly what remains and why."
+}

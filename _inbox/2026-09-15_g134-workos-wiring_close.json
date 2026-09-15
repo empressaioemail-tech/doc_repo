@@ -1,0 +1,58 @@
+{
+  "lane": "g134-workos-wiring",
+  "planRows": ["G-134"],
+  "status": "closed-partial",
+
+  "probe": { "artifact": "_inbox/2026-09-15_g134-workos-wiring_surface_probe.json" },
+
+  "prNumbersMergeShasCiConclusions": {
+    "govtechBacklogLanding": "doc_repo commit fcc3c47c (pushed to origin/main): G-120/G-126/G-127/G-132/G-133 close artifacts. smartcity-dashboards #62 (G-132 code, merged, squash, CI green). smart-files #14 (G-132 code, merged, squash, CI green). plan-review #16 (G-132 code, merged, squash, CI green, one real merge conflict against G-126's #15 resolved by keeping both independent checks).",
+    "g134Own": {
+      "plan-review": "#17 (GAP 3, STAFF_TOKEN_MAX_AGE_SECONDS) -- merged, squash, CI green (113/113).",
+      "smart-files": "#15 (GAP 3 + GAP 4) -- merged, squash, CI green (62/62) after resolving a real add/add merge conflict against G-132's own just-landed squash-merge commit (resolved by taking the superset, confirmed byte-identical to origin/main's pre-lane content).",
+      "smartcity-dashboards": "#65 (GAP 1, GAP 3, GAP 5) -- CI green (unit tests 693/693, a11y pass in 10m0s), merged (squash) at 2026-09-15T01:18:17Z."
+    }
+  },
+
+  "countsWithCountingRules": {
+    "testsPassing": "smartcity-dashboards 693/693 (up from 671 pre-G-134, +8 GAP1 +14 GAP5), plan-review 113/113 (+5 GAP3), smart-files 62/62 (+7 GAP4, GAP3 counted within the pre-existing staff-identity.test.mjs). Counting rule: every test each repo's own `npm test`/`node --test` invocation reports, pre-existing and new combined, no exclusions.",
+    "newTestsThisLane": "smartcity-dashboards: 5 (GAP3 max-age) + 8 (GAP1 staff-admin-client) + 2 (GAP5 tenancy cookie fallback) + 12 (GAP5 staff-signin) = 27. plan-review: 5 (GAP3). smart-files: 5 (GAP3) + 7 (GAP4 staffFileScopeRefusal) = 12. Total 44 new test cases across the three repos.",
+    "filesChanged": {
+      "smartcity-dashboards": ["src/staff-admin-client.mjs (new)", "src/staff-admin-client.test.mjs (new)", "src/staff-signin.mjs (new)", "src/staff-signin.test.mjs (new)", "src/staff-identity.mjs (edited, GAP3)", "src/staff-identity.test.mjs (edited, GAP3)", "src/tenancy.mjs (edited, GAP5 cookie fallback)", "src/tenancy.test.mjs (edited, GAP5)", "src/server.mjs (edited, GAP5 routes)"],
+      "plan-review": ["src/staff-identity.mjs (edited, GAP3)", "src/staff-identity.test.mjs (edited, GAP3)"],
+      "smart-files": ["src/staff-identity.mjs (edited, GAP3)", "src/staff-identity.test.mjs (edited, GAP3)", "src/actors.mjs (edited, GAP4)", "src/actors.test.mjs (edited, GAP4)", "src/server.mjs (edited, GAP4)"],
+      "doc_repo": ["_inbox/2026-09-15_g134-workos-wiring_cp1.json", "_inbox/2026-09-15_g134-workos-wiring_cp2.json", "_inbox/2026-09-15_g134-workos-wiring_surface_probe.json", "_inbox/2026-09-15_g134-workos-wiring_close.json (this file)", "plus the five backlogged lanes' artifacts landed first, listed in cp1"]
+    }
+  },
+
+  "constraintsHonored": [
+    "Fail closed: GAP3's age cap, GAP4's staff-first terminal check, and GAP5's state-checked-before-any-WorkOS-call callback all refuse rather than guess on every failure mode tested.",
+    "Typed refusals: every new refusal (token_too_old, cross_tenant_refused via staffFileScopeRefusal, invalid_signin_state, signin_exchange_failed) carries a machine-readable error code and message. Zero bare 'unauthorized' introduced.",
+    "One identity, three products: staff-identity.mjs stays byte-identical across all three repos after the GAP3 edit (divergence test PASS), including fixing a real pre-existing CRLF/LF byte divergence found while making the edit.",
+    "Never fall back to the shared persona: GAP4's staff-first check is terminal in both directions -- a refused staff JWT never retries as an opaque service token.",
+    "Anonymous path verified both directions: not independently re-tested this lane (G-132 already verified it; this lane's changes are additive to the staff-bearer branch, not the anonymous branch), but the full pre-existing test suites (693/113/62) pass unchanged, which would have caught a regression.",
+    "Every verification command exit-bounded: all gcloud/curl calls in the bastrop_tx key mint ran under `timeout`; the local smoke-test servers were explicitly killed at the end of each script, not left running.",
+    "Never print secret VALUES: the WORKOS_* env var names appear throughout; no WorkOS key exists to have printed. The bastrop_tx raw key value was fetched into a shell variable, used, and never echoed; it lives only in this session's local scratch file.",
+    "Enumerate before asserting absence: the WorkOS-credential-does-not-exist finding lists every location checked (CP1 workosCredentialEnumeration) before concluding absence.",
+    "A second mechanism considered and rejected: for GAP3, a purely provider-side TTL recommendation was considered and rejected in favor of a code-enforced cap, because a dashboard setting could drift or be misconfigured without this program noticing; the code-enforced cap is verifiable by this program directly."
+  ],
+
+  "falsifier": "Pre-registered per predicate in the probe artifact, each confirmed on the real failing/passing case: P1-P10 confirmed PASS on live local tests and adversarial unit tests re-run this session; P11-P12 confirmed PASS against an injectable mock (explicitly NOT a live WorkOS call, named as such); P13 (the mission's own real-WorkOS violation test) confirmed UNVERIFIED-LIVE by an enumerated, real constraint (no account exists), not a shrug; P14 (GAP2 untouched) and P15 (lens UI not built) confirmed by grep showing zero relevant changes.",
+
+  "contradicted": "This dispatch's own prose named the smart-files integration point as 'x-persona-gated' (GAP 4 section). That is imprecise: smart-files' write path uses body-based orgId/userId for QA personas, and its READ path (the actual integration point) resolves an opaque SMART_FILES_SERVICE_TOKENS bearer from the Authorization header -- no x-persona header exists anywhere in this repo (grepped, zero matches). The underlying instruction (mirror plan-review's staffEngagementRefusal pattern) was correct and was followed; only the specific mechanism name in the dispatch's prose was off. Built against the real mechanism, not the prose description of it.",
+
+  "leave_behind": [
+    "OPERATOR ACTION REQUIRED -- create the real WorkOS organization, client id and API key. Nothing in this lane can substitute for this; it is the one thing that turns 'build now, verify later' into 'verified.'",
+    "OPERATOR ACTION REQUIRED, once the organization exists -- turn on 'Require MFA' at the WorkOS organization level (dashboard-only, no API this client found to set it) and configure the STAFF_ROLE_CLAIM/STAFF_TENANT_CLAIM claim mapping so issued tokens actually carry role/tenant.",
+    "BUILD GAP (not attempted this lane, small) -- the People-and-access LENS frontend. The read API (G-132) is unchanged and ready; only the UI page/nav entry is missing. Dispatch named this lower priority than sign-in.",
+    "NOT THIS LANE'S SCOPE -- GAP 2, hauska-mcp-server accepting the staff bearer. OPS-19/OPS-23 territory, reported, untouched, per the dispatch's own instruction.",
+    "NOT THIS LANE'S SCOPE, PER OPERATOR MID-SESSION -- G-135, distributing/documenting the bastrop_tx verification credential mechanism G-133 found. This lane minted one dedicated key for its own local verification use only and did not wire it into any Secret Manager or documentation.",
+    "THE REAL VIOLATION TEST -- once a WorkOS organization exists: create a real staff account, sign in as them for real in a browser, disable the account at WorkOS, confirm access ends in all three products on the next request, confirm a different, still-active account is unaffected. This is the actual correctness test this row exists to pass and it has not run."
+  ],
+
+  "missionPremise": "G-127 is blocked and Bastrop's soft launch has one hard blocker: real per-person staff identity. G-132 built the provider-agnostic verification/directory layer and closed-partial, deliberately leaving the paid-vendor pick and a production auth-surface deploy for the operator. The operator ruled the provider (WorkOS) on 2026-09-14 and directed this lane to wire it. This lane's job was GAP 1 (provisioning client), GAP 3 (offboarding latency, given a number and a verdict), GAP 4 (smart-files route wiring), and GAP 5 (sign-in), explicitly NOT GAP 2 (a different repo/program).",
+
+  "completionPredicate": "Per the dispatch's own CLOSE SKELETON rule, a 'closed' verdict requires PASS on every parcel of every row in planRows on the cited probe artifact. The cited probe (_inbox/2026-09-15_g134-workos-wiring_surface_probe.json) has one predicate, P13, verdict UNVERIFIED-LIVE -- the mission's own required real-WorkOS violation test. Every other predicate this lane could measure without a real WorkOS account is PASS, including two live-local end-to-end smoke tests (not merely unit tests) of the full sign-in and read-scope-gate chains. This is why the verdict below is closed-partial rather than closed: everything reachable without a real provider account is done and verified; the one thing that needed a real account is named, not guessed at or silently skipped.",
+
+  "scopeBasis": "In scope and built: GAP 1 (staff-admin-client.mjs), GAP 3 (STAFF_TOKEN_MAX_AGE_SECONDS, all three repos), GAP 4 (smart-files route wiring), GAP 5's sign-in/callback/sign-out mechanics. Out of scope, each named rather than silently skipped: GAP 2 (a different repo/program, per the dispatch's own text and OPS-17 govtech scope discipline -- this program has been burned by scope violations across seat boundaries before); the People-and-access lens UI (the dispatch's own stated priority put sign-in first); G-135 (named by the operator mid-session as a separate lane); the real WorkOS organization itself (an operator action -- account creation/billing is outside this session's authority, and the operator explicitly directed build-now-verify-later rather than asking this session to attempt account creation)."
+}

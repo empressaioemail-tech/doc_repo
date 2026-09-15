@@ -1,0 +1,100 @@
+{
+  "probe": "hand-written, same discipline as scripts/surface-probe.mjs and the g132/g133 precedent -- the generic script has no predicate for any OPS-17/G-1xx row, it probes live parcel/setback surfaces only (re-confirmed by reading its own source, not re-run against an unrelated surface).",
+  "lane": "g134-workos-wiring",
+  "planRows": ["G-134"],
+  "generatedAt": "2026-09-15T01:20:00Z",
+  "method": "Each predicate is either (a) a currently-passing, adversarial automated test cited by file/repo/name, re-run fresh in this session immediately before this artifact was written, (b) a real local HTTP round-trip against a genuinely running server process with a synthetic signed JWT and a fake JWKS/token-exchange endpoint, or (c) a direct source/config read with an enumerated search basis. PASS/FAIL/UNVERIFIED-LIVE are all real determinations; none is a shrug.",
+
+  "predicates": [
+    {
+      "id": "P1",
+      "claim": "GAP 3: a staff token older than STAFF_TOKEN_MAX_AGE_SECONDS is refused even though its exp has not passed, in all three repos, byte-identically.",
+      "verdict": "PASS",
+      "evidence": "staff-identity.test.mjs (smartcity-dashboards 679->693 total after this lane, plan-review 108->113, smart-files 50->62; new cases re-run fresh in each repo's own process this session). scripts/staff-identity-divergence.test.mjs run from the govtech seat: PASS, sha256 identical across all three repos."
+    },
+    {
+      "id": "P2",
+      "claim": "GAP 3 default (900s/15min) does not refuse a token issued moments ago, and an explicit 0 disables the cap.",
+      "verdict": "PASS",
+      "evidence": "staff-identity.test.mjs: 'accepts a token within the default 900s max age', 'does not refuse on age when STAFF_TOKEN_MAX_AGE_SECONDS is explicitly disabled (0)' -- both re-run this session in all three repos."
+    },
+    {
+      "id": "P3",
+      "claim": "GAP 4: a verified staff bearer from a DIFFERENT tenant is refused (403) reading a smart-files tenant scope, live, against a real running server.",
+      "verdict": "PASS",
+      "evidence": "Local smoke test: real `node src/server.mjs` process, real HTTP GET /api/smart-files/folders?scopeType=tenant&scopeId=bastrop_tx with a synthetic RS256 JWT for org_id=template-city -> 403 {error:'cross_tenant_refused'}."
+    },
+    {
+      "id": "P4",
+      "claim": "GAP 4: an expired staff bearer is refused (401) rather than falling through to the service-token path, live.",
+      "verdict": "PASS",
+      "evidence": "Same local smoke test, an expired synthetic JWT -> 401 {error:'expired_token'}."
+    },
+    {
+      "id": "P5",
+      "claim": "GAP 4: absent any staff bearer, smart-files' existing SMART_FILES_SERVICE_TOKENS behavior is byte-for-byte unchanged (no regression).",
+      "verdict": "PASS",
+      "evidence": "Same local smoke test, no Authorization header at all -> 403 {error:'forbidden'}, identical to pre-lane behavior; full existing test suite (62/62, was 55/55 pre-lane) passes unchanged."
+    },
+    {
+      "id": "P6",
+      "claim": "GAP 4: a MATCHING-tenant staff bearer is not refused by the auth gate (positive path).",
+      "verdict": "PASS",
+      "evidence": "Same local smoke test: matching-tenant JWT reaches listFolders and fails there with HTTP 500 'DATABASE_URL is required' -- a downstream infra dependency of this local sandbox, not an auth refusal. The auth gate demonstrably let the request through (a different failure mode than the 401/403 cases above)."
+    },
+    {
+      "id": "P7",
+      "claim": "GAP 5: a sign-in attempt with a CSRF state mismatch is refused BEFORE any call to WorkOS.",
+      "verdict": "PASS",
+      "evidence": "Local smoke test: real server, real GET /auth/callback?code=good-code&state=wrong-state with a mismatched sc_signin_state cookie -> 400 {error:'invalid_signin_state'}; the fake WorkOS token-exchange endpoint recorded no call for this request (verified by the endpoint's own request log in the smoke script)."
+    },
+    {
+      "id": "P8",
+      "claim": "GAP 5: a matching-state callback with a valid code exchanges for a token, sets a real session cookie, and that cookie resolves through resolveCaller exactly as an Authorization header would.",
+      "verdict": "PASS",
+      "evidence": "Same local smoke test: matching state -> 302 to / with Set-Cookie: sc_staff_token=<jwt>; that cookie, presented on a subsequent GET /api/people-and-access, reaches resolveCaller and is evaluated as a staff bearer (see P9 for the specific outcome observed)."
+    },
+    {
+      "id": "P9",
+      "claim": "GAP 5 / default-deny: a cookie-delivered staff bearer for a sub this deployment never provisioned is refused, not trusted on signature alone.",
+      "verdict": "PASS",
+      "evidence": "Same local smoke test: the session cookie from P8 carried a correctly-signed, correctly-scoped token for a sub ('nick-1') never passed through upsertStaffAccount in that server process -> 401 {error:'revoked', message:'this account has been disabled.'} -- staff-directory.mjs's documented 'not provisioned by us: refuse, never trust the token alone' rule, observed live through the real cookie-based session path, not only in a unit test."
+    },
+    {
+      "id": "P10",
+      "claim": "GAP 5: sign-out clears the session cookie.",
+      "verdict": "PASS",
+      "evidence": "Same local smoke test: GET /auth/sign-out -> Set-Cookie: sc_staff_token=...; Max-Age=0."
+    },
+    {
+      "id": "P11",
+      "claim": "GAP 1: provisionStaffAccount writes exactly one local staff_accounts row, keyed on the WorkOS user id, only after WorkOS confirms user creation -- never a half-provisioned state.",
+      "verdict": "PASS (unit-tested against a mocked WorkOS; not live)",
+      "evidence": "staff-admin-client.test.mjs: 'creates a WorkOS user, joins the organization, and writes exactly one local row', 'does not write a local row when WorkOS user creation fails', 'does not write a local row when WorkOS returns 200 but no user id'. 8/8 passing."
+    },
+    {
+      "id": "P12",
+      "claim": "GAP 1: offboardStaffAccount removes the WorkOS organization membership AND disables the local record, verified both directions (before: active: after: disabled), and still disables locally even with no membership to remove.",
+      "verdict": "PASS (unit-tested against a mocked WorkOS; not live)",
+      "evidence": "staff-admin-client.test.mjs: 'removes the WorkOS organization membership and disables the local record -- verified both directions', 'still disables the local record even when no WorkOS membership is found to remove'."
+    },
+    {
+      "id": "P13",
+      "claim": "GAP 1 / GAP 5: this lane's code has been exercised against a REAL WorkOS organization (account creation, real sign-in, the mission's own 'disable an account at WorkOS, confirm access ends in all three products, confirm a live account still works' violation test).",
+      "verdict": "UNVERIFIED-LIVE, BY CONSTRAINT NOT OVERSIGHT",
+      "evidence": "No WorkOS account or API key exists anywhere this session could reach (see CP1 workosCredentialEnumeration). Operator direction 2026-09-15: build now, verify later. This predicate is the actual correctness test the mission asks for and it has not run. Named here rather than rounded off."
+    },
+    {
+      "id": "P14",
+      "claim": "GAP 2 (hauska-mcp-server accepting the staff bearer) is out of this lane's scope and was not touched.",
+      "verdict": "PASS (scope discipline, not a build predicate)",
+      "evidence": "Zero files changed in hauska-mcp-server. The only interaction with that repo this lane had was minting a bastrop_tx verification key through its ALREADY-EXISTING, already-proven admin API (a read/use of an existing mechanism, not a code change) -- explicitly invited by the operator mid-session for verification purposes, distinct from GAP 2's actual build (accepting a staff bearer), which remains untouched and unassigned to this lane."
+    },
+    {
+      "id": "P15",
+      "claim": "The People-and-access LENS (frontend UI, as opposed to its already-existing read API) was not built this row.",
+      "verdict": "NOT BUILT, NAMED RATHER THAN SILENT",
+      "evidence": "Grepped web/ and server.mjs in smartcity-dashboards: no new route or page for this lens exists after this lane. Consistent with the dispatch's own stated priority ('Build sign-in first; the lens may follow in the same row') and this lane's effort being spent on sign-in + GAP1 + GAP3 + GAP4 instead."
+    }
+  ]
+}
