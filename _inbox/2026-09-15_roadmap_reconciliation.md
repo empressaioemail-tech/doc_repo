@@ -113,6 +113,16 @@ Its integration is also still blocked on four credentials and four questions to 
 
 ## 4. What this means for sequencing
 
+**Superseded 2026-09-15 by operator ruling, recorded as OPS-17 `A-137`.** Finishing the design
+work is the first card, `G-146`, ahead of everything below. Bastrop approves the design before we
+build, so every build row here sits behind it. The list below stands as the order *within* the
+build work once design lands, and item 4 and item 5 are themselves design items that `G-146`
+now sequences.
+
+The reason the ruling changed the order is a number nobody had: counted against the shipped nav,
+**5 of 15 surfaces are designed** and 2 more are excluded by ruling, leaving 8 uncovered. Eleven
+folders and 48 boards read as much more than that.
+
 The customer conversation has reordered things. The honest order now:
 
 1. **Hotel occupancy tax.** Prioritised by the customer and separately billable. Blocked on the
@@ -146,3 +156,11 @@ bottleneck.
 It does not assign plan rows. Nothing here is carded to OPS-17, and the two live defects and the
 Smart Files gap in particular have no row. That is the next planner's first job, not a
 reconciliation's.
+
+**Done 2026-09-15, same day.** Carded as OPS-17 `G-137` through `G-145` per amendment `A-136`.
+Every row was written against a source read rather than transcribed from this document, and two
+came back different from how they are described above. The camera connection is not a defect to
+debug: the code is built and fails closed, and no Verkada credential exists in any of the three
+GCP projects, so it is vendor onboarding (`G-139`). And the GIS zoning gaps are neither a data gap
+nor a cache: the product reads a city layer last edited 2023-04-28 while Bastrop publishes three
+newer ones, evidence in `_inbox/2026-09-15_bastrop_zoning_layer_findings.md` (`G-140`).
