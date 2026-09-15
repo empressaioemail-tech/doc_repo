@@ -66,6 +66,12 @@ const ROWS = [
     boards: [["Main.dc.html", "DeptRouting", "Routing — scope, not dispatch"], ["Department.dc.html", "DeptOneLane", "One department — Fire sees Fire"], ["Board.dc.html", "DeptBoard", "Where the application is waiting"], ["Conflict.dc.html", "DeptConflict", "Two departments, two authorities"], ["Letter.dc.html", "DeptLetter", "One notice, four departments"]],
   },
   {
+    surface: 'Finance lens',
+    note: 'FINANCE LENS — DRAFT 2026-09-15, not ratified. Drawn against the 25-page v1 capture supplied by the operator.\nTHE BRIEF IS AN OPERATOR CORRECTION: removing the v1 fabrications is the GAP ANALYSIS, not the product. So the lens is drawn at FULL SHAPE — every cell it will ever hold exists on the page from the start, each one measured or countably unaccounted, and every unaccounted cell carries a named acquisition path. A missing column is invisible; an unaccounted cell is countable.\nFour states, not one number: MEASURED, UNACCOUNTED, REFUSED, CONFLICT. v1 has one state — a number — and that is the defect expressed once. Its Actual Spent column is the Budget column copied on all ten rows at 100% burn; its collection rate reads 157%, which is not a reachable state.',
+    from: 'smartcity-finance-lens',
+    boards: [['Main.dc.html', 'FinanceLens', 'Finance today — the full shape'], ['Departments.dc.html', 'FinanceDepartments', 'Departments — refused, not fabricated'], ['PermitRevenue.dc.html', 'FinancePermitRevenue', 'Permit fee revenue — the conflict is the output'], ['Acquisition.dc.html', 'FinanceAcquisition', 'What has to land, and who acts'], ['Connected.dc.html', 'FinanceConnected', 'Once the fund ledger lands — the target']],
+  },
+  {
     surface: 'Finance — Localgov filings',
     note: 'FINANCE / LOCALGOV FILINGS — DRAFT 2026-09-15, not ratified.\nThe headline is an AGREEMENT, not an amount: the page opens with whether two independently derived sources agree and by how much. Filed, Received and Booked are three different facts and each names its field and its system. The exception worklist checks the implied tax rate against the city ordinance, which is a second derivation rather than another field from the same payload.\nNOTHING HERE IS MEASURED: the endpoint has never been called and no credential exists.',
     from: 'smartcity-finance-filings',

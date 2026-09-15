@@ -4,7 +4,7 @@
 **Rebuild:** `node build.mjs`
 **Status:** derived view, 2026-09-15. Ratify designs in their own folders, never here.
 
-38 artboards across 9 surfaces, one row per surface, read top to bottom as shipped,
+43 artboards across 10 surfaces, one row per surface, read top to bottom as shipped,
 then designed-and-never-built, then drafted this week, then kept as a record.
 
 | Row | Surface | Boards | Status |
@@ -13,11 +13,12 @@ then designed-and-never-built, then drafted this week, then kept as a record.
 | 2 | Development services | 6 | shipped G-123; completed and corrected 2026-09-15 |
 | 3 | Map dock | 3 | APPROVED, shipped G-128 |
 | 4 | Plan review | 3 | IN REVIEW, never dispatched |
-| 5 | Flood study | 5 | DRAFT, not ratified |
-| 6 | Plan review, the reasoner path | 5 | DRAFT, not ratified |
-| 7 | Plan review, parallel departments | 5 | DRAFT, BLOCKED on the role-gate amendment |
-| 8 | Finance, Localgov filings | 5 | DRAFT, not ratified |
-| 9 | Place tab | 3 | SUPERSEDED, kept on purpose |
+| 5 | Flood study | 5 | RATIFIED 2026-09-15 |
+| 6 | Plan review, the reasoner path | 5 | RATIFIED 2026-09-15 |
+| 7 | Plan review, parallel departments | 5 | DRAFT. May be shown, cannot be built: gate amendment DEFERRED with a trigger |
+| 8 | Finance lens | 5 | DRAFT 2026-09-15, not ratified |
+| 9 | Finance, Localgov filings | 5 | AMEND, not ratified |
+| 10 | Place tab | 3 | SUPERSEDED, kept on purpose |
 
 Row 2 grew from three boards to six on 2026-09-15: Inspections, Code enforcement and
 Licenses ship in the nav and had never been designed, and that lens is what the first
