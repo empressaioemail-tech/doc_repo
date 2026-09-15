@@ -1,0 +1,140 @@
+{
+  "lane": "p241-etj-enumeration",
+  "planRows": ["P-241"],
+  "status": "closed",
+  "seat": "cente-vsc-p241",
+  "closedAt": "2026-09-15T23:10:00.000Z",
+  "snapshot": {
+    "repo": "doc_repo",
+    "worktree": "C:/Users/cente/doc_repo",
+    "branch": "main",
+    "commit": "c9733c9d566c861ddd0eec9166388ed49b6dbe36",
+    "note": "Read-only diagnostic lane: no product-repo writes were made in legacy-design-tools, hauska-engine, hauska-map, or hauska-factory. doc_repo commits are planner-owned per AGENT CONTRACT section 6; this close and its CP1/CP2 siblings are left uncommitted in this seat's worktree for the operator/integration seat to review and commit."
+  },
+  "probe": {
+    "notApplicable": "read-only diagnostic review (P-241, OPS-24 predicate debt row); no surface-probe.mjs predicate exists yet for this row and none was added, per scripts/enforcement/probe-close-gate.mjs's own documented exception for read-only OPS-24 reviews"
+  },
+  "missionPremise": "P-241 dispatch: enumerate which cities in the current wired-city footprint publish an ETJ layer and/or a city-limits layer, whether one layer carries both, trace (by following an EXISTING boundary layer's live path, not by directory-name guessing) which repo/directory owns the staging path a new jurisdiction layer would join, and name the file/function list for unwiring F19's two hardcoded 'unresolved' values -- without writing any code.",
+  "completionPredicate": "Satisfied: a per-city table covering every city in the source-of-truth footprint with service URL/geometry/SR/count/distinguishing-attribute or an honest classified miss; Austin independently re-measured and reconciled; a traced (file-and-function-cited, spot-verified against origin/main) repo attribution for the staging path; the current F19 file/function locations read and stated with what unwiring requires; the SB 2038 claim checked against a primary source.",
+  "scopeBasis": "SCOPE DECISION (flag for correction if wrong): 'every other wired city' was read as the full legacy-design-tools ZONING_LAYERS registry (lib/cad-ingest/src/txgio/zoning-layers.ts) -- 23 cities -- not the narrower 17-city/six-county v1-serving subset a concurrent lane (P-225) uses for its own different purpose (P-225's own scopeBasis explicitly carves 6 of these 23 cities OUT as 'out of scope by county' for its census; P-241's dispatch text has no such county restriction and 'wired' is this codebase's own word for registry membership). If the operator intended the narrower 17-city set, the 6 extra cities checked (New Braunfels, San Antonio, Seguin, Cibolo, Killeen, Belton) are still valid findings, just outside the intended scope.",
+
+  "enumeration": {
+    "sourceOfTruth": "legacy-design-tools/lib/cad-ingest/src/txgio/zoning-layers.ts ZONING_LAYERS registry, read directly (23 entries) rather than inherited from any other lane's list.",
+    "austin": {
+      "status": "HAS_BOTH_ONE_LAYER",
+      "url": "https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/BOUNDARIES_jurisdictions/FeatureServer/0",
+      "geometry": "esriGeometryPolygon",
+      "wkid": "102739 (Esri ID for the same NAD83 Texas Central ftUS CRS the dispatch cited as EPSG 2277 -- not a discrepancy, two numbering conventions for one CRS)",
+      "count": 388,
+      "distinguishingField": "JURISDICTION_LABEL / JURISDICTION_TYPE / JURISDICTION_TYPE_SPECIFICS",
+      "reMeasurement": "PASS -- independently re-queried live (curl, JSON by field name, not WebFetch summarization). Reproduces the dispatch's 270/24/4/26/64 breakdown exactly via server-side group-by. Finer split the dispatch did not carry: the 270 'AUSTIN 2 MILE ETJ' = 154 still-live '2 MILE ETJ' + 116 'DISANNEXED PER SB 1844' (see sb2038Check below). exceededTransferLimit not set on the grouped query -- not a paging truncation."
+    },
+    "otherCities": [
+      {"cityKey": "georgetown-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["MapServer layer 3 (City Limits)", "layer 4 (ETJ)", "layer 5 (ETJ Disannexations)", "host: gis.georgetowntexas.gov PublicWebMaps/ETJdisannexationsWebMap"], "count": "L3=1, L4=1"},
+      {"cityKey": "round-rock-tx", "status": "HAS_CITY_LIMITS_ONLY", "url": "maps.roundrocktexas.gov/.../CityLimitsWMTS_Round6/FeatureServer/0", "count": 1, "note": "no ETJ layer found on this host after checking browsable folders"},
+      {"cityKey": "leander-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["Leander_City_Limits/FeatureServer/2001", "Leander ETJ/FeatureServer/2002"], "count": "1 / 1"},
+      {"cityKey": "new-braunfels-tx", "status": "HAS_BOTH_ONE_LAYER", "url": "gismaps.newbraunfels.gov/.../OpenData/AddressesBoundaries/MapServer/1 (CityBoundaries)", "count": 9, "distinguishingField": "BoundaryType (0=City Limits x1, 1=ETJ x1, 2=Limited Purpose x7)", "verifiedByPlanner": true, "note": "structural analog to Austin's combined-layer model; spot-verified directly, attribute breakdown matches exactly"},
+      {"cityKey": "dripping-springs-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["City_Limits2026_shp/FeatureServer/0", "ExtraTerritorialJurisdiction/FeatureServer/0"], "count": "24 / 1"},
+      {"cityKey": "hutto-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["Hutto_City_Limits/FeatureServer/0", "Hutto_ETJ/FeatureServer/0"], "count": "1 / 1"},
+      {"cityKey": "buda-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["City_Limits_October_2017/FeatureServer/0", "Buda_ETJ/FeatureServer/0"], "count": "1 / 1", "distinguishingField": "JURIS_TYPE = FULL PURPOSE on city-limits layer"},
+      {"cityKey": "kyle-tx", "status": "HAS_BOTH_ONE_LAYER", "url": "services5.arcgis.com/Zhdeglqfvv6JnrnU/.../Jurisdiction_and_Zoning_Finder/FeatureServer/6", "count": 18, "distinguishingField": "JURIS_TYPE = ETJ / INSIDE CITY", "note": "task-given per-server URL (utility.arcgis.com/usrsvcs/servers/...) was non-responsive; resolved via the dispatch's own fallback (web search + AGOL sharing-rest search) to the city's real public org"},
+      {"cityKey": "san-marcos-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["ETJOnly/MapServer/0", "CityLimitOnly_BaseMap/MapServer/0"], "count": "1 / 1"},
+      {"cityKey": "cedar-park-tx", "status": "HAS_CITY_LIMITS_ONLY", "url": "gisrest.cedarparktexas.gov/.../Planning/CityLimits/MapServer/0", "count": 2, "note": "no ETJ layer found on this host -- both browsable folders (Planning, CityProperties) checked"},
+      {"cityKey": "taylor-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["City_Limits_ETJ_082321/FeatureServer layer 5 (City Limits)", "layer 6 (ETJ Boundary)"], "count": "L5=1, L6=23", "dataQualityNote": "sibling services literally named 'Annexations' and 'ETJ_Releases' are broken views that both resolve to an unrelated 'Parcel_Attachments' layer -- a defect in Taylor's own org, not this enumeration's error"},
+      {"cityKey": "liberty-hill-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["CityLimits_241031/FeatureServer/33", "ETJLimits_241031/FeatureServer/108"], "count": "1 / 1"},
+      {"cityKey": "pflugerville-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["City_Limits/FeatureServer/0", "Planning/ETJ/FeatureServer/0"], "count": "1 / 1"},
+      {"cityKey": "bastrop-city-tx", "status": "HAS_BOTH_SEPARATE_LAYERS_SAME_SERVER", "url": "services7.arcgis.com/qOeXJdBtGknaCJC4/.../City_Limit_and_ETJ_Map_WFL1/FeatureServer layer 5 (City Limits) / layer 6 (ETJ Areas)", "count": "L5=1, L6=3", "distinguishingField": "juris = CITY LIMIT/ETJ, extent = FULL PURPOSE/1-MILE/DEVELOPMENT AGREEMENT", "verifiedByPlanner": true, "note": "richest taxonomy found outside Austin -- same FeatureServer as city-limits, split by layer index rather than fully separate services, and directly spot-verified"},
+      {"cityKey": "san-antonio-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["COSABoundary/FeatureServer/1", "COSA_ETJ/FeatureServer/3"], "count": "1 / 1"},
+      {"cityKey": "elgin-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["City_Limits/FeatureServer/0", "ElectionPrecinct_CityExtraterritorialJurisdiction/FeatureServer/0"], "count": "5 / 6", "note": "the ETJ layer is county-wide (6 Bastrop-county cities' ETJs), not Elgin-exclusive"},
+      {"cityKey": "lockhart-tx", "status": "NO_LAYER_FOUND_PORTAL_EXISTS_BUT_UNQUERYABLE", "note": "Lockhart's own ArcGIS org (services3.arcgis.com/kPfGI7KGlXn5IaHL) lists only 2 unrelated services -- no jurisdiction layer there. A web/AGOL-item search found candidate layers titled 'Lockhart City Limits' and 'ETJ' under a DIFFERENT org (Caldwell County CAD, owner kamerlanderm); both returned HTTP 499 'Token Required' when queried directly despite showing public access in the item catalog. This is the dispatch's second falsifier state (portal/item exists, not publicly queryable), explicitly distinguished from absence."},
+      {"cityKey": "seguin-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["City_Limits_Open_Data/FeatureServer/0", "Seguin_ETJ_Open_Data/FeatureServer/0"], "count": "1 / 1"},
+      {"cityKey": "cibolo-tx", "status": "HAS_BOTH_ONE_LAYER", "url": "services3.arcgis.com/D32JCd9p0r1BYMwd/.../CiboloCityLimits/FeatureServer/30", "count": 3, "distinguishingField": "Name = 'Cibolo City Limits' / 'Cibolo ETJ'", "note": "exact Austin-style combined-layer structure"},
+      {"cityKey": "waco-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["Waco_City_Limits/FeatureServer/0", "Waco_ETJ/FeatureServer/0"], "count": "1 / 1"},
+      {"cityKey": "killeen-tx", "status": "HAS_CITY_LIMITS_ONLY_ON_OWN_PORTAL", "url": "killeengis.killeentexas.gov/.../Hosted/CityLimits/FeatureServer/0", "count": 1, "note": "no ETJ layer on Killeen's own host (root + folders checked, two folders token-gated). Killeen's ETJ IS published, but only via a NEIGHBORING city's portal: Belton's Admin_Boundaries/FeatureServer/3 'Bell County ETJ's' carries a Killeen row -- an adjacent-authority finding, not Killeen's own data."},
+      {"cityKey": "belton-tx", "status": "HAS_BOTH_SEPARATE_LAYERS", "urls": ["Admin_Boundaries/FeatureServer layer 0 (City Limits)", "layer 5 (Belton_ETJ)"], "count": "L0=1, L5=2", "note": "layer 3 of the same service, 'Bell County ETJ's', is a 17-row multi-city regional layer (Temple, Harker Heights, Killeen, Nolanville, Salado, Little River) -- the source of Killeen's ETJ finding above"}
+    ],
+    "aggregateFinding": "20 of 23 wired cities (87%) have a directly queryable ETJ layer somewhere (own portal or a neighboring city's regional layer); 4 of those 20 (Austin, New Braunfels, Kyle, Cibolo) carry city-limits AND ETJ in ONE layer distinguished by an attribute value, plus Bastrop splits it across two layer-indices of the same FeatureServer -- closer to combined than separate. Only 2 cities (Round Rock, Cedar Park) show city-limits with no ETJ layer found anywhere on their own host. Only 1 city (Lockhart) has no publicly queryable layer of either kind. This directly bears on (without deciding) the ruling this lane was told not to make: OP-1's '#42.021-derivation or per-city GIS' framing assumed per-city GIS coverage was sparse; it is not -- ETJ is close to universally published by this footprint's own cities, which is evidence FOR a per-city acquisition approach (mirroring zoning-layers.ts) and AGAINST needing a statewide-derivation fallback for most of this footprint."
+  },
+
+  "repoAttribution": {
+    "method": "Traced by a supervised sub-agent, then spot-verified directly by this seat against origin/main tip commits (not the stale local checkouts) before being trusted -- report-model.ts and feasibility.ts citations below were independently re-fetched via `git show origin/main:<path>` and matched byte-for-byte against the sub-agent's quoted excerpts.",
+    "twoLiveMechanismsFound": {
+      "chainA_cityLimits_legacyDesignTools": {
+        "description": "The literal closest sibling of a new etj/city-limits layer, and the one actually serving every non-slated county today.",
+        "chain": [
+          "Acquisition: TxGIO statewide City_Boundaries ArcGIS layer, pulled once by @workspace/cad-ingest's boundary-ingest CLI",
+          "Storage: legacy-design-tools/lib/db/src/schema/txCityBoundary.ts -- tx_city_boundary table, Drizzle, wholesale replace",
+          "Containment: legacy-design-tools/lib/cad-ingest/src/boundary/containment.ts -- resolveCityContainmentAtPoint(), bbox-prefilter + point-in-polygon, explicitly commented as reusing zoning-stamp.ts's pattern; etjUnresolved() is unconditional here -- this module was BUILT for ETJ and still cannot resolve it",
+          "Fact DTO: legacy-design-tools/lib/cad-ingest/src/boundary/cityLimitsFact.ts -- cityLimitsFactFromContainment()",
+          "Read: legacy-design-tools/artifacts/api-server/src/lib/cityLimitsFactRead.ts -- loadCityLimitsFact()",
+          "Cutover wrapper: legacy-design-tools/artifacts/api-server/src/lib/cityLimitsFactServeCutover.ts -- loadCityLimitsFactForServe(), checks a per-county slate and routes to Chain B for slated counties, else falls through to live PIP here",
+          "Consumers: legacy-design-tools/artifacts/api-server/src/routes/brokerageNodeFacets.ts:864 and routes/propertyExplorer.ts:312"
+        ]
+      },
+      "chainB_specialDistricts_hauskaEngine_ledger": {
+        "description": "The ruled 'ledger is the serving path' architecture (ADR-031 amendment, 2026-09-11), confirmed live in production for special districts (MUD/PID), NOT yet for any jurisdiction/ETJ data.",
+        "chain": [
+          "Acquisition: hauska-engine/packages/engine-core/scripts/ingest-tx-special-districts.mjs, TCEQ WaterDistricts ArcGIS layer -> tx_special_district table",
+          "Atom mint: hauska-engine/packages/engine-core/scripts/write-special-district-fact-county.mjs -> packages/atoms/src/special-district-fact-writer.ts -> createSpecialDistrictFact from @empressaio/atom-contract/property, written to the substrate atoms table",
+          "Materialization: hauska-factory/src/lib/parcel-record-engine/ingest-existing.js applyAtomPresenceToRecord, ENTITY_TYPE_TO_RAIL maps special-district-fact -> specialDistricts rail cell",
+          "One reader: hauska-engine/services/retrieval-api/src/parcel-record-reader.ts readParcelRecord/buildRailResponse, GET /property-nodes/:id/record, per-county slate",
+          "hauska-engine consumer: packages/engine-core/src/site-plan/parcel-record-reader-client.ts recordSpecialDistrictNames()",
+          "Report: packages/engine-core/src/site-plan/report-model.ts composeParcelReportFacts, specialDistricts section (line 653)",
+          "PDF: packages/engine-core/src/site-plan/pdf/feasibility.ts feasibilityModelToBriefSections, section id specialDistricts"
+        ]
+      }
+    },
+    "answer": "A new etj/city-limits-adjacent layer's acquisition and registry code most plausibly belongs in legacy-design-tools/lib/cad-ingest/src/boundary/ (a new tx_etj_boundary schema table alongside txCityBoundary.ts, a bulk-ingest CLI mirroring the existing City_Boundaries pull, and either an extension to containment.ts or a sibling module) -- this is the layer's real closest sibling, already fully wired, and is the DEFAULT path for essentially every county today (Chain B only serves the small number of counties currently slated). If the operators want it in the one-reader/ledger architecture instead, the registry slot ALREADY EXISTS but is dead: hauska-factory's parcel-record-rail-registry.ts line 54 declares `{ key: \"etjStatus\", grain: \"scalar\", group: \"jurisdiction\" }`, but parcel-record-slate.json (152 entries) has ZERO rows naming etj -- a real writer would need to populate that slate before the rail path could ever serve anything but legacy-transitional for this fact.",
+    "verifiedByPlanner": "Independently re-fetched report-model.ts and pdf/feasibility.ts at hauska-engine origin/main (746e7b9, confirmed the local P:/hauska-engine checkout is stale at 8d8e880 -- a real, separate finding matching the dispatch's own 'known traps' warning about stale local clones). Both quoted excerpts matched byte-for-byte."
+  },
+
+  "f19Status": {
+    "premiseCorrection": "STALE PREMISE, CONTRADICTED: the dispatch's 'already established' text states report-model.ts:791-796 sets city-limits AND ETJ to unresolved for every parcel today. That was true before a P152-RAILS lane (2026-09-12) rewired city-limits off the constant -- confirmed live at origin/main, and the current code's own comment names its predecessor as 'report-model.ts:791-796 before this lane; deleted per the wave-3 verify doc A2'. ONLY ETJ remains hardcoded today.",
+    "reportModelTs": {
+      "repo": "hauska-engine (not legacy-design-tools)",
+      "path": "packages/engine-core/src/site-plan/report-model.ts",
+      "function": "composeParcelReportFacts",
+      "currentLines": "953-967 (jurisdiction block); line 966 is the live hardcode: `etjStatus: \"unresolved\",`",
+      "cityLimitsNowReal": "line 963: `cityLimitsStatus: cityLimits?.status ?? \"unresolved\",` sourced from `recordCityLimitsDisposition(record?.rails.cityLimits)` at line 959 -- a real read, no longer a constant",
+      "whatUnwiringRequires": "Add a `recordEtjDisposition()` function to the same directory's parcel-record-reader-client.ts (can mirror the existing recordCityLimitsDisposition, lines 179-204, since the rail registry already types etjStatus as the same scalar/jurisdiction grain), then call it at line 966 in place of the literal string. This alone does nothing until a real writer populates the etjStatus rail (see repoAttribution above) -- the fix stops HARDCODING, it does not by itself produce a value."
+    },
+    "feasibilityTs": {
+      "repo": "hauska-engine",
+      "path": "packages/engine-core/src/site-plan/pdf/feasibility.ts",
+      "function": "feasibilityModelToBriefSections",
+      "currentLines": "184-220 (jurisdiction section); city-limits (199-209) is now a real ternary on cityLimitsStatus; ETJ (210-212) is still unconditional: `factOrChip(\"ETJ\", undefined, { absentReason: \"No ETJ boundary source is wired for this county yet...\" })`",
+      "whatUnwiringRequires": "Once report-model.ts supplies a real etjStatus, give the ETJ block the same ternary treatment the city-limits block immediately above it already has."
+    },
+    "duplicateHardcodeSites": "Five MORE independent hardcodes of 'ETJ unresolved' beyond the two named in the dispatch, none sharing a common type or constant across repo boundaries -- reported by the sub-agent, not independently re-verified line-by-line by this seat, so treat with one notch less confidence than the two spot-checked sites above: (1) legacy-design-tools/lib/cad-ingest/src/boundary/containment.ts -- origin of the concept, `type EtjStatus = \"unresolved\"`; (2) legacy-design-tools/lib/cad-ingest/src/boundary/cityLimitsFact.ts:53; (3) legacy-design-tools/artifacts/api-server/src/lib/parcelConstraintProjection.ts:44,391; (4) hauska-map/apps/property-explorer/api/_lib/atom-chain-to-facets.ts:598,1494 -- an independently redefined type, not imported from legacy-design-tools; (5) hauska-map/apps/property-explorer/api/_lib/pe-record-to-facets.ts -- five separate inline occurrences (207,221,227,234,807); (6) hauska-map/apps/property-explorer/src/lib/fact-sheet-resolver.ts:1270,1287 -- the customer-facing Property Explorer UI text, entirely independent of hauska-engine's PDF sentence. Wiring a real ETJ source would require finding and updating all of these, not just the two the dispatch named."
+  },
+
+  "sb2038Check": {
+    "claim": "Dispatch card: SB 2038 (2023) created ETJ release by petition; if true, a derived ETJ is the fabricated buffer P-76 already refused.",
+    "verdict": "CONFIRMED via primary source, capitol.texas.gov/BillLookup/BillSummary.aspx?LegSess=88R&Bill=SB2038 and capitol.texas.gov/tlodocs/88R/analysis/html/SB02038F.htm -- SB 2038, 88th Texas Legislature (2023), added Local Government Code Chapter 42 Subchapters D and E, effective 2023-09-01: direct-petition and election-based ETJ release, plus automatic release by municipal inaction, plus a bar on re-inclusion absent the owner's own later request.",
+    "adjacentFinding": "The dispatch's own live-measured Austin data (116 of the 270 '2 MILE ETJ' rows) cites a DIFFERENT bill, SB 1844 -- independently verified as the 89th Legislature (2025), amending LGC Sec. 43.141 (disannexation for water/wastewater service failure near navigable water, eff. 2025-09-01). Per Austin's own council case records, land disannexed under SB 1844/Sec.43.141 lands IN the ETJ rather than being released from it -- consistent with those rows still carrying an ETJ label. Both bills verified real and correctly distinguished; not a data error.",
+    "relevanceCarriedForward": "A third real, one-off legal mechanism (Sec.43.141 disannexation) joins the AG-development-agreement carve-outs the dispatch already flagged as evidence Austin's actual ETJ is shaped by individual administrative actions, not a §42.021 population formula. This is evidence carried forward for the operator's ruling, not a ruling made here."
+  },
+
+  "layerToggleCorrection": {
+    "finding": "The dispatch's 'already established' claim that LayersControl.tsx renders an honest emptyBasis disclosure line for source-less toggles does not match live code. Grepped the whole of P:/hauska-map/packages/map-renderer/src/layer-registry.js -- the etj entry (line 54) has live:false/fuelGated:true/pending:true exactly as the dispatch states, but there is no emptyBasis field anywhere in the file. Grepped packages/map-renderer/src/chrome/LayersControl.tsx (the real path -- the dispatch's stated apps/property-explorer/src/browse/LayersControl.tsx does not exist) for basis/emptyBasis/disclosure/pending -- zero matches; fuelGated is consumed elsewhere (layer-allocation.js, postMessage.ts, command-center's LayerRegistryView.tsx) but not here.",
+    "impact": "The narrow, load-bearing facts for this lane's own scope decision (toggle correctly dark; absent from the consumer panel via consumerKnownLayers()'s entry.live gate, verified directly at consumer-layers.ts:44-55) still hold. The broader 'do not flip live because the UI already discloses honestly' argument does not currently have code behind it -- flipping live today would show a bare, unexplained toggle, not an honest empty-basis message. Carried forward so a future build lane does not inherit a false premise."
+  },
+
+  "falsifier": "Pre-registered per the dispatch: (1) every miss must distinguish nothing-published / portal-uncheckable / did-not-look -- satisfied, see Lockhart. (2) re-measure Austin -- PASS, exact reconciliation. (3) repo attribution must trace a live path, not directory names -- satisfied and spot-verified against origin/main. (4) name any city the enumeration could not complete, and why -- Lockhart (token-gated layers found via a different org); Kyle needed the dispatch's own fallback method after its given URL failed, but WAS completed.",
+  "contradicted": "Three of the dispatch's own 'already established, do not re-derive' premises did not survive a direct read: (a) city-limits is no longer hardcoded unresolved in report-model.ts -- only ETJ is, since a 2026-09-12 lane already fixed city-limits; (b) the claimed LayersControl.tsx emptyBasis disclosure mechanism does not exist in current code; (c) the F19 line numbers cited (791-796 / 194-197) are stale -- current locations are report-model.ts:953-967 and feasibility.ts:184-220.",
+
+  "leave_behind": [
+    {"item": "etjStatus rail slot exists (parcel-record-rail-registry.ts:54) but has zero entries in parcel-record-slate.json -- a real ETJ writer needs to populate this slate before the ledger path can serve it", "owner": "unassigned", "plan_row": "backlog, follow-on to P-241"},
+    {"item": "Six duplicate/divergent 'ETJ unresolved' hardcode sites beyond the two the dispatch named (legacy-design-tools x3, hauska-map x3) would all need updating to actually wire a real ETJ source, not just the two F19 files", "owner": "unassigned", "plan_row": "backlog, follow-on to P-241"},
+    {"item": "P:/hauska-engine local checkout is stale (8d8e880 vs origin/main 746e7b9, predates the entire site-plan/report-model.ts feature area) -- any seat reading that path directly will get wrong answers until it is re-synced", "owner": "unassigned", "plan_row": "operational hygiene, not a plan row"},
+    {"item": "Lockhart's ETJ/city-limits layers are AGOL-catalog-visible but return HTTP 499 Token Required -- unresolved whether a credentialed path exists or the listing is stale/misconfigured on the publisher's side", "owner": "unassigned", "plan_row": "backlog, follow-on to P-241"},
+    {"item": "Taylor's 'Annexations' and 'ETJ_Releases' named services both resolve to an unrelated 'Parcel_Attachments' layer -- a data-quality defect in Taylor's own ArcGIS org, worth a courtesy note to that city's GIS department if this program ever contacts them, not an action item for this codebase", "owner": "unassigned", "plan_row": "none"}
+  ],
+
+  "prsAndCi": "not applicable: doc_repo/read-only lane, no product-repo writes, no PRs, no CI runs",
+
+  "fanDisposition": {
+    "agentA_liveEnumeration": "completed, 22/22 assigned cities checked (none skipped for budget), findings incorporated above after 2 direct spot-verifications by this seat (New Braunfels, Bastrop) both matched exactly",
+    "agentB_repoTrace": "completed, findings incorporated above after 2 direct spot-verifications by this seat (report-model.ts and feasibility.ts current content) both matched exactly byte-for-byte; the 5 additional duplicate-hardcode-site claims and Chain A/B file lists beyond those two are carried at sub-agent confidence, not independently re-verified line-by-line"
+  }
+}

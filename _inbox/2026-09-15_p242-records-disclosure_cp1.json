@@ -1,0 +1,71 @@
+{
+  "lane": "p242-records-disclosure",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRows": ["P-242"],
+  "seat": "cente-p2",
+  "filedAt": "2026-09-15T18:40:00Z",
+  "note": "Filed retrospectively alongside CP2: this lane executed directly (no sub-agent fan, per the dispatch's own 'you own your fan' / do-not-nest-agents instruction and the modest scope of two functions in one file), so CP1/CP2 record adversarial self-review of the same design/pilot decisions the contract asks a fanned lane's planner to checkpoint against its workers, rather than a review of separate sub-agent output.",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/tmp/legacy-design-tools-p242",
+      "branch": "fix/p242-records-disclosure (cut from origin/main before any file edit)",
+      "baseCommitAtClaim": "0b498606 (origin/main HEAD at clone time: fix(envelope): join the per-edge setback regions at ring vertices (P-235) (#693))",
+      "note": "STANDALONE CLONE, not a shared seat worktree: the primary P:/legacy-design-tools checkout is dirty on feat/s1-instrument-hardening with unrelated in-progress work (5 uncommitted files, 2 dirty nested .claude/worktrees) and every registered legacy-design-tools-* worktree under P:/seat-worktrees/property/ and P:/tmp/ belongs to a different named lane. Path equals worktree, matching this repo's own established convention for a lane that cannot safely reuse an existing checkout (see seat_register.json's many precedents, e.g. legacy-design-tools-p125-entitlement-wire)."
+    },
+    "doc_repo": {
+      "worktree": "P:/doc_repo",
+      "branch": "main",
+      "note": "This lane has no separate planner-spawned worktree (it was handed the compiled dispatch directly, acting as its own dispatch planner per the dispatch's own path-resolution note: 'for the dispatch planner itself it is its own seat worktree'). No other registered seat worktree exists for this session, so checkpoints land in P:/doc_repo per the dispatch's explicit warning against writing into another seat's worktree (property) instead."
+    }
+  },
+
+  "laneClaim": {
+    "method": "node scripts/lane-claim.mjs claim --lane p242-records-disclosure --seat cente-p2 --plan-row P-242 --dispatch _dispatches/2026-09-15_p242-records-disclosure_dispatch.md",
+    "result": "exit 0, CLAIMED p242-records-disclosure for cente-p2 (P-242). Proceed.",
+    "checkedStatusFirst": "node scripts/lane-claim.mjs status printed 'No open lane claims' before claiming."
+  },
+
+  "missionPremise": "P-223 (SEV-1, 2026-09-15) was measured the same day and refuted for the tier-gate-bypass framing: the measuring account was Studio, so list_purchased_records returning ok/jobs:[] and read_purchased_record reaching the query were both consistent with a PASSING gate, not a bypassed one. Two things survived measurement and are this row's mandate: (1) a bad artifactId on read_purchased_record returns a raw, unhandled postgres-js error disclosing records_request_artifacts' table and column names verbatim to an authenticated caller; (2) the tier gate has never been observed REFUSING (a genuinely sub-Studio account could not be constructed by the earlier measurement), so 'the gate is dormant vs. correct' remains undistinguished per ENFORCEMENT's verify-by-violation rule. The coming-soon surface-change half of P-223 is explicitly NOT this row's mandate (unruled, held for a second dispatch).",
+
+  "falsifiersPreRegistered": [
+    "1. Prove the gate by violation: construct the sub-Studio case the earlier measurement could not, and show the refusal. If a real account cannot be created, build the test at the level where the entitlement is resolved and assert the refusal there, stating plainly that the live account path remains unexercised.",
+    "2. Delete the gate and confirm the test goes red. A test that passes with the control removed is testing nothing.",
+    "3. Enumerate every path that can produce a raw driver error, not just the one artifactId case reported.",
+    "4. Confirm no schema text survives anywhere in the refusal, including in a nested cause, a log line the caller can read back, or a stack. Grep the served payload for the table name.",
+    "5. If the tier gate genuinely does fire and the earlier row was pessimistic, the row still closes, with the evidence -- an honest refutation is a result."
+  ],
+
+  "beforeStateResult": {
+    "method": "Read artifacts/smartsite-mcp/src/{tools.ts,recordsExtraction.ts,entitlement.ts,constants.ts,request-context.ts} and lib/db/src/schema/{recordsRequestArtifacts.ts,recordsRequestJobs.ts} directly against the fast-forwarded, unmodified checkout at 0b498606. THEN, before writing any code, called this session's own real authenticated Smart Site MCP connector tools (mcp__claude_ai_Smart_Site__list_purchased_records / read_purchased_record) against LIVE production mcp.smartsite.cloud, per an existing memory note confirming this session has a genuine signed-in account (a real capability, not a simulation).",
+    "falsifier3_repoWideEnumeration": "grep for recordsRequestArtifacts/recordsRequestJobs across the whole repo (not just smartsite-mcp) found 18 files. Scoped enumeration to the three named tools' reachable code, per the dispatch's own scope fence ('do not spread into the purchased-records product flow beyond the two defects named here'): request_records is readiness:'blocked' in constants.ts and intercepted by tools.ts's early not-ready branch before the tool switch ever runs -- confirmed by an existing test (tools.test.ts: 'notReadyMessage... expect(mockCortexFetch).not.toHaveBeenCalled()') that it makes zero calls, so it is not a live vector today and out of this row's scope (P-85 item 4, not P-242). Within listPurchasedRecords/readPurchasedRecord, exactly ONE call site takes caller-controlled input directly into a uuid-typed column comparison without prior format validation: eq(recordsRequestArtifacts.id, artifactId) in readPurchasedRecord. Every other query (jobs-by-parcelKey+userId, artifacts-by-jobId, job-by-artifact.jobId) either compares against a `text` column (parcelKey, userId -- no type-cast failure possible regardless of content) or uses a DB-sourced value (artifact.jobId), never raw caller input, against a uuid column.",
+    "liveConfirmation_beforeFix": {
+      "tool": "mcp__claude_ai_Smart_Site__read_purchased_record",
+      "args": { "parcelNodeId": "48021:R123456", "artifactId": "not-a-real-uuid" },
+      "rawResponse": "Failed query: select \"id\", \"job_id\", \"portal_id\", \"recording_ref\", \"document_type\", \"recording_date\", \"parties\", \"acquisition_method\", \"content_sha256\", \"byte_size\", \"purchase_cost_cents\", \"detail_url\", \"storage_path\", \"metadata\", \"created_at\" from \"records_request_artifacts\" where \"records_request_artifacts\".\"id\" = $1 limit $2\nparams: not-a-real-uuid,1",
+      "capturedAt": "2026-09-15, this session, against live production, before any fix was written",
+      "significance": "Confirms falsifier 3's code-read conclusion empirically: reproduces the exact reported defect, live, in production, with the full table name and 14 column names disclosed verbatim -- more schema surface than the row's own quoted excerpt named."
+    },
+    "liveConfirmation_tierGateStatus": {
+      "tool": "mcp__claude_ai_Smart_Site__list_purchased_records",
+      "args": { "parcelNodeId": "48021:R123456" },
+      "rawResponse": "{\"status\":\"ok\",\"parcelNodeId\":\"48021:R123456\",\"parcelKey\":\"apn:48021:R123456\",\"jobs\":[]}",
+      "significance": "This session's live account is currently Studio-or-above (it was NOT refused, and read_purchased_record's tier check passed far enough to reach the query above) -- a change from an 8-day-old memory recording it as free tier. CONSEQUENCE FOR FALSIFIER 1: this session's live account, being Studio-or-above, CANNOT be used to exercise the live failing-direction path either. This mirrors the row's own finding about the earlier measurement exactly, confirmed independently rather than assumed. The failing-direction falsifier will be built at the entitlement-resolution level per the dispatch's own explicit fallback instruction, with the live-account gap stated plainly in the close."
+    }
+  },
+
+  "designPlan": {
+    "approach": "(1) Add a UUID-format pre-check on artifactId in readPurchasedRecord, returning a NEW distinct reason artifact_id_malformed (never collapsed into artifact_not_found), mirroring this file's own existing invalidParcelNodeIdResult pattern for parcelNodeId -- house style, not a new shape. (2) Wrap every remaining DB call in both exported functions in a shared runQuery try/catch helper that logs the real error server-side (console.error, matching connection-record.ts's established '[smartsite-mcp] ...' logging convention) and returns a generic records_lookup_failed refusal on any OTHER unexpected driver failure, so no future call site can regress the same disclosure class even from a cause other than a malformed UUID. (3) For the tier gate: canRunStudioReport(snap) is a pure synchronous predicate over an already-resolved SmartsiteEntitlementSnapshot (requireAuthContext() reads AsyncLocalStorage populated once per request by the HTTP layer) -- so 'the level where entitlement is resolved', per falsifier 1's own fallback language, is exactly this snapshot object; no live account or DB is needed to exercise it. Add a PAID-Solo (subscriptionTier:'solo') refusal case alongside the pre-existing FREE case (found already merged 2026-09-03 in this file, predating this dispatch), since 'sub-Studio' is not only the free/null case and canRunStudioReport's real branch point is subscriptionTier, not the coarser tier field. Add a DB-less spy test using a fake db whose select() throws if called, proving the gate runs BEFORE any query is built (stronger than asserting response shape alone) -- and use that same spy harness to literally perform falsifier 2 (temporarily delete each gate check, confirm red, revert) before writing the close.",
+    "existingCoverageFound_notReinvented": "artifacts/smartsite-mcp/tests/records-extraction.test.ts already contains a FREE-tier refusal assertion for both tools, dated to the original P-113 commit (2026-09-03, c34ab0fc), 12 days before this dispatch. This is a real, non-trivial finding for the close per DEV_PROCESS 3.2/'an honest refutation is a result': the row's framing ('nobody has ever seen the gate refuse') is true at the LIVE production-account level (confirmed above) but was already partially false at the unit level before this lane started. This lane does not re-claim that prior work; it extends it (Solo case, spy-based non-vacuousness proof) and states the distinction plainly in the close.",
+    "scopeDecision_artifactIdVsParcelNodeId": "Per the dispatch's own 'Known trap': a malformed artifactId and a well-formed-but-nonexistent/not-owned one are declared as DIFFERENT reasons (artifact_id_malformed vs. the existing artifact_not_found), because a malformed id is the caller's own syntax error and carries no ownership-privacy concern, whereas the existing artifact_not_found envelope is deliberately silent about ownership mismatches (per this tool's own published description) and must not be diluted by conflating it with a client bug.",
+    "outOfScopeConfirmed": "No change to entitlement policy, tier boundaries, or subscriptionTierGrantsStudio. No coming-soon labeling or surface removal on request_records or anywhere else -- that ruling is unmade per the dispatch's explicit prohibition. request_records itself is not touched (readiness stays 'blocked'; it has no live call path today, confirmed above)."
+  },
+
+  "knownTraps_acknowledged": [
+    "Repo is legacy-design-tools, artifacts/smartsite-mcp -- confirmed by tracing the live call (constants.ts + tools.ts), not assumed from the dispatch's own text, per this program's own 2-days-in-a-row wrong-repo warning.",
+    "Root `tsc --build` alone is insufficient for a single artifact; used the full `pnpm run typecheck` (typecheck:libs then per-artifact typecheck) as instructed.",
+    "esbuild conditions left untouched (still ['workspace']).",
+    "This repo does not auto-deploy on merge; no deploy is planned or performed by this lane regardless.",
+    "Do not implement coming-soon in any form -- confirmed nothing in this diff touches request_records' readiness, description, or any purchase-surface UI/route."
+  ]
+}

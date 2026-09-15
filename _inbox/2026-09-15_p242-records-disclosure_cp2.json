@@ -1,0 +1,52 @@
+{
+  "lane": "p242-records-disclosure",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRows": ["P-242"],
+  "seat": "cente-p2",
+  "filedAt": "2026-09-15T19:10:00Z",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/tmp/legacy-design-tools-p242",
+      "branch": "fix/p242-records-disclosure",
+      "workCommit": "25da11ce3c8fd38baf80dbebdc5ac40268f6dfd7",
+      "baseCommitAtClaim": "0b498606"
+    },
+    "doc_repo": { "worktree": "P:/doc_repo", "branch": "main" }
+  },
+
+  "changesMade": {
+    "artifacts/smartsite-mcp/src/recordsExtraction.ts": "Added ARTIFACT_ID_UUID_RE + malformedArtifactIdResult(): a caller-supplied artifactId that does not parse as a UUID is refused with a NEW reason artifact_id_malformed BEFORE any query runs, distinct from artifact_not_found. Added QueryOutcome<T> + runQuery(label, fn): a shared try/catch wrapper used at all four remaining DB call sites across listPurchasedRecords and readPurchasedRecord; on any thrown driver error it logs '[smartsite-mcp] recordsExtraction: <label> query failed' server-side via console.error and returns a generic records_lookup_failed refusal via queryFailedResult(), never re-throwing or stringifying the original error into the response. No change to canRunStudioReport, refuseStudioReport, subscriptionTierGrantsStudio, or any entitlement/tier logic.",
+    "artifacts/smartsite-mcp/tests/records-extraction.test.ts": "Added SOLO entitlement fixture (tier:'paid', subscriptionTier:'solo') and a test asserting both tools refuse a PAID-Solo caller identically to FREE. Added a new describe block ('P-242: a bad artifactId never reaches the driver') with three tests: malformed artifactId refused pre-query with reason artifact_id_malformed (and an explicit assertion that the served text does NOT match /records_request_artifacts/i or /select|invalid input syntax/i -- falsifier 4, mechanically enforced); a well-formed-but-nonexistent UUID still reads artifact_not_found (not records_lookup_failed); and a parcelNodeId-shape injection attempt is refused as parcel_node_id_invalid before touching the DB (belt-and-suspenders check on the pre-existing parcelNodeId guard).",
+    "artifacts/smartsite-mcp/tests/records-extraction-gate-spy.test.ts": "NEW file. DB-less proof (a fake db whose select() throws if called at all) that canRunStudioReport gates BEFORE any query is built, for FREE and SOLO, on both tools. No live Postgres required to run this file."
+  },
+
+  "falsifierResults": {
+    "falsifier1_gateByViolation": "Built at the entitlement-resolution level, exactly as the falsifier's own fallback instructs, because this session's live account (verified live against production this session, see CP1 liveConfirmation_tierGateStatus) is currently Studio-or-above, not sub-Studio -- an independent, first-hand reproduction of the same limitation the row itself names for the earlier measurement. Two synthetic entitlement snapshots were exercised: FREE (subscriptionTier:null, pre-existing test, dated 2026-09-03) and SOLO (subscriptionTier:'solo', added this lane) -- both refuse on both tools with status upgrade_required, reason studio_report. THE LIVE ACCOUNT PATH REMAINS UNEXERCISED BY THIS LANE, stated plainly: no genuinely sub-Studio API key against production mcp.smartsite.cloud was available to this session, and none was fabricated.",
+    "falsifier2_deleteTheGateConfirmRed": "Performed literally, twice, once per function, using the new spy suite (no Postgres needed for this step): (a) commented out `if (!canRunStudioReport(entitlement)) return upgradeRequiredResult(entitlement);` in listPurchasedRecords, ran `npx vitest run tests/records-extraction-gate-spy.test.ts` -- the listPurchasedRecords spy test went RED (AssertionError: expected 'refused' to be 'upgrade_required'; body.reason became records_lookup_failed because the mutated code reached the throwing fake db and runQuery's own defense-in-depth caught IT instead), readPurchasedRecord's spy test stayed green (proving the mutation was isolated to the one function, not a suite-wide false positive). Reverted. (b) Repeated identically for readPurchasedRecord's own gate check: its spy test went RED, listPurchasedRecords' stayed green. Reverted both; `git diff` confirms the working tree matches the committed fix exactly (no leftover mutation).",
+    "falsifier3_callSiteEnumeration": "Enumerated in CP1 (repo-wide grep, 18 files; scope-fenced to the three named tools per the dispatch). Confirmed count of caller-input-to-uuid-column call sites in scope: exactly ONE (readPurchasedRecord's artifact-by-id query on the raw artifactId argument) -- now guarded by ARTIFACT_ID_UUID_RE before the query is built. The other three DB calls in this module (jobs-by-parcel, artifacts-by-job, job-by-artifact.jobId) take either a `text`-typed value (parcelKey/userId, no type-cast failure possible) or a DB-sourced value (artifact.jobId, never raw caller input) -- none of the three is independently exploitable by a malformed caller value the way the uuid comparison was, but all four are now wrapped in runQuery as defense-in-depth against any OTHER unexpected driver failure (a dropped connection, a statement timeout), per falsifier 4's 'nested cause' concern. request_records is confirmed unreachable (readiness:'blocked', intercepted before the tool switch; existing test tools.test.ts proves zero calls) and out of scope per the dispatch's own explicit prohibition on implementing anything about it.",
+    "falsifier4_noSchemaTextSurvives": "Mechanically asserted, not just eyeballed: the new test 'a malformed (non-UUID) artifactId is refused before any query runs' asserts the served JSON text does not match /records_request_artifacts/i nor /select|invalid input syntax/i. Additionally confirmed by inspection: queryFailedResult()'s body is a fixed literal object (status/reason/message only) built from no runtime error value; the caught `error` in runQuery is passed ONLY to console.error (server-side stderr), never interpolated into any string that reaches the ToolResult -- so a `.cause` on a future different driver error also cannot reach the caller through this path, by construction rather than by having been individually tested for that one shape.",
+    "falsifier5_notInvoked": "Not applicable -- the gate is confirmed genuinely capable of refusing (falsifier 2), so this row does not close on a refutation of the tier-gate finding; the disclosure defect and the untested-failing-direction finding both stand as real, and both are addressed above."
+  },
+
+  "testSuiteResults": {
+    "typecheck": "pnpm run typecheck (full workspace: typecheck:libs via tsc --build, then every artifacts/* + scripts package) -- clean, 0 errors, run twice (once after the fix, once again after adding tests) with identical clean result.",
+    "localTestDb": "No Docker container was running on this workstation at lane start; started Docker Desktop, bounded-polled for daemon readiness (attempt succeeded after a second launch), then stood up a disposable pgvector/pgvector:pg16 container on host port 55442 (p242-mcp-testdb), installed postgresql-16-postgis-3 into it, enabled vector and postgis extensions, and pushed the drizzle schema via `pnpm --filter @workspace/db run push` -- mirroring .github/workflows/pr-checks.yml's Test job service block and this repo's own cc_agent_local_test_db.md runbook exactly (a different disposable port than the runbook's own 55441 example, to avoid any collision with a stale container from a prior session).",
+    "scopedRun": "P113_TEST_DATABASE_URL=<local> npx vitest run tests/records-extraction.test.ts tests/records-extraction-gate-spy.test.ts -- 2 files, 15 tests, 0 failures.",
+    "fullPackageRun": "DATABASE_URL=<local> P113_TEST_DATABASE_URL=<local> npx vitest run (no file filter, whole artifacts/smartsite-mcp package) -- 28 files, 639 tests, 0 failures, 0 skipped. No pre-existing failures encountered; nothing in this package was red before this lane's changes touched it.",
+    "liveAfterCapture": "Ran the fixed readPurchasedRecord function directly (tsx, local test DB, STUDIO entitlement) with the EXACT input that produced the live production 'before' in CP1: {parcelNodeId:'48021:R123456', artifactId:'not-a-real-uuid'}. Result: {\"status\":\"refused\",\"reason\":\"artifact_id_malformed\",\"message\":\"artifactId must be a UUID.\",\"parcelNodeId\":\"48021:R123456\",\"artifactId\":\"not-a-real-uuid\"}, isError:true. This is a LOCAL, FIXED-CODE result, not a live redeploy of production (the dispatch forbids deploying) -- the before/after pairing is deliberately (live-prod / local-fixed-code), and is named as such rather than implying a live re-test of the deployed surface."
+  },
+
+  "pr": {
+    "repo": "empressaioemail-tech/legacy-design-tools",
+    "number": 694,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/694",
+    "headSha": "25da11ce3c8fd38baf80dbebdc5ac40268f6dfd7",
+    "base": "main",
+    "state": "OPEN",
+    "merged": false,
+    "ciStatusAtThisCheckpoint": "In progress at filing time (8 of 11 required checks passed within the first ~60s: L17/L5-x3/PR-base-is-main/SS-W16/SS-W18/cortex-daily-limit-bake all pass; Test and Typecheck jobs still running). Full conclusion strings to be confirmed and cited in the close, per AGENT_CONTRACT 5's 'MERGE only on the CI check-run conclusion STRING success' rule -- not merging regardless, per this dispatch's own prohibition, but still confirming the string rather than a printed label before calling this green in the close."
+  },
+
+  "openRisk_notedNow": "None identified beyond what CP1 already named (live sub-Studio account path unexercised). The metering/billing-adjacent side effects seen in other lanes' work (e.g. P-234's paid-meter-on-refusal finding) do not apply here: neither listPurchasedRecords nor readPurchasedRecord calls any metered upstream service; the fix only changes what happens on an already-local DB-query failure path."
+}
