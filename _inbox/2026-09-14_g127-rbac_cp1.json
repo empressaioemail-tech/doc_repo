@@ -1,0 +1,43 @@
+{
+  "lane": "g127-rbac",
+  "checkpoint": "CP1 design/pre-build",
+  "planRows": ["G-127"],
+  "laneClaim": { "seat": "cente-g127", "status": "claimed", "verifiedFree": "checked _catalog/lane_claims.json in P:/doc_repo before claiming; g127-rbac absent (g125-rainfall-control, g128-map-dock, g130-flood-determination were the only live claims, all different lanes)" },
+  "blockingDependency": {
+    "row": "G-126",
+    "requirement": "must be CLOSED before this row starts, per this dispatch's own SEQUENCING section",
+    "verified": "read _inbox/2026-09-14_g126-tenant-isolation_close.json in this seat's own doc_repo worktree (untracked, present) -- status: \"closed\", all three defects fixed/reported, PRs #15 (plan-review) and #59 (smartcity-dashboards) merged and deployed, verified live on production revisions plan-review-00025-ley and smartcity-dashboards-00066-wed.",
+    "result": "SATISFIED -- proceeded."
+  },
+
+  "surfacesRead": {
+    "smartcity-dashboards": [
+      "src/tenancy.mjs -- resolveCaller/resolveHauskaTenant/isServiceBearer: the entire identity model. resolveCaller returns exactly one of three kinds: {kind:\"tenant\",tenant} (a CITY, from MCP /auth/whoami's jurisdiction_tenant field, nothing else read off that response), {kind:\"service\"} (a bearer key), {kind:\"anonymous\"}. No user id, no department, no role, anywhere in this file.",
+      "src/domains.mjs -- DOMAIN_REGISTRY (11 domains), composeDomainById/composeDomainMap/composeAllDomains. None of the three compose functions take a caller/identity argument; their signature is (pack[, domainId][, registry]) only.",
+      "src/domains/*.mjs (11 files) -- grepped every lensId: development-services x5 (permits-pipeline, inspections, code-violations, business-licenses, work-orders), public-works x2 (call-analytics, cip-projects), fire-ems x1 (fire-apparatus), fleet x1 (fleet-vehicles), police x2 (patrol-vehicles, police-cameras). lensId labels which department a RECORD belongs to (a data attribute); it is never read as a viewer-side filter anywhere in the compose path.",
+      "src/mygov-live.mjs:123-156 -- mapRealWorkOrderRecord, the real (non-fixture) Bastrop feed: `subject: row.title || row.type || \"Untitled work order\"` passes the source system's free-text title through unredacted. This is the concrete mechanism behind the mission's citizen-name/phone-number claim; row.department is also present on the raw row (row.department, line 138) and currently discarded into the composed record's own `department` field, unused by any access check.",
+      "src/server.mjs -- enumerated all 26 registered routes (grep). GET /api/city-domains (line 423) and GET /api/domains/:id (line 480) are the two that carry the department-scoped operational data; both are gated by packContentReadStatus(pack, caller) alone, which is city-tenant-level only (confirmed by reading both handlers in full, lines 423-519). A caller entitled to bastrop_tx at all can read every one of the 11 domains, work-orders and code-violations and business-licenses included, regardless of department.",
+      "src/lenses.mjs -- LEAD_LENSES: only 4 top-level audiences (city-manager, development-services, finance, citizen), all accessPolicy \"platform-internal\" or \"public-free\" -- audience-level labeling for product navigation, not an enforcement list. \"Finance\" appears here but has no domain in DOMAIN_REGISTRY yet (cip-projects, the nearest thing to a finance domain, is lensId public-works)."
+    ],
+    "plan-review": [
+      "src/actors.mjs (88 lines, read in full) -- QA_PERSONAS has 5 entries total, ONE for bastrop_tx: {orgId:\"bastrop_tx\",userId:\"staff\",label:\"Development services staff / bastrop_tx\"}. Zero entries carry a department field. resolvePersona matches on (orgId,userId) only. engagementCrossTenantRefusal (G-126, unmodified by this read) enforces orgId match only; its own header comment states the persona is asserted via a client-supplied x-persona header ('ANY CALLER CAN SET IT') and that this 'is a narrowing... not an authentication system,' scoped by 'Operator ruling 2026-09-02... to the existing named-persona list, not a new auth build.'",
+      "Confirmed: every real Bastrop staff member using Plan Review today -- Police, Fire, Public Works, whoever -- authenticates as the identical single persona literally labeled \"Development services staff\", because there is only one."
+    ],
+    "smart-files": [
+      "src/actors.mjs (32 lines, read in full) -- QA_PERSONAS has 8 entries, same {orgId,userId,label} shape, same resolvePersona. bastrop_tx/staff entry IS present (line 13, label \"Development services staff / bastrop_tx\", added at G-116).",
+      "CORRECTION to this dispatch's own premise (DEV_PROCESS 3.2a, quoted): this dispatch's 'What this replaces' section asserts smart-files has 'a known gap -- G-115's leave-behind records that Smart Files needs a matching bastrop_tx entry before a Bastrop-persona file upload works.' That entry already exists (G-116, committed, present in the file read above). This specific cited gap is STALE, not current, as of this read."
+    ],
+    "runbooks": [
+      "90_runbooks/AGENT_CONTRACT.md (full read) -- lane-planner fan model waived for this lane by the dispatch's explicit 'Do NOT spawn sub-agents' clause; write-slot/heavy-scan law not applicable (no atoms-store writes in this mission); verification rules and close-artifact schema (section 6, missionPremise/completionPredicate/scopeBasis) applied below.",
+      "90_runbooks/DEV_PROCESS.md (full read) -- rule 5.4 ('Propose; do not unilaterally remediate. Structural violations, retirements, and deletions are operator rulings') and rule 2.4 (CTRL-1: paired/tripled implementations of one rule need a single source of truth, not careful parallel edits) are the two rules most directly load-bearing on this mission's own close decision below."
+    ]
+  },
+
+  "departmentRosterCheck": {
+    "instruction": "mission text: 'Do not infer the roster from the lens list... If you cannot establish the real roster, say so and build against a named provisional list rather than a guessed one.'",
+    "searched": "grepped doc_repo (case-insensitive) for 'org chart', 'department roster', 'staff roster', 'bastrop.*staff', 'staff directory' across all *.md; also checked 90_operations/OPS-17_govtech_stack_plan_of_record.md and every 2026-08-17_g* decision file already cited in this dispatch's own PROGRAM CONTEXT block.",
+    "found": "No document naming Bastrop's actual departmental org chart. The operator's own dispatch prose ('Development services, Public works, Police, Fire and EMS, Fleet and Finance') is the most authoritative roster statement located, and it is prose, not a ratified list.",
+    "observation, not conclusion": "The 5 lensId values already live in the domain registry (development-services, public-works, police, fire-ems, fleet) track the operator's named list closely, MINUS a standalone 'finance' -- which is at least consistent with reading 'Fleet and Finance' as one combined department rather than two, matching that no finance-only domain exists. This is noted, not adopted: the mission explicitly warned against inferring the roster from the lens list, and a product's data-domain taxonomy is not evidence about how a real city org chart is drawn.",
+    "result": "UNMEASURED -- no authoritative roster located; see CP2/close for how this bears on the final recommendation."
+  }
+}

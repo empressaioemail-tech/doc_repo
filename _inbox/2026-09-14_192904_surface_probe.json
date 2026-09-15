@@ -1,0 +1,72 @@
+{
+  "_note": "scripts/surface-probe.mjs (OPS-23's fixed-parcel-set completion predicate for smartsite.cloud) does not apply to this mission -- G-133 is a read-only recon into an auth/credential mechanism across two products and two GCP projects, not a graded parcel-surface measurement. G-128's close (2026-09-14) already reported this same non-fit for its own dispatch and substituted a self-authored evidence artifact rather than silently forcing an unrelated instrument or fabricating a pass/fail row it did not measure. This file follows that precedent, reported rather than silently substituted, per this dispatch's own CLOSE SKELETON note and per AGENT_CONTRACT section 5's ban on silent fallbacks.",
+  "lane": "g133-bastrop-verify-access",
+  "instrumentSubstituted": true,
+  "substituteInstrument": "manual, source-cited enumeration + live HTTP/DB probes, exit-bounded (every command below ran under `timeout 30` or `timeout 60`), each row MEASURED (a real command actually run, output captured) not OBSERVED (nothing pasted from a screenshot or a person's report in this artifact).",
+
+  "rows": [
+    {
+      "id": "P1-deployed-tenancy-gate-source",
+      "claim": "The deployed smartcity-dashboards service's tenant-private gate accepts exactly two caller kinds (tenant via x-hauska-key, service via DASHBOARDS_API_KEY bearer), and only 'tenant' unlocks a tenant-private pack.",
+      "method": "git show origin/main:src/tenancy.mjs, cross-checked against `gcloud run services describe smartcity-dashboards --format=json` status.traffic (100% on smartcity-dashboards-00072-cow, built from origin/main@c7174f8, same commit).",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "P2-g132-staff-path-not-deployed",
+      "claim": "The 'staff' JWT caller kind (G-132) exists only in the local seat worktree, uncommitted, and is not part of the deployed gate.",
+      "method": "`git status --short` in P:/seat-worktrees/govtech/smartcity-dashboards shows src/tenancy.mjs as Modified plus untracked src/staff-identity.mjs/staff-directory.mjs; `git show origin/main:src/tenancy.mjs` has no verifyStaffToken import at all.",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "P3-v1-esri-own-middleware-is-open",
+      "claim": "smartcity-os's own esri.ts route middleware (esriTenant) performs no auth of any kind.",
+      "method": "Read server/routes/esri.ts in full; every one of 21 registered /api/esri/* routes carries only `esriTenant` (defaults tenantId=2 if unset, nothing else).",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "P4-v1-global-gate-is-not-open",
+      "claim": "A global gate in smartcity-os's server/routes.ts requires a real Passport session for most /api/esri/* routes despite P3.",
+      "method": "Read server/routes.ts app.use('/api', ...) block and its publicPrefixes allowlist; live curl to two non-allowlisted esri routes on smartcityos.io with no cookie.",
+      "commands": [
+        "timeout 30 curl -s -o /tmp/esri_health.json -w \"HTTP_STATUS:%{http_code}\\n\" https://smartcityos.io/api/esri/health  =>  HTTP_STATUS:401 {\"message\":\"Unauthorized\"}",
+        "timeout 30 curl -s -o /tmp/esri_boundary.json -w \"HTTP_STATUS:%{http_code}\\n\" https://smartcityos.io/api/esri/bastrop-city-boundary  =>  HTTP_STATUS:401 {\"message\":\"Unauthorized\"}"
+      ],
+      "verdict": "PASS (MEASURED) -- v1 is gated too, just on a different, session-based mechanism, not a Hauska one"
+    },
+    {
+      "id": "P5-hauska-mcp-server-whoami-live",
+      "claim": "hauska-mcp-server's /auth/whoami endpoint is deployed and live at the exact URL smartcity-dashboards' HAUSKA_MCP_URL points to.",
+      "method": "gcloud run services list (project hauska-prod-497015) for the URL; live anonymous curl.",
+      "commands": [
+        "timeout 30 curl -s -o /tmp/whoami_anon.json -w \"HTTP_STATUS:%{http_code}\\n\" https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/auth/whoami  =>  HTTP_STATUS:200 {\"anonymous\":true,\"jurisdiction_tenant\":null}"
+      ],
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "P6-bastrop-tx-key-exists-active",
+      "claim": "A Hauska product key exists with jurisdiction_tenant exactly 'bastrop_tx', status active, created and used within the G-116/G-128 timeframe.",
+      "method": "Read-only SELECT (key_id, tier, product, jurisdiction_tenant, platform_internal, status, owner_email, owner_name, notes, created_at, last_used_at only -- never key_hash) against hauska-prod-497015's DATABASE_URL secret, fetched to a shell variable and unset immediately after, never printed.",
+      "result": "1 row: key_id 2a26c318-271d-414c-967d-caba619a6f73, active, jurisdiction_tenant=bastrop_tx, owner_email=empressaioemail@gmail.com, owner_name='Nick (bastrop_tx staff pilot)', notes cite G-116 explicitly, created 2026-09-03T19:23:47Z, last_used_at 2026-09-14T20:31:55Z.",
+      "verdict": "PASS (MEASURED) -- credential EXISTS, this is a distribution finding not an absence finding"
+    },
+    {
+      "id": "P7-decoy-key-ruled-out",
+      "claim": "A second, unrelated row with jurisdiction_tenant='bastrop-tx' (hyphen) is not the same credential and does not affect the P6 finding.",
+      "method": "Same query widened to both spellings.",
+      "result": "1 additional row: revoked, created 2026-07-07, notes 'temp probe key, revoke after a4b verification', product=map, platform_internal=true -- unrelated card, dead.",
+      "verdict": "PASS (MEASURED, ruled out)"
+    },
+    {
+      "id": "P8-smartcity-dashboards-own-db-has-no-keys",
+      "claim": "smartcity-dashboards' own 'tenant-registry' Neon DB (repo_intents.md's phrase) holds pack definitions only, never Hauska keys -- the actual key authority is hauska-mcp-server's separate DB in a separate GCP project.",
+      "method": "\\dt against smartcity-dashboards' database-url secret: exactly one table, city_packs, schema has no credential column of any kind. Row for bastrop_tx: city_key=bastrop_tx, access_policy=tenant-private, environment=staging.",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "P9-secret-manager-enumeration-both-projects",
+      "claim": "Enumerate before asserting absence: no bastrop_tx-named secret exists in either smartcity-dashboards' or hauska-prod-497015's Secret Manager -- consistent with keys being DB rows (P6), not GCP secrets, by this system's own design (hauska-mcp-server mints/validates keys via api_keys table + key_hash, never via Secret Manager per-tenant entries).",
+      "method": "gcloud secrets list, both projects, full output captured (31 secrets in smartcity-dashboards, 30+ in hauska-prod-497015), grepped for bastrop/tenant-shaped names.",
+      "verdict": "PASS (MEASURED) -- absence at this location has a stated basis and does not contradict P6, since P6 is where the credential actually lives by design"
+    }
+  ]
+}

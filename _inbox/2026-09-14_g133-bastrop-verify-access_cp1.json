@@ -1,0 +1,41 @@
+{
+  "lane": "g133-bastrop-verify-access",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-15T00:20:00Z",
+  "purpose": "Design/pre-build checkpoint (AGENT_CONTRACT section 1) adapted for a non-code recon lane: what the gate mechanism actually is, read at source, before any credential enumeration or live probing.",
+
+  "item1_whatGatesBastropTxRoutes": {
+    "repo": "smartcity-dashboards",
+    "worktree": "P:/seat-worktrees/govtech/smartcity-dashboards",
+    "finding": "src/server.mjs calls resolveCaller(req) then packContentReadStatus(pack, caller) on nine routes (grep-confirmed: /api/city-packs content, /api/property-map/summary, /api/property-map/layers, and six more each with their own caller/status pair). src/tenancy.mjs is the single source of truth.",
+    "callerKindsInDeployedCode": {
+      "note": "Verified against origin/main@c7174f8 (the commit smartcity-dashboards-00072-cow, the current 100%-traffic serving revision, was built from -- see CP2/close for the traffic verification). The local seat-worktree copy of tenancy.mjs is NEWER than this and includes a third 'staff' caller kind -- that code is G-132's work, UNCOMMITTED, not deployed. Distinguishing local-file-state from live-deployed-state matters here and is called out explicitly so this checkpoint is not read as describing production when it is describing two different things.",
+      "tenant": "resolveHauskaTenant(req) reads header x-hauska-key, and on Cloud Run (K_SERVICE set) ALWAYS resolves it by calling `${HAUSKA_MCP_URL}/auth/whoami` with that same header, reading response.jurisdiction_tenant. Returns {kind:'tenant', tenant} only if that string is non-empty.",
+      "service": "isServiceBearer(req): Authorization: Bearer <DASHBOARDS_API_KEY> (deployed, from Secret Manager secret dashboards-api-key). Returns {kind:'service'}.",
+      "anonymous": "everything else."
+    },
+    "canReadPack_tenantPrivateBranch_deployedCode": "if (policy === 'tenant-private') return callerIsPackSubject(caller, pack.cityKey); and callerIsPackSubject (deployed version) is `caller?.kind === 'tenant' && caller.tenant === subject` -- a 'service' caller (the DASHBOARDS_API_KEY bearer) does NOT satisfy a tenant-private pack. Quoted directly from `git show origin/main:src/tenancy.mjs`.",
+    "conclusion": "For bastrop_tx (a tenant-private pack, confirmed live in DB at CP2), the ONLY way past the gate in the deployed service today is a caller presenting x-hauska-key whose value hauska-mcp-server's own /auth/whoami resolves to jurisdiction_tenant === 'bastrop_tx'. The DASHBOARDS_API_KEY service bearer does not unlock tenant-private content -- this was already live-confirmed correct behavior in G-116's own close (403, not 200, for a service caller) and reads the same in the code today."
+  },
+
+  "item2_v1VsV2_dataPath": {
+    "v2_smartcityDashboards_propertyMap": {
+      "file": "src/property-map.mjs",
+      "finding": "The module's own header states it reads smartcity-os's PLATFORM-INTERNAL route (GET /api/platform/property-intel/summary) server-to-server, the same pattern as every other real-live domain module in this product. fetchPropertyIntelSummary/fetchPropertyIntelLayer both require PLATFORM_INTERNAL_API_KEY (env, backed by Secret Manager secret platform-internal-api-key) as a Bearer token to that platform route -- a THIRD, wholly separate credential from the Hauska tenant key, scoped only to service-to-service calls between these two specific products.",
+      "gateOrder": "A caller must first pass smartcity-dashboards' own tenancy gate (item 1, needs a bastrop_tx Hauska key) before the server ever attempts the smartcity-os platform-internal call (which needs PLATFORM_INTERNAL_API_KEY, already configured -- see CP2). The 401s three lanes hit are ALL at the first gate; none of them got far enough to exercise the second."
+    },
+    "v1_smartcityOs": {
+      "file": "server/routes/esri.ts",
+      "finding": "Every /api/esri/* route (parcels, zoning, bastrop-city-boundary, bastrop-parcels, etc.) is hardcoded to Bastrop-specific ArcGIS FeatureServer URLs (BASTROP_CAD_PARCELS_URL etc, literal constants) and carries only `esriTenant` middleware, which defaults req.tenantId=2 when unset and does nothing else -- no Hauska call, no product key, of any kind, anywhere in this file.",
+      "openQuestionCarriedToCp2": "esri.ts's OWN middleware needs nothing, but server/routes.ts (the app's route registration file, not yet read in full at CP1) may apply a broader gate ahead of these routes. This is the literal 'second mechanism that would produce the same 401' the dispatch's method section asks for, and it has NOT yet been ruled out -- carried to CP2 as the next thing to check before asserting v1 is truly credential-free end-to-end."
+    }
+  },
+
+  "sourceCheckedCorrection": "The mission text's framing ('if v1 goes straight to Esri, v1 needs no Hauska key and never did') is confirmed for the ESRI-ROUTE-OWN-MIDDLEWARE layer specifically, but that is not yet the same claim as 'v1 needs no credential at all' -- those are different claims and this checkpoint is deliberately not collapsing them before checking the outer gate.",
+
+  "openForCp2": [
+    "Whether server/routes.ts applies a global auth gate ahead of registerEsriRoutes that would explain a still-possible 401 on a bare curl to v1.",
+    "Whether a bastrop_tx-scoped Hauska product key exists anywhere (Secret Manager x3 relevant projects, Cloud Run env on serving revisions, .env.example, hauska-mcp-server's own api_keys store -- the actual authority, since hauska-mcp-server's DB is what /auth/whoami reads from, not smartcity-dashboards' own DB).",
+    "Live-verify the deployed serving revision by field name from the traffic JSON, not latestReadyRevisionName, per AGENT_CONTRACT/dispatch method section."
+  ]
+}

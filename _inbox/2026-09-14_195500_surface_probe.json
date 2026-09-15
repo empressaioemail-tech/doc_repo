@@ -1,0 +1,97 @@
+{
+  "note": "scripts/surface-probe.mjs is OPS-23's property-surface instrument (P-1xx rows, smartsite.cloud, cortex/GIS parcel legs) and carries zero predicates for any OPS-17/G-1xx row. Confirmed empirically, not assumed from its header: `node scripts/surface-probe.mjs --rows G-126` run from P:/doc_repo at 2026-09-14T19:09:54Z returned PASS 0 FAIL 0 UNMEASURED 0 and wrote an empty artifact to P:/doc_repo/_inbox/2026-09-14_190954_surface_probe.json (left in place, untouched, in the integration seat -- not committed, doc_repo commits are planner-owned). Citing that vacuous run as this lane's probe would read as measured when it measures nothing for these rows. This file is this lane's own probe, in the same PASS/FAIL/UNMEASURED discipline, scoped to what G-126 actually has: HTTP routes and a compose function, not GIS parcels.",
+  "lane": "g126-tenant-isolation",
+  "planRow": "G-126",
+  "generatedAt": "2026-09-14T19:55:00Z",
+  "predicates": [
+    {
+      "id": "d1-queue-no-persona-refused",
+      "repo": "plan-review",
+      "surface": "https://plan-review-ozx33wafia-ue.a.run.app/api/plan-review/queue",
+      "measuredLive": true,
+      "before": "200, total=25, engagements across bastrop_tx/icc-demo/template-city",
+      "after": "401 unauthorized",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d1-reviewer-engagements-no-persona-refused",
+      "repo": "plan-review",
+      "surface": "https://plan-review-ozx33wafia-ue.a.run.app/api/plan-review/reviewer/engagements",
+      "measuredLive": true,
+      "before": "200, count=25, same 3 orgs",
+      "after": "401 unauthorized",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d1-findings-no-persona-refused",
+      "repo": "plan-review",
+      "surface": "https://plan-review-ozx33wafia-ue.a.run.app/api/plan-review/findings",
+      "measuredLive": true,
+      "before": "200, 23 cross-tenant findings with parcelNodeId, per sectionId",
+      "after": "401 unauthorized",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d1-scoped-persona-sees-only-own-tenant",
+      "repo": "plan-review",
+      "surface": "queue, reviewer/engagements, findings with x-persona: bastrop_tx/staff or template-city/staff",
+      "measuredLive": true,
+      "result": "bastrop_tx/staff -> total=8, orgs=[bastrop_tx] only; template-city/staff -> count=11, orgs=[template-city] only",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d1-by-id-gate-regression",
+      "repo": "plan-review",
+      "surface": "/api/plan-review/engagements/:id and subtree",
+      "measuredLive": true,
+      "result": "no-persona pass-through (200), cross-tenant refusal (403), same-tenant success (200) all byte-identical to pre-fix behavior",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d1-serving-revision-by-field-name",
+      "repo": "plan-review",
+      "measuredLive": true,
+      "result": "plan-review-00025-ley serving both a 401 and 200 test request at 2026-09-14T18:54Z, read via gcloud logging read on resource.labels.revision_name",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d2-cross-tenant-stamp-refused",
+      "repo": "smartcity-dashboards",
+      "surface": "mapRealPermitRecord(row, cityKey, accessPolicy)",
+      "measuredLive": false,
+      "measuredUnit": true,
+      "basis": "no live HTTP repro possible: no pack besides bastrop_tx holds the mygov grant in production today, so there is nothing to reproduce a cross-tenant call against over HTTP. Unit-level is the correct fidelity, matching the fixture path's own paired control (domains.test.mjs) being unit-level too.",
+      "result": "mapRealPermitRecord(SAMPLE_ROW, 'template-city', ...) throws; composeRealPermits(TEMPLATE_CITY, ...) rejects before fetchImpl is ever called (spy confirms zero invocations)",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d2-legitimate-tenant-unaffected",
+      "repo": "smartcity-dashboards",
+      "measuredUnit": true,
+      "result": "all 11 pre-existing mygov-permits.test.mjs tests (bastrop_tx path) still pass unchanged; full suite 633/633 green",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d2-serving-revision-by-field-name",
+      "repo": "smartcity-dashboards",
+      "measuredLive": true,
+      "result": "smartcity-dashboards-00066-wed serving live 200s at 2026-09-14T19:05:11-12Z, read via gcloud logging read on resource.labels.revision_name",
+      "verdict": "PASS"
+    },
+    {
+      "id": "d3-platform-key-tenant-binding",
+      "repo": "smartcity-os",
+      "measuredLive": false,
+      "measuredSource": true,
+      "basis": "ABSOLUTE NO-TOUCH; question is a source-level finding, not a deployable/probeable surface. Authorization covered reading the handlers, not live-probing smartcity-os.",
+      "result": "not uniform across the 12 requirePlatformInternalKey routes: 5 mygov.ts routes resolve Bastrop by name (getBastropTenantId, tenants.slug='bastrop', cached, fallback 1); property-intel/summary resolves it via the bare DEFAULT_TENANT_ID literal (=2, flipped from 1 in 0e5c41e for an unrelated reason) with a real SQL tenant_id filter behind it; property-intel/layers and the 5 vendor routes (samsara/spireon/firstdue/powerbi/goto) have no tenant concept at all, single-account/registry by construction",
+      "verdict": "UNMEASURED (not applicable -- reporting-only mission, no code changed, no live probe authorized)"
+    }
+  ],
+  "counts": {
+    "PASS": 9,
+    "FAIL": 0,
+    "UNMEASURED": 1,
+    "countingRule": "one row per violation-direction or legitimate-case check actually run for defects 1-2; defect 3 is a read-only source finding with no deployable surface to probe, counted UNMEASURED rather than PASS or omitted"
+  }
+}

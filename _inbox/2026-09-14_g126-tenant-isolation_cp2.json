@@ -1,0 +1,55 @@
+{
+  "lane": "g126-tenant-isolation",
+  "planRows": ["G-126"],
+  "checkpoint": "CP2",
+  "timestamp": "2026-09-14T19:40:00Z",
+  "workerModel": "no sub-agents spawned",
+  "sinceCP1": {
+    "defect1": {
+      "status": "closed and merged",
+      "pr": "https://github.com/empressaioemail-tech/plan-review/pull/15",
+      "mergedAt": "2026-09-14T19:06:21Z",
+      "mergeCommitSha": "59714c19d766c106baf7960fd27ae6f3e88a9a98",
+      "ciConclusion": "test check conclusion string: success",
+      "servingRevision": "plan-review-00025-ley @ 100%, verified by field name from live request log lines"
+    },
+    "worktreeCorrection": "Found a pre-existing, empty local branch g126-tenant-isolation in the raw P:/smartcity-dashboards checkout (created 2026-09-14 13:49, zero unique commits, identical to origin/main tip) AND a dedicated registered worktree already provisioned at P:/smartcity-dashboards-worktrees/g126-tenant-isolation (clean, up to date, no data loss). Per AGENT_CONTRACT section 5 ('every lane has its own registered worktree'), switched to doing all defect-2 work in that dedicated worktree rather than the raw checkout, where I had already (harmlessly) stashed CRLF noise but not yet branched."
+  },
+  "defect2": {
+    "repo": "smartcity-dashboards",
+    "worktree": "P:/smartcity-dashboards-worktrees/g126-tenant-isolation",
+    "status": "closed, PR open, CI pending",
+    "sourceVerifiedFinding": {
+      "question": "does the upstream row carry a tenant field mapRealPermitRecord could compare pack.cityKey against?",
+      "answer": "no. Read live (read-only, smartcity-os ABSOLUTE NO-TOUCH honored): server/routes/mygov.ts's /api/platform/mygov/permits hardcodes `eq(mygovPermits.tenantId, await getBastropTenantId())` server-side and accepts no caller tenant param; dbPermitToApi (the exact shape it returns) drops tenantId from its output entirely (lines 131-160, no tenant/city/jurisdiction field of any kind). This is the literal 'if the upstream response carries no tenant field to compare against, that is the finding' branch the dispatch named.",
+      "whatWouldHaveToChangeUpstream": "dbPermitToApi would need to surface the row's own tenantId (or a public-safe derived city identifier) so a caller-side check could compare the RECORD's tenant, not just the feed's known-good default. Not done -- smartcity-os is no-touch."
+    },
+    "theRealReachableGapClosedInstead": "platformGrantForKind gates this feed on a pack merely HOLDING a {kind:'mygov'} object in grantedAdapters. PLATFORM_MYGOV_PERMITS_GRANT (adapters.mjs) is one city-agnostic constant currently wired only to BASTROP_TX in the static pack definitions, BUT a DB-backed pack's grantedAdapters comes straight off a `granted_adapters` column (city-pack.mjs line ~241) -- settable by an ordinary row write, no code review, no deploy. Nothing before this fix stopped a second pack from acquiring that exact grant object and reaching mapRealPermitRecord, which would then fetch Bastrop's real permits (the only tenant the hardcoded query serves) and stamp them with that OTHER pack's cityKey.",
+    "fix": "assertVerifiedMygovTenant(cityKey) in src/mygov-permits.mjs refuses (throws) unless cityKey === 'bastrop_tx', the one tenant the hardcoded upstream query is verified to serve. Guarded twice through the one shared function: composeRealPermits (before the network call, so a mis-granted pack doesn't spend the platform key) and mapRealPermitRecord itself (the function this mission named).",
+    "falsifier": "If composeRealPermits or mapRealPermitRecord returned/stamped a record for any cityKey other than 'bastrop_tx' without throwing, the fix would be contradicted.",
+    "contradicted": "no -- 5 new tests confirm: the constant matches what smartcity-os actually hardcodes; the guard passes bastrop_tx and is not vacuous; it refuses template-city, icc-demo, empty string, null, and undefined; mapRealPermitRecord throws on a cross-tenant stamp attempt using a real sample row; composeRealPermits throws BEFORE fetchImpl is ever invoked (verified via a call-tracking spy).",
+    "violationTestBothDirections": {
+      "violationRefused": "mapRealPermitRecord(SAMPLE_ROW, 'template-city', ...) throws /mygov real feed is verified live for bastrop_tx only/; composeRealPermits(TEMPLATE_CITY, ...) rejects with the same message and fetchCalled stays false",
+      "legitimateCaseSucceeds": "composeRealPermits(BASTROP_TX, ...) and mapRealPermitRecord(row, 'bastrop_tx', ...) both proceed exactly as before -- unchanged by the guard, confirmed by all 11 pre-existing tests in mygov-permits.test.mjs still passing"
+    },
+    "whyNoLiveHttpRepro": "No pack other than bastrop_tx holds the mygov grant today, so there is no live cross-tenant call to reproduce a leak against over HTTP -- that absence IS the 'coincidental, not enforced' framing this mission's preamble uses. The unit-level violation test is the correct fidelity, matching how the fixture side's own paired control (domains.test.mjs, 'returned a record for other-city on pack probe-city') is unit-level too, not an HTTP demonstration.",
+    "testSuite": "npm test: 633/633 passing (628 pre-existing + 5 new)",
+    "deploy": {
+      "canary": "smartcity-dashboards-00066-wed, tag g126-tenant-isolation, deployed --no-traffic",
+      "regressionCheck": "template-city pipeline route (unaffected, no mygov grant) returns 200 on canary; a 403 on the bastrop_tx pipeline route is confirmed BYTE-IDENTICAL on the currently-serving production revision (g120-overview-lens) before any change -- pre-existing tenant-auth behavior (G-11, DASHBOARDS_API_KEY is not a tenant credential), not a regression from this fix",
+      "trafficLease": "recorded at _catalog/leases/smartcity-dashboards.json before the shift, deleted immediately after the serving revision was confirmed by field name",
+      "servingRevisionVerifiedByFieldName": "gcloud logging read on resource.labels.revision_name: smartcity-dashboards-00066-wed serving live 200s at 2026-09-14T19:05:1{1,2}Z",
+      "trafficSplit": "100% smartcity-dashboards-00066-wed"
+    },
+    "pr": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/59 (branch g126-tenant-isolation, commit 2760136), CI pending at time of this checkpoint (a11y + test checks both running), not yet merged"
+  },
+  "openThreads": [
+    "smartcity-dashboards PR #59 CI pending -- merge on green (test AND a11y check conclusion strings 'success'), report merge SHA in close",
+    "Defect 3 (smartcity-os platform key binding, read-only) starting next"
+  ],
+  "fleetMemory": {
+    "LESSON": "before creating a feature branch in a product repo on this program, check `git worktree list` for a dedicated per-lane worktree first -- a raw checkout collision (branch name already exists) is the signal, and the fix is to switch to the registered worktree, not to force-create alongside it.",
+    "GROUND_TRUTH": "(2026-09-14 19:05 live) smartcity-dashboards serving smartcity-dashboards-00066-wed @ 100%, GCP project smartcity-dashboards, us-east1, verified by field name from request log lines.",
+    "OPEN": "none carried forward beyond defect 3 itself."
+  }
+}
