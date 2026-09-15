@@ -1,0 +1,59 @@
+{
+  "lane": "p216-envelope-served",
+  "planRows": ["P-216"],
+  "checkpoint": "CP2",
+  "stage": "pilot/mid-work",
+  "timestamp": "2026-09-15T11:50:46.000Z",
+  "seat": "cente-p216",
+  "codeChange": {
+    "repo": "hauska-map",
+    "branch": "fix/p216-envelope-served",
+    "files": [
+      "apps/property-explorer/api/_lib/atom-chain-to-facets.ts",
+      "apps/property-explorer/api/_lib/pe-property-atoms.ts",
+      "apps/property-explorer/api/_lib/pe-record-to-facets.ts"
+    ],
+    "diffstat": "3 source files changed (+~85 lines incl. comments), 3 test files changed/extended (+~171 lines)",
+    "defect1And2Fix": "adaptAtomChainToBakedFacets(): split the former unconditional 'no-buildable-area' branch into a depthWarm-gated branch (serves the honest zero, unchanged) and a new else-branch for the unverified case (status:'declined', declineReason:'envelope-unverified', setbacks still served, buildableAreaPct/SqFt withheld, facetCoverage.envelope:false, a stated disclosure -- never a blank per the dispatch's own pre-registered falsifier). The 'buildable' branch's pctFromAtom and buildableAreaSqFt spreads are likewise gated on depthWarm.",
+    "defect3Fix": "pe-record-to-facets.ts: composeSetbackAxisScalar now delegates to a new composeSetbackAxisScalarWithVintage, which also returns the record cell's own `vintage`; composeZoningSetbackOverride computes the latest parseable vintage across whichever axes were actually overridden and exposes it as ZoningSetbackOverride.setbackAxisOverrideVintage. Added an exported latestParseableDate() helper (never guesses from an unparseable string). pe-property-atoms.ts's applyRecordPatch: when setbackAxisOverrideVintage is present, bumps the response's snapshotAt and facets.bakedAt to the newer of that and the existing snapshotAt; when absent, the payload is untouched byte-for-byte (verified by a dedicated test)."
+  },
+  "testWork": {
+    "newFixtures": [
+      "src/lib/atom-chain-to-facets.test.ts: sanMarcosUnverifiedZeroChain, modeled on the exact live 48209:97658 shape (SF-6, front/side/rear/corner 25/5/20/15, no depthWarmPromotion) -- asserts the false zero never reaches the wire, setbacks still serve, disclosure names ground-truth verification, and (second test) the SAME fixture with depthWarmPromotion added still serves the honest zero, proving the gate discriminates rather than blanket-suppressing.",
+      "api/_lib/pe-property-atoms.test.ts: two new tests -- bumps snapshotAt/bakedAt to the newer parcel_record axis vintage when an override is applied (values matching the live 2026-07-23 atom-chain / 2026-09-15 override dates from the dispatch), and leaves both untouched when no axis override happened."
+    ],
+    "updatedFixturesAndWhy": [
+      "src/lib/atom-chain-to-facets.test.ts 'Hays-shaped' test: pre-fix asserted buildableAreaSqFt:5100 being served from a non-depth-warm chain -- that was the exact defect class this pass fixes, not a behavior to preserve. Updated to assert buildableAreaSqFt is now undefined; isDepthWarmPromoted(haysChain)===false is independently asserted a few lines below in the same file already.",
+      "3 tests under 'attachBuildablePctFromKnownLotArea': all three cloned haysChain (non-depth-warm) as their fixture for testing a DOWNSTREAM, unrelated function (pct-from-known-lot-area). Added depthWarmPromotion to each fixture's buildableEnvelope so the precondition (a verified area reaching that stage) holds, preserving each test's original purpose rather than reverting the gate.",
+      "api/_lib/pe-record-to-facets.test.ts: one exact-keys assertion on the ZoningSetbackOverride object updated to include the new setbackAxisOverrideVintage field."
+    ],
+    "falsifierProven": {
+      "method": "Ran the full suite before writing the gate fix, confirmed the pre-fix 'Hays-shaped' test passed with the fabricated buildableAreaSqFt:5100 (i.e. the fixture faithfully encoded the live defect); after the fix, reran and confirmed it now fails until updated, then updated it -- the same before/after falsification the dispatch requires, done via the existing regression suite rather than a git-stash round-trip (equivalent evidence: the diff between the old and new expected values IS the defect being fixed, on a fixture shaped like the real chain, not a synthetic one)."
+    },
+    "regressionCheck": {
+      "command": "npx vitest run (apps/property-explorer, whole package)",
+      "result": "208 test files, 3039 tests passed, 1 pre-existing todo, 0 failures, 0 regressions."
+    },
+    "typecheck": {
+      "command": "npx tsc --noEmit (apps/property-explorer)",
+      "result": "0 new errors. 9 pre-existing 'Cannot find module @hauska/map-renderer' errors in unrelated browse/* map-rendering files, confirmed by file list none of which this change touches or imports."
+    }
+  },
+  "liveVerification": {
+    "beforeState": "Live-queried via mcp__claude_ai_Smart_Site__get_smart_site depth=node on 48209:97658 (2026-09-15T11:2x): confirms the parcel's real setbacks (25/5/20/15, SF-6), real acreage (8,615 sqft), and the genuine 9-edge/5-side boundary geometry the fix's fixtures are modeled on. The dispatch's own quoted REST payload (buildableAreaPct:0, buildableAreaSqFt:0, the 'Reader-composed axis override' disclosure) is the independently-confirmed BEFORE state for the route this fix changes -- get_smart_site itself already correctly refuses (see CP1), so it is not itself evidence of the defect, only corroborating that the underlying setback/geometry facts are real and not fabricated by the dispatch.",
+    "afterStateCaveat": "A true live re-read of the FIXED route requires the hauska-map PR to be deployed; per the operator-go stop-point (see close), this pass does not merge/deploy. 'After' evidence is therefore the fixture-based falsifier tests above (built from the exact live shape) plus a full regression pass, not a second live HTTP call against the unmodified production route."
+  },
+  "prOpened": {
+    "repo": "hauska-map",
+    "number": 404,
+    "url": "https://github.com/empressaioemail-tech/hauska-map/pull/404",
+    "headBranch": "fix/p216-envelope-served",
+    "merged": false,
+    "note": "Held for operator go before merge -- this repo's Vercel deploy is production-facing, same stop-point class OPS-24 dispatches apply explicitly to legacy-design-tools."
+  },
+  "notYetDone": [
+    "Defect 4 (35,365 unreadable-dateBasis cells) diagnosed, not fixed -- see close leave_behind; requires operator-authorized cross-store verification against hauska-factory + hauska-engine stores this session has no credentials for.",
+    "Defect 2's write-time geometry root cause (the actual inset/edge-labeling computation in hauska-engine) is named, not reformed -- this pass withholds the unverified figure rather than fixing the computation that produced it.",
+    "PR #404 not merged/deployed, per operator-go stop-point."
+  ]
+}
