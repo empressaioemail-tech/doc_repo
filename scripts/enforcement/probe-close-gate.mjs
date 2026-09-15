@@ -42,7 +42,7 @@ export const OPS23_RANGES = [[151, 174]];
 // OPS-24 owns 186-198 and 200-210. 199 is deliberately NOT in either: it is the Smart Site auth
 // gate, not a county-to-serving row. Added 2026-09-14 with the registry extension; the drift
 // check below compares EVERY range, not rows[0], after that check was found vacuous by violation.
-export const OPS24_RANGES = [[186, 198], [200, 215]];
+export const OPS24_RANGES = [[186, 198], [200, 225]];
 export const GATED_RANGES = [...OPS23_RANGES, ...OPS24_RANGES];
 export const GATED_ROW = { test: (r) => { const m = /^P-(\d+)$/.exec(String(r).trim()); if (!m) return false; const n = Number(m[1]); return GATED_RANGES.some(([a, b]) => n >= a && n <= b); } };
 // OPS-24 rows carry a PREDICATE DEBT (OPS-24 Law 1): no ROWS entry in surface-probe.mjs yet. A close for one
