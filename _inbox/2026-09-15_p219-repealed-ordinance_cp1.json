@@ -1,0 +1,115 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "lane": "p219-repealed-ordinance",
+  "planRows": ["P-219"],
+  "seat": "cente-p219",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/p219-repealed-ordinance/hauska-engine",
+  "branch": "fix/p219-repealed-ordinance-setbacks",
+  "baseCommit": "cea0ad9",
+  "writtenAt": "2026-09-15T13:05:00Z",
+
+  "missionPremise": "OPS-24 P-219. Both PDF products (feasibility study, site plan) draw every setback line, the envelope polygon and the buildable-area figure from City of Bastrop Ordinance 2019-51, repealed 2026-04-14 by Ordinance 2026-06 (B3 Code Repeal and Bastrop Development Code Adoption). The facet side is correct; the engine side is wrong. Standing rulings this rests on: MOST-CURRENT SOURCE WINS (operator 2026-09-11, _decisions/2026-09-11_setback_source_most_current_wins.md); THE LEDGER IS THE SERVING PATH, ATOMS ARE CANONICAL (operator 2026-09-11, one reader in hauska-engine/services/retrieval-api); A-148 (overseer 2026-09-14) which resolved F24 as ONE layer with stale numeric columns rather than two layers citing two ordinances.",
+
+  "dispatchPremisesVerifiedAtSource": [
+    {
+      "premise": "The PDFs print 25/5/25 sourced to bastrop-per-parcel/34049/front, cited to Ordinance 2019-51, with no corner-side value.",
+      "verdict": "CONFIRMED",
+      "how": "export_instrument(kind=feasibility, 48021:34049) via the live Smart Site MCP, generatedAt 2026-09-15T12:47:49Z, 13 pages, sitePlanAppended true. pdftotext -layout of the returned PDF carries verbatim: 'Setbacks 25 / 5 / 25 ft -- source: Setback rule for SF-1 cited to bastrop-per-parcel/34049/front, cited https://www.cityofbastrop.org/page/open/6743/0/ORDINANCE%20NO.%202019-51%20BASTROP%2...' (feasibility sheet 2 and sheet 9), and the site-plan sheet 4 labels 'FRONT SETBACK 25'', 'SIDE 5' (TYP.)', 'SIDE 5''. No corner-side label anywhere in the document."
+    },
+    {
+      "premise": "The PDFs print 19,052 sq ft of buildable area, 64% of the 29,989 sq ft lot.",
+      "verdict": "CONFIRMED",
+      "how": "Same PDF, sheet 1: '19,052 sq ft of buildable area' / '64% of the 29,989 sq ft lot, an envelope roughly 131 by 158 ft at its widest'. The 131 x 158 ft dimension is itself the proof the figure is computed off 25/5/25: the parcel ring spans 181.06 ft x 168.30 ft in the local frame, and 181.06 - 25 - 25 = 131.06, 168.30 - 5 - 5 = 158.30. Under the ruled 30/10/30/20 the same ring gives roughly 121 x 138 ft."
+    },
+    {
+      "premise": "The facet side (setbackRulesFact) is right: SF-1 30/10/30 corner 20, jurisdictionKey bastrop-development-code, Ordinance 2026-06 effective 2026-04-14.",
+      "verdict": "CONFIRMED, and independently corroborated",
+      "how": "get_smart_site(48021:34049, depth=node) 2026-09-15 returns setbackRulesFact {districtCode SF-1, jurisdictionKey bastrop-development-code, resolvedTableKey bastrop-development-code, effectiveDate 2026-04-14, citationUrl ORDINANCE NO. 2026-06} and brief section setbacks-envelope {frontFt 30, sideFt 10, rearFt 30, cornerFt 20}. Independently: the city's own authoritative zoning layer Zone_Types/FeatureServer/25 (A-148) was queried live 2026-09-15 for ZoneTypeClass=3 (SF): 175 rows, 4 distinct value/ordinance combinations, and EVERY one reads TEXT FrontSetback '30 feet', SideSetback '10 feet', RearSetback '30 feet', CornerSideStreetSetback '20 feet' while its NUMERIC shortcut columns read 25/5/25. The BDC corpus row and the city's authoritative layer text agree exactly. They also agree on RR (50/20/50 corner 20)."
+    }
+  ],
+
+  "rootCause": {
+    "statement": "The export path throws away correct per-edge setbacks and overwrites them with a persisted setback-rule atom that was minted from the City of Bastrop One Click join layer 23, whose numeric shortcut columns were never refreshed after Ordinance 2026-06 and whose Ordinance_ field still reads 2019-51.",
+    "chain": [
+      "services/engine-api/src/routes/parcel-terrain.ts:401-407 (site plan), :506-511 (terrain), :704-708 (feasibility) load the persisted setback-rule property atom with storage.listPropertyAtomsByParcelNodeId() and pass it as options.setback. Nothing on this path re-resolves the setback against a ruled table or against the parcel_record rails.",
+      "packages/engine-core/src/site-plan/author.ts:305 composeSitePlanModelForParcel() uses that atom for the sheet setback model (front/side/rear only) and hands it to prepareBoundaryEdgesForExport().",
+      "packages/engine-core/src/site-plan/prepare-boundary-edges-for-export.ts:255-276 replaces EVERY stored per-edge setback value with the atom's values via resolvedSetbackForRole() whenever any of three triggers fires. For 48021:34049 all three fire: (a) stale = isStaleBastropCitySetbackRule(sourceAdapter 'descriptor-fixture'), (b) perParcelOnly = requiresPerParcelSetbackRecord(jurisdictionTenant), (c) anyRetiredEdge = true because boundary edge 4 carries 'refused: retired road-class derivation'.",
+      "The stored edges it discards are already CORRECT: get_smart_site 2026-09-15 reads boundaryEdgeFact edges as rear 30, side_corner 20, front 30, side 10, provenance 'district-setback-table'. The export replaces them with 25/5/25 and, having no corner concept in NotSpecifiedAxes, resolves the side_corner edge from the atom's sideCornerFt which the stale atom does not carry, falling through to the flat side value of 5.",
+      "The atom itself was minted by packages/engine-core/src/property-reasoning/emit-setback-rule.ts from the table built by packages/adapters/src/local/setbacks/bastrop-per-parcel-record.ts:686-780 (setbackTableFromBastropPerParcelRecord), whose provenance atom_dids are bastrop-per-parcel/{propId}/{front,rear,side-interior,side-corner} and whose citation_url is record.ordinanceLink, i.e. layer 23's Ordinance_ field, live value '2019-51'."
+    ],
+    "irony": "The 2026-08-05 edge-role freshness gate was built to STOP a stale setback value reaching the sheet (the 2026-07-29 descriptor-fixture 15/0/0 regression). It is now the component that injects one, because the atom it was taught to trust has become the stale side of the conflict."
+  },
+
+  "designToBuild": [
+    {
+      "item": 1,
+      "title": "One setback authority for the export path, the same one setbackRulesFact renders",
+      "detail": "New module packages/engine-core/src/site-plan/resolve-export-setback.ts. Precedence: (a) the parcel_record rails setbackFrontFt / setbackSideFt / setbackRearFt / setbackCornerFt plus the setbackRules companion, read through the existing one reader (parcel-record-reader-client.ts, GET /property-nodes/:id/record) — these are the exact rails setbackRulesFact is rendered from and they serve 'record' for this parcel; (b) the ruled corpus resolution getSetbackTableForZoning() under R-1, which for SF-1 resolves to bastrop-development-code 30/10/30/20 with the Ord. 2026-06 citation and effectiveDate 2026-04-14; (c) the persisted setback-rule atom, only when its provenance is not a retired path; (d) honest absence. The resolver carries corner as a first-class axis and returns its own source label, citation, source date and date basis so the sheet prints WHICH source it read.",
+      "note": "RETRIEVAL_API_URL and RETRIEVAL_API_KEY ARE mounted on hauska-engine-api today, verified 2026-09-15 by gcloud run services describe hauska-engine-api --project hauska-prod-497015 --region us-central1 (RETRIEVAL_API_URL literal, RETRIEVAL_API_KEY <- secret HAUSKA_ENGINE_API_KEY). The module doc in parcel-record-reader-client.ts still says they are NOT mounted (confirmed 2026-09-12) — that comment is stale and this lane corrects it. No new secret mount is needed, so operator stop point 1 is NOT engaged by this design."
+    },
+    {
+      "item": 2,
+      "title": "side_corner honoured end to end",
+      "detail": "SitePlanSetbackModel gains a corner axis; NotSpecifiedAxes gains sideCorner so a corner axis can be silent independently of the interior side (today they share one flag, which is why a missing corner degrades to the side value instead of declaring itself); formatSetbackSummaryLine prints a corner term when the district has one; the per-edge label path already maps side_corner to 'SIDE (CORNER)' in emitters.ts:66 and pdf/layout.ts:688, so it only needs the right value to arrive."
+    },
+    {
+      "item": 3,
+      "title": "bastrop-per-parcel/* retired as a setback-value provenance, proven by decline",
+      "detail": "Retirement covers the four live paths by which it still answers: (a) resolveBastropEuclideanCandidate's unordered-dates default, which falls back to the per-parcel candidate as the follower; (b) its stale-numeric-columns arm, which returns the per-parcel table as the followed table; (c) buildBastropPerParcelSetbackDescriptor, the depth-warm descriptor that mints setback-rule atoms from the per-parcel table — this is the writer that produced the bad atom; (d) the persisted atom already in the store, which the export must now refuse rather than serve. One named constant holds the retired prefix; a CI test fails if a served setback value or a minted atom carries it.",
+      "scopeBoundary": "Retirement is of the setback VALUE and its provenance, not of the layer-23 record itself. The record stays in use for R26 dominant-district resolution on split-zone parcels and as the NAMED second source in the P-154 conflict disclosure. A disclosure that names a source is not a served value."
+    }
+  ],
+
+  "escalation": {
+    "trigger": "Dispatch falsifier: 'If you find the 2019 values are still authoritative for some district or some parcel, that is a bigger finding than this row and you escalate rather than continuing.'",
+    "finding": "Partially triggered, for the per-parcel-record-only districts and NOT for the district this row is about. Measured live 2026-09-15 against Parcels_One_Click/FeatureServer/23, grouped count of prop_id by ZoneTypeClass over every row in the layer, denominator 16,751 rows: no zoning class 9,778 (58.4%), SF-1 2,496 (14.9%), PDD 1,995 (11.9%), GC 900 (5.4%), RR 689 (4.1%), MU 518 (3.1%), PI 241 (1.4%), IND 133 (0.8%), P/OS 1. SF-2 and SF-3 have zero rows on this layer. The BDC corpus deliberately carries scalar rows ONLY for SF-1/SF-2/SF-3/RR (CORRECTION C honest-decline), so the per-parcel-record-only districts MU/GC/PDD/PI/IND/P-OS — 3,788 rows, 22.6% of the layer — have no ruled table to repoint to.",
+    "whyItIsAnEscalation": "Querying Zone_Types/FeatureServer/25 live 2026-09-15 shows the stale-numeric-column defect is NOT uniform across districts. The SF rows are stale (text 30/10/30/20 vs numeric 25/5/25). But the GC row reads text 20/5/20 corner 10 and numeric 20/5/20, and the IND row reads text 25/20/25 corner 20 and numeric 25/20/25 — for those districts the numeric columns the One Click join reads AGREE with the city's authoritative text. Blanket-retiring the per-parcel value path for those districts would replace currently-correct values with an honest absence on roughly 1,274 GC+IND rows, which is a regression, not a fix. MU is a third case again: text side '5 feet minimum; 0 feet allowed on shared/party-wall sides within a unified development; 10 feet where abutting RR or SF districts' against numeric SideSetback_ 0 — genuinely conditional language the flat model cannot hold, which is exactly why CORRECTION C omitted it.",
+    "decision": "Retire bastrop-per-parcel/* on every path where this lane repoints a consumer — i.e. every district with a ruled corpus row (the BDC Euclidean set, and every other jurisdiction with a table). Do NOT unilaterally flip the 3,788 per-parcel-record-only rows to honest absence in this row. That sub-case is escalated with its measurement, and named as the remaining half of the retirement. The follow-on that would resolve it properly is a new adapter reading Zone_Types/25 TEXT fields per district WITH their conditional language preserved, which is a build, not a flag flip, and is not this row.",
+    "honestLabel": "This makes the retirement item partial. The close will say so rather than claiming a full retirement."
+  },
+
+  "buildableFigurePolicy": {
+    "statusToday": "Three surfaces, three different answers, verified live 2026-09-15. (1) The panel WITHHOLDS: draw.derivedFigures.denies lists area, coverage_ratio, lot_coverage_pct, setback_distance, buildable_area, and the envelope overlay basis is 'modelled-figure-withheld'. (2) The facets endpoint SERVES a number: /api/spine/property-atoms/48021%3A34049/facets envelope carries buildableAreaSqFt 19052 and buildableAreaPct 63.5 against parcelAreaSqFt 29989. (3) The PDFs SHOUT the same number in the largest type on the cover.",
+    "correctionToTheDispatch": "The dispatch says the facets endpoint serves a zero. It does not, as of 2026-09-15 — it serves 19,052 and 63.5%. The contradiction is therefore panel-withholds versus facets-serves versus PDF-shouts, all three disagreeing, rather than a zero.",
+    "secondFreeFinding": "The facets endpoint disagrees with ITSELF. Its envelope.setbacks block reads front 30, side 10, rear 30, side_interior 5, side_corner 20 — the corrected values — while its buildableAreaSqFt of 19,052 is the figure the 25/5/25 geometry produces. Separately, the polygon the panel actually draws (draw overlay id 'envelope', 5 vertices in local feet) has a shoelace area of 16,387 sq ft, 54.6% of the 29,993.9 sq ft the same overlay's ring gives — that polygon IS corner-aware. So the served figure and the drawn polygon on the same response differ by 2,665 sq ft. Under DEV_PROCESS 1.4 that is a free finding and it is reconciled here rather than rounded off: the number and the polygon come from different computations, and only the polygon reflects the ruled table.",
+    "optionsToDecide": [
+      {
+        "option": "A — print it, off the ruled table, on all three surfaces",
+        "requires": "Lift buildable_area and lot_coverage_pct from DERIVED_FIGURES_POLICY denies, back the figure with a buildable-envelope atom, and make the panel, the facets endpoint and both PDFs read that one atom. All three then agree.",
+        "cost": "Touches the wire policy and hauska-map, i.e. outside this row's repo, and ENVELOPE DRAWN FIGURE REFUSED (operator 2026-09-11, Ruling B reversed for the polygon only) currently rules the opposite: buildable area and percent stay refused until an envelope atom backs them."
+      },
+      {
+        "option": "B — withhold it from both PDF covers, matching the panel and the standing ruling",
+        "requires": "The feasibility cover and sheet 9, and the site-plan title block, stop printing a buildable-area sq ft and percent and print the standing withheld sentence instead. The envelope POLYGON keeps being drawn (Ruling B reversed for the polygon only). The facets endpoint's numeric field is hauska-map's, not this repo's, and is named for routing.",
+        "cost": "A number a buyer currently sees disappears from the cover. That is a visible product change."
+      }
+    ],
+    "laneRecommendation": "Option B, and it is not a close call: the operator ruling of 2026-09-11 already decided this — the polygon is drawn, the figure is refused until an envelope atom backs it. Printing the figure on a PDF while the wire denies it is the PDF ignoring a ruling, not a second legitimate reading. This lane will implement B and will state it explicitly rather than letting the figure vanish as a side effect of the setback fix, which is the dispatch's own third falsifier.",
+    "aboveMyPayGrade": false,
+    "escalatedAnyway": "The facets endpoint's own buildableAreaSqFt 19052 lives in hauska-map, which this row does not touch. Fixing the PDFs and leaving that field serving a 25/5/25-derived number leaves two of three surfaces disagreeing. Named for routing."
+  },
+
+  "falsifiersPreRegistered": [
+    "If the engine now agrees with the facet but bastrop-per-parcel/* still answers for a district with a ruled table, the repoint left the store alive and this lane failed. Test: the CI check must FAIL on a deliberately reintroduced bastrop-per-parcel provenance, proven by running it in both directions.",
+    "If a non-corner lot renders correctly and the corner lot was never tested, the missing half was never tested. 48021:34049 is the corner lot and is the named test parcel; edge 1 must carry 20 ft and a SIDE (CORNER) label, not 5 ft and SIDE.",
+    "If the buildable figure disappears from the PDFs without a stated policy decision, withholding was chosen by omission. The decision is stated above BEFORE the code was written.",
+    "If the numbers match but the lane cannot name WHICH source the engine read, a value was patched rather than a provenance. The sheet must print the source label and citation it actually resolved, and the close must name it.",
+    "If the 2019 values turn out still authoritative for some district or parcel, escalate rather than continue. PARTIALLY FIRED — see escalation above; handled by narrowing the retirement and naming the remainder, not by continuing through it.",
+    "Pre-registered expected band for the corrected buildable envelope on 48021:34049: 16,300 to 16,800 sq ft, 54 to 56 percent of the 29,989 sq ft lot. Basis: the ring spans 181.06 x 168.30 ft; insetting front 30, rear 30, corner-side 20, interior side 10 gives roughly 121.06 x 138.30 ft, and the panel's own corner-aware polygon already measures 16,387 sq ft. A result outside that band is a finding either way, whether or not the figure is ultimately printed."
+  ],
+
+  "constraintsHonored": [
+    "Lane claimed before any investigation: node P:/doc_repo/scripts/lane-claim.mjs claim --lane p219-repealed-ordinance --seat cente-p219 --plan-row P-219, exit 0, FREE before the claim.",
+    "Isolated worktree cut from origin/main BEFORE the first file read for editing (AGENT_CONTRACT section 5).",
+    "No sub-agents (dispatch overrides the contract's fan model for this lane).",
+    "Every command exit-bounded; every network read wrapped in timeout; no watch, tail or dev server.",
+    "Will not change the facet or setbackRulesFact, will not edit the setback corpus or any ruled table, will not invent a corner-side value for a district that has none, will not touch smartcity-os or smartcity-dashboards, will not deploy without the operator's go."
+  ],
+
+  "openAtCp1": [
+    "Whether the engine's in-process ruled-corpus fallback (precedence b) is close enough to 'one source' for the integration seat, given the rails (precedence a) are the literal source setbackRulesFact renders. The fallback exists because the reader is a network call that must never fail the report; it resolves to the SAME corpus row.",
+    "Whether the per-parcel-only retirement remainder (3,788 rows, 22.6%) should be routed as a new plan row or folded into F24."
+  ]
+}
