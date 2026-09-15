@@ -1,0 +1,59 @@
+{
+  "_purpose": "P-205 / OPS-24 coverage-refusal lane. scripts/surface-probe.mjs could not be located in any accessible repo (legacy-design-tools, hauska-engine, hauska-map, hauska-factory, hauska-atom-contract) — see close leave_behind. This artifact substitutes hand-run live find_parcel calls through the authenticated Smart Site MCP connector (mcp__claude_ai_Smart_Site__find_parcel), same production surface a customer hits, run 2026-09-14.",
+  "lane": "p205-coverage-refusal",
+  "planRows": ["P-205"],
+  "tool": "mcp__claude_ai_Smart_Site__find_parcel (live, authenticated, production)",
+  "reads": [
+    {
+      "label": "unonboarded-county-miss (the finding's own example)",
+      "query": "301 W Avenue B, Killeen, TX 76541",
+      "expectedCounty": "Bell (48027)",
+      "timestampUtc": "2026-09-14T22:37:00Z",
+      "rawResult": { "hits": [], "missClass": "no-hit" },
+      "note": "Reproduces the dispatch's cited defect live: Bell County, absent from the six-county serving ledger, returns the same 'no-hit' an in-coverage genuine miss gets. Bug confirmed still live at read time."
+    },
+    {
+      "label": "unonboarded-serving-county but geocoding-populated (falsifier probe for a txgio_parcel-derived coverage check)",
+      "query": "100 Military Plaza, San Antonio, TX 78205",
+      "expectedCounty": "Bexar (48029)",
+      "timestampUtc": "2026-09-14T22:37:05Z",
+      "rawResult": {
+        "hits": [
+          {
+            "parcelNodeId": "48029:109766",
+            "situsAddress": "100 MILITARY PLAZA , SAN ANTONIO, TX 78205",
+            "countyFips": "48029",
+            "source": "parcel-situs"
+          }
+        ]
+      },
+      "note": "DECISIVE: Bexar (48029) is NOT one of the six serving-ledger counties (48021/48055/48209/48309/48453/48491) yet find_parcel returns a REAL parcel-situs hit. This proves txgio_parcel/txgio_address (the table find_parcel's query mode actually searches) holds address data for at least one county broader than the Factory serving ledger. A coverage check derived from txgio_parcel/txgio_address row-presence would therefore classify Bexar as 'covered', which is false against the mission's own definition (an address in a county absent from the serving ledger must get the coverage refusal) — ruling out txgio-store-derived coverage as a correct source."
+    },
+    {
+      "label": "onboarded-county genuine no-match (must stay no-hit, not become a false coverage refusal)",
+      "query": "99999 Zzyzx Trail, Bastrop, TX",
+      "expectedCounty": "Bastrop (48021, one of the six serving-ledger counties)",
+      "timestampUtc": "2026-09-14T22:43:00Z",
+      "rawResult": { "hits": [], "missClass": "no-hit" },
+      "note": "Baseline that must never regress: a genuine miss inside an onboarded county still returns plain no-hit today. Any future fix that widens coverage refusal must re-run this exact query and keep this result."
+    },
+    {
+      "label": "regression note (fixture drift, not a finding)",
+      "query": "147 Kahana Ln, Bastrop, TX",
+      "timestampUtc": "2026-09-14T22:41:00Z",
+      "rawResult": {
+        "hits": [
+          {
+            "parcelNodeId": "48021:31358",
+            "situsAddress": "147 KAHANA LN, Bastrop, TX, 78602",
+            "countyFips": "48021",
+            "latitude": 30.07340562306308,
+            "longitude": -97.30463248538784,
+            "source": "address-point-containment"
+          }
+        ]
+      },
+      "note": "This is the exact address txgioAddressResolveCoverage.test.ts's mocked 'genuine in-coverage no-match' fixture uses. Live today it now resolves via address-point-containment (P-175, shipped after that test was written), so the test's mock is a synthetic double and does not itself prove today's live no-match behavior — the Zzyzx Trail read above is the live substitute. Not a P-205 defect; noted for whoever owns that test file."
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "lane": "p214-panel-conflict-render",
+  "planRows": ["P-214"],
+  "status": "closed-partial",
+  "probe": {
+    "artifact": "_inbox/2026-09-15_013612_surface_probe.json",
+    "note": "Extended scripts/surface-probe.mjs (self-test passing) with PARCELS entry 48021:8723767 and ROWS['P-214'] (checks the live envelope-by-point disclosure/emptyReason for an internal rule identifier, assertion syntax, an unrounded float, or a raw per-edge diagnostic prefix). Run live against unmodified production: PASS 0 FAIL 1 UNMEASURED 0. The FAIL is correct and expected -- the fix below is not yet merged/deployed, so production still serves the raw string. This is the honest baseline the fix is proven against, not evidence the fix doesn't work (see falsifier)."
+  },
+  "falsifier": "artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.test.ts, describe block 'P-214: a raw hauska-engine mechanical-verify diagnostic must never reach a customer string'. LIVE_R32_DIAGNOSTIC is the exact string curled from production in CP1, not a paraphrase. Proven to fail on the pre-fix code (git stash of reconcileAtomEnvelope.ts alone, tests kept: 9 passed / 2 failed) and pass after (11/11). A third test in the same block asserts a genuine human-authored engine reason is unaffected, proving the detector is scoped rather than a blanket softening.",
+  "contradicted": "An earlier planner claim (recorded in the dispatch itself) that the string was panel-generated because it is absent from get_smart_site's depth-node JSON payload. Confirmed independently the payload really doesn't carry it, AND confirmed the reason it doesn't: the panel's raw-string path is an entirely different server route (POST /brokerage/v1/place/buildable-envelope, the live-derive fallback), not the MCP JSON at all. Also contradicted, mid-investigation, my own working hypothesis that this defect was purely cosmetic (a wording/rounding fix): the live reconciliation function does not just print a bad string, it uses that same bad atom outcome to CLOBBER a real, correctly-computed, currently-sourced envelope with a false 'no buildable area' finding. Fixing only the string would have left that false zero in place -- exactly the outcome the dispatch's pre-registered falsifiers warn against.",
+  "leave_behind": [
+    {
+      "item": "Defect 2 -- brief-vs-overlay self-contradiction: get_smart_site depth=node for 48021:8723767 returns brief.sections[setbacks-envelope].disposition='present' (30/10/30/20) in the same response as draw.overlays[envelope]={state:'refused', reason:'atom_path_pending'}. Root-caused (CP1): artifacts/api-server/src/routes/brokerageNodeFacets.ts's baked-facets route unconditionally nulls facets.envelope at bake time (WDLL 3.7 anti-zombie); the get_smart_site MCP JSON is server-rendered once and has no equivalent of the web panel's client-side live-derive augment (hauska-map's live-envelope-augment.ts) to fill the polygon in. The 2026-09-11 'ENVELOPE DRAWN, FIGURE REFUSED' canon-preamble ruling already requires the draw block to draw the modelled polygon (area/pct still refused) wherever a district and setback table exist, which is true for this parcel. NOT fixed this pass: the correct fix is a new capability (a server-side envelope derivation call inside the facets/get_smart_site composition path, reusing derive.ts + authoritativeSetbackSource.ts, with the figure still suppressed per the ruling), not a rendering tweak, and it touches a shared, actively-worked file under time pressure. Scoping this out rather than rushing it was a deliberate call, not an oversight.",
+      "owner": "legacy-design-tools owning seat (property, per _catalog/seat_register.json) or whichever lane next picks up OPS-24 envelope-coherence work",
+      "plan_row": "P-214 (unresolved sub-item) or a new OPS-24 row scoped specifically to server-side draw-time envelope derivation"
+    },
+    {
+      "item": "Defect 3 -- F25 vintage lie: two live backend reads for the identical parcel disagree on bakedAt by 32 days. GET /api/spine/property-atoms/48021:8723767/facets (the route hauska-map's InspectCard.tsx labels 'as of') returns bakedAt 2026-08-08T10:29:36.661Z; mcp__claude_ai_Smart_Site__get_smart_site returns bakedAt 2026-09-10T18:48:41.688Z for the same parcel, read minutes apart. Confirmed live (CP1, and reconfirmed in this session's own surface-probe run). NOT root-caused past this point: which storage table/cache each route actually reads, and why one is 32 days stale, was not traced -- requires reading the baked-facets route's own query path inside legacy-design-tools (distinct from brokerageNodeFacets.ts, per the two different endpoint paths already identified) and was out of the time this pass had after defects 1 and 2's investigation.",
+      "owner": "legacy-design-tools owning seat",
+      "plan_row": "P-214 (unresolved sub-item) or a new row"
+    },
+    {
+      "item": "hauska-engine's honest-decline-promote.ts (buildHonestVerifyDeclineAtom) is the actual ROOT emitter of the raw diagnostic text -- it writes verifyReasons.slice(0,3).join('; ') into a contract field (absence.reason / outcome.reason) that every consumer's honest-absence vocabulary treats as customer-safe prose. This lane's fix is a defensive filter in legacy-design-tools, not a root fix, and it can only catch the shapes named in isMachineVerifyDiagnostic() -- any future hauska-engine mechanical gate whose reason text doesn't match one of those three signals (semicolon-join, edge/road prefix, long float) would still leak. The durable fix belongs in hauska-engine: compose a human-safe decline sentence from declineCode via a lookup table instead of joining raw gate reasons. Not fixed here -- different repo, different owning seat, and ENFORCEMENT.md's 'stay in your own repositories' applies.",
+      "owner": "hauska-engine owning seat",
+      "plan_row": "not yet carded -- recommend a new row under OPS-24 or OPS-19"
+    }
+  ],
+  "missionPremise": "P-154's R-1 conflict disclosure (A-148, PR #688) is real and ratified; this row is about how it renders, and about verifying that what looks like a rendering bug isn't hiding a real conflict between two sources. Established before this lane started: the string is P-154's territory, its INTENT is correct, and deleting it would undo a ratified decision.",
+  "completionPredicate": "No customer-facing envelope string contains an internal identifier, an unrounded float, or assertion syntax, proven by a fixture built from the live 48021:8723767 payload that fails pre-fix and passes post-fix -- MET for the reconciliation path (defect 1). NOT YET met for the get_smart_site draw-overlay path (defect 2, still refused/present self-contradiction) or the two-endpoint bakedAt divergence (defect 3) -- both investigated and precisely documented, neither fixed.",
+  "scopeBasis": "Repo scope is legacy-design-tools only, per this dispatch's own PLAN-ROW line and ENFORCEMENT.md's 'stay in your own repositories.' The true root cause (hauska-engine's honest-decline-promote.ts) is named and left as leave_behind for the owning seat rather than edited directly. Defects 2 and 3 are real, in-scope-by-mission findings that were deliberately NOT fixed this pass, for the reason stated in each leave_behind item -- a scoping choice made explicit rather than a silent drop, per the dispatch's own 'fix all three or say why one is out of scope.' Deploy/merge is explicitly out of scope for this session: this dispatch's 'Do not: Deploy without the operator's go' -- note that a merge to legacy-design-tools main auto-deploys -- was honored by holding the PR unmerged.",
+  "pr": {
+    "number": 691,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/691",
+    "branch": "fix/p214-panel-conflict-render",
+    "headSha": "5871fd2fb1e11748a552fe1683d67250957d3b1a",
+    "merged": false,
+    "ciStatusAtCloseTime": "in progress (Test, Typecheck, SS-W18, L17, L5 SF-26, L5 SF-30 still running at close time; cortex daily limit bake, L5 SF-24/SF-25, SS-W16 tier2, L5 silent-fallback, PR-base-is-main already conclusion success). Not merged -- CI completion was not waited on since this row holds for operator go regardless."
+  },
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-15_p214-panel-conflict-render_cp1.json",
+    "cp2": "_inbox/2026-09-15_p214-panel-conflict-render_cp2.json"
+  },
+  "counts": {
+    "newTestsAdded": "3 (new it(...) blocks in reconcileAtomEnvelope.test.ts, counting rule: blocks added in this PR's diff)",
+    "regressionTestsPassing": "109/109 (counting rule: total it(...) passes across every suite under src/lib/buildableEnvelope/ that successfully collected, via npx vitest run src/lib/buildableEnvelope/)",
+    "unrelatedPreExistingFailures": "4 suites fail to collect (not run, not fail-as-in-assert) on a pre-existing missing @empressaio/setback-corpus package in this ad hoc seat's pnpm install -- confirmed unrelated by import graph, none import reconcileAtomEnvelope.ts."
+  },
+  "constraintsHonored": [
+    "Lane claimed via scripts/lane-claim.mjs before any file edit (exit 0, cente-p214).",
+    "Branch fix/p214-panel-conflict-render cut from a fresh origin/main worktree (git checkout -b ... origin/main) before any file edit, in an isolated checkout never shared with the seat's concurrent feat/p112-email-magic-link work.",
+    "A-148's ratified conflict disclosure (r1BriefCompose.ts, withSetbackConflictNote) untouched -- a different code path, verified by reading it, not merely by not editing it.",
+    "No setback value invented for any parcel; no bake or setback table changed.",
+    "smartcity-os and smartcity-dashboards untouched.",
+    "hauska-engine untouched -- root cause named and left as leave_behind for its owning seat rather than edited across a repo boundary.",
+    "Deploy/merge held for the operator's go -- PR opened and left unmerged.",
+    "CP1/CP2/close committed to doc_repo main from this seat's own worktree (C:/Users/cente/doc_repo), never P:/doc_repo (the integration seat's checkout)."
+  ],
+  "remainingOpen": [
+    "Operator go-ahead to merge PR #691 (== deploy, per legacy-design-tools' auto-deploy-on-merge).",
+    "Defect 2 (brief-vs-overlay envelope self-contradiction) -- root-caused, not fixed.",
+    "Defect 3 (F25 vintage lie, two-endpoint bakedAt divergence) -- confirmed live, partially root-caused, not fixed.",
+    "hauska-engine's honest-decline-promote.ts root-cause fix (different repo/owning seat)."
+  ]
+}

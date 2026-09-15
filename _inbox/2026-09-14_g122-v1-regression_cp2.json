@@ -1,0 +1,61 @@
+{
+  "lane": "g122-v1-regression",
+  "checkpoint": "CP2",
+  "type": "pilot/mid-work (post-fix, pre-close)",
+  "filedAt": "2026-09-15T00:45:00Z",
+  "seat": "cente-g122",
+  "prBuiltAndMerged": {
+    "repo": "empressaioemail-tech/smartcity-os",
+    "pr": 55,
+    "branch": "fix/g122-v1-regression",
+    "commitSha": "f7c69472f4b94017c96f4321dac5a98c6c4d3789",
+    "mergeSha": "e6fbde73e5f07f34abc03b0c97f13b1029e44c88",
+    "mergedAt": "2026-09-15T00:32:59Z",
+    "ciCheckRuns": [
+      { "name": "Gitleaks — detect secrets in code and history", "conclusion": "success" },
+      { "name": "Semgrep — static analysis", "conclusion": "success" },
+      { "name": "Trivy — dependency vulnerability scan", "conclusion": "success" }
+    ],
+    "ciVerificationMethod": "read via gh api repos/.../commits/<sha>/check-runs, per AGENT_CONTRACT ('gh pr checks printing pass is NOT it') -- not just gh pr checks output",
+    "localVerificationBeforePush": {
+      "tests": "npx vitest run -> 28 files, 192 tests, all passing (includes both tests/api/platform-property-intel*.test.ts files)",
+      "build": "npm run build:cloud-run (the exact command Dockerfile.api runs) -> succeeds"
+    }
+  },
+  "deploy": {
+    "leaseTaken": "_catalog/leases/smartcity-api.json, lane g122-v1-regression, 2026-09-15T00:33:00Z-2026-09-15T02:33:00Z (no other lease existed for this service at claim time)",
+    "buildImage": "gcloud builds submit --config=cloudbuild-api.yaml --project=smartcity-os-prod -> SUCCESS, digest sha256:1a3054a4ffec40e01b1cc19c9922a8f829823f156de892e96cfd0f90cc20762b",
+    "canary": {
+      "revision": "smartcity-api-00140-kaj",
+      "tag": "g122-oneclick-fix",
+      "deployedNoTraffic": true,
+      "smokeTestsOnCanaryTagUrl": [
+        { "route": "/api/health", "result": "200 ok, db connected" },
+        { "route": "/api/platform/mygov/permits", "result": "200, real permit rows returned" },
+        { "route": "/api/platform/property-intel/summary?lat=30.1102&lng=-97.3153", "result": "200, parcel.found=true, real parcel (1011 Chestnut St, owner TALLEY BOBBIE JEAN) -- THE FIX, confirmed on canary before any traffic shift" },
+        { "route": "/api/platform/property-intel/layers?key=parcels-one-click&bbox=downtown-bastrop", "result": "200, found=true, real features returned -- second independent path through the same fixed registry entry" }
+      ]
+    },
+    "trafficShift": {
+      "command": "gcloud run services update-traffic smartcity-api --to-revisions=smartcity-api-00140-kaj=100",
+      "verifiedByFieldName": "gcloud run services describe --format=json, read status.traffic[].revisionName/percent/tag in Python, never a positional formatter -- smartcity-api-00140-kaj shows percent:100, tag:g122-oneclick-fix; every prior tagged revision (including smartcity-api-00138-law, the problem revision) shows percent:None"
+    },
+    "smokeTestsOnProductionUrlPostShift": [
+      { "route": "/api/health", "result": "200 ok" },
+      { "route": "/api/platform/mygov/work-orders", "result": "200, real work-order rows returned" },
+      { "route": "/api/platform/property-intel/summary?lat=30.1102&lng=-97.3153", "result": "200, parcel.found=true, snapshot.address='1011  CHESTNUT ST , BASTROP, TX 78602', snapshot.owner='TALLEY, BOBBIE JEAN'" },
+      { "route": "/api/platform/property-intel/layers?key=parcels-one-click", "result": "200, found=true, totalReturned=500" }
+    ],
+    "leaseReleased": "2026-09-15T00:44:00Z, after all four production smokes confirmed"
+  },
+  "violationTestBothDirections": {
+    "beforeFix_liveArcGISSource": "Same outFields string (with Ordinance_Link) against the real Parcels_One_Click/FeatureServer/23 at a real Bastrop point -> HTTP 400 {\"error\":{\"code\":400,\"message\":\"Cannot perform query. Invalid query parameters.\",\"details\":[\"'outFields' parameter is invalid\"]}}",
+    "beforeFix_liveDeployedApp": "Before this lane's deploy, GET the then-serving production v2 route (/api/platform/property-intel/summary) at the same point returned HTTP 200 but parcel.found=false, oneClickData=null, every parcel-derived summary field blank -- the silent-swallow path in platformOneClickAtPoint (data.error -> return null)",
+    "afterFix_liveArcGISSource": "Identical query with only Ordinance_Link removed -> HTTP 200, real parcel returned (1011 Chestnut St)",
+    "afterFix_liveDeployedApp": "Same production route, same point, after the traffic shift -> HTTP 200, parcel.found=true, real parcel data (see smokeTestsOnProductionUrlPostShift above)",
+    "conclusion": "The defect and the fix are both reproduced at the true source (the ArcGIS service) and through the real deployed application, before and after, satisfying AGENT_CONTRACT's verify-by-violation rule."
+  },
+  "limitationNamedHonestly": {
+    "v1SessionGatedRouteNotDirectlyExercised": "The v1 /api/esri/one-click-at-point route requires a real staff OIDC session (server/replit_integrations/auth/replitAuth.ts) that this lane does not hold credentials for, and creating or bypassing one was out of scope and not attempted. Verification instead relies on: (1) the route's own source code being byte-for-byte identical in its query construction to platformOneClickAtPoint aside from variable names (both read the same BASTROP_LAYER_REGISTRY['parcels-one-click'] object, confirmed by direct code comparison), and (2) platformOneClickAtPoint itself being verified live, both broken and fixed, through two independently-routed v2 endpoints. This is reported as a proxy verification, not claimed as a direct UI test of the v1 screen."
+  }
+}

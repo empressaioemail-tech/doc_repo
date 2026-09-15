@@ -1,0 +1,42 @@
+{
+  "lane": "g134-workos-wiring",
+  "checkpoint": "CP1 design/pre-build",
+  "planRows": ["G-134"],
+  "laneClaim": {
+    "seat": "cente-g134",
+    "status": "claimed",
+    "detail": "node scripts/lane-claim.mjs claim --lane g134-workos-wiring --seat cente-g134 --plan-row G-134 --dispatch _dispatches/2026-09-15_g134-workos-wiring_dispatch.md -> exit 0, CLAIMED."
+  },
+
+  "govtechSeatBacklogLandedFirst": {
+    "why": "Dispatch instruction: land G-132's uncommitted work and the govtech seat's other backlogged close artifacts before starting G-134 itself, since G-134 builds directly on G-132's verifier/directory.",
+    "found": "P:/seat-worktrees/govtech/doc_repo had five lanes' _inbox artifacts sitting uncommitted: G-120 (overview-lens, code already merged, paperwork only), G-126 (tenant-isolation, code already merged, paperwork only), G-127 (rbac, blocked determination, paperwork only), G-132 (staff-auth, closed-partial, REAL uncommitted code across all three product repos), and G-133 (bastrop-verify-access, closed while this lane was mid-investigation -- resolved the standing 'no bastrop_tx credential exists' mystery from G-116/G-128).",
+    "docRepoStaleness": "The govtech seat's own doc_repo clone was 405 commits behind origin/main (git fetch + rev-list, confirmed). Rather than rebase a 405-commit-stale clone, the five lanes' _inbox artifacts were copied file-by-file (no overlap with any file already in the up-to-date P:/doc_repo checkout, verified before copying) and committed there directly: commit fcc3c47c, pushed to origin/main.",
+    "productRepoLanding": "G-132's actual code (all three repos, all in the govtech seat's own product-repo worktrees, which were only 0-4 commits behind their own origin/main, not 405) was branched, re-tested (612/812 -> counts grew slightly after picking up newer merged work in between: 666->671, 108->113, 50->50), committed, pushed, PR'd and squash-merged: smartcity-dashboards #62, smart-files #14, plan-review #16. plan-review had a real merge conflict against G-126's own just-merged tenant-gate PR (#15) in src/actors.mjs and src/server.mjs -- resolved by keeping both independent checks (G-126's tenantListRefusal for list routes, G-132's staffEngagementRefusal for engagement-by-id routes), not by picking one over the other.",
+    "bastropTxCredential": "Per operator instruction mid-session: minted a DEDICATED bastrop_tx lane-verification key via hauska-mcp-server's existing, already-proven admin API (POST /admin/keys, gated by HAUSKA_ADMIN_BOOTSTRAP_KEY, read from Secret Manager and never printed) rather than reusing the operator's personal 'Nick' pilot key, per G-133's own leave_behind recommendation (b). key_id acf2cf9f-72ad-4008-9bf4-684a35470e99, tier=team, product=public, jurisdiction_tenant=bastrop_tx, owner_email=empressaioemail@gmail.com. Verified both directions against /auth/whoami: with the key, {anonymous:false, jurisdiction_tenant:'bastrop_tx'}; without, {anonymous:true, jurisdiction_tenant:null}. Raw key value lives only in this session's local scratch file; never committed, never printed in any artifact. Distribution/documentation of this mechanism (G-133's leave_behind) is explicitly G-135's scope, not touched here."
+  },
+
+  "surfacesRead": {
+    "staffIdentityAndDirectory": [
+      "src/staff-identity.mjs (all three repos, byte-identical) -- provider-agnostic OIDC/JWKS verifier, RS256-only, fail-closed on every branch, returns null for a non-JWT bearer (fall-through signal), a typed refusal for a JWT-shaped-but-invalid bearer (terminal), or {ok:true, identity} on success. Does not itself enforce any maximum token age beyond exp/nbf -- the gap G-134 GAP 3 exists to close.",
+      "src/staff-directory.mjs (smartcity-dashboards only) -- upsertStaffAccount/disableStaffAccount/isStaffAccountRevoked, Neon-backed with an in-memory fallback when DATABASE_URL is unset. Explicitly documents itself as 'not the provisioning mechanism' and names staff-admin-client.mjs as the file that plugs into it -- this is the seam GAP 1 fills.",
+      "src/tenancy.mjs resolveCaller -- staff bearer checked first via the Authorization header only, prior to this lane; no cookie fallback existed, meaning a browser sign-in flow (which sets a cookie, not a header) had nowhere to deliver its credential. This is the reason GAP 5 required a tenancy.mjs change, not only new routes."
+    ],
+    "planReviewIntegrationPattern": [
+      "src/actors.mjs staffEngagementRefusal + src/server.mjs resolveStaffCaller (plan-review) -- the dispatch names this the pattern to mirror for GAP 4. Read in full before writing smart-files' equivalent."
+    ],
+    "smartFilesReadPath": [
+      "src/server.mjs requireReadScope / bearerToken / resolveCallerIdentity (identity.mjs) -- smart-files' existing read-scope gate resolves an OPAQUE SMART_FILES_SERVICE_TOKENS bearer from the SAME Authorization header slot a staff JWT would arrive in. This is the actual integration point (not an 'x-persona header' as the dispatch's prose suggested -- smart-files uses body-based orgId/userId for QA personas, not a header; the read path's caller identity is a completely separate, service-token-based mechanism). verifyStaffToken's null-for-non-JWT contract is what lets a staff JWT and an opaque service token share one header slot safely."
+    ],
+    "workosCredentialEnumeration": [
+      "gcloud secrets list --project=hauska-prod-497015: HAUSKA_ADMIN_BOOTSTRAP_KEY present (used for the bastrop_tx key mint above), nothing named WORKOS_* or workos-shaped.",
+      "gcloud secrets list (smartcity-dashboards' own project): hauska-retrieval-api-key, powerbi-tenant-id -- nothing WorkOS-shaped.",
+      "grep -rli workos across all three repos' src/: zero hits before this lane's own new files.",
+      "No .env.example in plan-review or smart-files at all; smartcity-dashboards' .env.example carries no WORKOS_* names.",
+      "_decisions/2026-09-14_staff_identity_and_department_rbac.md names WorkOS as the ruled provider but records no organization id, client id, or API key.",
+      "Conclusion, stated plainly rather than guessed around: no real WorkOS account or API key exists anywhere this session could reach. This is a hard blocker on LIVE verification of GAP 1 and GAP 5, not on building them."
+    ]
+  },
+
+  "operatorDirectionMidSession": "Asked the user directly how to proceed given the missing WorkOS account (three options: build-now-verify-later, wait for a real key, or stop and report blocked). Answer: build now, verify later -- build GAP 1/4/5 against WorkOS's documented API with full unit-test coverage against mocked responses, and state plainly in the close that live account-creation/sign-in was not verified against a real organization."
+}

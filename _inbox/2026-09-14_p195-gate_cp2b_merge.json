@@ -1,0 +1,44 @@
+{
+  "lane": "p195-gate",
+  "planRows": ["P-195"],
+  "checkpoint": "CP2b",
+  "kind": "mid-work, supersedes CP2's open CI blocker",
+  "at": "2026-09-14T16:45:00Z",
+  "summary": "The CI dispatch anomaly from CP2 is resolved and both PRs are merged on real, current-base CI success. Root cause found and fixed per the operator's own diagnostic sequence, not worked around.",
+
+  "rootCause": {
+    "diagnosis": "NOT a paths/paths-ignore filter (ci.yml carries none; confirmed identical to origin/main's copy) and NOT Actions being disabled or a stale required-check name (both checked and ruled out). The actual cause: after PR #443 squash-merged, this branch's own commit history still had the PRE-squash commit (1f04459) as its base rather than the post-squash main commit (5e43fc0) -- a classic squash-then-continue-on-the-same-branch divergence. GitHub's PR mergeable state silently went CONFLICTING/DIRTY, and while in that state no pull_request-triggered check-suite was being created at all (a push and a close/reopen both failed to trigger one). A manually workflow_dispatch-triggered run DID succeed (proving the code and CI environment were fine), which was the key diagnostic separating a webhook/event problem from a runner/YAML/quota problem.",
+    "fix": "git rebase origin/main on the engine branch (git recognized 1f04459 as already-applied via patch-id and skipped it automatically, replaying only the two genuinely new commits with zero conflicts), then force-push. This simultaneously fixed the phantom merge conflict (mergeable flipped to MERGEABLE) and unblocked pull_request check-suite creation (a real run started automatically on the force-push).",
+    "credit": "Diagnosed by the operator's own directed sequence (check paths filter -> Actions enabled -> workflow YAML valid -> branch protection -> and the workflow_dispatch escalation as both an unblock and a diagnostic), not found independently."
+  },
+
+  "engineSide": {
+    "pr443": { "status": "MERGED", "mergeSha": "5e43fc02f31c5c4d0624f078e5157b7b4328bef2", "ciConclusion": "success" },
+    "pr444": {
+      "status": "MERGED",
+      "mergeSha": "2cc20578262bca1881ad81c84231f9c6288fe94a",
+      "ciConclusion": "success (pull_request-triggered, run 34869241262, re-greened against current main after the rebase; a prior workflow_dispatch run 34868673321 also succeeded on the same commit content and was the diagnostic proof, but is not what the merge relied on)",
+      "mergeStateAtMerge": "CLEAN / MERGEABLE"
+    }
+  },
+
+  "factorySide": {
+    "pr150": {
+      "status": "MERGED",
+      "mergeSha": "e584f4b45bc37f026ecf52745f0042de908034dd",
+      "ciConclusion": "success (gate8, ldt-sha-comment-presence, test -- all pass, run 34870004401 and 34870002305)",
+      "fixupCommitsAfterCp2": [
+        "9d08c2c -- corrected ENGINE_PIN.json's engineSha from the provisional 5e43fc0 to the real merged 2cc2057, recompiled from an isolated worktree checkout of that SHA and diff-confirmed byte-identical to what was already vendored (no drift)",
+        "1769f42 -- CI's own pin-divergence test step ('pin SHA must not move while pin is the control') correctly caught that test/parcel-record-fill.test.mjs's ENGINE_SHA assertion still expected the superseded 5e43fc0 prefix; updated to 2cc2057. The control worked exactly as designed."
+      ]
+    }
+  },
+
+  "notYetDone": {
+    "deploy": "STOPPED. Dispatch step 5 and AGENT_CONTRACT's production-serving-store stop point both require the operator's explicit go before the production job image moves. Not requested yet in this checkpoint -- asking directly, not treating anything relayed as sufficient.",
+    "postDeployVerification": "Per explicit instruction: the finish line after deploy is reading the DEPLOYED scheduler revision (factory-publish-gate-sched Cloud Run job) BY FIELD NAME and confirming it actually carries this fix -- not the merge, and not a job-run success alone. Will paste the job's image digest before and after, per the dispatch's own step 5, and read ENGINE_SHA/the deployed image's actual behavior post-deploy before calling this closed.",
+    "evaluatePopulationLiveRead": "Still not performed against the NEONDB store (see CP2 -- out of the dispatch's literal step-4 scope, which names publish-gate-sched specifically)."
+  },
+
+  "askingOperator": "Ready to deploy factory-publish-gate-sched from origin/main after this merge. Requesting explicit go before the production job image moves, per the dispatch's own step 5."
+}

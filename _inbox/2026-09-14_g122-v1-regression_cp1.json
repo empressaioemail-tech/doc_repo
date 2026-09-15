@@ -1,0 +1,57 @@
+{
+  "lane": "g122-v1-regression",
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "filedAt": "2026-09-15T00:27:06Z",
+  "seat": "cente-g122",
+  "worktrees": {
+    "doc_repo": "P:/seat-worktrees/g122-v1-regression/doc_repo (branch seat/g122-v1-regression, from origin/main 4f4ebc36)",
+    "smartcity-os": "P:/seat-worktrees/g122-v1-regression/smartcity-os (branch fix/g122-v1-regression, from origin/main 332a16c9, matches dispatch snapshot)"
+  },
+  "symptom": {
+    "source": "operator, asked directly via AskUserQuestion (dispatch did not itself state the symptom)",
+    "verbatim": "that one click isnt working in the dev services area. one click is how they click a property and see al the details",
+    "interpretation": "the 'One Click' parcel-identify feature in client/src/pages/DevelopmentServicesDashboard.tsx: staff click a point on the GIS map, the app queries the Parcels_One_Click ArcGIS layer at that point, and opens a details panel (PropertyDossier / inline parcel table) for the property under the click."
+  },
+  "hypothesesTested": [
+    {
+      "id": "H1_auth_gate_exemption_d2d3648",
+      "verdict": "FALSIFIED for this symptom",
+      "how": "Read the full diff of d2d3648 (#40). It adds exactly one prefix, '/platform', to a startsWith() allowlist used by the GLOBAL session-auth gate. The v1 one-click path (/api/esri/one-click-at-point, gated by a local esriTenant middleware, not this global gate's exempt list) and /api/property-intelligence/summary (requireTenant) do not start with '/platform' or any of the other allowlisted prefixes, so req.path.startsWith(p) cannot match them. Diffed server/routes.ts across the ENTIRE seam (68fe8cc^..332a16c): the only non-additive change is this one line. No session-gated v1 route's auth requirement changed."
+    },
+    {
+      "id": "H2_wastewater_geometry_332a16c",
+      "verdict": "FALSIFIED for this symptom",
+      "how": "Read the full diff of 332a16c (#52). It touches only platformQueryPropertyIntelLayer's wastewater branch in server/routes/esri.ts (adds a `.rings` fallback) plus its own test file. It does not touch platformOneClickAtPoint, the parcels-one-click registry entry, or the session-gated /api/esri/one-click-at-point route. The commit message itself confirms production's own bastrop-infrastructure wastewater route was deliberately left untouched. Unrelated layer, unrelated symptom (wastewater lines/polygons, not parcel click)."
+    },
+    {
+      "id": "H3_other_seam_commits",
+      "verdict": "FALSIFIED for this symptom",
+      "how": "Diffed every one of #39-52 that touches server/routes/esri.ts or server/routes/property-intelligence.ts (c6cd8be, 3022f72, 2776b12) against the pre-seam tree (68fe8cc^). Every change to server/routes/property-intelligence.ts is a pure addition after the original registerPropertyIntelligenceRoutes function, which is byte-for-byte unchanged. No seam commit touches server/services/property-intelligence.ts (getPropertySummary) at all. BASTROP_LAYER_REGISTRY['parcels-one-click'] (server/routes/esri.ts:264-268, including its outFields string) is untouched by any of the 14 PRs -- confirmed by grep across every commit's diff in the range."
+    }
+  ],
+  "rootCauseFound": {
+    "mechanism": "External dependency break, not a code regression from the seam. BASTROP_LAYER_REGISTRY['parcels-one-click'].outFields (server/routes/esri.ts:266) is a single hardcoded field list shared by BOTH the v1 session-gated /api/esri/one-click-at-point route and the v2 platformOneClickAtPoint() helper. It has requested a field named 'Ordinance_Link' since 2026-03-05 (git blame: e82f0c28). The City of Bastrop's own ArcGIS Online-hosted layer (services7.arcgis.com/qOeXJdBtGknaCJC4, Parcels_One_Click/FeatureServer/23) no longer has a field by that name: live layer metadata's editingInfo.schemaLastEditDate = 1789071882041ms = 2026-09-10T20:24:42Z. ArcGIS FeatureServer query rejects the ENTIRE outFields list as invalid (400 'outFields parameter is invalid') when even one requested field name does not exist -- there is no partial-field degrade.",
+    "evidenceLiveAtSource": [
+      "curl to the live ArcGIS layer's own metadata (?f=json) lists 59 real fields; 'Ordinance_Link' is not among them (nearest are 'Ordinance_', an ordinance-NUMBER field like '2022-02', and 'OrdRes', both semantically different from a link/URL).",
+      "Replicating the app's exact query (same outFields string, a real downtown Bastrop point 30.1102,-97.3153) against the live layer returns: {\"error\":{\"code\":400,\"message\":\"Cannot perform query. Invalid query parameters.\",\"details\":[\"'outFields' parameter is invalid\"]}}",
+      "Removing only 'Ordinance_Link' from that same outFields string and re-running the identical query against the live layer returns 200 with a real parcel (1011 Chestnut St, Bastrop TX, owner TALLEY BOBBIE JEAN, zoning GC District, full setback/zoning fields, real polygon geometry) -- proves the fix live, at source, before writing any code."
+    ],
+    "evidenceLiveThroughTheDeployedApp": "Hit the LIVE production v2 route with the real platform-internal-api-key secret: GET https://smartcity-api-7dyaiy7wha-uc.a.run.app/api/platform/property-intel/summary?lat=30.1102&lng=-97.3153 -> HTTP 200, parcel.found=false, oneClickData=null, every parcel-derived summary field blank. platformOneClickAtPoint's own code (`if (data.error || !data.features...) return null`) silently swallows the ArcGIS 400 into a null result rather than surfacing it -- v2 is ALSO broken right now by this exact defect, just silently (a 200 with empty fields) rather than visibly. This is itself a DEV_PROCESS 4.3 violation (silent fallback where an empty result is read as an absence) but is the same root cause, not a second defect, and not in scope to change beyond what the outFields fix already repairs.",
+    "clientSideConfirmation": "client/src/pages/DevelopmentServicesDashboard.tsx's fetchOneClickAtPoint (v1) treats any non-{found:true,data:...} response, including the 502 the v1 server route correctly returns on an ArcGIS query error, identically to 'no parcel here': it clears oneClickData/oneClickLatLng/selectedParcelGeometry and shows nothing. This matches the reported symptom exactly -- staff click a parcel and nothing happens, no dossier, no visible error."
+  },
+  "timelineFalsifiesOperatorHypothesis": {
+    "seamDeployCreated": "smartcity-api-00138-law created 2026-09-04T20:41:32Z (gcloud run revisions describe, field-read)",
+    "externalSchemaChange": "2026-09-10T20:24:42Z (live ArcGIS layer editingInfo.schemaLastEditDate) -- six days AFTER the seam revision was already serving",
+    "customerReport": "morning of 2026-09-14 -- four days after the external schema change",
+    "conclusion": "The operator's own framing ('the v2 import broke the version one dashboard') does not fit this symptom's timeline: the code that the seam PRs shipped had already been serving unchanged for six days when the City's own GIS org silently renamed/removed a field on a layer this app has depended on since March. This is reported as an honest correction per DEV_PROCESS 3.2, not concealed."
+  },
+  "plannedFix": {
+    "change": "Remove 'Ordinance_Link' from the outFields string at server/routes/esri.ts:266 (BASTROP_LAYER_REGISTRY['parcels-one-click']). One shared config value; fixes both the v1 route and the v2 platformOneClickAtPoint() helper identically -- does not touch routing, auth, or either route's own code, so it cannot regress the auth-exemption or GIS-parity work the seam shipped.",
+    "downstreamSafety": "Ordinance_Link is read by client/src/components/property/PropertyDossier.tsx:700-702 and client/src/pages/DevelopmentServicesDashboard.tsx:5477/5521, both already null/undefined-guarded (optional chaining / explicit undefined check that skips rendering the row). Confirmed by reading both call sites before proposing the removal -- no client code assumes this field is always present.",
+    "explicitlyNotDoing": "Not filing anything with the City of Bastrop's GIS admins to restore or rename the field upstream -- out of this lane's authority and the operator's stated authorization (diagnose and repair THIS regression only). Not touching the v2-only overlay-layers work from #50/#51/#52. Not fixing the silent-swallow pattern in platformOneClickAtPoint (data.error -> null) beyond what removing the bad field name already repairs -- that pattern is a separate, smaller finding, named in the close, not fixed here (ABSOLUTE NO-TOUCH is for the incident, not a general license to refactor)."
+  },
+  "missionPremise": "Dispatch _dispatches/2026-09-14_g122-v1-regression_dispatch.md, G-122, OPS-17. Operator authorized engagement with smartcity-os (normally ABSOLUTE NO-TOUCH) specifically for this incident.",
+  "completionPredicate": "The One Click ArcGIS query for parcels-one-click succeeds live (200, real parcel data) instead of failing (400/502/silent-null), verified against the live ArcGIS source both before and after the code change, and separately verified against the live deployed v2 platform route before and after traffic shifts to the fixed revision; all three v2-facing platform routes (mygov, property-intel/summary, property-intel/layers) still answer after the shift.",
+  "scopeBasis": "Dispatch scopes this lane to smartcity-os only, to this incident only, and instructs reporting (not fixing) anything else discovered. The root cause and fix are entirely within server/routes/esri.ts's parcels-one-click registry entry, which both v1 and v2 already share by design (per #49's own code comments) -- there is no path split to make."
+}
