@@ -32,6 +32,11 @@ Every canvas regenerates with `node gen.mjs` in its folder. **Every folder with 
 must have it run and pass before that design is shown to anyone**; see "The rule this thread
 earned" below.
 
+> **The design tables below are SUPERSEDED.** They were written mid-session and predate the
+> Finance lens, Smart Files, the exports and the A-136 carding pass. Use
+> `_inbox/2026-09-15_design_addendum.md`, which is counted from the folders and carries the plan
+> rows, the per-surface source state, and the order to design in.
+
 ## What is designed, verified against the shipped nav
 
 Verified against `smartcity-dashboards` `origin/main` `f776b4bf`, `web/index.html`: `LENS` is
