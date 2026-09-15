@@ -13,6 +13,57 @@ audience: the planner picking up the doc_repo integration seat
 > **Snapshot: `doc_repo` main, branch `main`.** Verify with `git log -1` before trusting
 > anything here. This session ran ~57 commits to `origin/main`.
 
+## STOP. PRODUCTION STATE AS OF 2026-09-15 MORNING — READ BEFORE YOU TOUCH ANYTHING
+
+**`smartsite.cloud` is serving a ROLLED-BACK build and that is deliberate.** Deployment
+`property-explorer-r4pk3k7sv`, built ~2026-09-15T01:00Z. The map works. Leave it working.
+
+**Four fixes merged; only ONE is live.** Do not assume any of the others are in effect:
+
+```
+P-214  legacy-design-tools #691  b5dfb508b   merged AND LIVE (LDT auto-deploys)
+P-216  hauska-map          #404  fabf9b7b5   merged, deployed, then ROLLED BACK
+P-218  hauska-map          #405  b36013845   merged, deployed, ROLLED BACK as collateral
+P-219  hauska-engine       #449  f77cf56     merged, NEVER DEPLOYED
+```
+
+**WHY THE ROLLBACK.** P-216's `declined` branch sets `envelopeCovered = false`. `depthWarm` is
+false for most parcels, so deploying it **suppressed the buildable envelope across the entire
+map**, not only the false-zero cases. P-216's OWN pre-registered falsifier named this exact
+outcome: *"If you suppress the envelope and the panel then shows nothing where a customer
+expects a finding, you have traded a wrong answer for a silent one."* **The falsifier fired and
+it shipped anyway, because the previous seat checked CI and the close and never checked the
+falsifier.** Check the falsifier before you merge anything.
+
+**THE FIX BEFORE P-216 GOES BACK OUT — one branch, not a redesign.** The `declined` branch must
+keep the envelope **DRAWN** and withhold only the **area figure**. P-216's own row already says
+setback distances stay served; the polygon must too. **Do not redeploy P-216 until that lands
+or you will take the map down again.**
+
+**THEN deploy engine and panel TOGETHER, and verify THE MAP — not the API.** The API and the
+panel are different read paths; the API looked healthy the whole time the map was blank.
+
+**DEPLOY MECHANICS. This cost a production outage:**
+- `legacy-design-tools` **auto-deploys** on merge to main (Cloud Run).
+- `hauska-map` **DOES NOT.** Vercel CLI, run from the **repo root** — the project's Root
+  Directory is already `apps/property-explorer`, so deploying from inside that folder fails on
+  a doubled path.
+- **A MERGE IS NOT A DEPLOY. The only proof is the live alias.** `curl -sI https://smartsite.cloud/`
+  and read `Age:` — a large Age means an old build is serving. The previous seat reported three
+  merges as deployed; two were not, then blamed a live symptom on code that was not running.
+- Deploy from a **clean worktree at origin/main**. `P:/hauska-map` sits on a feature branch.
+- Rollback that worked: `vercel promote <previous-prod-url> --yes`, then re-check `Age:`.
+
+**P-219 CLOSED PARTIAL, HONESTLY.** Merged `f77cf56`, CI conclusion `success`. Regenerated
+read-only: FRONT 30 · SIDE 10 · SIDE (CORNER) 20 · REAR 30, cited Ord. 2026-06, corrected
+envelope 16,767 sq ft inside its pre-registered 16,300–16,800 band. It closed partial **because
+the deploy is owed** — `hauska-engine-api` serves `00224-joq` without the fix — and it recorded
+its probe artifact as FAIL rather than claim a PASS it had not earned. Unresolved and flagged by
+that lane: **3,788 of 16,751 layer-23 rows (22.6%) still author from the retired namespace, and
+blanket-retiring them would replace CORRECT values with an absence** — GC and IND numeric
+columns agree with the city's authoritative text. Its escalation falsifier fired and it
+correctly stopped.
+
 ## READ THESE FOUR FIRST, IN THIS ORDER
 
 | # | Path | What it is |
