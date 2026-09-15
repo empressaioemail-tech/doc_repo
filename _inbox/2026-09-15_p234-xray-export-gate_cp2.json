@@ -1,0 +1,54 @@
+{
+  "lane": "p234-xray-export-gate",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRows": ["P-234"],
+  "seat": "cente-p234",
+  "filedAt": "2026-09-15T19:40:00Z",
+
+  "snapshot": {
+    "hauska-mcp-server": {
+      "worktree": "C:/Users/cente/dev/hauska-mcp-server",
+      "branch": "fix/p234-xray-gate-post-engine-check",
+      "workCommit": "62b2fc55ba1e6b8a447bf255cfa7f4e4748f3429",
+      "baseCommitAtClaim": "3b5626bddf00fda0ca16108ac1551215c8c298eb"
+    },
+    "doc_repo": {
+      "worktree": "C:/Users/cente/doc_repo",
+      "branch": "main"
+    }
+  },
+
+  "changesMade": {
+    "src/xray-export-gate.ts": "refuseHollowXrayRefresh (took caller-supplied {verdictLine, brief}) removed. New refuseHollowXrayResult takes {verdictIncluded, briefFactCount} -- the ENGINE'S response fields, same shape download_parcel_dossier_export already reads via isStoredDossierArtifactHollow. XRAY_VERDICT_PLACEHOLDER removed (dead: it existed to detect a caller-forwarded placeholder verdict string, which no longer applies now that verdictIncluded is a real boolean from the engine). XRAY_PIPELINE_ABSENT_MESSAGE reworded: no longer says 'Open the property brief and try again'; now names retrying the same call once the parcel's underlying facts resolve. isStoredDossierArtifactHollow, formatHollowXrayRefuse, formatStoredHollowRefuse, XRAY_STORED_HOLLOW_MESSAGE, HollowXrayRefuse/HollowXrayMissing types, XRAY_PIPELINE_ABSENT_ERROR: unchanged.",
+    "src/tools.ts": "refresh_parcel_dossier_export handler: removed the pre-engine-call hollowGate check (was immediately after requireIdentifiedCaller, before authorizePaidCall). Added the post-engine-call check (refuseHollowXrayResult on refresh.verdictIncluded/refresh.briefFactCount) immediately after engineApiClient.refreshParcelDossierExport returns and before the response envelope/byte-download path is built. authorizePaidCall's position, call count (1), and the gate/access-tier checks before it are UNCHANGED. Import updated: refuseHollowXrayRefresh -> refuseHollowXrayResult.",
+    "tests/xray-export-gate.test.ts": "Unit tests re-pointed at refuseHollowXrayResult's new {verdictIncluded, briefFactCount} contract (pass/verdict-absent/facts-absent/both-absent). Removed the two tests exercising the now-deleted caller-supplied-placeholder concept.",
+    "tests/dossier-export-catalog.test.ts": "Removed XRAY_VERDICT_PLACEHOLDER import (symbol no longer exists). Added hollowRefreshFixture (verdictIncluded:false, briefFactCount:0) and a hollowRefresh mockFetchRouter option so /dossier-export/refresh can return a hollow ENGINE result in tests. Replaced the three pre-call 'refuses ... without engine call' tests (which asserted calls.length===0, i.e. asserted the bug) with three P-234 tests: (a) the engine IS called even when the caller sends no verdict_line/brief, (b) the refusal fires when the engine's OWN result is hollow, with the engine having been called exactly once and the message not containing 'open the property brief', (c) a hollow engine result never reaches the byte-download hop. All other existing tests (VERBATIM body pass-through, format-download happy path, engine-422 passthrough, metering call-count/gating, download-leg hollow-stored-artifact tests) left as written and still pass unmodified."
+  },
+
+  "falsifierResults": {
+    "falsifier1_confirmedByReadingCode": "As stated in CP1: the pre-fix code refused before authorizePaidCall and before any engineApiClient call, using only the tool's own optional request arguments. No path in the pre-fix code called the engine before refusing. Confirmed by reading, not inferred.",
+    "falsifier2_hollowRefusalStillFires": "New test 'P-234: refresh_parcel_dossier_export refuses when the ENGINE'S result is hollow (verdict absent)' mocks /dossier-export/refresh returning HTTP 201 with verdictIncluded:false, briefFactCount:0 (the engine's own honest-degrade shape, confirmed against hauska-engine's real route handler read-only -- it returns 201 with this metadata rather than a 4xx, so the mock matches real behavior, not an invented one). Result: isError true, status 422, error pipeline_output_absent, missing includes both 'verdict' and 'brief_facts', AND the /dossier-export/refresh call DID happen (refreshCalls.length === 1) -- proving the refusal is now reached BY calling the engine and reading its result, not by skipping the call. A companion test confirms a hollow result never reaches the byte-download hop (format:'pdf-dossier' requested, zero download calls made). FIRED as designed; the guard was moved, not removed.",
+    "falsifier3_soleEmitterConfirmed": "Re-confirmed after the edit: pipeline_output_absent and the HollowXrayRefuse/formatHollowXrayRefuse shape exist ONLY in src/xray-export-gate.ts, consumed at exactly 2 call sites in src/tools.ts (refuseHollowXrayResult in refresh_parcel_dossier_export; isStoredDossierArtifactHollow+formatStoredHollowRefuse in download_parcel_dossier_export, both leading to formatHollowXrayRefuse/formatStoredHollowRefuse). dossier-export-contract.ts only declares the verdictIncluded/briefFactCount TYPE fields the gate reads; it does not itself emit an error. No other tool, route, or file in hauska-mcp-server references pipeline_output_absent, XRAY_PIPELINE_ABSENT_ERROR, or matching message text. xray-export-gate.ts is confirmed the only emitter IN THIS REPO. (hauska-engine has its own, separate pipeline_output_absent emitter on its download route per the dispatch's own finding -- out of scope, not touched, read-only verified to still exist post-P-221 and to already use connector-safe wording.)",
+    "falsifier4_subsetRelationshipNotApplicableToThisChange": "This lane did not touch how the engine derives verdict/brief content, only whether hauska-mcp-server asks for it and how it reacts to the answer. The subset relationship between kind=dossier's verdict/brief and the feasibility study is entirely engine-owned (P-221, hauska-engine, not touched here) and cannot be broken by a gate-timing change on the mcp-server side. Could not be independently re-verified against a live parcel in this lane (no deploy; see probe/leave_behind) -- noted as unmeasured-by-this-lane rather than assumed satisfied."
+  },
+
+  "testSuiteResults": {
+    "scopedRun": "node --import tsx --test tests/xray-export-gate.test.ts tests/dossier-export-catalog.test.ts -- 26/26 pass, 0 fail.",
+    "fullRepoRun": "npm test (node --import tsx --test tests/*.test.ts) -- 559/559 pass, 0 fail, 0 skipped. No pre-existing failures encountered.",
+    "typecheck": "npx tsc --noEmit -- clean, no errors."
+  },
+
+  "pr": {
+    "repo": "empressaioemail-tech/hauska-mcp-server",
+    "number": 83,
+    "url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/83",
+    "headSha": "62b2fc55ba1e6b8a447bf255cfa7f4e4748f3429",
+    "base": "main",
+    "state": "OPEN",
+    "merged": false,
+    "mergeable": "MERGEABLE",
+    "ciConclusion": "success on all 5 check-runs (build-test, ci-deny-as-no-atom-found, ci-dual-atom-contract, ci-gate-map-vs-server-tool, ci-hardcoded-did-type-union) -- verified via gh api repos/.../commits/<headSha>/check-runs, reading the conclusion field directly, not the gh pr checks printed label."
+  },
+
+  "openRisk_notedNow": "Consuming a paid SDK meter on a genuinely-hollow refusal (metering side effect from CP1) is carried forward unresolved into the close for an operator ruling. No PR conflicts identified (unlike the P-229/P-211 precedent) -- this lane found no other open PR touching xray-export-gate.ts or the refresh_parcel_dossier_export handler."
+}

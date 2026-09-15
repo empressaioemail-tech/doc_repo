@@ -1,0 +1,61 @@
+{
+  "lane": "p234-xray-export-gate",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRows": ["P-234"],
+  "seat": "cente-p234",
+  "filedAt": "2026-09-15T19:35:00Z",
+
+  "snapshot": {
+    "hauska-mcp-server": {
+      "worktree": "C:/Users/cente/dev/hauska-mcp-server",
+      "branch": "fix/p234-xray-gate-post-engine-check (cut from main before any edit)",
+      "baseCommitAtClaim": "3b5626bddf00fda0ca16108ac1551215c8c298eb (origin/main HEAD at worktree fast-forward; verified byte-identical to the image tag of the currently deployed Cloud Run revision, see deployedRevision below)"
+    },
+    "doc_repo": {
+      "worktree": "C:/Users/cente/doc_repo",
+      "branch": "main",
+      "baseCommitAtClaim": "814035bb (origin/main HEAD when lane was claimed; claim itself committed and pushed as 207be189)"
+    },
+    "note": "No dedicated per-lane seat worktree existed for hauska-mcp-server at claim time. The registry-named worktree (P:/seat-worktrees/substrate/hauska-mcp-server, seat 'substrate') was 23 commits behind origin/main and carried 3 dirty uncommitted files belonging to another seat -- not touched. C:/Users/cente/dev/hauska-mcp-server was clean and at parity with origin/main, so it was used directly and fast-forwarded before branching. P:/doc_repo (the integration seat's checkout) was not used for this lane's writes, per the dispatch's own instruction; C:/Users/cente/doc_repo was used instead."
+  },
+
+  "deployedRevision": {
+    "service": "hauska-mcp-server",
+    "project": "hauska-prod-497015",
+    "region": "us-central1",
+    "revision": "hauska-mcp-server-00092-pur",
+    "trafficPercent": 100,
+    "imageTag": "rev-3b5626bddf00",
+    "confirmedVia": "gcloud run services describe hauska-mcp-server --project hauska-prod-497015 --region us-central1 --format=json, read as JSON (status.traffic[], spec.template.spec.containers[0].image), 2026-09-15T19:3x. Image tag rev-3b5626bddf00 correlates to hauska-mcp-server commit 3b5626bddf00fda0ca16108ac1551215c8c298eb -- the exact commit this lane's fix branch was cut from. The deployed revision is therefore CURRENT with origin/main as of claim time and carries the P-234 bug unmodified.",
+    "note": "hauska-engine-api (a separate service) is NOT this lane's repo and was not queried here; the dispatch's own evidence already names its serving revision (hauska-engine-api-00228-zat) and this lane did not need to re-confirm it since P-221 is out of scope (do not edit hauska-engine)."
+  },
+
+  "missionPremise": "P-221 rebuilt the X-ray as a subset of the feasibility model and is merged and deployed in hauska-engine; export_instrument kind=dossier on 48021:34049 still returns the byte-identical pipeline_output_absent refusal it returned before that fix, with upstreamStatus:\"unmeasured\" -- a literal signal that the caller never reached the engine. pipeline_output_absent is emitted by hauska-mcp-server/src/xray-export-gate.ts, a file the dispatch's own method note flags as located by a non-exhaustive GitHub code search and requires confirming by reading the repo before treating it as the sole emitter.",
+
+  "falsifiersPreRegistered": [
+    "1. Confirm by reading the code (not inferring from logs) that the current refusal fires WITHOUT an engine call. If the gate calls the engine on some path, the mechanism differs from the dispatch's assumption and must be reported as such.",
+    "2. After the fix, construct a parcel/response whose verdict or brief facts are genuinely absent and confirm the refusal STILL fires. If it does not, the guard was removed rather than made unreachable, and the row fails regardless of the happy path.",
+    "3. Search the whole repo (not just the one file) for other emitters of pipeline_output_absent and of the same refusal shape. A fix confined to xray-export-gate.ts that misses a second emitter will look correct on one test parcel and still fail elsewhere.",
+    "4. If kind=dossier starts producing a file whose content disagrees with the feasibility study for the same parcel, P-221's subset relationship has been broken downstream and the row is not done."
+  ],
+
+  "beforeStateResult": {
+    "method": "Read src/xray-export-gate.ts and every call site in src/tools.ts directly (no live call, no log inference) against the fast-forwarded, unmodified checkout at 3b5626b -- the same commit confirmed above to be the deployed image's source.",
+    "falsifier1_result": "CONFIRMED. refresh_parcel_dossier_export (src/tools.ts, then lines ~1367-1376) called refuseHollowXrayRefresh({verdictLine: verdict_line, brief}) -- i.e. the tool's own OPTIONAL, caller-supplied MCP arguments -- and returned errorContent(...) immediately on failure, BEFORE authorizePaidCall and BEFORE engineApiClient.refreshParcelDossierExport were ever reached. verdict_line/brief are legacy passthrough fields (schema description: 'rendered VERBATIM ... labeled as caller-supplied') from a pre-P-221 design where the PE web app computed and forwarded its own verdict/brief; since P-221 the engine derives both itself and no longer accepts them as input (confirmed read-only in hauska-engine's services/engine-api/src/routes/parcel-terrain.ts: dossierRefreshBody's zod schema, re-cut 2026-09-15 for P-120/P-221, has no verdictLine/brief fields at all, with a comment stating exactly why). A caller that never populates these two optional legacy fields -- which is every real MCP/connector caller today -- is refused unconditionally and the engine is never asked. This is the exact defect the dispatch describes.",
+    "falsifier3_partial_result": "grep for pipeline_output_absent across hauska-mcp-server/src found exactly 3 files: xray-export-gate.ts (definition), tools.ts (2 call sites: refuseHollowXrayRefresh in refresh_parcel_dossier_export, isStoredDossierArtifactHollow in download_parcel_dossier_export), and dossier-export-contract.ts (type-only fields verdictIncluded/briefFactCount, no error/message emission). No other file in this repo emits this error code or the matching message text. Full confirmation (that these are the ONLY 2 call sites and that the second one -- the download-side stored-artifact check -- is already correctly implemented as a post-call check and does not need fixing) is carried into CP2/close."
+  },
+
+  "designPlan": {
+    "approach": "Move the hollow gate from PRE-engine-call (checking the caller's optional verdict_line/brief) to POST-engine-call (checking the engine's own verdictIncluded/briefFactCount fields on the refresh response), mirroring the pattern this repo already uses correctly on the download leg (isStoredDossierArtifactHollow, called after engineApiClient.getParcelDossierExport returns) and the equivalent post-call check hauska-engine itself runs on its own /dossier-export/download route (read-only verified). Rename refuseHollowXrayRefresh -> refuseHollowXrayResult with a new input shape ({verdictIncluded, briefFactCount}) since the contract is fundamentally different (engine result, not caller request), not a cosmetic rename. Update XRAY_PIPELINE_ABSENT_MESSAGE to drop 'Open the property brief and try again' (a web-app-only action) in favor of retrying the same MCP call once the parcel's facts resolve -- an action identical on every calling surface, matching the wording hauska-engine's own equivalent fix already uses.",
+    "engineSchemaRiskChecked": "Read-only verified hauska-engine's dossierRefreshBody is a plain z.object (not .strict()), so mcp-server continuing to forward the now-inert verdictLine/brief fields will be silently stripped by the engine, not rejected as a 400. Chose NOT to remove the vestigial verdict_line/brief MCP tool params in this change (out of the dispatch's stated scope; their descriptions are now stale but harmless) -- flagged as a leave_behind finding rather than acted on unilaterally.",
+    "meteringSideEffectIdentified": "authorizePaidCall (one SDK meter per refresh) currently runs BEFORE the engine call and is NOT being reordered by this fix (kept in place; there is an existing regression test pinning 'authorizePaidCall called exactly once' in the handler). Consequence: before this fix, a hollow refusal consumed zero meters (the call never reached the engine); after this fix, a genuinely-hollow parcel will consume one paid meter for a refused/empty result, because the engine must now actually be called to know whether it is hollow. This is a real, new side effect this lane did not invent a resolution for -- flagged for the operator's ruling in the close rather than silently deciding it by reordering metering.",
+    "testStrategy": "Replace the three existing pre-call P-89 tests (which assert calls.length === 0, i.e. assert the bug) with tests that mock the ENGINE returning a hollow result (verdictIncluded:false/briefFactCount:0) and assert the refusal fires AND the engine WAS called exactly once, plus a positive test proving the engine is called even when the caller sends no verdict_line/brief at all. Full repo test suite + tsc --noEmit run before treating the fix as done."
+  },
+
+  "knownTraps_acknowledged": [
+    "hauska-mcp-server is its own repo/Cloud Run service in hauska-prod-497015, distinct from legacy-design-tools' smartsite-mcp service -- confirmed the git remote and the deployed service name/project directly, not assumed.",
+    "No repo in this portfolio auto-deploys on merge (verified 3x per the dispatch) -- the deployed revision was read live via gcloud, not inferred from git log.",
+    "Do not edit hauska-engine -- only read it (shallow clone into scratchpad, read-only, not modified, not committed anywhere) to verify the schema-drop risk and to see the engine's own equivalent fix for wording consistency.",
+    "Do not weaken the hollow-report refusal -- the redesign keeps a fail-closed refusal; it changes WHAT is measured (engine result vs. caller input), never removes the refusal path."
+  ]
+}
