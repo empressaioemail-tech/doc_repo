@@ -1,6 +1,6 @@
 ---
 id: 2026-09-15_bastrop_cutover_WDLL
-title: WDLL — the Bastrop cutover. Staff in v2 daily, v1 dark.
+title: WDLL — the Bastrop cutover. Phase 1 soft launch, phase 2 severance.
 date: 2026-09-15
 status: draft — operator approval owed
 kind: WDLL
@@ -14,26 +14,114 @@ related:
   - _inbox/2026-08-17_dashboards_missing_pieces.md
   - _decisions/2026-09-14_staff_identity_and_department_rbac.md
   - _decisions/2026-09-14_flood_determination_authority.md
-  - _decisions/2026-09-04_no_leaflet_island_overridden_for_bastrop_map.md
 ---
 
 # WDLL — the Bastrop cutover
 
 > **This is the instrument `_catalog/repo_intents.md` names.** That file holds `smartcity-os`
 > under ABSOLUTE NO-TOUCH *"until the Dashboards template is the staff path and a named cutover
-> WDLL runs."* This is that WDLL. Until it is approved, everything done on `smartcity-os` runs
-> under narrow incident exceptions, which is how the last two weeks actually went.
+> WDLL runs."* This is that WDLL.
 
-## Done looks like, in the operator's own words
+## The operator's ruling, 2026-09-15
 
-**Bastrop staff working in v2 daily, and v1 dark.** Ruled 2026-09-15.
+**Two phases, and phase 1 is the one that matters.**
 
-Not "v2 is primary with v1 still running." Dark.
+> *"the most important thing is that we get bastrop on the v2, not that we have backend work to do
+> to make it clean."*
 
-## THE ONE THING THAT MAKES THIS HARD, AND IT IS NOT THE UI
+**PHASE 1 — SOFT LAUNCH.** Bastrop staff working in v2 daily. **v1 keeps running behind it,
+unchanged, as the data backend.** The twelve platform dependencies stay. They are the
+architecture during transition, not a defect to fix first.
 
-**v2 reads twelve routes off v1 right now.** `smartcity-dashboards` calls
-`smartcity-api` server-to-server for every real record it shows:
+**PHASE 2 — SEVERANCE.** v1 dark. Later, on its own schedule, invisible to the customer.
+
+## Why this ordering is right, said once so it is not relitigated
+
+The severance is **entirely invisible to Bastrop**. Whether v2 reads MyGov through v1's platform
+API or through a ported adapter, a permit clerk sees the same permit. Spending weeks on that
+before the city can use the product optimises for our architecture over their adoption.
+
+**And we are knowingly increasing the severance bill to do it.** Every lens shipped in phase 1
+consumes v1 more deeply, so phase 2 gets more expensive with each one. That is a real cost, it is
+accepted deliberately, and it is written here so nobody later reports it as a discovery.
+
+The trade: a customer using the product beats a clean backend nobody can see.
+
+## PHASE 1 — what actually blocks a soft launch
+
+Much less than the full cutover. Four things, and two of them are already most of the way there.
+
+### 1. Real per-person identity — the only hard blocker
+
+Today **every department signs in as one shared persona** labelled "Development services staff."
+That is not a login, it is a shared account. Under it there is no audit trail, no offboarding, and
+no way to answer "who looked at that citizen's record."
+
+For a system holding citizen names, phone numbers and complaint addresses, handed to a
+government customer, that is the one thing that cannot ship soft.
+
+G-132 built the verifier provider-agnostic and passing (812/812). **WorkOS is ruled. It needs
+wiring and accounts provisioned.** That is the critical path for the whole soft launch.
+
+### 2. The lenses those staff actually use — mostly built
+
+Not all fifteen. **The first cohort is Development Services staff**, and their daily surfaces are
+the ones already shipped:
+
+| Surface | State |
+|---|---|
+| Overview | G-120 closed, serving |
+| Development services — Pipeline, Inspections, Work orders, Code enforcement, Licences | G-123 closed, 20/20 live checks |
+| The map rail and property detail | G-128 closed, serving |
+| Plan review | live, real `bastrop_tx` persona, cross-tenant refusal verified |
+
+**That cohort is close to servable now.** Finance, Police, Fire and EMS, Fleet, Public works and
+Parks are later cohorts, not phase-1 blockers.
+
+### 3. Proof it works for Bastrop, not just for `template-city`
+
+**Three lanes have failed to verify authenticated `bastrop_tx` behaviour**, and G-128's close
+records that the map iframe never mounted in a full-shell probe for want of a product key. We
+cannot soft-launch on a surface nobody has seen working with the customer's own data.
+
+**G-133 is the recon.** It is small, it is open, and it is on the critical path now in a way it
+was not before.
+
+### 4. v1 healthy — and this matters MORE under soft launch, not less
+
+v1 stays up as the backend. **A broken v1 is a broken v2.** G-122 is the open customer incident
+reported 2026-09-14 and still unfixed.
+
+Under the severance plan, v1's health was a transitional concern. Under soft launch it is
+permanent infrastructure until phase 2.
+
+### Explicitly NOT phase-1 blockers
+
+**Severance.** The whole point.
+
+**The remaining nine lenses.** Later cohorts.
+
+**RBAC (G-127).** See the ruling owed below — this is the one genuine judgement call in phase 1.
+
+**Hotel occupancy tax.** Wanted, but not gating staff use of what exists.
+
+## Done looks like — phase 1
+
+| Item | Done is | Instrument | Not done is |
+|---|---|---|---|
+| **Identity** | a named Bastrop staff member signs in as themselves in all three products; disabling them ends access | violation test, both directions | a shared persona with a nicer name |
+| **Bastrop data** | the Dev-services surfaces render the city's own real records, authenticated, in a browser | full-shell probe on `bastrop_tx`, not `template-city` | it works on the demo pack |
+| **v1 health** | G-122 closed, and v1's own dashboard is not degraded | the symptom reproduced, then not | "nothing else has broken" |
+| **Adoption** | named Dev-services staff use v2 for a full working week without reverting | confirmed by those people | staff *can* use it |
+
+**Phase 1 is done when Bastrop staff are working in v2 daily.** That is the ruling, and it does
+not require v1 to be dark.
+
+## PHASE 2 — severance, recorded now so it is not rediscovered
+
+Not scheduled. Recorded so the bill is visible.
+
+**v2 reads twelve platform routes off v1:**
 
 ```
 /api/platform/mygov/permits            /api/platform/property-intel/summary
@@ -44,137 +132,59 @@ Not "v2 is primary with v1 still running." Dark.
 /api/platform/powerbi/cip-projects     /api/platform/goto/call-summary
 ```
 
-**So "v1 dark" is not a UI migration. It is a dependency severance.** The day v1 goes dark, v2
-loses every real record it serves unless those twelve routes have been re-homed first.
+Behind them: **eight MyGov services** in v1 — `mygov-scraper.ts` (Playwright plus AJAX POST, built
+because MyGov refused API access), backfill, budget, enrichment, inspection-geocoder, two
+manager-load scrapers, report-export — inside 33 services and 26 routes.
 
-Behind them sits the thing the operator has said he never wants to rebuild: **eight MyGov services
-in v1** — `mygov-scraper.ts` (Playwright plus AJAX POST, built because MyGov refused API access),
-plus backfill, budget, enrichment, inspection-geocoder, two manager-load scrapers, and
-report-export. Thirty-three services and twenty-six routes live in that repo in total.
+Plus ~20 GB of `mygov_raw_records` and 9.3 GB of `mygov_raw_sync_pages`: the **replayable capture**
+that makes the cleaning liftable rather than re-derivable. That is the asset, and it is why the
+pipeline is portable at all.
 
-**Nothing in the program to date has moved any of it.** Every lane so far has built v2 surfaces
-that consume v1 more deeply.
+**Phase 2 done is:** v1 returns a decline, a CI check fails if it reappears, and v2 serves every
+real record without it. Retirement is proven by decline, never by documentation.
 
-That is the finding this WDLL exists to make unmissable: **each shipped v2 lens increases the cost
-of turning v1 off.**
-
-## What is verified true right now
-
-```
-SHIPPED AND SERVING (v2)     smartcity-dashboards-00072-cow @100%
-  G-120 Overview             closed, deployed, verified
-  G-123 Dev services         closed, 20/20 live checks, PII leak found and closed
-  G-126 tenant isolation     closed, 3 unguarded list routes found and fixed
-  G-128 map dock             closed-partial, Place retired to a rail
-  G-125 rainfall control     closed — Sylvia's four-inch question is answerable
-  G-130 flood authority      ruled
-
-NOT STARTED (v2 lenses)      Finance · Police · Fire and EMS · Fleet · Public works
-                             Parks · Citizen · Files · Records search · Assets
-                             Connections · People and access
-
-THE DEPENDENCY               12 platform routes, 8 MyGov services, 33 services,
-                             26 routes — all still in v1, none re-homed
-
-IDENTITY                     G-132 closed-partial. WorkOS chosen, NOT wired.
-                             One shared persona labelled "Development services
-                             staff" is still how every department signs in.
-                             G-127 RBAC blocked on the wiring.
-
-CUSTOMER INCIDENT            G-122 open. Reported 2026-09-14 morning, still
-                             unfixed at time of writing.
-
-VERIFICATION                 G-133 open. Three lanes could not verify
-                             authenticated bastrop_tx behaviour; the map iframe
-                             has never mounted in a full-shell probe.
-
-DATA IN v1                   16,723 work orders · 27,874 archived · 12,683
-                             projects · 949 inspections · 1,502 code cases ·
-                             72 licences · ~20 GB mygov_raw_records
-```
-
-## The order, and why it is this order
-
-**1. Sever before you cut.** The twelve platform routes are re-homed, or v1 cannot go dark
-whatever the UI looks like. This is the long pole and it has not started.
-
-**2. Identity before logins.** WorkOS wired, then RBAC. Today "give staff logins" means handing
-every department one shared account. No staff go-live can honestly precede this.
-
-**3. Parity before dark.** Every v1 function has a home per `g18_shell_homes` and its disposition
-is honoured — Mounted works, Empty is honestly empty, Killed is gone with its reason, Island still
-works on the island. **Homeless is the only defect.** Six lenses are untouched.
-
-**4. Staff actually choose v2.** The 2026-08-17 ruling stands: PermitFlow and the Leaflet island
-stay live until staff choose the replacement. **Dark is a consequence of adoption, never a
-scheduled event.**
-
-**5. Then dark.** And only then.
-
-## Done looks like — per phase, with its instrument
-
-| Phase | Done is | Instrument | Not done is |
-|---|---|---|---|
-| **Sever** | all 12 platform routes served without v1; the MyGov pipeline runs somewhere v1's death does not touch | v1 stopped in staging and v2 still serves real records | "we could move it" |
-| **Identity** | a named staff member is a PERSON in all three products; disabling them ends access everywhere | violation test, both directions | a shared persona with a nicer name |
-| **RBAC** | a department role is refused another department's records, typed not blank | violation test, both directions | a role that renders but never refuses |
-| **Parity** | every row in `g18_shell_homes` has its disposition verified live | the register walked, row by row | a lens that looks built |
-| **Data** | every record staff rely on is reachable in v2, or its absence is declared | count reconciliation against v1 | a table that exists |
-| **Adoption** | Bastrop staff use v2 for a full working week without reverting | named staff, named week, confirmed by them | staff *can* use it |
-| **Dark** | v1 returns a decline; a check fails if it reappears | the decline, not a doc | v1 "switched off" |
-
-## The customer commitments riding on this
-
-**Sylvia's flood study.** *"I want to be able to tell what happens when four inches of rain falls
-on a property."* The engine answers it (G-125, closed). G-129 mounts it. This is the nearest
-customer-visible win available and it does not wait on the cutover.
-
-**Hotel occupancy tax.** Requested by Bastrop. **It has no row, no card and no decision anywhere**
-— flagged 2026-09-14 and never picked up. Note it is not a build from zero: the Finance workspace
-already carries Hotel Occupancy Fund at $10.2M and Hotel Occupancy Tax at $5.5M through OpenGov.
-**Owed: a ruling on whether it is reporting or collection-and-remittance.** Those are different
-products.
-
-## Lines that do not move
+## Lines that do not move, in either phase
 
 **Citizen PII.** Work-order free text carries citizen names and phone numbers verbatim; code
 enforcement carries officer names and complaint addresses. G-123 found a live leak in Inspections
-and closed it. **No free-text description in any scannable list, and none of it on a public rail,
-ever.**
+and closed it, plus two latent paths. **No free-text description in any scannable list, and none
+of it on a public rail, ever.**
 
-**Dashboards embeds, it does not compute.** The moment it computes its own version of a fact it
-becomes another read path, in a portfolio that has a whole program because one parcel had six.
+**Dashboards embeds, it does not compute.**
 
-**Buildable area stays REFUSED** with its basis (R-2). The envelope draws; the figure does not.
+**Buildable area stays REFUSED** with its basis (R-2).
 
-**`smartcity-os` stays no-touch** outside this WDLL and the narrow recorded exceptions. Approval
-of this card lifts it for cutover work and nothing else.
+**`smartcity-os` stays no-touch** outside this card and its narrow recorded exceptions. Approving
+this lifts it for cutover work and nothing else — and under soft launch v1 is *live production*,
+so changes there carry customer risk, not just hygiene risk.
 
-## Deferred on purpose
+## The customer commitment that does not wait for any of this
 
-The map engine question — MapLibre everywhere or Leaflet stays an island. Porting the flood
-renderer (G-129 mounts, it does not port). The remaining six lenses until severance and identity
-land. Compass's answer engine. Prophecy document search.
+**Sylvia's flood study.** *"I want to be able to tell what happens when four inches of rain falls
+on a property."* The engine answers it (G-125, closed). G-129 mounts it. **It is independent of
+the cutover and it is the nearest customer-visible win available.**
 
 ## Owed rulings
 
-1. **Hotel occupancy tax: reporting, or collection and remittance?** Different products.
-2. **Where does the MyGov pipeline live after v1?** Ported to `@hauska-engine/adapters` as the
-   Tyler MyGov family adapter (the 2026-06-10 recon's recommendation, which scoped it at 1–2 weeks
-   once, then $5–30 and 45–60 minutes per additional MyGov city), or lifted as-is into a standalone
-   service. The first is more valuable and slower.
-3. **What happens to ~20 GB of `mygov_raw_records`?** It is the replayable capture that makes the
-   cleaning liftable rather than re-derivable. Migrated, archived, or abandoned.
-4. **Is there a date or event driving this?** Asked and not yet answered. It changes what gets cut
-   versus built.
+1. **RBAC in phase 1, or after?** The real question: is it acceptable for, say, Police staff to
+   see Water/Wastewater work orders carrying citizen names and phone numbers? Within one city,
+   staff-to-staff, at a small named cohort, that is defensible and cities routinely share systems.
+   **Recommendation: soft-launch the Dev-services cohort without RBAC, and require it before the
+   second department joins** — because the moment two departments are on it, "everyone sees
+   everything" stops being a scoped pilot and becomes a policy.
+2. **Hotel occupancy tax: reporting, or collection and remittance?** Different products. Still no
+   row anywhere. Not a build from zero — Finance already carries Hotel Occupancy Fund at $10.2M
+   and Hotel Occupancy Tax at $5.5M through OpenGov.
+3. **Who is the first cohort, by name?** The card assumes Development Services staff because
+   their surfaces are the ones built. Confirm or correct.
+4. **Phase 2's trigger.** Not a date — a condition. Recommendation: when a second city is
+   onboarding, because that is when carrying v1 stops being one city's transitional cost and
+   starts being the machine's.
 
 ## What this card is honest about
 
-**We are not close.** Four lenses of fifteen, identity unwired, twelve routes un-severed, and a
-customer incident open. The design and ruling work of 2026-09-14 was real and it was mostly
-*upstream* of the cutover rather than in it.
+Phase 1 is genuinely close. Identity is the one hard blocker, the first cohort's surfaces are
+built, and the two open lanes on the path (G-122, G-133) are both small.
 
-**And the direction of travel is currently wrong for this goal.** Every v2 lens shipped so far
-consumes v1 more deeply. That is correct for making v2 good and it is the opposite of making v1
-dark. Both are worth doing; they are not the same project, and this card exists so nobody
-confuses one for the other again.
+Phase 2 is not close and is getting further away by design. That is the accepted cost of putting
+the customer first, and the bill is written down above so it is a decision rather than a surprise.
