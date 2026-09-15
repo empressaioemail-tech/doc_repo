@@ -4,8 +4,14 @@ Do NOT spawn sub-agents. You are the deepest worker; do the work yourself.
 
 ## This is a live customer incident
 
-The City of Bastrop reported a problem with their production dashboard on 2026-09-14. Staff
-work in this system daily. It is a real customer, not a demo.
+The City of Bastrop reported a problem with their production dashboard on the morning of
+2026-09-14. Staff work in this system daily. It is a real customer, not a demo.
+
+**This dispatch was compiled that morning and never executed.** As of recompile: no commits on
+`smartcity-os` since 2026-09-14, no close artifact anywhere on disk, and the service still serves
+`smartcity-api-00138-law` tag `g117-full-layers-v2` — the same revision identified as the problem
+shape. Nothing has been done. **The city has been waiting all day.** Treat this as the oldest
+open item in the program, not a fresh one.
 
 **Diagnose before you fix.** Do not push a change until you can state the symptom, reproduce it,
 and name the mechanism. A confident wrong fix on a customer's live system is worse than an hour
@@ -75,21 +81,41 @@ not assume it.
 State which one you are testing, what result would falsify it, and then test it. The documented
 recurring error in this operation is stopping at the first plausible explanation.
 
-**1. `d2d3648` (#40) exempted `/platform` from the session-auth gate.** A change to the auth
-middleware in a live multi-tenant app is the single likeliest way to break a whole dashboard.
-Read the actual middleware ordering and the exemption's match rule. Ask: can the exemption match
-more than `/platform`? A prefix match, a missing anchor, or a reordered `use()` would let
-unauthenticated requests through, or break session resolution for normal routes.
+**1. `d2d3648` (#40) exempted `/platform` from the session-auth gate.** 2026-09-03, inside the
+seam. A change to auth middleware in a live multi-tenant app is the single likeliest way to break
+a whole dashboard. Read the actual middleware ordering and the exemption's match rule. Ask: can
+the exemption match more than `/platform`? A prefix match, a missing anchor, or a reordered
+`use()` would let unauthenticated requests through, or break session resolution for normal routes.
 
-**2. `0e5c41e` flipped `DEFAULT_TENANT_ID` from 1 to 2.** Bastrop is `tenant_id=2`. Enumerate
-every reader of `DEFAULT_TENANT_ID` and ask what each one did when the value was 1. A default
-that changes meaning breaks whatever relied on the old meaning, silently and only for some rows.
+**2. `332a16c` (#52) wastewater layer geometry.** 2026-09-04, the most recent seam commit and the
+narrowest. Accepting polygon geometry where only lines were accepted can break a renderer that
+assumed lines.
 
-**3. `332a16c` (#52) wastewater layer geometry.** Most recent, narrowest. Accepting polygon
-geometry where only lines were accepted can break a renderer that assumed lines.
+**3. Anything else in #39–#52.** Twelve other commits landed in the seam. If neither of the above
+explains the symptom, work the rest rather than forcing the evidence into these two.
 
-If none of the three explains the symptom, say so and keep going. Do not force the evidence into
-the nearest hypothesis.
+**DEMOTED, and the planner got this wrong first time round.** `0e5c41e` (DEFAULT_TENANT_ID 1→2)
+was originally ranked as a peer of the two above. It is dated **2026-04-05** — five months before
+the seam and unrelated to it. It does not explain a regression the city noticed this week, and
+treating it as a peer would waste your time. It is still worth knowing the value moved, because
+G-131 records that `property-intel/summary` uses a bare numeric tenant literal that has already
+been bumped once by an unrelated commit — but that is a structural finding for another row, not
+this incident.
+
+## What has been learned since this dispatch was written
+
+G-126 closed today and read this repo's platform handlers read-only. Its findings are directly
+relevant and you should not re-derive them:
+
+**`PLATFORM_INTERNAL_API_KEY` binds to no tenant at all.** It is one shared bearer secret gating
+all 12 platform routes uniformly.
+
+**Tenant resolution splits three ways behind it.** Five routes do a robust name-based lookup;
+`property-intel/summary` uses a bare numeric literal; five vendor routes have no tenant concept
+whatsoever.
+
+That is recorded as **G-131** and is NOT yours. Do not fix it here. But if your regression turns
+out to live in that area, say so — the two rows would then be one.
 
 ## Method
 

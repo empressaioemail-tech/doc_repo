@@ -25,20 +25,20 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
-PLAN-ROW: G-122 (90_operations/OPS-17_govtech_stack_plan_of_record.md)
-repo: smartcity-os
+PLAN-ROW: G-133 (90_operations/OPS-17_govtech_stack_plan_of_record.md)
+repo: smartcity-dashboards
 
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 
-  node scripts/lane-claim.mjs claim --lane g122-v1-regression --seat <your-seat-id> --plan-row G-122 --dispatch _dispatches/2026-09-14_g122-v1-regression_dispatch.md
+  node scripts/lane-claim.mjs claim --lane g133-bastrop-verify-access --seat <your-seat-id> --plan-row G-133 --dispatch _dispatches/2026-09-14_g133-bastrop-verify-access_dispatch.md
 
 Exit 0 means proceed. **Exit 3 means another seat is already executing this lane:
 STAND DOWN, do not execute, and report which seat holds it.** Exit 4 means the claim
 is stale — confirm the holder is gone before re-running with --force. Release when
 your close is filed:
 
-  node scripts/lane-claim.mjs release --lane g122-v1-regression --seat <your-seat-id>
+  node scripts/lane-claim.mjs release --lane g133-bastrop-verify-access --seat <your-seat-id>
 
 On 2026-09-14 this exact dispatch shape was handed to two sessions at once. One found
 out mid-execution from a merged commit appearing in its own fetch.
@@ -68,181 +68,108 @@ CONTRACT or ENFORCEMENT, those win.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 
 
-# MISSION — G-122 INCIDENT: live Bastrop v1 regression
+# MISSION — G-133: why can nobody verify Bastrop, when Bastrop works
 
 Do NOT spawn sub-agents. You are the deepest worker; do the work yourself.
 
-## This is a live customer incident
+## The observation that makes this a recon and not a provisioning ticket
 
-The City of Bastrop reported a problem with their production dashboard on the morning of
-2026-09-14. Staff work in this system daily. It is a real customer, not a demo.
+**The v1 dashboard's property map worked last week with real Bastrop data.** Operator, 2026-09-14.
+It is serving right now at `smartcityos.io` with a live Leaflet map, real parcels, real zoning.
 
-**This dispatch was compiled that morning and never executed.** As of recompile: no commits on
-`smartcity-os` since 2026-09-14, no close artifact anywhere on disk, and the service still serves
-`smartcity-api-00138-law` tag `g117-full-layers-v2` — the same revision identified as the problem
-shape. Nothing has been done. **The city has been waiting all day.** Treat this as the oldest
-open item in the program, not a fresh one.
+And yet **three separate lanes have now failed to verify authenticated Bastrop behaviour in v2**,
+all blocked on the same thing, each reporting it as a standing gap rather than a new one:
 
-**Diagnose before you fix.** Do not push a change until you can state the symptom, reproduce it,
-and name the mechanism. A confident wrong fix on a customer's live system is worse than an hour
-of reading.
+- **G-116** close, 2026-09-03 — listed "Real Hauska tenant key for `bastrop_tx`" as a leave-behind.
+- **G-128** close, 2026-09-14 — `GET /api/property-map/summary` returns 401 without one, and the
+  shell's own compose call is gated behind the same thing, so **the map iframe never mounted in a
+  full-shell live probe.**
+- Earlier the same day, the planner's own read-only probes hit 401 on every `bastrop_tx` route.
 
-## Authorisation, stated explicitly
+**Those two facts cannot both be casually true.** Either the data path and the verification path
+are different things and we have been conflating them, or a credential exists and is not reaching
+anyone, or it does not exist and something else has been serving Bastrop this whole time.
 
-`smartcity-os` is under ABSOLUTE NO-TOUCH in `_catalog/repo_intents.md`. The operator authorised
-engagement **for this incident specifically** on 2026-09-14. That authorisation covers
-diagnosing and repairing this regression. It does NOT reopen the repo for feature work, and it
-does not lift the no-touch. Anything you find that is not this incident gets reported, not fixed.
+**Do not start by trying to obtain a key.** Start by establishing what is actually true. The
+provisioning answer, if that is what it turns out to be, falls out of the recon.
 
-## Snapshot first
+## What to establish
 
-Repo: `/p/smartcity-os` (GitHub `empressaioemail-tech/smartcity-os`). Fetch and confirm you are
-current before reading. As of 2026-09-14 local HEAD equalled `origin/main` at `332a16c`.
-Declare repository, branch and commit SHA in your first output line. Work on your own branch in
-your own worktree.
+**1. What actually gates the `bastrop_tx` routes in `smartcity-dashboards`.** `src/server.mjs`
+calls `packContentReadStatus(pack, caller)` before composing, on at least nine routes;
+`src/tenancy.mjs` carries `resolveCaller`, `canReadPack` and `isServiceBearer`. Read them. State
+precisely what a caller must present, in what header, issued by what, and what distinguishes a
+service bearer from a product key from an anonymous caller. Quote the code.
 
-Live service, read 2026-09-14 from the traffic JSON **by field name**:
+**2. Where v1 gets its Bastrop map data, and whether it needs any Hauska credential at all.**
+`smartcity-os` `server/routes/esri.ts` exists and `property-map.mjs`'s own header says the upstream
+parcel, zoning and flood queries are **hardcoded to Bastrop's ArcGIS services**. If v1 goes
+straight to Esri, then v1 needs no Hauska key and never did — which would mean the "missing key"
+blocks *verification of v2's gate*, not access to Bastrop data. **Confirm or refute that; it is
+the crux.**
 
-```
-project    smartcity-os-prod
-service    smartcity-api   (region us-central1)
-url        https://smartcity-api-7dyaiy7wha-uc.a.run.app
-serving    smartcity-api-00138-law @ 100%, tag g117-full-layers-v2
-generation 139
-```
+**3. Whether the credential exists.** Enumerate where a `bastrop_tx` product or tenant key would
+live — Secret Manager in each GCP project, Cloud Run env on the serving revisions, `.env.example`,
+the tenant-registry Neon store. **Never print a secret value; report presence, name and location
+only.** If one exists, the finding is distribution, not absence. If none exists, say what has been
+answering for `bastrop_tx` on the live service, because something is.
 
-## What changed, and why that matters
+**4. How the live service answers today.** The deployed `smartcity-dashboards` serves
+`bastrop_tx` content to somebody — the operator sees it in a browser. Establish **what that
+browser is presenting** that a lane's `curl` is not. A session cookie, a header injected by a
+front door, an IAP, a logged-in identity. That difference is probably the whole answer.
 
-Fourteen PRs (#39 through #52) landed on this repo building a **platform-internal seam for
-`smartcity-dashboards`** (the v2 product). v1 production is now serving a revision tagged for
-v2's benefit. The operator's own words: the v2 import "broke the version one dashboard."
-
-```
-332a16c  Fix wastewater layer: accept polygon geometry, not just lines (#52)
-c6cd8be  widen platform layers bridge to full 52-layer GIS parity (#51)
-3022f72  platform-internal GIS overlay-layer route (#50)
-2776b12  platform-internal address-to-parcel/zoning/flood/permits route (#49)
-a00138b  NSpire maintenance records, 7-day alert log, patrol-vehicles route (#48)
-d377fbd  platform-internal work-orders route returns clean columns (#47)
-72021b7  DVIR, safety events, mileage/fuel flags on samsara route (#45)
-29eada2  platform-internal reads for fleet, patrol, fire apparatus, CIP (#42)
-1ff70d2  platform-internal reads for work-orders, inspections, licences (#41)
-d2d3648  exempt /platform from the session-auth gate (#40)
-68fe8cc  platform-internal read-only permits endpoint (G-116) (#39)
-0e5c41e  manager-load uses work_order_managers roster, DEFAULT_TENANT_ID 1 to 2
-```
-
-## THE CONSTRAINT THAT DECIDES YOUR FIX
-
-`smartcity-dashboards` (v2) reads **this service** server-to-server:
-
-```
-/api/platform/mygov/*                    -> v2's permit, work-order and licence data
-/api/platform/property-intel/summary     -> v2's native property map, per-parcel
-/api/platform/property-intel/layers      -> v2's 52 GIS overlay layers
-```
-
-**Reverting the seam repairs v1 by breaking v2.** That is not an acceptable fix. Whatever you
-change must leave every one of those routes working, and you must prove it live after the fix,
-not assume it.
-
-## Hypotheses to TEST, ranked — not to assume
-
-State which one you are testing, what result would falsify it, and then test it. The documented
-recurring error in this operation is stopping at the first plausible explanation.
-
-**1. `d2d3648` (#40) exempted `/platform` from the session-auth gate.** 2026-09-03, inside the
-seam. A change to auth middleware in a live multi-tenant app is the single likeliest way to break
-a whole dashboard. Read the actual middleware ordering and the exemption's match rule. Ask: can
-the exemption match more than `/platform`? A prefix match, a missing anchor, or a reordered
-`use()` would let unauthenticated requests through, or break session resolution for normal routes.
-
-**2. `332a16c` (#52) wastewater layer geometry.** 2026-09-04, the most recent seam commit and the
-narrowest. Accepting polygon geometry where only lines were accepted can break a renderer that
-assumed lines.
-
-**3. Anything else in #39–#52.** Twelve other commits landed in the seam. If neither of the above
-explains the symptom, work the rest rather than forcing the evidence into these two.
-
-**DEMOTED, and the planner got this wrong first time round.** `0e5c41e` (DEFAULT_TENANT_ID 1→2)
-was originally ranked as a peer of the two above. It is dated **2026-04-05** — five months before
-the seam and unrelated to it. It does not explain a regression the city noticed this week, and
-treating it as a peer would waste your time. It is still worth knowing the value moved, because
-G-131 records that `property-intel/summary` uses a bare numeric tenant literal that has already
-been bumped once by an unrelated commit — but that is a structural finding for another row, not
-this incident.
-
-## What has been learned since this dispatch was written
-
-G-126 closed today and read this repo's platform handlers read-only. Its findings are directly
-relevant and you should not re-derive them:
-
-**`PLATFORM_INTERNAL_API_KEY` binds to no tenant at all.** It is one shared bearer secret gating
-all 12 platform routes uniformly.
-
-**Tenant resolution splits three ways behind it.** Five routes do a robust name-based lookup;
-`property-intel/summary` uses a bare numeric literal; five vendor routes have no tenant concept
-whatsoever.
-
-That is recorded as **G-131** and is NOT yours. Do not fix it here. But if your regression turns
-out to live in that area, say so — the two rows would then be one.
+**5. Why three lanes each reported it as standing rather than escalating it.** Not to assign
+blame — to find whether there is a missing mechanism. A gap that three closes name and nobody
+owns is the "artifact that exists, is correct, and does nothing" class.
 
 ## Method
 
-**Get the symptom first.** Ask the operator what Bastrop actually reported if it is not already
-in your dispatch: a blank page, a specific screen, missing data, a slow load, an error. A
-diagnosis without a symptom is a guess. If you cannot get the symptom, say so and characterise
-the system's health broadly instead of picking a hypothesis at random.
-
 **Read the authoritative record, never a proxy.** The revision that served a request is on that
-request's own log line, not in `latestReadyRevisionName`. The image a revision runs is its
-digest, not the tag that was requested. Whether a table exists is in the catalog, not in the
-shape of somebody else's query.
+request's own log line, not `latestReadyRevisionName`. Cloud Run traffic is read from JSON **by
+field name**, never a positional `value()` formatter — that exact misread produced a false reading
+on this service earlier today.
 
-**Never read multi-field CLI output through a positional formatter.** `--format="value(a,b,c)"`
-aligns by semicolons and a blank field shifts every column after it. Use JSON and read fields
-by name.
+**ENUMERATE BEFORE ASSERTING ABSENCE.** "No key exists" is only acceptable with the list of places
+you looked. This whole row exists because an absence was asserted three times without being traced.
 
-**Check whether the symptom predates the deploy.** Compare the reported onset against when
-`00138-law` began serving. A regression that predates the deploy has a different cause.
+**State the mechanism, then a second mechanism that would produce the same observation and why you
+rejected it.** For this row specifically: "the key is missing" and "the key exists and lanes do not
+have it" and "no key is needed and the gate is doing something else" all produce an identical 401.
 
-**Verify by violation.** Before reporting the fix as working, reproduce the symptom on the old
-behaviour and confirm it does not reproduce on the new. A check observed only passing has not
-been observed working.
+**Never print secret VALUES.** Names, locations and presence only. This row is entirely about
+credentials and that rule is not decorative here.
 
-**Every verification command must be exit-bounded** (`timeout 120 ...`). Never run a command
-that waits for input or does not terminate.
+Every verification command exit-bounded (`timeout 120 ...`).
 
-## Deploy
+## Scope
 
-Deploys are planner-owned here, which means YOU deploy and you fix your own failed deploys;
-never escalate a deploy to the operator. Tag a canary, deploy with `--no-traffic`, smoke it,
-then shift traffic, and verify the shift by reading the traffic JSON by field name.
+**Read-only across `smartcity-dashboards`, `smartcity-os` and the relevant GCP projects.**
 
-Before shifting traffic, smoke ALL THREE v2-facing routes above plus the v1 symptom.
+`smartcity-os` is under ABSOLUTE NO-TOUCH with a narrow read-only exception recorded in
+`_catalog/repo_intents.md`. Reading `server/routes/esri.ts` and the platform handlers is inside it.
+Changing anything there is not.
 
-## Report, do not fix, anything that is not this incident
+**Change nothing.** If the answer is "provision a key", that is a follow-on with its own row —
+report what would need creating, where, and who can do it. Do not create credentials.
 
-You will likely find more. The fourteen PRs cite three decision records that **do not exist** in
-doc_repo (`2026-09-03_smartcity_os_platform_read_authorization.md`,
-`2026-09-03_bastrop_tx_dashboards_pack_ratified.md`, and a 2026-09-04 Leaflet-island override),
-and none of that work carries a plan row. That is a real governance gap and it is not yours to
-close. Name what you find in your close.
+If G-122 is running on `smartcity-os` while you work, **coordinate: do not both touch that repo.**
 
 ## Close
 
-Write your close to `_inbox/2026-09-14_g122_v1_regression_close.json`.
+Write your close to the path named in the CHECKPOINTS AND CLOSE block above — that is the
+machine-checkable one, and this mission deliberately does not name a second.
 
-State: the symptom as reported, the mechanism you believe explains it, **a second mechanism that
-would produce the same observation and why you rejected it**, what you changed, the deployed
-revision and digest, the violation test in both directions, and live proof that all three
-v2-facing platform routes still answer. If you could not determine the cause, say that plainly
-rather than shipping a change that might be unrelated.
+Lead with the crux in one sentence: **why Bastrop's map works for the operator in a browser and
+401s for a lane with curl.** Then the five items. Then state, plainly, whether this is a
+provisioning problem, a distribution problem, or a misunderstanding about what the gate is for —
+and what it would cost to make authenticated Bastrop verification routinely available to any lane,
+because three closes have now been degraded for want of it.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-09-14_g122-v1-regression_cp1.json
-  CP2: _inbox/2026-09-14_g122-v1-regression_cp2.json
-  CLOSE: _inbox/2026-09-14_g122-v1-regression_close.json
+  CP1: _inbox/2026-09-14_g133-bastrop-verify-access_cp1.json
+  CP2: _inbox/2026-09-14_g133-bastrop-verify-access_cp2.json
+  CLOSE: _inbox/2026-09-14_g133-bastrop-verify-access_close.json
   These paths are relative to the doc_repo worktree the session RUNNING YOU is rooted in: for a
   lane spawned by the dispatch planner that is the planner's worktree; for the dispatch planner
   itself it is its own seat worktree (never P:/doc_repo, the integration seat's checkout). This
@@ -254,8 +181,8 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
 CLOSE SKELETON (the fields the enforcement gate reads; spell them exactly, or the gate refuses
 the commit rather than guessing what you meant):
   {
-    "lane": "g122-v1-regression",
-    "planRows": ["G-122"],
+    "lane": "g133-bastrop-verify-access",
+    "planRows": ["G-133"],
     "status": "closed | closed-partial | blocked",
     "probe": { "artifact": "_inbox/<date>_<HHMMSS>_surface_probe.json" },
     "falsifier": "...", "contradicted": "...", "leave_behind": [...],
