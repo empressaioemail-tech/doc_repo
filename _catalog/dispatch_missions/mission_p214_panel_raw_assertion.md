@@ -62,6 +62,35 @@ Find what `R32` is and where the panel's "expected" values and edge lengths come
 both sources. If the panel's source turns out to be correct and the served record wrong, that is
 a bigger finding and you escalate rather than continuing.
 
+### THE PARCEL YOU WERE SHOWN IS THE WRONG HALF OF A SPLIT NODE — read this before you scope
+
+Measured live 2026-09-15, stub depth:
+
+```
+48021:60981    label "1009 PECAN ST , BASTROP, TX 78602"   situs present  landUse present   envelope present
+48021:8723767  label "TX"                                   situs present  landUse unknown   envelope present
+```
+
+`find_parcel` for "1009 Pecan St, Bastrop" returns **60981**, not 8723767. These are two nodes
+for what is plausibly one lot: a CAD-style 5-digit node carrying the address and land use, and a
+7-digit node carrying neither.
+
+**`8723767`'s situs reports `present` while its value is the bare state token "TX".** That is a
+SENTINEL counted as a populated value, the recorded situs class. The panel's "No street address
+on the county record" is the panel being MORE honest than the record. Do not "fix" the panel to
+print "TX".
+
+**And the envelope disagrees ACROSS READ PATHS on one parcel:** stub depth reports `envelope:
+present` for 8723767 while depth-node reports the overlay `refused / atom_path_pending`. That is
+a third reader disagreeing, on top of the brief-versus-overlay disagreement below.
+
+IN SCOPE for you: the stub-versus-node envelope disagreement, because it is the same coherence
+defect as the rest of this row.
+
+OUT OF SCOPE, carded separately as P-215 — do NOT chase it: the 5-digit/7-digit node split, the
+situs sentinel, and which node is canonical. That is an identity problem in the same namespace
+family as P-212's mass false retirement, and it needs the crosswalk, not the panel.
+
 ### Two further defects in the same payload, same parcel
 
 **Same self-contradiction class as P-207, different rail.** The brief's `setbacks-envelope`
