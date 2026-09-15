@@ -132,6 +132,15 @@ BFF abort.
 
 **Said three decision records did not exist.** They were on an unpushed branch.
 
+**Built an incident dispatch around the wrong cause.** G-122's ranked hypotheses were all seam
+commits, because the seam was the largest recent change and the operator's own theory pointed
+there. The real cause was **external**: the City of Bastrop edited their own ArcGIS parcel layer
+on 2026-09-10, dropping a field the app had requested since March, and ArcGIS rejects an entire
+query when one requested field is absent. The seam finished deploying six days BEFORE that change.
+Both ranked hypotheses tested clean on diff review. **The dispatch's insistence on testing rather
+than assuming, and on naming a second mechanism, is what found it** — the process worked while the
+planner's hypothesis did not.
+
 Common shape: **a conclusion travelled and its caveat did not.**
 
 ## Designs — `_design/`, with `README.md` and `INDEX.md`
