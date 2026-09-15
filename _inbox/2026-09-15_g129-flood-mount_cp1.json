@@ -1,0 +1,53 @@
+{
+  "lane": "g129-flood-mount",
+  "checkpoint": "CP1 design/pre-build",
+  "planRows": ["G-129"],
+  "seat": "cente-g129",
+  "at": "2026-09-15T00:00:00Z",
+  "startCommits": {
+    "doc_repo": "4f4ebc36",
+    "hauska-map": "3e88306dc7be2ffa1ab972756e0836ec3d1b50c5",
+    "smartcity-dashboards": "c7174f8"
+  },
+  "whatAlreadyExists": [
+    "FloodDrainageSection (hauska-map apps/property-explorer/src/workbench/tools/FloodTool.tsx) already accepts an `embed` prop (compact styling, no border/caption) -- built for embedding INSIDE the Reports catalog list, not for an iframe target. Reusable for the new embed page, but the URL-drivable iframe entry point itself does not exist yet.",
+    "flood-map-overlay.ts's createFloodMapOverlayController is the real MapLibre renderer, already wired to ExplorerMap's host.setFloodMapOverlay. Reusable verbatim.",
+    "The synchronous refresh path (POST /api/pe-site-plan-export?report=flood-drainage) already has FLOOD_ENGINE_TIMEOUT_MS=55000 (BFF-side AbortSignal) matching Vercel's 60s cap.",
+    "G-125 (closed 2026-09-14) already established, live: a depth change is NOT a differential cache-miss risk -- flood-drainage has no refresh-level caching at any depth. The dispatch's cited 85-154s figure is FEASIBILITY's number (P-155, separately scoped), not flood-drainage's. Flood-drainage's own measured cold-container cost is 92.5-102.8s regardless of depth (subprocess/DEM cold start), which DOES still exceed the 55s BFF abort on any first/cold call -- a real, pre-existing, general risk G-125 explicitly left out of scope as unrelated to its own row.",
+    "G-117 (2026-09-04, doc_repo _decisions) rules that for the LIVE bastrop_tx pack specifically, the Dashboards map stage mounts this repo's OWN Leaflet page (web/property-map.html) instead of the SmartSite/PE iframe -- a deliberate, named, reversible stopgap. Every other pack (template-city; any future onboarded city) mounts the real PE iframe. This directly gates whether the flood-drainage capability can reach the real derived-study renderer for the live customer today.",
+    "smartcity-dashboards' three-stage MountStage mechanism (map/review/files) already exists (G-128, closed) with dock/expand/full states and a postMessage protocol (sc-map-dock-mode) from the embedded page. Public works and Fire & EMS lenses exist (staff-review.mjs ROSTER_LENS_IDS) but carry no data-stage=\"map\" anchor today; only Overview and Development-services do."
+  ],
+  "openQuestionsResolvedHere": [
+    {
+      "q": "Is a depth change a cache miss on the mounted path (dispatch's own conditional for building async refresh/polling)?",
+      "a": "No -- confirmed by G-125's own live measurement, cited above. But the underlying cold-container risk is real and depth-independent, and it inherits into this mount as a new consumer. Plan: build a minimal, embed-scoped polling fallback (POST refresh; on 503 engine_timeout, poll the existing GET .../action=study endpoint on a bounded interval) rather than the full job-state/202 infrastructure P-155 built for Feasibility -- because the engine's own refresh handler (hauska-engine services/engine-api/src/routes/flood-drainage.ts, Hono) computes-then-persists-then-responds with no abort-checking, so a BFF-side client disconnect does not stop the engine from finishing and persisting; a subsequent GET picks up the finished study. This is the same de-facto mechanism P-155 formalizes for Feasibility, reused informally here without touching hauska-engine (out of my named repos) or duplicating P-155's own not-yet-fully-closed (closed-partial) infrastructure.",
+      "risk": "The 'engine keeps computing after BFF disconnect' mechanism is inferred from reading the route source (no explicit disconnect-handling code, Hono/Node do not cancel in-flight handlers on their own), not yet observed live end-to-end through my own mount. Will state this as the accepted mechanism with its rejected alternative (the engine aborts too) in the close, and verify empirically where I can."
+    },
+    {
+      "q": "How do the FEMA regulatory zone and the derived drainage study read as two different questions (dispatch: 'decide how, and state the decision')?",
+      "a": "The mount opens in its own frame (the existing 'map' MountStage, taken to Full), replacing the city's Leaflet FEMA view for the duration -- never rendered simultaneously with it. Inside that frame, the existing PE map already labels FEMA as '(reference)' in muted blue and the derived study in the slate-teal hydro family, per the already-shipped Legend in FloodTool.tsx. I will add one explicit banner at the top of the embed stating the distinction in words (regulatory zone vs. modeled study) since a color-only distinction is not enough for a screen a city staffer may view once. No new taxonomy invented; no change to Dashboards' 52-layer palette."
+    },
+    {
+      "q": "Should the embed bypass PE's existing $15 property-entitlement paywall for staff use?",
+      "a": "NOT deciding this here. The dispatch explicitly names the credential/auth question as G-133's (a live recon), and inventing a bypass would be new cross-cutting entitlement code outside my named repos' scope for this row. The embed rides the SAME session+entitlement gate every PE consumer hits; on 401/402 it renders the SAME honest sign-in/paywall states FloodDrainageSection already has. Verification will use template-city / an already-entitled test path where possible and report the wall honestly where not, per the dispatch's own 'known verification wall' instruction."
+    }
+  ],
+  "plannedChanges": {
+    "hauska-map": [
+      "New embed entry point: a `?embed=flood-drainage&parcelNodeId=<id>` URL mode. Reuses the existing ExplorerMap self-contained shell (already deep-link-capable on parcelNodeId) rather than building a second map instance -- adds a reduced-chrome layout, an auto-open-Reports-to-Flood-and-run effect, and the FEMA-vs-study banner.",
+      "A small additive polling helper beside floodDrainageClient.ts, used ONLY by the embed's own call site -- the existing PE consumer flow (FloodTool.tsx run()) is left untouched, per G-125's own precedent of not touching the shared synchronous contract."
+    ],
+    "smartcity-dashboards": [
+      "One reusable 'Flood & drainage screening' capability card/button, added to Public works and Fire & EMS lenses (Overview and Development-services already anchor the map stage) and reachable from Development-services too, that mounts the map stage at the flood-drainage embed URL and opens Full -- honoring G-117 (disabled with a stated basis when the current pack is on the native-property-map stopgap, i.e. bastrop_tx today)."
+    ]
+  },
+  "outOfScopeConfirmed": [
+    "Porting the renderer to Leaflet",
+    "The map engine question",
+    "G-130 (FEMA determination ruling)",
+    "G-127 (RBAC enforcement)",
+    "G-133 (credential provisioning)",
+    "P-155's job-state/202 infrastructure (Feasibility-specific, closed-partial, not duplicated here)",
+    "G-117's reversal (native-property-map stopgap for bastrop_tx) -- honored, not lifted"
+  ]
+}
