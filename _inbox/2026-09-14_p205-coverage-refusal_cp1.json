@@ -1,0 +1,26 @@
+{
+  "lane": "p205-coverage-refusal",
+  "planRows": ["P-205"],
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "filedAtUtc": "2026-09-14T22:20:00Z",
+  "laneClaim": {
+    "seat": "cente-p205",
+    "claimedVia": "P:/doc_repo/scripts/lane-claim.mjs claim --lane p205-coverage-refusal --seat cente-p205 --plan-row P-205 --dispatch _dispatches/2026-09-14_p205-coverage-refusal_dispatch.md",
+    "result": "exit 0, free (no prior claim on this lane)",
+    "worktrees": {
+      "docRepo": "P:/seat-worktrees/p205-coverage-refusal/doc_repo (branch lane/p205-coverage-refusal, off P:/doc_repo main c72657cb)",
+      "legacyDesignTools": "P:/seat-worktrees/p205-coverage-refusal/legacy-design-tools (branch p205-coverage-refusal, off origin/main 803cd0d5)"
+    }
+  },
+  "bugMechanismConfirmed": {
+    "entryPoint": "artifacts/smartsite-mcp/src/tools.ts find_parcel handler -> splitFindParcelHits() -> api-server GET /api/brokerage/v1/place/situs-search -> searchPlaceByPrefix()",
+    "file": "artifacts/api-server/src/lib/txgioAddressResolve.ts",
+    "decisionPoint": "lines 1416-1422",
+    "mechanism": "isOutOfCoverageStateCode(locality.state) (txgioAddressNormalize.ts:744-747) only fires on an EXPLICIT, recognised non-TX state token (e.g. '...Phoenix, AZ'). It is a STATE-level check only, keyed off COVERED_STATE_CODE='TX' (txgioAddressNormalize.ts:723). A Texas address in any unonboarded county (Bell/Killeen included) parses to state='TX' or null, so the check never fires; the address then runs the ordinary situs/prefix/address-point search ladder, bounded by storeCountyFipsBound() which spans texasCountyFipsList() -- ALL 254 Texas county FIPS, an index-bound generator, not a coverage claim (txgioAddressNormalize.ts:673-691, explicit in its own doc comment: 'This function is the index bound, not a name directory'). Zero rows come back, and finish() (txgioAddressResolve.ts:1396-1402) falls to missClass:'no-hit' -- indistinguishable from a real in-coverage miss.",
+    "typeDeclaration": "SitusSearchMissClass = 'no-hit' | 'out_of_coverage' | budget-error (txgioAddressResolve.ts:1154-1157)",
+    "existingSixCountyList": "CONSTRAINT_SEARCH_COUNTIES (artifacts/api-server/src/lib/parcelConstraintSearch.ts:49-62) already names exactly the six serving-ledger counties, but it gates a DIFFERENT tool (find_parcels, plural / constraint search) and is not consulted by searchPlaceByPrefix at all. It is also itself a hand-maintained literal array, not a store-derived query -- reusing it would relocate the dispatch's named anti-pattern ('a hardcoded list ... wrong the moment Burnet lands'), not escape it."
+  },
+  "designQuestionOpen": "Dispatch requires picking ONE of: (a) widen the existing out_of_coverage class to a county-aware check, or (b) add a new, narrower missClass (e.g. county_out_of_coverage) alongside the existing state-level out_of_coverage, distinct because the two failure reasons (never-reached-this-state vs never-onboarded-this-county) may warrant different agentGuidance text. Leaning (b) pending the derivation-source investigation below, because collapsing them loses the ability to tell a caller which axis (state vs county) explains the refusal -- not yet decided; CP2 will carry the decision plus the derivation-source finding, since the two are coupled (the derivation source available determines what the check can even key off).",
+  "nextStep": "Investigate whether county-level coverage (\"does this county have any rows in the serving ledger, parcel_record / parcel_gate_verdict\") can be DERIVED on find_parcel's read path today, per the dispatch's explicit trap warning against a hardcoded county list, before writing any code."
+}

@@ -1,0 +1,53 @@
+{
+  "lane": "p205-coverage-refusal",
+  "planRows": ["P-205"],
+  "status": "blocked",
+  "probe": {
+    "artifact": "_inbox/2026-09-14_224347_surface_probe.json",
+    "note": "scripts/surface-probe.mjs does not exist in any repo reachable from this seat (legacy-design-tools, hauska-engine, hauska-map, hauska-factory, hauska-atom-contract all searched, including full git history of legacy-design-tools -- zero hits). It is referenced only in a comment in nodeFacetBakeTier1Conformant.test.ts as something someone ran locally against production. This close's probe artifact is instead four live, authenticated find_parcel calls through mcp__claude_ai_Smart_Site__find_parcel (the same production surface a customer hits), hand-assembled to the closest equivalent shape. Reported as a leave_behind item below rather than claiming compliance the toolchain does not actually support for this lane."
+  },
+  "checkpoints": [
+    "_inbox/2026-09-14_p205-coverage-refusal_cp1.json",
+    "_inbox/2026-09-14_p205-coverage-refusal_cp2.json"
+  ],
+  "prs": "not applicable: no code was changed. Every candidate fix was ruled out before a diff was written (see CP2) -- there is nothing to open a PR for. legacy-design-tools worktree (P:/seat-worktrees/p205-coverage-refusal/legacy-design-tools, branch p205-coverage-refusal) has zero commits ahead of origin/main 803cd0d5.",
+  "docRepoEditsUncommitted": [
+    "_inbox/2026-09-14_224347_surface_probe.json",
+    "_inbox/2026-09-14_p205-coverage-refusal_cp1.json",
+    "_inbox/2026-09-14_p205-coverage-refusal_cp2.json",
+    "_inbox/2026-09-14_p205-coverage-refusal_close.json"
+  ],
+  "docRepoEditsNote": "Left uncommitted in P:/seat-worktrees/p205-coverage-refusal/doc_repo (branch lane/p205-coverage-refusal) per AGENT_CONTRACT section 6: doc_repo commits are planner-owned. All four are new files under _inbox/; nothing else in the worktree is touched.",
+  "counts": {
+    "servingLedgerCounties": "6, per the dispatch's own measurement 2026-09-14 (Travis 380,917 / Williamson 282,570 / Hays 116,420 / McLennan 114,254 / Bastrop 62,256 / Caldwell 24,988 parcel_record rows) -- not re-measured here since this lane never got Factory-store read access to independently re-count (P-152 removed FACTORY_DATABASE_URL_RO from legacy-design-tools); taken as given from the dispatch's own cited figures, at their stated date.",
+    "derivationCandidatesEvaluated": "4, all 4 ruled out with a stated reason each (CP2.derivationInvestigation.candidatesRuledOut) -- never fewer than 4 evaluated, never a subset silently dropped.",
+    "liveProbeCallsRun": "4, listed verbatim with raw request/response and UTC timestamp in _inbox/2026-09-14_224347_surface_probe.json."
+  },
+  "constraintsHonored": [
+    "No write to smartcity-os or smartcity-dashboards.",
+    "No address-point loading for anything.",
+    "No widening of coverage claims in code or copy beyond counties the store actually holds -- the inverse risk (this exact widening) is precisely why every candidate was ruled out rather than shipped.",
+    "No write to a repository not owned by this lane (repo: legacy-design-tools) -- the only viable derivation path found requires a new endpoint in hauska-engine, and that work was recommended (CP2.designRecommendationForWhenUnblocked) rather than performed.",
+    "No hardcoded/declared county list shipped, even though three already exist elsewhere in the codebase and reusing one would have been the fast path -- explicitly the trap the dispatch warns against.",
+    "Did not conflate this finding with the separate, already-known located-unbound / address-point gap (six-of-254-counties address-point loading) -- untouched, not this lane's mandate."
+  ],
+  "falsifier": "Pre-registered per dispatch: (1) does a coverage refusal false-fire inside one of the six onboarded counties? (2) does it fail to fire for a county the store demonstrably has zero rows for? (3) does the coverage check pass on an empty result that could be empty for an unrelated reason (a presence-shaped check)? Since no code shipped, (1) is vacuously not applicable. (2) is TRUE today and remains true: the live Killeen/Bell probe still returns bare no-hit (bug unfixed, correctly reported as still-open rather than silently accepted). (3) FIRED against the retrieval-api gate-verdict candidate (200/null indistinguishable from 'unevaluated rail' or 'read failure') and, separately, a live-evidence falsifier fired against the txgio_parcel-presence candidate: a real hit in Bexar County (48029, not a serving-ledger county) proves that store's row-presence is not equivalent to serving-ledger membership.",
+  "contradicted": "Working premise going into CP1 was that 'derive coverage from what the store actually holds' would resolve to a query legacy-design-tools could already run (per the dispatch's own hint that this should be achievable on the read path). Live evidence contradicted this: the one store this repo can query directly (txgio_parcel/txgio_address) demonstrably holds broader-than-served coverage (Bexar hit), and the one external store reachable by HTTP (the Factory ledger via retrieval-api) has no existence-check endpoint, only an ambiguous per-rail verdict lookup. The dispatch's own escape hatch ('if you cannot derive it ... that reason is a finding') is the operative clause, not the main path.",
+  "leave_behind": [
+    {
+      "item": "New retrieval-api endpoint (repo: hauska-engine, services/retrieval-api) that returns the set of county FIPS with >=1 row in parcel_record and/or parcel_gate_verdict, e.g. GET /parcel-record-gate-verdict/coverage, backed by SELECT DISTINCT county_fips FROM parcel_gate_verdict (and parcel_record if a county can precede its first gate verdict), cacheable with a short TTL. This is the actual unblocking work for P-205; not performed here because hauska-engine is not this lane's owned repo. See CP2.designRecommendationForWhenUnblocked for the full shape including the recommended new missClass ('county_out_of_coverage', name for the planner to bless) and its vocabulary impact in hauska-atom-contract.",
+      "owner": "unassigned -- needs a lane against hauska-engine"
+    },
+    {
+      "item": "scripts/surface-probe.mjs referenced by OPS-24's own law 1 and by probe-close-gate.mjs does not exist in any repo reachable from this seat. Either it needs to be committed somewhere lanes can reach it, or the close-gate's expectation needs an explicit exception path for a lane that could not reach it (this close's probe.artifact is a hand-built substitute, not the named script's output).",
+      "owner": "unassigned -- OPS-24 tooling gap, affects every lane on this program, not just P-205"
+    },
+    {
+      "item": "txgioAddressResolveCoverage.test.ts's mocked in-coverage no-match fixture ('147 Kahana Ln, Bastrop, TX') now resolves live via address-point-containment (P-175 shipped after that test), so the mock no longer reflects live behavior for that specific address. Not a defect in the mock (it never claimed to track live data, it's a unit test double) but worth a note to whoever owns that test file, since a future reader could mistake the mock for a live characterization.",
+      "owner": "unassigned -- informational, not a defect"
+    }
+  ],
+  "missionPremise": "OPS-24 P-205's ruling (this dispatch, 2026-09-14): a Texas county absent from the six-county serving ledger must return an honest coverage-class refusal from find_parcel instead of the ordinary no-hit an in-coverage genuine miss gets, and 'coverage must be DERIVED, never declared' -- a hardcoded county list is explicitly named as the failure mode to avoid, with an explicit carve-out that an undeliverable derivation is itself a valid, reportable finding rather than grounds to hardcode around the constraint.",
+  "completionPredicate": "Closed (not blocked) requires: a live find_parcel call against an unonboarded Texas county returns a coverage-class miss naming the county/state, a live call against an onboarded county's genuine miss still returns plain no-hit (no regression), the served vocabulary carries the new/widened class, and the classification is backed by a query against a store that actually reflects serving-ledger membership -- not a hand-maintained list and not a table whose footprint has been shown broader than the ledger. None of these were reachable without new work outside this lane's owned repo, so this stays blocked rather than closed or closed-partial (closed-partial would misstate that partial customer-facing progress shipped; none did).",
+  "scopeBasis": "Repo scope is 'legacy-design-tools' per this dispatch's PLAN-ROW line, and the dispatch's own Do-not list forbids writing to a repository this lane does not own. The only technically sound derivation found requires a new endpoint in hauska-engine, owned by a different lane/repo -- excluded on that basis, not because the work is undesirable or because it was overlooked; CP2 names the exact shape for whoever picks it up next. The separate located-unbound / address-point coverage gap (six-of-254 counties) is explicitly named out of scope by the dispatch itself ('That is a different gap and it is not yours') and was not touched."
+}
