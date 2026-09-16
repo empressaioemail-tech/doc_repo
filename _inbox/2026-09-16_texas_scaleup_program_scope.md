@@ -690,7 +690,7 @@ The envelope family is every rail and atom that decides what may be built:
 | L1 | P-204's other rails into the ledger: `pipelines`, `railCorridor`, `etjStatus` (built from the P-241 enumeration), `landUseDescription`. | Pass in all six. | hauska-factory, LDT |
 | L2 | Trivial derivations for five counties: `acreageSqft`, `landUseVintage`, `situsState`. | Pass in all six. | hauska-factory |
 | L3 | `citationUrl`: a writer exists in `parcel-r5-zoning.mjs`, yet the rail is excluded in all six. Diagnose, then fix. | Pass in all six; the "citation degraded" flag clears where a citation exists. | hauska-factory |
-| L4 | **`agValuation` Texas-wide**: acquire ag valuation for Bastrop, Caldwell, Hays and McLennan from each CAD (318,000 cells unaccounted today). Delete the never-run not-applicable sweep so it cannot write the false state. Confirm Travis's join key (the writer's own open item; 373,406 values suggest it holds). | Pass in all six. The instrument's `ag-valuation-no-source` guard stays at zero. | hauska-factory |
+| L4 | **`agValuation` Texas-wide**: ag valuation for Bastrop, Caldwell, Hays and McLennan **comes from Cotality once its credentials and contract arrive** (operator, A-184; 318,000 cells unaccounted today). Delete the never-run not-applicable sweep so it cannot write the false state. Confirm Travis's join key (the writer's own open item; 373,406 values suggest it holds). | Pass in all six once the Cotality data lands; until then accepted only as `vendor-pending` (P-253). The instrument's `ag-valuation-no-source` guard stays at zero. | hauska-factory |
 | L5 | `exemptionCodes` (Williamson 187,186; Caldwell 8,958), `landUseSource` (five counties) and `acreageMethod` (Caldwell, Hays) refusals: diagnose each. Fix it, or rule it an earned refusal with a count. | Each has a verdict. | hauska-factory |
 | L6 | **P-201** (landed 2026-09-16, factory `9171279`): `excluded` split into not-applicable, mid-cutover and no-acquisition-path. **It does not close the zero-earned hole** (rev 4 item 1). **P-252** does: a rail live elsewhere with nothing earned here refuses unless a declared basis says it does not apply; the pre-bake rail check becomes an allowlist; the uncalled `evaluatePublishGate` is wired or retired; a checked-in all-`unaccounted` county must refuse. Dry run and staging first, because the honest state turns verdicts red. | P-252's fixture refuses; `maxImperviousCoverPct` outside Travis stays not-applicable. | hauska-factory |
 | L7 | **P-192**: the six lease-less writers take a lease; the false `lease_released: true` is removed. | Owner, land use and flood re-run without throwing, under a lease with run records. | hauska-engine, factory |
@@ -717,7 +717,7 @@ The envelope family is every rail and atom that decides what may be built:
 | X7 | **`salesHistory` absent from the MCP schema** rather than declared Unavailable (XD-12, against P-209) | LDT smartsite-mcp |
 | X8 | **No-table cities decline with "no zoning district observed"** while the same payload holds the district (XD-5) | hauska-map |
 | X9 | **A malformed situs (", ,") breaks envelope drawing** for a parcel whose zoning and setbacks resolve (XD-9) | hauska-map, LDT |
-| X10 | **"PUD"-coded districts resolve Euclidean setbacks** (XD-14). Settle what the code means before the PUD message ships. | ruling first, then LDT |
+| X10 | **"PUD"-coded districts** (XD-14). Settled without a ruling (A-184): they have no table row and the ledger marks them "none required", so they get the PUD message; P-257 traces the unsupported numbers L-E saw on them. | LDT, hauska-map |
 | X11 | **Setback citation without an effective date** on Pflugerville (XD-11) | LDT |
 
 The card spec (`_inbox/2026-09-16_scaleup-le_card_spec.md`) and the 39-bucket fixture list
@@ -735,7 +735,7 @@ a leg of the Phase 0 exit (section 5), through P-254.** The row for each item is
 | C4 | P-212 follow-on: live-currency checks for the other five counties (P-275). Rev 4 correction: P-206 is "a provenanced retirement is served as `parcel_not_found`"; its open PR (LDT #699) relabels declines that already happen and refuses nothing new. | engine |
 | C5 | **LDT `STAGING_ATOMS_DATABASE_URL`: REPOINTED 2026-09-16 (A-181)** to the live staging branch; the stale planner branch is quarantined. **Still owed (P-276), and "add a key" would silently do nothing:** `ROTATION_TARGETS` is a frozen two-key object whose loop also reads `branchRecords[key]` (from `staging-reset`) and `projectIds[key]` and writes to one GCP project. The fix is a third target, its branch record, its project id and its own project, with a test that fails when a consumed staging secret is missing. | hauska-factory |
 | C6 | **Sub-agent depth: BUILT 2026-09-16 (A-181).** `FAN-DEPTH` is compiled into every dispatch and enforced at commit and at launch. Proven by violation. Armed in the next session. **Rev 4: the commit layer does not fire in a seat worktree or on a merge** (C10). | doc_repo (done, with C10 owed) |
-| C8 | **ADD-084: `PRODUCTION_NEONDB_URL` exposed in a lane's output 2026-09-04, still unrotated** (version 1, 2026-08-28). Nine secrets across two projects share the production role, so rotation is a coordinated change: new password, all nine secrets, and every consumer redeployed. **Rev 4 (P-278): it blocks Burnet's first production publish** (teardown T9), which is operator stop point 2. The engine key exposed 2026-09-15 is rotating separately under the reports lane's P-251. | GCP, Neon, every consumer |
+| C8 | **ADD-084: `PRODUCTION_NEONDB_URL` exposed in a lane's output 2026-09-04, still unrotated** (version 1, 2026-08-28). Nine secrets across two projects share the production role, so rotation is a coordinated change: new password, all nine secrets, and every consumer redeployed. **Rev 4 (P-278): it blocks Burnet's first production publish** (teardown T9), which is operator stop point 2. **Planned for later** (operator, A-184): `_inbox/2026-09-16_add084_production_credential_rotation_plan.md`. The engine key exposed 2026-09-15 is rotating separately under the reports lane's P-251. | GCP, Neon, every consumer |
 | C7 | **Main already carries six duplicate amendment ids** (A-016, A-060, A-061, A-136, A-145, A-146). Extend the allocation gate to A-, F- and R- prefixes, and reconcile the register's C15 count of three (P-277). | doc_repo |
 | C9 | **Tag URLs that skip a security setting** (P-279). The 37 engine tags are gone (reports lane, P-251); a post-deploy check stops the next set. | engine deploy, every Cloud Run service |
 | C10 | **The commit gates fire where lanes commit** (P-280): tracked `pre-commit` and `pre-merge-commit` hooks on the shared git directory run both gates against the worktree being committed. | doc_repo |
@@ -765,7 +765,7 @@ a leg of the Phase 0 exit (section 5), through P-254.** The row for each item is
 | P-288 | The generalised target pair | A second farm cannot run under its own name | factory, engine | before Phase 2, if isolation is chosen |
 | P-289 | Branch lifecycle | The six quarantined branches had no owner or expiry | factory, operations | before Phase 2, if isolation is chosen |
 | P-290 | Two counties publishing in one hour, tested | The shared-store tolerance is a schema fact, not a tested one | hauska-factory | before Phase 2 |
-| P-291 | The July bake and the farm: 19 baked counties, Bell a migration county | Customers in 13 counties outside the six are answered from an ungraded bake | engine, LDT | census now; Bell in Phase 2 |
+| P-291 | The July bake and the farm: 19 baked counties, Bell a migration county | Customers in 13 counties outside the six are answered from an ungraded bake; ruled 2026-09-16 to keep serving with a visible "not yet verified" statement | engine, LDT | the statement and census now; Bell in Phase 2 |
 
 ## 5. Phase 0 exit: the definition of done
 
@@ -878,7 +878,7 @@ diagram where they differ.
 | 0 Recon and places | Declare all seven places. Fix the roster status. | per-place declaration feeding the gate |
 | 1 Manifest | Pin the four lines. | manifest file and the check that stages carry it |
 | 2 Pre-bake | Run the normalised register against Burnet's sources. | the runner |
-| 3 Acquire | Parcels, roll with declared vintage, address points (StratMap statewide set), Marble Falls zoning, road nodes (checked against TIGER), ag valuation from the Burnet CAD. Vendor stage only if V2 allows. | address-point loader for a new county; vendor stage gate |
+| 3 Acquire | Parcels, roll with declared vintage, address points (StratMap statewide set), Marble Falls zoning, road nodes (checked against TIGER), ag valuation (from Cotality unless the Burnet CAD publishes it, A-184). Vendor stage only if V2 allows. | address-point loader for a new county; vendor stage gate |
 | 4 Identity | Measure the CAD-to-GIS join. | the generalised H1 instrument |
 | 5 Instantiate | 65-rail full shape. **P-252 must already be live**: with P-201 alone, the instantiated county reads `excluded-not-applicable` on every rail and clears the pre-bake rail check (A-183). | none |
 | 6 Rail fill | Every writer under lease with run records. | none (L7 lands first) |
@@ -1113,19 +1113,24 @@ PHASE 0 EXIT (section 5) <- everything above, plus P-230, P-217, P-209, P-204, P
 10. **The 37 engine tags and the engine key:** removed and rotating, by the reports lane under its
     P-251, operator-ruled (verification of the rotation owed once it completes).
 
+11. **Ag valuation** for Bastrop, Caldwell, Hays and McLennan: "this will come from Cotality
+    when we get their credentials and contract" (A-184, P-267). The exit accepts the rail there only
+    as `vendor-pending` until the contract is in hand. Burnet's is assumed to come from Cotality
+    too, unless the Burnet CAD publishes it.
+12. **The production database credential** (P-278, ADD-084): "plan it for later". Planned at
+    `_inbox/2026-09-16_add084_production_credential_rotation_plan.md`; it still completes before
+    Burnet's first production publish.
+13. **The "PUD" code question** (P-257, XD-14): withdrawn. The districts tested have no table row
+    and the ledger marks them "none required", so they are planned developments under A-164.
+14. **Answers from the July bake in 13 counties outside the six** (P-291): "okay". They keep
+    serving, each with a visible "not yet verified" statement.
+
 **Still owed:**
 
-11. **Ag-valuation sources** for Bastrop, Caldwell, Hays and McLennan: which CAD product per
-    county (P-267).
-12. **The production database credential** (P-278, ADD-084): a planned rotation. It blocks
-    Burnet's first production publish.
-13. **What a bare "PUD" code means** where it resolves Euclidean setbacks today (P-257, XD-14).
-14. **Answers served from the July bake in 13 counties outside the six** (P-291): keep serving
-    them with a declared quality statement, or refuse them until onboarded. Recommendation: keep
-    serving, with the statement visible, because refusing would remove answers customers have
-    today and the farm will replace them county by county.
 15. **P-264 without the road-name dictionary** (a planner call inside A-177): stands unless the
     operator overrules it.
+16. **The `vendor-pending` acceptance for `agValuation`** (an integration seat call, A-184):
+    stands unless the operator wants Burnet to wait for the Cotality data.
 
 ## 15. Instruments in this package
 

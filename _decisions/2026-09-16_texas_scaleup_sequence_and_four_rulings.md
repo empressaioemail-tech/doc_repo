@@ -155,3 +155,19 @@ that answer from the July bake keep serving with a declared quality statement or
 onboarded (P-291).
 
 Reversal: any of the four calls is undone by an operator ruling and a scope revision.
+
+## Addendum: answers on the rev 4 decisions (A-184)
+
+1. **The production database credential:** "plan it for later". Planned at
+   `_inbox/2026-09-16_add084_production_credential_rotation_plan.md`. It still completes before
+   Burnet's first production publish.
+2. **Answers from the July bake outside the six:** "okay". They keep serving, each with a
+   visible "not yet verified" statement.
+3. **The PUD code question:** withdrawn by the integration seat; the evidence showed these are
+   planned developments already covered by A-164.
+4. **Ag valuation for Bastrop, Caldwell, Hays and McLennan:** "this will come from Cotality when
+   we get their credentials and contract." The integration seat's call: until then the Phase 0 exit
+   accepts that rail in those four counties only as `vendor-pending`, so Burnet does not wait on
+   the vendor for it. The operator can overrule that.
+
+Reversal: an operator ruling and a scope revision.
