@@ -2,7 +2,7 @@
 id: 2026-09-16_pickup_list_planned_not_done
 title: Pickup list — work planned 2026-09-13 to 2026-09-16 that the QA arc displaced
 date: 2026-09-16
-status: working card, for the operator to route; nothing here is dispatched
+status: ABSORBED 2026-09-16 into _inbox/2026-09-16_texas_scaleup_program_scope.md, which re-measured several items at parcel grain and supersedes this card where they differ (for example, the setback gap is 219,472 parcels, not the census's feature counts). Kept as the record of the reconciliation; work from the scope.
 kind: reconciliation
 owner: nick
 audience: the planner who picks this up after the current integration handoff (P-243, P-244a, P-244b, P-246)

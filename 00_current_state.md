@@ -222,7 +222,7 @@ findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 ## 6. Cross-cutting watch list
 
 - Two plans of record. Work that cannot name `P-xx` or `G-xx` is not scoped. G-66 is draft until approved.
-- Cotality REST extinguished; the MCP **eval** channel is LIVE (creds written 2026-07-14, first probed 2026-09-12, 11 tools). Never rotate a REST credential; re-route. Deploys planner-owned. No privileged data. CTX/national HELD. Code-done is not customer-done.
+- Cotality REST extinguished; the vendor is RE-ENGAGED as the farm purchase stage (operator 2026-09-16); the MCP **eval** channel is LIVE (creds written 2026-07-14, first probed 2026-09-12, 11 tools). Never rotate a REST credential; re-route. Deploys planner-owned. No privileged data. CTX/national HELD. Code-done is not customer-done.
 - Gold parcel `48021:34137` on Dashboards is a demo fixture, not Bastrop onboarded.
 - Plan-review files writes are reviewer uploads only. Planner does not seed Smart Files.
 - Hauska inbound meter / ICC store UPDATE waits a quiet L26 slot.

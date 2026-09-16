@@ -1,10 +1,10 @@
-<!-- CANON-PREAMBLE v9e22f2c4 generated 2026-09-11 from _STATE.md -->
+<!-- CANON-PREAMBLE v3a99388a generated 2026-09-16 from _STATE.md -->
 
 ## STANDING DECISIONS (paste into every executor dispatch)
 
-CANON-PREAMBLE v9e22f2c4
+CANON-PREAMBLE v3a99388a
 
-- COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
+- COTALITY REST IS DEAD, THE VENDOR IS RE-ENGAGED FOR THE FARM (operator 2026-09-16, _decisions/2026-09-16_texas_scaleup_sequence_and_four_rulings.md): when code hits Cotality REST (502/OAuth/fallthrough), re-route to county-gis/public-record and NEVER rotate the credential. The MCP eval channel is live for internal evaluation only. No vendor-sourced value reaches a customer until the commercial agreement is read, and the factory never bulk-calls the vendor. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
 - CTX / national HOLD LIFTED 2026-08-26 for the Factory program (`_decisions/2026-08-26_factory_program_and_hold_lifts.md`); the Bastrop QA condition is cosmetic and does not gate the data path. NO PRIVILEGED DATA and the Hauska spine rule stand.
