@@ -1,0 +1,89 @@
+{
+  "lane": "p256-setback-honest-states",
+  "planRows": [
+    "P-256"
+  ],
+  "kind": "evidence",
+  "evidenceFor": "the write-gate release added after CP2: what it releases, the proof that it cannot release anything else, and the raw local-suite comparison it was landed against",
+  "writtenAt": "2026-09-16T20:53:01Z",
+  "branchHead": "1ca92ac3185e32062d552021195edff6601c06fc",
+  "baseCommit": "afdda428811eac1c1fc59055ece36496a0f1685a",
+  "whyThisExists": "The dispatch's defect is 219,472 cells ALREADY WRITTEN. Fixing the two writer sites stops new ones and removes none of them: the write gate only ever moved a cell still reading `unaccounted`, and every measured cell reads `absent-verified`, which is in EARNED_CELL_KINDS and isPublishable. So the writers-only design filed in CP2 was insufficient on its own, and the dispatch's own stated post-apply outcome (every county's setback verdict turns refuse with a count) would have been false without this change. Recorded here because it is a change to what the PR ships, made after CP1 pre-registered its falsifiers.",
+  "theReleaseRule": {
+    "unchangedBranch": "prc.cell_state ->> 'kind' = 'unaccounted'  (the original gate, untouched)",
+    "addedBranch": "prc.cell_state ->> 'kind' = 'absent-verified' AND (basis.method LIKE $4 OR basis.finding LIKE $5)",
+    "releasedSet": "exactly the two buckets P-255's census measured, keyed on the census's own exported prefixes",
+    "methodPrefix": "setback-table-router",
+    "findingPrefix": "no ruled setback table exists for ",
+    "prefixesReadAtSource": "P:/doc_repo/scripts/setback-parcel-census.mjs:45-46 -- NO_TABLE_PREFIX = \"no ruled setback table exists for \"; ROUTER_METHOD_PREFIX = \"setback-table-router\". Copied character for character, and asserted equal in the lane's test (drift guard).",
+    "selfClosing": "a rewritten cell is no longer absent-verified, so a second run cannot match it again (asserted)",
+    "mirror": "setbackCellMayBeMoved(state) is the pure mirror of the WHERE clause; a drift test pins the SQL text, both parameterized LIKEs and the two prefix constants to it"
+  },
+  "whoElseCanWriteTheseSignatures": {
+    "method": "repo-wide grep over hauska-factory src/ for the two prefix strings and for each of the five setback rail keys",
+    "methodPrefixWriters": [
+      "src/jobs/parcel-setback-cells.mjs (the router-miss writer, basis.method \"setback-table-router.resolveSetbackForParcel\") -- the only writer of this string"
+    ],
+    "findingPrefixWriters": [
+      "src/jobs/parcel-setback-cells.mjs (buildNoRuledTableCells, method \"getSetbackTable(jurisdictionKey) probe\")",
+      "src/jobs/parcel-envelope-cells.mjs (its own noRuledTableCells, the SAME method and finding strings, lines ~368-371)"
+    ],
+    "theTrap": "The no-table signature is NOT unique to this job. A second job writes the identical basis.",
+    "whyItIsStillSafe": "The second job writes it on its own rails -- maxHeightFt / maxLotCoveragePct / maxFootprintSqFt (its exported RAIL_KEYS) -- and never on the five setback rails. The release's WHERE clause matches whatever the batch names, and the batch only ever names SETBACK_RAIL_ALLOWLIST, enforced at write time by assertNoFalseAbsence. So the disjointness of the two rail sets is the real control.",
+    "notTakenOnTrust": "A test imports parcel-envelope-cells.mjs's own exported RAIL_KEYS and asserts the intersection with SETBACK_RAIL_ALLOWLIST is empty, so the two files cannot silently drift apart.",
+    "fiveSetbackRailWriters": "src/jobs/parcel-setback-cells.mjs is the only job in the repo that writes setbackFrontFt/setbackSideFt/setbackRearFt/setbackCornerFt/setbackRules (the other hits are the rail registry src/lib/parcel-record-engine/rail-keys.js, the row-creation default in ingest-existing.js, and a comment in publish-gate-sched.mjs)"
+  },
+  "guardsProvenAbleToFire": {
+    "why": "DEV_PROCESS: a gating indicator must be proven able to fire. Both new guards were exercised against a mutation that should trip them.",
+    "disjointnessGuard": "real overlap = []; with `setbackFrontFt` added to the other job's rail list the computed overlap = [\"setbackFrontFt\"] (the assertion fires)",
+    "metacharacterGuard": "real prefixes test false/false (no % or _); a crafted prefix containing % tests true (the assertion fires)",
+    "howRun": "node -e, importing both job modules and recomputing the two predicates over the real exports plus one mutation each",
+    "notVacuous": "the release itself is proven live, not just declared: the processCityPage test asserts the five params reach the real UPDATE and that the released cell is counted in cellsMoved (5), and a second direction asserts a foreign absent-verified cell moves nothing (0)"
+  },
+  "compositionWithP284": {
+    "fact": "P-284 landed in this same file while the lane was building (#158), adding per-county stage row counts from the UPDATE's RETURNING plus the companion INSERT.",
+    "whyItMatters": "The gate release changes WHICH rows the UPDATE returns, so the two features meet in the stage record's cost basis. That is asserted, not assumed: a remediation run's released cells must appear in cellsMovedByCounty, or a cost record would claim a run that rewrote a county's false absences wrote nothing.",
+    "commentFixed": "P-284's own doc comment described the gate as 'unaccounted-only', which this change makes stale; it now states the widened rule and keeps P-284's point (written, not offered, is the count that matters)."
+  },
+  "failingSetComparison": {
+    "method": "node --test --test-reporter=tap test/*.test.mjs on both trees, filtering to 'not ok' lines and the runner's own summary lines; raw captures kept beside this file",
+    "baseline_origin_main_afdda42": {
+      "tests": 1520,
+      "pass": 1505,
+      "fail": 1,
+      "skipped": 12,
+      "todo": 2
+    },
+    "branch_1ca92ac": {
+      "tests": 1548,
+      "pass": 1533,
+      "fail": 1,
+      "skipped": 12,
+      "todo": 2
+    },
+    "delta": "+28 tests, +28 pass, identical failing set",
+    "identicalNotOkLines": [
+      "not ok 264 - CTX-B3 leaf list: read from the bake's own pin, not the walk, with a divergence guard",
+      "not ok 686 - EXPECTED (non-vacuity): the dispatchable p3-rail-absence write path should reach the real classify/absence decision logic it is documented to trigger # TODO OPS-21 S3 ...",
+      "not ok 687 - EXPECTED (non-vacuity): given a crafted unincorporated-parcel scope that deserves a real not-applicable verdict, running p3-absence should surface that verdict, not a fixed no-op note # TODO OPS-21 S3 ..."
+    ],
+    "laneSuite": "node --test test/parcel-setback-cells.test.mjs -> 58 tests, 58 pass, 0 fail",
+    "rawCaptures": [
+      "_inbox/2026-09-16_p256-setback-honest-states_failing-set-origin-main.txt",
+      "_inbox/2026-09-16_p256-setback-honest-states_failing-set-branch.txt"
+    ]
+  },
+  "ciArtifactWorthRecording": {
+    "observed": "the push leg of `ldt-sha-comment-presence` FAILED once, on the force-push that followed the rebase (run 35148781812, sha 74c8d3b)",
+    "rootCause": "on a push event the workflow diffs github.event.before; after a rebase + force-push that value is the pre-rebase tip (0a399d5), which the runner cannot fetch even with fetch-depth: 0 because nothing references it any more -> `fatal: bad object 0a399d5` -> exit 2 (`.github/workflows/ci.yml:93-101`)",
+    "notADefectInThisDiff": "the identical check passed on the pull_request leg of the same sha, and both legs are green at 1ca92ac once the following push was a fast-forward",
+    "leftAloneDeliberately": "the fix belongs in the workflow file, and this lane's scope is two files; filed as an open thread instead"
+  },
+  "commands": [
+    "node --test test/parcel-setback-cells.test.mjs",
+    "node --test --test-reporter=tap test/*.test.mjs  (both trees)",
+    "node -e \"import('./src/jobs/parcel-envelope-cells.mjs')...\"  (the two guard-fires proofs)",
+    "gh pr view 160 --json statusCheckRollup,mergeable,mergeStateStatus",
+    "gh run view 35148781812 --job 104971482727 --log-failed"
+  ]
+}
