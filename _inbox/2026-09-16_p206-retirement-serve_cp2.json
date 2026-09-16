@@ -1,0 +1,90 @@
+{
+  "lane": "p206-retirement-serve",
+  "checkpoint": "CP2 (pilot built, falsifiers run, verification evidence)",
+  "planRows": ["P-206"],
+  "seat": "cente-p206",
+  "filedAt": "2026-09-16T16:52:00Z",
+  "startCommit": "0bf2377f44d66849fdcbdf1e7cfa26b784a0a567",
+  "headCommit": "53c56552",
+
+  "filesChanged": [
+    "artifacts/api-server/src/lib/serveGuards.ts",
+    "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+    "artifacts/api-server/src/routes/propertyExplorer.ts",
+    "artifacts/smartsite-mcp/src/tool-honesty.ts",
+    "artifacts/smartsite-mcp/src/mcp-app.ts",
+    "artifacts/api-server/src/lib/__tests__/serveGuards.test.ts",
+    "artifacts/smartsite-mcp/tests/tool-honesty.test.ts",
+    "artifacts/smartsite-mcp/tests/mcp-app.test.ts"
+  ],
+  "diffStat": "8 files changed, 512 insertions(+), 33 deletions(-)",
+
+  "falsifiers": {
+    "1_reMeasure_48209_84629_live_on_current_main": {
+      "result": "CONFIRMED, and sharper than the row claimed. The node does not merely read parcel_not_found -- it reads it BYTE-IDENTICALLY to a fabricated node. Both 48209:84629 and 48209:999999 answer `404 {\"error\":\"not_baked\",\"errorClass\":\"no_coverage\",\"message\":\"No baked facets for this parcel node\"}`. The row's 'indistinguishable' is exact, not approximate.",
+      "caveat": "This was measured on the brokerage node-facets leg (the panel's path), which is reachable anonymously. The get_smart_site leg itself was NOT invoked (no MCP credential -- 401), so its answer is established from source plus the api-server's own wire contract, not from a live tool call. Stated, not glossed."
+    },
+    "2_nameTheExactFunctionAndRepo": {
+      "result": "NAMED, and the dispatch's handoff was wrong about it.",
+      "firstSetterOfTheBoolean": "`mapGetSmartSiteNonOk` in `artifacts/smartsite-mcp/src/tool-honesty.ts` is the ONLY place the literal `parcelExists: false` is minted, and it mints it from the reason, never from a measurement.",
+      "firstSetterOfTheReason": "`sendBriefMiss` in `artifacts/api-server/src/routes/propertyExplorer.ts` is the first place `parcel_not_found` is set, from a null `cortexNodeLookup()` probe.",
+      "ultimateDecider": "`lookupParcelNodeForScreen` in `artifacts/api-server/src/lib/txgioAddressResolve.ts` -- the presence of a `txgioParcel` row.",
+      "whyTheDispatchMissedIt": "The dispatch's grep was run for the token `parcelExists` on the api-server side. The api-server never uses that word; it speaks `error`/`reason`, and the MCP renames it at the seam. A field-name grep across a renaming seam is a false negative that looks like proof of absence -- exactly the trap DEV_PROCESS's divergence rule exists for."
+    },
+    "3_account_parcel_layering": {
+      "result": "REAL AND MEASURED, but it does NOT make the question malformed.",
+      "evidence": "84629 + 3019 = 97648. `48209:97648` answers 200 with a full card: '609 STURGEON DR, SAN MARCOS, TX 78666', CONWAY ADDITION SEC IV BLOCK 1 LOT 1, single-family, 3040 sqft, built 2019, own-prop-id join to txgio_parcel feature_index 31370. The retired account-keyed number and the live parcel-keyed number are the same property. The retired node is an alias whose live counterpart serves.",
+      "whyItDoesNotEndTheQuestion": "The layering explains WHY the existence probe returns null for 84629 (there is deliberately no txgio_parcel row for a CAD account number) -- which is a fine reason for `parcel_not_found` to be WRONG here, since the serve knows this node is a retired alias. It does not make the question unanswerable at the point of serve: the retirement is present in the payload the serve is already holding. `recordRetirement` was measured on the wire as an explicit field, `null` on live nodes."
+    },
+    "4_genuine_never_existed_node": {
+      "result": "PRESERVED. `48209:999999` still answers the generic `404 not_baked/no_coverage`, and in the fix that branch is untouched -- it is reached only when `bakedRead.kind === 'none'`, i.e. no tier-1 row at all. A node with no row and no retirement cannot reach the new `record_retired` branch by construction, and `mcp-app`'s `parcel_not_found -> absent` mapping is proven unchanged by a named negative-control test."
+    },
+    "5_the_residual_1_8_percent": {
+      "result": "ANSWERED BY DESIGN, NOT BY ENUMERATION -- and the honest limit is stated.",
+      "whatWasNotDone": "A handful of the 1,013 still-retired Bastrop nodes from P-212's close were NOT individually re-probed. P-212's close does not enumerate the 1,013 ids on disk (it reports the count and says each was spot-checked in isolation at its own close), so the set cannot be reconstructed from the artifacts on this seat.",
+      "whyTheFixCannotInheritTheError": "This is structural, and it is the reason the enumeration is not load-bearing. The new `record_retired` branch fires ONLY on `isEarnedRecordRetirement` passing -- status 'retired', verdict 'absent-verified', four non-empty string fields, lastSeenTaxYear numeric-or-null. A node that is retired but NOT earned (the exact shape P-212 was about) does not pass that gate, so it does not take the new branch, and it continues to answer exactly what it answers today. The fix widens what is DECLARED, never what is DECLINED. A residual wrong retirement therefore cannot be laundered into a confident 'retired' claim by this change.",
+      "theOtherHalfOfTheTrap": "The reverse risk -- the fix asserting a confident retirement that is itself wrong -- is bounded by the same gate plus `parcelExists: 'unmeasured'`, which deliberately stops short of asserting anything about parcel existence. No new affirmative claim is minted anywhere in this diff.",
+      "bastropScoping": "Bastrop (48021) is not in LANDUSE_JOIN_DISABLED_FIPS_SEED today (the seed is 48209 Hays and 48491 Williamson), so a Bastrop retirement does not reach the decline at all on current main. The P-212 residual is not in this fix's blast radius, and saying so is not the same as having checked it."
+    }
+  },
+
+  "twoDirectionalEvidence": {
+    "principle": "A test that passes with the control removed is testing nothing.",
+    "newCasesFailAgainstOldCode": [
+      "`retiredRecordAtServe` does not exist on the old tree, so the whole P-206 serveGuards block fails to compile/import against it -- it cannot pass vacuously.",
+      "`record_retired` is not a member of the old `GetSmartSiteMissReason`, and the old `mapGetSmartSiteNonOk` returns null for an unknown error token, so the P-206 tool-honesty cases fail against the old mapper.",
+      "The old `MissClass` has no 'retired' member, so the P-206 panel cases cannot pass against it."
+    ],
+    "negativeControlsThatMustStayUnchanged": [
+      "parcel_not_found still maps to `parcelExists: false` -- proven by a named control test.",
+      "A non-blocked county (48055, 48021) returns null from `retiredRecordAtServe`.",
+      "A live node (48209:97658) with `recordRetirement: null` returns null.",
+      "A half-built retirement (`{status:'retired'}`) returns null -- seven malformed shapes tested on the MCP side.",
+      "A node with no tier-1 row still reaches the untouched `not_baked/no_coverage` branch.",
+      "`loadBakedNodeFacetSnapshot`'s signature and its collapse-to-null are unchanged, so every pre-existing caller is unmoved."
+    ],
+    "divergenceTest": "One test pins `retiredRecordAtServe` and `shouldDeclineRetiredRecordAtServe` to each other across seven cases in both directions. Two implementations of one rule is how this row's defect arose, so the pair is held together by test, not by intention."
+  },
+
+  "localVerification": {
+    "typecheck": "api-server `tsc -p tsconfig.json --noEmit` clean; smartsite-mcp typecheck clean (via the workspace `pnpm run typecheck` fan, which the first pass caught a real `TS2451 Cannot redeclare block-scoped variable 'snapshot'` in brokerageNodeFacets.ts -- fixed by deleting the now-dead `let snapshot;` and typing `bakedRead` as `BakedNodeFacetRead`).",
+    "targeted": {
+      "api-server serveGuards": "22/22 pass",
+      "api-server propertyExplorerBriefAbsent + ScreensStubs + serveGuards": "39/39 pass",
+      "smartsite-mcp tool-honesty + mcp-app": "133/133 pass",
+      "smartsite-mcp mcp-app-served (the embedded-copy suite)": "91/91 pass -- this is the one that proves `retiredRecordSentence` and `RETIRED_RECORD_PREFIX` were properly added to INLINE_SHARED and the emitted `var` block rather than left as ReferenceErrors inside the iframe"
+    },
+    "fullSuites": {
+      "api-server": "2140 passed, 0 failed, 4 skipped; 190 test FILES failed to COLLECT on `DATABASE_URL must be set` (206 passed, 1 skipped of 397). Pre-existing environment, not this change -- diagnosed by running one of the failing files and reading the error.",
+      "smartsite-mcp": "664 passed, 13 failed -- every failure inside `records-extraction.test.ts`, all `Failed query: delete from \"engagements\"` (DB teardown). Pre-existing, and in the P-242 records lane's file, not one this lane touched."
+    },
+    "knownGreenNotSameAsCI": "The root `pnpm install --frozen-lockfile` exits non-zero on this Windows host at the root `preinstall` POSIX `sh` one-liner, though it links all 1053 packages first. Local green is therefore reported as local green."
+  },
+
+  "deliberatelyNotDone": [
+    "No deployment, per the dispatch.",
+    "The GTM error CLASS taxonomy is not widened -- `errorClass` stays `no_coverage` and the `error` token carries the distinction, so the panel's fallback routing is untouched. Adding a class is a ruled change with its own consumers.",
+    "The entitlement policy, the county scoping of the decline, and `isEarnedRecordRetirement` are all untouched.",
+    "The retirement SENTENCE copy could not be moved into the shared display vocabulary: `NOT_ON_FILE_PREFIX` and `NO_BAKED_SNAPSHOT_PREFIX` come from `@empressaio/atom-contract/display`, which is NOT in this repository. `RETIRED_RECORD_PREFIX` is therefore a local literal with the same shape, flagged in-file as a named leave-behind rather than presented as already living in the one place."
+  ]
+}
