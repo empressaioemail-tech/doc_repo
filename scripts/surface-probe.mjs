@@ -42,11 +42,16 @@
  * The cortex node leg needs CORTEX_API_BASE, CORTEX_SERVICE_API_KEY and CORTEX_API_KEY_HEADER.
  * The header NAME is not guessed: a wrong header falls through to the anonymous gate silently
  * (fleet memory hauska-mcp-auth-header), so the seat that holds the key declares it.
+ *
+ * The P-241 row needs P241_LDT_ROOT, the legacy-design-tools checkout that carries the ETJ
+ * acquisition path, and it names the tree it used in the artifact. It defaults to the lane's own
+ * worktree, which is right before the merge and wrong after it: once the ETJ path is on main,
+ * point it at an ordinary checkout. A missing checkout is a REFUSAL, never a pass on another tree.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,7 +62,9 @@ const CORTEX_PROXY = `${PE_BASE}/api/spine/cortex/api`;
 
 /** Metres around the record point for the ring probe; mirrors the resolver's own constant. */
 const RING_PROBE_METRES = 150;
-const LEG_TIMEOUT_MS = { facets: 30_000, envelopeByAddress: 30_000, envelopeByPoint: 12_000, gisRing: 30_000, cortexNode: 30_000 };
+const LEG_TIMEOUT_MS = { facets: 30_000, envelopeByAddress: 30_000, envelopeByPoint: 12_000, gisRing: 30_000, cortexNode: 30_000, etjInstrument: 900_000 };
+/** P-241: the ETJ instrument acquires every registered publisher live, so it is given real room. */
+const ETJ_TIMEOUT_MS = LEG_TIMEOUT_MS.etjInstrument;
 
 // --------------------------------------------------------------------------- the parcel set
 // OPS-23 §7. A lane may add one; it may not remove one. The four other-county parcels are
@@ -85,6 +92,59 @@ export const ADDRESSES = [
   { key: "48209:addr:619-sturgeon", fips: "48209", address: "619 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "619", street: "STURGEON", ids: ["84634", "97653", "11-2011-0001-00600-3"], point: { lat: 29.87135, lng: -97.92649 }, label: "lot 6; CAD 84634 / R97653 / TxGIO 97653; vacant" },
   { key: "48209:addr:627-sturgeon", fips: "48209", address: "627 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "627", street: "STURGEON", ids: ["84638", "97657", "11-2011-0001-01000-3"], point: { lat: 29.87177, lng: -97.92600 }, label: "lot 10; CAD 84638 / R97657 / TxGIO 97657; vacant" },
   { key: "48209:addr:629-sturgeon", fips: "48209", address: "629 STURGEON DR, SAN MARCOS, TX 78666", houseNumber: "629", street: "STURGEON", ids: ["84639", "97658", "11-2011-0001-01100-3"], point: { lat: 29.87188, lng: -97.92588 }, label: "lot 11; CAD 84639 / R97658 / TxGIO 97658; resolves today to node 48209:97658, a chimera carrying CAD account 97658's label (13669 Mesa Verde Dr) on the Sturgeon polygon" },
+];
+
+// P-241 (ETJ acquisition). The ETJ path has NO served surface yet, and by this mission's own
+// scope it is not supposed to: the consumer hardcode sites in hauska-engine and hauska-map are
+// explicit follow-on work, so no route reads tx_etj_boundary today. A row that measured the card
+// would measure something this lane did not change. So P-241's rows measure what the lane DID
+// change — the acquisition path, live — through the lane's own instrument
+// (lib/cad-ingest/src/boundary/etjCli.ts --verify --json), which runs the real register, the real
+// ArcGIS client, the real parser and the real resolver against the real publishers. The leg
+// REFUSES rather than passes when the instrument cannot run, like every other leg here.
+// The subjects are the mission's four pre-registered falsifiers, and each one is a real address
+// or a real city hall, never a synthetic point:
+//   1. a Travis parcel whose only Austin jurisdiction label is an ETJ ring  -> present
+//   2. a house inside Austin city limits, on the same combined layer        -> absent
+//   3. Round Rock City Hall, a city-limits-only publisher                   -> unresolved
+//   4. Houston City Hall, outside the register entirely                     -> unresolved
+export const ETJ_SUBJECTS = [
+  {
+    key: "P-241:austin-2mile-etj",
+    controlPointKey: "austin-2mile-etj",
+    parcelNodeId: "48453:134392",
+    situs: "3128 EDGEWATER DR, Travis County (unincorporated, inside Austin's 2-mile ETJ)",
+    expect: "present",
+    expectCityKey: "austin-tx",
+    mustContain: ["tx_etj_boundary etj_id=austin-tx"],
+  },
+  {
+    key: "P-241:austin-city-limits",
+    controlPointKey: "austin-city-limits",
+    parcelNodeId: "48453:367134",
+    situs: "5833 TAYLOR DRAPER CV, Austin (inside city limits)",
+    expect: "absent",
+    expectCityKey: null,
+    mustContain: ["verified absent"],
+  },
+  {
+    key: "P-241:round-rock-city-limits-only",
+    controlPointKey: "round-rock-city-limits-only",
+    parcelNodeId: null,
+    situs: "221 E MAIN ST, Round Rock (City Hall)",
+    expect: "unresolved",
+    expectCityKey: null,
+    mustContain: ["mode=city_limits_only", "not a confirmed absence of ETJ"],
+  },
+  {
+    key: "P-241:houston-outside-register",
+    controlPointKey: "houston-outside-register",
+    parcelNodeId: null,
+    situs: "901 BAGBY ST, Houston (City Hall)",
+    expect: "unresolved",
+    expectCityKey: null,
+    mustContain: ["not in the ETJ register"],
+  },
 ];
 
 // --------------------------------------------------------------------------- small helpers
@@ -295,6 +355,82 @@ export function extractFootprintNear(resp) {
   const count = num(j.count) ?? (fps ? fps.length : null);
   if (count == null) return { measured: true, http: resp.http, ms: resp.ms, count: null, shapeUnknown: true, keys: Object.keys(j).slice(0, 12) };
   return { measured: true, http: resp.http, ms: resp.ms, count, returned: fps ? fps.length : null };
+}
+
+/**
+ * P-241: parse the ETJ instrument's single JSON document. Tolerant of a wrapper's own stdout
+ * chatter by design — `pnpm exec` can print a line before the child's — but never tolerant of a
+ * missing document: no document is UNMEASURED, never a pass on an empty parse.
+ */
+export function extractEtjInstrument(stdout) {
+  const raw = typeof stdout === "string" ? stdout : "";
+  let doc = null;
+  try {
+    doc = JSON.parse(raw);
+  } catch {
+    const open = raw.indexOf("{");
+    const close = raw.lastIndexOf("}");
+    if (open < 0 || close <= open) {
+      return { measured: false, error: `ETJ instrument emitted no JSON document (${raw.trim().slice(0, 160) || "empty stdout"})` };
+    }
+    try {
+      doc = JSON.parse(raw.slice(open, close + 1));
+    } catch (e) {
+      return { measured: false, error: `ETJ instrument document is not JSON (${String(e?.message ?? e)})` };
+    }
+  }
+  const j = rec(doc);
+  if (!j) return { measured: false, error: "ETJ instrument document is not an object" };
+  const cps = Array.isArray(j.controlPoints) ? j.controlPoints : null;
+  const pubs = Array.isArray(j.publishers) ? j.publishers : null;
+  if (!cps || !pubs) {
+    return { measured: false, error: `ETJ instrument document carries no controlPoints/publishers (keys ${Object.keys(j).join(",") || "none"})` };
+  }
+  return {
+    measured: true,
+    ranAt: str(j.ranAt),
+    registerVintage: str(j.registerVintage),
+    registerSize: num(j.registerSize),
+    publishers: pubs,
+    controlPoints: cps,
+    summary: rec(j.summary),
+    passed: num(j.passed),
+    failed: num(j.failed),
+  };
+}
+
+/**
+ * P-241: run the lane's live ETJ instrument once and return its document. The checkout is named
+ * by P241_LDT_ROOT (a lane's worktree before merge, an ordinary checkout after); when it is not
+ * there this leg REFUSES — it does not silently measure a different tree.
+ */
+function runEtjLegs() {
+  const root = process.env.P241_LDT_ROOT || "P:/seat-worktrees/p241-etj-acquisition/legacy-design-tools";
+  const entry = join(root, "lib", "cad-ingest");
+  if (!existsSync(entry)) {
+    return { measured: false, error: `REFUSED: no legacy-design-tools checkout at ${root} (set P241_LDT_ROOT); the ETJ instrument is never run from a tree nobody named` };
+  }
+  try {
+    const stdout = execSync("pnpm exec tsx src/boundary/etjCli.ts --verify --json", {
+      cwd: entry,
+      encoding: "utf8",
+      timeout: ETJ_TIMEOUT_MS,
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--use-system-ca" },
+      windowsHide: true,
+    });
+    return { ...extractEtjInstrument(stdout), root };
+  } catch (e) {
+    const out = str(e?.stdout);
+    // A non-zero exit still carries a document when a control point failed; parse it and let the
+    // row fail on the measurement rather than reporting a bare exec error.
+    if (out && out.includes("{")) {
+      const parsed = extractEtjInstrument(out);
+      if (parsed.measured) return { ...parsed, root, exitCode: e?.status ?? null };
+    }
+    return { measured: false, error: `REFUSED: the ETJ instrument did not complete (${String(e?.message ?? e).split("\n")[0]})` };
+  }
 }
 
 // The situs-search route through the PE proxy (the Find box's address path). Shape read live
@@ -593,6 +729,59 @@ export const ROWS = {
       return { verdict: "PASS", basis };
     },
   },
+  // ------------------------------------------------------------------ P-241 (2026-09-16)
+  "P-241": {
+    title: "ETJ: a real Austin ETJ address resolves present from the published layer, while the city-limits trap, a city-limits-only city and an unserved city each answer honestly",
+    parcels: ETJ_SUBJECTS.map((s) => s.key),
+    evaluate(key, legs) {
+      const l = legs.etjLive;
+      const s = ETJ_SUBJECTS.find((x) => x.key === key);
+      if (!s) return { verdict: "UNMEASURED", basis: `no ETJ subject definition for ${key}` };
+      if (!l?.measured) {
+        return { verdict: "UNMEASURED", basis: `ETJ instrument leg did not run (${l?.error ?? "no leg"}) -- run with --rows P-241 and P241_LDT_ROOT set to the checkout that carries the lane` };
+      }
+      const sum = l.summary ?? {};
+      const cp = l.controlPoints.find((c) => c.key === s.controlPointKey) ?? null;
+      const guards = Array.isArray(sum.predicateGuardFailures) ? sum.predicateGuardFailures : null;
+      const withRings = l.publishers.filter((p) => p?.hasEtjRings === true).length;
+      const withoutRings = l.publishers.length - withRings;
+      const head =
+        `register ${l.registerVintage ?? "?"} (${l.registerSize ?? "?"} cities), ${num(sum.publishersWithRings) ?? "?"} publishers with rings and ${num(sum.publishersEnumeratedWithoutRings) ?? "?"} enumerated without, ` +
+        `${num(sum.ringsAcquired) ?? "?"} ETJ rings acquired live`;
+      // The two halves of the document must agree: a summary that claims publishers the publisher
+      // list does not carry is the instrument disagreeing with itself, and everything downstream
+      // of it is unreadable.
+      if (l.publishers.length === 0) return { verdict: "FAIL", basis: `${head} -- the instrument listed no publishers at all, so nothing was acquired` };
+      if (num(sum.publishersWithRings) !== withRings || num(sum.publishersEnumeratedWithoutRings) !== withoutRings) {
+        return { verdict: "FAIL", basis: `${head} -- but its publisher list carries ${withRings} with rings and ${withoutRings} without; the instrument disagrees with itself` };
+      }
+      if (cp === null) {
+        return { verdict: "FAIL", basis: `${head}; the instrument reported NO control point "${s.controlPointKey}" for ${s.situs} — a control point that silently disappears is the defect this row exists to catch` };
+      }
+      const basis =
+        `${head}; ${s.situs} -> pre-registered ${s.expect}, instrument said ${cp.actual ?? "nothing"}` +
+        (cp.actualCityKey ? ` (${cp.actualCityKey})` : "") +
+        (cp.ringLabel ? ` ring "${cp.ringLabel}"` : "") +
+        (cp.sourceCitation ? ` cited ${cp.sourceCitation}` : "") +
+        `: ${cp.basis ?? "no basis given"}`;
+      // A publisher whose predicate stopped selecting its city's ETJ (or started selecting the
+      // whole layer, city limits included) fails every subject at once, because the rings under
+      // the whole resolution are then wrong. It is checked before the per-subject verdict.
+      if (guards !== null && guards.length) return { verdict: "FAIL", basis: basis + ` -- predicate guard failed for ${guards.join(", ")}: the rings under every answer are wrong` };
+      if (guards === null) return { verdict: "FAIL", basis: basis + " -- the instrument reported no predicate-guard summary, so no publisher's ETJ selection was proven selective" };
+      if (cp.verdict !== "PASS") return { verdict: "FAIL", basis: basis + " -- the instrument itself marked this control point FAIL" };
+      if (cp.actual !== s.expect) return { verdict: "FAIL", basis: basis + ` -- the disposition is not the pre-registered one` };
+      if (s.expectCityKey !== null && cp.actualCityKey !== s.expectCityKey) return { verdict: "FAIL", basis: basis + ` -- resolved as ${cp.actualCityKey ?? "no city"}, expected ${s.expectCityKey}` };
+      if (s.expect === "present" && !str(cp.sourceCitation)) return { verdict: "FAIL", basis: basis + " -- a present disposition must cite the source it came from" };
+      if (s.expect === "present" && !str(cp.ringLabel)) return { verdict: "FAIL", basis: basis + " -- a present disposition must name the publisher's own ring label" };
+      // The two unresolved subjects differ in WHY they are unresolved, and the wording is the only
+      // thing that separates "checked, this city publishes no ETJ layer" from "not covered at all".
+      // A generic unresolved that names neither is not evidence of the distinction.
+      const missing = s.mustContain.filter((t) => !String(cp.basis ?? "").includes(t));
+      if (missing.length) return { verdict: "FAIL", basis: basis + ` -- the basis does not state ${missing.join(", ")}` };
+      return { verdict: "PASS", basis };
+    },
+  },
   "P-214": {
     title: "no customer-facing envelope string carries an internal identifier, an unrounded float, or assertion syntax",
     parcels: ["48021:8723767"],
@@ -722,23 +911,31 @@ export function findings(legsById) {
 
 function printReport(results, legsById) {
   console.log("\nLEGS (measured live unless marked)");
+  const absent = (what) => ({ measured: false, error: `no ${what} leg for this subject` });
   for (const [id, legs] of Object.entries(legsById)) {
-    const f = legs.facets;
+    const f = legs.facets ?? absent("facets");
     console.log(`  ${id}`);
     console.log(`    facets       ${f.measured ? `http ${f.http} readPath ${f.readPath} bakedAt ${f.bakedAt} zoning ${f.zoningDistrict ?? "-"} envelope ${f.envelopeStatus ?? "-"} setbacks ${fmtSb(f.setbacks)} city ${f.cityLimitsStatus ?? "-"} point ${f.recordPoint ? "yes" : "no"}` : `NOT MEASURED ${f.error}`}`);
-    const a = legs.envelopeByAddress;
+    const a = legs.envelopeByAddress ?? absent("envelope-by-address");
     console.log(`    env/address  ${a.measured ? `http ${a.http} status ${a.status} node ${a.parcelNodeId ?? "-"} setbacks ${fmtSb(a.setbacks)} vertices ${a.vertexCount ?? "-"} ${a.ms} ms` : `NOT MEASURED ${a.error ?? "http " + a.http}`}`);
-    const p = legs.envelopeByPoint;
+    const p = legs.envelopeByPoint ?? absent("envelope-by-point");
     console.log(`    env/point    ${p.measured ? `http ${p.http} status ${p.status} node ${p.parcelNodeId ?? "-"} ${p.ms} ms` : `NOT MEASURED http ${p.http ?? "-"} ${p.error ?? ""}`}`);
-    const g = legs.gisRing;
+    const g = legs.gisRing ?? absent("gis-ring");
     console.log(`    gis ring     ${g.measured ? `http ${g.http} features ${g.featureCount} matches ${g.matchesParcel}${g.matchedBy ? " by " + g.matchedBy : ""}${g.idSchemeMismatch ? " ID-SCHEME-MISMATCH (" + g.containingFeatureId + ")" : ""}${g.noContainingPolygon ? " NO-CONTAINING-POLYGON (nearest " + (g.nearest ? g.nearest.id + " " + g.nearest.metres + " m" : "none") + ")" : ""}` : `NOT MEASURED ${g.error ?? ""}`}`);
     const n = legs.footprintNear;
     if (n) console.log(`    near-bbox    ${n.measured ? `http ${n.http} count ${n.count ?? "?"}${n.shapeUnknown ? " SHAPE-UNKNOWN keys " + n.keys?.join(",") : ""} ${n.ms} ms` : `NOT MEASURED ${n.error ?? ""}`}`);
     for (const [label, s] of [["situs bare  ", legs.situsSearchBare], ["situs city  ", legs.situsSearchCity]]) {
       if (s) console.log(`    ${label} ${s.measured ? `http ${s.http} ${s.error ? s.error : `hits ${s.hitCount ?? "?"} first ${s.firstParcelNodeId ?? "-"} matches ${s.matchesParcel ?? "?"}`} ${s.ms} ms` : `NOT MEASURED ${s.error ?? ""}`}`);
     }
-    const c = legs.cortexNode;
+    const c = legs.cortexNode ?? absent("cortex-node");
     console.log(`    cortex node  ${c.measured ? `http ${c.http} keys ${c.keys?.join(",")}` : `NOT MEASURED ${c.error ?? ""}`}`);
+    // P-241: the ETJ acquisition instrument, one live run shared by every ETJ subject.
+    const e = legs.etjLive;
+    if (e) {
+      const sum = e.summary ?? {};
+      const cps = Array.isArray(e.controlPoints) ? e.controlPoints : [];
+      console.log(`    etj live     ${e.measured ? `register ${e.registerVintage ?? "?"} (${e.registerSize ?? "?"} cities) ${e.publishers?.length ?? "?"} publishers ${sum.ringsAcquired ?? "?"} rings; control points ${cps.map((p) => `${p.key}=${p.actual}${p.verdict ? " " + p.verdict : ""}`).join(", ")}${Array.isArray(sum.predicateGuardFailures) && sum.predicateGuardFailures.length ? " PREDICATE-GUARD-FAILED " + sum.predicateGuardFailures.join(",") : ""}` : `NOT MEASURED ${e.error ?? ""}`}`);
+    }
   }
   const fnd = findings(legsById);
   if (fnd.length) {
@@ -905,6 +1102,49 @@ function selfTest() {
   check("P-175 is UNMEASURED on a hole in the county layer with no anchor", ROWS["P-175"].evaluate(k629, { situsSearchCity: hit84639, facets: fixed629, gisRing: { ...ringLot, containingFeatureId: null, noContainingPolygon: true, nearest: { id: "97657", metres: 9 } } }, null).verdict === "UNMEASURED");
   check("haversine: the Mesa Verde anchor is about 56 km from the Sturgeon point", Math.abs(haversineM({ lat: 30.18232, lng: -97.97703 }, { lat: 29.87188, lng: -97.92588 }) - 34900) < 2000);
 
+  // P-241, the ETJ acquisition path. The leg is a live subprocess, so the self-test supplies a
+  // document shaped exactly as extractEtjInstrument reads it and proves the row in both
+  // directions: it passes the four pre-registered answers, and it refuses a document that
+  // collapses the two unresolved subjects into one string or drops a publisher guard.
+  const etjDoc = {
+    measured: true,
+    registerVintage: "selftest",
+    registerSize: 23,
+    summary: { publishersWithRings: 20, publishersEnumeratedWithoutRings: 3, ringsAcquired: 355, controlPointsPassed: 4, controlPointsFailed: 0, predicateGuardFailures: [] },
+    publishers: [
+      ...Array.from({ length: 20 }, (_, i) => ({ kind: "publisher", cityKey: `selftest-${i}-tx`, hasEtjRings: true, predicateGuard: "ok" })),
+      ...Array.from({ length: 3 }, (_, i) => ({ kind: "publisher", cityKey: `selftest-only-${i}-tx`, hasEtjRings: false })),
+    ],
+    controlPoints: ETJ_SUBJECTS.map((s) => ({
+      key: s.controlPointKey,
+      preRegistered: s.expect,
+      actual: s.expect,
+      actualCityKey: s.expectCityKey,
+      ringLabel: s.expect === "present" ? "AUSTIN 2 MILE ETJ" : null,
+      sourceCitation: s.expect === "present" ? "https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/BOUNDARIES_jurisdictions/FeatureServer/0" : null,
+      basis:
+        s.expect === "present"
+          ? 'point-in-polygon against tx_etj_boundary etj_id=austin-tx:22 (Austin: "AUSTIN 2 MILE ETJ", ring 22)'
+          : s.expect === "absent"
+            ? "no published ETJ ring contains it, so ETJ is verified absent here"
+            : s.controlPointKey === "round-rock-city-limits-only"
+              ? "no source to check: Round Rock is enumerated in the ETJ register as mode=city_limits_only. This is a checked absence of a SOURCE, not a confirmed absence of ETJ"
+              : "no source to check: Houston is not in the ETJ register at all; this is a checked absence of a SOURCE, not a confirmed absence of ETJ",
+      verdict: "PASS",
+    })),
+  };
+  const etjLeg = (doc) => ({ etjLive: doc });
+  const etjAll = (doc) => ETJ_SUBJECTS.every((s) => ROWS["P-241"].evaluate(s.key, etjLeg(doc), {}).verdict === "PASS");
+  check("P-241 PASSES on the four pre-registered answers", etjAll(etjDoc), ROWS["P-241"].evaluate(ETJ_SUBJECTS[0].key, etjLeg(etjDoc), {}).basis);
+  check("P-241 FAILS when the present subject stops citing a source", ROWS["P-241"].evaluate(ETJ_SUBJECTS[0].key, etjLeg({ ...etjDoc, controlPoints: etjDoc.controlPoints.map((c) => (c.key === "austin-2mile-etj" ? { ...c, sourceCitation: null } : c)) }), {}).verdict === "FAIL");
+  check("P-241 FAILS when the inside-city-limits subject is called present", ROWS["P-241"].evaluate(ETJ_SUBJECTS[1].key, etjLeg({ ...etjDoc, controlPoints: etjDoc.controlPoints.map((c) => (c.key === "austin-city-limits" ? { ...c, actual: "present" } : c)) }), {}).verdict === "FAIL");
+  check("P-241 FAILS when a generic unresolved replaces the city-limits-only distinction", ROWS["P-241"].evaluate(ETJ_SUBJECTS[2].key, etjLeg({ ...etjDoc, controlPoints: etjDoc.controlPoints.map((c) => (c.key === "round-rock-city-limits-only" ? { ...c, basis: "no source covers this point" } : c)) }), {}).verdict === "FAIL");
+  check("P-241 FAILS when a publisher's predicate guard fails", etjAll({ ...etjDoc, summary: { ...etjDoc.summary, predicateGuardFailures: ["austin-tx"] } }) === false);
+  check("P-241 FAILS when the instrument drops a control point", ROWS["P-241"].evaluate(ETJ_SUBJECTS[0].key, etjLeg({ ...etjDoc, controlPoints: etjDoc.controlPoints.filter((c) => c.key !== "austin-2mile-etj") }), {}).verdict === "FAIL");
+  check("P-241 FAILS when the summary claims publishers its list does not carry", ROWS["P-241"].evaluate(ETJ_SUBJECTS[0].key, etjLeg({ ...etjDoc, publishers: etjDoc.publishers.slice(0, 19) }), {}).verdict === "FAIL");
+  check("P-241 is UNMEASURED when the instrument leg did not run", ROWS["P-241"].evaluate(ETJ_SUBJECTS[0].key, { etjLive: { measured: false, error: "REFUSED: no checkout" } }, {}).verdict === "UNMEASURED");
+  check("extractEtjInstrument refuses a non-document and tolerates a wrapper line", extractEtjInstrument("pnpm: nothing\n").measured === false && extractEtjInstrument("noise\n" + JSON.stringify(etjDoc) + "\n").measured === true);
+
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;
 }
@@ -955,6 +1195,17 @@ async function main() {
         process.stdout.write(`probing ${a.key} (${a.address}) ... `);
         legsById[a.key] = await runAddressLegs(a);
         console.log("done");
+      }
+    }
+    // P-241: one live run of the ETJ acquisition instrument, shared by every ETJ subject (the
+    // instrument acquires all 23 registered cities at once, so running it per subject would
+    // re-query every publisher four times).
+    if (rowFilter && rowFilter.includes("P-241")) {
+      process.stdout.write("running the ETJ acquisition instrument against the live publishers ... ");
+      const etjLive = runEtjLegs();
+      console.log(etjLive.measured ? "done" : `did not run (${etjLive.error})`);
+      for (const s of ETJ_SUBJECTS) {
+        legsById[s.key] = { ...(legsById[s.key] ?? {}), etjLive };
       }
     }
     source = "live";
