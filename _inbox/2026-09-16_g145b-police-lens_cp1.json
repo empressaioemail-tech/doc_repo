@@ -1,0 +1,74 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "g145b-police-lens",
+  "planRows": ["G-145"],
+  "seat": "subagent of the doc_repo integration seat; the planner holds the lane and no lane-claim was run (dispatch step superseded by the spawning instruction)",
+  "snapshot": {
+    "docRepo": "P:/doc_repo, branch main",
+    "productRepo": "empressaioemail-tech/smartcity-dashboards",
+    "ref": "origin/main",
+    "commit": "f776b4bf24114ed4061609d28c0429f84eb431b7",
+    "note": "the local checkout sat on branch g135-tenant-key-env-doc @ e74e525c; it was NOT read. dump-source-state.mjs extracts origin/main with git archive and imports from the extraction, so no working tree reached this design."
+  },
+  "sourceReVerified": {
+    "twoRegions": "src/domains.mjs registers exactly two domains under lensId police: patrol-vehicles (gatedBy spireon, recordType patrol-vehicle, region 'Patrol roster') and police-cameras (gatedBy verkada, recordType camera-device, region 'Camera inventory'). Derived from listDomains(), not read from the dispatch.",
+    "distanceOne_ungrantedExemplar": "TEMPLATE_CITY.fixtureGrants = [mygov, samsara, verkada, firstdue, powerbi, goto]. spireon is absent, deliberately, and src/domains.test.mjs asserts its absence. composeDomainById(TEMPLATE_CITY,'patrol-vehicles') returns status ungranted with basis 'Spireon is not granted on template-city; the Patrol roster region is built and has no source'.",
+    "distanceTwo_noCredentialNoMapper": "verkada occurrences in src/vendor-live.mjs: 0 (counted). 'camera' occurrences: 0. police-cameras is absent from REAL_LIVE_DOMAINS in src/server.mjs (counted). BASTROP_TX.grantedAdapters kinds = [municode, mygov, samsara, spireon, firstdue, powerbi, goto] — verkada is not among them.",
+    "distanceThree_refusedOnPurpose": "src/adapters.mjs RECORD_SHAPES.verkada declares plateReads and personsOfInterest required:false WITH a basis, and occupancyCount required:false with a basis. src/domains/police-cameras.mjs carries CAMERA_IDENTITY_BASIS, EXCLUDED_FAMILIES_BASIS, NOT_AN_INVENTORY_NODE_BASIS and OCCUPANCY_BANDS whose first entry is the honest absence 'occupancy not measured'.",
+    "composedCounts": {
+      "template-city cameras": "ok / 18 records / 5 sites / 4 bands / measured 18",
+      "template-city patrol": "ungranted / 0 records",
+      "empty-city both": "no-fixture-source, identical sentence",
+      "bastrop_tx cameras": "no-fixture-source, 'bastrop_tx generates no records, and Verkada is not granted on it'",
+      "bastrop_tx patrol": "no-fixture-source, 'bastrop_tx generates no records; Spireon is granted on it as a live feed, which this seam does not read'",
+      "probe-city patrol (the test's own throwaway pack, spireon granted)": "ok / 10 records / 3 opaque operator refs"
+    }
+  },
+  "designArgument": {
+    "spine": "DERIVED, not asserted: Police is the ONLY registered lens whose regions disagree about their source, and it disagrees in OPPOSITE DIRECTIONS on the two shipped packs. On template-city verkada is granted and spireon is not; on bastrop_tx spireon is granted live and verkada is not granted at all. Every other lens's regions share one grant state on both packs (computed from vocab.registry against grants.templateCityFixtureGrants and grants.bastropGrantedAdapters: police is the only lens with set size 2).",
+    "consequence": "the demo's emptiest region is the city's most connected one, and the demo's fullest region is the one the city cannot have. A design that renders the two alike destroys exactly the distinction the product was built to preserve.",
+    "boards": 3,
+    "boardPlan": [
+      "Main.dc.html — template-city, Camera inventory active. 18-row register in composer order, a status-by-occupancy-band matrix with both margins and the corner total, the site margin, and the declined-classes panel. The matrix has forbidden cells: REPORTING_STATUSES = [firmware-due, online], so 8 of 16 cells cannot occur by rule and 'occupancy not measured' is a CONSEQUENCE of status rather than a leftover. The three not-measured cameras reconcile exactly against offline(1)+signal-loss(2).",
+      "Patrol.dc.html — template-city, Patrol roster active. The ungranted exemplar: the blocked-region component with its four facts, tiles that stay unread and never show a zero, THE THREE SENTENCES side by side (ungranted composed, granted-empty quoted as a template because it is unreachable here, not-built composed), the proving composition from probe-city carrying the operator dimension, and the not-built panel.",
+      "Bastrop.dc.html — bastrop_tx. Both regions at no-fixture-source with two DIFFERENT sentences, the inversion named, verkada's obstacle typed as vendor onboarding, and what the live Spireon path carries and drops."
+    ],
+    "boardsCutAndWhy": "No Empty.dc.html. On empty-city BOTH regions return the identical no-grant sentence, which says strictly less than the Bastrop board, where the same status produces two different sentences. Public works drew an Empty board to carry the five-state legend; repeating that legend here would be padding, and the Fire lane's discipline (cut a board rather than repeat a sentence another board already made) applies.",
+    "sharedConstraintAnswer": "ANSWERED THE SAME WAY FLEET DOES, deliberately and with no second vocabulary. Patrol records carry operatorRef matching OPERATOR_REF_FORMAT /^OPR-\\d{2}$/ over OPERATOR_COUNT=3, and OPERATOR_BASIS on the record states why the name is absent: 'a generated record names no person; the operator is an opaque reference and a granted feed is where a name would come from'. This is the same mechanism samsara's shape declares for fleet drivers. The one Police-specific addition is the stronger refusal on the camera side (plate reads, persons of interest), which is declared in the record CONTRACT rather than only on the record, and the design draws that as a different KIND of absence, not a stronger degree of the same one."
+    },
+  "findingsToCarry": [
+    "REQUIRED FIELD MISSING FROM THE LIVE PATH, WITH NO GUARD. operatorRef is declared required:true on RECORD_SHAPES.spireon and appears ZERO times in src/vendor-live.mjs (counted). assertRecordShape appears twice in src/fixture-seam.mjs and ZERO times in src/vendor-live.mjs, so nothing fails when the required field is absent on a live record. The grouping dimension the roster is built on does not survive the cutover, and on bastrop_tx the cutover has already happened.",
+    "THE SPIREON SHAPE DECLARES NO REFUSED FIELD. samsara declares operatorName required:false with a basis; verkada declares plateReads, personsOfInterest and occupancyCount the same way; firstdue declares crew. spireon declares nothing it will never carry. The refusal for patrol lives only on the generated record (operatorBasis), which the live mapper does not produce. A guard catches the attempt and a contract prevents it: on this one shape there is no contract.",
+    "THREE OF SIX SHIPPED PATROL COLUMNS CANNOT BE FILLED BY THE GENERATOR. web/index.html gives the patrol table Unit, Status, Operator, NSpire, Maintenance, Recent Alerts. activeInNspire, maintenanceAlertCount and recentAlertCount exist only on the live mapper. Same class as the Completion column Public works found on the CIP table, three times over.",
+    "granted-empty IS UNREACHABLE ON THIS LENS through the seam: both fixture plans return a fixed non-empty set, so composeDomain can never take the zero-record branch. It is reachable only through the live Spireon read, which has its own differently worded sentence in okResult. The lens the product built to prove it can tell ungranted from granted-empty cannot currently produce granted-empty.",
+    "EMERGENCY EOC IS HOMED TO TWO LENSES AND NAMED ON NEITHER. SHELL_HOMES rows 16 and 17 home 'Emergency EOC' to 'Police + Fire and EMS' and 'Regional ops map / resources / incident log' to 'Police / Fire'. The shipped Police not-built panel names Incident log and Regional operations map; the Fire panel names Occupancies, Volunteer response, County dispatch, Flood and weather. Neither names Emergency EOC.",
+    "THE SHELL-HOMES DISPOSITION FOR POLICE AND CAMERAS STILL READS 'Not built' while both are registered domains. This is ALREADY RECORDED, not a new finding: src/lens-claims.test.mjs states that seven lens-granular rows across Fleet, Police, Fire and EMS and Public works look stale in the same way and are routed rather than edited, because those rows map to no domain without a ruling. Reported so the Police pair is named, not to re-open it.",
+    "THE GENERATOR PRODUCES 'unit unit'. PATROL_VOCABULARY carries entries that already end in the word unit (Traffic unit, Supervisor unit, Unmarked unit) and the label template appends ' unit NN', so probe-city renders 'Traffic unit unit 23'. UNIT_LABEL_FORMAT permits it. Cosmetic, visible on any granted pack, and the board renders it as the composer produced it rather than tidying data on a canvas."
+  ],
+  "instrumentPlan": {
+    "selfTestsBothDirections": "every predicate proved able to accept and to refuse before any artboard is read; a failure aborts with exit 2 rather than reporting a verdict",
+    "matchedInputCounts": "per predicate, per board and in total; any predicate matching nothing across every board refuses the verdict",
+    "minimumRefusals": [
+      "a domain, region, vendor or record-type name absent from the product's own source",
+      "any person-shaped name in any cell",
+      "ANY plate string or persons-of-interest content anywhere on the canvas — the strongest rule on this lens, scanned over the whole document rather than over cells",
+      "a head count rendered as a bare figure where the product carries a band",
+      "rows drifting from composer output, by id and in composer order",
+      "the probe domain id (probe-unregistered-surface) appearing on any board"
+    ],
+    "narrownessesClosed": [
+      "VENDOR NAMES IN PROSE. The existing checks verify only the structured provenance foot. This one strips every verbatim source-state string out of the board text first, then requires every catalogued vendor display name remaining in the prose to be one of THIS lens's two gate names. Quotation stays legal; an unquoted vendor the foot contradicts does not.",
+      "BIG FIGURES AT A NON-KIT WEIGHT. Parks scopes its rule to font:[45]00 at 20px+. This one matches any three-digit weight at 20px or larger in either font, and then requires every big figure's TEXT to be a number the composer actually produced."
+    ]
+  },
+  "constraintsHonored": [
+    "no git operation of any kind",
+    "no sub-agents",
+    "writes confined to _design/smartcity-police-lens/ and _inbox/",
+    "product repos read only; nothing written to any",
+    "_catalog/lane_claims.json untouched; no existing _design folder touched",
+    "every command exit-bounded"
+  ],
+  "hazardFound": "THE SCRATCHPAD IS SHARED BETWEEN SIBLING LANES. C:/Users/cente/AppData/Local/Temp/claude/p--doc-repo/<session>/scratchpad already held the g145a lane's working files (patch-pw*.mjs, patch-fire*.mjs, emit-source-state.mjs) and a directory named scd-f776b4bf that a sibling had already populated. A mkdir -p plus tar -x landed inside another lane's extraction before it was noticed. This lane moved to scratchpad/police-lane/ and touched nothing else. The extraction it overwrote was byte-identical content from the same ref, so no damage, but the collision class is real and the Fleet lane is running right now."
+}
