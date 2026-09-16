@@ -270,6 +270,7 @@ ${repo ? `repo: ${repo}\n` : ''}FAN-DEPTH: ${fanDepth}
 ${fanDepth === 0
   ? 'This lane launches NO sub-agents. Do the work yourself. The commit gate refuses a close that declares any (A-181).'
   : 'This lane may launch sub-agents one level deep; those sub-agents launch none. The commit gate refuses a close that declares a deeper fan (A-181).'}
+
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 

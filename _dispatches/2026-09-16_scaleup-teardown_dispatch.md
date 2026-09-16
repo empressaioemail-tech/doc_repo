@@ -29,6 +29,7 @@ PLAN-ROW: P-198, P-201, P-249 (90_operations/OPS-16_texas_market_plan_of_record.
 repo: doc_repo
 FAN-DEPTH: 0
 This lane launches NO sub-agents. Do the work yourself. The commit gate refuses a close that declares any (A-181).
+
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 
