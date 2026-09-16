@@ -2,12 +2,52 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-16 (two session closes: design completion and five lenses; 2026-09-15e eleven rows shipped and the async cutover)
+last_updated: 2026-09-16 (three session closes: design completion and five lenses; 2026-09-15e eleven rows shipped and the async cutover; 2026-09-16f the dispatch cycle and the P-200-213 blind spot closed)
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
 
 # Current state snapshot
+
+**2026-09-16f SESSION CLOSE.** The three in-flight lanes from the prior close all landed: **P-243**
+(smartsite-mcp binding, panel resource_link now attached to `get_smart_site`) merged and deployed to
+`smartsite-mcp-00126-yak` — the code-level fix is live; **the customer predicate (a panel actually
+rendering in a real Claude client) is NOT verified by this seat and needs the operator's own check.**
+**P-244b** (declared-wait envelope) merged and deployed to `hauska-mcp-server-00100-cal`. **P-244a**
+(site-plan compose misclassification) merged and deployed to `hauska-engine-api-00238-tax`, and the
+underlying root cause was then also fixed same session: `--no-cpu-throttling` applied to
+`hauska-engine-api`, now serving `hauska-engine-api-00240-qig` at 100 percent. **The real-fix
+verification (the `48021:34049` job actually reaching `ready`) is still not independently confirmed** —
+`engine-api` refuses direct calls (`gate_front_context_required`, correct posture) and the test account's
+Solo tier blocks a live MCP trigger; owed next session or by the operator's own client.
+
+**THE LARGEST UNVERIFIED BLIND SPOT ON THE BOARD (P-200 through P-213) IS NOW CLOSED (A-178).** An
+internal read-only sub-agent re-verified all 14 rows against fresh clones and live probes. Four resolved
+since filing (P-202, P-203, P-207, and **P-212, the SEV-1 mass false retirement, fully fixed and verified
+three independent ways**); two ruled but not built (P-209, P-210); one improved but not customer-visible
+(P-205); three unchanged (P-201, P-204, P-206); and **P-213 (the blast-radius refusal) was confirmed
+STILL UNBUILT by reading the actual write path** — the exact code that caused P-212 was untouched.
+**P-213 was re-dispatched and built same day**, merged into `hauska-engine` (PR #457): a generic,
+reusable pre-write refusal (`writer-blast-radius-guard.mjs`, ported from hauska-factory's P-236 template),
+wired into the parcel-node reconcile writer before OPS-24 runs Burnet through the same pipeline.
+**New defect surfaced, not one of the 14:** two independent lanes (P-200, P-211) found `get_smart_site`
+apparently serving a periodically-baked snapshot rather than a live ledger-cell dereference, contradicting
+the "ledger is the serving path" canon. Flagged, not yet carded.
+
+**Four more PRs merged same session, on top of the three above: P-246** (legacy-design-tools#697,
+the `valueHistoryFact` dollar-value tier-gate bypass — a Solo caller was refused CAD dollars on
+`onRecord.cadRoll` and handed the same dollars one field later; both routes now gate every entry),
+**P-247** (hauska-map#408, the Smart Site sign-in redesign — three states, real data wired to three
+live-verified sample parcels, two self-caught bugs fixed along the way), **P-238** (hauska-engine#456,
+found the dispatch's own premise FALSE — the X-ray dossier footer defect it described had already been
+fixed by P-228 the same day it was filed; the lane added the missing regression coverage instead of a
+duplicate fix), and **P-213** (above). **ALL FOUR ARE MERGED, NOT YET DEPLOYED — deploy is owed next
+session**, deliberately not started this close given context constraints; do not treat "merged" as
+"customer-done" for any of the four (P-246 in particular is a live paid-tier bypass fix sitting merged but
+unshipped).
+
+Full detail: `_sessions/2026-09-16f_dispatch_cycle_and_p200_213_closed_claude_code.md`. Prior durable
+card: `_inbox/2026-09-15_reports_and_envelope_WDLL.md` (now largely superseded by the above).
 
 **2026-09-15e SESSION CLOSE. The serving revisions in this paragraph are the ones to trust, and
 they were read by field on 2026-09-16.** Eleven rows shipped and verified on customer surfaces in
