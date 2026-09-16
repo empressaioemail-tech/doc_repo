@@ -11,6 +11,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { evaluate, isGitCommit, targetsDocRepo, stagedFiles, stagesInSameCommand, DOC_REPO } from "../../scripts/enforcement/probe-close-gate.mjs";
+import { isInstalled, installedHooksPath, HOOKS_DIR } from "../../scripts/enforcement/git-commit-gates.mjs";
 
 let raw = "";
 process.stdin.setEncoding("utf8");
@@ -21,6 +22,12 @@ process.stdin.on("end", () => {
     const command = payload?.tool_input?.command ?? payload?.toolInput?.command ?? payload?.command ?? "";
     const cwd = payload?.cwd ?? payload?.tool_input?.working_directory ?? process.cwd();
     if (!isGitCommit(command) || !targetsDocRepo(command, cwd)) process.exit(0);
+    // P-280: the git-level gates are what grade lane closes in seat worktrees and on merges. If
+    // they are not installed, refuse here so the gap is noticed at the next integration commit.
+    if (!isInstalled(DOC_REPO)) {
+      process.stderr.write(`{"block": true, "message": "COMMIT GATES NOT INSTALLED (P-280): core.hooksPath is '${installedHooksPath(DOC_REPO).replace(/["\\\\]/g, "")}', expected '${HOOKS_DIR}'. Lane closes in seat worktrees and merged closes go ungraded until it is set. Run: node scripts/enforcement/git-commit-gates.mjs --install"}`);
+      process.exit(2);
+    }
     if (stagesInSameCommand(command)) {
       process.stderr.write(`{"block": true, "message": "PROBE CLOSE GATE (OPS-23 R-4) refused the commit: this command stages and commits in one string (git add ... && git commit, or commit -a/--all), so the gate cannot read the index it is about to commit. Stage in one call, commit in the next. Found live 2026-09-12 (213f5369, reverted)."}`);
       process.exit(2);

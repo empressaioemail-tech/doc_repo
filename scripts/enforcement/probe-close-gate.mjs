@@ -256,6 +256,8 @@ export function selfTest() {
   return failures;
 }
 
-if (process.argv.includes("--self-test")) {
+// Only when this file is the entry point. An importer run with --self-test (git-commit-gates.mjs,
+// 2026-09-16) otherwise ran this suite instead of its own and exited before its checks started.
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url)) && process.argv.includes("--self-test")) {
   process.exit(selfTest() === 0 ? 0 : 1);
 }
