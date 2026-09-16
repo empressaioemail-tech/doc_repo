@@ -1,0 +1,81 @@
+{
+  "lane": "scaleup-ld-farm-architecture",
+  "planRows": ["P-187", "P-198"],
+  "status": "closed",
+  "at": "2026-09-16",
+  "seat": "dispatch-planner-ld, claimed via scripts/lane-claim.mjs (exit 0) in P:/seat-worktrees/dispatch-planner/doc_repo",
+
+  "missionPremise": "Operator ruling 2026-09-16 (per _inbox/2026-09-16_farm_architecture_draft.md, parent _inbox/2026-09-16_texas_scaleup_program_scope.md): before finalizing a farm architecture for Burnet-then-Bell-and-Milam-in-parallel-then-the-rest-of-Texas, map the system as it actually runs (not as drafted), measure capacity instead of estimating it, and test the draft's leaning (Option B: Neon branch pair per farm + Option D's bulk write path) against the real publish-job code, because the draft was written by a planner who had already gotten one diagnosis wrong that same day and its own status line says 'treat every line of it as a claim to test.'",
+
+  "completionPredicate": "A report exists at the named path containing: a corrected architecture map with each correction verified at a live source (gcloud describe, Neon API response, or a SQL query against a named run-record table); a capacity table where every figure names its source and any figure that could not be re-sourced this session is marked UNMEASURED rather than carried from memory; the contention incidents named in the dispatch, each marked as independently confirmed, indirectly corroborated, or not located; the four options evaluated against actual code (not prose), including a step-by-step walk of 'two counties publish in the same hour' against the publish job's real target-resolution logic; a recommended architecture with the 13 named stages placed on it, store/writer/gate/operator-stop named for each where evidence exists; a speed-record specification saying what each measure needs to become a query rather than a memory; and a hardcoded-literal list starting from the dispatch's named entry points (publish job name/args, zoning layer registries, SIX_COUNTIES, CONSTRAINT_SEARCH_COUNTIES) with each entry confirmed present, confirmed absent, or confirmed harmless.",
+
+  "scopeBasis": "Read-only research lane, one level of the fan (no sub-agents spawned, per the dispatch's own first line). In scope: gcloud read calls (run jobs/services list+describe, Secret Manager list) against hauska-prod-497015 and legacy-design-tools-prod; Neon API read calls via the NEON_API_KEY credential already present in Secret Manager; bounded, non-heavy-scan SQL reads against the factory store and atoms store for schema and run-record facts; git show/grep against origin/main in all four product repos (never a working tree, since all four local checkouts were stale or dirty at session start). Out of scope, honored throughout: no cloud resource created, modified or deleted; no product code or config written; no git commit/push (doc_repo commits are planner-owned); no DSN or API key value printed to stdout or a file; no unindexed full-table scan (heavy-scan rule); no Neon branch created to test the branch-count ceiling, which is why that ceiling is reported UNMEASURED rather than empirically forced.",
+
+  "prs": "not applicable: doc_repo research lane, no product code changed",
+  "mergeShas": "not applicable: doc_repo research lane",
+  "ciConclusions": "not applicable: doc_repo research lane",
+
+  "checkpoints": [
+    "_inbox/2026-09-16_scaleup-ld-farm-architecture_cp1.json",
+    "_inbox/2026-09-16_scaleup-ld-farm-architecture_cp2.json"
+  ],
+
+  "probe": { "notApplicable": "read-only research lane" },
+
+  "falsifier": {
+    "1_correctedDiagramDiffersFromDraft": "SCORED PASS. Multiple elements differ from the draft, each verified at source, not merely re-asserted: (a) all 40 Cloud Run jobs and 4 services live in ONE GCP project, hauska-prod-497015, confirmed by `gcloud run jobs/services list`; (b) the atoms store and the landing store share one Neon PROJECT (cortex-prod / fancy-fire-06136146), confirmed by Neon API branch listing showing both 'neondb' and 'hauska_mcp' secrets resolve into the same project's branches; (c) 'staging' is already a reused Neon branch PAIR in that project (not a fresh-per-run branch), confirmed by Neon API operations log showing delete_timeline+create_branch resets under the same names on 2026-09-14; (d) the factory store has exactly ONE branch, ever, confirmed by Neon API branch listing (this directly corrects the draft's Option B description, which implies factory branching is a straightforward extension of an existing pattern -- it is not, for the factory-store half); (e) the factory store already has a read-replica endpoint, confirmed by Neon API endpoints listing plus two post-incident Secret Manager entries (FACTORY_DATABASE_URL_RO, FACTORY_DATABASE_URL_REPLICA), not shown in the draft's diagram; (f) PUBLISH_TARGETS/WRITER_TARGETS are frozen 2-value enums in both repos' code, confirmed by `git show` on origin/main -- absent from the draft entirely and the single most consequential correction; (g) 6 stray Neon branches from 2026-08-27/28 are confirmed still alive and, in several cases, still active TODAY (2026-09-16), upgrading the draft's 'branch cleanup, 2026-08-28' bullet from a historical incident to a live unresolved condition.",
+    "2_optionSurvivesTwoCountiesOneHour": "SCORED: RECOMMENDED OPTION SURVIVES, WITH A NAMED PRECONDITION, NOT UNCONDITIONALLY. Walked step by step in report Section 4 against publish-target-env.mjs / writer-target-env.mjs: the bookkeeping layer (publish_runs keyed by (county_fips, target), leases keyed by (entity_type, county_fips)) already tolerates two counties publishing in the same hour on shared stores TODAY, confirmed by schema. But two counties CANNOT each get their own isolated branch/compute under a distinct name today, because the target name is a frozen 2-value enum pointing at one fixed secret pair per name -- confirmed by code, not assumed. The recommended B+D architecture therefore survives the falsifier only once the target model is generalized beyond 2 values (named as precondition 1 in the report); as currently coded, two farms sharing the literal string 'staging' would be sharing one Neon branch pair, which is a real, code-confirmed limitation the draft did not have.",
+    "3_everyCapacityNumberSourced": "SCORED PASS, WITH EXPLICIT UNMEASURED MARKERS WHERE A NUMBER COULD NOT BE RE-SOURCED. All capacity-table entries in report Section 2 name their source (a specific Neon API path, a specific SQL query against a named table, or a gcloud command). Three figures are explicitly marked UNMEASURED / UNMEASURED-IN-SESSION rather than carried from memory: the Neon plan's branch-count ceiling (no read endpoint returned it), parcel-envelope-cells/parcel-setback-cells row throughput (zero counts/cost/run_events on all 14 sampled runs -- a finding in itself), and the draft's specific 67.4/149.0 atoms/s figure (not disputed, but not re-derivable from any table this session could read, since atoms_writer_lease_history carries no row-count column)."
+  },
+
+  "contradicted": "The draft's Option B description ('a factory branch and an atoms branch per county, each with its own compute') implies a roughly symmetric extension of one existing pattern to both stores. Measured this session: the atoms/landing side already has a reused-in-place staging branch pair (an existing, if singular, pattern); the factory store has never been branched at all (zero prior art). Building 'a branch pair per farm' is therefore two different-sized jobs, not one job done twice. Separately, the draft's framing of the Bastrop-named publish job as the main county-literal risk undersold the real blocker: the job's CONTENTS are already fully county-generic (confirmed: TX_COUNTY_FIPS_SET has all 254 counties, and the job's own header comment states nothing inside assumes Bastrop) -- the frozen PUBLISH_TARGETS/WRITER_TARGETS enum, which the draft never mentions, is the actual structural constraint on running more than one farm concurrently.",
+
+  "leave_behind": [
+    {
+      "item": "_inbox/2026-09-16_scaleup-ld_farm_architecture_report.md -- the full corrected map, capacity table, contention incidents, option evaluation, recommended architecture with stage placement, speed-record spec, and hardcoded-literal list",
+      "owner": "planner (doc_repo integration seat)",
+      "plan_row": "P-187"
+    },
+    {
+      "item": "_inbox/2026-09-16_scaleup-ld-farm-architecture_{cp1,cp2,close}.json -- 3 uncommitted checkpoint/close artifacts",
+      "owner": "planner (doc_repo integration seat)",
+      "plan_row": "P-187"
+    },
+    {
+      "item": "PRECONDITION 1: generalize PUBLISH_TARGETS (hauska-factory/src/lib/publish-target-env.mjs) and WRITER_TARGETS (hauska-engine/packages/engine-core/scripts/writer-target-env.mjs) beyond the frozen 2-value ['staging','production'] enum, plus corresponding Secret Manager entries, before any farm can run concurrently with 'staging' under its own name. A code + secret-mount change, not something this read-only lane can do.",
+      "owner": "whoever builds the farm (not this lane)",
+      "plan_row": "P-198"
+    },
+    {
+      "item": "PRECONDITION 2: build a Neon branch lifecycle/cleanup mechanism before farm-per-branch ships. Six stray branches in cortex-prod (fancy-fire-06136146) are alive today, dating to 2026-08-27/28, several still showing compute activity as of this report's writing (2026-09-16). Named, not deleted -- deleting them is a write action outside this lane's read-only scope and belongs to whoever owns that Neon project.",
+      "owner": "whoever builds the farm (not this lane); Neon branch deletion is a write action this lane did not take",
+      "plan_row": "P-198"
+    },
+    {
+      "item": "PRECONDITION 3: instrument parcel-envelope-cells and parcel-setback-cells (hauska-factory Cloud Run jobs) to populate runs.counts / runs.cost, which are NULL on all 14 sampled runs today. Wall-clock is already automatic via the runs/termination_records join; rows and dollars are not.",
+      "owner": "whoever builds the farm (not this lane)",
+      "plan_row": "P-198"
+    },
+    {
+      "item": "Open questions this session could not resolve: which code paths use FACTORY_DATABASE_URL_RO/_REPLICA; whether defects/defect_events carry per-run instances or only a static rule-class register; the Neon plan's actual branch-count ceiling; the 'Harris writer lease' and generic 'rate limit' contention incidents named in the dispatch's prose (not independently located this session).",
+      "owner": "next lane that touches farm architecture or Neon capacity planning",
+      "plan_row": "P-187"
+    }
+  ],
+
+  "constraintsHonored": [
+    "no sub-agents spawned; all work serial in this session, per the dispatch's first line",
+    "no cloud resource created, modified or deleted; every gcloud/Neon-API/psql call was a read",
+    "no product code or config written in hauska-engine, hauska-factory, hauska-map or legacy-design-tools",
+    "no git operation beyond read-only fetch/show/grep/log in the product repos; no commit/push in doc_repo (planner-owned)",
+    "no DSN or Neon API key value printed to stdout or written to any file; retrieved into shell variables and unset immediately after use",
+    "no new credential or secret created, rotated or mounted; the Neon API credential used already existed in Secret Manager before this session",
+    "no unindexed full-table scan; entity_type distribution taken from pg_stats rather than a GROUP BY over 102M rows",
+    "every gcloud/psql/curl call wrapped in a bounded timeout",
+    "lane claimed before any file edit (scripts/lane-claim.mjs claim, exit 0) and will be released on this close's filing"
+  ],
+
+  "leaseSelfGranted": "not applicable: this lane took no Cloud Run traffic-shift lease and shifted no traffic",
+
+  "laneClaimStatus": "claimed at session start via `node scripts/lane-claim.mjs claim --lane scaleup-ld-farm-architecture --seat dispatch-planner-ld --plan-row P-187 --dispatch _dispatches/2026-09-16_scaleup-ld-farm-architecture_dispatch.md`, exit 0 ('CLAIMED ... Proceed.'). To be released immediately after this close file is filed via `node scripts/lane-claim.mjs release --lane scaleup-ld-farm-architecture --seat dispatch-planner-ld`."
+}

@@ -1,0 +1,38 @@
+{
+  "lane": "scaleup-le-customer-experience",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build",
+  "timestamp": "2026-09-16T00:00:00Z-session",
+  "seat": "dispatch-planner-le",
+  "laneClaim": "claimed via lane-claim.mjs, exit 0",
+  "whatWasBuilt": [
+    "Read canon preamble, AGENT_CONTRACT.md, DEV_PROCESS.md, and every ruling the dispatch cites by name (Ruling B reversed 2026-09-11, most-current-source-wins 2026-09-11, ledger-as-serving-path 2026-09-11, not-specified-semantics 2026-09-11, A-164 PUD ruling, P-209 salesHistory, P-199/P-246 tier-gating findings).",
+    "Read the same-session program-scope doc (_inbox/2026-09-16_texas_scaleup_program_scope.md) and pickup list, which already carry live-measured examples for the two falsifier parcels (Pflugerville 48453:427599, Kyle PC R2 48209:100698) and the control parcel (Bastrop 48021:34049) -- per fleet memory M0, read scratch context before re-deriving.",
+    "Wrote the spec (_inbox/2026-09-16_scaleup-le_card_spec.md), 11 sections, each citing its source ruling, with the falsifier pre-registration restated inside it.",
+    "Designed and ran a deterministic fixture-selection SQL against the factory store (read-only, bounded statement_timeout, one indexed range scan per county on parcel_record_cell), one query per county, bucketed by zoningJurisdictionKey (or a '(no city: <kind>)' sentinel for unincorporated/refused), selecting the lowest md5(place_key) per category per bucket. Five categories per bucket where they exist: a codified district with a setback value, a district miss, a no-table city, a PUD-shaped district code, a vacant lot. All 6 counties returned within the 280s per-query timeout (Caldwell fastest, Travis and Hays largest).",
+    "Wrote the fixture list artifact (_inbox/2026-09-16_scaleup-le_fixture_list.json) and the SQL it was produced by (_inbox/2026-09-16_scaleup-le_fixture_queries.sql), covering all 39 city/unincorporated buckets across the six counties.",
+    "Spot-checked six fixtures' situsAddress live against the store: five look like real Texas addresses; one (48021:51735, the Bastrop codified-setback fixture) returned a blank/malformed address ', ,' -- flagged as a defect candidate to verify live on the surfaces, not assumed."
+  ],
+  "designDecisions": [
+    {
+      "decision": "corner lot and curved frontage are NOT selectable from parcel_record_cell",
+      "reason": "The rail set has no geometry/adjacency/frontage-curvature field. Determining either needs parcel geometry, which is out of this lane's read scope (the dispatch's operational notes say the atoms/geometry store is not needed for this lane). Disclosed explicitly in the fixture list's categoriesNotDeterminable block rather than guessed or silently dropped.",
+      "risk": "The mission lists these as fixture categories to include 'where a city has them'. This is a capability gap in the selection method, not a claim that no corner lots or curved frontages exist. Where a deep-probed fixture happens to read as a corner lot on the live setbacks payload (a non-null side_corner_ft), that will be noted as an observation, not a pre-selected category."
+    },
+    {
+      "decision": "envelope-drawn vs envelope-declined is determined live, not by SQL",
+      "reason": "envelopeStatus/buildableAreaSqFt are R-2-withheld rails in the factory store gate (excluded everywhere); the actual draw/decline outcome lives in the atoms store's buildable-envelope atom and the live place/buildable-envelope call, neither of which this lane reads via SQL. Determined per fixture during Step 3's live probe instead."
+    },
+    {
+      "decision": "full 3-surface deep grading will be scoped to a representative subset of the 39 buckets, not all of them",
+      "reason": "39 buckets x up to 5 fixture categories is ~120-150 distinct parcels; full map+MCP+PDF probing at that scale is not achievable inside one session's realistic tool-call budget. The complete deterministic fixture LIST (all 39 buckets) is delivered in full as the P-197 artifact regardless. Deep 3-surface probing will cover: the 3 operator-named anchor/falsifier parcels, plus for every one of the 6 counties at least one high-volume wired city (codified + miss/no-table + PUD where distinct) and the unincorporated remainder -- roughly 24-30 parcels. Remaining buckets are graded on the map leg only (cheap, WebFetch) where time allows, with MCP/PDF explicitly marked not-probed-this-pass rather than assumed. This will be stated plainly as a scope decision in the close (scopeBasis), not hidden inside an unqualified 'graded' claim.",
+      "citesDevProcess": "coverage figures travel with their denominator -- every scorecard in the report will say how many of the bucket's fixture categories were actually read live versus listed only."
+    }
+  ],
+  "risksFlagged": [
+    "MCP tool calls (get_smart_site) are live, paid, authenticated calls on the operator's own Solo account; kept to a bounded count (~10) rather than one per fixture.",
+    "PDF export (export_instrument) will be attempted only on 1-2 anchor fixtures; the rest marked UNMEASURED with reason, per the dispatch's own table for where the account is not entitled or the leg was not run.",
+    "Two counties (Williamson R-prefixed parcel ids, others numeric) confirm P-184's known two-namespace issue is still live; the Williamson and Travis Pflugerville buckets are a deliberate adjacent pair in the fixture list to let the report check for two-namespace disagreement directly."
+  ],
+  "nextStep": "Step 3: live-read the deep-probe subset on the map surface (WebFetch against smartsite.cloud facets + buildable-envelope), then the MCP surface (get_smart_site) for the reduced subset, then attempt PDF export on the anchors. Grade each against the spec. File CP2 after the map leg completes for all deep-probe fixtures."
+}

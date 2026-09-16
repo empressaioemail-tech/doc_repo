@@ -1,0 +1,87 @@
+{
+  "id": "2026-09-16_scaleup-le_fixture_list",
+  "planRows": ["P-197"],
+  "selectionRule": "Read-only, factory store (FACTORY_DATABASE_URL_RO), default_transaction_read_only=on, statement_timeout bounded. Per county, one pass over parcel_record_cell restricted to place_key range [fips:, fips;) and rail_key in (zoningJurisdictionKey, zoningDistrict, setbackFrontFt, landUseCode, yearBuilt, situsAddress), grouped by place_key with FILTER aggregates. Bucketed by zoningJurisdictionKey value, or '(no city: <zoningDistrict kind>)' when absent. Within each bucket, within each category, the fixture is the place_key with the lowest md5(place_key) satisfying the category predicate (array_agg(place_key order by md5(place_key)) filter (where <predicate>))[1]. Full query: _inbox/2026-09-16_scaleup-le_fixture_queries.sql.",
+  "categoryPredicates": {
+    "fx_codified": "setbackFrontFt cell kind = 'value' (a codified district with a setback value on record)",
+    "fx_district_miss": "setbackFrontFt cell kind = 'absent-verified' and its basis.method starts with 'setback-table-router' (the district has no row in the city's table)",
+    "fx_no_table": "setbackFrontFt cell kind = 'absent-verified' and NOT the district-miss method (the city has no table in the corpus at all)",
+    "fx_pud": "zoningDistrict value matches /(^|[^A-Za-z])(PUD|PDD|PD|PC)([^A-Za-z]|$)/i -- a planned-development-shaped code",
+    "fx_vacant": "landUseCode value ILIKE '%vacant%' OR yearBuilt cell kind != 'value' (no built-year on record), restricted to parcels that also have a codified setback so the fixture is otherwise gradeable"
+  },
+  "categoriesNotDeterminable": {
+    "corner_lot": "No adjacency/frontage-count signal exists in parcel_record_cell's rail set; selecting a true corner lot needs parcel geometry, which is outside this lane's read scope (atoms/geometry store not used, per operational scope). Not selected by SQL; where a deep-probed fixture happens to be a corner lot that is noted from the live setbacks payload's corner value, not pre-selected.",
+    "curved_frontage": "Same reason as corner_lot: no frontage-geometry field in parcel_record_cell. Not selected."
+  },
+  "requiredAnchorFixtures": [
+    { "id": "48021:34049", "label": "1109 Pecan St, Bastrop, SF-1, corner lot; Bastrop's own confirmed-good control parcel (falsifier 2)", "source": "operator-named, _decisions/2026-09-11_setback_source_most_current_wins.md; also surface-probe.mjs PARCELS" },
+    { "id": "48209:100698", "label": "5292 Hartson, Kyle, district PC R2, planned community; falsifier 1 (Kyle PC R2)", "source": "operator-named, _inbox/2026-09-16_texas_scaleup_program_scope.md §2b" },
+    { "id": "48453:427599", "label": "203 E Oxford Dr, Pflugerville (Travis part), SF-S; falsifier 1 (Pflugerville missing-city)", "source": "operator-named, _inbox/2026-09-16_texas_scaleup_program_scope.md §2c/2e" }
+  ],
+  "buckets": {
+    "48021_bastrop": {
+      "countyName": "Bastrop",
+      "(no city: not-applicable)": { "n": 50419, "fx_no_table": "48021:8733976" },
+      "bastrop-tx": { "n": 5775, "fx_codified": "48021:51735", "fx_district_miss": "48021:98624", "fx_pud": { "id": "48021:98624", "district": "PDD" }, "fx_vacant": "48021:51735" },
+      "elgin-tx": { "n": 3740, "fx_codified": "48021:14899", "fx_district_miss": "48021:111348", "fx_vacant": "48021:11943" },
+      "smithville-tx": { "n": 2295, "fx_no_table": "48021:123776", "fx_pud": { "id": "48021:70907", "district": "PD" }, "note": "100% no-table city (2295/2295); eCode360 scrape ruling per program-scope S3" },
+      "(no city: refused)": { "n": 27, "fx_no_table": "48021:13722" }
+    },
+    "48209_hays": {
+      "countyName": "Hays",
+      "(no city: not-applicable)": { "n": 62155, "fx_no_table": "48209:25590" },
+      "kyle-tx": { "n": 19855, "fx_codified": "48209:145880", "fx_district_miss": "48209:196663", "fx_pud": { "id": "48209:196663", "district": "PC MXD" }, "fx_vacant": "48209:105451" },
+      "san-marcos-tx": { "n": 18601, "fx_codified": "48209:166141", "fx_district_miss": "48209:161748", "fx_pud": { "id": "48209:91950", "district": "PDD" }, "fx_vacant": "48209:23188" },
+      "buda-tx": { "n": 5876, "fx_codified": "48209:140047", "fx_district_miss": "48209:89730", "fx_pud": { "id": "48209:89730", "district": "PD" }, "fx_vacant": "48209:110033" },
+      "(no city: refused)": { "n": 4610, "fx_no_table": "48209:36260" },
+      "dripping-springs-tx": { "n": 3886, "fx_codified": "48209:142415", "fx_district_miss": "48209:188100", "fx_pud": { "id": "48209:188100", "district": "PDD" }, "fx_vacant": "48209:120732" },
+      "woodcreek-tx": { "n": 1026, "fx_no_table": "48209:49000", "note": "100% no-table (1026/1026)" },
+      "austin-tx (Hays part)": { "n": 411, "fx_codified": "48209:150937", "fx_district_miss": "48209:123789", "fx_pud": { "id": "48209:132641", "district": "PUD" }, "fx_vacant": "48209:150939" }
+    },
+    "48309_mclennan": {
+      "countyName": "McLennan",
+      "waco-tx": { "n": 47679, "fx_codified": "48309:187374", "fx_district_miss": "48309:342115", "fx_pud": { "id": "48309:342115", "district": "PUD" }, "fx_vacant": "48309:187374" },
+      "(no city: not-applicable)": { "n": 33478, "fx_no_table": "48309:342715" },
+      "(no city: refused)": { "n": 27411, "fx_no_table": "48309:123814" },
+      "robinson-tx": { "n": 5686, "fx_no_table": "48309:402845", "fx_pud": { "id": "48309:370438", "district": "PD" }, "note": "100% no-table (5686/5686)" }
+    },
+    "48453_travis": {
+      "countyName": "Travis",
+      "austin-tx": { "n": 203218, "fx_codified": "48453:239852", "fx_district_miss": "48453:344164", "fx_pud": { "id": "48453:153648", "district": "PUD" }, "fx_vacant": "48453:725468" },
+      "(no city: not-applicable)": { "n": 104992, "fx_no_table": "48453:855924" },
+      "(no city: refused)": { "n": 35365, "fx_no_table": "48453:157574" },
+      "pflugerville-tx": { "n": 20020, "fx_codified": "48453:445501", "fx_district_miss": "48453:728424", "fx_pud": { "id": "48453:728424", "district": "PUD" }, "fx_vacant": "48453:282274", "anchor": "48453:427599" },
+      "lakeway-tx": { "n": 8202, "fx_no_table": "48453:850459", "fx_pud": { "id": "48453:995707", "district": "PUD (Eff. 7/19/04)" }, "note": "100% no-table (8202/8202)" },
+      "leander-tx (Travis part)": { "n": 5165, "fx_codified": "48453:812200", "fx_district_miss": "48453:864821", "fx_pud": { "id": "48453:864821", "district": "PUD-SF" }, "fx_vacant": "48453:513976" },
+      "cedar-park-tx (Travis part)": { "n": 2378, "fx_codified": "48453:523600", "fx_district_miss": "48453:178242", "fx_pud": { "id": "48453:178242", "district": "PD" }, "fx_vacant": "48453:543551" },
+      "elgin-tx-travis": { "n": 1174, "fx_codified": "48453:959606", "fx_vacant": "48453:990532", "note": "no district-miss/PUD row matched; small bucket" },
+      "round-rock-tx (Travis part)": { "n": 321, "fx_codified": "48453:482441", "fx_district_miss": "48453:482075", "fx_pud": { "id": "48453:894572", "district": "PUD" }, "fx_vacant": "48453:380029" },
+      "elgin-tx (Travis part)": { "n": 76, "fx_codified": "48453:941831", "fx_district_miss": "48453:557511" },
+      "buda-tx (Travis part)": { "n": 6, "fx_codified": "48453:352594", "fx_district_miss": "48453:352053", "fx_pud": { "id": "48453:352053", "district": "PD" }, "fx_vacant": "48453:352594" }
+    },
+    "48491_williamson": {
+      "countyName": "Williamson",
+      "(no city: not-applicable)": { "n": 109014, "fx_any": "48491:R599233", "note": "no absent-verified/pud/vacant row matched the category filters in this bucket; supplemental query used zoningJurisdictionKey kind='not-applicable' directly" },
+      "georgetown-tx": { "n": 38898, "fx_codified": "48491:R405006", "fx_district_miss": "48491:R461828", "fx_vacant": "48491:R523140", "note": "no PUD-shaped district code matched" },
+      "round-rock-tx": { "n": 38677, "fx_codified": "48491:R483884", "fx_district_miss": "48491:R490471", "fx_pud": { "id": "48491:R490471", "district": "PUD" }, "fx_vacant": "48491:R471811" },
+      "leander-tx": { "n": 26482, "fx_codified": "48491:R038268", "fx_district_miss": "48491:R086290", "fx_pud": { "id": "48491:R086290", "district": "PUD-HC" }, "fx_vacant": "48491:R038268" },
+      "cedar-park-tx": { "n": 22284, "fx_codified": "48491:R474467", "fx_district_miss": "48491:R388071", "fx_pud": { "id": "48491:R388071", "district": "PD" }, "fx_vacant": "48491:R474467" },
+      "hutto-tx": { "n": 15805, "fx_codified": "48491:R464748", "fx_district_miss": "48491:R572668", "fx_pud": { "id": "48491:R572668", "district": "PUD" }, "fx_vacant": "48491:R671545" },
+      "austin-tx (Williamson part)": { "n": 13924, "fx_codified": "48491:R062214", "fx_district_miss": "48491:R424589", "fx_pud": { "id": "48491:R424589", "district": "PUD" }, "fx_vacant": "48491:R093510" },
+      "taylor-tx": { "n": 8504, "fx_codified": "48491:R015944", "fx_district_miss": "48491:R329756", "fx_vacant": "48491:R630443", "note": "no PUD-shaped district code matched" },
+      "(no city: refused)": { "n": 5824, "fx_no_table": "48491:R010642" },
+      "liberty-hill-tx": { "n": 3061, "fx_codified": "48491:R580151", "fx_district_miss": "48491:R651421", "fx_pud": { "id": "48491:R651421", "district": "PUD" }, "fx_vacant": "48491:R538099" },
+      "pflugerville-tx (Williamson part)": { "n": 97, "fx_codified": "48491:R415488", "fx_district_miss": "48491:R423623", "fx_pud": { "id": "48491:R423623", "district": "PUD" }, "fx_vacant": "48491:R463550", "note": "two-namespace pair with Travis Pflugerville; see P-184" }
+    },
+    "48055_caldwell": {
+      "countyName": "Caldwell",
+      "(no city: not-applicable)": { "n": 14401, "fx_no_table": "48055:21992" },
+      "lockhart-tx": { "n": 6466, "fx_codified": "48055:124036", "fx_district_miss": "48055:124553", "fx_pud": { "id": "48055:124553", "district": "PDD" }, "fx_vacant": "48055:33717" },
+      "luling-tx": { "n": 2887, "fx_no_table": "48055:44215", "fx_pud": { "id": "48055:130676", "district": "PD-LADERA" }, "note": "100% no-table (2887/2887)" },
+      "martindale-tx": { "n": 615, "fx_no_table": "48055:27929", "note": "100% no-table (615/615)" },
+      "(no city: refused)": { "n": 549, "fx_no_table": "48055:15475" },
+      "san-marcos-tx (Caldwell part)": { "n": 70, "fx_codified": "48055:40428", "fx_district_miss": "48055:28119", "fx_vacant": "48055:41692" }
+    }
+  },
+  "sanityCheck": "situsAddress spot-read on six fixtures across counties (2026-09-16): 48055:124036=301 PITKIN DR; 48209:145880=151 FENDER DR, KYLE, TX 78640; 48309:187374=931 N 12TH ST, WACO, TX 76707; 48453:445501=21404 GRAND NATIONAL AVE; 48491:R405006=120 NOLAN DR, GEORGETOWN, TX 78633; 48021:51735=', ,' (BLANK/malformed situsAddress -- flagged as a defect, see report)."
+}

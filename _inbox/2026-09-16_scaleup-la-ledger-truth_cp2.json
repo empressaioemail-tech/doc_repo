@@ -1,0 +1,43 @@
+{
+  "lane": "scaleup-la-ledger-truth",
+  "seat": "dispatch-planner-la",
+  "checkpoint": "CP2-pilot",
+  "filedAt": "2026-09-16T14:00:00Z",
+  "instrumentSelfTest": "PASS 17/17 (scripts/ledger-truth.mjs --self-test), including the two required NOT-VACUOUS checks (#8 disagreeing fixture reports disagree, #10 no-atom fixture never reports agree).",
+  "instrumentBugFoundAndFixedDuringPilot": {
+    "bug": "readSlates() defaulted to /p/hauska-engine and /p/legacy-design-tools (Git-Bash MSYS path form). git.exe, spawned via node child_process with no shell to translate the path, silently resolved neither path and returned null for both slate reads -- collapsing every rail's serve classification to legacy-transitional with no thrown error, only a printed WARNING line.",
+    "howCaught": "Ran Mode 1 on 48209:97658, read the WARNING line in the output instead of assuming the run succeeded, and cross-checked engine/ldt slate set sizes before trusting any serve-state output.",
+    "fix": "Changed defaults to P:/hauska-engine and P:/legacy-design-tools (drive-letter form, which git.exe resolves correctly on Windows regardless of caller shell). Re-ran Mode 1; slatesAvailable now {engine:true, ldt:true}, sizes 152/158 matching the manually-verified diff from CP1 exploration.",
+    "secondBugFoundAndFixed": "The entrypoint guard added to make the module import-safe (`import.meta.url === file://${process.argv[1]...}`) compared an absolute file:// URL against argv[1] in whatever form the shell passed it -- relative ('scripts/ledger-truth.mjs' when invoked as `node scripts/ledger-truth.mjs` from doc_repo root) -- so main() silently never ran and the process exited 0 having done nothing. Fixed with node:url's pathToFileURL(process.argv[1]).href for a normalized comparison; re-verified self-test prints its 17 PASS lines and exits 0 for the right reason."
+  },
+  "pilotResults": {
+    "mode1_48209_97658": {
+      "setbackSideFt_servePath": "legacy-transitional",
+      "envelopeStatus_agree": "disagree (ledger withholds this rail by ruling R-2; atom outcome=no-buildable-area)",
+      "atomSourceAdapter": "cortex-tier1-snapshot-breadth-bake",
+      "falsifier2_hays_leg": "CONFIRMED"
+    },
+    "mode1_48453_427599": {
+      "buildableAreaSqFt_atomExists": true,
+      "envelopeStatus_agree_outcome": "buildable",
+      "falsifier2_travis_leg": "CONFIRMED"
+    },
+    "mode2_rollup": {
+      "runtime": "under 5 minutes end to end, six counties, cell-kind + city-split + atom sample",
+      "slateDisagreementsFound": 6,
+      "slateDisagreementDetail": "48209:{yearBuilt,marketValue,assessedValue,landValue,improvementValue,livingAreaSqft} -- engine vendored slate lacks all six (stale since 2026-09-13T16:14:12-05:00 resync, PR #439), LDT's real allowlist carries all six (restored by P-180, 2026-09-13T19:30:32-05:00). Live, current, unresolved as of this pilot run.",
+      "envelopeSixCountyNoBuildableAreaCount": 490185,
+      "matchesDispatchPremise": true
+    },
+    "falsifier1_setbackFrontFt_crosscheck": {
+      "against_grain_results_txt": "EXACT MATCH, all 6 counties, all 5 kind buckets",
+      "against_live_six_county_completeness_run": "EXACT MATCH: setback-no-ruled-table + setback-router-miss falseEarned counts sum to this instrument's absent-verified county totals, all 6 counties",
+      "sixCountyCompletenessLiveVerdict": "INCOMPLETE (exit 1) -- matches the expected/known state"
+    }
+  },
+  "adversarialChecksPerformed": [
+    "Did not trust the dispatch's cited 490,185 figure at face value: ran an independent index-bounded count against the live atoms store scoped to the six program counties and got the identical number.",
+    "Ran the SAME count store-wide (no county scope) first and got a different number (848,381) with a third outcome kind (provisional-front-edge, 559,084) the dispatch's premise text does not mention -- reported as a scope clarification, not a contradiction, since the scoped count matches exactly.",
+    "Cross-checked the operational notes' cited 318,000 unaccounted ag-valuation figure against a live count: 317,918 (Bastrop+Caldwell+Hays+McLennan cells with rail=agValuation, kind=unaccounted) -- within noise, confirmed not contradicted; traced WHY six-county-completeness.mjs's own false-earned guard reads 0 for this class (its SQL predicate checks kind='not-applicable', but the live cells are still kind='unaccounted' -- exactly the gap the script's own comment names as a known, not-yet-fixed guard)."
+  ]
+}
