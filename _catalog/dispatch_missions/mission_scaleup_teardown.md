@@ -1,5 +1,11 @@
 ## Mission — TEXAS SCALE-UP TEARDOWN: a fresh planner tries to break the scope before any row is allocated
 
+> **HELD 2026-09-16. Do not send the dispatch compiled from this mission.** The operator
+> challenged the scope's envelope diagnosis the same day, and it was wrong; the scope was revised
+> (rev 2). A five-lane research wave (`mission_scaleup_research_wave_planner.md`) runs first. This
+> teardown is rewritten against the revised scope and the architecture draft, and recompiled,
+> after that wave returns.
+
 You are a fresh dispatch planner with no memory of the session that wrote this scope. **You spawn
 no sub-agents. You write no code and change no store.** Your product is a review that tries to
 make `_inbox/2026-09-16_texas_scaleup_program_scope.md` fail, and says where it holds.

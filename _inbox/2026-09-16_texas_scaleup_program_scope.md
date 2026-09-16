@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_program_scope
 title: Texas scale-up — six counties complete, Burnet builds the farm, Bell and Milam prove it in parallel
 date: 2026-09-16
-status: DRAFT for operator review. Nothing here is carded or dispatched. On approval it becomes OPS-24 rev 3 and its rows are allocated.
+status: DRAFT rev 2 (2026-09-16, envelope diagnosis corrected after the operator's challenge). Research lanes L-A to L-E run before this is revised again, then a final teardown. Nothing is carded.
 kind: program-scope
 owner: nick
 audience: the operator first; then the integration seat and the lane planners who will execute it
@@ -25,6 +25,9 @@ related:
   - _research/2026-09-12_cotality_reengagement_division_cogs_and_probe.md
   - 80_adrs/adr_032_third_party_source_rights_envelope.md
   - scripts/six-county-completeness.mjs
+  - _inbox/2026-09-16_farm_architecture_draft.md
+  - _inbox/2026-09-10_ctx_third_party_review.md
+  - _sessions/2026-09-10_MIDSESSION_ctx_completion_and_the_six_classes.md
 ---
 
 # Texas scale-up — the work scope
@@ -144,10 +147,10 @@ city or the district simply has no row in our table.
 | Hays | Dripping Springs | 3,886 | 1,923 | 1,963 |
 | Hays | Woodcreek | 1,026 | 0 | 1,026 |
 | Hays | Austin (Hays part) | 411 | 88 | 323 |
-| Hays | zoning refused | 4,610 | 0 | 4,610 |
+| Hays | no-table cities (zoning refused) | 4,610 | 0 | 4,610 |
 | McLennan | Waco | 47,679 | 37,513 | 10,166 |
 | McLennan | Robinson | 5,686 | 0 | 5,686 |
-| McLennan | zoning refused | 27,411 | 0 | 27,411 |
+| McLennan | no-table cities (zoning refused) | 27,411 | 0 | 27,411 |
 | Williamson | Round Rock | 38,677 | 27,198 | 11,479 |
 | Williamson | Leander | 26,482 | 17,443 | 9,039 |
 | Williamson | Austin (Williamson part) | 13,924 | 6,688 | 7,236 |
@@ -157,14 +160,14 @@ city or the district simply has no row in our table.
 | Williamson | Taylor | 8,504 | 8,109 | 395 |
 | Williamson | Liberty Hill | 3,061 | 3,028 | 33 |
 | Williamson | Pflugerville (Williamson part) | 97 | 67 | 30 |
-| Williamson | zoning refused | 5,824 | 0 | 5,824 |
+| Williamson | no-table cities (zoning refused) | 5,824 | 0 | 5,824 |
 | Bastrop | Bastrop | 5,775 | 2,731 | 3,044 |
 | Bastrop | Smithville | 2,295 | 0 | 2,295 |
 | Bastrop | Elgin | 3,740 | 3,690 | 50 |
 | Caldwell | Luling | 2,887 | 0 | 2,887 |
 | Caldwell | Lockhart | 6,466 | 5,426 | 1,040 |
 | Caldwell | Martindale | 615 | 0 | 615 |
-| Caldwell | zoning refused | 549 | 0 | 549 |
+| Caldwell | no-table cities (zoning refused) | 549 | 0 | 549 |
 | Travis | Austin | 203,218 | 150,102 | 53,116 |
 | Travis | Lakeway | 8,202 | 0 | 8,202 |
 | Travis | Pflugerville | 20,020 | 16,005 | 4,015 |
@@ -248,51 +251,87 @@ This parcel is a planned community and falls under the PUD ruling (A-164).
 Both findings describe our corpus, not the lot. ENFORCEMENT names this exactly: "never convert
 unaccounted to absent-verified to clear a gate."
 
-### 2c. The envelope, the road nodes, and the two registries
+### 2c. The envelope: why it draws in Pflugerville and not in San Marcos (CORRECTED)
 
-**Measured on the Hays test parcel `48209:97658` (629 Sturgeon Dr, San Marcos, SF-6).**
+**The first version of this section was wrong, and the operator caught it.** It said a polygon
+draws only where depth-warm verified the envelope, which the engine's registry allows for three
+cities. The operator's live example disproved it: 203 E Oxford Dr, Travis County (Pflugerville,
+SF-S), draws an envelope. Re-measured the same hour:
 
-- The record holds setbacks 25/5/20.
-- The map declines the envelope as `envelope-unverified` and sends no polygon.
-- The map adapter's own comment names this parcel and its neighbours: a nine-edge county ring
-  with five edges labelled `side`, which collapses a long narrow lot to a false zero.
-- P-216 correctly withholds that zero.
-- A polygon is only drawn when the stored envelope passed depth-warm ground-truth verification.
+| | Pflugerville `48453:427599` | San Marcos `48209:97658` |
+|---|---|---|
+| Map facets | `status: ok`, record path | `status: declined`, `envelope-unverified` |
+| Live `POST place/buildable-envelope` | `ok`, a Polygon, "Buildable area from the property atom chain (engine source of truth): 5027 sq ft" | `no-buildable-area`, no geometry, "Setbacks consume the lot" |
+| Front edge | "inferred from the **situs-named** street centerline" | "inferred from the **nearest** street centerline" |
+| Setbacks | 25 / 7.5 / 20 / 15 from the record | 25 / 5 / 20 / 15 from the record |
 
-**Depth-warm ground truth** (hauska-engine `geometry/envelope-ground-truth.ts`) has three parts:
+**The mechanism, read in code and confirmed in the atoms store.**
 
-- **P1:** the envelope sits inside the parcel.
-- **P2:** each edge is inset by the right setback for its role.
-- **P3:** the front edge is the one next to a street, using road geometry.
+- The live derive is `labelEdges+derive+atom-reconciled`. **When an envelope atom exists, its
+  outcome wins.**
+- The map draws the wedge only when that call returns `ok` with geometry, for an entitled viewer
+  (`ExplorerMap.tsx` `handleEnvelope`).
+- The San Marcos lot's atom: `source_adapter = cortex-tier1-snapshot-breadth-bake`, minted
+  2026-07-24 and never updated. It reads `outcome: {kind: "no-buildable-area", areaSqFt: 0}` at
+  an asserted 0.9 confidence.
+- It was minted from a nine-edge county ring, with the front taken from the nearest street,
+  because the lot's situs then carried no house number (P-175).
+- The ground-truth registry (Bastrop, Elgin, Lockhart) limits **verified promotion**, not
+  drawing.
 
-**Depth-warm can only run where the engine's jurisdiction registry has a row.** That registry
-(`registry/jurisdiction-registry.ts`) holds zoned-city rows for **Bastrop, Elgin and Lockhart
-only**. Everything else in it is an unincorporated-county row. That includes Bell. So San Marcos,
-Kyle, Georgetown, Round Rock, Waco and the rest can never earn a verified polygon today. That is
-the "specific areas" pattern the operator recognised.
+**The population, read-only from the atoms store** (index-bounded, per county):
 
-**Two registries hold one fact.**
+| County | "No buildable area" atoms | "Buildable" atoms | Other outcomes |
+|---|---|---|---|
+| Williamson | 239,491 | 42,945 | none |
+| Hays | 91,401 | 10,742 | none |
+| McLennan | 65,814 | **0** | none |
+| Bastrop | 56,540 | 3,935 (depth-warm verified) | 1,785 provisional |
+| Caldwell | 21,385 | 2,621 | none |
+| Travis | 15,554 | 6,457 | 150,702 `provisional-front-edge` |
 
-- The record's setback cells come from `@empressaio/setback-corpus` through the factory writer.
-- The engine's per-edge setbacks and depth-warm read the engine's jurisdiction descriptors.
+**What the 490,185 "no buildable area" atoms really are,** grouped on each atom's own `reason`:
 
-On the Hays test parcel, every property line says "No setback table configured for jurisdiction
-descriptor" (`emit-setback-rule.ts:90`) while the record holds the San Marcos values.
+| Class | Atoms | What it actually means | Right state |
+|---|---|---|---|
+| Unzoned: no district basis | 208,868 | nothing to compute | `not-applicable` with its reason |
+| Not onboarded: no district on record | 153,775 | the city was not wired in July; many are now (Waco, Kyle, San Marcos) | re-derive from the current ledger |
+| Zero with no reason, or copied from the tier-1 snapshot | 123,706 | shape-only computation, never verified | re-derive with correct labelling and ground truth |
+| No per-parcel layer-23 row | 1,948 | Bastrop-specific | re-derive |
+| **Road-node and edge-label failures** | **1,119** | Bastrop only, because only Bastrop ran verification | fix the road data, then re-derive |
+| Inset and geometry check failures | 685 | ground truth caught a wrong inset | re-derive |
+| Parcel id superseded | 84 | identity | retire correctly |
 
-**Two edge labellers do one job.**
+**This is the road-node problem the operator named, and it is larger than 1,119.** The Bastrop
+reasons show what verification finds wherever it runs:
 
-- The engine's depth-warm labeller (`depth-warm/edgeLabeling.ts`) labels every ring segment by
-  its own road proximity, with no grouping. It relies on a separate lot-line scrub.
-- The labeller the map's live envelope uses (legacy-design-tools
-  `buildableEnvelope/edgeLabeling.ts`) groups near-collinear chords into logical edges, and it
-  carries the P-235 curved-frontage fix.
+- **Street names that do not normalise:** "SH 95" against "State Highway 95", "W SH 71" against
+  "State Highway 71 West", "SCHAEFER BLVD" against "Schafer Boulevard".
+- **Road-class conflicts:** "classification residential != OSM tag county-roadway".
+- **Unlabelled fronts:** "no-road-adjacency", "fresh labeling produced no front edge",
+  "front-orientation-unresolved".
 
-The 2026-08-23 geometry unification (closed) unified the map and export paths. It did not unify
-the engine's.
+The 123,706 unexplained zeros were never put through that check. When they are, the same
+failures will appear at scale. Road-node quality is therefore the gate on drawing envelopes
+across the six.
 
-**Road data exists but is not in the ledger.** Road nodes are loaded as atoms: Bell alone had
-13,987 on 2026-08-05, and every Hays edge cites an OSM road. The factory maps road-node atoms to
-the `roads` rail. That rail, `parcelGeometry` and `edgeSignal` are excluded in all six counties.
+**The customer consequence.**
+
+- Wherever the ledger now holds setbacks and the atom still says zero, the envelope is declined.
+  The panel says "not verified" and draws nothing.
+- Waco carries 37,513 parcels with setback values and not one "buildable" atom.
+- The exact per-city count of "setbacks on record, no envelope drawn" needs a join across the
+  factory store and the atoms store. It is owed to the envelope and road-node lane (L-B).
+  Subtracting one county total from another is not that measurement.
+
+**Twin registries and twin labellers still stand, but they are secondary.**
+
+- The engine's per-edge setbacks read its own jurisdiction descriptors ("No setback table
+  configured for jurisdiction descriptor" on every San Marcos edge).
+- The engine's depth-warm labeller does not group ring chords; LDT's does.
+- Because the live derive defers to the atom, **fixing a labeller does not change what serves
+  until the atom is re-derived.** That is pattern 1 of the reports card: a producer fix does not
+  fix a product whose consumer defers first.
 
 ### 2d. Serving staleness
 
@@ -314,15 +353,25 @@ A fix that lands in the ledger is not visible until serving catches up.
   - Under today's ruling the sweep code must also be removed, so it can never write the false
     state.
 - **`valueHistoryFact`** leaks Studio-gated dollars to Solo callers in Hays as in Bastrop (P-246).
-- **The canon preamble compiled into every dispatch still says "COTALITY IS EXTINGUISHED".**
+- **The canon preamble compiled into every dispatch still says "COTALITY IS EXTINGUISHED".** Corrected
+  at source on 2026-09-16.
+- **The card does not name the city.** The operator's Pflugerville parcel read "Travis County",
+  "203 E OXFORD DR" and "SF-S", so nothing told the customer which city's code governs.
+  - The ledger holds `situsCity` PFLUGERVILLE, `situsZip` 78660, `cityLimits` Pflugerville and
+    `zoningJurisdictionKey` pflugerville-tx.
+  - The map adapter still takes the situs family from the cortex path (P-151, P-172), and the
+    zoning row shows the district without its jurisdiction.
+  - Customer-experience defect: the address line and the zoning and setback rows must name the
+    governing city, from the ledger.
 
-## 3. The four defect classes Phase 0 closes
+## 3. The five defect classes Phase 0 closes
 
 | Class | What it is | Where it lives | Why it blocks scaling |
 |---|---|---|---|
 | **A. False earned states, and a gate that hides gaps** | `absent-verified` written where nothing established it (219,472 setback cells); an `excluded` verdict that reports 0 unaccounted over 318,000 unaccounted ag cells | factory setback writer (2 paths); the publish gate's excluded accounting; the unrun ag sweep | The gate counts them as done, so a county "passes" with its largest gaps hidden. Every farm run would inherit it. |
 | **B. Twin registries and twin implementations** | Two setback-table registries; two edge labellers | engine jurisdiction registry vs setback corpus; engine vs LDT labelling | A fix in one leaves the other wrong, which is the exact fork the farm model exists to prevent. |
 | **C. Road nodes and edge roles** | Wrong edge roles from ring artifacts; road and edge rails not in the ledger; depth-warm limited to three cities | engine depth-warm, boundary primitive, factory rails | No verified envelope outside three cities, so the map cannot draw what the record holds. |
+| **E. Stale atoms overriding the ledger** | July breadth-bake envelope atoms (490,185 "no buildable area", mostly mislabelled) that the live derive defers to | atoms store; `place/buildable-envelope` atom reconciliation | A county's current setbacks never draw. Every farm would mint the same way unless the writer is fixed. |
 | **D. Serving lag** | The surface serves a bake older than the ledger | engine bake (P-230), map snapshot | A correct write is invisible, so no close can be graded on the customer surface. |
 
 ## 4. Phase 0 — the six counties complete
@@ -354,18 +403,30 @@ dependencies. Existing rows are named; new rows are allocated after approval.
 
 Smithville falls under the eCode360 scrape ruling.
 
-### 4.2 Road nodes and edge roles (class B and C)
+### 4.2 Road nodes and the envelope family (classes B, C and E)
+
+The envelope family is every rail and atom that decides what may be built:
+
+- **Rails:** `setbackFrontFt`, `setbackSideFt`, `setbackRearFt`, `setbackCornerFt`,
+  `setbackRules`, `maxHeightFt`, `maxLotCoveragePct`, `maxFootprintSqFt`,
+  `maxImperviousCoverPct`, `parcelAreaSqFt`, `buildableAreaSqFt`, `buildableAreaPct`,
+  `envelopeStatus`, `envelopeDisclosure`, `edgeSignal`, `citationUrl`, `buildingFootprint`,
+  `parcelGeometry`, `roads`.
+- **Atom families:** `zoning-fact`, `setback-rule`, `buildable-envelope`,
+  `property-boundary-edge`, `road-node`, `building-footprint`, `parcel-node`.
 
 | ID | Work | Done when | Instrument | Repo | Depends |
 |---|---|---|---|---|---|
-| R0 | **Measure verified envelope coverage per city**: parcels with a promoted (depth-warm) envelope, an unverified shape-only one, or none. Plus road-node coverage per county, checked against Census TIGER as a second derivation. | A per-city table exists, with its query planned (EXPLAIN) before it runs against the atoms store. | new read-only instrument; atoms store `hauska_mcp` | doc_repo | none |
-| R1 | **One edge labeller.** The engine's depth-warm labelling adopts logical-edge grouping and the P-235 curved-frontage handling, or imports one shared implementation, with a divergence test. | Fixture `48209:97658` (nine-edge ring) labels one front and gets a non-zero envelope that passes P1, P2 and P3. A curved-frontage fixture passes in both paths. The divergence test goes red when one path is changed. | engine and LDT tests | hauska-engine (and LDT if shared) | none |
-| R2 | **Ring scrub before labelling**, so GIS artifact vertices do not become edges. | Short-chord fixtures collapse. Real corners (over the declared angle floor) survive. | engine tests | hauska-engine | R1 |
-| R3 | **Engine registry rows for every wired city in the six:** Kyle, San Marcos, Buda, Dripping Springs, Woodcreek, Austin, Pflugerville, Round Rock, Georgetown, Cedar Park, Leander, Hutto, Liberty Hill, Taylor, Waco, Robinson, Luling, Martindale and Smithville, alongside the existing Bastrop, Elgin and Lockhart. | Each row loads, and its cohort query returns that city's parcel count from the ledger, within a declared bound. | registry tests plus a count comparison | hauska-engine | S6 |
-| R4 | **Fix the re-mint no-op (P-208)** and **enforce the warm preflight gate in every runner.** The standing memory records it bypassed in 3 of 4. | A declined single-parcel re-mint exits non-zero. A runner that skips `gateWarmCohort` refuses to start. | violation tests | hauska-engine | none |
-| R5 | **Depth-warm every wired city**: dry run, then apply on the operator's go, serialised as a heavy scan, with `--force-overwrite` where stored geometry is being corrected. | Every in-city zoned parcel either has a verified envelope or a named failure (P1, P2 or P3) recorded as a count per city. The P3 count is the road-node residual. | dry/apply parity formula (Factory 2 runbook); R0 re-run | hauska-engine jobs | R1 to R4 |
-| R6 | **Cut `roads`, `parcelGeometry` and `edgeSignal` over into the ledger** (P-204, plus `edgeSignal` built from the labeller). | All three pass in all six counties. | six-county-completeness | hauska-factory | R1 |
-| R7 | **The map and MCP draw the verified envelope** wherever R5 promoted one, and keep P-216's honest decline elsewhere. | The per-city surface probe draws on a promoted parcel and declines with the right reason on an unpromoted one. | surface probe | hauska-map, LDT | R5, D1 |
+| R0 | **Measure the draw gap per city**: parcels with setbacks in the ledger joined to their envelope atom's outcome and class. Also measure road-node coverage and quality per county against Census TIGER and county roadway data, as a second derivation. | A per-city table exists, from a checked-in instrument that reads both stores with index-bounded queries. | L-B instrument | doc_repo | none |
+| R1 | **Road-name normalisation** used by front labelling handles state highways, farm-to-market roads, directionals, suffixes and misspellings, from a tested dictionary rather than one-off fixes. | Every Bastrop `facesAnswer` mismatch in the atoms store resolves; the fixtures include the ones quoted in 2c. | engine tests | hauska-engine | none |
+| R2 | **Road classification conflicts** (OSM tag against county roadway class) resolve by a declared rule, not a decline. | The 1,119 Bastrop failures re-run and each resolves or carries a named residual. | engine tests plus a re-run | hauska-engine | R1 |
+| R3 | **One edge labeller** (logical-edge grouping, curved frontage, situs-named front first), or a shared primitive with a divergence test. Plus a **ring scrub** for GIS artifact vertices. | Fixture `48209:97658` gets one front and a non-zero envelope that passes P1 to P3. The divergence test goes red when one path changes. | engine and LDT tests | hauska-engine, LDT | R1 |
+| R4 | **Retire the mislabelled breadth-bake outcomes.** Unzoned becomes `not-applicable`; not-onboarded becomes whatever the current ledger supports. Writers can no longer emit `no-buildable-area` without a computed, verified zero. | Zero atoms carry `no-buildable-area` with a "no district" or "unzoned" reason. The false-zero guard in the completeness instrument goes red if one is written. | atoms store count; guard | hauska-engine | P-213 (blast radius), C1 |
+| R5 | **Re-derive every envelope** whose ledger now holds setbacks, through the fixed labeller, with ground truth (P1 to P3). This includes the 123,706 unexplained zeros. Serialised as a heavy write, dry run first, apply on the operator's go. | Every in-city zoned parcel either draws a verified envelope or carries a specific, named failure; the per-city residual is counted. | R0 re-run | hauska-engine jobs | R1 to R4, S6 |
+| R6 | **Fix the re-mint no-op (P-208)** and **enforce the warm preflight gate in every runner.** | A declined re-mint exits non-zero; a runner that skips the gate refuses to start. | violation tests | hauska-engine | none |
+| R7 | **Registry rows** for every wired city in the six, so verified promotion is possible everywhere, not only in Bastrop, Elgin and Lockhart. **One setback registry (S6).** | Each row loads and its cohort count matches the ledger. | registry tests | hauska-engine | S6 |
+| R8 | **Cut `roads`, `parcelGeometry` and `edgeSignal` into the ledger** (P-204), with each cell pointing at its atom. | All three pass in all six counties. | six-county-completeness | hauska-factory | R3 |
+| R9 | **The surfaces draw what R5 produced** and keep an honest, specific decline elsewhere, in words that name the actual reason. No Bastrop "layer-23" wording outside Bastrop. | The per-city probe draws on a verified parcel and declines correctly on a failed one. | surface probe | hauska-map, LDT | R5, D1 |
 
 ### 4.3 Hays close-out (from P-200 and P-211)
 
@@ -442,32 +503,36 @@ any of them in the six, the instrument's policy changes by ruling, not by edit.
 
 ## 6. The farm — what it is
 
-Reconciling the 2026-09-14 handoff, the teardown and today's rulings:
-
 **A farm is one county, with its cities, run through the one pipeline under a pinned manifest.
 Every stage leaves a record. The county merges into the ledger through a gate that refuses a
-mismatched manifest.** It is a data boundary, never a code boundary. A defect found in a farm is
-fixed upstream, and the farm re-runs on the new pin. **Zero county-local patches.**
+mismatched manifest.** A defect found in a farm is fixed upstream, and every farm re-runs on the
+new pin. **Zero county-local patches.**
 
-**What the farm adds to today's pipeline**, built during Burnet (P-187, P-188, P-194, P-197,
-P-198, plus three OPS-24 does not have):
+**The architecture is drafted separately and is NOT decided:**
+`_inbox/2026-09-16_farm_architecture_draft.md`.
 
-| Piece | What it is | OPS-24 row |
-|---|---|---|
-| Manifest | four lines: LDT, engine, factory, the two packages; pinned at run start; every stage record carries it | P-187 |
-| Pre-bake audit | the assumption registers normalised to one format, then run against the county's sources: GREEN, AMBER or RED with the assumption named | P-188 |
-| Completeness check | two independently derived parcel counts that must agree within a declared bound | P-194 |
-| Stage meter | per stage: wall-clock, operator minutes, agent count, dollars, counts in and out, defects found | P-197 |
-| Merge gate | refuses a county whose manifest is not upstream HEAD; row-version stamping so the ledger records which code built which county | P-198 |
-| **Depth stage (new)** | registry rows, depth-warm, and `edgeSignal` for the county's wired cities. Phase 0's road-node machinery run as a stage. | none |
-| **Vendor stage (new)** | Cotality acquisition for BUY rails the county's CAD cannot answer, behind a bulk-call refusal gate and the rights envelope | none |
-| **Farm runbook (new)** | the stage order, commands, go points and the record format, written from Burnet's actual run | none |
+- It maps today's stores and flows.
+- It names six bottlenecks with evidence (small factory compute; a per-atom write floor of 67
+  to 149 atoms/s; serialised heavy scans; serial publish; people; unindexed atom families).
+- It compares four options.
+- **It leans toward a Neon branch pair per farm, each with its own compute, loaded in bulk and
+  merged by a set-based publish through staging.**
 
-**Proposed storage (decision owed):** county-scoped writes into the existing staging and
-production stores, not isolated farm stores. The atoms writer lease is already county-scoped, so
-the contention reason for isolated stores did not survive the teardown. The merge is then the
-county's staging-to-production publish under the manifest gate and row versions. Revisit if
-Phase 2 shows two counties interfering.
+That reverses this document's first recommendation of plain shared stores, which the operator
+challenged. The reversal has a reason: the 2026-09-14 teardown examined the atoms lease (which
+is per county) and never examined compute contention or write throughput.
+
+**The farm includes**, per the operator:
+
+- **the bake audit** (the pre-bake audit, stage 2, GREEN, AMBER or RED against the county's own
+  sources);
+- the completeness check;
+- the stage meter;
+- the manifest and merge gate;
+- a **depth stage** covering the whole envelope family and road nodes;
+- a **vendor stage** for Cotality once the contract lands.
+
+The stage-by-stage map is in the architecture draft, section 5.
 
 ## 7. Phase 1 — Burnet through the farm
 
@@ -575,21 +640,38 @@ two farms.
 - **Its first real job:** V1, the bake-off on the six, before Burnet. That makes Burnet's vendor
   stage a measured choice rather than a catalog claim.
 
-## 12. Sequencing: what starts now, by repo
+## 12. Sequencing: research first, then build
 
-The in-flight lanes (P-243, P-244a, P-244b) and the queued P-246 hold their repos first.
+**Not yet.** The operator asked for more digging, more planning and deeper review before this is
+a plan. Five read-only research lanes run first, in parallel. Each answers something this
+document could not. Then this scope and the architecture draft are revised. Then one final
+adversarial teardown attacks the revised versions.
 
-| Now (free repos) | After P-244a (engine free) | After P-246 (LDT free) |
+| Lane | Answers | Rows |
 |---|---|---|
-| **hauska-factory:** L6 (P-201), then S1; H2 (operator go); L2; L3 diagnosis; L4 acquisition design | R1, R2, R4 (labeller, scrub, re-mint and gate); S6; L7 (P-192); D1 (P-230); H1 engine half | S2 (PUD); S4 (Austin parser); S3 corpus rows; S8 docs; D2 (P-217); H1 LDT half |
-| **hauska-map:** D3; H4 | R3, then R5 (after R1 to R4) | R7 |
-| **doc_repo:** S0 instrument; R0 plan; H6 wave 6 landing; S3 research; S5; V1 bake-off; V3 canon correction; farm machinery design (manifest, pre-bake register normalisation, stage meter spec) | | |
+| **L-A ledger truth** | For every parcel and every one of the 65 rails in the six counties: cell state, serve path, atom presence, and cell-atom agreement. Built as a checked-in instrument. Includes what the ledger must carry to be the single source of truth. | P-201, P-204 |
+| **L-B envelope and road nodes** | The per-city draw gap; the whole envelope family; road-node coverage and quality against TIGER and county roadway data; what a re-derive at scale needs; customer rendering per failure class. | P-233, P-235, P-208 |
+| **L-C blocker history** | Every blocker since the six counties began, filed under the seven classes (six CTX classes plus the served-value class). Root cause, fix status, whether a control now prevents recurrence, and which farm stage must catch it. | P-188 |
+| **L-D farm architecture** | Neon limits, compute and branch behaviour; bulk write rate; merge mechanics; which serving copies a farm must write; hidden county literals. Tests the architecture draft. | P-187, P-198 |
+| **L-E customer experience** | Per city: address with city and ZIP, zoning with its governing jurisdiction, setbacks with a citation, envelope drawn or declined with a specific reason, on the map, the MCP and the PDF. This becomes the per-city probe fixture set. | P-197, P-210 |
 
-**Farm machinery does not wait for Phase 0.** Only Burnet's run does. The manifest, the pre-bake
-runner, the completeness check and the stage meter touch different code and can be built
-alongside. Recommended, so Phase 1 starts the day Phase 0 exits.
+**Every lane carries the same instruction: exhaust the question.** A lane that finds one blocker
+records it and keeps going. The operator has seen agents stop at the first blocker many times,
+and a close that names one blocker and stops is returned.
+
+**What can still start now, because it does not depend on the research:** P-201 (the `excluded`
+split, hauska-factory), landing the wave 6 record (H6), the canon corrections, and the farm
+machinery that is architecture-neutral (the manifest format, the normalised assumption register,
+the stage-record format).
 
 ## 13. Teardown: where this plan is most likely wrong
+
+0. **Already wrong once, caught by the operator.** The first version blamed the three-city
+   verification registry for undrawn envelopes. Pflugerville disproved it within the hour. The
+   real mechanism is stale, mislabelled breadth-bake atoms that the live derive defers to. The
+   same draft also recommended plain shared stores without measuring compute contention. Both
+   are corrected above. **Treat every other claim here with the same suspicion until a lane has
+   re-derived it.**
 
 1. **S1 will turn green gates red in every county, on purpose.** That is the honest state. It will
    read as a regression unless it is announced first. Surfaces must also be checked for how they
@@ -618,15 +700,28 @@ alongside. Recommended, so Phase 1 starts the day Phase 0 exits.
 9. **The P-183, P-178 and wave 6 record never reached main.** Some state in this document may be
    older than what that branch holds. H6 comes early for that reason.
 
-## 14. Decisions still owed
+## 14. Decisions (answered 2026-09-16, and still owed)
 
-1. **Farm storage** (section 6): county-scoped writes into the shared stores (recommended), or
-   isolated farm stores.
-2. **Cities with no published ordinance** in Phase 0: a declared-unacquirable decision per city
-   (recommended), so one city does not block the exit.
-3. **Commercial agreement:** is it signed, and can its four terms be read now? This gates any
-   vendor value reaching a customer.
-4. **Smithville:** in Phase 0 under the scrape ruling, or declared out for now?
+**Answered by the operator:**
+
+1. **Farm storage:** not decided until the architecture is mapped. The operator's concern is a
+   bottleneck on the existing stores, and the draft now agrees that it is a real risk.
+2. **Cities with no published ordinance:** a per-city decision is acceptable, **but most should
+   be publishable one way or another.** Before any city is declared unacquirable, the lane must
+   log every source it tried: city GIS, municode, eCode360 (the engine's corpus adapter
+   exists), American Legal, city PDF zoning maps, planning pages, and county appraisal zoning
+   fields.
+3. **Cotality:** the contract is promised. Nothing Cotality-sourced is served until it arrives,
+   and that is the correct state today.
+4. **Smithville:** included. The eCode360 scraper exists in hauska-engine
+   (`packages/corpus/src/adapters/ecode360/`, with a Cloudflare challenge fixture).
+
+**Still owed:**
+
+5. **The ag-valuation source for Bastrop, Caldwell, Hays and McLennan:** which CAD product per
+   county.
+6. **Whether P-201 and the canon corrections proceed now** while the research lanes run.
+   Recommended yes; neither depends on the research.
 
 ## 15. Instruments in this package
 
