@@ -1,0 +1,158 @@
+{
+  "lane": "p284r-compute-cost-job-name",
+  "planRows": ["P-284"],
+  "status": "closed-partial",
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-16_p284r-compute-cost-job-name_dispatch.md",
+  "at": "2026-09-16T23:15:00Z",
+  "seat": "p284r-lane",
+  "repo": "hauska-factory",
+  "branch": "fix/p284r-compute-cost-job-name",
+  "commit": "09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c",
+  "startCommit": "35007fb9d85e7bdb5fed237d55de18662991c4f5 (origin/main at clone time; the dispatch compiled at afdda42, which is an ancestor -- main moved twice, declared in CP1)",
+
+  "snapshot": {
+    "head": "09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c on fix/p284r-compute-cost-job-name",
+    "base": "35007fb9d85e7bdb5fed237d55de18662991c4f5 (origin/main)",
+    "commits": "1 (09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c)",
+    "workingTree": "clean -- `git status --porcelain` empty, including after the falsifier harness re-ran its five mutations and restored every file",
+    "diffstat": "5 files changed, 780 insertions(+), 52 deletions(-)",
+    "worktrees": {
+      "build": "P:/tmp/p284r-factory (fresh clone of origin/main under P:/tmp, per the dispatch; its own path and worktree are the same directory)",
+      "artifacts": "P:/seat-worktrees/p284r-compute-cost-job-name/doc_repo (this seat's worktree; CP1/CP2/close are here and are LEFT UNCOMMITTED, contract section 6: doc_repo commits are planner-owned)"
+    }
+  },
+
+  "filesTouched": [
+    { "path": "migrations/0014_stage_run_execution_identity.sql", "state": "new", "what": "adds stage_run_records.execution_name and .execution_job as NULLABLE text, COMMENTs stating what a NULL means (a record written off a Cloud Run job) and why the remembered default job is not a fallback, plus a partial index on (started_at) WHERE compute_cost_usd IS NULL for the reaper tick's own query" },
+    { "path": "src/lib/compute-cost.mjs", "state": "modified", "what": "COMPUTE_UNMEASURED.JOB_NOT_NAMED; nonEmptyName; computeCostNowForSelf names THIS execution's job from CLOUD_RUN_JOB via a deps spread and REFUSES before any request when the job is unknown; the execution-window fallback now carries the reason the billed metric was not read (sourceMetricUnavailableReason/Detail); the basis's execution field reads v2's top-level name as well as v1's metadata.name" },
+    { "path": "src/control/stage-runs.mjs", "state": "modified", "what": "openStageRun stamps execution_name/execution_job on every record (env-derived via runs.mjs's executionIdentity, no job file edited); backfillStageComputeCosts groups by EXECUTION, LEFT JOINs runs, drops the termination_records join and the run_id IS NOT NULL predicate, reads the job off the RECORD first and the run scope second, refuses with JOB_NOT_NAMED when neither names one, and reports the execution with each filled/unmeasured record" },
+    { "path": "test/p284r-cost-lookup-names-its-own-job.test.mjs", "state": "new", "what": "8 arms: the requested URL both ways with a non-vacuity inequality against the default job, both refusals with an assertion that NO request was issued, record-first/scope-second precedence, the dry-run fill with run_id NULL and no runs row, the writer stamping what it is handed and the environment's otherwise, the fallback naming the metric read that failed, and a static sweep of src/ and scripts/ for any getExecution call site that omits or hardcodes the job" },
+    { "path": "test/p284-stage-run-records-live.test.mjs", "state": "modified", "what": "+1 arm against a real PostgreSQL: a dry run's record (no run row at all, migration 0014 applied) is selected, described under its own job and filled" }
+  ],
+
+  "pr": {
+    "number": 162,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/162",
+    "state": "OPEN, mergeable=MERGEABLE, mergeStateStatus=CLEAN, headRefOid=09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c",
+    "mergeShas": "none -- this lane opens a PR and does not merge (dispatch: 'You build in hauska-factory and open a PR. You do not deploy; the integration seat rebuilds the images')",
+    "ciConclusionStrings": {
+      "countingRule": "the check-run `conclusion` field (contract section 5: MERGE only on the conclusion STRING 'success'; `gh pr checks` printing 'pass' is NOT it). Read via gh api repos/.../commits/<sha>/check-runs at 23:10Z.",
+      "checkRunsOnHead": ["ldt-sha-comment-presence | status=completed | conclusion=success", "gate8 | status=completed | conclusion=success", "test | status=completed | conclusion=success", "ldt-sha-comment-presence | status=completed | conclusion=success", "test | status=completed | conclusion=success", "gate8 | status=completed | conclusion=success"],
+      "workflowRuns": ["35160494397 | workflow=ci | event=push | status=completed | conclusion=success", "35160507962 | workflow=ci | event=pull_request | status=completed | conclusion=success"],
+      "ciTestJobLiteralTap": ["# tests 1564", "# pass 1558", "# fail 0", "# skipped 4", "# todo 2"],
+      "newArmsRanInCi": "yes -- the new file's arms appear in the CI log as ok 688 (the describe names THIS execution's own job...), ok 689 (an unknown job REFUSES with JOB_NOT_NAMED...), ok 690 (the job is read off the RECORD first...), ok 691 (neither the record nor the run naming a job REFUSES...), ok 692 (a record with NO run row is examined and filled...), ok 693 (the writer stamps the identity...), ok 694 (the FALLBACK names the metric read that failed...), plus the SWEEP arm"
+    }
+  },
+
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-16_p284r-compute-cost-job-name_cp1.json",
+    "cp2": "_inbox/2026-09-16_p284r-compute-cost-job-name_cp2.json",
+    "close": "_inbox/2026-09-16_p284r-compute-cost-job-name_close.json"
+  },
+
+  "counts": {
+    "countingRules": "every number names what it counted. Repo suite counts are node --test's own TAP totals. Mutation counts are one entry per arm that the harness reports as red for that mutation. Live probes are literal HTTP status codes and response bodies.",
+    "repoSuiteCi": "# tests 1564, # pass 1558, # fail 0, # skipped 4, # todo 2 (CI check `test`, 09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c)",
+    "repoSuiteThisLaptop": "# tests 1567, # pass 1561, # fail 2, # skipped 2, # todo 2 (FACTORY_DATABASE_URL=postgres://postgres:postgres@localhost:5433/factory_test, migrations 0001..0014 applied). The 2 failures are (a) test/ctx-b3-store-census.test.mjs 'CTX-B3 leaf list...' -- environment-specific and untouched by this diff: the test hardcodes P:/legacy-design-tools, which EXISTS on this machine at pin bae48d40 with 6 bake-owned leaf paths against the factory mirror's 5, and is absent in CI where its own skip clause fires; (b) test/p2-juris-57p01.test.mjs 'F2: long chunk with short heartbeat interval yields multiple lease heartbeats' -- timing-sensitive under node --test's parallel file execution against one shared scratch database; run alone it is 4/4 pass, as it is in CI.",
+    "newTestArms": "8 arms in test/p284r-cost-lookup-names-its-own-job.test.mjs + 1 added live arm in test/p284-stage-run-records-live.test.mjs; 9/9 pass in CI and locally",
+    "mutations": "5/5 mutations turned their own arm(s) red, 0 skipped (anchor-not-found would have printed SKIPPED)",
+    "liveGrade": "2 arms (no monitoring reader injected -> BILLABLE_TIME_UNAVAILABLE, basis names it; reader injected -> a measured figure with its basis)",
+    "liveGcpProbes": 4
+  },
+
+  "probe": {
+    "notApplicable": "build lane; graded by a stage record carrying a measured compute cost"
+  },
+
+  "falsifier": "F1 the self-measurement requests the execution's OWN job: PASS -- the arm captures the single request and asserts it equals .../jobs/factory-parcel-setback-cells/executions/factory-parcel-setback-cells-x9zmt AND is a DIFFERENT address from the same call built with the default factory-atoms-cad (non-vacuity: the assertion cannot pass on the unfixed code); live at close, 23:10Z, that URL returns 200 (limits cpu=1 memory=2Gi) while the same execution under .../jobs/factory-atoms-cad/... returns 404 'Resource ... with parent 'factory-atoms-cad' does not exist.'. F2 a DRY RUN's record with an execution name is filled: PASS -- live against a real PostgreSQL with migration 0014 applied, a record with run_id NULL and NO runs row is selected, described under its own job and filled (600 instance-seconds at 2 vCPU/4 GiB -> 0.0264 USD) with the basis written and the reason cleared; CAVEAT stated in CP2: in production nothing injects a monitoring reader, so the live fill came from the execution window, which the basis now names. F3 removing the job name from EITHER call fails a test: PASS by mutation, not by assertion -- deleting jobName from the self call and from the backfill call, one at a time, re-run at close, turns the corresponding URL arm red plus the source sweep.",
+  "falsifiers": {
+    "F1": { "verdict": "PASS", "offline": "test/p284r-cost-lookup-names-its-own-job.test.mjs arm 1", "live": "HTTP 200 under factory-parcel-setback-cells vs HTTP 404 under factory-atoms-cad for factory-parcel-setback-cells-x9zmt (23:10Z, project hauska-prod-497015, region us-east4)" },
+    "F2": { "verdict": "PASS WITH A NAMED CAVEAT", "arms": "offline (fake transport) + live (real PostgreSQL, migration 0014, run_id NULL, no runs row)", "caveat": "in production no monitoring reader is injected, so the number comes from the execution window; the basis now says so rather than presenting a window figure as a billed one" },
+    "F3": { "verdict": "PASS", "evidence": "P:/tmp/p284r-falsify.mjs, re-run at close with FACTORY_DATABASE_URL set: mutation 1 -> 'the describe must address THIS execution's own job' + SWEEP; mutation 2 -> 'the record's own job is the job to ask about' + SWEEP; mutation 3 -> 'CLOUD_RUN_JOB unset'; mutation 4 -> 'no describe may be issued when the job is unknown'; mutation 5 (exclusions restored) -> 'the join to runs must be a LEFT JOIN' + 'the dry run's record must be filled; it was []'. 0 skipped; the working tree was byte-identical afterwards (git status empty)." }
+  },
+
+  "contradicted": "The dispatch's premise that this defect is a WRONG ADDRESS is confirmed; the dispatch's implied remedy -- fix the address and the cost becomes measurable -- is CONTRADICTED by three live measurements this lane made. (1) run.googleapis.com/job/billable_instance_time, the metric compute-cost.mjs reads, DOES NOT EXIST in project hauska-prod-497015: the Monitoring API answers HTTP 404 'Cannot find metric(s) that match type = \"run.googleapis.com/job/billable_instance_time\"', and the project's only run.googleapis.com/job/* descriptors are completed_execution_count, completed_task_attempt_count, running_executions, running_task_attempts (the job's own sibling canaries are counted, never its instance-seconds). The nearest real metric, run.googleapis.com/container/billable_instance_time, reports 0.1 instance-seconds for the same execution window the module's fallback prices at 30.7 seconds -- a 300x difference, i.e. a different quantity, not a misspelling. (2) NO production caller injects deps.monitoringFn (grep: monitoringFn appears only in test files), so readBillableInstanceSeconds returns BILLABLE_TIME_UNAVAILABLE: why=no monitoring reader injected WITHOUT making any request -- today the billed quantity is never read in production at all. (3) instanceShapeFromExecution cannot read the v1 body that this client's own gcloud fallback returns (INSTANCE_SHAPE_UNAVAILABLE {missing: cpu}), while the direct v2 body parses correctly. Consequence stated plainly: with this fix merged, the reaper will still write execution-window figures, not billed ones -- but they will be correct-JOB window figures, and each row will now name the failed metric read instead of reading as a transport failure. Choosing which quantity is 'the compute cost' is returned as leave_behind #1, not decided here.",
+  "contradictedAlso": "The dispatch's line 'a job cannot read its own final billable time while it runs (METRIC_NOT_YET_PUBLISHED)' is a consequence of reading the wrong metric: METRIC_NOT_YET_PUBLISHED is what the module returns when the metric set is empty, and for this project it is empty for every window, not only while the job runs.",
+
+  "missionPremise": "P-284 merged at afdda42 (migration 0012 applied, the setback writer image rebuilt, the Caldwell dry run factory-parcel-setback-cells-x9zmt writing a stage record) and its compute cost reads BILLABLE_TIME_UNAVAILABLE: why=execution describe failed. The dispatch's finding (integration seat, 2026-09-16, proven both ways) is that a Cloud Run execution's resource name is jobs/<job>/executions/<name>, that getExecution's job parameter defaults to the remembered factory-atoms-cad, and that both cost lookups therefore addressed a different job; the 404 that comes back is indistinguishable from a transport failure. This lane re-measured that finding at source before designing anything (CP1) and again at close (200 vs 404, literal bodies).",
+  "completionPredicate": "Done when BOTH cost lookups name the execution's own job and refuse with a named reason when it is unknown (never a default job); when every stage record carries its execution name and job, including dry runs, so the backfill can select and fill a record that has no runs row; and when a test exists that goes red if either call omits the job or names a different one. All three hold in 09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c and are proved red-on-revert by 5 mutations. The lane stays closed-partial because the dispatch's own live grade -- the integration seat's rebuilt images writing a MEASURED cost on a real execution -- has not happened: this lane does not deploy and does not rebuild the factory-conformant image that runs reap.",
+  "scopeBasis": "hauska-factory only, plus this lane's own doc_repo seat-worktree artifacts (left uncommitted). Inside hauska-factory: migrations/0014 (new), src/lib/compute-cost.mjs, src/control/stage-runs.mjs, one new test file, one added live arm. Deliberate exclusions, so a successor can tell a decision from an oversight: (a) src/control/cloudrun-jobs.mjs is NOT edited and its default job is NOT changed -- the default is CORRECT for its other callers (executeJob/waitForExecution in bexar-cad.mjs and f10-cad-loop.mjs all drive factory-atoms-cad; jobName() IS that name), and flipping a default parameter would silently re-point five call sites, which is the dispatch's own do-not; the defect is a call site that FALLS to the default while holding a different job, and both are in scope and fixed; (b) src/jobs/parcel-setback-cells.mjs is NOT edited (P-256 open on it) -- the writer stamps the identity from its own env inside openStageRun, which is why no job file changes at all; (c) migrations/0012 is NOT edited; (d) no gate file, no deploy, no image rebuild, no sub-agent; (e) the only store this lane wrote is a scratch PostgreSQL it started locally (docker p284r-pg, port 5433, database factory_test) for the live tests and the live grade; every other transport is injected and the Cloud Run Admin API is only ever READ (four probes, no write).",
+
+  "callerListForReap": {
+    "question": "the dispatch's close asks for 'the caller list for reap'; CP1 confirmed it and this is the list at close.",
+    "callersOfBackfillStageComputeCosts": [
+      "src/jobs/reap.mjs:143 -- runReap's tick, wrapped in try/catch reporting computeBackfillError rather than throwing. THE scheduled caller.",
+      "src/cli.mjs:411 -- `factory stage-runs backfill-compute`, a hand/seat path through the same function; it takes the fix for free because the fix is inside the function, not at the call site."
+    ],
+    "howReapIsReached": "Cloud Scheduler `factory-conformant-reap` (every 10 minutes, scripts/create-conformant-reaper-scheduler.mjs) POSTs https://us-east4-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/hauska-prod-497015/jobs/factory-conformant:run with containerOverrides.args=['reap'] -> cli.mjs's `reap` verb -> runReap -> backfillStageComputeCosts.",
+    "imageNote": "the factory-conformant image the scheduler runs predates P-284; the integration seat rebuilds it (dispatch, and the dispatch's own line 'you only confirm in CP1 that reap is the one caller'). Until that rebuild, tonight's tick is still the old code.",
+    "testCallers": ["test/p284-stage-run-records-live.test.mjs:290", "test/p284r-cost-lookup-names-its-own-job.test.mjs (3 call sites)"]
+  },
+
+  "constraintsHonored": [
+    "FAN-DEPTH 0: no sub-agent was launched; subAgents declares 0/0.",
+    "src/jobs/parcel-setback-cells.mjs untouched (P-256 open).",
+    "cloudrun-jobs.mjs's default job untouched; every caller of it listed in CP1 and in the leave_behind.",
+    "migrations/0012 untouched; the new columns arrived in a new migration (0014) as NULLABLE.",
+    "No deploy, no image rebuild, no traffic shift, no lease taken (nothing in this lane shifts traffic).",
+    "No credential rotated, no vendor called, no privileged data path used.",
+    "No gate file edited.",
+    "The job service account's ability to read executions is REPORTED, not changed (dispatch item 4): the job names no serviceAccountName, so it runs as the default compute-engine SA 172690833726-compute@developer.gserviceaccount.com, which by policy holds roles/run.admin and roles/run.viewer (both include run.executions.get) and roles/editor (includes monitoring.timeSeries.list) -- GRANTED BY POLICY, NOT OBSERVED, because impersonating that SA from this seat is refused (iam.serviceAccounts.getAccessToken denied). Nothing was granted or revoked.",
+    "doc_repo edits left uncommitted (contract section 6)."
+  ],
+
+  "laneClaim": {
+    "registered": "_catalog/lane_claims.json claim lane=p284r-compute-cost-job-name, seat=p284r-lane, planRow=P-284, dispatch=_dispatches/2026-09-16_p284r-compute-cost-job-name_dispatch.md, startedAt 2026-09-16T22:38:47.889Z (the registration under the property seat; no otherWorktrees entry was ever added for P:/tmp/p284r-factory -- it is a product clone under P:/tmp, not a doc_repo checkout, and seat-worktree-gate governs doc_repo checkouts)",
+    "release": "node scripts/lane-claim.mjs release --lane p284r-compute-cost-job-name --seat p284r-lane, run on filing this close; RELEASED, exit 0"
+  },
+
+  "leave_behind": [
+    "RULING NEEDED -- which quantity is 'the compute cost' for a Cloud Run job. run.googleapis.com/job/billable_instance_time does not exist in hauska-prod-497015 (HTTP 404, literal body recorded); run.googleapis.com/container/billable_instance_time exists and reports 0.1 instance-seconds against the 30.7-second execution window the module's fallback prices; and the Cloud Run jobs pricing definition carries a one-minute minimum none of them implements. Three candidate meanings, 300x apart. This lane kept the module's documented intent, made the failed read visible on the row, and refused to pick silently.",
+    "Nothing injects deps.monitoringFn in production (grep: it appears only in test files), so readBillableInstanceSeconds never reads the billed quantity at all -- with or without the correct metric name. Every production cost today comes from the execution window.",
+    "instanceShapeFromExecution cannot parse the v1 body this repo's own gcloud fallback returns (INSTANCE_SHAPE_UNAVAILABLE {missing: cpu}), though it parses the direct v2 body. Also: it reads taskCount from template.taskCount while the live v2 execution body carries taskCount at the TOP level, so a multi-task job would be recorded as 1 task.",
+    "cloudrun-jobs.mjs:399 (getExecution inside waitForExecution) still carries the same omission through for its callers; harmless today (both callers drive factory-atoms-cad) and named in the lane's sweep allowlist so the next session cannot miss it. The deeper fix -- make executionResourceName refuse an absent job -- is a one-line change with five call sites and needs its own caller list, which is why it is here and not in this diff.",
+    "The jest-of-the-environment pair found while running the suite on this laptop, both unrelated to this diff: (a) test/ctx-b3-store-census.test.mjs's LDT-checkout guard hardcodes P:/legacy-design-tools and PASSES in CI only because none of its three candidate paths exists there, while failing on a machine that has one -- a guard that cannot fire where it is graded, plus a real mirror divergence (the pinned checkout at bae48d40 lists 6 bake-owned leaf paths, the factory mirror 5, including baseFacts.situsAddress); (b) test/p2-juris-57p01.test.mjs's lease-heartbeat chunk test is timing-sensitive under parallel file execution against one shared database (4/4 alone).",
+    "The factory-conformant image that runs reap predates P-284 and no image in this repo rebuilds itself: until the integration seat rebuilds it, the scheduled tick keeps writing nothing where a cost should be, whatever this PR says."
+  ],
+
+  "scratch": {
+    "_purpose": "FLEET MEMORY (M0) block: LESSON / DEAD-END / GROUND-TRUTH / OPEN entries, returned for the planner to gate. Promotion is the planner's call, not this lane's.",
+    "LESSON": [
+      "A wrong resource name and a transport failure are the SAME observation at the call site: both arrive as a failed fetch. That is why the refusal (JOB_NOT_NAMED, before any request) is worth more than a better error message after the fact -- a call site that FALLS to a default while holding a different identity cannot be distinguished from one that was never given the identity, unless it refuses.",
+      "A default parameter that is correct for its current callers is still a hazard for the NEXT caller: getExecution's jobName default is right for both atoms-cad loops and produced a silent 404 for every other job the moment a second job reused it. The place to state that is the caller list, not the parameter.",
+      "A fallback figure and a measured figure that look identical on the row are the SILENT FALLBACK defect class; the fix is not to remove the fallback but to write the reason for it into the same basis the number travels in.",
+      "A dry run cannot be costed by anything that keys on a `runs` row: the record must carry its own execution identity, because for a dry run there is no other place it can live. Any telemetry column shaped 'run_id->run->scope' silently excludes the case the metering program most wants to read.",
+      "A test that asserts a URL CONTAINS the execution name proves nothing about the job -- the execution name is in the URL under every job. The assertion that can only pass on correct code is an INEQUALITY against the wrong address."
+    ],
+    "DEAD-END": [
+      "Reconstructing the job from the execution name (Cloud Run execution names START with the job name) works today and breaks the day a job is renamed with a stale execution in the window; rejected in CP1 as a guess, and the identity is READ instead.",
+      "Storing the identity as a JSONB blob on the record: two named columns can be indexed and read back by name; a blob is a third shape of 'execution identity' in the repo and cannot be constrained.",
+      "Reading billable_instance_time alone without the execution describe: the metric is instance-SECONDS and only the execution carries the vCPU/memory shape that turns seconds into dollars.",
+      "Passing the job down from every stage writer: it would have required editing src/jobs/parcel-setback-cells.mjs, held by the open P-256 lane, and would make every future writer responsible for remembering its job -- the drift the stage-completeness test exists to stop. Stamping it inside openStageRun from the writer's own env needs no job file at all.",
+      "gcloud run jobs executions describe with a --job flag: this gcloud version has no such flag (the job is meant to be part of the execution argument); the v2 REST path with an access token is what both measured the 200/404 pair and what the module itself uses."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-16T23:10Z: GET run.googleapis.com/v2/projects/hauska-prod-497015/locations/us-east4/jobs/factory-parcel-setback-cells/executions/factory-parcel-setback-cells-x9zmt -> HTTP 200, template.containers[0].resources.limits {cpu:1, memory:2Gi}.",
+      "2026-09-16T23:10Z: the same execution under .../jobs/factory-atoms-cad/... -> HTTP 404 'Resource factory-parcel-setback-cells-x9zmt of kind EXECUTION in region us-east4 in project hauska-prod-497015 with parent factory-atoms-cad does not exist.'",
+      "2026-09-16T23:10Z: monitoring.googleapis.com/v3 timeSeries for metric.type=run.googleapis.com/job/billable_instance_time -> HTTP 404 'Cannot find metric(s) that match type = \"run.googleapis.com/job/billable_instance_time\"'; the project's run.googleapis.com/job/* descriptors are exactly completed_execution_count, completed_task_attempt_count, running_executions, running_task_attempts.",
+      "2026-09-16: the job names no serviceAccountName and runs as 172690833726-compute@developer.gserviceaccount.com; that SA holds roles/run.admin + roles/run.viewer (run.executions.get present in both) and roles/editor (monitoring.timeSeries.list present) -- granted by policy, NOT observed (impersonation refused from this seat).",
+      "2026-09-16: this lane's scratch store is docker container p284r-pg on localhost:5433, database factory_test, user/password postgres/postgres, migrations 0001..0014 applied at 22:46:40Z; the live tests and the live grade ran against it.",
+      "2026-09-16: CI on 09e3f75292d2ec2060d50c5e6b803f0e5e5c0d8c is conclusion=success for gate8, test and ldt-sha-comment-presence in both runs (push 35160494397 and pull_request 35160507962)."
+    ],
+    "OPEN": [
+      "The integration seat must rebuild the factory-conformant image (the reap tick) and the setback writer image, then confirm a real execution's stage record carries compute_cost_usd -- ONLY THEN is P-284's metering leg live. What to look for: compute_cost_basis.sourceMetricAvailable false with sourceMetricUnavailableReason naming the metric read, or a measured number if a monitoring reader is injected.",
+      "Ruling on the compute-cost quantity (leave_behind #1) blocks trusting any stage-record cost as THE cost, regardless of this fix.",
+      "Who injects deps.monitoringFn in production, and with which metric -- nothing does today.",
+      "taskCount is read from the wrong depth for v2 bodies; one recorded figure (1 task) is right by luck today.",
+      "The p3-absence non-vacuity debt (2 TODO arms) is unchanged by this lane and remains an OPS-21 S3 finding."
+    ]
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "evidenceOutsideTheRepo": {
+    "_note": "not committed anywhere: they are this lane's own instruments, kept for re-run.",
+    "P:/tmp/p284r-falsify.mjs": "the 5-mutation harness; re-run at close with FACTORY_DATABASE_URL set, 0 skipped, working tree clean afterwards",
+    "P:/tmp/p284r-live-grade.mjs": "the live grade: opens a dry-run stage record in the scratch PostgreSQL, closes it with METRIC_NOT_YET_PUBLISHED, runs backfillStageComputeCosts with real transports, prints the resulting record in two arms (reader absent / reader injected)"
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "lane": "p295-ledger-serving-measure",
+  "planRows": ["P-295"],
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-16T23:16:00Z",
+  "seat": "p295-lane",
+  "dispatch": "_dispatches/2026-09-16_p295-ledger-serving-measure_dispatch.md",
+  "status": "closed-partial (phase 1 of 2: measured and proposed; nothing cut over, nothing deployed)",
+  "docRepoWorktree": {
+    "writtenTo": ["P:/doc_repo/_inbox", "P:/seat-worktrees/dispatch-planner/doc_repo/_inbox"],
+    "whyTwo": "Same resolution as CP1 and as the P-293R sibling lane filed today: this session is not rooted in a doc_repo worktree, the dispatch names two candidate homes, and writing to both byte-identical is disclosed rather than guessed."
+  },
+  "headline": "0 of 26,814,129 value cells in the six counties carry an atom reference of any kind. The ledger-serving path has nothing to dereference today, and for the setback rails the atoms that do exist disagree with the values the cells have copied in on 30.2% of the parcels where both exist.",
+  "m1_cellShapePerRail": {
+    "store": "FACTORY_DATABASE_URL_RO (hauska-prod-497015), factory store",
+    "measuredAt": "2026-09-16T22:57Z",
+    "counties": ["48021", "48055", "48209", "48309", "48453", "48491"],
+    "sql": [
+      "SET statement_timeout='1500000';",
+      "SET default_transaction_read_only=on;",
+      "COPY (",
+      "  SELECT rail_key,",
+      "         coalesce(cell_state->>'kind','(no-kind)') AS kind,",
+      "         coalesce(cell_state->>'source','(no-source)') AS source,",
+      "         (cell_state ?| array['atomDid', 'atom_did', 'atomRef', 'atom_ref', 'atomDids', 'atomRefs', 'atomVersion', 'atom_version']) AS has_pointer,",
+      "         count(*) AS cells",
+      "    FROM parcel_record_cell",
+      "   WHERE place_key >= '<fips>:' AND place_key < '<fips+1>:'",
+      "   GROUP BY 1,2,3,4",
+      ") TO STDOUT WITH (FORMAT csv, HEADER true);",
+      "per county, one statement; the range predicate is the county place_key prefix on the (place_key, rail_key) primary key"
+    ],
+    "instrumentCommand": "FACTORY_DATABASE_URL_RO=... pnpm exec tsx services/retrieval-api/scripts/ledger-serving-measure.mjs cells --county <fips>",
+    "totals": {
+      "rails": 65,
+      "parcels": 981405,
+      "cells": 63791325,
+      "completenessCheck": "65 x 981,405 = 63,791,325, and the kind buckets sum to exactly that: the scan is whole, not partial",
+      "byKind": { "value": 26814129, "unaccounted": 22397221, "not-applicable": 7425002, "absent-verified": 6765819, "refused": 389154 },
+      "valueCells": 26814129,
+      "valueCellsWithAPointerOfAnyKind": 0,
+      "valueCellsCopiedOnly": 26814129,
+      "cellsWithAPointerOfAnyKind": 0,
+      "railsCarryingValueCells": 46,
+      "railsCarryingNoValueCell": 19
+    },
+    "perCountyCells": {
+      "48021": { "cells": 4046640, "parcels": 62256 },
+      "48055": { "cells": 1624220, "parcels": 24988 },
+      "48209": { "cells": 7567300, "parcels": 116420 },
+      "48309": { "cells": 7426510, "parcels": 114254 },
+      "48453": { "cells": 24759605, "parcels": 380917 },
+      "48491": { "cells": 18367050, "parcels": 282570 }
+    },
+    "railsTheLedgerWritesAndTheirWriters": [
+      { "rail": "setbackFrontFt", "valueCells": 387237, "notApplicable": 374231, "absentVerified": 219472, "refused": 465, "distinctWriters": 18 },
+      { "rail": "setbackSideFt / setbackRearFt / setbackCornerFt / setbackRules", "valueCells": 387237, "distinctWriters": 18, "note": "byte-identical counts to setbackFrontFt: one writer, five keys" },
+      { "rail": "maxHeightFt", "valueCells": 308359, "unaccounted": 27949, "notApplicable": 373887, "absentVerified": 264819, "refused": 6391, "distinctWriters": 13 },
+      { "rail": "maxFootprintSqFt", "valueCells": 200793, "distinctWriters": 6 },
+      { "rail": "maxLotCoveragePct", "valueCells": 200793, "distinctWriters": 6 },
+      { "rail": "maxImperviousCoverPct", "valueCells": 22139, "unaccounted": 600488, "refused": 155786, "distinctWriters": 2 },
+      { "rail": "zoningDistrict / zoningJurisdictionKey / zoningProvenance", "valueCells": 533160, "notApplicable": 374459, "refused": 73786, "distinctWriters": 3 },
+      { "rail": "flood", "valueCells": 979998, "absentVerified": 1407, "distinctWriters": 2 }
+    ],
+    "noteOnWriters": "`source` is per-cell, and the setback rails carry 18 distinct writers (a jurisdiction table per city and a corpus label). A rail whose cells come from many writers is the hardest case for a per-rail repoint, because 'the rail is slate-ready' is not a claim about all 18.",
+    "answer": "Every one of the 65 rails is value-copied-only today. 46 carry value cells; 19 carry none. The reader's extractAtomDid (services/retrieval-api/src/parcel-record-reader.ts:63-67) therefore has never fired against live data, exactly as its own comment says ('P-163 has not landed; no live cell carries one yet')."
+  },
+  "m2_atomsForLedgerWrittenRails": {
+    "store": "ATOMS_DATABASE_URL (hauska-prod-497015), the atoms store (hauska_mcp)",
+    "measuredAt": "2026-09-16T23:04Z-23:06Z",
+    "catalogFirst": {
+      "why": "The dispatch requires enumerating the atoms table's indexes before choosing a path, and warns that an unindexed scan on a ~190 GB table is forbidden.",
+      "indexesFound": ["atoms_pkey (atom_did)", "atoms_entity_type_idx (entity_type)", "atoms_jurisdiction_idx (jurisdiction_tenant)", "atoms_entity_composite_unique (entity_type, entity_id) UNIQUE", "atoms_property_parcel_node_idx ((body->>'parcelNodeId') text_pattern_ops) WHERE entity_type = ANY ('zoning-fact','setback-rule','buildable-envelope','parcel-terrain-model')", "atoms_boundary_parcel_node_idx (property-boundary-edge)", "atoms_road_node_id_idx", "atoms_road_county_fips_idx", "atoms_parcel_node_lookup_idx", "atoms_section_number_partial_idx", "atoms_parcel_node_county_idx", "atoms_building_footprint_parcel_node_idx"],
+      "entityTypesPresent": ["special-district-fact", "parcel-node", "flood-hazard-fact", "rail-corridor-fact", "rrc-pipeline-fact", "cad-parcel-roll", "zoning-fact", "well-fact", "land-use-fact", "owner-fact", "building-footprint", "identity.alias", "road-node", "buildable-envelope", "setback-rule", "code-section", "property-boundary-edge", "code-cross-reference"],
+      "entityTypeSource": "pg_stats.most_common_vals for atoms.entity_type (n_distinct 18), NOT a GROUP BY over the table: counting rows by entity_type would itself be a full scan."
+    },
+    "chosenPath": "atoms_entity_composite_unique on (entity_type, entity_id), 4 point lookups per parcel (setback-rule, zoning-fact, buildable-envelope, parcel-terrain-model). entity_id IS the parcelNodeId for these entity types: live row (entity_type 'setback-rule', entity_id '48209:100226', atom_did 'did:hauska:setback-rule:48209:100226', body->>'parcelNodeId' '48209:100226').",
+    "explainNotAnalyze": {
+      "compositeUniqueSpelling": "Index Scan using atoms_entity_composite_unique on atoms  (cost=0.69..8.71 rows=1 width=65) | Index Cond: ((entity_type = 'setback-rule'::text) AND (entity_id = '48209:100226'::text))",
+      "partialIndexSpelling": "Bitmap Heap Scan on atoms  (cost=10143.38..11021.14 rows=3560) | Recheck Cond: ((body->>'parcelNodeId') = '48209:100226') AND (entity_type = ANY ('{zoning-fact,setback-rule,buildable-envelope,parcel-terrain-model}')) AND (entity_type = 'setback-rule') | -> BitmapAnd: Bitmap Index Scan on atoms_property_parcel_node_idx (cost=0.00..869.37 rows=31591) ; Bitmap Index Scan on atoms_entity_type_idx (cost=0.00..9271.98 rows=711922)",
+      "reading": "The composite unique index answers the question in one index scan at cost 0.69..8.71. The body->>'parcelNodeId' spelling is ~1,400x the cost estimate AND estimates 31,591 rows for a single parcelNodeId, because text_pattern_ops statistics on that expression are poor. A builder reaching for the partial index by intuition picks the slower path. FALSIFIER 2: PASS on the chosen path; the second spelling is reported because it is a real trap, not a strawman.",
+      "instrumentCommand": "ATOMS_DATABASE_URL=... pnpm exec tsx services/retrieval-api/scripts/ledger-serving-measure.mjs explains --entity-type setback-rule --parcel 48209:100226",
+      "runtime": "378 parcels x 4 entity types = 1,512 index probes in 0.7-1.4 s per county"
+    },
+    "sample": {
+      "method": "parcels drawn from parcel_record_cell itself, stratified by city (cell_state->>'value' on rail zoningJurisdictionKey), up to 20-25 per city, >= 50 per county",
+      "denominator": 378,
+      "perCounty": { "48021": 60, "48055": 80, "48209": 80, "48309": 50, "48453": 54, "48491": 54 }
+    },
+    "atomExistenceByEntityType": {
+      "zoning-fact": { "hit": 378, "of": 378, "rate": 1.0 },
+      "buildable-envelope": { "hit": 271, "of": 378, "rate": 0.7169 },
+      "setback-rule": { "hit": 134, "of": 378, "rate": 0.3545 },
+      "parcel-terrain-model": { "hit": 1, "of": 378, "rate": 0.0026 },
+      "anyOfTheFour": { "hit": 378, "of": 378, "rate": 1.0 }
+    },
+    "setbackRuleAtomByCounty": { "48021": "40/60", "48055": "18/80", "48209": "39/80", "48309": "0/50", "48453": "7/54", "48491": "30/54" },
+    "theCrossTabThatDecidesTheCutover": {
+      "countingRule": "the same 378 parcels; the cell is read by (place_key, rail_key) primary-key point lookup on rail setbackFrontFt; the atom by atoms_entity_composite_unique on (setback-rule, <parcelNodeId>)",
+      "sampleParcels": 378,
+      "setbackFrontFtCellsKindValue": 193,
+      "ofThoseWithASetbackRuleAtom": 119,
+      "ofThoseWithNoAtomAtAll": 74,
+      "valueCellWithoutAtomRate": 0.3834,
+      "atomGivenValueCellRate": 0.6166,
+      "frontValueAgrees": 83,
+      "frontValueDisagrees": 36,
+      "frontAgreesRate": 0.6975,
+      "frontDisagreesRate": 0.3025,
+      "disagreementShape": "36 of 36 disagreements are the SAME signature in one direction: the cell carries a LARGER front setback than the atom. Bastrop (48021) contributes 11 of them, every one 'cell 30 ft vs atom 25 ft'; Travis (48453) 0; Williamson (48491) 5. No disagreement runs the other way in this sample.",
+      "example": "48021:103387 - cell setbackFrontFt value 30, atom did:hauska:setback-rule:48021:103387 body->>'front' 25",
+      "maxHeightFtCellsWithAValueInTheSame378": 120,
+      "whyItDecides": "A cut-over that dereferences atoms would CHANGE the served number on 30.2% of the parcels where both exist, and would serve nothing at all on 38.3% of the parcels whose cell carries a number. Neither is a repoint; both are product decisions.",
+      "whatThisDoesNotClaim": "No vintage comparison is made between a cell's copied value and its atom's fetched_at, so this is a disagreement count, not a finding about which side is newer. Every atom row sampled was last written 2026-07-24 or earlier while the cells carry vintage stamps up to 2026-09-15, which is a HINT pointing one way; it is stated as a hint and not as the answer."
+    },
+    "answer": "Atoms exist for SOME of the rails the ledger writes and not others, and they do not agree with the values already copied into the cells. zoning-fact exists for every sampled parcel (378/378). setback-rule exists for 35.4% of sampled parcels and for 61.7% of the parcels whose cell actually carries a setback number. There is no rail here that can be repointed to the ledger this phase without deciding what to serve where the two disagree and where the atom is missing."
+  },
+  "m3_whatEachSurfaceReadsToday": {
+    "measuredAt": "2026-09-16T23:00Z-23:04Z",
+    "method": "rg over the product checkouts for the field names and the loader names, then git show at LDT origin/main 62e7349b for the merged source (the local LDT checkout is on branch feat/s1-instrument-hardening at 10069854, which does not contain the serve-cutover loaders at all and would have answered the question wrongly).",
+    "surfaces": [
+      {
+        "surface": "MCP get_smart_site",
+        "repo": "legacy-design-tools",
+        "maxHeightFt": {
+          "file": "artifacts/api-server/src/routes/propertyExplorer.ts",
+          "import": "line 82: import { loadMaxHeightFtFactForServe } from \"../lib/maxHeightFtFactServeCutover\"",
+          "call": "line 296 (and the assembled field at line 241/432)",
+          "reads": "LEDGER, but never: maxHeightFtFactServeCutover.ts:9-11 states the card is NOT SLATED (it 'fails the gate on every in-scope county', blocked on the zoningDistrict residual) and lines 44-51 therefore return notCutOverMaxHeightFtFact for every parcel, by construction.",
+          "so": "no live value at all from this path today; the field is served as the not-cut-over state"
+        },
+        "setbacks": {
+          "file": "artifacts/api-server/src/routes/propertyExplorer.ts",
+          "import": "line 64: import { loadSetbacksFactForServe } from \"../lib/setbacksFactServeCutover\"",
+          "call": "line 286 (and line 470)",
+          "reads": "LEDGER when the (county, setbackFrontFt) pair is slated AND the gate verdict passes (setbacksFactServeCutover.ts:49-55 -> resolveAllowlist -> parcelGateVerdictRead); otherwise the caller keeps its own bake-derived envelope",
+          "underlyingReader": "artifacts/api-server/src/lib/setbacksFactFromParcelRecord.ts:167 reads cell.value (frontFt), and artifact/api-server/src/lib/parcelRecordCellRead.ts:128-132 issues its OWN SQL: SELECT cell_state FROM parcel_record_cell WHERE place_key = $1 AND rail_key = $2"
+        }
+      },
+      {
+        "surface": "map facets / Property Explorer dock",
+        "repo": "hauska-map",
+        "routeRead": "GET /property-nodes/:parcelNodeId/atom-chain on the retrieval-api (the ATOM path, not /record, not the bake)",
+        "maxHeightFt": { "file": "apps/property-explorer/api/_lib/atom-chain-to-facets.ts", "lines": "517-518: ...(typeof rule.maxHeightFt === \"number\" && rule.maxHeightFt > 0 ? { maxHeightFt: rule.maxHeightFt } : {})", "source": "rule = c.setbackRule, the atom-chain response's setback-rule atom (declared at lines 50-53, 142-145)" },
+        "setbacks": { "file": "apps/property-explorer/api/_lib/atom-chain-to-facets.ts", "lines": "487-492 (c.setbackRule, with a stale-Bastrop-city suppression at 488-492), 512 (const setbacks = mapSetbacks(rule, district))", "source": "LIVE CALL to the atoms path" },
+        "alsoReads": ["apps/property-explorer/src/lib/parcel-node-store.js:245,273 (envelope.maxHeightFt)", "apps/property-explorer/src/browse/brief-view-model.ts:424-425 (renders 'Max height N ft')"]
+      },
+      {
+        "surface": "web dock facets route (cortex, the sibling of get_smart_site)",
+        "repo": "legacy-design-tools",
+        "file": "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+        "maxHeightFt": "line 877 loadMaxHeightFtFactForServe, assembled at 837/1074",
+        "setbacks": "line 873 loadSetbacksFactForServe, assembled at 833/1062; the module's own header at lines 159-160 says 'setbacksFact is read from parcel_record via loadSetbacksFactForServe -- the SAME loader propertyExplorer.ts's ... uses'",
+        "source": "LEDGER (same readers as get_smart_site)"
+      },
+      {
+        "surface": "PDF / brief (the X-ray dossier and the R1 brief)",
+        "repo": "legacy-design-tools + hauska-map",
+        "setbacks": { "file": "artifacts/api-server/src/lib/r1BriefCompose.ts", "lines": "597-609: composeSetbacksEnvelopeBriefSection prefers parcelRecordSetbacksFact (LEDGER, and only when its state is not 'refused') at 603-604, and otherwise composes the baked envelope at 609; the parameter's contract is documented at 726-727", "source": "LEDGER first, BAKE as the fallback" },
+        "maxHeightFt": { "file": "hauska-map apps/property-explorer/src/browse/brief-view-model.ts", "lines": "424-425: const maxHeightFt = num(env.maxHeightFt); if (maxHeightFt !== null) facts.push(fact(\"Max height\", `${maxHeightFt} ft`))", "source": "the brief payload's own envelope object, which arrives from the bake path (legacy derive at legacy-design-tools artifacts/api-server/src/lib/buildableEnvelope/derive.ts:220) because maxHeightFt is not slated anywhere (see MCP above)" }
+      }
+    ],
+    "theAnswerInOneLine": "For maxHeightFt NOTHING reads the ledger: the MCP path is not-cut-over by construction, the map reads the live atom-chain, and the PDF reads the bake. For setbacks the MCP and the dock ALREADY read the ledger through LDT's own copy of the reader while the map reads the atom-chain, which is why five producers disagree on the same parcel (A-128/A-140) - and it is the map's atom-chain number (rule.maxHeightFt / mapSetbacks(rule)) that the customer sees on the panel.",
+    "readerCount": "Three readers of the same two fields exist today: retrieval-api's parcel-record-reader.ts (the /record route, which NO surface calls for these rails - rg for '/record' across LDT's api-server and hauska-map's PE app found no call), LDT's parcelRecordCellRead.ts (its own SQL against parcel_record_cell, lines 128-132), and hauska-map's atom-chain adapter reading atoms over HTTP. The 2026-09-11 ruling's 'one reader' is not what is on disk."
+  },
+  "m4_recordRouteCost": {
+    "endpoint": "GET https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app/property-nodes/:parcelNodeId/record (revision hauska-retrieval-api-00094-wed)",
+    "auth": "Bearer HAUSKA_ENGINE_API_KEY (Secret Manager, hauska-prod-497015), read into the process env and never written to disk",
+    "measuredAt": "2026-09-16T23:08Z",
+    "instrumentCommand": "HAUSKA_ENGINE_API_KEY=... pnpm exec tsx services/retrieval-api/scripts/ledger-serving-measure.mjs record-timing --url <base> --parcels <ids>",
+    "coldDefinition": "the first call for that parcel in this run (it walks the 65 rails)",
+    "warmDefinition": "the immediate second call for the same parcel",
+    "n": { "parcels": 20, "counties": 4, "perCounty": { "48453": 5, "48491": 5, "48021": 5, "48309": 5 }, "coldSamples": 20, "warmSamples": 20 },
+    "httpStatuses": { "200": 20 },
+    "cold": { "p50Ms": 266.0, "p95Ms": 332.1, "minMs": 237.9, "maxMs": 967.0 },
+    "warm": { "p50Ms": 250.0, "p95Ms": 290.4, "minMs": 228.2, "maxMs": 350.8 },
+    "percentileRule": "nearest-rank, no interpolation (percentile.ts in the instrument: p50 of 20 samples is the 10th value, p95 the 19th)",
+    "coldMsVerbatim": [967, 324, 288, 270, 322, 327, 243, 245, 238, 251, 267, 332, 252, 266, 255, 259, 294, 276, 248, 265],
+    "warmMsVerbatim": [351, 231, 284, 268, 275, 289, 256, 290, 271, 238, 250, 240, 249, 228, 276, 254, 240, 238, 234, 230],
+    "reading": "A /record read costs ~250 ms and the cold/warm gap is small outside one 967 ms outlier, which is a Cloud Run instance warm-up, not a store cost. The route walks 65 rails per call; the store path per rail is one (place_key, rail_key) point read plus, where slated, one verdict read.",
+    "pilotDisclosed": "A 13-parcel pilot across 2 counties ran first (while one county's sample was being rebuilt) at cold p50 248 ms / p95 382 ms, warm p50 231 ms / p95 281 ms, all 200. It is reported as a pilot and is NOT merged into the 20-parcel answer.",
+    "environmentNote": "This machine's Node fetch rejects the service's certificate chain (UNABLE_TO_VERIFY_LEAF_SIGNATURE); the driver was run with NODE_OPTIONS=--use-system-ca. A CI runner or another machine will not need it, and the instrument does not hard-code the workaround."
+  },
+  "answer": {
+    "railsThatCanServeFromParcelRecordCellThroughTheRetrievalApiReaderToday": "None, in the sense the 2026-09-11 ruling means (dereference an atom). All 65 rails are value-copied-only: 26,814,129 value cells, 0 pointers. What CAN be served today is the copied value with its provenance fields - which is what the ruling says a cell is not.",
+    "railsThatNeedAtomsMintedFirst": [
+      "The four envelope rails (maxHeightFt, maxFootprintSqFt, maxLotCoveragePct, maxImperviousCoverPct): the gate is not slated for any of them (maxHeightFtFactServeCutover.ts:9-11), 120 of 378 sampled parcels carry a maxHeightFt value cell, and only 271 of 378 sampled parcels have a buildable-envelope atom at all. Both the pointer AND the atom coverage are missing.",
+      "The setback group (setbackFrontFt/SideFt/RearFt/CornerFt + setbackRules): the atom exists for 61.7% of the parcels whose cell carries a value, and disagrees on 30.2% of those where it does. Minting is needed for the second kind of gap (74 of 193 sampled parcels have a cell value and no atom) and adjudication for the first.",
+      "zoningDistrict/zoningJurisdictionKey/zoningProvenance: the ONLY rails where the canonical claim already exists for every sampled parcel (zoning-fact 378/378). These three are the rails that can be repointed to the ledger first, ahead of any minting work."
+    ],
+    "howACachedRenderingWouldKeyToTheCellVersion": "It cannot today, and this is a schema fact rather than an opinion: parcel_record_cell is (place_key text, rail_key text, cell_state jsonb, updated_at timestamptz) and nothing else - no version column, no pointer column. The only version-ish field is updated_at, a wall-clock stamp, and the cell_state's `vintage` field is the SOURCE's date ('2026-09-15T00:54:11.683Z' on 48209:100226's setback cell), not a content version of the cell. A rendering keyed to 'atom version and vocabulary version' therefore needs the pointer and a content version to exist first; both are P-163's scope, not this lane's.",
+    "retirementOrderForTheBake": [
+      "1. Land the writer (P-163: pointer + content version in cell_state) - without it there is nothing for a rendering to key to and nothing for the reader to dereference.",
+      "2. Repoint the reader that already reads the ledger (LDT's parcelRecordCellRead.ts) to retrieval-api's reader, so the two stop being parallel implementations of the same read. This is the only consumer that already serves a customer from the ledger.",
+      "3. Repoint the map's atom-chain adapter (hauska-map atom-chain-to-facets.ts:487-518) - it is the surface the customer actually sees, and it is the one that reads atoms instead of cells, which is why the panel and the MCP disagree today.",
+      "4. Retire the bake per rail, not per county, with a divergence test in the overlap: for the setback group the divergence is already visible (cell 30 vs atom 25 in Bastrop) and the test would have to pick a side before it can assert anything.",
+      "5. Only after 1-4, retire the legacy derive (legacy-design-tools buildableEnvelope/derive.ts:220)."
+    ],
+    "whereTheProposalConflictsWithThe2026_09_11Ruling": [
+      "The ruling says a cell is accounting, 'never a copied value'. On disk, 26,814,129 value cells ARE copied values and none of them is accounting-with-a-pointer. Either the ruling needs a named transition window in which the copied value is permitted while the pointer is absent, or every consumer repoint is blocked behind the writer. RECOMMEND THE OPERATOR RULE: the copied value is permitted ONLY while the pointer is absent, and its presence is itself a measured defect (this instrument reports it), so the number cannot be forgotten.",
+      "The ruling says 'one reader in retrieval-api'. There are three, and one of them (LDT's) is the one serving customers today. A lane that builds the retrieval-api reader without a ruled retirement order for LDT's copy adds a fourth diverging producer. RECOMMEND THE OPERATOR RULE the retirement order above, in that order.",
+      "The ruling's 'cached rendering keyed to atom version and vocabulary version' has no version to key to in parcel_record_cell. RECOMMEND the operator fold the version column into P-163's scope explicitly, because a rendering cache built today would key to updated_at and be wrong in exactly the silent way this program keeps finding."
+    ]
+  },
+  "falsifiers": {
+    "f1_bothDirections": "PASS. src/__tests__/ledger-serving-measure.test.ts: a cell carrying a reference reports it; the SAME cell without it reports none; plus non-vacuity (null/blank pointer does not count, a nested pointer does not count). The negative direction is the live shape, not a fixture shape: 26,814,129 cells classified value-copied-only by the same function the test covers. 19 tests, all passing (local: P:/tmp/p295-ledger-serving, vitest 2.1.9).",
+    "f2_indexPlan": "PASS for the chosen path (Index Scan using atoms_entity_composite_unique, cost 0.69..8.71), pasted verbatim in m2 above; the partial-index spelling of the same question is pasted beside it at cost 10143.38..11021.14 and is the trap, not a strawman.",
+    "f3_threeCounties": "PASS at four counties (48021, 48309, 48453, 48491), 5 parcels each, 20 parcels, all HTTP 200."
+  },
+  "disclosures": [
+    "MISTAKE, DISCLOSED: during reconnaissance one unfiltered probe was launched against the 199 GB atoms table (SELECT ... ORDER BY fetched_at DESC LIMIT 1 with no matching index) and was killed within ~35 s of starting. It read no user data (it read atom body text), it wrote nothing, and it was replaced by a properly indexed point lookup. No other statement in this lane ran without SET statement_timeout and SET default_transaction_read_only=on.",
+    "CP1 was filed after the instrument's first draft rather than strictly before it (see CP1.phaseNote); nothing downstream depends on the ordering, and no store write or deploy happened at any point.",
+    "The M2 sample's county-level spread is large (setback-rule atoms 0/50 in McLennan, 40/60 in Bastrop). County-level numbers are reported with their own denominators and must not be read as statewide rates.",
+    "The 48453 (Travis) sample query took 268 s and 48309 (McLennan) 81 s for the same statement shape: the county place_key prefix range does not cost the same per row in every county. Relevant to anyone who assumes a per-county scan budget.",
+    "The 48309 sample was deepened to 50 parcels with a second pass at 25-per-city (the first pass capped at 20 and returned 40 over two city values); the deepening re-ran the same statement with one constant changed, and the final sample file is the deeper one.",
+    "hauska-map and LDT are cited at their refs as read (LDT origin/main 62e7349b; hauska-map and the factory tree were read from the checkouts on this machine). No file outside the engine clone was written."
+  ],
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

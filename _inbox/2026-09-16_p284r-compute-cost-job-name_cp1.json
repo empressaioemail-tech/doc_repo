@@ -1,0 +1,122 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p284r-compute-cost-job-name",
+  "title": "design / pre-build adversarial checkpoint: which job an execution's cost asks for, and where a dry run's execution identity can live",
+  "planRows": ["P-284"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-16_p284r-compute-cost-job-name_dispatch.md",
+  "at": "2026-09-16T22:45:00Z (filed BEFORE any product code was written; the lane claimed 2026-09-16T22:35:00Z via scripts/lane-claim.mjs, exit 0)",
+  "seat": "p284r-lane",
+  "repo": "hauska-factory",
+  "worktree": {
+    "doc_repo": "P:/seat-worktrees/p284r-compute-cost-job-name/doc_repo (this seat's registered worktree, branch lane/p284r-compute-cost-job-name; NOT P:/doc_repo, the integration seat's checkout)",
+    "build": "P:/tmp/p284r-factory (fresh CLONE of origin/main under P:/tmp, per the dispatch; the clone's path and worktree are the same directory)"
+  },
+  "branch": "fix/p284r-compute-cost-job-name",
+
+  "startCommit": {
+    "declared": "35007fb9d85e7bdb5fed237d55de18662991c4f5 (origin/main, 'feat(P-281): a heavy scan takes a lease on its store, or it does not scan (#161)')",
+    "vsDispatch": "the dispatch says 'factory main was afdda42 at compile'. afdda42 IS the P-284 merge (#158) and it is an ancestor of 35007fb; main has moved twice since (P-292 #159, then P-281 #161). A fresh clone of origin/main is what the dispatch asks for, so the lane starts at 35007fb and not at the dispatch's compiled SHA. Declared here because a start commit that is not the declared one is the first thing a successor needs to know.",
+    "branchCutBeforeAnyEdit": true,
+    "cloneIsNew": "P:/tmp/p284r-factory did not exist before this lane (P:/hauska-factory is an unrelated stale 'Initial commit' shell, 3653f12, and was NOT used, NOT touched, NOT cloned from)"
+  },
+
+  "theFindingReproducedAtSourceBeforeDesigning": {
+    "selfPath": "src/lib/compute-cost.mjs:350-351 calls getExecution(execution, env, deps) with no job; src/control/cloudrun-jobs.mjs:354 builds the URL from executionResourceName(name, env, deps.jobName) and line 166's default parameter jobName() returns factory-atoms-cad. An execution of any other job is therefore described under jobs/factory-atoms-cad/...",
+    "backfillPath": "src/control/stage-runs.mjs:708-709 makes the identical call with the identical omission; the job it should ask for is on the run scope (scope.job) and is read two lines above the call but never passed.",
+    "dryRunCannotBeCosted": "src/control/stage-runs.mjs:674-684 selects only records with s.run_id IS NOT NULL joined to runs and termination_records. A dry run opens no run row (0012's own CHECK and its header say so, and P-284 falsifier 4 requires dry runs to leave records), so the execution name it needs -- which only lives on runs.scope today -- is not merely unread, it does not exist for that record.",
+    "whyItAlwaysFails": "the 404 is not intermittent: it is a wrong resource name. The dispatch's statement that the same execution under its own job returns 200 is consistent with this reading and is the falsifier this lane answers with a fake-transport assertion (no credential is exercised, no billable call is made by this lane)."
+  },
+
+  "callerListForReap": {
+    "question": "the dispatch's close asks for 'the caller list for reap'; 'reap is the one caller' is to be CONFIRMED in CP1, not assumed",
+    "measured": "grep for backfillStageComputeCosts across src/, scripts/ and test/ returns exactly two production call sites:",
+    "callers": [
+      "src/jobs/reap.mjs:143 -- runReap's tick, wrapped in a try/catch that reports computeBackfillError rather than throwing. This is the one the dispatch names, and the one Cloud Scheduler factory-conformant-reap executes on the factory-conformant job.",
+      "src/cli.mjs:411 -- the factory CLI's own backfill verb (line 368 imports it). A seat/manual path, not a scheduler path. NOT a second tick: it is the same function with the same semantics, invoked by hand."
+    ],
+    "conclusion": "reap IS the only scheduled/automated caller. It is NOT the only caller in the repo; the CLI verb is a second one, and it takes the same fix for free because the fix is inside backfillStageComputeCosts rather than at the call site. Said out loud rather than reported as 'one caller' when the grep says two.",
+    "imageNote": "the dispatch records that the factory-conformant image the scheduler runs predates P-284 (sha256:5e6ebba2...) and that the integration seat rebuilds it. This lane does not deploy and does not rebuild; the tick that runs tonight is the old image, and that is stated in the close rather than discovered later."
+  },
+
+  "whatElseUsesTheDefaultJobSoItIsNotChanged": {
+    "decision": "src/control/cloudrun-jobs.mjs is NOT edited by this lane. Its default parameter jobName() = factory-atoms-cad stays exactly where it is.",
+    "whyThatIsTheRightCallAndNotAnOmission": "the default is CORRECT for its other callers, and they are: executeJob (src/jobs/bexar-cad.mjs:116, src/jobs/f10-cad-loop.mjs:332) and waitForExecution (src/jobs/bexar-cad.mjs:117, src/jobs/f10-cad-loop.mjs:333) -- both drive factory-atoms-cad, which is what jobName() names; and src/jobs/bexar-cad.mjs:29 exports ATOMS_WRITER_JOB = jobName(). Changing the default would silently re-point four call sites at nothing, which is the dispatch's own 'do not' item. The defect is not the default; the defect is a call site that FALLS to it while holding a different job. Both such call sites are in this lane's scope and both get an explicit job.",
+    "theThirdCallSiteIsNamedNotFixed": "src/control/cloudrun-jobs.mjs:399 -- getExecution inside waitForExecution -- also carries the omission through, and would address the wrong job for a non-atoms-cad caller. Its only two callers are the atoms-cad loops above, so it is not wrong today. Left alone deliberately (changing it is the dispatch's 'do not'), and returned as a leave_behind so the next session can decide whether the default should become a refusal."
+  },
+
+  "designDecisions": {
+    "D1_theJobIsNamedAtBothCallSitesNeverDefaulted": {
+      "self": "computeCostNowForSelf resolves job = env.CLOUD_RUN_JOB (trimmed, empty string is not a name) and execution = env.CLOUD_RUN_EXECUTION, and passes { ...deps, jobName: job } to getExecution. A spread, never a mutation: reap hands the same deps object to the tick's other calls, and mutating it would leak a job name into an unrelated lookup.",
+      "backfill": "the job is resolved per record: the record's own execution_job column first (it is what CLOUD_RUN_JOB was at write time and it is the only source a dry run has), then the run scope's job (stamped by startRun's identityScope, which is the single writer of scope.execution/job/host). Same for the execution name.",
+      "refusalInsteadOfFallback": "when the execution is named but the job is not, both paths return usd:null with the NEW named reason JOB_NOT_NAMED and the execution named in the detail, WITHOUT calling getExecution at all. That is the dispatch's 'refuse with a named reason when neither is known, never a default job'. A fallback would produce a 404 that reads exactly like the bug being fixed, which is why the refusal has to happen before the request rather than be inferred from its failure."
+    },
+    "D2_theExecutionIdentityTravelsOnTheRecord_becauseARecordCanExistWithoutARun": {
+      "columns": "stage_run_records.execution_name text NULL, stage_run_records.execution_job text NULL -- added by a NEW migration, 0014_stage_run_execution_identity.sql. 0012 is NOT edited (the dispatch's own do-not).",
+      "whyNotNullAndWhyTwo": "a stage record written on a laptop has no execution and must not be forced to invent one, so both are nullable and a null is the honest absence. Two columns rather than one because a Cloud Run execution resource name needs BOTH halves to be addressable, and a dry run has no scope to carry either.",
+      "whereTheValueComesFrom": "executionIdentity(env, { require: false }) in src/control/runs.mjs -- the existing, single determination of 'which execution am I' (it already backs startRun's scope stamping and the reaper's name matching). Reusing it means one vocabulary for execution identity in the repo rather than a second, hand-rolled read of two env vars. require:false because a record writer must not throw on a laptop: it writes the absence.",
+      "noCallerIsEditedToSupplyIt": "openStageRun/recordStageRunsForRun already receive env (defaulting to process.env), so the writer stamps the identity itself. This is deliberate beyond convenience: src/jobs/parcel-setback-cells.mjs is held by the OPEN P-256 lane and the dispatch orders this lane out of it. A design that needed an edit there would be unshippable without a collision; this one needs none, and both existing depth writers get the columns for free.",
+      "anExplicitOverrideIsStillAccepted": "fields.executionName / fields.executionJob let a test or a non-Cloud-Run caller name an execution explicitly; the env read is the default, not the only path."
+    },
+    "D3_theBackfillStopsRequiringARun_thenLooksUpByExecution": {
+      "removed": "the INNER JOIN runs and the INNER JOIN termination_records. Both were exclusions with no bearing on whether a cost is readable: the run join is what made a dry run uncostable, and the termination join excluded a record whose execution has ended but whose run row has not yet been reconciled (the reaper reconciles in the same tick it backfills, and the order is not a guarantee).",
+      "kept": "compute_cost_usd IS NULL (IT ONLY EVER FILLS AN ABSENCE -- a measured figure is never recomputed), started_at >= since, ORDER BY started_at, LIMIT n.",
+      "grouping": "records are grouped by (host, execution name, job) rather than by run_id: one describe per EXECUTION. A run sweeping three counties has three records and one execution; a dry run has records and no run at all; the old by-run grouping could not express the second case at all.",
+      "host": "host is taken from the run scope when there is one, and otherwise derived: a record that names an execution and a job is a Cloud Run job record, and one that names neither is a not-cloud-run absence (which is the reason the writer already stored for it on a laptop).",
+      "theUpdateIsUnchanged": "the UPDATE still carries AND compute_cost_usd IS NULL, so a fill can never overwrite a figure that landed between the SELECT and the UPDATE."
+    },
+    "D4_aNullableIndexForTheBackfillsOwnAccessPath": {
+      "index": "CREATE INDEX IF NOT EXISTS stage_run_records_unmeasured_compute_idx ON stage_run_records (started_at) WHERE compute_cost_usd IS NULL",
+      "why": "after D3 this is the query the reap tick runs every few minutes against a table that grows with every stage of every county. A partial index on the exact predicate keeps the tick's SELECT from being a sequential scan on the one table the metering program is about to fill. It is additive and doesn't change any existing plan's contract."
+    }
+  },
+
+  "designAlternativesConsideredAndRejected": {
+    "passTheJobDownFromEveryCallerInsteadOfReadingEnvInTheWriter": "REJECTED. It moves the fix into src/jobs/parcel-setback-cells.mjs and src/jobs/parcel-envelope-cells.mjs, and the first is held by the open P-256 lane. It would also require every future stage writer to remember the job, which is the drift the stage map's own completeness test exists to stop.",
+    "reconstructTheJobFromTheExecutionName": "REJECTED as a guess. Cloud Run execution names in this fleet START with the job name (factory-parcel-setback-cells-x9zmt), and a string-prefix rule against a job list would work today, would fail the day a job is renamed with a stale execution in the window, and is exactly the kind of silent inference DEV_PROCESS's 'an empty result is not an absence' clause is about. The job is READ, never reconstructed.",
+    "makeExecutionResourceNameRefuseAnUndefinedJob": "REJECTED FOR THIS LANE. It is the more fundamental fix, and it is the one the dispatch forbids without a caller list: executionResourceName's default is load-bearing for the atoms-cad loops (see whatElseUsesTheDefaultJobSoItIsNotChanged), and flipping a default parameter to a refusal changes five call sites' behaviour in one line. Returned as a leave_behind with the caller list attached rather than smuggled in.",
+    "aJSONBBlobOnTheRecord": "REJECTED: two named columns can be indexed and read back by name; a blob cannot be checked by a constraint and would be the third shape of 'execution identity' in the repo.",
+    "alsoStoreTheHostOnTheRecord": "REJECTED as scope: the dispatch names the execution name and the job. Host is derivable in the one place that needs it (D3), and a third column is a third thing to keep honest for no additional query.",
+    "backfillByCallingTheMonitoringApiAlone": "REJECTED: the billable quantity is instance-seconds and only the EXECUTION carries the instance shape the conversion needs. Without the describe there is no vCPU/memory, so the metric alone cannot produce a dollar figure."
+  },
+
+  "adversarialReviewOfMyOwnPlan": {
+    "howThisFixCouldBeWrongAndStillPassItsOwnTests": [
+      "The tests could pass while the production path still falls to the default. Closed by asserting the REQUESTED URL, built with executionResourceName directly, in both directions: equal to the URL under the execution's own job, and NOT equal to the URL under factory-atoms-cad. An assertion that only checks 'contains the execution name' would pass with the wrong job in it, because the execution name is in the URL either way.",
+      "The refusal could be untested at the place it matters. JOB_NOT_NAMED is asserted on BOTH paths (self and backfill) with an assertion that NO transport call was made -- a refusal that still issues the request has not refused.",
+      "The static drift guard could match its own prose. The 'every getExecution call names a job' check reads source and a doc comment could satisfy a naive regex; it is therefore run over both files and paired with the behavioural assertions above, so a comment cannot be the only thing holding it up.",
+      "Falsifier 2 could be satisfied by a record that has a run row after all. The dry-run fixture has run_id NULL and NO runs row at all, so the LEFT JOIN is genuinely exercised rather than being present-but-unused."
+    ],
+    "whatThisLaneDeliberatelyDoesNotDo": [
+      "It does not deploy, rebuild an image, or run a Cloud Run job. The dispatch's falsifiers 1 and 2 are answered with the transport captured and the SQL exercised; the LIVE grade ('a real execution writes a measured cost') is the integration seat's, which is why the close is closed-partial by construction.",
+      "It does not exercise the job's service account against Cloud Run Admin (dispatch item 4: report, do not change). The finding already says the wrong URL was reached first, so the job identity's read permission was never tested; this lane reports that as unmeasured-because-unreachable rather than as passing.",
+      "It does not touch src/jobs/parcel-setback-cells.mjs (P-256, open), the gate files, or migrations/0012."
+    ]
+  },
+
+  "falsifierPreRegistration": {
+    "F1": {
+      "claim": "The self-measurement for a factory-parcel-setback-cells execution requests jobs/factory-parcel-setback-cells/executions/<name>.",
+      "predicted": "the URL captured from an injected fetch, under env.CLOUD_RUN_JOB = factory-parcel-setback-cells, equals https://run.googleapis.com/v2/ + executionResourceName(<name>, env, 'factory-parcel-setback-cells'), and does NOT equal the same call built with the default 'factory-atoms-cad'.",
+      "wouldFalsify": "any request whose resource name carries factory-atoms-cad, or a resource name with no job segment at all, or a refusal where a request was due."
+    },
+    "F2": {
+      "claim": "A dry-run record with an execution name is filled by the backfill once the metric is published.",
+      "predicted": "a fixture record with run_id NULL (and no runs row in existence), execution_name set, execution_job set, compute_cost_usd NULL and a METRIC_NOT_YET_PUBLISHED reason is selected, its execution described under its own job, the billable metric converted with the execution's own container limits, and the record UPDATEd to a measured number with its basis, reason cleared.",
+      "wouldFalsify": "the record not being selected, or selected and left NULL, or filled from a job other than the one on the record."
+    },
+    "F3": {
+      "claim": "Removing the job name from either call fails a test.",
+      "predicted": "deleting jobName from the self call makes F1's URL equal the default-job URL and the test goes red; deleting the explicit job from the backfill's describe does the same for F2's lookup. Asserted as an inequality against the default-job resource name, which is the assertion that can only pass when the job is right.",
+      "wouldFalsify": "the test still passing with the job removed -- which would mean it was asserting the presence of a name rather than the identity of the job."
+    }
+  },
+
+  "scopeBasis": "hauska-factory only, plus this lane's CP/close artifacts in its own doc_repo seat worktree. Inside hauska-factory: migrations/0014_stage_run_execution_identity.sql (new), src/lib/compute-cost.mjs, src/control/stage-runs.mjs, and one new test file. Stated exclusions so a successor can tell a decision from an oversight: (a) src/control/cloudrun-jobs.mjs is NOT edited and its default job is NOT changed -- reasons and the full caller list above; (b) src/jobs/parcel-setback-cells.mjs is NOT edited (P-256 open on it) -- the writer stamps the identity from env instead, which is why no job file needs to change at all; (c) migrations/0012 is NOT edited; (d) no gate file, no deploy, no image rebuild, no sub-agent; (e) no store is written except a scratch PostgreSQL this lane starts locally to run the live tests, and the Cloud Run Admin API is never reached -- every transport in the tests is injected.",
+
+  "probe": {
+    "notApplicable": "build lane; graded by a stage record carrying a measured compute cost (the dispatch's own probe value). scripts/surface-probe.mjs reads a customer surface for a county and no address in any county changes what this lane did -- the dispatch pre-declares this, and the artifact cited at close is the dispatch's own declared shape."
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

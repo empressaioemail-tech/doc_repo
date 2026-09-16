@@ -1,0 +1,112 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p205b-coverage-ambiguous-locality",
+  "title": "design / pre-build adversarial checkpoint: what 'narrow before giving up' costs in scans, and what an empty narrowing is allowed to mean",
+  "planRows": ["P-205"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "program": "OPS-24 (county to serving) -- Phase 1 county (Burnet) locality resolution",
+  "dispatch": "_dispatches/2026-09-16_p205b-coverage-ambiguous-locality_dispatch.md",
+  "at": "2026-09-16T22:40:00Z (filed before any code was written; the lane claimed 2026-09-16T22:08Z)",
+  "seat": "p205b-lane",
+  "fanDepth": 0,
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "worktrees": {
+    "doc_repo": "P:/seat-worktrees/p205b-coverage-ambiguous-locality/doc_repo (this lane's own worktree, branch lane/p205b-coverage-ambiguous-locality, cut from origin/main 00cbf8c3; NOT P:/doc_repo, the integration seat's checkout, and NOT P:/seat-worktrees/property/doc_repo)",
+    "build": "P:/tmp/p205b-coverage-ambiguous-locality (fresh clone from origin/main under P:/tmp, per the dispatch)",
+    "branch": "fix/p205b-coverage-ambiguous-locality"
+  },
+
+  "startCommitDeclared": {
+    "repo": "hauska-engine",
+    "originMainAtClone": "e7cd0aee8cd21ae1a03897edb741b8d7e9fd9cf1 (Merge pull request #461 from empressaioemail-tech/fix/p262-edge-labeller)",
+    "dispatchClaim": "the dispatch says 'engine main was d88cf65 at compile'",
+    "measured": "origin/main is e7cd0ae, NOT d88cf65 -- reported as measured rather than matched to the dispatch's figure (DEV-PROCESS 3.2: the brief's numbers are the planner's and the planner is often wrong; saying so is a successful outcome). e7cd0ae is the branch point for this lane."
+  },
+
+  "dispatchClaimsCheckedAtSource": [
+    {
+      "claim": "the P-210 coverage check resolves a locality to one county with chooseDominantCounty (coverage-check.ts:95, DOMINANCE_SHARE = 0.9)",
+      "verdict": "TRUE at source",
+      "source": "services/retrieval-api/src/coverage-check.ts:66 (DOMINANCE_SHARE = 0.9) and :95 (export function chooseDominantCounty)"
+    },
+    {
+      "claim": "when a ZIP is given, resolveLocality (around line 206) groups txgio_parcel by ZIP ONLY and ignores the city",
+      "verdict": "TRUE at source, line number exact",
+      "source": "services/retrieval-api/src/coverage-check.ts:206 is `async function resolveLocality`; :215-228 groups by county_fips with WHERE situs_zip = $1 when a zip is present and never references situs_city in that branch; the city predicate appears only in the else-branch taken when no zip is present."
+    },
+    {
+      "claim": "txgio_parcel has no index on situs_zip or situs_city (module header; a cold GROUP BY takes 2 to 3 minutes)",
+      "verdict": "checked live this session against the cortex/overlay store the service reads (pg_indexes) -- see liveMeasurements below",
+      "whyItMatters": "the whole cost argument for this lane's design rests on it, so it was re-derived rather than quoted"
+    },
+    {
+      "claim": "the finding was measured live 2026-09-16 on hauska-retrieval-api-00092-lag",
+      "verdict": "the revision string could not be reproduced: the hauska-retrieval-api service in hauska-prod-497015 currently serves revision hauska-retrieval-api-00080-yax, with hauska-retrieval-api-00094-wed as the newest created revision. Reported as measured; the CLAIM the dispatch actually needs (an ambiguous split ZIP makes the live check answer indeterminate) was re-measured live rather than inherited -- see liveMeasurements."
+    },
+    {
+      "claim": "Bell 76541 is 6,897 in 48027 against 3 in 48319, and still resolves with no city given",
+      "verdict": "already pinned by the P-210 fixture (coverage-check.test.ts:20-26, :76-85) and falsifier 3 of this dispatch; carried forward unchanged, re-proven in this lane's own new tests"
+    }
+  ],
+
+  "theQuestionThatDecidedTheDesign": {
+    "question": "Ruling 1 says 'when the ZIP alone is ambiguous and a city is given, resolve on ZIP AND city together (both predicates in one query)', and the cost section says 'do not add a second full scan per request'. Read literally and separately these two sentences point in opposite directions: deciding whether the ZIP alone was ambiguous requires the ZIP-only grouping, and then narrowing requires the ZIP-and-city grouping -- two unindexed full scans of txgio_parcel, 4-6 minutes cold, inside a service whose Cloud Run request timeout is 300s. The second scan would not just be expensive, it would make the narrowed answer UNREACHABLE for exactly the cold ZIP this lane exists for.",
+    "whyItIsNotObvious": "the cheap reading is 'the ruling authorises the second scan, and the cost warning only forbids scans that are not the combined one'. That reading is self-consistent and wrong: the module's own header records a cold ZIP-only GROUP BY at 2-3 minutes, so zip-then-zip-and-city exceeds the platform timeout before the narrowing is ever applied. A design that cannot return the answer for a cold locality is not a fix for Burnet.",
+    "answer": "ONE scan, TWO splits. When both a zip and a city are given, the module issues exactly one statement -- the ZIP predicate as the WHERE, plus a boolean 'does this row's situs_city match the given city' as a second GROUP BY key -- and derives BOTH groupings from its result: summing across the city flag reproduces the ZIP-only split byte-for-byte (same WHERE, same rows), and taking only the matching rows is the ZIP-and-city split. The 90 percent rule is then applied to the ZIP-only split first (so a ZIP that resolves alone behaves exactly as it does today) and to the ZIP-and-city split only if the first is ambiguous. One scan, at most as expensive as the ZIP-only query, and the ruling's two sentences hold simultaneously."
+  },
+
+  "theOtherQuestionThatDecidedTheDesign": {
+    "question": "When the narrowing runs and returns NO rows -- the given city matches no parcel in that ZIP -- is that 'not-found', or is it 'no new information'?",
+    "whyItIsNotObvious": "'narrow before giving up' taken to its end says a combined set of zero rows fails the 90 percent rule and the locality is simply not found. That is a NEW refusal this lane would be introducing: today the ZIP alone would have answered (ambiguously, but with real candidates), and the new path would answer 'locality not found in the statewide parcel index' -- a fail-closed answer, but a false one, because the ZIP demonstrably exists in the index and only the CITY string matched nothing.",
+    "answer": "an empty narrowing is NOT an absence. DEV-PROCESS 4.3 governs -- 'an empty result is not an absence; only a positive determination writes an absence' -- so when the combined set is empty the module keeps the ZIP-only resolution and lets the ruling's step 2 decide it (unanimous covered / unanimous not-covered / mixed). The absence that WOULD be legitimate (the city genuinely is not in this ZIP) is not established, because txgio_parcel's situs_city is a CAD situs city, not the postal city, and a whole ZIP whose CAD situs city is spelled differently would otherwise be reported as non-existent.",
+    "theMirrorCase": "a combined set that is NON-empty and still fails 90 percent is a positive determination of continued ambiguity, and that one IS reported -- with the combined candidate list, because the narrowing is the best evidence available at that point."
+  },
+
+  "whatIsDeliberatelyUnchanged": {
+    "DOMINANCE_SHARE": "0.9, untouched (ruling 3: widening it is a ruling, not a lane decision)",
+    "theCoveredDefinition": "a Tier-1 bake row under TIER1_ADAPTER_KEY in place_layer_snapshots, reached by countyServesAtLeastOneParcel -- untouched (the dispatch: 'the rule for a covered county is the one P-210 already uses; do not change it')",
+    "theZIP-onlyAndCity-onlyBranches": "byte-identical SQL and behaviour; when only one of the two is given nothing about this lane fires (ruling 1)",
+    "theExpensiveHalfOfTheCostProblem": "the unindexed scan is not fixed here. Adding an index is legacy-design-tools' own drizzle schema and is named out of scope by the dispatch; this lane narrows the number of scans per request, it does not make one scan cheap. Reported as a leave_behind."
+  },
+
+  "verdictShapeAndForwardCompatibility": {
+    "newType": "CountyCandidateCoverage = { countyFips, n, covered } (it extends the existing CountyMatchCount with the candidate's own serving-path status)",
+    "whereItIsCarried": "candidates?: readonly CountyCandidateCoverage[] on the not-covered and indeterminate variants only. covered stays exactly { status: \"covered\" } with no added field, because ruling 2 enumerates what travels with the unanimous-not-covered and the mixed answers and does not ask for a list on the unanimous-covered one -- and keeping the hot path's body byte-identical to today's removes any chance of a body-shape regression on the path every in-coverage address takes.",
+    "whyThisCannotBreakTheLiveConsumer": "read at source this session: legacy-design-tools artifacts/api-server/src/lib/placeCoverageSource.ts (merged as PR #690, commit df9180d5) declares `type CoverageCheckResponseBody = { status; countyFips?; countyName?; state?; reason? }` and its isValidBody() tests only `status`. Extra properties on the response are ignored by construction, and its not-covered branch still requires all three of countyFips/countyName/state -- which this lane keeps producing. So the new field is additive for a reader that does not know it and loses nothing."
+  },
+
+  "cacheDesign": {
+    "localityCache": "kept, and the combined lookup gets its own key: `zip:<zip>|city:<CITY-UPPERCASED>`. A zip-only lookup keeps `zip:<zip>` and a city-only lookup keeps `city:<CITY>` exactly as today, so a cached zip-only ambiguity is never mistaken for a narrowed answer and vice versa. TTL unchanged at 24h (geography, not a publish artefact).",
+    "verdictCache": "the verdict cache key is unchanged (zip|CITY|STATE, coverage-check.ts:155-160) and already distinguishes the combined input from the zip-only one, so no collision is introduced there.",
+    "ttlChoices": "unanimous covered and unanimous not-covered are real verdicts whose inputs change only on a Factory/bake publish -> COUNTY_VERDICT_TTL_MS, same as an ordinary covered/not-covered (the existing documented reasoning for that TTL is exactly this). The mixed answer is cached briefly -> INDETERMINATE_TTL_MS, following the module's existing convention that an indeterminate is not a long-lived state. Consequence, stated rather than hidden: the mixed answer for a busy locality is recomputed every 30s; that costs one cached locality lookup plus N indexed EXISTS queries, never another full scan."
+  },
+
+  "failureHandlingOnTheNewPath": {
+    "rule": "every failure inside the new per-candidate coverage reads resolves to indeterminate with a named reason, and the candidates list is NOT attached to that failure body",
+    "whyNoListOnFailure": "a partial list would have to carry an unknown coverage status for the counties not yet read, and a body whose `covered` field can mean 'unknown' is exactly the presence-shaped check this program hunts. When every candidate has been positively read, the list is attached; when one could not be read, the whole determination is refused."
+  },
+
+  "heavyScanAnnouncement": {
+    "requiredBy": "AGENT-CONTRACT section 4 (at most ONE heavy PostGIS/full-table scan at a time on a shared database; announce before, confirm after)",
+    "mechanism": "P-281 landed and is live: scripts/heavy-scan-lease.mjs (doc_repo) against factory-control's heavy-scan-lease routes, verified this session by a successful `list` (HTTP 200, live: [], httpStatus 200). P-281's own close named 'a real job refused in production' as the outstanding proof; the mechanism itself answers.",
+    "announcement": "about to take a heavy-scan lease on store ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech (the cortex/overlay store behind txgio_parcel, alias cortex:neondb), holder p205b-lane, phase p205b-78654-locality-split, window 900s.",
+    "target": "txgio_parcel in the cortex/overlay store (CORTEX_DATABASE_URL, the value retrieval-api's own revision mounts)",
+    "expectedDuration": "one full unindexed scan of txgio_parcel per statement. The dispatch and the module header both record 2-3 minutes for a cold ZIP-only GROUP BY; this lane issues at most three statements, each with statement_timeout bounding it.",
+    "readsOnly": "SELECT only. Neither the factory store nor any serving store is written. statement_timeout is set on every connection; the lane never drops, alters or indexes anything."
+  },
+
+  "falsifiersPreRegistered": {
+    "F1": "78654 + city Marble Falls resolves to 48053 (Burnet) when the combined split clears 90 percent, proven by a fixture built from the MEASURED counts and by the live split if the live measurement succeeds",
+    "F2": "a split ZIP whose candidates are all covered answers covered; all uncovered answers not-covered with the candidate list, naming the plurality county; mixed answers indeterminate carrying the list with each county's coverage status",
+    "F3": "Bell 76541 (6,897 in 48027 against 3 in 48319) still resolves to 48027 with no city given",
+    "F4": "an out-of-state locality still answers with NO database call -- proven by injecting an openSql that fails the test if it is ever invoked, not by reading the branch",
+    "F5 (added here, not in the dispatch)": "exactly ONE statement is issued for a zip+city lookup, and its text carries both the situs_zip predicate and the situs_city predicate -- the mechanical proof of the one-scan design, since a design claim proven only by prose is a plan, not a control (DEV-PROCESS 2.2)"
+  },
+
+  "whatWouldMakeThisWrong": [
+    "if the combined GROUP BY (county_fips, city_match) is materially more expensive than the ZIP-only GROUP BY, the 'at most as expensive' claim is false -- measured live, reported either way",
+    "if the live split for 78654 + MARBLE FALLS does NOT clear 90 percent, ruling 1's premise for Burnet is wrong and the honest outcome is to report that, not to widen the share",
+    "if any existing P-210 test encodes the old 'ambiguous -> indeterminate' answer for a fixture whose candidates are now unanimously uncovered, that test must be updated deliberately and the change named -- the ruling changes its answer on purpose (the fixture at coverage-check.test.ts:80-85, tiers, and :119-123 is exactly this case)"
+  ]
+}
