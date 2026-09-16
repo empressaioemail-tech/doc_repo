@@ -1,0 +1,68 @@
+{
+  "lane": "p178-publish",
+  "planRows": ["P-180", "P-178"],
+  "status": "blocked",
+  "probe": {
+    "artifact": "_inbox/2026-09-14_142615_surface_probe.json",
+    "producedBy": "scripts/surface-probe.mjs --rows P-175, run 2026-09-14T14:26:15Z (after this lane's staging deploy) from this worktree; exit 1; printed tally PASS 0 / FAIL 5 / UNMEASURED 0 for the P-175 row",
+    "rowVerdictsNote": "This script's rows are address/surface rows (P-151, P-153, P-175), not P-180/P-178: P-180 and P-178 are graded by the factory verify-walk and the store, not by a --rows predicate. The artifact is cited because the close skeleton requires a script-produced artifact under _inbox/, and it was run after this lane's deploy. It measures PRODUCTION (the script's PE_BASE is production and has no staging flag), and this lane's change is staging-only, so the row verdicts for this lane's rows come from the two artifacts below.",
+    "rowsReads": "_inbox/2026-09-14_143600_p178-publish_staging_reads.json",
+    "forensics": "_inbox/2026-09-14_143305_p178-publish_s13_forensics.json",
+    "note": "Step 4 (production publish) was not crossed, so no artifact exists yet that measures this lane's change ON the production surface."
+  },
+  "at": "2026-09-14T14:38:00Z",
+
+  "falsifier": "Pre-registered: (1) if the staging walk fails BP-PUBLISH-RUN-01 on any node after step 3, the retirement pass missed a population; (2) if any excluded node serves facts after step 3, the pass wrote more than a retirement; (3) if current-run rows on staging differ from 173,050, the work list changed shape. Observed: (1) NOT TRIGGERED -- BP-PUBLISH-RUN-01 is 0 occurrences on the current walk, down from 16 on fwv5s (05:01); the failure this lane exists to clear is gone. (2) NOT TRIGGERED for this pass -- of the 56,629 rows it wrote, 0 carry baseFacts. (3) NOT TRIGGERED -- exactly 173,050 rows carry the current publishRunId b0864dde-3e9f-43b4-bf14-49174abfea23 and no other run id is present, so the store is uniform at precisely the required count. What DID block the lane was outside all three falsifiers: the walk is red on 16 x S13, a rule this dispatch places out of scope and which this lane did not touch. All three were then re-measured independently at 14:33Z (fresh heavy scan, _inbox/2026-09-14_143305_p178-publish_s13_forensics.json): the store holds exactly 173,050 rows at the current run and 0 at any other; of the pass's 56,629 retired rows, 0 carry a zoning value, 0 an envelope value, 0 acreage, 0 landUse and 0 a non-empty baseFacts; and the two walks' non-pass parcel sets are identical 86 of 86, with only the 16 retired parcels' rule changed (BP-PUBLISH-RUN-01 -> S13). Nothing in the pass's own footprint is defective.",
+
+  "contradicted": "The dispatch's framing of the fix is incomplete, not wrong: it presents the current run id as the thing standing between the excluded nodes and a green walk ('so the stamp the walk wants exists', 'Do not weaken the walk'). The current run id is necessary but NOT sufficient. Because the ruled retirement payload is facts-free, it has no provenance.parcelSource, so S13's token selection reaches the zoning REFUSAL OBJECT that zoningSourceMirror copies onto provenance.zoningSource, and gradeS13 stringifies and rejects it as off-allowlist. A correct, facts-free retirement therefore cannot walk green under the walk's rule as written. Everything else in the dispatch's 'what is true today' checked out at source: fwv5s did fail BP-PUBLISH-RUN-01 on 84629-84639; 84629 carries an earned retirement with lastSeenTaxYear 2025; the intake 'MIXED 116,421 + 56,629' sums to exactly 173,050; the gold 97658 is the right anchor. Also worth recording: the last GREEN staging walk (91c3bfd5, 03:36:42Z) was green partly by accident -- its retired nodes still carried fact-shaped payloads with an allowlisted parcelSource, which is the very condition A-146 option B removes.",
+
+  "leave_behind": [
+    "OPERATOR DECISION (blocks everything downstream): the walk's rule. S13 currently FAILs on a mirrored zoning refusal object because servedProvenanceTokens (factory src/stages/grade/s-rules.mjs:700-704) accepts a non-string as a provenance 'token', and walkParcel then promotes that S-family failure over a RECORD_RETIRED grade because the retirement branch returns verdict 'pass'. Recommended least change: accept only string tokens (the function already filters null/false) so a refusal object yields no token -> S13 UNMEASURED -> isNonPassGrade treats UNMEASURED as acceptable (v-rules.mjs:74) -> the 16 grade RETIRED and the walk goes green. Alternative: skip the S-family promotion when grade.grade === 'RETIRED'. A ruling that S13 firing here is intended implies a facts-free retirement can never walk green and A-146 option B needs revisiting.",
+    "There is NO honest in-lane fix to reach green: setting provenance.parcelSource to an allowlisted token would fabricate a parcel source for a node that has none, and zoningSourceMirror overwrites provenance.zoningSource regardless of what the payload sets. Do not let a later agent 'fix' this by inventing a token.",
+    "RULING DOSSIER, re-measured at source 2026-09-14T14:33Z: _inbox/2026-09-14_143305_p178-publish_s13_forensics.json. It carries the served payload for a retired node and a kept node side by side, the exact rule lines (verify-walk.mjs:743-757 is the promotion that makes a RECORD_RETIRED 'pass' non-terminal; s-rules.mjs:700-705 takes the token; s-rules.mjs:627-658 rejects it), the 86-of-86 identical non-pass sets of the two walks, and the excluded population's clean fact audit. Read it before ruling; it contains the two facts that make a naive fix tempting and dishonest -- the SERVED retirement marker satisfies every field of isEarnedRecordRetirement (so the retirement is admitted, and only the promotion loses it), and DEFAULT_PROVENANCE_ALLOWLIST already contains txgio_parcel (so a token exists that one could name, but the slot means 'the source that supplied a parcel record' and a retired account-keyed node has none).",
+    "STEP 4 (production publish) NOT CROSSED and not yet authorised. Gate condition is half-met: stamp counts pasted and exact at 173,050; walk RED. The gate request text is in CP2 under operatorGate.requestText.",
+    "STEP 5 (the seven cards) NOT STARTED: the planner reads get_smart_site for 48209:97658, the three moved accounts (166234, 167545, 28279 by their nodes) and three marked accounts, and runs --rows P-175. Not attempted because step 4 never ran.",
+    "LDT branch fix/p180-retire-excluded-with-current-run is at 55c7ad16 and its work is merged (#686, merge 84f4e7c9); the worktree is CLEAN. Factory branch chore/p178-pin-and-publish is at db3aa54c with its work merged (#147); the worktree is CLEAN. Nothing uncommitted is left in either worktree -- unlike the predecessor's state, there is no diff at risk.",
+    "Competing pin, for the planner's attribution only: LDT #687 (bae48d40, merged 13:44:50Z) and factory #148 ('bump _LDT_SHA to bae48d40', merged 13:46:57Z) landed ~13 minutes after this lane's pin #147 and ~3 minutes after this lane's staging publish started. This lane's staging reads are on 84f4e7c9.",
+    "The recovered predecessor diff still exists out-of-tree at _inbox/2026-09-14_p178-publish_stopped_worker.diff.patch (61,774 bytes, sha256 0447390C0544A1F73DA8B6F90BDF9A0F705186C5D79A7421A501E7C101A0BBD3, both re-verified this run). It is superseded by the merged PR #686; safe to keep as the recovery record and safe to prune once #686 is trusted.",
+    "The A-148 addendum lands in p154/p156 and did not enter this lane's scope; no item of this row was displaced or deferred for it."
+  ],
+
+  "missionPremise": "P-180 walk fix, then P-178 step 6: excluded nodes carry the current run id, the Hays publish walks, and the seven cards are read.",
+  "completionPredicate": "Steps 1-2 merged on CI conclusion 'pass' (done: LDT #686 merge 84f4e7c9; factory #147 merge db3aa54c). Step 3: staging 48209 walk green with current-run rows exactly 173,050 (half done: rows exactly 173,050 and uniform; walk RED 16 x S13). Step 4: the identical production publish on the operator's go. Step 5: seven get_smart_site reads pasted by the planner. Not met past step 3.",
+  "scopeBasis": "Dispatch P:/seat-worktrees/dispatch-planner/doc_repo/_dispatches/2026-09-14_p178-publish_dispatch.md (PLAN-ROW P-180, P-178; ruling A-146 option B; 'Do not weaken the walk'; Out of scope: 'The walk's rule'). Lane confined to legacy-design-tools-p178-publish and hauska-factory-p178-publish; no commit made to doc_repo (R-5 THREE ROLES).",
+
+  "closedWork": {
+    "mergedPRs": [
+      { "repo": "legacy-design-tools", "pr": 686, "mergeCommit": "84f4e7c9f7787f2342d73474db7989e2d317ff69", "mergedAt": "2026-09-14T13:27:43Z", "conclusionString": "success (gh statusCheckRollup conclusions: SUCCESS, 11 checks)", "checks": "11/11 success" },
+      { "repo": "hauska-factory", "pr": 147, "mergeCommit": "db3aa54c48397511e31830fe8aec378f90694b84", "mergedAt": "2026-09-14T13:30:04Z", "conclusionString": "success (gh statusCheckRollup conclusions: SUCCESS, 6 checks)", "checks": "6/6 success" }
+    ],
+    "stampCounts": "173,050 rows at publishRunId b0864dde-3e9f-43b4-bf14-49174abfea23 (required 173,050; observed 173,050; single run id in store)",
+    "walkVerdict": "fail -- 86 parcels, retiredCount 0, servedCount 85; BP-PUBLISH-RUN-01 0 (was 16), S13 16, BP-MEANING-01 69 pass, BP-VERIFY-01 1",
+    "sevenReads": "not performed (step 4 not crossed)"
+  },
+
+  "fleetMemory": {
+    "GROUND-TRUTH": [
+      "2026-09-14T14:33Z (independent re-measurement): staging 48209 tier-1 is 173,050 rows at publishRunId b0864dde-3e9f-43b4-bf14-49174abfea23 and 0 at any other run; of the 56,629 rows this pass retired, 0 carry a zoning, envelope, acreage or landUse value and 0 carry a non-empty baseFacts. The SERVED payload for 48209:84629 carries facets.publishRunId b0864dde and a facets.recordRetirement that satisfies every field of isEarnedRecordRetirement, with provenance keys tierNote/roadsPending/zoningSource(refusal object). Production https://smartsite.cloud/.../place/node/48209:84629/facets is HTTP 404 while 97658 serves b5e54917.",
+      "2026-09-14: staging 48209 tier-1 is a single uniform run -- 173,050 rows at publishRunId b0864dde-3e9f-43b4-bf14-49174abfea23, no other run id present. Previously MIXED 116,421 + 56,629 = 173,050.",
+      "2026-09-14: the retirement pass wrote 56,629 facts-free rows (0 carrying baseFacts); 58,015 rows carry recordRetirement.status='retired' in total, the extra 1,386 being CAD-roll retirements that deliberately serve last-known facts.",
+      "2026-09-14: the last green staging walk was 91c3bfd5 at 03:36:42Z (96 parcels, retiredCount 16); the current walk c636b630 (14:21:10Z) is 86 parcels with retiredCount 0 and 16 x S13. The retired block of the green walk (48209:135540-135573) is absent from the 86-parcel sweeps.",
+      "2026-09-14: the walk admits a retirement by importing isEarnedRecordRetirement from LDT artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts (re-exported from recordRetirement.ts); the served body nests the stored payload under `facets`, and recordRetirement sits at that payload's top level, so it IS found."
+    ],
+    "LESSON": [
+      "A facts-free retirement payload cannot pass S13 as the rule is written: with no provenance.parcelSource, S13's token selection reaches the zoning refusal object that zoningSourceMirror intentionally copies onto provenance.zoningSource, and gradeS13 stringifies it and rejects it as off-allowlist. Removing an old failure can expose a rule the old payload shape was accidentally satisfying.",
+      "walkParcel promotes an S-family failure over a RETIRED grade, because the retirement branch returns verdict 'pass' and the promotion tests only verdict. Check this interaction before using retiredCount as evidence that a retirement was recognised -- retiredCount 0 does not mean the retirement was rejected.",
+      "isNonPassGrade (v-rules.mjs:74) is FAIL or KNOWN_OPEN only; UNMEASURED never fails a walk. Prefer UNMEASURED over FAIL when a rule measured nothing."
+    ],
+    "DEAD-END": [
+      "Setting provenance.parcelSource (or zoningSource) in the retirement payload to reach green: the mirror overwrites zoningSource, and inventing an allowlisted parcelSource for a node with no parcel is fabrication. Not a fix.",
+      "`rg -r <pattern> <path>` in this environment: -r is the REPLACE flag, so `rg -rn \"S13\" src/` silently rewrote matches and the output looked like corrupted source ('graden' for 'gradeS13'). Recursion is implicit from the path argument; use `rg -n`."
+    ],
+    "OPEN": [
+      "Operator ruling on the walk's rule (S13 token extraction and/or the S-family promotion over RETIRED) -- blocks the production publish and the seven cards.",
+      "The 1,386 CAD-roll retirements that serve last-known facts: not this lane's mechanism and not a violation of this lane's falsifier, but 'a retired row that serves facts' is a class worth a deliberate owner -- the P-178 concern about facts surviving on retired rows is only half-closed.",
+      "verify_walks has no created_at (it is `at`) and runs has no walk_id (join via runs.scope->>'publishRunId' to verify_walks.id); the runs table columns are id, started_at, scope, image_digest, engine_sha, ldt_sha, contract_version, db_host_fingerprint, rtt_ms, phase, target, status, refuse_code, counts, cost."
+    ]
+  }
+}

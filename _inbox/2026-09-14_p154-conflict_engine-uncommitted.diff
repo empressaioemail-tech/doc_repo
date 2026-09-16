@@ -1,0 +1,474 @@
+﻿diff --git a/packages/adapters/src/index.ts b/packages/adapters/src/index.ts
+index c63e685..16512b5 100644
+--- a/packages/adapters/src/index.ts
++++ b/packages/adapters/src/index.ts
+@@ -106,6 +106,9 @@ export {
+   type SetbackTable,
+   type SetbackDistrict,
+   type SetbackTableResolveOptions,
++  type SetbackTableResolution,
++  type SetbackSecondSourceConflict,
++  type SetbackSecondSourceDisclosure,
+   type BastropPerParcelSetbackParsed,
+   type BastropChartDisagreement,
+   BASTROP_AUTHORITATIVE_SETBACK_ADAPTER,
+diff --git a/packages/adapters/src/local/setbacks/index.ts b/packages/adapters/src/local/setbacks/index.ts
+index 096f895..68635ea 100644
+--- a/packages/adapters/src/local/setbacks/index.ts
++++ b/packages/adapters/src/local/setbacks/index.ts
+@@ -32,8 +32,18 @@
+  */
+ import { getSetbackTable as getCorpusSetbackTable } from "@empressaio/setback-corpus";
+ 
+-export type { SetbackDistrict, SetbackTable } from "./table-types.js";
+-import type { SetbackDistrict, SetbackTable } from "./table-types.js";
++export type {
++  SetbackDistrict,
++  SetbackTable,
++  SetbackSecondSourceConflict,
++  SetbackSecondSourceDisclosure,
++} from "./table-types.js";
++import type {
++  SetbackDistrict,
++  SetbackSecondSourceConflict,
++  SetbackSecondSourceDisclosure,
++  SetbackTable,
++} from "./table-types.js";
+ 
+ import {
+   setbackTableFromBastropPerParcelRecord,
+@@ -41,6 +51,7 @@ import {
+ import {
+   dateFromTableEffectiveDate,
+   resolveMostCurrentSetback,
++  SETBACK_SOURCE_TIER_RANK,
+   type SetbackCandidate,
+ } from "@empressaio/setback-corpus/resolve";
+ 
+@@ -176,32 +187,143 @@ export function getSetbackTable(jurisdictionKey: string): SetbackTable | null {
+  * County / other jurisdictions: fall through to the keyed table
+  * (e.g. bastrop-tx legacy R-MD rows for non-city codes).
+  */
++/**
++ * P-154 (OPS-23 wave 6, R-1 CONFLICT ROW) ΓÇö what a setback-table lookup
++ * resolves to.
++ *
++ * The 2026-09-11 ruling (`_decisions/2026-09-11_setback_source_most_current_wins.md`)
++ * makes a disagreement between two readable-dated sources a CONFLICT ROW: both
++ * values, both citations, both dates, and which one this operation follows and
++ * why. Before wave 6 this function collapsed that case into a value and hid
++ * the disagreement in `display_meta.second_source`, which no surface printed.
++ *
++ * Both arms carry the table, because R-1 still names the source we follow ΓÇö
++ * the followed values stay printable; only the DISCLOSURE differs. That is
++ * why the discriminant is a separate `table` field rather than a flag on the
++ * table itself: every caller has to say which arm it means, so the compiler
++ * finds each one and no caller can silently drop a conflict (`kind: "table"`
++ * on the table would compile fine and hide it).
++ */
++export type SetbackTableResolution =
++  | {
++      /** One source, or several that agree on the value: nothing to disclose. */
++      kind: "table";
++      table: SetbackTable;
++    }
++  | {
++      /** Two sources whose values differ. `table` is the source we follow. */
++      kind: "conflict";
++      table: SetbackTable;
++      /** The candidate we follow, with its own date and citation. */
++      followed: SetbackCandidate;
++      /** The candidate we do not follow ΓÇö named, never characterised as wrong. */
++      secondSource: SetbackCandidate;
++      /** Why we follow `followed` (R-1: most current by effective date). */
++      reason: string;
++      /** Ready-to-serialize payload for the one vocabulary sentence every surface prints. */
++      note: SetbackSecondSourceConflict;
++    };
++
++function scalarsOf(candidate: SetbackCandidate) {
++  return {
++    front_ft: candidate.scalars.front_ft,
++    side_ft: candidate.scalars.side_ft,
++    rear_ft: candidate.scalars.rear_ft,
++    side_corner_ft: candidate.scalars.side_corner_ft ?? null,
++  };
++}
++
++function candidatesDisagree(a: SetbackCandidate, b: SetbackCandidate): boolean {
++  const x = scalarsOf(a);
++  const y = scalarsOf(b);
++  return (
++    x.front_ft !== y.front_ft ||
++    x.side_ft !== y.side_ft ||
++    x.rear_ft !== y.rear_ft ||
++    x.side_corner_ft !== y.side_corner_ft
++  );
++}
++
++/**
++ * R-1 ΓÇö which candidate this operation follows when the corpus resolver
++ * refuses to name one (its own `conflict` arm, which exists for unreadable
++ * dates and unattributable ones). Wave-6 law is explicit that the row still
++ * names the one it follows: most recent effective date first, tier breaking
++ * the tie. A candidate with no readable date cannot win against one that has
++ * a date.
++ */
++function followedOnConflict(
++  candidates: ReadonlyArray<SetbackCandidate>,
++): SetbackCandidate {
++  const dated = candidates.filter((c) => c.sourceDate != null);
++  const pool = dated.length > 0 ? dated : candidates;
++  const top = pool.reduce((m, c) =>
++    (c.sourceDate ?? "") > (m.sourceDate ?? "") ? c : m,
++  );
++  const tied = pool.filter((c) => c.sourceDate === top.sourceDate);
++  if (tied.length === 1) return tied[0]!;
++  return [...tied].sort(
++    (a, b) =>
++      SETBACK_SOURCE_TIER_RANK[b.sourceKind] - SETBACK_SOURCE_TIER_RANK[a.sourceKind],
++  )[0]!;
++}
++
++/**
++ * How a customer would name the OTHER source's own card. Read off the
++ * source's own published name rather than invented: Bastrop's per-parcel
++ * layer is the city's "Parcels_One_Click" service, whose customer-facing name
++ * in the city's own tool is the One Click card. Falls back to the source's
++ * own display name, never to a guess.
++ */
++function secondSourceCardLabel(candidate: SetbackCandidate): string {
++  const name = `${candidate.sourceLabel} ${candidate.id}`;
++  if (/one[_\s-]?click/i.test(name)) return "One Click card";
++  return candidate.sourceLabel;
++}
++
++/**
++ * The ordinance a candidate's own row cites, verbatim, or null. A citation
++ * slot holding a layer URL cites no ordinance ΓÇö say so instead of printing a
++ * URL in a sentence that promises an ordinance number.
++ */
++function citedOrdinance(candidate: SetbackCandidate): string | null {
++  const raw = candidate.citationUrl?.trim();
++  if (!raw) return null;
++  if (/^https?:\/\//i.test(raw)) return null;
++  return raw;
++}
++
+ /**
+  * P-154 (R-1, most-current-source-wins) ΓÇö Bastrop's own two-candidate case:
+  * a codified Euclidean chart row (SF-1/SF-2/SF-3/RR) versus the live
+- * per-parcel layer-23 record for that same district. Returns null when
+- * there is no codified chart row to compare against (MU/GC/PDD/PI/IND/OS ΓÇö
+- * per-parcel-record-only districts, R13) ΓÇö the caller then falls through
+- * to the per-parcel record as the sole candidate, unchanged from before
+- * this wave, since there is nothing to resolve BETWEEN.
++ * per-parcel layer-23 record for that same district. Returns the per-parcel
++ * table alone (kind `table`) when there is no codified chart row to compare
++ * against (MU/GC/PDD/PI/IND/OS ΓÇö per-parcel-record-only districts, R13):
++ * there is nothing to resolve BETWEEN.
++ *
++ * R-1 ΓÇö the two readable-dated sources that disagree are a CONFLICT ROW. This
++ * returns `kind: "conflict"` with the followed values still printable, the
++ * other source named with its own values, date and citation, and the
++ * structured `note` payload every surface formats through
++ * `@empressaio/atom-contract`'s one conflict sentence.
+  *
+- * On a genuine conflict (disagreement with an unreadable date on either
+- * side, or the resolver's other conflict rule) this still returns the
+- * per-parcel table, exactly as this function always did before P-154 ΓÇö
+- * but now with `display_meta.source_date`/`date_basis` on that table
+- * honestly marked, plus a `second_source` disclosure carrying the OTHER
+- * candidate's own value/date/citation, so a caller reading display_meta
+- * sees the disagreement rather than a bare, unqualified number. A hard
+- * refusal (no value at all on conflict) needs this function's return type
+- * to grow a `conflict` variant, which ripples into every existing caller of
+- * `getSetbackTableForZoning` across this repo; out of scope for this wave
+- * (see close `leave_behind`) ΓÇö reported, not silently worked around.
++ * Wave-6 operator finding, verified at source 2026-09-14: for `48021:34049`
++ * (1109 Pecan St, SF-1) the city's own services disagree ΓÇö the Zoned Parcels
++ * layer (edited 2026-07-23) prints 30/10/30/20 citing BDC Sec. 14.02.003 and
++ * the One Click layer (`Parcels_One_Click/FeatureServer/23`, edited
++ * 2026-08-24) prints 25/5/25/15 citing Ord. 2019-51, which Ord. 2026-06
++ * repealed effective 2026-04-14. A layer's edit date is not a content date
++ * when its citation names an older ordinance: the One Click row's date is the
++ * year of the ordinance it cites, read at source through its own
++ * `Ordinance_` field (`gio-row-citation-ordinance`), and the ordinance text
++ * we follow is more current. So the values we print are the codified
++ * 30/10/30/20 and the sentence names the One Click card.
+  */
+ function resolveBastropEuclideanCandidate(
+   normalized: string,
+   district: string,
+   perParcelRecord: NonNullable<SetbackTableResolveOptions["bastropPerParcelRecord"]>,
+-): SetbackTable {
++): SetbackTableResolution {
+   const perParcelTable = setbackTableFromBastropPerParcelRecord(perParcelRecord, district);
+   const perParcelDistrict = perParcelTable.districts[0]!;
+ 
+@@ -216,7 +338,7 @@ function resolveBastropEuclideanCandidate(
+   if (!chartTable || !chartDistrict) {
+     // No codified row to resolve against (e.g. MU/GC/PDD/PI/IND/OS) ΓÇö
+     // per-parcel record is the only candidate; nothing to compare.
+-    return perParcelTable;
++    return { kind: "table", table: perParcelTable };
+   }
+ 
+   const chartCandidate: SetbackCandidate = {
+@@ -249,60 +371,131 @@ function resolveBastropEuclideanCandidate(
+   };
+ 
+   const resolution = resolveMostCurrentSetback([chartCandidate, perParcelCandidate]);
++  const followed =
++    resolution.status === "resolved"
++      ? resolution.winner
++      : followedOnConflict(resolution.candidates);
++  const secondSource =
++    followed === chartCandidate ? perParcelCandidate : chartCandidate;
+ 
+-  if (resolution.status === "resolved" && resolution.winner.id === "bastrop-development-code") {
+-    return {
+-      ...chartTable,
+-      districts: chartTable.districts.map((d) =>
+-        d === chartDistrict
+-          ? {
+-              ...d,
+-              display_meta: {
+-                ...(d.display_meta ?? {}),
+-                source_date: chartCandidate.sourceDate,
+-                date_basis: chartCandidate.dateBasis,
+-                ...(chartCandidate.datePrecision ? { date_precision: chartCandidate.datePrecision } : {}),
+-                second_source: {
+-                  source: perParcelCandidate.sourceLabel,
+-                  note: `Superseded by the codified table under R-1 (most-current source wins): per-parcel record dated ${perParcelCandidate.sourceDate ?? "unreadable"} (${perParcelCandidate.dateBasis}) reads ${perParcelDistrict.front_ft}/${perParcelDistrict.side_ft}/${perParcelDistrict.rear_ft}/${perParcelDistrict.side_corner_ft ?? "?"} (front/side/rear/corner).`,
+-                  citation_url: perParcelCandidate.citationUrl ?? undefined,
+-                },
+-              },
+-            }
+-          : d,
+-      ),
+-    };
++  const followedMeta = {
++    source_date: followed.sourceDate,
++    date_basis: followed.dateBasis,
++    ...(followed.datePrecision ? { date_precision: followed.datePrecision } : {}),
++  };
++
++  /** The followed table, with its own date on the exact district row. */
++  const followedTable =
++    followed === chartCandidate
++      ? {
++          ...chartTable,
++          districts: chartTable.districts.map((d) =>
++            d === chartDistrict ? { ...d, display_meta: { ...(d.display_meta ?? {}), ...followedMeta } } : d,
++          ),
++        }
++      : perParcelTable;
++
++  if (!candidatesDisagree(followed, secondSource)) {
++    // The two sources agree on every scalar: one claim, nothing to disclose,
++    // and no conflict sentence anywhere (the detector must not fire here).
++    return { kind: "table", table: followedTable };
+   }
+ 
+-  // Resolved in favor of the per-parcel record, OR a genuine conflict
+-  // (resolution.status === "conflict") ΓÇö either way, return the per-parcel
+-  // table (this function's historical behavior on conflict; see docstring)
+-  // with an honest second-source disclosure naming the OTHER candidate.
+-  const conflictNote =
+-    resolution.status === "conflict"
+-      ? `CONFLICT under R-1 (most-current source wins): ${resolution.reason} Codified table reads ${chartDistrict.front_ft}/${chartDistrict.side_ft}/${chartDistrict.rear_ft}/${chartDistrict.side_corner_ft ?? "?"} (front/side/rear/corner), dated ${chartCandidate.sourceDate ?? "unreadable"} (${chartCandidate.dateBasis}).`
+-      : `Per-parcel record is more current under R-1: codified table dated ${chartCandidate.sourceDate ?? "unreadable"} (${chartCandidate.dateBasis}) reads ${chartDistrict.front_ft}/${chartDistrict.side_ft}/${chartDistrict.rear_ft}/${chartDistrict.side_corner_ft ?? "?"} (front/side/rear/corner).`;
++  const reason =
++    resolution.status === "resolved"
++      ? `${followed.sourceLabel} (${followed.sourceDate ?? "unreadable"}, ${followed.dateBasis}) is the most current source under R-1 and disagrees with ${secondSource.sourceLabel} (${secondSource.sourceDate ?? "unreadable"}, ${secondSource.dateBasis}).`
++      : `${resolution.reason} ΓÇö the row still names the source it follows (most recent readable effective date; tier breaks the tie).`;
++
++  const note: SetbackSecondSourceConflict = {
++    label: secondSourceCardLabel(secondSource),
++    ...scalarsOf(secondSource),
++    citation: citedOrdinance(secondSource),
++    source_date: secondSource.sourceDate,
++    date_basis: secondSource.dateBasis,
++    // "repealed <date>": only when the instrument WE follow is dated by its
++    // own ordinance effective date and the other source's date IS the year of
++    // the ordinance it cites ΓÇö i.e. our instrument post-dates and supersedes
++    // that cited ordinance (Ord. 2026-06 is the city's repeal-and-adopt
++    // ordinance; its own note names it as such). Never inferred from ordering
++    // alone, and never asserted when either side's date is unreadable.
++    repealed_by_effective_date:
++      followed.dateBasis === "ordinance-effective-date" &&
++      secondSource.dateBasis === "gis-row-citation-ordinance" &&
++      followed.sourceDate != null &&
++      secondSource.sourceDate != null &&
++      followed.sourceDate > secondSource.sourceDate
++        ? followed.sourceDate
++        : null,
++  };
++
++  const disclosure: SetbackSecondSourceDisclosure = {
++    source: secondSource.sourceLabel,
++    note: `CONFLICT under R-1 (most-current source wins): ${reason} ${note.label} reads ${note.front_ft}/${note.side_ft}/${note.rear_ft}${note.side_corner_ft != null ? `/${note.side_corner_ft}` : ""} (front/side/rear${note.side_corner_ft != null ? "/corner" : ""}), dated ${note.source_date ?? "unreadable"} (${note.date_basis}).`,
++    citation_url: secondSource.citationUrl ?? undefined,
++    conflict: note,
++  };
++
+   return {
+-    ...perParcelTable,
+-    districts: perParcelTable.districts.map((d) => ({
+-      ...d,
+-      display_meta: {
+-        ...(d.display_meta ?? {}),
+-        second_source: {
+-          source: chartCandidate.sourceLabel,
+-          note: conflictNote,
+-          citation_url: chartCandidate.citationUrl ?? undefined,
+-        },
+-      },
+-    })),
++    kind: "conflict",
++    table: withSecondSourceDisclosure(followedTable, disclosure),
++    followed,
++    secondSource,
++    reason,
++    note,
+   };
+ }
+ 
++/**
++ * Attach a second-source disclosure to a table's governing row, preserving any
++ * disclosure the row already carries (Bastrop's R25 layer-83 revisions note on
++ * a per-parcel table) by keeping its prose in the note rather than dropping it.
++ */
++function withSecondSourceDisclosure(
++  table: SetbackTable,
++  disclosure: SetbackSecondSourceDisclosure,
++): SetbackTable {
++  const merging = table.districts.find((d) => d.display_meta?.second_source)?.display_meta
++    ?.second_source;
++  const merged: SetbackSecondSourceDisclosure = merging
++    ? { ...disclosure, note: `${disclosure.note} (Also disclosed: ${merging.note})` }
++    : disclosure;
++  return {
++    ...table,
++    districts: table.districts.map((d, i) =>
++      i === 0 ? { ...d, display_meta: { ...(d.display_meta ?? {}), second_source: merged } } : d,
++    ),
++  };
++}
++
++
++/**
++ * Resolve the table for a parcel's stamped zoning code, under R-1.
++ *
++ * Returns `null` when there is no table at all (absence). Otherwise a
++ * {@link SetbackTableResolution}: `kind: "table"` for a single source or
++ * sources that agree, `kind: "conflict"` when two readable-dated sources
++ * disagree on a value ΓÇö the followed values are on `table` in BOTH arms, and
++ * the disagreement is named on the conflict arm (see its docstring; wave 6
++ * changed this from `SetbackTable | null`, which collapsed the conflict).
++ *
++ * City of Bastrop (per-parcel layer 23 + ordinance text):
++ *   - When `options.bastropPerParcelRecord` is supplied, the two candidates
++ *     are resolved under R-1 (see `resolveBastropEuclideanCandidate`).
++ *   - Without a per-parcel record, this returns null for city BDC districts
++ *     ΓÇö callers MUST NOT use chart scalars as warm authors for Bastrop city
++ *     (fetch layer 23 first). The chart table is reachable directly through
++ *     {@link getSetbackTable} for edition/citation lookup.
++ *   - Repealed B3 Place Types (P-1..P-5, P-CS, P-EC) ΓåÆ null
++ *     (honest-decline). Do NOT silently serve bastrop-city-tx as current.
++ *
++ * County / other jurisdictions: the keyed table, always `kind: "table"`
++ * (one source; nothing to resolve between).
++ */
+ export function getSetbackTableForZoning(
+   jurisdictionKey: string,
+   zoningCode: string | null | undefined,
+   options?: SetbackTableResolveOptions,
+-): SetbackTable | null {
++): SetbackTableResolution | null {
+   const normalized = normalizeJurisdictionKey(jurisdictionKey);
+   const code = (zoningCode ?? "").trim().toUpperCase();
+ 
+@@ -323,7 +516,8 @@ export function getSetbackTableForZoning(
+       code &&
+       !isKnownBdcDistrictCode(code)
+     ) {
+-      return SETBACK_TABLES["bastrop-tx"] ?? null;
++      const legacy = SETBACK_TABLES["bastrop-tx"];
++      return legacy ? { kind: "table", table: legacy } : null;
+     }
+ 
+     // R13 (AMENDMENT 8): city BDC districts require layer-23 per-parcel record.
+@@ -331,10 +525,12 @@ export function getSetbackTableForZoning(
+   }
+ 
+   if (normalized === "elgin-tx" || normalized === "elgin-development-code") {
+-    return SETBACK_TABLES["elgin-development-code"] ?? null;
++    const elgin = SETBACK_TABLES["elgin-development-code"];
++    return elgin ? { kind: "table", table: elgin } : null;
+   }
+ 
+-  return SETBACK_TABLES[normalized] ?? null;
++  const keyed = SETBACK_TABLES[normalized];
++  return keyed ? { kind: "table", table: keyed } : null;
+ }
+ 
+ /**
+diff --git a/packages/adapters/src/local/setbacks/table-types.ts b/packages/adapters/src/local/setbacks/table-types.ts
+index 9c6ade6..cc70957 100644
+--- a/packages/adapters/src/local/setbacks/table-types.ts
++++ b/packages/adapters/src/local/setbacks/table-types.ts
+@@ -1,3 +1,39 @@
++/**
++ * P-154 (OPS-23 wave 6, R-1 CONFLICT ROW) ΓÇö the structured half of a second-
++ * source disclosure: everything a surface needs to print the one conflict
++ * sentence from `@empressaio/atom-contract` (`setbackConflictNote`). It is
++ * data, not a sentence, so the SAME formatter can produce the string on the
++ * panel, in `get_smart_site` and in the PDF (R-6: one vocabulary module; the
++ * sentence is never retyped at a call site). Every field is read at source by
++ * the resolver below ΓÇö the second source's own scalars in its own reading
++ * order, the ordinance its own row cites verbatim, and the effective date of
++ * the instrument this operation follows when that instrument superseded the
++ * cited one. `null` means "read at source and not there", never a placeholder.
++ */
++export interface SetbackSecondSourceConflict {
++  /** How a customer would recognize the other source's own card, e.g. "One Click card". */
++  label: string;
++  /** The second source's own scalars, front/side/rear/corner. */
++  front_ft: number;
++  side_ft: number;
++  rear_ft: number;
++  /** Corner-side distance where the second source publishes one; null when it does not. */
++  side_corner_ft: number | null;
++  /** The ordinance the second source's own row cites, verbatim (e.g. "2019-51"); null when it cites none. */
++  citation: string | null;
++  /** The second source's own date, read at source; null when unreadable. */
++  source_date: string | null;
++  /** How `source_date` was read (see SetbackDateBasis). */
++  date_basis: string;
++  /**
++   * The effective date of the instrument WE follow, when that instrument is
++   * the repeal-and-adopt ordinance that superseded the ordinance the second
++   * source cites. Null when that is not established at source ΓÇö the sentence
++   * then omits the repeal clause rather than asserting one.
++   */
++  repealed_by_effective_date: string | null;
++}
++
+ /** R25 ΓÇö a jurisdiction's conflicting SECOND source, cited + called out honestly. */
+ export interface SetbackSecondSourceDisclosure {
+   /** Name of the conflicting source (e.g. "layer 83 Zoned_Parcels Revisions"). */
+@@ -6,6 +42,12 @@ export interface SetbackSecondSourceDisclosure {
+   note: string;
+   /** Optional citation link to the second source. */
+   citation_url?: string;
++  /**
++   * P-154 wave 6 ΓÇö the same disagreement as structured data, for the one
++   * conflict sentence every surface prints. Present only when the resolver
++   * found two sources that disagree on a value (never when they agree).
++   */
++  conflict?: SetbackSecondSourceConflict;
+ }
+ 
+ /** R26 ΓÇö a minor (non-dominant) zone present on a split-zoned parcel, for disclosure. */

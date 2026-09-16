@@ -26,3 +26,17 @@ sequences shifts explicitly for it.
 
 Lease files are working state, not canon: they are not committed. `.gitignore` keeps
 `_catalog/leases/*.json` out of the index; this README is the only tracked file here.
+
+## Self-grant (adopted by the operator 2026-09-16; first proposed in OPS-23 wave 6 on 2026-09-14 and mis-recorded there as an operator ruling)
+
+The planner grants, as above. A lane MAY grant its own lease when this directory holds no live
+lease for the service it is about to shift — an empty directory means the two-lanes-one-service
+incident is impossible at that moment, and waiting on a planner round-trip is the cost the rule was
+never meant to impose. Conditions: read the serving revision by field name and run the probe before
+releasing; release it; and disclose the self-grant in the close as `leaseSelfGranted` **with the
+reason**, not as a deviation.
+
+The planner still grants whenever the service is **contended** — when more than one lane in the
+wave intends to shift it — and must say so up front. "Empty right now" is not "uncontended in this
+wave": on 2026-09-14 `cortex-api` was empty at 14:16Z when `p185-promotekit` self-granted, yet a
+second lane in the same wave intended to shift the same service later that day.

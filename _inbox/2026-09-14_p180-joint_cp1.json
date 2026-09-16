@@ -1,0 +1,108 @@
+{
+  "lane": "p180-joint",
+  "checkpoint": "CP1 (design/pre-build, pre-registered before any code)",
+  "at": "2026-09-14T14:52:00Z",
+  "planRows": ["P-180", "P-183"],
+  "role": "lane (deepest worker, no sub-agents)",
+
+  "seat": {
+    "worktree": "P:/seat-worktrees/property/hauska-factory-p180-joint",
+    "branch": "fix/p180-s13-string-provenance-token",
+    "startCommit": "84642360184a685596417f2e0b066cd8a56cacaf",
+    "originMainAtStart": "84642360184a685596417f2e0b066cd8a56cacaf",
+    "cleanAtStart": true,
+    "ldtShaAtStart": "bae48d406f7595af3d47111b558d0ebc3efd9c56",
+    "ldtShaSource": "git grep -n _LDT_SHA -- cloudbuild.publish.yaml -> line 325; also the value the dispatch declared. Verified on the checkout itself, not inferred from origin/main."
+  },
+
+  "missionPremiseVerified": {
+    "claim": "Option (a), operator ruling 2026-09-14: servedProvenanceTokens admits a non-string OBJECT as a provenance token, so an earned (facts-free) retirement's mirrored zoning REFUSAL object is graded by S13 and rejected, making the walk red on 16 hollow Bastrop nodes.",
+    "verifiedAtSourceThisRun": [
+      "src/stages/grade/s-rules.mjs:698-705 `servedProvenanceTokens(body)` maps parcelSource/landUseSource/zoningSource and filters `.filter((t) => t != null && t !== false)` -- a non-string object passes the filter and lands in the token position. CONFIRMED by read.",
+      "src/stages/grade/s-rules.mjs:742-748 hands that token to gradeS13 as `provenance: { source: 'served-facets.provenance', token }`; when token == null it passes provenance:null.",
+      "src/stages/grade/s-rules.mjs:627-658 gradeS13 returns failClosed with 'provenance <token> is placeholder or off the allowlist' for an off-allowlist token, and unmeasured('S13', ...) when no provenance pair is supplied. CONFIRMED.",
+      "src/stages/grade/v-rules.mjs:74-76 `isNonPassGrade` returns `grade === 'FAIL' || grade === 'KNOWN_OPEN'` -- UNMEASURED is NOT a non-pass grade. CONFIRMED.",
+      "src/jobs/verify-walk.mjs:748-757 promotes `firstSFail(sGrades)` over a grade whose `verdict === 'pass'`; a RECORD_RETIRED pass (verify-walk.mjs:511-517) is therefore replaced by the failing S13. CONFIRMED by read (the dispatch's O11 refinement, not the dispatch's own text)."
+    ]
+  },
+
+  "deployedPinReadBackBeforeAnyChange": {
+    "method": "gcloud run jobs describe factory-bastrop-publish --region=us-east4 --project=hauska-prod-497015 --format=json, read by FIELD NAME (spec.template.template.spec.containers[0].image and env IMAGE_DIGEST), never by eyeballing a table.",
+    "jobImageDigest": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:7e73cafa1d8bd06c1ce9d477899d828d2040a8540ad40ac4f00f01fb0a3b6f34",
+    "agreesWith": "O12: the image the last run (factory-bastrop-publish-twtwq) executed was built from LDT 84f4e7c9 (P-180 only). The current pin bae48d40 (P-183) is NOT in the deployed digest, so no run to date has exercised #148's own-row geometry fix.",
+    "consequence": "A fresh build from the merged pin is required before the staging run; the dispatch's step 2 is load-bearing, not a formality.",
+    "note": "The job's container also carries env LDT_SHA? No -- read by field name, env names present are CONTRACT_VERSION, IMAGE_DIGEST, CLOUD_RUN_REGION, FACTORY_CLOUD, STAGING_SITE_URL, BAKE_CLI_ROOT plus secrets. So runs.ldt_sha (from env.LDT_SHA, src/jobs/snapshot.mjs:46) is NULL for this job shape; the LDT sha must be resolved from the Cloud Build record that produced the digest, which is the method this lane will use after its own build."
+  },
+
+  "sharedResourceCheckAtCp1": {
+    "factory-bastrop-publish executions": "last = factory-bastrop-publish-twtwq, start 2026-09-14T13:43:38.958Z, completion 2026-09-14T14:22:42.941Z, failedCount 1 (that is the WALK_FAILED run the predecessor read). No execution started after it. NOTHING IN FLIGHT at 14:47Z.",
+    "factory-staging-reset executions": "last = factory-staging-reset-2phlw, start 2026-09-14T13:39:58.921Z, completion 2026-09-14T13:40:22.948Z, succeeded 1. Nothing in flight.",
+    "leaseTakenBeforeReset": "See jobLease below -- to be written before the staging reset, per the mission."
+  },
+
+  "whatIWillChange": {
+    "file": "src/stages/grade/s-rules.mjs",
+    "function": "servedProvenanceTokens",
+    "change": "extend the existing null/false filter with a typeof === 'string' clause, so only strings enter the token position. Minimal, additive to the existing predicate.",
+    "tests": "test/p5-scrub.test.mjs (the S13/S-family suite): (1) a served body whose only provenance value is a mirrored zoning REFUSAL OBJECT yields NO token, so S13 is UNMEASURED and the walk's verdict is pass for an earned retirement (this test FAILS against the unfixed code); (2) a companion test that a genuinely off-allowlist STRING provenance still FAILS S13, and that this failure still fails the walk (positive control -- the change must not silence a real signal)."
+  },
+
+  "preRegisteredFalsifiers": [
+    "PRIMARY (from the mission, O13): if the staging walk's OVERALL verdict is not `pass` after the staging run, this lane has not succeeded, whatever the individual counts say. A partial-green walk is not green.",
+    "If a parcel serving a genuinely off-allowlist STRING provenance no longer fails S13, the fix has silenced a real signal and is wrong (two-directional test).",
+    "If any of the 16 hollow nodes no longer grades RETIRED, name which and why.",
+    "If current-run rows on staging differ from 173,050, or any excluded node serves facts, or BP-PUBLISH-RUN-01 fires on any node, the retirement pass regressed -- name the population.",
+    "If the digest I run does not carry LDT bae48d40, the run is not joint; say so rather than attributing a green walk to P-183."
+  ],
+
+  "progressAtRevision": {
+    "at": "2026-09-14T15:05:00Z",
+    "fixMerged": {
+      "repo": "empressaioemail-tech/hauska-factory",
+      "pr": 149,
+      "title": "fix(P-180/S13): admit only STRING provenance tokens in servedProvenanceTokens",
+      "branch": "fix/p180-s13-string-provenance-token",
+      "mergeCommit": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf",
+      "mergedAt": "2026-09-14T14:52:30Z",
+      "conclusionString": "statusCheckRollup conclusions all SUCCESS (6 of 6 check-runs: test, gate8, ldt-sha-comment-presence x2 workflows), read from statusCheckRollup, not from `gh pr checks` printing 'pass'",
+      "headEqualsOriginMain": "git rev-parse HEAD = git rev-parse origin/main = 63aca2cfc3e4bd73a2d3aa71e1611546855897cf; worktree clean; _LDT_SHA unchanged at bae48d406f7595af3d47111b558d0ebc3efd9c56"
+    },
+    "twoDirectionalTestEvidence": {
+      "command": "node --test --test-name-pattern=S13 test/p5-scrub.test.mjs",
+      "result": "11 tests, 11 pass, 0 fail (107ms)",
+      "direction1": "S13 DIRECTION 1 (unit): a mirrored zoning REFUSAL object is not a provenance token -> S13 UNMEASURED, and firstSFail() is null. S13 DIRECTION 1 end-to-end: an earned facts-free retirement serving a refusal object grades RETIRED with verdict pass and sGrades.S13.grade UNMEASURED.",
+      "direction2": "S13 DIRECTION 2 (no silencing): a genuinely off-allowlist STRING provenance ('some-uncatalogued-source-2026') still FAILs S13 (reason matches /off the allowlist/) and still fails the walk (verdict fail, grade S13). Control: an allowlisted STRING token still PASSes."
+    },
+    "jointBuild": {
+      "buildId": "f1781a1d-a296-4dc1-a8b3-8a8bb4baa4fd",
+      "status": "SUCCESS, duration 5M32S",
+      "factoryCommitBuilt": "63aca2cfc3e4bd73a2d3aa71e1611546855897cf (the merged S13 fix; worktree == origin/main, clean)",
+      "substitutionLdtSha": "bae48d406f7595af3d47111b558d0ebc3efd9c56 (read by field name from the build resource's substitutions)",
+      "ldtCheckoutLogLine": "Step #0: HEAD is now at bae48d4 Merge pull request #687 from empressaioemail-tech/fix/p183-querypoint-from-geometry",
+      "deployedDigest": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+      "deployLogLine": "Step #3: pinning publish jobs to us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:bb3d7148687dbdfc825f89fdbdc263a9cca120364b6194b8091718c8f41d5d51",
+      "jobsReadBackByFieldName": "factory-bastrop-publish, factory-staging-reset, factory-verify-walk all read image = that digest and env IMAGE_DIGEST = that digest",
+      "verdict": "JOINT: the digest about to run carries LDT bae48d40 (P-183 #148) and factory 63aca2c (P-180 S13 fix). Prior deployed digest for comparison: sha256:7e73cafa... = LDT 84f4e7c9, P-180-only (O12 reproduced)."
+    },
+    "stagingReset": {
+      "execution": "factory-staging-reset-qsk9k",
+      "result": "success (gcloud: 'has successfully completed')",
+      "digest": "bb3d7148 (post-build pin)"
+    },
+    "misInvocationDisclosed": {
+      "execution": "factory-bastrop-publish-4qzj4",
+      "at": "2026-09-14T15:02:55Z",
+      "result": "failed, exit code 2, duration 24s, BEFORE any store work",
+      "cause": "invoked with an unquoted comma list in PowerShell: `--args=a,b,c` is parsed by PowerShell as an ARRAY, so gcloud received the args joined into ONE element ('bastrop-publish --target=staging ...' with spaces) and `node src/cli.mjs` printed usage and exited 2. Confirmed by reading the execution's spec.template.spec.template.spec.containers[0].args back (1 element, spaces).",
+      "remedy": "quoted the token ('--args=a,b,c') so PowerShell passes it whole and gcloud comma-splits it: the job now reads back 5 separate args (bastrop-publish, --target=staging, --county=48209, --skip-pmtiles, --gold=48209:97658), identical to the predecessor's twtwq. The corrected execution uses the job's args (no --args override).",
+      "jobArgsRestore": "job args were changed from the deploy default (--county=48021) to --county=48209 for this run and MUST be restored to the deploy default after the run."
+    },
+    "lease": "_catalog/leases/factory-bastrop-publish.json written 2026-09-14T14:53:00Z, self-granted and disclosed (the directory held only README.md), to be deleted after the run row, the walk verdict and the P-183 leg are read."
+  },
+
+  "openThreadsForCp2": [
+    "Resolution of the LDT SHA carried by my build's digest (read from the Cloud Build record's substitutions, by field name).",
+    "The staging run id, walk id, walk overall verdict, stamp counts.",
+    "P-183's own predicate: the five Sturgeon nodes' record points read through the point-keyed leg, measured whether the walk is green or red."
+  ]
+}

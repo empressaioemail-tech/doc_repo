@@ -1,4 +1,4 @@
-<!-- AGENT-CONTRACT v79be86e2 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- AGENT-CONTRACT v378cd643 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # AGENT CONTRACT — the operative law for every dispatched lane
 
@@ -54,6 +54,22 @@ within minutes of each other and served each other's revision in production. The
 live firing through the harness owed the next session, since a hook registered mid-session does not
 arm) refuses the command without a lease in sessions rooted in doc_repo; a lane run outside such a
 session is the named bypass, which is why the planner sequences shifts explicitly.
+
+**Self-grant when uncontended (proposed by the OPS-23 wave 6 dispatch planner on 2026-09-14, where it was recorded as an operator ruling in error; ADOPTED by the operator 2026-09-16: "I didn't actually make that call, but I don't mind it").** A lane that finds
+`_catalog/leases/` holding no live lease for the service it is about to shift MAY take that lease
+itself, in the same file with the same fields, rather than waiting on a planner round-trip. The
+reason is the rule's own premise: an empty directory means the incident this rule exists to prevent
+(two lanes shifting one service within minutes, 2026-09-11) cannot occur at that moment, and the
+alternative — the deepest worker idling on coordination — is what P-177 and the p185-promotekit lane
+both worked around. Three conditions attach. (1) It must still READ the serving revision by field
+name from the traffic JSON and run its probe before releasing. (2) It must DISCLOSE the self-grant
+in its close — named as `leaseSelfGranted` with the reason, not filed under `leaseDeviation`, which
+is the wrong name for a permitted act. (3) It must still release the lease. The planner keeps the
+grant whenever the service is CONTENDED — more than one lane in the wave intends to shift it — and
+must SAY SO in the dispatch, because contended is exactly the state in which self-grant would
+re-create the 2026-09-11 incident. Note the wave in which this ruling was made had precisely that
+shape: `cortex-api` was uncontended when the lane self-granted at 14:16Z but a second lane intended
+to shift it later the same day, so "empty right now" is not the same as "uncontended in this wave".
 
 ## 4. Heavy-scan serialization
 

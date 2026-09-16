@@ -1,0 +1,282 @@
+{
+  "artifact": "OPS-23 wave 6 - serve-layer 404 semantics + smartsite-mcp proxy question",
+  "lane": "serve-layer-404-semantics (READ-ONLY serving-layer investigation, subagent of dispatch planner)",
+  "at": "2026-09-14T16:32:00Z..2026-09-14T16:52:00Z",
+  "executedNothing": true,
+  "writesMade": [
+    "_inbox/2026-09-14_serve-layer-404-semantics.json (this file) - the ONLY write"
+  ],
+  "readOnlySurfacesUsed": [
+    "read-only HTTP GET (curl.exe / Invoke-WebRequest, 25s bounds, GET only)",
+    "SELECT-only psql against PRODUCTION_NEONDB_URL",
+    "git show / git grep / git log / git diff (no checkout, no mutation)",
+    "gcloud run services|revisions describe, gcloud artifacts docker tags list, gcloud secrets versions access (read-only)"
+  ],
+  "tlsNote": "Corporate proxy in place. NODE_OPTIONS=--use-system-ca used for gcloud calls that required it; gcloud still emits InsecureRequestWarning/urllib3 noise and every value below was extracted by --format=value(...) or parsed as JSON, never read from raw text.",
+
+  "q1_the404": {
+    "verdict": "REPRODUCED. The 404 is a DELIBERATE serve-side decline, not a missing row and not an id-scheme mismatch.",
+    "host": "smartsite.cloud",
+    "route": "/api/spine/cortex/api/brokerage/v1/place/node/:parcelNodeId/facets -> cortex-api GET /api/brokerage/v1/place/node/:parcelNodeId/facets",
+    "verbatimRequest": "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:84629/facets",
+    "reproduced": true,
+    "reproducedHow": "curl.exe -s -m 25 -o - -w \"...%{http_code}...\" against the live host; also independently re-measured as a prior artifact (2026-09-14_deploy-sequence_coordination.json H1) recorded the same URL at HTTP 404 in 0.94s.",
+    "statusCode": 404,
+    "responseBodyVerbatim": "{\"error\":\"not_baked\",\"errorClass\":\"no_coverage\",\"message\":\"No baked facets for this parcel node\"}",
+    "timing": "0.7377 s",
+    "bodyProvenance": "This body is emitted at exactly ONE place in the entire legacy-design-tools repo: artifacts/api-server/src/routes/brokerageNodeFacets.ts:880-885, `res.status(404).json(gtmErrorBody(\"no_coverage\",\"not_baked\",\"No baked facets for this parcel node\"))`. `git grep -n '\"not_baked\"' HEAD -- artifacts lib apps` returns only that emitter plus the comment in serveGuards.ts:220 that names it. Therefore the 404 IS the brokerage node-facets route's typed refusal, not an edge/404-page/cache artifact.",
+    "controlsRunInTheSamePass": [
+      {
+        "request": "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:97658/facets",
+        "status": 200,
+        "servedSnapshotAt": "2026-09-13T17:44:13.036Z",
+        "note": "Same county, same bake run, NOT retired -> 200."
+      },
+      {
+        "request": "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:97651/facets",
+        "status": 200,
+        "servedSnapshotAt": "2026-09-13T17:44:17.620Z"
+      },
+      {
+        "request": "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48055:1/facets",
+        "status": 200,
+        "servedSnapshotAt": "2026-09-10T18:30:22.220Z",
+        "note": "THE DECISIVE CONTROL: Caldwell 48055 is NOT in the gate-blocked set, and this row carries the SAME earned retirement shape (recordRetirement.status='retired', verdict='absent-verified'). It serves 200. So it is not 'a retirement 404s' - it is 'a retirement in 48209/48491 404s'."
+      }
+    ]
+  },
+
+  "q1_serveTrace": {
+    "theRowThatIsPresent": {
+      "store": "PRODUCTION_NEONDB_URL (secret hauska-prod-497015), host ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech",
+      "query": "SELECT place_key, adapter_key, snapshot_at, payload_json->>'publishRunId', payload_json->'recordRetirement'->>'status' FROM place_layer_snapshots WHERE adapter_key='node-facets:tier1' AND place_key IN ('node:48209:84629','node:48209:84639','node:48209:97658');",
+      "rowsReturned": [
+        "node:48209:84629 | node-facets:tier1 | 2026-09-13 17:40:58.92658+00 | b5e54917-4f5a-461c-ad75-37b60016ca7d | retired",
+        "node:48209:84639 | node-facets:tier1 | 2026-09-13 17:41:22.393206+00 | b5e54917-4f5a-461c-ad75-37b60016ca7d | retired",
+        "node:48209:97658 | node-facets:tier1 | 2026-09-13 17:44:13.036253+00 | b5e54917-4f5a-461c-ad75-37b60016ca7d | (null)"
+      ],
+      "the84629Payload": {
+        "access": "{ entitlement: anyone-free, discoverability: catalog-listed }",
+        "situsAddress": "609 STURGEON DR, SAN MARCOS, TX 78666",
+        "apn": "84629",
+        "parcelNodeId": "48209:84629",
+        "baseFactsPresent": true,
+        "recordRetirement": {
+          "status": "retired",
+          "verdict": "absent-verified",
+          "authority": "Hays County CAD roll (cad_property) for county_fips 48209 at declared tax_year 2026",
+          "scopeSearched": "cad_property, ALL rows (not filtered to a use code), county_fips 48209 tax_year 2026",
+          "asOf": "2026-09-13T17:40:06.675Z",
+          "basis": "48209:84629: prop_id 84629 carries no row in the Hays County CAD roll's declared tax_year 2026; this record's own claim last carried tax_year 2025. ...",
+          "lastSeenTaxYear": 2025
+        }
+      },
+      "isEarnedRecordRetirement": "TRUE by the code's own predicate (artifacts/api-server/src/lib/recordRetirement.ts): status==='retired' AND verdict==='absent-verified' AND authority/scopeSearched/asOf/basis all non-empty strings AND lastSeenTaxYear is a number (2025). Every field is present."
+    },
+
+    "codePathFromSurfaceToStore": [
+      "1. Vercel same-origin serverless proxy: apps/command-center/api/spine.ts, rewrite `/api/spine/(.*) -> /api/spine?upath=$1`, routed by first segment: `/api/spine/cortex/* -> CORTEX_API_URL` with `Authorization: Bearer CORTEX_SERVICE_API_KEY` (apps/command-center/PROXY_CONTRACT.md:15-16, :22; default upstream documented at :28 as 'the Cloud Run cortex-api URL').",
+      "2. cortex-api (Cloud Run, project legacy-design-tools-prod, region us-central1, service cortex-api) express route: artifacts/api-server/src/routes/brokerageNodeFacets.ts:732 `brokerageNodeFacetsRouter.get(\"/node/:parcelNodeId/facets\", ...)`.",
+      "3. Key construction: placeKeyForNode(parcelNodeId) (brokerageNodeFacets.ts:303-305) returns the template literal `node:` prefixed to the REQUESTED node id, e.g. placeKeyForNode('48209:84629') -> 'node:48209:84629'. The requested node id is used VERBATIM; there is no APN/prop_id/geo_id translation anywhere on this read path.",
+      "4. Store read: loadBakedNodeFacetSnapshot (brokerageNodeFacets.ts:670-733) selects from placeLayerSnapshots WHERE adapterKey IN (TIER1_ADAPTER_KEY, TIER2_ADAPTER_KEY) AND placeKey = 'node:{parcelNodeId}' LIMIT 2 (lines 685-692). TIER1_ADAPTER_KEY = 'node-facets:tier1' (artifacts/api-server/src/lib/nodeFacetTier1Constants.ts).",
+      "5. Row IS found. Then, IMMEDIATELY, the row is deliberately DISCARDED: lines 696-701, `// P-180: a retired record in a gate-blocked county declines at serve rather than presenting a hollow account-keyed card (48209:84639 and siblings).  if (shouldDeclineRetiredRecordAtServe(parcelNodeId, row.payloadJson)) { return null; }`",
+      "6. `null` snapshot -> the route's 404 not_baked branch (lines 872-887). That is the observed body."
+    ],
+
+    "theDeclinePredicateVerbatim": {
+      "file": "artifacts/api-server/src/lib/serveGuards.ts:200-233 (present at the SERVING LDT commit 8f91d5d1 as well - `git grep -n shouldDeclineRetiredRecordAtServe 8f91d5d1` hits serveGuards.ts:223, brokerageNodeFacets.ts:244 and :699)",
+      "signature": "export function shouldDeclineRetiredRecordAtServe(parcelNodeId: string, payload: unknown, blockedFips: ReadonlySet<string> = LANDUSE_JOIN_DISABLED_FIPS_SEED): boolean",
+      "body": "const countyFips = String(parcelNodeId).split(\":\")[0]?.trim() ?? \"\"; if (!blockedFips.has(countyFips)) return false; if (!payload || typeof payload !== \"object\") return false; return isEarnedRecordRetirement((payload as Record<string, unknown>).recordRetirement);",
+      "blockedSet": "LANDUSE_JOIN_DISABLED_FIPS_SEED = new Set([\"48491\", \"48209\"]) - artifacts/api-server/src/lib/joinNormalize.ts:93 (read at 8f91d5d1; header comment: 'the gate's bootstrap output (48491 + 48209) used when the ledger has not yet been scored'). The route calls the function with the DEFAULT argument, so at serve today the set is this hardcoded two-county seed, not a ledger read.",
+      "conclusion": "countyFips('48209:84629') = '48209' IS in the set; isEarnedRecordRetirement(row.recordRetirement) = true. The predicate returns TRUE. The row is present, correct, catalog-listed, and REFUSED."
+    },
+
+    "candidateRulings": [
+      {
+        "candidate": "(a) id-scheme mismatch - the serve resolves by a different parcel identifier than the row's key (P-161 / probe finding ID-SCHEME-MISMATCH)",
+        "ruling": "RULED OUT (for this read path). This is the LEADING candidate the brief asked me to test first; it is NOT the cause here.",
+        "evidence": [
+          "The row the request asks for is the row that exists. Request id 48209:84629 -> placeKeyForNode -> 'node:48209:84629'; the store holds exactly place_key='node:48209:84629' under adapter_key='node-facets:tier1'. Same table, same branch, same key, SAME KEY SCHEME.",
+          "No translation exists on this path: placeKeyForNode is a literal string concat (brokerageNodeFacets.ts:303-305). The read never consults APN, prop_id, geo_id, txgio_parcel or any crosswalk - grep of brokerageNodeFacets.ts shows the tier-1 read is a single place_layer_snapshots lookup by place_key.",
+          "isValidParcelNodeId (PARCEL_NODE_ID_RE = /^\\d{5}:[A-Za-z0-9][A-Za-z0-9._-]*$/, brokerageNodeFacets.ts:312) ACCEPTS '48209:84629', so the request is not 400'd as malformed - it reaches the DB.",
+          "The row-lookup then SUCCEEDS, which is provable independently of the 404: the same store/table/key returns 200 for its non-retired siblings in the same county and same run (48209:97658 snapshotAt 2026-09-13T17:44:13.036Z and 48209:97651 snapshotAt 2026-09-13T17:44:17.620Z are echoed by the served 200 bodies to the MILLISECOND: store '2026-09-13 17:44:13.036253+00' -> wire '2026-09-13T17:44:13.036Z'). The serve demonstrably reads this exact table/key/row-space.",
+          "The 48209:97651..97658 family IS the second id scheme (TxGIO/Sturgeon Dr GeoIDs, the P-161 theme), and 48209:84629 IS the first (CAD account id). But both schemes are PRESENT AS THEIR OWN ROWS in the same table, each servable under its own key - the mismatch phenomenon is real and live on the ADDRESS->NODE resolution legs (P-175/P-186, see the P-161 ID-SCHEME-MISMATCH probe findings), NOT on this node-id-keyed read. Nothing here mints or maps an id.",
+          "Falsifier that would have convicted (a): the store would NOT hold 'node:48209:84629'. It does."
+        ],
+        "residual": "Whether 'node:48209:84629' (609 STURGEON DR) and any of 'node:48209:97651..97658' are the same physical lot is UNMEASURED (not needed for this 404; recorded so nobody reads the ruling above as a claim about lot identity)."
+      },
+      {
+        "candidate": "(b) the serve reads a different store/branch than the one holding the row",
+        "ruling": "RULED OUT.",
+        "evidence": [
+          "cortex-api's template env is DATABASE_URL = SECRET:DEPLOYMENT_DATABASE_URL_DIRECT:latest (`gcloud run services describe cortex-api --format=json`, read by field name).",
+          "That secret resolves to host ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech. PRODUCTION_NEONDB_URL (hauska-prod-497015) resolves to host ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech. SAME HOST - the store I SELECTed from IS the store cortex-api reads.",
+          "Corroborated to the millisecond by the served snapshotAt values matching the store's snapshot_at for 48209:97658 / 48209:97651 (above).",
+          "There is no separate 'production branch': the 404 body is produced by the SAME process that serves the 200s for its siblings, in the same run."
+        ]
+      },
+      {
+        "candidate": "(c) a serve-side predicate excludes the row (e.g. a facts-free earned retirement refused rendering rather than rendered as empty)",
+        "ruling": "RULED IN. THIS IS THE CAUSE, and it is the brief's wording almost verbatim: a serve-side predicate refuses the row, it is not that the row is absent.",
+        "evidence": [
+          "shouldDeclineRetiredRecordAtServe(parcelNodeId, row.payloadJson) -> true (blocked county 48209 AND isEarnedRecordRetirement true) -> loadBakedNodeFacetSnapshot returns null -> route answers 404 no_coverage/not_baked.",
+          "The predicate's own unit tests, present at the SERVING revision 8f91d5d1, encode exactly this outcome: 'declines a retired record in a gate-blocked county (48209:84639)' -> expect(true); 'does NOT decline the same retirement outside the gate-blocked set (control: non-blocked county unchanged)' with 48055:1 and 48021:34137 -> expect(false); 'does NOT decline a live (non-retired) gate-blocked node' with 48209:97658 -> expect(false). The live behaviour I measured matches all three expectations exactly, in the same direction.",
+          "The gate-blocked set is {48491, 48209}. Per the joinNormalize.ts header, membership is lifted per county 'once an external CAD-account <-> TxGIO-prop_id crosswalk raises its owner-match rate above threshold' - i.e. lifting it is a DATA-integrity gate change, not a publish.",
+          "Naming note: the code comment at brokerageNodeFacets.ts:697 says '48209:84639 and siblings'. The operator's parcel is 48209:84629 - also Hays, also retired, also 404s. Both were measured (see theRowThatIsPresent)."
+        ],
+        "whatWouldHaveToChangeForA200": [
+          "(i) 48209 leaves LANDUSE_JOIN_DISABLED_FIPS_SEED (a serve-code/seed change, or the gate lifting on an external crosswalk measurement), OR",
+          "(ii) the row's recordRetirement stops being an EARNED retirement (status != 'retired', or verdict != 'absent-verified', or one of authority/scopeSearched/asOf/basis emptied). That is driven by the Hays CAD roll: prop_id 84629 acquiring a row at the declared tax_year 2026. A re-stamp of the SAME inputs recomputes the SAME retirement, OR",
+          "(iii) the caller stops passing the default seed / the route stops calling the predicate - a cortex-api change."
+        ]
+      },
+      {
+        "candidate": "(d) a cache/CDN/revision artifact",
+        "ruling": "RULED OUT as the cause.",
+        "evidence": [
+          "The 404 body is the origin route's typed refusal, emitted at exactly one call site (see q1_the404.bodyProvenance). A CDN/edge 404 would not synthesize cortex-api's `gtmErrorBody` shape.",
+          "The 200 siblings echo store snapshotAt to the millisecond, i.e. the read path is live against the store (no stale snapshot served).",
+          "Resolution is content-driven: the 404-ing and the 200-ing rows differ in exactly the field the predicate reads (recordRetirement), not in age, run id, or snapshot time."
+        ],
+        "residual": "An edge cache sitting in front of the proxy cannot be fully excluded by these reads alone; it is not needed to explain the observation, and the typed body makes it implausible."
+      },
+      {
+        "candidate": "(e) the row is catalog-listed but not in the table the serve queries",
+        "ruling": "RULED OUT.",
+        "evidence": [
+          "The row IS in the table the serve queries: place_layer_snapshots, adapter_key='node-facets:tier1', place_key='node:48209:84629' - the exact predicate the route builds.",
+          "The row is catalog-listed within its own payload (`access.discoverability = 'catalog-listed'`), and it carries baseFacts. Its absence from the wire is produced AFTER the SELECT, by the decline, not before it."
+        ]
+      }
+    ],
+
+    "THE_KILLER_FACT": "Within ONE production run id (b5e54917-4f5a-461c-ad75-37b60016ca7d) the store holds node:48209:97658 -> serves 200 and node:48209:84629 -> serves 404. The run stamp is IDENTICAL on both rows. The 404 is therefore NOT a function of the run id, and cannot be flipped by writing a new run id onto the row."
+  },
+
+  "q1_discriminatingTest": {
+    "statingPlainly": "A post-publish 200 on this endpoint would prove nothing on its own, and CANNOT be attributed to the publish unless the field the predicate reads changes. The read whose value differs between 'the publish wrote the row' and 'the 404 is actually fixed' is NOT publishRunId - it is payload_json->'recordRetirement' (as consumed by isEarnedRecordRetirement) plus the countyFips membership in {48491, 48209}.",
+
+    "theFalsifiableVerification": {
+      "step1_serve_status": "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:84629/facets  -> record the status AND the body verbatim.",
+      "step2_store_fields": "SELECT place_key, snapshot_at, payload_json->>'publishRunId' AS run_id, payload_json->'recordRetirement'->>'status' AS retirement, payload_json->'recordRetirement'->>'verdict' AS verdict, payload_json->>'countyFips' AS fips FROM place_layer_snapshots WHERE adapter_key='node-facets:tier1' AND place_key IN ('node:48209:84629','node:48209:84639','node:48209:97658');  (connector: PRODUCTION_NEONDB_URL, project hauska-prod-497015; SELECT-only)",
+      "step3_invariants": "GET .../node/48209:97658/facets and .../node/48055:1/facets -> must both still be 200 (the non-retired sibling, and the retired row in a NON-blocked county). And `gcloud run services describe cortex-api --project=legacy-design-tools-prod --region=us-central1 --format='value(status.traffic)'` -> the serving revision must be unchanged.",
+      "decisionRule_itCanFail": [
+        "OUTCOME A (expected): run_id on 84629 CHANGES to the new id, retirement STAYS 'retired', GET STAYS 404 -> the publish did its job (a restamp) and did NOT fix the 404. The sequence's premise ('step 4 fixes the 404') is FALSE.",
+        "OUTCOME B (test FAILS): 84629 becomes 200 while retirement is STILL 'retired' AND 48209 is still in {48491,48209} AND the cortex-api serving revision is unchanged -> the 200 cannot be produced by the publish's data, because the predicate that makes 84629 404 is untouched and would still fire. A 200 here is a cache/proxy/revision artifact and must NOT be booked as a publish success.",
+        "OUTCOME C (the only outcome that proves the write caused the 200): 84629 becomes 200 AND its recordRetirement is absent or no longer an earned retirement (status != 'retired' / verdict != 'absent-verified'). Only then did the write change the single store-side input that gates this endpoint - and it is independently checkable by asking whether the Hays CAD roll now carries prop_id 84629 at declared tax_year 2026.",
+        "CONTROL FAILURE: if 97658 or 48055:1 changes status while 84629 does not, something outside both the store and this route changed (proxy/revision/edge) - none of it is the publish."
+      ],
+      "whyThisIsTheRightRead": "publishRunId proves the publish WROTE. recordRetirement proves the 404 is FIXED. They are different fields and the wave has already been burned once by a falsifier set that measured the stamp instead of the outcome (CP1 O13)."
+    },
+    "doesSuchAReadExist": "YES - it exists and is cheap and read-only: payload_json->'recordRetirement' on the same row, cross-read against the GET status and the serve revision. It is falsifiable: if the retirement is unchanged and the GET is 200, the test has FAILED."
+  },
+
+  "q1_doesPublishFixIt": {
+    "answer": "NO. The planned production publish cannot fix this 404, and the sequence's stated premise for step 4 is WRONG.",
+    "reasoning": [
+      "The 404 is produced entirely by a serve-side predicate: countyFips in {48491,48209} AND isEarnedRecordRetirement(payload.recordRetirement). Neither input is the run id, the snapshot time, or the row's presence.",
+      "The publish re-bakes county 48209 from the SAME declared CAD roll and recomputes recordRetirement from the same roll read. prop_id 84629 is absent from the Hays roll at tax_year 2026 today; a re-stamp of unchanged inputs recomputes the same 'retired / absent-verified' object, so the predicate keeps returning true and the route keeps answering 404 not_baked.",
+      "The run stamp is provably orthogonal: within the EXISTING run b5e54917, 48209:97658 is 200 and 48209:84629 is 404 (THE_KILLER_FACT). Restamping the row with a newer run id moves it from one already-404-ing run id to another.",
+      "The only publish-side event that could flip it is a change in the CAD roll/join inputs so that 84629 is no longer an earned retirement - i.e. a DATA change, not the run stamp. Nothing in the planned step 4 supplies that.",
+      "Separately, the earlier coordination pass already found the production publish BLOCKED on two unmet non-operator preconditions (CP1 O20: non-quiescent project from factory-publish-gate-sched, and a missing PRODUCTION_SITE_URL value). So step 4 is both unable to fix the 404 and not currently fireable."
+    ],
+    "whatStep4IsActuallyFor": "If fired, step 4 is a RESTAMP: it would rewrite 48209 rows (including 48209:84629) under a NEW publishRunId. That is a real, observable store effect - it is just not the effect the sequence claims. Its success criterion must be the run-id/stamp change in the store, never the surface status.",
+    "consequenceForTheSequence": "The operator's halt is correct. The premise 'production still 404s on 48209:84629, so step 4 is a real serving-store write that fixes coverage' should be struck: the surface 404 is a declined retired record in a gate-blocked county, and would remain after any number of successful publishes. If the objective is a 200 on that parcel, the levers are (i) lifting Hays out of the land-use join gate on crosswalk evidence, (ii) a CAD-roll/identity resolution making 84629 current, or (iii) changing the decline predicate - none of which is step 4."
+  },
+
+  "q2_mcpProxy": {
+    "verdictOneLine": "smartsite-mcp does NOT proxy around the cortex-api revision: it calls the cortex-api SERVICE URL, caches nothing, and holds no vendored composer. It will faithfully inherit whatever revision serves cortex-api's default traffic.",
+    "howItReachesCortexApi": {
+      "file": "artifacts/smartsite-mcp/src/cortex-client.ts",
+      "symbols": "loadCortexClientConfig() and cortexFetch()",
+      "verbatim": [
+        "const baseUrl = process.env.CORTEX_API_BASE_URL?.trim();   (cortex-client.ts:13)",
+        "if (!baseUrl || !serviceApiKey) return null;              (cortex-client.ts:15)",
+        "const url = `${config.baseUrl}${path.startsWith(\"/\") ? path : `/${path}`}`;  (cortex-client.ts:29)",
+        "headers.set(\"Authorization\", `Bearer ${config.serviceApiKey}`);  (cortex-client.ts:31)",
+        "headers.set(\"X-PE-User-Id\", init.userId);  (cortex-client.ts:34)"
+      ],
+      "deployedValueReadByField": "gcloud run revisions describe smartsite-mcp-00119-naf --project=legacy-design-tools-prod --region=us-central1, spec.containers[0].env: CORTEX_API_BASE_URL = https://cortex-api-tds7av26va-uc.a.run.app",
+      "whatKindOfUrlThatIs": "The PLAIN Cloud Run service hostname (cortex-api-tds7av26va-uc.a.run.app). It carries NO revision suffix, NO '---' tag prefix (tagged URLs in this project look like https://canary---cortex-api-tds7av26va-uc.a.run.app - that is the shape used for the 'canary' tag on cortex-api-00799-xaq), and no revision name. A plain service hostname routes to whatever revision currently holds the service's default traffic split. The README documents the same value (artifacts/smartsite-mcp/README.md:39, :72).",
+      "researchApiCall": "get_smart_site issues `cortexFetch(config, \"/api/property-explorer/v1/research/brief\", { method: \"POST\", userId, body: JSON.stringify({parcelNodeId, depth?}) })` at artifacts/smartsite-mcp/src/tools.ts:878-887 - a plain proxy POST of the caller's request to cortex-api; the response text is then only NORMALIZED (tools.ts:922), never recomposed."
+    },
+    "doesItCache": {
+      "answer": "NO - no in-process cache, no memoization, no TTL, no HTTP cache semantics.",
+      "evidence": [
+        "cortexFetch is a bare fetch() with a Headers set and an AbortController timeout (cortex-client.ts:26-50). It does not store, key, or replay responses; nothing reads Cache-Control/ETag; there is no Map/WeakMap memo in the module.",
+        "Repo-wide grep over artifacts/smartsite-mcp/src for cache|memo|ttl returns only prose and unrelated identifiers (constants.ts tool copy; feasibility-export.ts comments about an engine-side 'NO TTL' and a cache-hit caveat on feasibility EXPORTS; tool-honesty.ts:308 a comment about the panel route; mcp-app.ts:3646 'handshake settles'). No response cache exists in this server.",
+        "The only caching mentioned in the whole MCP tool surface is cortex-side/engine-side for find_parcels projections and feasibility exports - neither is on the get_smart_site path."
+      ]
+    },
+    "doesItHoldItsOwnCopyOfRelevantLogic": {
+      "answer": "NO. No vendored composer, and nothing to do with the setback conflict row.",
+      "evidence": [
+        "`git grep -n 'getSetbackTableForZoning|displayLine|setbackConflictNote|conflictRow' HEAD -- artifacts/smartsite-mcp` returns ZERO hits. The same grep scoped to artifacts/api-server returns getSetbackTableForZoning in artifacts/api-server/src/lib/buildableEnvelope/{authoritativeSetbackSource.ts:40,258; envelopeJurisdiction.ts:13,68} and their tests, i.e. the shared @workspace/adapters table lives on the cortex-api side, not in the MCP.",
+        "The P-154 sentence is composed INSIDE cortex-api: `git show HEAD:artifacts/api-server/src/lib/r1BriefCompose.ts` defines withSetbackConflictNote (and imports setbackConflictNote from @empressaio/atom-contract/display at line 15), called at r1BriefCompose.ts:617 as `data: withSetbackConflictNote(envelope)` for the setbacks-envelope section when disposition === 'present'. `setbackConflictNote` does NOT appear in r1BriefCompose.ts at the SERVING revision 8f91d5d1 - `git grep -n setbackConflictNote 8f91d5d1` has no hit in that file, while HEAD does. The P-154 composer change is therefore genuinely UNSERVED, exactly as reported.",
+        "The MCP's role is passthrough + additive normalization: normalizeGetSmartSiteResponseText (tool-honesty.ts:727-751) -> normalizeR1ResponseText -> normalizeR1BodyForExternal (tool-honesty.ts:534-585). That function SPREADS each section (`return { ...section, data: section.data ?? null, disposition, dispositionDisplayText, ...(agentGuidance ? {agentGuidance} : {}) }`) and takes `brief.sections` straight off the cortex body. `data` is passed through by reference, so a newly added `conflictNote` inside the setbacks-envelope section's data survives the normalizer.",
+        "The MCP's own @empressaio/atom-contract usage is display/vocabulary only (tool-honesty.ts:2 envelopeBasisHuman/envelopeHuman; vocabulary.ts; mcp-app.ts:44) - it re-uses the shared human-string helpers, it does not hold a second composer. `displayLine` appears NOWHERE in legacy-design-tools at HEAD (repo-wide grep), so it is not an MCP-vendored symbol.",
+        "package.json pins: artifacts/api-server @empressaio/atom-contract ^1.36.0 at HEAD vs ^1.34.0 at 8f91d5d1; artifacts/smartsite-mcp ^1.36.0 at HEAD. `git diff 82857ebb 8f91d5d1 -- artifacts/smartsite-mcp` is EMPTY and `git diff 8f91d5d1 HEAD -- artifacts/smartsite-mcp/src` is EMPTY, so the MCP source is byte-identical across the serving image's LDT commit, the served cortex-api commit, and HEAD."
+      ]
+    },
+    "currentRevisionByField": {
+      "service": "smartsite-mcp, project legacy-design-tools-prod, region us-central1",
+      "traffic": "status.traffic: { percent: 100, revisionName: 'smartsite-mcp-00119-naf' } (and smartsite-mcp-00121-vef tagged 'canary' at no percent)",
+      "servingRevision": "smartsite-mcp-00119-naf",
+      "servingImage": "us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/smartsite-mcp@sha256:dab2ff2fa60c25ff9ddb34df35f0b9ff9e3301cb060093c37caa9d8bbfb80eb7",
+      "ldtSha": "82857ebb38804ee4cce6ed1ba8718cb712aa9f29 (resolved by matching the digest against `gcloud artifacts docker tags list .../apps/smartsite-mcp`)",
+      "ldtCommit": "82857ebb = 'Merge pull request #682 from empressaioemail-tech/fix/p155-mcp-refresh-hop'",
+      "created": "2026-09-14T01:15:14Z",
+      "reportedValueConfirmed": "YES - 'smartsite-mcp-00119-naf on LDT 82857ebb' is exact. Note the brief's separate claim that cortex-api serves cortex-api-00799-xaq (built from LDT 8f91d5d1) is ALSO confirmed live: status.traffic = [{percent:100, revisionName:'cortex-api-00799-xaq'}], template image = .../cortex-api:8f91d5d15e4c1dd04c497d207d302edd601fe70e, digest sha256:f918c2a82249f173533a60709781f350ea0b90dafa31e2e95b299d5f6c689404 - matching the revision list entry for 00799-xaq."
+    },
+    "wouldShiftingCortexApiAloneChangeWhatGetSmartSiteReturns": {
+      "answer": "YES, at the serving layer - the MCP does not route around the revision. With CORTEX_API_BASE_URL = the plain cortex-api service host and no cache anywhere on the path, the next POST /api/property-explorer/v1/research/brief is served by whatever revision holds default traffic. After a shift to a revision built from 803cd0d5, get_smart_site would receive the composer's `conflictNote` and would pass it through the normalizer unchanged.",
+      "but_not_observably_alone": "NO in the sense that matters operationally: the sentence only exists when the served atom carries `secondSource.conflict`. As of this reading the served setbacks rail for 48021:34049 has no `conflict` payload (CP1 O17: the atom was minted 2026-08-05, pre-A-148), so the composer's guard `if (!conflict) return envelope;` returns the envelope unchanged and the MCP surface would print nothing new. The shift is needed for the CODE to be live; the ATOM RE-MINT (step 2) is needed for the sentence to appear."
+    }
+  },
+
+  "q2_verdict": {
+    "isTheCortexApiShiftSufficientNecessaryOrIrrelevant": "NECESSARY-BUT-NOT-SUFFICIENT - and specifically NOT insufficient for the reason the plan worried about. The concern that 'smartsite-mcp proxies around the revision' is FALSE: it proxies to the service URL, caches nothing, and vendors no composer, so it inherits the revision automatically and needs NO MCP rebuild. What the shift cannot do on its own is make the P-154 change visible: the composer is dormant until the served atom carries display_meta.conflict, which is step 2's re-mint. So: shift alone = code live, nothing visible; shift + re-mint = the change appears on get_smart_site with no smartsite-mcp deploy.",
+    "consequenceForThePlan": [
+      "Do NOT schedule an smartsite-mcp rebuild or shift as a precondition for the P-154 change on the MCP surface - it is unnecessary on this evidence.",
+      "DO keep the two conditions separate in the acceptance test: (1) code live = a revision built from 803cd0d5 serving cortex-api (image already exists: tag 803cd0d564349f3a67fd1d2be7985f3d25a8888b -> sha256:dfbe3c3d9f1f19163382e08de02bd78ecae9d9bcda5fcf12ac1a3878cb41e5c4); (2) data live = the served atom carrying conflict.",
+      "A shift CANNOT be validated by reading smartsite-mcp's revision - the MCP revision will be unchanged by design. Validate by reading cortex-api's status.traffic by field name, then exercising get_smart_site through the MCP."
+    ]
+  },
+
+  "dangers": [
+    "STEP 4's PREMISE IS FALSE, and the halt should stay until the plan text is amended: 'production still 404s on 48209:84629, so step 4 is a real serving-store write' conflates a DECLINED RETIRED RECORD with MISSING COVERAGE. Any post-publish 200 on that parcel that is not accompanied by a changed recordRetirement must be treated as unproven.",
+    "A post-publish 200 IS achievable without the publish, by shifting/rolling cortex-api or by an edge cache, because the 404 is produced by cortex-api code - not by the store. Do not read 'surface flipped' as 'publish worked'.",
+    "THE 200 IS NOT THE ACCEPTANCE TEST. The store-side evidence that the publish ran is publishRunId / snapshot_at. The evidence that the 404 is fixed is recordRetirement. The plan currently has no field-level statement of which layer changed (this is exactly the O21/`which layer changed` gap, now with a named field).",
+    "The decline predicate's blocked set {48491, 48209} is a HARDCODED SEED inside cortex-api (joinNormalize.ts:93) and is used as the DEFAULT argument at the node-facets route. Any change to the land-use join gate silently changes which parcels 404 on the facets surface - a serve-behaviour consequence of a data-integrity setting, undocumented in the plan.",
+    "smartsite-mcp at HEAD pins @empressaio/atom-contract ^1.36.0 but its SERVING revision (82857ebb) predates that pin. It is harmless for P-154 because the MCP does not call setbackConflictNote - but any future lane that moves the conflict sentence INTO the MCP would need an MCP rebuild, and the two services' contract versions would then have to be reconciled.",
+    "The command-center proxy's CORTEX_API_URL is UNMEASURED from this lane (Vercel env). If it were ever pinned to a tagged URL (e.g. '.../canary---cortex-api-...'), the /api/spine surface would stop following cortex-api's traffic shift while smartsite-mcp kept following it - two surfaces diverging on the same underlying service. The documented default is the plain Cloud Run URL, but the deployed override was not readable.",
+    "O22's credential finding is CONFIRMED in the same family: the RO credential is weak. Everything in this artifact that reads the factory ledger or gated tables was avoided; all store evidence above came from PRODUCTION_NEONDB_URL, and no attempt was made to re-read publish_runs or verify_walks through FACTORY_DATABASE_URL_RO."
+  ],
+
+  "unmeasured": [
+    {
+      "item": "Whether 'node:48209:84629' (609 STURGEON DR) and any of 'node:48209:97651..97658' are the same physical lot under the two P-161 id schemes.",
+      "blocker": "Not needed to explain the 404; resolving it needs a geometry/geometry-bind read (the txgio_parcel feature index join) that is outside this lane's question and was not attempted."
+    },
+    {
+      "item": "The provisioned command-center (Vercel) CORTEX_API_URL override for the /api/spine/cortex/* route.",
+      "blocker": "No Vercel credential or dashboard read in this lane; only the repo default (apps/command-center/.env.example:7 = the plain Cloud Run URL; PROXY_CONTRACT.md:28 'defaults to the Cloud Run cortex-api URL') is readable. Does not change Q1's cause (cortex-api has exactly one revision at percent>0 today)."
+    },
+    {
+      "item": "Whether an edge/CDN cache sits in front of smartsite.cloud or the spine proxy, and its TTL semantics.",
+      "blocker": "No CDN configuration or cache-status header evidence reachable read-only from this lane; the typed origin body and the millisecond-accurate snapshotAt echoes make a cached answer implausible but do not formally exclude one."
+    },
+    {
+      "item": "confirm whether the Hays CAD roll (cad_property) will carry prop_id 84629 at declared tax_year 2026 at the time the planned publish runs.",
+      "blocker": "cad_property is not on this lane's sanctioned read set from PRODUCTION_NEONDB_URL (not queried here), and the question is about the publish's future input, not a stored value. The retirement basis recorded in the row is the only evidence available, and it says absent at tax_year 2026, lastSeenTaxYear 2025."
+    },
+    {
+      "item": "'displayLine' - named in the brief as a symbol of interest.",
+      "blocker": "Repo-wide `git grep -n displayLine HEAD` in legacy-design-tools (HEAD 1196f215) returns ZERO hits, so it is not a symbol in this repo at this revision. Not chased into hauska-map/hauska-engine because it is not on the smartsite-mcp or cortex-api node-facets paths this brief asks about."
+    },
+    {
+      "item": "Whether smartsite-mcp-00121-vef (tagged 'canary', not serving traffic) differs from 00119-naf in any way that matters, and what its LDT sha is.",
+      "blocker": "Out of scope for the question asked (00119-naf holds 100% of traffic, so it is what get_smart_site runs); not read."
+    }
+  ]
+}

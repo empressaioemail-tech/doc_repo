@@ -1,0 +1,105 @@
+{
+  "lane": "p185-promotekit",
+  "planRows": ["P-185"],
+  "kind": "lane evidence: PromoteKit referral plumbing measured on the DEPLOYED surfaces (this file is NOT scripts/surface-probe.mjs output; the instrument has no P-185 row, see openThreads)",
+  "measuredAt": "2026-09-14T14:19Z-14:31Z",
+  "surfaces": {
+    "smartSite": "https://smartsite.cloud (Vercel production alias for property-explorer)",
+    "cortexApi": "https://cortex-api-tds7av26va-uc.a.run.app (GCP project legacy-design-tools-prod, us-central1)"
+  },
+
+  "hop1_scriptOnEveryPage": {
+    "verdict": "MEASURED PASS",
+    "method": "live GET https://smartsite.cloud/ (Invoke-WebRequest, 2026-09-14T14:16Z) + DOM read in a real browser tab at https://smartsite.cloud/?via=p185probe (CDP Runtime.evaluate, 2026-09-14T14:26Z-14:29Z)",
+    "htmlCarries": "<script async src=\"https://cdn.promotekit.com/pk.js\" data-promotekit=\"5d6458ec-b6b9-47df-a587-c2c255db7e8d\">",
+    "domRead": {
+      "hasPkScript": true,
+      "pkSrc": "https://cdn.promotekit.com/pk.js",
+      "pkSiteId": "5d6458ec-b6b9-47df-a587-c2c255db7e8d",
+      "scriptAsync": true,
+      "scriptLoaded": "done"
+    },
+    "cdnReachable": "https://cdn.promotekit.com/pk.js -> HTTP 200, 137932 bytes (2026-09-14T13:36Z)"
+  },
+
+  "hop2_cspAdmitsIt": {
+    "verdict": "MEASURED PASS",
+    "servedCsp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://accounts.google.com https://cdn.promotekit.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-src 'self' https://js.stripe.com https://*.stripe.com https://hooks.stripe.com https://accounts.google.com; worker-src 'self' blob:",
+    "notJustTheHeader": "the script was observed EXECUTING, not merely permitted: window.promotekit exists (object) with a `refer` function on its prototype, and the global window.promotekit_referral is DECLARED (typeof 'object', value null) rather than undefined",
+    "noResourceTheCspBlocks": "DOM scan at 2026-09-14T14:29Z: iframes = 1 (Stripe's m-outer, already in frame-src); PromoteKit images = 0; PromoteKit link tags = 0; PromoteKit web fonts = 0. connect-src 'https:' covers api.promotekit.com",
+    "browserStorage": "no PromoteKit cookie and no PromoteKit localStorage key after the script ran; only Stripe's __stripe_mid / __stripe_sid"
+  },
+
+  "hop3_viaParamPopulatesTheVariable": {
+    "verdict": "MEASURED PASS",
+    "measuredAt": "2026-09-14T14:47Z",
+    "how": "real browser tab navigated to the operator's own affiliate link https://smartsite.cloud/?via=empressa, then CDP Runtime.evaluate on the loaded page",
+    "result": {
+      "href": "https://smartsite.cloud/?via=empressa",
+      "referralType": "string",
+      "referral": "43ff6ff0-44bf-404f-94aa-e6fdfa2558c5",
+      "cookie": "promotekit_referral=43ff6ff0-44bf-404f-94aa-e6fdfa2558c5",
+      "pkObject": "present, window.promotekit.refer is a function",
+      "localStorage": "no PromoteKit key",
+      "sessionStorage": "no PromoteKit key"
+    },
+    "THE_FINDING_THAT_DECIDES_THE_SESSION_READ": "the value is a VISIT-SCOPED UUID (43ff6ff0-44bf-404f-94aa-e6fdfa2558c5), NOT the affiliate slug 'empressa' that is in the ?via= parameter. So the Stripe session's metadata[promotekit_referral] must equal a UUID, never the string 'empressa'. An operator who opens ?via=empressa and then looks for 'empressa' in the session metadata will wrongly read a correct session as broken; and the UUID is per-visit, so it differs between the operator's browser and this measurement tab.",
+    "howToReadTheExpectedValue": "in the SAME browser that will run the checkout: open the affiliate link, read document.cookie for promotekit_referral (or run `window.promotekit_referral` in the console). That exact string is what must appear as metadata[promotekit_referral] on the created session.",
+    "alsoConfirms": "the populate half of the pipeline is alive on production: window.promotekit_referral is a non-null STRING, where the invented ?via=p185probe produced null. Same variable, same page; the only variable that changed is whether the affiliate resolves.",
+    "operatorSideConfirmation": "PromoteKit's dashboard showed Clicks 0 / Paying Referrals 0 before the operator's first visit; a click should now register there, which is an independent read of the same event from the vendor's side",
+    "carryForward": "the referral cookie persists in the browser, so a checkout run in that same browser carries it without needing the ?via= param again"
+  },
+
+  "hop4_clientReadsItAtCheckoutTime": {
+    "verdict": "MEASURED PASS (shipped code) + the null case matters",
+    "deployedBundle": "https://smartsite.cloud/assets/index-Ci49Gs8I.js (2042151 bytes, fetched and read 2026-09-14T13:36Z, re-read 14:37Z)",
+    "bundleProof_strongerThanAStringMatch": {
+      "promotekitReferral_occurrences": 2,
+      "bothArePOSTBodyKeys": [
+        "billing/checkout  -> body: JSON.stringify({tier:e.tier, interval:e.interval, ...(seats!==void 0?{seats:seats}:{}), ...(b?{promotekitReferral:b}:{}), uiMode:\"elements\", returnUrl:o, suc…})",
+        "entitlement/checkout -> body: JSON.stringify({parcelNodeId:e, ...(w?{promotekitReferral:w}:{}), uiMode:\"elements\", returnUrl:n.suc…})"
+      ],
+      "theReaderIsWiredAtBothCallSites": "the shipped reader `function VR(){ … const e=window.promotekit_referral; if(typeof e!=\"string\")return; const n=e.trim(); if(!(!n||n.le…` is called immediately before each fetch: `…b=VR();try{const u=await fetch(`${Ni}/api/property-explorer/v1/billing/checkout`,…` and `…w=VR();try{const b=await l(`${Ni}/api/property-explorer/v1/entitlement/checkout`,…` (VR() occurs 3 times: 1 definition + 2 call sites)",
+      "theReadIsAtCheckoutTime_notAtLoad": "the call sits inside the checkout function body, immediately before the fetch, not at module scope — which is the dispatch's requirement (the tag is async, so a load-time capture can be permanently empty)"
+    },
+    "shippedRule": "readPromotekitReferral() returns undefined for anything that is not a short whitespace-free string, so the live null window value produces NO field on the wire; both POST bodies use `...(x ? {promotekitReferral:x} : {})`, so an undefined reader result OMITS the key rather than sending an empty one",
+    "falsifierB_status": "the null value measured live on production is exactly the input that falsifier (b) names ('a session created without a referral carries the field' = a stale cached value). The shipped rule drops it — and the omit-spread means it cannot be sent as '' either."
+  },
+
+  "hop5_proxyAndServerForm": {
+    "verdict": "MEASURED (no regression) / UNMEASURED (does the field reach Stripe)",
+    "proxyHop": "POST https://smartsite.cloud/api/spine-deep/api/property-explorer/v1/entitlement/checkout with no referral, with promotekitReferral, with a malformed referral, and with a malformed JSON body -> HTTP 401 in all four cases (2026-09-14T14:26Z, and again after the shift at 14:31Z). The deep proxy resolves the route and auth precedes body validation, so the extra field neither 401s differently nor 400s at the proxy.",
+    "serverDirect": "POST https://cortex-api-tds7av26va-uc.a.run.app-equivalent routes with and without the field -> 401 both (auth gate). A differential on this route CANNOT decide the schema; it is reported as a null, not as evidence.",
+    "whereTheFormBodyIsActuallyDecided": "the CI route tests capture the form posted to /checkout/sessions (mockStripeCheckoutSession): 'billing/checkout: the referral rides metadata AND subscription_data, and allow_promotion_codes stays on' asserts form.get('metadata[promotekit_referral]')==='aff_abc123' AND form.get('subscription_data[metadata][promotekit_referral]')==='aff_abc123' AND allow_promotion_codes==='true'; the no-referral case asserts BOTH keys null; the unlock route asserts the session key present and the subscription key null. All five passed in CI run 34850116983 (Test job, 2026-09-14T13:39:59Z)."
+  },
+
+  "hop6_servingRevision": {
+    "verdict": "MEASURED PASS",
+    "image": "8f91d5d15e4c1dd04c497d207d302edd601fe70e = merge of legacy-design-tools#685 (2026-09-14T14:15:35Z)",
+    "revisionBefore": "cortex-api-00797-zus (100%)",
+    "revisionAfter": "cortex-api-00799-xaq (100%)",
+    "readByFieldName": "gcloud run services describe cortex-api --project=legacy-design-tools-prod --region=us-central1 --format='json(status.traffic)' -> {percent: 100, revisionName: cortex-api-00799-xaq, tag: canary}",
+    "probeAgainstServingRevision": "GET /api/healthz -> 200 {\"status\":\"ok\"}; the two PE checkout routes through the production deep proxy -> 401 with and without the field"
+  },
+
+  "clientDeployment": {
+    "deploymentId": "dpl_4ddpvQxgY4HkV74BxRCnCEUaraY6",
+    "url": "https://property-explorer-2knwjzrbt-empressaioemail-techs-projects.vercel.app",
+    "alias": "https://smartsite.cloud",
+    "buildEnv": "HAUSKA_BUILD_SHA=6765590f115612f27fbea7ceaec95c683f5c55a6",
+    "command": "vercel deploy --prod --yes (from hauska-map-p185-promotekit, with NODE_OPTIONS=--use-system-ca)",
+    "autoDeployOnMerge": "NO. Measured: after hauska-map#400 merged at 13:34:31Z the alias served no tag for 4 polls until this lane's explicit vercel deploy --prod at 13:36:11Z. The Vercel git integration does not auto-deploy main for this project; a merge is not a deploy."
+  },
+
+  "cortexDeployMechanismFinding": {
+    "verdict": "MEASURED — and it changes what a canary costs",
+    "what": "deploy-canary (--tag=canary --no-traffic) does NOT shift traffic on this service. Measured before/after at 2026-09-14T14:19Z/14:22Z: the 100% entry kept naming cortex-api-00797-zus and the new revision cortex-api-00799-xaq appeared with tag canary and no percent. Traffic is pinned to a revisionName, not to the tag; the earlier rendering of `tag: canary` on the 100% entry was gcloud resolving the tag for display only.",
+    "whyItMatters": "a canary deploy can be probed at https://canary---cortex-api-tds7av26va-uc.a.run.app WITHOUT a traffic lease; only shift-traffic (--to-tags=canary=100) needs one. This is the cheap order other lanes should use.",
+    "canarySmoke": "GET https://canary---cortex-api-tds7av26va-uc.a.run.app/api/healthz -> 200 {\"status\":\"ok\"} before the shift"
+  },
+
+  "unrelatedFailuresSeen": {
+    "canvaRouteTest": "CI run 34850116983 failed on src/__tests__/canva-route.test.ts:119 ('engagement canva assets + push > runs a push job to ready without Canva credentials', AssertionError: expected 0 to be greater than 0) — NOT a P-185 file and NOT touched by this lane. api-server 4404 passed / 1 failed. Re-running the failed job went green (run 34850116983, Test SUCCESS 2026-09-14T14:04Z), so the failure is flaky rather than caused by this merge. Recorded so a later lane does not read it as P-185's.",
+    "p154SurfaceRow": "the surface probe run at 2026-09-14T14:25Z reports FAIL P-154 48021:33223 (panel 20/5/20/- vs endpoint 25/7/15/7). Not this lane's row and not this lane's parcel; NOT touched here."
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "lane": "p178-publish",
+  "checkpoint": "CP2",
+  "at": "2026-09-14T14:35:00Z",
+  "phase": "Step 3 (staging publish + walk) executed. Stamp counts are EXACTLY as required, but the walk is RED on S13 -- a rule this dispatch places OUT OF SCOPE ('The walk's rule', 'Do not weaken the walk'). Step 4 NOT started: the gate requires a green staging walk.",
+  "planRows": ["P-180", "P-178"],
+
+  "step3_stagingPublish": {
+    "job": "factory-bastrop-publish",
+    "command": "bastrop-publish",
+    "target": "staging",
+    "county": "48209",
+    "gold": "48209:97658",
+    "execution": "factory-bastrop-publish-twtwq",
+    "publishRunId": "b0864dde-3e9f-43b4-bf14-49174abfea23",
+    "runRow": {
+      "id": "b0864dde-3e9f-43b4-bf14-49174abfea23",
+      "startedAt": "2026-09-14T13:43:52.639253+00",
+      "target": "staging:48209",
+      "status": "failure",
+      "refuseCode": "WALK_FAILED",
+      "note": "the write completed; the refusal is the walk verdict, not a bake or guard failure. dryRun=false on this row (the preceding 13:43:15 row 07eb6079 was dryRun=true and refused DRY_RUN_REFUSED)."
+    },
+    "verifyWalkRunRow": {
+      "id": "c636b630-1257-4e58-abb0-7e2df26abce6",
+      "startedAt": "2026-09-14T14:21:10.158579+00",
+      "command": "verify-walk",
+      "target": "staging:48209",
+      "status": "failure",
+      "execution": "factory-bastrop-publish-twtwq",
+      "publishRunId": "b0864dde-3e9f-43b4-bf14-49174abfea23",
+      "siteUrl": "https://smart-site-factory.vercel.app/site"
+    }
+  },
+
+  "stampCounts": {
+    "query": "SELECT COALESCE(payload_json->>'publishRunId','(none)') AS run_id, count(*) FROM place_layer_snapshots WHERE adapter_key='node-facets:tier1' AND place_key LIKE 'node:48209:%' GROUP BY 1 ORDER BY 2 DESC  (staging Neon, STAGING_NEONDB_URL)",
+    "result": [
+      { "publishRunId": "b0864dde-3e9f-43b4-bf14-49174abfea23", "rows": 173050 }
+    ],
+    "distinctRunIdsInStore": 1,
+    "required": 173050,
+    "observed": 173050,
+    "verdict": "MATCHES EXACTLY. The store is no longer MIXED: every one of the 173,050 Bastrop tier-1 rows carries the current publishRunId and no other run id appears."
+  },
+
+  "walkVerdict": {
+    "verdict": "fail",
+    "parcelCount": 86,
+    "retiredCount": 0,
+    "servedCount": 85,
+    "gradeHistogram": {
+      "BP-MEANING-01 pass": 69,
+      "BP-PUBLISH-RUN-01 fail": 0,
+      "S13 fail": 16,
+      "BP-VERIFY-01 pass": 1
+    },
+    "sFamiliesFailed": { "S13": 16 },
+    "failingParcels": [
+      "48209:84629", "48209:84630", "48209:84631", "48209:84635", "48209:84636", "48209:84637",
+      "48209:84639", "48209:84641", "48209:84642", "48209:84643", "48209:84644", "48209:84645",
+      "48209:84646", "48209:84647", "48209:84648", "48209:38774"
+    ],
+    "s13Reason_verbatim_example_48209_84639": "provenance {\"status\":\"absent\",\"asOf\":\"2026-09-14T14:21:21.891Z\",\"provenanceClass\":\"Record\",\"subjectKind\":\"extensional\",\"chainAnchoring\":\"backfill\",\"serveLayer\":\"zoning\",\"entityType\":\"zoning-fact\",\"derivation\":{\"method\":\"city-limits-containment\",\"source\":\"tx_city_boundary\",\"cityLimitsStatus\":\"unmeasured\",\"queryPoint\":{\"longitude\":-97.92589,\"latitude\":29.8719},\"place\":null,\"countyDoctrine\":\"unzoned-unincorporated\"},\"verdict\":\"refused\",\"authority\":\"unresolved\",\"scopeSearched\":\"incorporated-place polygons in tx_city_boundary; query point lng -97.92589 lat 29.8719\",\"basis\":\"parcel_record cityLimits refused (no-such-parcel-or-rail): No parcel_record_cell row for 48209:84639/cityLimits. Either the parcel is outside the program's landing population, or the rail key is not one of the 65.\",\"mirrors\":\"zoning\"} is placeholder or off the allowlist"
+  },
+
+  "falsifiers_preRegistered": [
+    {
+      "falsifier": "If the staging walk fails BP-PUBLISH-RUN-01 on any node after step 3, the retirement pass missed a population; name it.",
+      "observed": "NOT TRIGGERED. BP-PUBLISH-RUN-01 occurrences on the current walk: 0 (it was 16 on fwv5s at 05:01 before this fix). The named failure the dispatch and PR #686 exist to clear is gone."
+    },
+    {
+      "falsifier": "If any excluded node serves facts after step 3, the pass wrote more than a retirement.",
+      "observed": "NOT TRIGGERED for this pass. Rows written by the retirement pass (provenance.tierNote LIKE 'retired: this node is account-keyed%', 56,629 rows): 0 carry a top-level baseFacts. Every retired payload is facts-free by construction (ACCOUNT_KEYED_RETIREMENT_FORBIDDEN_FACT_KEYS names baseFacts among the forbidden keys).",
+      "separate_population_worth_knowing": "1,386 OTHER rows in the same store are marked recordRetirement.status='retired' AND DO carry facts. They are NOT this pass's output: their provenance.tierNote is the ordinary bake's, they serve the normal shape (source conformant-v1-cad-parcel-roll, real acreage/landUse/situs), and their retirement basis is a DIFFERENT rule -- prop_id absent from the CAD roll's declared tax_year 2026 ('This account is not on the current roll -- split, merged, renumbered or removed; no successor account has been verified. The facts elsewhere on this payload are the LAST-KNOWN claim, not current.'). That mechanism deliberately serves last-known facts. Account-keyed retirements (56,629) + CAD-roll retirements (1,386) = 58,015 retired rows, which is why retired_total reads 58,015 while this pass wrote 56,629."
+    },
+    {
+      "falsifier": "If current-run rows on staging differ from 173,050, the work list changed shape; explain it.",
+      "observed": "NOT TRIGGERED. Exactly 173,050 rows carry the current publishRunId and no other run id is present. The dispatch's intake note described the store as MIXED at 116,421 (current bake) + 56,629 (previous) = 173,050; this publish resolved it to a single run id and the two intake classes sum exactly to the required figure, so the work list did not change shape."
+    }
+  ],
+
+  "theNewBlocker": {
+    "summary": "The stamp the walk wanted now exists on every row, but the walk is still red: the same 16 account-keyed nodes that used to fail BP-PUBLISH-RUN-01 now fail S13, because a facts-free retirement payload has no `provenance.parcelSource` and the next token in S13's reach is a mirrored zoning REFUSAL OBJECT, which S13 stringifies and rejects as off-allowlist.",
+    "rootCauseChain": [
+      "1. The retirement payload (buildAccountKeyedRetirementPayload, accountKeyedWork.ts) is facts-free and sets provenance = { tierNote, roadsPending } -- no parcelSource, no landUseSource, no zoningSource (omission is the honest shape: a retired account has no parcel source).",
+      "2. `zoningSourceMirror` (LDT artifacts/api-server/src/lib/structuralFactToFacetsWire.ts:102-145) mirrors the node's zoning rail onto provenance.zoningSource -- deliberately and with a docstring saying so ('This leaf never decides anything. It COPIES ... if the rail refuses, the twin refuses'). For an account-keyed node the rail carries no parcel_record cityLimits cell, so the rail is a serve-composed REFUSAL OBJECT and the mirror copies that object.",
+      "3. `servedProvenanceTokens` (factory src/stages/grade/s-rules.mjs:700-704) takes the first of provenance.parcelSource / landUseSource / zoningSource, filtering only `t != null && t !== false` -- so a non-string REFUSAL OBJECT is accepted as a 'provenance token'. On a normal node `parcelSource = \"conformant-v1-cad-parcel-roll\"` (on the allowlist) is chosen first and S13 passes; on a facts-free retired node there is no parcelSource, so the refusal object becomes tokens[0].",
+      "4. `gradeS13` (s-rules.mjs:627-658) stringifies it and tests it against DEFAULT_PROVENANCE_ALLOWLIST -> FAIL ('is placeholder or off the allowlist').",
+      "5. `walkParcel` (verify-walk.mjs) promotes that S13 FAIL over the retirement grade, because the retirement branch returns verdict 'pass' (grade 'RETIRED') and the promotion only tests `grade.verdict === 'pass'`. Final grade becomes S13, which is exactly why retiredCount is 0 even though all 16 carry earned, current-run-stamped retirements."
+    ],
+    "evidenceThatTheRetirementItselfWasAdmitted": "The served body for 48209:84629 (GET https://smart-site-factory.vercel.app/site/api/spine/cortex/api/brokerage/v1/place/node/48209:84629/facets) carries facets.publishRunId = b0864dde-3e9f-43b4-bf14-49174abfea23 AND facets.recordRetirement = {status 'retired', verdict 'absent-verified', authority/scopeSearched/asOf/basis all non-empty, lastSeenTaxYear 2025} -- i.e. a well-formed retirement by the very predicate the walk imports (isEarnedRecordRetirement, LDT recordRetirement.ts:41). The walk's retirement branch admits it; S13 is what then replaces the grade.",
+    "whyThisIsNotThisPassesFault": "The pass did what A-146 option B ruled: current run stamp, no facts. The object in the token position is produced downstream (the mirror copying a refusal rail), and it is rejected by a *rule*, not by a data defect.",
+    "whyTheOldGreenWalkWasGreen": "Walk 91c3bfd5 (2026-09-14T03:36:42Z, pass, 96 parcels, retiredCount 16) graded its retired nodes RETIRED because those pre-P-180 payloads still carried the normal bake's provenance including an allowlisted parcelSource, so S13 never failed. Its retired block (48209:135540-135573) does not even appear in the later 86-parcel sweeps. The green was therefore incidental to retired nodes still carrying fact-shaped payloads -- the very condition P-180 option B removes.",
+    "whyUnmeasuredWouldBeEnough": "isNonPassGrade (src/stages/grade/v-rules.mjs:74) is true ONLY for FAIL and KNOWN_OPEN; UNMEASURED is not a non-pass grade, and gradeS13 already returns unmeasured('S13', ...) when no token is supplied. So an S13 that measured no token would leave these 16 graded RETIRED and the walk green -- consistent with retiredCount 16 on the pre-P-180 walk."
+  },
+
+  "operatorGate": {
+    "gate": "step 4 -- the PRODUCTION publish (the serving-store write)",
+    "status": "NOT CROSSED, NOT REQUESTED-FOR-EXECUTION YET",
+    "whyNotCrossed": "The dispatch makes the gate conditional: cross it only after the step-3 staging walk is GREEN and the stamp counts are pasted. The stamp counts are pasted and exact (173,050), but the walk is RED (16 x S13). The condition is therefore half-met and the gate stays shut.",
+    "requestText": "OPERATOR REQUEST (step 3 -> step 4). The P-180 walk fix (LDT #686, merge 84f4e7c9, all checks pass; factory pin #147, merge db3aa54c, all checks pass) works as ruled: staging 48209 tier-1 is now a single uniform run -- 173,050 rows at publishRunId b0864dde-3e9f-43b4-bf14-49174abfea23, exactly the required count -- and BP-PUBLISH-RUN-01 is now 0 occurrences (was 16). The staging walk is nevertheless RED: 16 account-keyed parcels fail S13, 'provenance <mirrored zoning refusal object> is placeholder or off the allowlist'. The cause is not the retirement pass: a facts-free retirement payload has no provenance.parcelSource, so S13's token selection reaches the zoning REFUSAL OBJECT that zoningSourceMirror copies onto provenance.zoningSource, and S13 stringifies and rejects it. The fix is therefore in the WALK'S RULE (servedProvenanceTokens accepting a non-string as a token, and/or walkParcel promoting an S-family failure over a RETIRED grade), which this dispatch places out of scope ('Do not weaken the walk'; Out of scope: 'The walk's rule'). I have not touched it. DECISION NEEDED: (a) rule that an S13 with no measured token is UNMEASURED rather than FAIL (isNonPassGrade already treats UNMEASURED as acceptable, and gradeS13 already emits UNMEASURED when no token is supplied), and/or (b) rule that walkParcel does not promote an S-family failure over a RECORD_RETIRED grade -- a retired node is not a served claim, which is the walk's own retiredCount/servedCount doctrine; and (c) authorise the production publish (step 4) once green.",
+    "leastChangeOptionsForRuling": [
+      "(a) servedProvenanceTokens: accept only string tokens (it already filters null/false) so a mirrored refusal object yields no token -> S13 UNMEASURED -> not a failure -> the 16 grade RETIRED. Smallest change; keeps S13's allowlist semantics intact for actual tokens.",
+      "(b) walkParcel: skip the S-family promotion when grade.grade === RECORD_RETIRED ('RETIRED'), matching the documented disjoint-class doctrine.",
+      "(c) Neither: if S13 firing on a mirrored refusal is intended, then a facts-free retirement payload can never walk green and the P-180 ruling needs revisiting -- note there is NO honest in-lane fix: setting provenance.parcelSource to an allowlisted token would fabricate a parcel source for a node that has none, and the mirror overwrites zoningSource regardless of what the payload sets."
+    ]
+  },
+
+  "measuredButNotActedOn": [
+    "Walk 91c3bfd5 (03:36:42Z) is the last GREEN staging walk: 96 parcels, retiredCount 16, 79 BP-MEANING-01, 1 BP-VERIFY-01. Walks 51babb00 (04:22:46Z) and fae26de7 (05:01:09Z) are red on 16 x BP-PUBLISH-RUN-01, with retiredCount 0, and their sweeps are the same 846xx population that fails S13 now. The 04:22/05:01 walks are the pre-fix baseline this lane was dispatched against.",
+    "Another lane merged a competing _LDT_SHA bump after this lane's pin: LDT #687 (bae48d40, merged 13:44:50Z) and factory #148 ('chore(P-183): bump _LDT_SHA to bae48d40', merged 13:46:57Z), i.e. 13 minutes after #147 and about 3 minutes after this lane's publish started. This lane's staging publish ran on 84f4e7c9. Flagged only so the planner does not attribute a later production build to this lane's pin; not a claim of defect.",
+    "Factory runs table has no walk_id column; the walk is joined through runs.scope->>'publishRunId' and verify_walks.id, and verify_walks timestamps on `at` (not created_at). Cost this lane two failed queries; recorded in fleet memory.",
+    "`rg -r` is a REPLACE flag, not a recursive flag, in this environment: `rg -rn \"S13\" src/` silently rewrote every match to the replacement string. Recursion is implicit via the path argument; use `rg -n`."
+  ],
+
+  "reVerification_2026-09-14T14:33Z": {
+    "artifact": "_inbox/2026-09-14_143305_p178-publish_s13_forensics.json",
+    "whatItAdds": "An independent re-derivation of the same blocker from the live surface and the walk's own source, run after the CP2 above was filed. Nothing in the CP2 above was contradicted; these readings tighten it.",
+    "newlyMeasured": [
+      "The SERVED retirement marker (not just the stored one) is well-formed by the walk's own predicate: all seven fields of isEarnedRecordRetirement are present with the right types on facets.recordRetirement for 48209:84629 (status 'retired', verdict 'absent-verified', authority/scopeSearched/asOf/basis non-empty, lastSeenTaxYear 2025). So the retirement IS admitted; the S13 promotion is what replaces the grade.",
+      "The line that does the replacing is verify-walk.mjs:743-757 ('if (grade.verdict === \"pass\") { const failed = firstSFail(sGrades); ... }'), which tests verdict only -- so RECORD_RETIRED's 'pass' is not terminal. This is why retiredCount reads 0 on a walk whose retired nodes were admitted.",
+      "DEFAULT_PROVENANCE_ALLOWLIST (s-rules.mjs:531-540) contains txgio_parcel. Recorded because it makes a token-substitution 'fix' look available; it is still fabrication (see below) and the serve's zoning mirror would not read it.",
+      "The two walks' non-pass sets are IDENTICAL: 86 of 86 parcels in both c636b630 and fae26de7; only the 16 retired parcels' rule changed (BP-PUBLISH-RUN-01 -> S13). Both walks have retiredCount 0.",
+      "Production still 404s on 48209:84629 (the P-180 gap), while 48209:97658 serves the old-shape payload at b5e54917 -- i.e. this lane's staging work is a staging-only state change, which is why step 4 remains a real serving-store write and not a formality.",
+      "The excluded population's fact audit is clean at the store: of 56,629 retired rows, 0 carry a zoning value, 0 an envelope value, 0 acreage, 0 landUse, 0 non-empty baseFacts."
+    ],
+    "whatIsNotTheFix": "Naming an allowlisted token in the retirement payload's provenance.parcelSource. The slot names the source that SUPPLIED a parcel record, and a retired account-keyed node has none -- that is fabrication, and the serve mirrors the zoning rail onto provenance.zoningSource independently of what the payload sets. The fix belongs to the walk's rule and to the operator's ruling; this lane did not touch it."
+  },
+  "next": "Blocked at the step-4 gate pending an operator ruling on the walk's rule. Close filed with status 'blocked'."
+}
