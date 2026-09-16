@@ -8,6 +8,7 @@ owner: integration seat (overseer); lanes on the property, substrate and dispatc
 plan_rows: P-186 through P-198 (OPS-16 A-149), P-200 through P-250, P-252 through P-291 (A-183); absorbs P-124, P-156, P-181, P-182, P-184 and OPS-21's writer leftovers
 snapshot: doc_repo main 82e6b503. Stage statuses trace to _inbox/2026-09-14_county_to_serving_program_map.md rev 2 (measured 2026-09-13/14) and to OPS-23's card. Re-run the instruments named per row before trusting a status.
 related:
+  - _inbox/2026-09-16_texas_scaleup_ROADMAP.md (living roadmap: done and left, updated as rows move)
   - _inbox/2026-09-14_county_to_serving_program_map.md
   - _inbox/2026-09-13_HANDOFF_national_program_package.md
   - _inbox/2026-09-13_dead_controls_ranked_fixes.md

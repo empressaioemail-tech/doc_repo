@@ -19,6 +19,7 @@ snapshot: |
   0bf2377f, hauska-engine 422c7d3a; the zero-earned probe executed against an extracted factory
   tree at 9171279.
 related:
+  - _inbox/2026-09-16_texas_scaleup_ROADMAP.md (living roadmap: done and left)
   - _inbox/2026-09-16_scaleup_final_teardown_review.md
   - _inbox/2026-09-16_engine_api_tag_url_gate_bypass_finding.md
   - 90_operations/OPS-24_county_to_serving_program.md
