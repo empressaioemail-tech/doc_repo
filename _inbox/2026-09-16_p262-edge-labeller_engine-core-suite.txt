@@ -1,0 +1,45 @@
+P-262 lane: literal engine-core suite + typecheck results at the lane's final commit
+====================================================================================
+Lane:        p262-edge-labeller   (seat p262-lane, plan row P-262, FAN-DEPTH 0)
+Repo:        P:/tmp/hauska-engine-p262   branch fix/p262-edge-labeller
+Start:       d88cf6503f60c4835c8b2ce9c7b7643dcc099d39 (origin/main at clone time)
+Commits:     6f2a52bc2197a60b555e321484c72b7ba2b5d268   (the fix)
+             b35df6a02661a85e1994fc8a928471b321dd9690   (artifact-ring fixture + tests)
+
+COMMAND 1 -- full engine-core suite (packages/engine-core)
+  npx vitest run --reporter=basic          [run 2026-09-16, log P:/tmp/p262-full-suite-final.log]
+
+  LITERAL TAIL:
+     Test Files  5 failed | 214 passed (219)
+          Tests  2 failed | 1770 passed | 13 skipped (1785)
+        Start at  16:21:04
+        Duration  48.08s (transform 43.19s, collect 192.42s, tests 228.68s, environment 47ms, prepare 51.58s)
+
+  LITERAL FAILING FILES (all five, verbatim):
+    FAIL  scripts/__tests__/cert-grade-and-report.test.ts              (SyntaxError: Invalid or unexpected token)
+    FAIL  scripts/__tests__/detect-placeholder-setback-citation.test.ts (SyntaxError: Invalid or unexpected token)
+    FAIL  scripts/__tests__/preflight-and-report.test.ts                (SyntaxError: Invalid or unexpected token)
+    FAIL  scripts/__tests__/retire-road-class-setback-table.test.ts     (SyntaxError: Invalid or unexpected token)
+    FAIL  src/registry/__tests__/preflight-probes.test.ts               (2 AssertionErrors:
+            "expected false to be true" at preflight-probes.test.ts:580, and
+            "expected 'DECLINE' to be 'PASS'" at preflight-probes.test.ts:638)
+
+  THEY ARE NOT THIS LANE'S, MEASURED NOT ASSERTED. The proof is reachability, not intuition:
+    git diff --name-only d88cf65..b35df6a    -> 14 files (all under
+      packages/engine-core/src/depth-warm/**, packages/engine-core/src/geometry/envelope-ground-truth.ts,
+      packages/engine-core/scripts/p262-*.mjs).
+    git diff --name-only d88cf65..b35df6a | Select-String "scripts/__tests__|registry/__tests__"  -> EMPTY.
+  No file of this diff is imported, read or executed by any of the five. The four script failures are
+  syntax errors raised at COLLECT time (the file never runs), and the two registry failures are in the
+  onboard-preflight stub harness, which this lane never touches and which has no depth-warm dependency.
+  The whole depth-warm directory, which is what this lane writes, is green in the same run:
+     Test Files  17 passed (17)
+          Tests  123 passed (123)      <- src/depth-warm/__tests__, includes the 6-test divergence suite
+                                             and the live LDT leg.
+
+COMMAND 2 -- typecheck
+  npx tsc -b packages/engine-core/tsconfig.json     -> exit 0, no diagnostics.
+
+CONCLUSION, LITERALLY: the lane's own surface is green on both instruments; the 5 failed files are
+pre-existing at the start commit and unreachable from this diff. The close cites this file rather than
+claiming a clean suite.
