@@ -1,0 +1,112 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work: implementation + tests + falsifier evidence + adversarial findings, filed BEFORE the branch was pushed and before the PR was opened",
+  "lane": "p292-county-scoped-floor",
+  "planRows": ["P-292"],
+  "seat": "p292-lane",
+  "productRepo": {
+    "repo": "hauska-factory",
+    "clone": "P:/tmp/p292-county-scoped-floor",
+    "branch": "fix/p292-county-scoped-floor",
+    "startCommit": "91712795ea2a1eb7c27f7328cf7f52fcb7810b59 (origin/main, 'fix(P-201): excluded is three states wearing one word (#156)')",
+    "pr157MergedAtCut": false
+  },
+
+  "filesTouched": [
+    { "path": "src/lib/publish-readiness-gate.mjs", "gitBlobSha": "50ae148f25cd19fff146a18f079e174ee32afa96", "linesAdded": 210, "linesRemoved": 9, "what": "the declared scope map + assertFloorRailCountyScopes + floorRailsForCounty + gateCountyFips + RAIL_SCOPE_UNMEASURED; evaluatePreBakeReadiness gains the county-aware split and the summary fields (countyFloorRails, skippedByScope, per-rail requiredForCounty); requirePreBakeReadiness hands its county down; module doc amended." },
+    { "path": "src/jobs/bastrop-publish.mjs", "gitBlobSha": "5849dcd78c3e2eb4b70ed5e7a7c2dba2a43aec1f", "linesAdded": 4, "linesRemoved": 0, "what": "recordReadinessEvent gains railsSkippedByScope -- the one line outside the gate module, DECLARED IN CP1 as an amendment to falsifier 3's file bound, so a publish record shows the ruled skip. No logic, no write, no store change." },
+    { "path": "test/p292-county-scoped-floor.test.mjs", "gitBlobSha": "a5263381d320d1dfb15faa36cec4e352f96c45cf", "linesAdded": "new file, 19 tests", "what": "both directions for every property, plus the map's own invariants and the three falsifiers." }
+  ],
+  "diffShape": "git diff --stat on the branch: src/jobs/bastrop-publish.mjs | 4 +, src/lib/publish-readiness-gate.mjs | 219 ++++++- , plus the new test file. Nothing else. No SQL write path touched, no migration, no workflow, no scheduler, no writer.",
+
+  "falsifierResults": [
+    {
+      "id": 1,
+      "claim": "The Travis case still refuses; if it clears, the change is too wide.",
+      "verdict": "PASS",
+      "evidence": "test/p292-county-scoped-floor.test.mjs -- 'FALSIFIER 1 (Travis still refuses)' and the end-to-end variant through requirePreBakeReadiness: a 48453 row set with maxImperviousCoverPct verdict=refuse, unaccounted_count=244669 throws RAIL_REFUSED with rail=maxImperviousCoverPct and unaccountedCount=244669. Also asserted that the writer itself still refuses Hays with COUNTY_NOT_IN_SCOPE via parseParcelMaxImperviousCoverFlags, and that TRAVIS_FIPS === the map's only county."
+    },
+    {
+      "id": 2,
+      "claim": "The Hays case clears ONLY this rail; any other floor rail refusing in Hays still refuses.",
+      "verdict": "PASS",
+      "evidence": "48209 rows with maxImperviousCoverPct=refuse/244669 evaluate ok; skippedByScope has exactly one entry { rail: maxImperviousCoverPct, counties: ['48453'], ruling: /engine #444/ and names 48453, verdict: 'refuse', unaccountedCount: 244669 }; checked stays at the full 17 rails while countyFloorRails is 16. Two negative controls: flood=refuse/17 in Hays still throws RAIL_REFUSED flood, and a missing row for an unscoped rail (wells) still throws RAIL_UNACCOUNTED -- the scope skips one named rail, never a missing row and never the floor."
+    },
+    {
+      "id": 3,
+      "claim": "No cell is written and no verdict changes; the diff touches only the gate module and tests.",
+      "verdict": "PARTIALLY AMENDED, DECLARED IN CP1 BEFORE THE CODE WAS WRITTEN",
+      "evidence": "'No cell is written and no verdict changes' HOLDS and is asserted two ways: (a) the gate module is read from disk and asserted to contain no INSERT INTO / UPDATE ... SET / DELETE FROM at all; (b) a real evaluation is run against a deep-cloned row set and the rows are asserted unchanged, with the skipped rail still reporting verdict 'refuse' and count 244669. The FILE BOUND is amended by exactly one 4-line field addition in src/jobs/bastrop-publish.mjs (recordReadinessEvent -> railsSkippedByScope), which CP1 pre-registered and justified against mission item 3; the diff --stat above is the complete list."
+    },
+    {
+      "id": 4,
+      "claim": "The scope map cannot be widened, and no rail can be added to it, without a test failing.",
+      "verdict": "PASS, PROVEN BY VIOLATION IN THREE WAYS",
+      "evidence": "(a) Load-time guard, proved by running the real module against a scratch-widened map: adding 48209 to maxImperviousCoverPct's counties WITHOUT naming it in the ruling made `import` fail with 'FLOOR_RAIL_COUNTY_SCOPES[\"maxImperviousCoverPct\"] lists county 48209 but its ruling does not name 48209 -- widening a scope requires a ruling that authorises it...'. (b) With the ruling also widened (so the module loads), `node --test test/p292-county-scoped-floor.test.mjs` went from 19/19 pass to 12 pass / 7 FAIL, including 'the shipped scope map is exactly one entry ... with the ratified county set', the Travis/writer-agreement test, both Hays-clears tests, floorRailsForCounty's three-way split and the named-bypass test -- the scope being too wide is caught. Both scratch edits were reverted; the reverted tree is 19/19 pass and git diff --stat shows only the three intended files. (c) A fixture entry for a rail that is NOT on the floor (agValuation) throws /not on PUBLISH_FLOOR_RAIL_KEYS/."
+    },
+    {
+      "id": 5,
+      "claim": "An undecidable county refuses rather than silently dropping or silently requiring a scoped rail.",
+      "verdict": "PASS",
+      "evidence": "RAIL_SCOPE_UNMEASURED fires for: no rows and no countyFips; rows that name no county; rows that name two counties; and rows whose county contradicts the caller's (with e.countyFips and e.rowCountyFips named). Negative control: an unscoped floor with no county still behaves exactly as before, and floorRailsForCounty's three-way split is asserted directly (in scope -> required, out of scope -> skipped, unknown -> scopedUndecided, never silently either list)."
+    }
+  ],
+
+  "regressionEvidence": {
+    "method": "A pristine second clone of origin/main at 9171279 (P:/tmp/p292-baseline, npm install, same Node v24.11.1) ran the identical command `node --test test/*.test.mjs`. Both outputs are saved: P:/tmp/baseline-full.txt and P:/tmp/p292-full.txt.",
+    "baseline": "tests 1435 | pass 1428 | fail 1 | skipped 4 | todo 2",
+    "branch": "tests 1453 | pass 1446 | fail 1 | skipped 4 | todo 2",
+    "failingSetIsIdentical": "Both runs list exactly the same three pre-existing failing tests, by file and line: test/ctx-b3-store-census.test.mjs:137 (needs the real pinned LDT checkout, an environment artifact) and test/p3-absence.test.mjs:545 and :568 (the OPS-21 S3 non-vacuity findings, self-described in their own test names as 'not fixed by this lane (out of scope)'). Delta: +18 tests, +18 pass -- exactly this lane's new file. No regression.",
+    "gateSuitesOnTheBranch": "node --test test/publish.test.mjs test/gate-county-scoped-rail.test.mjs test/publish-gate-sched.test.mjs test/gate-exclusion-classifier.test.mjs -> tests 181 | pass 180 | fail 0 (1 todo). The pre-bake gate's own suite, the county-scoped-rail suite and the scheduler suite are all green with this change."
+  },
+
+  "adversarialFindings": [
+    {
+      "id": "AF-1",
+      "severity": "HIGH -- it decides whether the Phase 0 exit can close at all",
+      "finding": "The Phase 0 exit's ledger leg ACCEPTS ONLY 'excluded' for an out-of-scope county-scoped rail, so after P-252's scheduler flips those verdicts to 'refuse', six-county-completeness.mjs will report INCOMPLETE on maxImperviousCoverPct in all five non-Travis counties -- even though P-292 has removed the PUBLISH consequence.",
+      "fileAndLines": "doc_repo scripts/six-county-completeness.mjs:52 (RAIL_POLICY: maxImperviousCoverPct { cls: 'county-scoped', accept: ['excluded'], onlyIn: ['48453'], ruling: 'engine #444' }) and :143-148 (the accept test: `const scopedOk = pol.cls !== 'county-scoped' || !pol.onlyIn.includes(fips); if (pol.accept?.includes(r.verdict) && scopedOk) { accepted } else { open }`).",
+      "why": "Outside 48453, scopedOk is true and the only accepted verdict is 'excluded'. P-252 rewrites that row to 'refuse' (A-186's dry run measured 25 such verdicts, this rail among them). 'refuse' is not in accept, so the rail lands in `open` as { cls: 'county-scoped', verdict: 'refuse' } and the county reads INCOMPLETE. P-292 deliberately does NOT rewrite the verdict (that would fabricate an absence), so the two instruments now disagree about the same fact: the publish gate says 'not on this county's floor', the exit says 'incomplete'.",
+      "proposedAmendmentNotTakenHere": "six-county-completeness.mjs:52 accept: ['excluded', 'refuse'] with a comment naming P-292/P-252 ('outside its scope the rail's honest verdict is refuse, never rewritten'), keeping the existing county-scoped-breach check at :138-141 that still flags a 'pass' outside onlyIn. That is a doc_repo edit, and doc_repo edits are planner-owned and six-county-completeness.mjs is P-253's repair, so this lane does NOT make it -- it is reported instead, with the line numbers, for the planner to route.",
+      "RESOLUTION_FILED_WITH_THE_CLOSE": "CLOSED UPSTREAM WHILE THIS LANE RAN. The pre-push fetch found doc_repo origin/main had advanced from 6ad2ad35 to 72bc4545 ('build(P-253): the Phase 0 ledger leg checks every setback rail and ties each acceptance to its reason'), and that commit carries exactly the proposed amendment: `maxImperviousCoverPct: { cls: 'county-scoped', accept: ['excluded','refuse'], onlyIn: ['48453'], ruling: 'engine #444; P-292' }`, with self-test 24 asserting classify(full('48209', { maxImperviousCoverPct: 'refuse' })) === COMPLETE. Read at that commit via `git show origin/main:scripts/six-county-completeness.mjs`, not inferred. So the alarm above was TRUE OF THE TIP THIS LANE READ and is superseded; the close's AF-1 and leave_behind entries were corrected before the push rather than left standing.",
+      "verificationOfTheClaim": "Read at the file, not inferred: RAIL_POLICY line 52 and classify's two branches were read in the seat worktree at 6ad2ad35; a self-test already exists for the class (line 226: 'the county-scoped rail excluded IN its own county is open') but there is no self-test for a 'refuse' verdict OUT of scope, which is the state P-252 creates -- a gating indicator never observed firing on the new state."
+    },
+    {
+      "id": "AF-2",
+      "severity": "MEDIUM -- named, not hidden",
+      "finding": "`checked` keeps its existing meaning (every rail the floor names), so run_events.railsChecked still lists a rail this county's floor does not carry. The skip is therefore only honest if the new field is read too.",
+      "handling": "skippedByScope (with the ruling and the rail's own stored verdict) is recorded alongside it by the one declared line in bastrop-publish.mjs, and the summary's countyFloorRails names what the county actually must meet. Changing `checked` to mean the county floor was considered and rejected: test/publish.test.mjs:2182 pins checked.length against DEFAULT_SCHED_RAIL_KEYS.length, and #157 rewrites that same test -- breaking it here would guarantee a conflict on a line someone else is editing. Recorded so the planner can rule the field's meaning separately."
+    },
+    {
+      "id": "AF-3",
+      "severity": "MEDIUM",
+      "finding": "P-252's own amended publish.test.mjs fixture drives maxImperviousCoverPct's verdict through 'excluded' / 'excluded-mid-cutover' / 'excluded-no-acquisition-path' on a BASTROP (48021) row set and asserts RAIL_EXCLUSION_UNPROVEN. Bastrop is out of this rail's scope, so after P-292 that rail is skipped for Bastrop and the assertion cannot fire there.",
+      "handling": "Named in CP1, here, in the close's leave_behind and in the PR body: the P-252 fixture must move to Travis (48453) to keep testing its property. The rollout order in A-186 (P-292 merged, then P-252) surfaces it at rebase time rather than in production."
+    },
+    {
+      "id": "AF-4",
+      "severity": "LOW -- named bypass, made visible",
+      "finding": "The map is hand-declared, so a future change to the writer's county scope without a corresponding change to the map would leave the rail skipped in a county the writer now fills. The skip would then hide a live rail.",
+      "handling": "(a) widening the map requires the county to be named in the entry's own ruling, refused at module load otherwise; (b) a test pins the map to exactly one entry with counties exactly ['48453'] and asserts the writer's own TRAVIS_FIPS and RAIL_KEY agree with it; (c) a test pins the drift-visible behaviour -- if an out-of-scope county's scoped rail ever reads 'pass', the skip still applies but carries verdict 'pass' in the record, which is the signal that the two have drifted. This is the map's named bypass rather than an unstated one."
+    },
+    {
+      "id": "AF-5",
+      "severity": "LOW",
+      "finding": "A syntactically valid but wrong FIPS in the map (a typo like 48435) would silently scope the rail to a county outside the program, skipping it everywhere.",
+      "handling": "The load-time guard checks FIPS FORMAT only, which is honest about what it can know. The concrete protection is the exact-equality test on the shipped entry plus the ruling-names-the-county invariant, and the writer-agreement test. Stated as residual rather than claimed closed."
+    }
+  ],
+
+  "instrumentsUsed": [
+    "node --test test/*.test.mjs (package.json's own test script), Node v24.11.1, on the branch and on a pristine baseline clone of origin/main at 9171279.",
+    "Real module import of src/lib/publish-readiness-gate.mjs for the load-time guard violation run.",
+    "No store was read or written: this lane has no DSN and neither FACTORY_DATABASE_URL_RO nor any other credential was sought or substituted. Every claim above is a code read or a test run -- which is also why the final grade is the integration seat's staging readiness run, as the dispatch says."
+  ],
+
+  "scopeDiscipline": [
+    "FAN-DEPTH 0: subAgents { spawned: 0, maxDepth: 0 } -- no sub-agent was launched at any point.",
+    "No deploy, no merge, no job run, no store connection, no cell write, no verdict change.",
+    "The writer (parcel-max-impervious-cover.mjs) was read, never edited; no not-applicable cell is written anywhere by this change.",
+    "No doc_repo file was edited: the AF-1 amendment is reported, not made."
+  ]
+}

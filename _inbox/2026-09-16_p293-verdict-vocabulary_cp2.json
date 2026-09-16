@@ -1,0 +1,131 @@
+{
+  "checkpoint": "CP2",
+  "kind": "implementation + evidence, filed after the code and tests were written and run, before the close",
+  "lane": "p293-verdict-vocabulary",
+  "planRows": ["P-293"],
+  "seat": "claude-p293",
+  "filedAt": "2026-09-16T19:22:00.000Z",
+  "docRepoWorktree": {
+    "writtenTo": ["P:/doc_repo/_inbox", "P:/seat-worktrees/dispatch-planner/doc_repo/_inbox"],
+    "whyTwo": "This session is not rooted in a doc_repo worktree (its workspace root is C:/Users/cente; the dispatch was located at the path given, P:/doc_repo/_dispatches/...). The dispatch's checkpoint note says the paths are relative to the worktree the session is RUNNING YOU is rooted in, names the dispatch planner's worktree for a spawned lane, and warns that two lanes per wave wrote into another seat's worktree and had their artifacts found by hand. Since neither root is unambiguous here, the artifacts are written to BOTH the integration checkout's inbox and the planner's worktree inbox, byte-identical, with the paths declared here rather than guessed at. Verified identical after the copy (Compare-Object over the three files: no differences).",
+    "precedentFollowed": "2026-09-16_p252-zero-earned-refusal_cp2.json exists in both inboxes with the same content, so this is the observed convention for this dispatch shape, not an invention."
+  },
+  "productRepo": {
+    "repo": "legacy-design-tools",
+    "clone": "P:/tmp/legacy-design-tools-p293-verdict-vocabulary",
+    "branch": "fix/p293-verdict-vocabulary",
+    "startCommit": "62e7349b4d8d4837d62da7f0f1cc7e7d2d00fb0f",
+    "endCommit": "f1443ad5 'fix(gate-verdict): read the factory's P-201 excluded-* verdict kinds (P-293)', pushed to origin/fix/p293-verdict-vocabulary",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/702",
+    "base": "main (1 commit ahead of 62e7349b, working tree clean after the commit)",
+    "seatRegistration": "legacy-design-tools-p293-verdict-vocabulary under the property seat, worktree == the clone path, branch fix/p293-verdict-vocabulary; SEAT-01 returns {\"allow\": true, \"code\": \"ok\"} for it."
+  },
+  "filesTouched": {
+    "artifacts/api-server/src/lib/parcelGateVerdictVocabulary.ts": "NEW. The pinned vocabulary: the six accepted strings, the three excluded-* kinds, factoryRepo/factorySha (91712795ea2a1eb7c27f7328cf7f52fcb7810b59 == 9171279)/cardRows P-201+A-153/verifiedAt/verifiedBy, the three upstream paths to re-read, the derived ParcelGateVerdictKind union, acceptedParcelGateVerdictKinds(pin), ACCEPTED_PARCEL_GATE_VERDICT_KINDS, classifyParcelGateVerdictKind, isAcceptedParcelGateVerdictKind.",
+    "artifacts/api-server/src/lib/parcelGateVerdictRead.ts": "The local ParcelGateVerdictKind declaration and isVerdictKind are gone; the type is re-exported from the vocabulary module and the predicate consumes that module. loadParcelGateVerdict classifies the raw column string, logs an unrecognised one loudly (county, rail, raw string, the pin, the files to re-read) and returns null as before. memoryParcelGateVerdicts takes MemoryParcelGateVerdictRow (verdict: string) so the unrecognised branch is reachable from a test.",
+    "artifacts/api-server/src/lib/parcelRecordAllowlist.ts": "resolveAllowlistState's parameter type follows the vocabulary union; the decision table is untouched (pass -> record, any other recognised verdict -> refused, no verdict -> legacy). Doc names the excluded-* family and states the ordering (an unrecognised string never reaches this function).",
+    "artifacts/api-server/src/lib/parcelRecordReaderClient.ts": "Two wire-type declarations widened to the same union (ParcelRecordRailWire.gate.verdict, ParcelGateVerdictWire.verdict) plus a type-only import. No runtime change.",
+    "artifacts/api-server/src/lib/parcelGateVerdictVocabulary.test.ts": "NEW. The pin/divergence tripwire (independent hand transcription of 0009 + 0011a + gate-exclusion-classifier.mjs, plus the stamp's own shape), the classifier's closed-list behaviour, and every accepted verdict through the real resolveAllowlistState for a real slated pair read out of PARCEL_RECORD_SLATE.",
+    "artifacts/api-server/src/lib/parcelGateVerdictRead.test.ts": "AMENDED. The reader-level falsifiers 1a/1b and 2, with a console.warn spy and the log-dedupe assertions."
+  },
+  "readersFoundAndWhatEachDoesWithAnUnknownString": {
+    "method": "rg over the whole clone for parcel_gate_verdict, loadParcelGateVerdict, resolveAllowlist, PARCEL_RECORD_SLATE, ParcelGateVerdictWire, ParcelRecordRailWire, plus a separate pass over artifacts/smartsite-mcp for any gate/verdict/allowlist reference.",
+    "smartsiteMcp": "No reader. artifacts/smartsite-mcp in this repo contains ZERO references to parcel_gate_verdict, gateVerdict, gate-verdict or allowlist (searched; zero matches). Nothing to change; nothing to list.",
+    "rows": [
+      { "file": "artifacts/api-server/src/lib/parcelGateVerdictRead.ts", "role": "the reader this lane fixes", "unknownString": "was: silent null; now: loud warn (once per county/rail/string per process) then null -> allowlist legacy" },
+      { "file": "artifacts/api-server/src/lib/parcelRecordAllowlist.ts", "role": "the only decision consumer", "unknownString": "never sees one -- the reader collapses it to null first; null has always meant legacy there, deliberately" },
+      { "file": "artifacts/api-server/src/lib/parcelRecordCellRead.ts", "role": "the env adapter that fetches the verdict over HTTP (224-247) and maps the upstream's null to an EMPTY ROW SET (line 230)", "unknownString": "no narrowing of its own; it cannot tell an excluded-* drop from a missing row, because its upstream already returned null" },
+      { "file": "artifacts/api-server/src/lib/parcelRecordReaderClient.ts", "role": "HTTP client; two TYPE-LEVEL declarations only (lines 31 and 152), both unchecked casts of the response body (line ~199: `(await res.json()) as { verdict: ParcelGateVerdictWire }`)", "unknownString": "flows through silently, exactly as before -- the type was a claim, not a filter. Widened in this lane so the claim is true." },
+      { "file": "artifacts/api-server/src/lib/placeCoverageSource.ts", "role": "hits a SIBLING route (/parcel-record-gate-verdict/coverage/check, P-210); reads county coverage, never a verdict string", "unknownString": "n/a -- it validates {status: covered|not-covered|indeterminate} strictly and returns indeterminate otherwise, failing closed. Listed so 'no other reader' is not taken on faith." },
+      { "file": "artifacts/api-server/src/lib/*FactServeCutover.ts (18 files) + cadRollServeCutover.ts", "role": "the per-rail serve wrappers; every one calls resolveAllowlist, none reads parcel_gate_verdict directly", "unknownString": "inherit the allowlist's answer; no verdict logic of their own" },
+      { "file": "hauska-engine services/retrieval-api/src/parcel-record-db.ts", "role": "OUT OF REPO. The upstream store reader both the gate-verdict route (server.ts:509) and /record call", "unknownString": "returns null (line 160) -- the live first narrowing. See deviationsFromDispatch.site3 and leave_behind." }
+    ]
+  },
+  "falsifierScores": {
+    "1_excludedKindResolvesRefused": {
+      "predicted": "PASS after the fix, FAIL before it",
+      "result": "PASS",
+      "evidence": "parcelGateVerdictRead.test.ts 'FALSIFIER 1a' (the reader returns the row with verdict 'excluded-not-applicable' / '-mid-cutover' / '-no-acquisition-path' intact, and does not warn) and 'FALSIFIER 1b' (end to end through resolveAllowlist + memoryParcelGateVerdicts over a REAL slated pair: each excluded-* kind -> 'refused'; pass -> 'record'; refuse -> 'refused'; bare excluded -> 'refused', unchanged). Plus the same table at the pure-function layer in parcelGateVerdictVocabulary.test.ts. Measured before/after by mutation probe 2 below."
+    },
+    "2_inventedStringResolvesLegacyAndLogs": {
+      "predicted": "PASS: 'legacy' before and after (unchanged, fail-closed); the LOG is the new part",
+      "result": "PASS",
+      "evidence": "parcelGateVerdictRead.test.ts 'FALSIFIER 2': resolveAllowlist -> 'legacy' for 'excluded-made-up-state'; console.warn called exactly once; the joined call contains the county, the rail, the raw string and the pin's short SHA. A second identical resolution does NOT log again (still 1 call), and a different invented string logs again (2 calls, carrying that string). 'stays quiet for the accepted vocabulary' asserts zero warns on the happy path. Teeth proven by probes 3 and 4."
+    },
+    "3_pinAndCodeCannotDiverge": {
+      "predicted": "PASS",
+      "result": "PASS, and proven by actually making each side wrong",
+      "evidence": "parcelGateVerdictVocabulary.test.ts 'DIVERGENCE TRIPWIRE' compares the pin against an independent hand transcription of the factory's own files. Probe 1 (drop the string from the pin, transcription untouched) -> 3 tests FAIL. Probe 2 (pin untouched, code narrowed to the legacy three) -> F1a/F1b and two vocabulary tests FAIL. Both reverted; the tree is clean and green afterwards (git status: only the six intended files)."
+    }
+  },
+  "mutationProbes_A_checkSeenOnlyPassingHasNotBeenSeenWorking": [
+    { "probe": "delete \"excluded-mid-cutover\" from the pin's accepted list", "observed": "FAIL -- DIVERGENCE TRIPWIRE, the excluded-* subset test, and 'accepts each of the six' (3 failed | 5 passed)", "reverted": true },
+    { "probe": "leave the pin correct but narrow the running ACCEPTED_..._KINDS set to pass|refuse|excluded (the pre-fix predicate)", "observed": "FAIL -- FALSIFIER 1a, FALSIFIER 1b, 'stays quiet for the accepted vocabulary', the excluded-* subset test and 'accepts each of the six' (5 failed | 15 passed). FALSIFIER 2 correctly stayed green: an invented string was still unrecognised under the old predicate, which is a property of the probe rather than a gap.", "reverted": true },
+    { "probe": "remove the logUnrecognisedVerdict call (keep the fail-closed null)", "observed": "FAIL -- FALSIFIER 2 only (1 failed | 11 passed)", "reverted": true },
+    { "probe": "remove the once-per-finding dedupe from logUnrecognisedVerdict", "observed": "FAIL -- FALSIFIER 2: 'expected \"warn\" to be called 1 times, but got 2 times'", "reverted": true }
+  ],
+  "testEvidence": {
+    "touchedAndAdjacentSuites": {
+      "command": "pnpm exec vitest run src/lib/parcelGateVerdictVocabulary.test.ts src/lib/parcelGateVerdictRead.test.ts src/lib/parcelRecordAllowlist.test.ts",
+      "result": "3 files passed, 73 tests passed"
+    },
+    "typecheck": {
+      "command": "pnpm run typecheck (repo root: tsc --build for the 9 libs, then every artifacts/* and scripts typecheck -- the same command pr-checks.yml runs)",
+      "result": "exit 0, all 8 artifact projects + scripts Done. Note: running api-server's own `tsc -p tsconfig.json --noEmit` WITHOUT typecheck:libs first fails with 24 TS6305 'output file has not been built' errors; that is project-references build order, not a defect in this change."
+    },
+    "widerSweep": {
+      "command": "pnpm exec vitest run src/lib",
+      "result": "180 files, 2030 tests: 12 failed | 2018 passed",
+      "theTwelve": "src/lib/parcelConstraintSearch.test.ts (3, 'three-set partition against a real store'), src/lib/__tests__/reportRunState.test.ts (8, 'durable report-run state'), src/lib/__tests__/brokerageTxParcels.test.ts (1, 'store-backed counties'). All three suites need a live Postgres; this box has none.",
+      "baseline": "MEASURED, not asserted: `git switch --detach HEAD~1` (62e7349b, before this change) re-running those three files gives the SAME 12 failed | 72 passed. Branch restored to fix/p293-verdict-vocabulary afterwards, tree clean. So the 12 are environmental, not collateral."
+    },
+    "suiteThatCannotRunLocally": "src/__tests__/brokerageNodeFacets.test.ts (the route-level test that uses memoryParcelGateVerdicts) fails to collect locally: with no DATABASE_URL it is 'DATABASE_URL must be set', and with one it is 'type \"public.vector\" does not exist' -- it needs the CI postgres service (pgvector) plus the pushed schema. Its conclusion is CI's to give, and the CI Test job ran on PR #702.",
+    "ciAtCp2FilingTime": "Typecheck and Test were still running; every other check was already pass (PR base is main, L17 ci-vintage-predicate, L5 SF-24/SF-25 score greps, L5 SF-26 hand hasWriter grep, L5 SF-30 Cotality warm grep, L5 silent-fallback greps, SS-W16 tier2 flood not served, SS-W18 api-server boots, cortex daily limit bake). The literal conclusions are recorded in the close."
+  },
+  "deviationsFromDispatch": {
+    "site3_theLivePathIsInAnotherRepo": {
+      "dispatchSays": "the drift is LDT's isVerdictKind returning false so 'the read returns null'.",
+      "measured": "in production the string never reaches LDT's predicate. resolveVerdictStore(undefined) -> parcelRecordQueryableFromEnv() -> HTTP to the retrieval service, whose loadGateVerdict applies the same three-string narrowing (services/retrieval-api/src/parcel-record-db.ts:160) and returns null; LDT's adapter (parcelRecordCellRead.ts:230) maps that null to an empty row set; the reader sees no row. The customer-visible drift is real and this fix is necessary for this repo, but it is not sufficient while the engine's line stands.",
+      "action": "Fixed in this repo (the dispatch scopes the build to legacy-design-tools and this lane owns no engine worktree). Reported as leave_behind with the one-line repair named, and NOT claimed as fixed."
+    },
+    "theLogIsDeduplicated": {
+      "dispatchSays": "'logged loudly (with the county, rail and string)'.",
+      "measured": "loadParcelGateVerdict runs on the public facets hot path once per rail per request for slated pairs. A warn repeated per request is a warn that gets filtered out, which restores the silence this card exists to remove.",
+      "action": "Logged once per (county, rail, string) per process, plus a resetUnrecognisedVerdictLogForTests seam. First occurrence carries the full message; a NEW string always logs. Both the log AND the dedupe are proven to have teeth (probes 3 and 4). Named as an addition beyond the dispatch's letter."
+    },
+    "twoMoreTypeDeclarationsWidened": {
+      "dispatchSays": "'the verdict type carries the factory's full vocabulary'.",
+      "measured": "the same vocabulary was written down in two further places as a narrower union: parcelRecordReaderClient.ts:31 (ParcelRecordRailWire.gate.verdict) and :152 (ParcelGateVerdictWire.verdict), both unchecked casts of the HTTP body (no runtime narrowing at either).",
+      "action": "Widened to the shared union, type-only, no behavior change. A narrower wire type than the store is the third way this vocabulary can be believed and be wrong."
+    },
+    "resolveAllowlistStateDecisionTableNotTouched": {
+      "why": "Every recognised non-pass verdict ALREADY resolved 'refused' -- `if (verdict.verdict === \"pass\") return \"record\"; return \"refused\";`. The drift was entirely in the reader's predicate above it. The dispatch's item 1 ('every excluded-* string resolves to refused') is therefore satisfied by fixing the predicate and is now ASSERTED rather than newly coded; 'do not change what pass or refuse serves' is satisfied because the table is byte-identical."
+    },
+    "prettierNotRun": {
+      "measured": "pnpm exec prettier --check flags 381 files under artifacts/api-server/src/lib alone, including files this lane never touched (parcelRecordCellRead.ts). Formatting is not a gate in pr-checks.yml.",
+      "action": "Left alone: reformatting six files against a repo-wide 381-file non-conformance would be diff noise, not a fix."
+    }
+  },
+  "noStoreWritesNoDeploy": {
+    "writes": "none to any store. No job run. The only database contact attempted locally was the vitest suites' own need for postgres, which is why 12 DB-backed tests are reported as unmeasurable rather than as passing.",
+    "deploy": "none. No gcloud command, no workflow dispatch, no credential read or written.",
+    "subAgents": "none launched (FAN-DEPTH 0), so subAgents is {spawned: 0, maxDepth: 0} in the close.",
+    "filesOutsideThisLane": "P:/doc_repo/_inbox (the three artifacts), P:/seat-worktrees/dispatch-planner/doc_repo/_inbox (identical copies), P:/doc_repo/_catalog/lane_claims.json (the lane claim) and P:/doc_repo/_catalog/seat_register.json (this lane's worktree registration) are the only files touched outside the product clone. No other lane's checkout was written to; hauska-factory and hauska-engine were read-only throughout (hauska-factory via the GitHub API at ref=main, hauska-engine from its own checkout)."
+  },
+  "notProven": [
+    "No live request has been observed serving an excluded-* verdict as 'refused' -- no parcel_gate_verdict row carries one yet (live verdicts still read plain 'excluded', 2026-09-16T18:28Z). The dispatch pre-declares probe.notApplicable for exactly this reason.",
+    "The pin cannot detect a THIRD factory widening: it has no dependency edge to hauska-factory, and the divergence test's transcription would be re-edited by the same person who re-edited the pin. Stated in the module header as a named limitation, not hidden.",
+    "The engine hop is unfixed, so the customer path still drops the string one step earlier. Proving the fix end-to-end in production is impossible until that line changes."
+  ],
+  "leave_behind": [
+    {
+      "what": "hauska-engine services/retrieval-api/src/parcel-record-db.ts:160 narrows parcel_gate_verdict.verdict to pass|refuse|excluded and returns null for anything else, so an excluded-* row is dropped before any LDT reader sees it -- on BOTH the /parcel-record-gate-verdict/:countyFips/:railKey route (server.ts:509-544, which returns the store result verbatim) and the /record route's per-rail `gate` field, which reads the same function.",
+      "proposedFix": "replace the three-way comparison with the same vocabulary predicate, mirroring this PR's parcelGateVerdictVocabulary.ts (or import an equivalent). One line plus a vocabulary source.",
+      "why not here": "hauska-engine is not this lane's repo and the dispatch scopes the build to legacy-design-tools; writing another repo's checkout is forbidden by the seat law."
+    },
+    {
+      "what": "A third factory widening of the CHECK constraint will be invisible to LDT until a human re-reads migrations/0009 and 0011a and refreshes the pin. The log makes an OBSERVED unknown string loud; it cannot make an UNOBSERVED vocabulary change visible.",
+      "proposedFix": "the honest remedy is a cross-repo check the factory publishes (its migration list pinned by SHA in a consumable artifact), not another hand transcription."
+    }
+  ]
+}

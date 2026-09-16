@@ -1,0 +1,64 @@
+{
+  "checkpoint": "CP1",
+  "kind": "orientation + falsifier-1 (the trigger read) -- filed after the bake's trigger mechanism was named from source and from the live Cloud resources, before the store-side reproduction",
+  "lane": "p230-bake-trigger",
+  "planRows": ["P-230"],
+  "seat": "p230-bake-trigger, claimed via scripts/lane-claim.mjs (exit 0) in P:/seat-worktrees/p230-bake-trigger/doc_repo; lane claim live at 2026-09-16T18:02:51.797Z",
+  "snapshot": {
+    "docRepo": { "worktree": "P:/seat-worktrees/p230-bake-trigger/doc_repo", "branch": "lane/p230-bake-trigger", "head": "360534f3f539fd2896b0820e32cc258d536769fb" },
+    "legacyDesignTools": { "worktree": "P:/seat-worktrees/p230-bake-trigger/legacy-design-tools", "branch": "lane/p230-bake-trigger", "head": "ba6a5a69aebf8ac5e4900a8e9b50bfd04a04ec27", "originMain": "ba6a5a69aebf8ac5e4900a8e9b50bfd04a04ec27", "note": "branch cut from origin/main and carries NO commits: this lane shipped no code change (the dispatch says the discriminator is the close-worthy result; do not build the fix in the same pass). Working tree clean." },
+    "hauskaFactory": { "checkout": "C:/Users/cente/hauska-factory", "readAt": "read-only by grep/read; no branch declared by this lane" }
+  },
+
+  "sequenceActuallyFollowed": [
+    "1. Claimed the lane FIRST, before any read, per the dispatch's own ordering. Exit 0. Confirmed still held by this seat before any evidence was written.",
+    "2. Read the dispatch in full, then the two plan rows' own framing (OPS-16 P-230, OPS-24 law 1) rather than working from a summary.",
+    "3. FALSIFIER 1: located the only writer of place_layer_snapshots (grep INSERT INTO place_layer_snapshots across legacy-design-tools) and read nodeFacetBakeTier1ConformantCli.ts's own header and its atom SQL.",
+    "4. FALSIFIER 1: followed the bake from LDT into hauska-factory (invokeLdtBake / bastrop-publish.mjs / cli.mjs / cloudbuild.publish.yaml) rather than assuming the trigger lives in LDT.",
+    "5. FALSIFIER 1: enumerated the live scheduling resources rather than reading a config that might not be deployed -- gcloud scheduler jobs list in us-east4, us-east1, us-central1, us-west1 (the whole project: two jobs, neither is a bake).",
+    "6. FALSIFIER 1: read publish-gate-sched.mjs in full (the only scheduled job in this area) to prove whether its '--apply' writes cells or triggers a bake, rather than inferring from its name.",
+    "7. FALSIFIER 1: read reaper.mjs's COMMAND_JOBS map to prove factory-bastrop-publish appears there as an execution-identity for reconciliation, not as a launch.",
+    "8. Established the production-vs-staging identity of the seat's DSN before trusting any cell timestamp: staging_targets.neondb_branch_id = br-purple-snow-ap51ewu6, the session's replica branch = br-noisy-bar-au9cwf7n, and freshness carries production:48209 stamped at exactly the production publish_runs completion -- so the cell writes read below are live on the production branch.",
+    "9. FALSIFIER 2: read the served side (place_layer_snapshots, PRODUCTION_NEONDB_URL) and the written side (parcel_record_cell, FACTORY_DATABASE_URL_REPLICA) for the same three Hays parcels, then attributed each post-bake write to the run that made it (runs by started_at).",
+    "10. FALSIFIER 4: counted counties on both sides of the gap -- distinct county prefixes in parcel_record (the ledger) vs substantive rows in place_layer_snapshots (the serve).",
+    "11. FALSIFIER 3: attempted the live customer read through the probe instrument and directly; found the customer facets path refusing project-wide (503 retrieval_auth_failed) and recorded that as the state of the predicate, not as a measurement of it."
+  ],
+
+  "falsifiersPreRegisteredForMyOwnRole": {
+    "readingRule": "Held BEFORE the store reads, and stated as a rule so it could be falsified rather than fitted: (a) is correct iff a scheduling resource (cron, Cloud Run job schedule, queue consumer) NAMES the bake; (b) is correct iff no such resource exists and no write path enqueues a parcel. A store-side staleness measurement alone cannot separate them -- staleness is the observation both hypotheses predict -- so the trigger read had to come first and did.",
+    "preRegistered": [
+      "(a) is CORRECT if and only if a cron / Cloud Run job schedule / queue consumer is found that runs factory-bastrop-publish (or any bake CLI) on a cadence. Predicted by the row's own framing ('do not assume the cheap one'), so (a) was the expectation to beat, not the default.",
+      "(b) is CORRECT if factory-bastrop-publish has no scheduling resource and no code path in the cell writers enqueues a parcel.",
+      "Mixed is possible: (b) with a partial (a) if some other actor (a lane, a manual step, a different scheduled job) re-bakes whole counties.",
+      "Falsifier 3 pre-registered as: the customer leg is likely UNREADABLE today for a reason unrelated to P-230, so 'a fresh write end to end' may reduce to the dispatch's own alternative branch ('or confirm it never does without manual intervention'). Recorded so a failure to produce a timing is not later presented as a pass."
+    ]
+  },
+
+  "falsifier1Answer": {
+    "answer": "NOTHING AT ALL. There is no cron, no Cloud Run job schedule, no queue consumer, and no manual-but-expected step that runs the bake. The bake executes only when a human or lane runs `gcloud run jobs execute factory-bastrop-publish`.",
+    "bakeEntrypoint": "legacy-design-tools/artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts -- the ONLY writer of place_layer_snapshots for the node facets path (grep INSERT INTO place_layer_snapshots across legacy-design-tools returns four bake CLIs -- nodeFacetBakeTier1ConformantCli.ts, nodeFacetBakeTier2ConformantCli.ts, nodeFacetBakeTier1Cli.ts, nodeFacetBakeTier2Cli.ts -- plus one backfill script, artifacts/api-server/scripts/backfill-bastrop-tier1-zoning-provenance.mjs. No route, no server module, no on-demand re-bake path writes that table.)",
+    "howItIsReached": "hauska-factory/src/jobs/bastrop-publish.mjs:190 invokeLdtBake(step, env, flags) -> spawns <BAKE_CLI_ROOT>/<step>.mjs (the esbuild bundle built by hauska-factory/scripts/build-publish-bake-clis.mjs from the pinned _LDT_SHA) or `pnpm --filter <LDT_API_SERVER> <step>`; dispatched by hauska-factory/src/cli.mjs:137 (cmd === 'bastrop-publish') -> runBastropPublish.",
+    "theJob": "Cloud Run job factory-bastrop-publish, defined at hauska-factory/cloudbuild.publish.yaml:389 with ARGS='bastrop-publish,--target=staging,--county=48021,--skip-pmtiles' and TIMEOUT=21600. Its default args are staging+Bastrop only; every real publish overrides them by hand via `gcloud run jobs execute ... --args=`.",
+    "schedulingResourcesInTheProject": "gcloud scheduler jobs list --project=hauska-prod-497015: us-east4 returns exactly TWO -- factory-conformant-reap (*/10 * * * *, args ['reap']) and factory-publish-gate-sched-hourly (0 * * * *, args ['publish-gate-sched','--county=48021','--county=48055','--county=48209','--county=48309','--county=48453','--county=48491','--apply']). us-east1, us-central1 and us-west1 return ZERO jobs. Neither job executes the bake.",
+    "whyTheGateSchedJobIsNotTheTrigger": "hauska-factory/src/jobs/publish-gate-sched.mjs writes ONLY parcel_gate_verdict (UPSERT_VERDICT_SQL, line ~300) and its '--apply' means 'write the verdicts', not 'write cells' and not 'bake'. Its own header says it shells out to gate-rail-cli.mjs once per (county, rail) and records verdicts. It reads rail liveness; it does not write a cell and does not invoke invokeLdtBake.",
+    "whyTheReaperIsNotTheTrigger": "hauska-factory/src/control/reaper.mjs:62 maps 'bastrop-publish' -> ['factory-bastrop-publish'] inside COMMAND_JOBS, whose consumer is jobsForRun(run): the path that attaches an in-flight run record to the Cloud Run execution that owns it, for reconciliation. Nothing in reaper.mjs launches a job.",
+    "alsoChecked": "No Eventarc triggers and no Cloud Tasks queues could be enumerated: both APIs return PERMISSION_DENIED 'not enabled' on this project, i.e. neither mechanism is in use. No Cloud Scheduler resource of any kind exists in the four regions a Cloud Run us-east4 job could be driven from."
+  },
+
+  "instrumentsReconnaissance": {
+    "productionNeon": "PRODUCTION_NEONDB_URL -- the serving store (place_layer_snapshots). Branch br-noisy-bar-au9cwf7n.",
+    "factoryReplica": "FACTORY_DATABASE_URL_REPLICA -- the factory store (parcel_record_cell, publish_runs, runs, freshness). Same branch id, so it is the production branch; staging is br-purple-snow-ap51ewu6 per staging_targets, so no cell timestamp read here can be a staging-only write.",
+    "atomsStore": "ATOMS_DATABASE_URL -- the bake's actual input (table `atoms`). A per-parcel lookup by entity_id TIMES OUT (statement timeout ~120 s) with no usable index for this predicate; the atom side is therefore reported as NOT MEASURED BY THIS LANE rather than guessed.",
+    "surfaceProbe": "scripts/surface-probe.mjs -- run for P-175 (the Hays row, whose subject set includes the stale parcel 48209:97658); artifact _inbox/2026-09-16_181544_surface_probe.json. It cannot carry a P-230 predicate: P-230 is in the OPS-24 predicate debt (ROWS_WITHOUT_PREDICATE).",
+    "nodeTls": "run node with --use-system-ca (env NODE_OPTIONS=--use-system-ca) in this environment; without it every outbound fetch fails as 'fetch failed' (corporate TLS interception, NODE_EXTRA_CA_CERTS=P:/tmp/corp-ca-bundle.pem alone is insufficient: 'unable to verify the first certificate'). PowerShell's Invoke-WebRequest works and exposes a JSON error body via $_.ErrorDetails.Message."
+  },
+
+  "constraintsAcknowledged": [
+    "FAN-DEPTH 0 -- no sub-agent was launched by this lane; subAgents.spawned 0, maxDepth 0.",
+    "No cell was written, no store was written, no deploy was performed, no bake was triggered: the trigger was NOT exercised, because the two honest ways to exercise it are a write to a production serving store (operator stop point 2) and a full county re-bake of 194,538 rows for a discriminator that is already decided.",
+    "No file was written outside _inbox/ in this lane's own doc_repo seat worktree.",
+    "lib/cad-ingest/src/boundary/ and lib/db/src/schema/ were not touched (P-241's scope; a claim for p241-etj-acquisition by seat dispatch-planner was live throughout this lane).",
+    "No DSN or secret value was printed.",
+    "Every command in this lane terminated on its own; nothing was left watching or polling."
+  ]
+}

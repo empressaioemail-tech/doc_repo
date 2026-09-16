@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (19:15Z)
+last_updated: 2026-09-16 (19:40Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -49,11 +49,11 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | Row | What | State | Next step |
 |---|---|---|---|
 | P-252 | Empty counties refuse at the gate | Lane closed partial; PR factory #157 open, green | Merge after P-292 and P-293; run on staging, then production |
-| P-292 | Impervious-cover rail required for publishing only in Travis | Lane running | Merge first |
-| P-293 | LDT reads the factory's new verdict strings | Lane running | Merge first |
+| P-292 | Impervious-cover rail required for publishing only in Travis | Lane closed partial; PR factory #159 open, green | Merge first |
+| P-293 | LDT reads the factory's new verdict strings | Lane closed partial; PR LDT #702 open; **the retrieval service has the same gap** (`parcel-record-db.ts:160`), one-line engine fix owed | Merge first, with the engine fix |
 | P-249 | Unverified "no buildable area" data stops hiding envelopes | Lane closed partial; PRs LDT #701, map #409 open | Integration seat: review, then staging proof on the served surface |
 | P-284 | Cost and timing records for every stage | Lane closed partial; PR factory #158 open | Integration seat: review; apply the migration on staging |
-| P-230 | Map and MCP serve current data, not an old snapshot | Dispatched by the reports session | Wait for its close |
+| P-230 | Map and MCP serve current data, not an old snapshot | Lane closed partial: **nothing re-runs the bake**; five counties serve 09-10 data, Hays 09-14 | **Operator decision:** the refresh path (A-189) |
 
 ## Left for Phase 0 (the six counties)
 
@@ -94,6 +94,8 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 
 ## Open with the operator
 
+- **The serving path (P-230, A-189):** nothing refreshes what customers see after the ledger changes. Choose the direction, and give a go for republishing the six counties.
+
 - The "waiting on vendor" acceptance for ag valuation stands unless the operator wants Burnet to wait for the Cotality data.
 - The Cotality contract and credentials unblock P-267 and P-283.
 - The production password rotation (P-278) runs on the operator's go.
@@ -111,3 +113,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | 2026-09-16 18:45 | Created from the roadmap given to the operator in session. |
 | 2026-09-16 18:55 | P-253 done (A-187); P-254 next. |
 | 2026-09-16 19:15 | Engine and retrieval deployed and verified (A-188); P-248/P-261, P-249, P-284 closes landed. |
+| 2026-09-16 19:40 | P-292, P-293, P-230 closed partial (A-189); the bake has no trigger; decision owed. |

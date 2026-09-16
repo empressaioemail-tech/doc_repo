@@ -1,0 +1,84 @@
+{
+  "checkpoint": "CP2",
+  "kind": "the discriminator, decided -- falsifiers 2/3/4 answered with live store evidence; the fix class named; the second mechanism named because it would produce the same observation",
+  "lane": "p230-bake-trigger",
+  "planRows": ["P-230"],
+  "seat": "p230-bake-trigger (P:/seat-worktrees/p230-bake-trigger/doc_repo)",
+  "snapshot": { "docRepoHead": "360534f3f539fd2896b0820e32cc258d536769fb", "ldtHead": "ba6a5a69aebf8ac5e4900a8e9b50bfd04a04ec27", "ldtBranch": "lane/p230-bake-trigger (no commits; no code change shipped)", "measuredAt": "2026-09-16T18:10Z-18:22Z" },
+
+  "verdict": "HYPOTHESIS (b) IS CORRECT. Nothing re-bakes a parcel when its cells change. (a) is REFUTED: there is no schedule for the bake to be late on. This is not a mix, and it is not a latency gap.",
+
+  "falsifier2": {
+    "question": "Reproduce (a) or (b) live on an already-written, still-stale parcel.",
+    "parcelsChosen": ["48209:100226 (P-211's parcel; independently confirmed touched by direct SQL, maxHeightFt=25)", "48209:97658 (P-218's parcel, and already a subject in scripts/surface-probe.mjs's own PARCELS list)", "48209:34137 (third Hays parcel, used as the CONTROL -- see below)"],
+    "servedSide": {
+      "store": "PRODUCTION_NEONDB_URL, place_layer_snapshots, adapter node facets tier1",
+      "48209:100226": { "snapshot_at": "2026-09-14 17:10:06.766352+00", "payloadJson.bakedAt": "2026-09-14T17:09:01.335Z" },
+      "48209:97658": { "snapshot_at": "2026-09-14 17:50:04.026925+00", "payloadJson.bakedAt": "2026-09-14T17:49:46.118Z" },
+      "48209:34137": { "snapshot_at": "2026-09-14 17:37:00.373685+00", "payloadJson.bakedAt": "2026-09-14T17:35:53.254Z" }
+    },
+    "writtenSide": {
+      "store": "FACTORY_DATABASE_URL_REPLICA, parcel_record_cell (production branch br-noisy-bar-au9cwf7n; staging is br-purple-snow-ap51ewu6, so none of these is a staging-only write)",
+      "48209:100226": { "cells": 65, "lastCellWrite": "2026-09-15 16:34:27.618267+00", "cellsWrittenAfterServedBakedAt": 9, "whichCells": ["setbackSideFt, setbackCornerFt, setbackFrontFt, setbackRearFt, setbackRules @ 2026-09-15 00:55:31.535906+00", "maxHeightFt, maxLotCoveragePct, parcelAreaSqFt, maxFootprintSqFt @ 2026-09-15 16:34:27.618267+00"] },
+      "48209:97658": { "cells": 65, "lastCellWrite": "2026-09-15 16:34:51.542672+00", "cellsWrittenAfterServedBakedAt": 9 },
+      "48209:34137": { "cells": 65, "lastCellWrite": "2026-09-13 23:52:32.806034+00", "cellsWrittenAfterServedBakedAt": 0 }
+    },
+    "theControl": "48209:34137 is the parcel the same September work did NOT touch after its own bake (its last cell write, 2026-09-13 23:52:32Z, predates its served bakedAt of 2026-09-14T17:35:53Z). It is the one of the three that is NOT stale. So the split among three parcels tracked the data changed after the build -- the staleness is a function of writes-after-bake, not of the parcel or the county or the bake being broken."
+    ,
+    "whoMadeTheWrites": [
+      { "run": "38026b23-846c-4c19-bc36-63cb2c49a864", "phase": "parcel-setback-cells", "target": "Austin,Bear Creek,Buda,Creedmoor,Dripping Springs,Hays,Kyle,Mountain City,Niederwald,San Marcos,Uhland,Wimberley,Woodcreek", "startedAt": "2026-09-15T00:54:13.057706+00", "status": "succeeded", "produced": "the 5 setback* cells at 2026-09-15 00:55:31.535906+00" },
+      { "run": "ca4d022f-4f70-4efa-a476-d49cf0ae935f", "phase": "parcel-envelope-cells", "target": "Austin,Buda,Creedmoor,Niederwald,San Marcos,Uhland", "startedAt": "2026-09-15T16:32:51.622747+00", "status": "succeeded", "produced": "the 4 envelope cells at 2026-09-15 16:34:27.618267+00" }
+    ],
+    "theWindow": {
+      "from": "2026-09-15T16:34:27Z (last cell write on 48209:100226)",
+      "to": "2026-09-16T18:22Z",
+      "hours": 25.8,
+      "publishRunsInWindow": 0,
+      "scheduledRunsInWindow": { "f03-reap": "152 success (+1 crashed at 2026-09-16T15:00:16Z, +1 started at 2026-09-16T18:20:15Z)", "publish-gate-sched": "24 succeeded (+1 failed at 2026-09-15T20:01:53Z, +1 running at 2026-09-16T18:02:04Z)" }
+    },
+    "howLongSinceAnyBakeAtAll": "48.5 h: the newest publish_runs row of any county or target is 48209/production, completed 2026-09-14 17:51:01.990025+00, and `select count(*) from publish_runs where created_at > '2026-09-15T16:34:27Z'` returns 0.",
+    "reading": "(a) would require a bake run in that window, late or not. There are zero. (b) is what the record shows: 176 scheduled executions of the project's other two jobs ran, 24 of them the hourly gate, and not one of them bakes -- because none of them can: publish-gate-sched writes parcel_gate_verdict only, and reap reconciles executions. The parcel sat written-for-25.8-hours and unbaked because nothing in existence was going to bake it."
+  },
+
+  "falsifier3": {
+    "question": "A fresh write, end to end; time until get_smart_site shows a bakedAt later than the write -- or confirm it never does without manual intervention.",
+    "whatIDidNotDo": "I did not write a cell. Both honest ways to exercise the trigger are closed to a lane: a write to a production serving store is one of the three operator stop points, and publish-gate-sched.mjs's own guard refuses `--apply` off Cloud Run (LAPTOP_WRITE_FROZEN). Executing factory-bastrop-publish by hand would re-bake a whole county (194,538 Hays rows) to answer a question the trigger read has already answered.",
+    "theBranchTaken": "The dispatch's own alternative -- 'or confirm it never does without manual intervention' -- is CONFIRMED, and it is confirmed on real writes rather than on a synthetic one: two succeeded writer runs put nine cells each onto two Hays parcels on 2026-09-15, both writes are live on the production branch the bake reads, and 25.8 hours later no bake has run. The next re-bake of those parcels will be the next time a person runs `gcloud run jobs execute factory-bastrop-publish`.",
+    "whatAManualBakeCostsAndBuys": "For scale on the fix class: one publish run rewrites the whole county -- Hays tier1Written 194,538 rows (was 306,722 before the 2026-09-14 exclusion change), Travis 873,766, Williamson 602,050. So 'bake more often' is 194,538 row-writes per Hays tick to refresh however many parcels changed.",
+    "theCustomerLegIsRefusingToday": {
+      "measured": "https://smartsite.cloud/api/spine/property-atoms/{id}/facets, 2026-09-16T18:1xZ",
+      "result": "HTTP 503 for EVERY parcel tested -- 48021:34049, 48209:97658, 48209:100226, 48453:474034",
+      "body": "{\"error\":\"retrieval_auth_failed\",\"retryable\":false,\"message\":\"Property atom chain retrieval returned HTTP 401 - HAUSKA_RETRIEVAL_API_KEY must match retrieval-api RETRIEVAL_API_KEY.\",\"atomPathReason\":\"atom-chain HTTP 401\",\"parcelNodeId\":\"<id>\"}",
+      "probeCorroboration": "_inbox/2026-09-16_181544_surface_probe.json: the P-175 facets leg reads `http 503 readPath null bakedAt null` for all five Sturgeon Dr addresses.",
+      "whyItMattersToThisRow": "The row's completion predicate ('a written cell demonstrably reaches get_smart_site with a bakedAt LATER than the write') cannot be measured by ANYONE right now: the customer's facets read refuses before it reaches a bake. This is not P-230 and must not be scored as P-230 -- it is a credential mismatch between the spine and retrieval-api, and it is a live project-wide customer-surface refusal. It is filed as a free finding, not absorbed."
+    }
+  },
+
+  "falsifier4": {
+    "question": "The six onboarded ledger counties specifically, or only the broader 19-county bake-only population?",
+    "answer": "THE SIX LEDGER COUNTIES SPECIFICALLY -- which is to say every close this program has graded on a gate verdict.",
+    "ledgerSide": "select distinct county prefix from parcel_record returns EXACTLY SIX: 48021, 48055, 48209, 48309, 48453, 48491. There are no ledger rows for any other county, so there is no cell in any other county for a re-bake to be enqueued for.",
+    "serveSide": "place_layer_snapshots on production holds 19 counties with substantive rows (rows / newest snapshot_at): 48491 1,204,099 / 2026-09-10; 48453 1,000,614 / 2026-09-10; 48029 733,249 / 2026-07-24; 48113 693,556 / 2026-08-05; 48439 689,838 / 2026-08-05; 48085 387,334 / 2026-08-04; 48121 351,798 / 2026-08-04; 48209 346,100 / 2026-09-14; 48309 228,510 / 2026-09-10; 48091 206,414 / 2026-07-22; 48027 195,558 / 2026-07-24; 48187 187,456 / 2026-07-24; 48021 155,598 / 2026-09-10; 48251 100,603 / 2026-08-04; 48139 98,150 / 2026-08-04; 48055 97,298 / 2026-09-10; 48257 93,292 / 2026-08-04; 48367 92,583 / 2026-08-04; 48397 52,420 / 2026-08-04. (A further long tail of place_keys carries 10-24 rows each under non-Texas or malformed county prefixes -- residue, named rather than silently filtered.)",
+    "soTheScopeIs": "The 13 counties outside the six have cells nowhere, so P-230's mechanism cannot apply to them: their answers change only when someone re-bakes the county by hand, and their newest bake is 2026-07-22..2026-08-05. They are A-184's population. The six are where a real cell write lands and the bake does not follow.",
+    "secondFindingInsideFalsifier4": "Five of the six ledger counties are stamped 2026-09-10 in freshness (production:48021, 48055, 48309, 48453, 48491); only 48209 is 2026-09-14. So five of the six ledger counties' customer answers are six days old by PUBLISH alone, independent of the cell-write gap -- the whole-county bake is not running on any cadence for them either.",
+    "theRetroactiveQuestionAnsweredPlainly": "Yes, this bears on closes graded on a gate verdict (P-201, P-206, P-242c and their siblings) -- but with the precision the row asks for: a gate verdict answers 'is this rail gradeable from the ledger', and the customer's baseFacts come from the baked table, which is refreshed only by a hand-run whole-county job. So a green gate verdict and a stale customer answer are not in contradiction; they were never measuring the same store. A close that cited a gate verdict as evidence the customer sees a value was grading something the customer may not see. A close that cited the surface probe was not."
+  },
+
+  "theSecondMechanism": {
+    "whyNamed": "The dispatch asks for a second mechanism that would produce the same observation, and here it is load-bearing -- it changes the fix class.",
+    "fact1": "The bake's INPUT is the atoms store, not the ledger. nodeFacetBakeTier1ConformantCli.ts:3 -- 'F-06 Tier-1 facet bake from conformant-v1 hauska_mcp atoms (publish lane)'; its read is `SELECT entity_id, body FROM atoms WHERE ...` (line 354), against ATOMS_DATABASE_URL.",
+    "fact2": "The cell writers for these rails mint no atom. hauska-factory/src/jobs/parcel-envelope-cells.mjs writes parcel_record_cell only (UPDATE parcel_record_cell prc, line 205; its own 'Bypasses' line names 'a hand UPDATE/INSERT on parcel_record_cell' as the only other writer), and parcel-setback-cells.mjs is the same shape.",
+    "consequence": "For the envelope and setback rails a cell write is not, by itself, an input the bake can read. A trigger that enqueued a parcel on a cell write would enqueue it and re-materialize the SAME atoms -- the rasterised payload would not change. So 'add a trigger to the bake' is necessary but not sufficient for these rails, and the narrower honest statement of the defect is: the ledger is the declared serving path for these rails (2026-09-11 ruling, 'THE LEDGER IS THE SERVING PATH, ATOMS ARE CANONICAL'), and place_layer_snapshots is a second, hand-refreshed copy that the customer surface still reads for baseFacts.",
+    "notMeasured": "Whether an atom for maxHeightFt exists for 48209:100226 at all. A per-parcel atoms lookup by entity_id TIMES OUT (~120 s statement timeout) with no usable index for that predicate, so this lane reports it as NOT MEASURED rather than inferring it. This is the single most useful thing the next seat can measure, and it decides whether the fix is 'trigger the bake' or 'point these rails at the ledger'.",
+    "theFixClassThatActuallyApplies": "(b) structural, per the dispatch's own trap: a faster schedule narrows the window without closing it, and costs a whole-county rewrite per tick (194,538 Hays rows). The two candidate fixes are (1) a per-parcel enqueue from the cell write into the bake, which first needs the atom question above answered, or (2) serve these rails from the ledger for the six counties, which is what the 2026-09-11 ruling already says is law. This lane proposes neither as shipped work; it names the class."
+  },
+
+  "constraintsHonored": [
+    "FAN-DEPTH 0 honoured: subAgents.spawned 0, maxDepth 0; every line of this lane was produced by this session.",
+    "No cell written, no store written, no deploy, no bake triggered.",
+    "Nothing written outside _inbox/ in this lane's own seat worktree.",
+    "lib/cad-ingest/src/boundary/ and lib/db/src/schema/ untouched (P-241's live scope).",
+    "No DSN or secret value printed.",
+    "Heavy scans serialized: at most one full-table scan against the atoms store at any time; the per-parcel lookup was cancelled when it hit the server's own statement timeout rather than retried in a loop."
+  ]
+}

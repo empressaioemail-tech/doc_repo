@@ -1,0 +1,115 @@
+{
+  "lane": "p293-verdict-vocabulary",
+  "planRows": ["P-293"],
+  "checkpoint": "CP1",
+  "kind": "design / pre-build",
+  "filedAt": "2026-09-16T18:48:00.000Z",
+  "seat": "claude-p293",
+  "answeredBeforeCoding": "Falsifier answers below were written BEFORE the fix was implemented, per the dispatch's 'pre-register your answers first'.",
+  "snapshot": {
+    "doc_repo": {
+      "worktree": "P:/doc_repo",
+      "branch": "main",
+      "commit": "6ad2ad35 (measure(P-252): the rollout dry run; A-186; P-293 carded and dispatched)",
+      "note": "Integration checkout; this session is rooted here and the dispatch was compiled here. Doc_repo edits are the three _inbox/ artifacts only, left uncommitted per AGENT_CONTRACT section 6 (doc_repo commits are planner-owned)."
+    },
+    "product": {
+      "repo": "legacy-design-tools",
+      "clone": "P:/tmp/legacy-design-tools-p293-verdict-vocabulary",
+      "origin": "https://github.com/empressaioemail-tech/legacy-design-tools.git",
+      "startCommit": "62e7349b4d8d4837d62da7f0f1cc7e7d2d00fb0f",
+      "startCommitSubject": "feat(etj): acquire ETJ per publisher, and keep absent apart from unresolved (P-241) (#700)",
+      "branch": "fix/p293-verdict-vocabulary",
+      "createdHow": "git clone from origin, then git checkout -b fix/p293-verdict-vocabulary origin/main. Branch cut BEFORE any file edit.",
+      "seatRegistration": "Registered in _catalog/seat_register.json under the property seat as legacy-design-tools-p293-verdict-vocabulary (path == worktree == the clone, branch fix/p293-verdict-vocabulary), verified by re-reading the file after the write. SEAT-01 then returns {\"allow\": true, \"code\": \"ok\", \"seat\": \"property\"} for this worktree. path is deliberately NOT P:/legacy-design-tools: ownerOfRepoPath keys on repo.path and returns the FIRST match, so reusing that path would have handed this lane's git writes to the property seat's own entry (the A-111 defect shape)."
+    },
+    "laneClaim": "node scripts/lane-claim.mjs claim --lane p293-verdict-vocabulary --seat claude-p293 --plan-row P-293 --dispatch _dispatches/2026-09-16_p293-verdict-vocabulary_dispatch.md => exit 0. Pre-claim check: `check --lane p293-verdict-vocabulary` printed FREE; `status` showed only p249-envelope-unlock live. No collision."
+  },
+  "missionPremise": "P-293 (dispatch _dispatches/2026-09-16_p293-verdict-vocabulary_dispatch.md, dispatched in 6ad2ad35): hauska-factory P-201 (merged at factory 9171279, migration 0011a) widened parcel_gate_verdict's verdict CHECK constraint from pass|refuse|excluded to also admit excluded-not-applicable, excluded-mid-cutover and excluded-no-acquisition-path. LDT's verdict reader accepts only the first three, so once the factory scheduler writes an excluded-* string to a SLATED (county, rail) pair, resolveAllowlistState resolves that pair to legacy instead of the refused it resolves to today for plain 'excluded' - a serve-state change nobody decided, invisible because today's live rows are still plain 'excluded'.",
+  "driftTracedAtSource": {
+    "method": "Read at source, not from the dispatch's prose: the four LDT files on this lane's own branch at 62e7349b, plus hauska-factory's merged migrations at 91712795ea2a1eb7c27f7328cf7f52fcb7810b59 (== factory main, read via the GitHub API) and hauska-engine's services/retrieval-api at its own main.",
+    "site1_ldt_reader": {
+      "file": "artifacts/api-server/src/lib/parcelGateVerdictRead.ts",
+      "lines": "63, 93-95, 112",
+      "quoted": "export type ParcelGateVerdictKind = \"pass\" | \"refuse\" | \"excluded\"; ... function isVerdictKind(v: string): v is ParcelGateVerdictKind { return v === \"pass\" || v === \"refuse\" || v === \"excluded\"; } ... if (!isVerdictKind(row.verdict)) return null;",
+      "observed": "An excluded-* verdict fails isVerdictKind, so loadParcelGateVerdict returns null. The comment there reads 'null means: no usable verdict'. Silent: no log, no distinct return, and the same null a missing row and a query error produce."
+    },
+    "site2_ldt_allowlist": {
+      "file": "artifacts/api-server/src/lib/parcelRecordAllowlist.ts",
+      "lines": "535-541, 563-565",
+      "quoted": "if (!PARCEL_RECORD_SLATE.has(slateKey(countyFips, railKey))) return \"legacy\"; if (!verdict) return \"legacy\"; if (verdict.verdict === \"pass\") return \"record\"; return \"refused\";",
+      "observed": "The allowlist is already correct for any RECOGNISED non-pass string: plain 'excluded' -> refused, 'refuse' -> refused. The drift is entirely upstream of it, in the reader's predicate. This is why the fix belongs in the vocabulary/predicate and NOT in the decision function - and why 'do not change what a pass or refuse verdict serves' is satisfiable with no edit to the decision table at all."
+    },
+    "site3_engine_store_narrowing_LIVE_PATH": {
+      "repo": "hauska-engine",
+      "file": "services/retrieval-api/src/parcel-record-db.ts",
+      "lines": "160-162",
+      "quoted": "if (row.verdict !== \"pass\" && row.verdict !== \"refuse\" && row.verdict !== \"excluded\") { return null; }",
+      "observed": "THE FINDING THAT CORRECTS THE DISPATCH'S OWN MECHANISM. In production the verdict string does not reach LDT's predicate at all. resolveVerdictStore(undefined) -> parcelRecordQueryableFromEnv() -> an HTTP call to the retrieval service; the service's own loadGateVerdict applies the SAME three-string narrowing and returns null for an excluded-* row; LDT's adapter maps that null to an empty row set at parcelRecordCellRead.ts:230 (`if (verdict === null) return { rows: [] as unknown as T[] };`); loadParcelGateVerdict sees no row and returns null; the allowlist resolves legacy. So the customer-visible drift is real, and it happens one hop EARLIER than the dispatch says, in a repo this lane does not own. hauska-engine's services/retrieval-api/src/server.ts:509-544 returns the store result verbatim - it does not narrow - so parcel-record-db.ts:160 is the single upstream narrowing site.",
+      "status": "Out of this lane's repo and out of this lane's dispatch scope ('You build in legacy-design-tools and open a PR'). Filed as a leave_behind with the exact one-line repair named. NOT fixed here, and NOT claimed as fixed."
+    },
+    "what_this_means": "Two silent narrowings of one vocabulary, in two repos, both collapsing to the same word (null) that both callers document as 'no usable verdict'. Fixing the LDT one is necessary (it is this repo's copy, and it is the copy that would go on dropping a string the engine ever does forward) but it is NOT sufficient for the customer path while parcel-record-db.ts:160 stands. Reported rather than papered over, per DEV_PROCESS 3.2."
+  },
+  "vocabularyReadAtSource": {
+    "factoryRepo": "empressaioemail-tech/hauska-factory",
+    "factorySha": "91712795ea2a1eb7c27f7328cf7f52fcb7810b59",
+    "factoryShaNote": "Read via the GitHub API at ref=main; main returned exactly this SHA on 2026-09-16, so the pin is at the merge the dispatch names (factory 9171279).",
+    "sources": [
+      {
+        "file": "migrations/0009_parcel_gate_verdict.sql",
+        "quoted": "verdict text NOT NULL CHECK (verdict IN ('pass', 'refuse', 'excluded'))",
+        "role": "the original three"
+      },
+      {
+        "file": "migrations/0011a_parcel_gate_verdict_excluded_kinds.sql",
+        "quoted": "ALTER TABLE parcel_gate_verdict ADD CONSTRAINT parcel_gate_verdict_verdict_check CHECK (verdict IN ('pass','refuse','excluded','excluded-not-applicable','excluded-mid-cutover','excluded-no-acquisition-path'));",
+        "role": "P-201 (A-153) widens the CHECK; the migration's own comment states it is written ALONGSIDE the legacy 'excluded', never replacing it, because existing rows carry 'excluded' and a not-yet-updated writer must still be able to write it"
+      },
+      {
+        "file": "src/lib/gate-exclusion-classifier.mjs",
+        "quoted": "export const EXCLUDED_NOT_APPLICABLE = \"excluded-not-applicable\"; export const EXCLUDED_MID_CUTOVER = \"excluded-mid-cutover\"; export const EXCLUDED_NO_ACQUISITION_PATH = \"excluded-no-acquisition-path\"; export const EXCLUDED_KINDS = Object.freeze([...]);",
+        "role": "the factory's own writer-side module; same three strings, so the migration's CHECK and the classifier agree at source - checked, not assumed, because two lists that should agree are a free finding if they do not"
+      }
+    ],
+    "acceptedVocabulary": ["pass", "refuse", "excluded", "excluded-not-applicable", "excluded-mid-cutover", "excluded-no-acquisition-path"],
+    "sixStringsOnePrefix": "Exactly three of the six share the 'excluded-' prefix; 'excluded' itself is the prefix WITHOUT a suffix and must stay accepted (0011a's own comment: it is still written and 23 Hays rows already carry it as of 2026-09-16). A predicate written as 'startsWith(\\\"excluded\\\")' would accept both families for the wrong reason and would silently admit a future excluded-anything; the pin is an explicit list, and the test below asserts an invented 'excluded-' string is still UNRECOGNISED."
+  },
+  "readersFound": {
+    "method": "rg over the whole clone for parcel_gate_verdict, loadParcelGateVerdict, resolveAllowlist, PARCEL_RECORD_SLATE, ParcelGateVerdictWire, ParcelRecordRailWire, plus a separate search of artifacts/smartsite-mcp for any gate/verdict/allowlist reference.",
+    "smartsiteMcp": "No reader at all. artifacts/smartsite-mcp in this repo contains zero references to parcel_gate_verdict, gateVerdict, gate-verdict or allowlist (searched; zero matches). Nothing for this lane to change or list there.",
+    "rows": [
+      { "file": "artifacts/api-server/src/lib/parcelGateVerdictRead.ts", "role": "the reader this lane fixes", "unknownStringToday": "silent null -> allowlist legacy" },
+      { "file": "artifacts/api-server/src/lib/parcelRecordAllowlist.ts", "role": "the only decision consumer of the reader", "unknownStringToday": "never sees it (the reader already collapsed it to null); treats null as legacy by design and correctly" },
+      { "file": "artifacts/api-server/src/lib/parcelRecordCellRead.ts", "role": "the env adapter that fetches the verdict over HTTP (lines 222-247) and turns the upstream's null into an empty row set (line 230)", "unknownStringToday": "its upstream returns null for excluded-*, so it cannot tell that case from a missing row; no narrowing of its own" },
+      { "file": "artifacts/api-server/src/lib/parcelRecordReaderClient.ts", "role": "the HTTP client. Two TYPE-LEVEL declarations only: ParcelGateVerdictWire.verdict (line 143) and ParcelRecordRailWire.gate.verdict (line 31), both \"pass\" | \"refuse\" | \"excluded\" | null", "unknownStringToday": "no runtime narrowing: both are unchecked casts of the response body, so a string outside the union flows through the type silently. WIDENED in this lane (type-only) because a narrower wire type than the store is the third place this vocabulary is written down, and it would let the next consumer believe excluded-* cannot arrive." },
+      { "file": "artifacts/api-server/src/lib/placeCoverageSource.ts", "role": "hits a SIBLING route (/parcel-record-gate-verdict/coverage/check, P-210) - it reads county coverage, never a verdict string", "unknownStringToday": "n/a: it strictly validates {status: covered|not-covered|indeterminate} and returns indeterminate on anything else, failing closed. Listed for completeness so 'no other reader was found' does not have to be taken on faith." },
+      { "file": "artifacts/api-server/src/lib/{agValuation,cityLimits,floodHazard,cadRoll,maxHeightFt,maxLotCoveragePct,maxFootprintSqFt,maxImperviousCoverPct,overlayDistricts,parcelAreaSqFt,setbackRules,setbacks,schoolDistrict,specialDistrict,utilityService,valueHistory,well,zoning}FactServeCutover.ts", "role": "18 per-rail serve wrappers, every one of which calls resolveAllowlist and none of which reads parcel_gate_verdict directly", "unknownStringToday": "inherit the allowlist's answer; none has its own verdict logic, so none is a separate drift site" },
+      { "file": "hauska-engine services/retrieval-api/src/parcel-record-db.ts", "role": "OUT OF REPO: the upstream store reader that both the gate-verdict route and the /record route call", "unknownStringToday": "returns null for excluded-* (line 160) - the live first narrowing, see site3 above" }
+    ]
+  },
+  "plannedChanges": [
+    "NEW artifacts/api-server/src/lib/parcelGateVerdictVocabulary.ts - the pinned factory vocabulary, following the repo's existing vendored-contract pattern (lib/db/src/schema/contractPropertyTypesSnapshot.ts: a checked-in `*_SNAPSHOT` const carrying its upstream version/path, plus a derived set helper; and lib/db/src/schema/countyRailDimension.ts, which states outright that such a declaration is verified against upstream BY HAND at the stamp below and cannot observe upstream drift it has no dependency edge to see). Carries factoryRepo, factorySha 91712795ea2a1eb7c27f7328cf7f52fcb7810b59, the two migration paths, the six accepted strings, and the three excluded-* kinds. Named in CP1 per the dispatch's instruction to name the pattern followed.",
+    "EDIT artifacts/api-server/src/lib/parcelGateVerdictRead.ts - ParcelGateVerdictKind becomes the full six-string union re-exported from the vocabulary module (one list, consumed, never copied); isVerdictKind becomes isAcceptedParcelGateVerdictKind from that module; a new exported pure classifier classifyParcelGateVerdictKind(raw) returns {state:'accepted',kind} | {state:'unrecognised',raw}; loadParcelGateVerdict logs LOUDLY on the unrecognised branch (console.warn, the lib's own convention - provenanceEnvelope.ts:287 is the only other one) naming county, rail and the raw string, then returns null so the allowlist still fails closed to legacy.",
+    "EDIT artifacts/api-server/src/lib/parcelRecordAllowlist.ts - widen resolveAllowlistState's parameter type to the shared kind union and name the excluded-* family in its doc; the decision table itself is NOT touched (pass -> record, everything else recognised -> refused), so no verdict's serve state changes.",
+    "EDIT artifacts/api-server/src/lib/parcelRecordReaderClient.ts - widen the two wire-type verdict declarations to the shared union (type-only; no runtime change, and no consumer switches on either today, checked).",
+    "EDIT artifacts/api-server/src/lib/parcelGateVerdictRead.ts's memoryParcelGateVerdicts signature - accept verdict: string rather than only the union, deliberately, so a test can hand the reader a string the type system would otherwise forbid arriving from a database column. Commented as such.",
+    "NEW artifacts/api-server/src/lib/parcelGateVerdictVocabulary.test.ts - the pin/divergence test: the six strings are transcribed in the test from the two migration files with their SHA (an INDEPENDENT transcription, not an import of the pin), and the test asserts the pin equals it; every accepted kind round-trips through the classifier; an invented 'excluded-*' string is UNRECOGNISED; each excluded-* kind resolves refused through resolveAllowlistState for a slated pair while pass resolves record. Editing either side alone fails this test.",
+    "EDIT artifacts/api-server/src/lib/parcelGateVerdictRead.test.ts - the two reader-level falsifiers (F1, F2) with a console.warn spy."
+  ],
+  "falsifierAnswersPreRegistered": {
+    "f1": "A slated pair with verdict 'excluded-not-applicable' resolves to 'refused'. Predicted PASS after the fix, FAIL before it (today it resolves 'legacy' through the silent null). Will be measured twice: purely on resolveAllowlistState, and end-to-end through resolveAllowlist + memoryParcelGateVerdicts so the reader is in the loop.",
+    "f2": "A slated pair with an invented string (e.g. 'excluded-made-up-state') resolves to 'legacy' AND logs. Predicted: resolution 'legacy' both before and after (unchanged - this is the fail-closed direction and must stay), and the LOG is the new part: before the fix the branch is silent, after it console.warn fires once with county, rail and the raw string. Measured with a spy, asserting the county, the rail and the string all appear.",
+    "f3": "Editing the pinned list without the code, or the code without the list, fails a test. Predicted PASS because the transcription lives in the test and the accepted set lives in the module: dropping a string from the pin fails the equality assertion; adding one fails it in the other direction; and removing the excluded-* branch from the decision path fails the per-kind resolution assertions. Will be proven by actually doing it (revert-check), not by asserting the test exists, per P-244's precedent that a test which cannot fail for the right reason is a defect."
+  },
+  "notChanging": [
+    "The slate: PARCEL_RECORD_SLATE is not edited at all.",
+    "What pass and refuse serve: the decision table in resolveAllowlistState is unchanged; only the parameter type widens and the doc names the new family.",
+    "The engine: hauska-engine is not this lane's repo and the dispatch scopes the build to legacy-design-tools. parcel-record-db.ts:160 is reported, not edited.",
+    "P-249's artifacts/api-server/src/lib/buildableEnvelope/ and P-206's serve guards: not touched (P-206 is merged at ba6a5a69 in this branch's own history; P-249 is open as PR #701 and its diff does not overlap any file this lane edits)."
+  ],
+  "openRisks": [
+    "The pin cannot detect upstream drift: it has no dependency edge to hauska-factory, exactly as countyRailDimension.ts says of its own declaration. If the factory widens the CHECK a third time, the pin (and the test's transcription) stay internally consistent and both stay WRONG together. Mitigation is the SHA stamp plus the instruction to re-read the two migration files when the stamp is refreshed; it is not a control, and the file says so rather than implying otherwise.",
+    "The live defect outlives this PR: until hauska-engine's parcel-record-db.ts:160 is widened, an excluded-* row still reaches the customer as 'legacy'. This PR removes this repo's copy of the narrowing; it cannot remove the other repo's.",
+    "Falsifier 2's log is proven at the reader and through resolveAllowlist in-process. It is NOT proven on a live request, because no live parcel_gate_verdict row carries an excluded-* string yet (live verdicts still read plain 'excluded' as of 2026-09-16T18:28Z per the dispatch, and the factory scheduler that would write one has not run the P-201 code). The dispatch already scopes the probe as notApplicable for exactly this reason."
+  ]
+}
