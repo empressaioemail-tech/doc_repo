@@ -68,24 +68,28 @@ either gives a tidier essay.
 
 ### Known traps
 
-- **Two real content defects are visible on this exact surface and are NOT yours to fix here.**
-  Owner name, mailing address and exemption flags come back on a tool whose description says twice
-  it never carries owner data (**P-220**, confirmed on two parcels in two counties). And the
-  pipeline fact says "no pipeline within 500 ft" while the overlay in the same response says
-  `unknown` with vintage `UNKNOWN` (**P-217**, instance nine). **Do not fix them and do not hide
-  them behind a prettier panel.** If your shaping would render either one, render it honestly and
-  report it.
+- **P-220 SHIPPED 2026-09-16 and you will still see owner data. That is CORRECT, not a leak.**
+  `smartsite-mcp-00124-bub` strips `ownerFact` (owner name, mailing address, exemption flags) for
+  callers below Studio tier via `canRunStudioReport`. **Your session's account is Studio-or-above**,
+  so owner data is legitimately present in your responses. Do not "fix" it, and do not treat its
+  presence as evidence the strip is broken - the organisation has no sub-Studio account to test
+  the failing direction with (P-245). If your shaping renders owner data, render it only where a
+  Studio caller should see it, and say so in your close.
+- **P-217 instance nine is still live on this surface and is NOT yours**: `pipelineFact` says "no
+  pipeline within 500 ft" while the overlay in the same response says `unknown` with vintage
+  `UNKNOWN`. **Do not hide it behind a prettier panel.** If your shaping renders it, render both
+  halves honestly and report it.
 - Citations are degraded on all five brief sections for the operator's parcel. Shaping must not
   invent a citation where `citationsDegraded` is true.
 - **This repo does NOT auto-deploy.** Push runs build-and-push only; the workflow is NAMED "Cloud
   Run Deploy" and reports success while the deploy jobs show skipped. Merged is not shipped.
-- `smartsite-mcp` currently serves `smartsite-mcp-00122-coh`, deployed 2026-09-15. Read Cloud Run
+- `smartsite-mcp` currently serves `smartsite-mcp-00124-bub` (P-220), deployed 2026-09-16. Read Cloud Run
   traffic BY FIELD, never a positional `--format=value`, and never trust `latestReadyRevisionName`.
 
 ### Do not
 
 - Do not close this row on a resource-resolution test.
-- Do not fix P-220 or P-217 here.
+- Do not touch P-220 (shipped) or fix P-217 here.
 - Do not change what data the tools return, beyond what shaping and the vocabulary require.
 - Do not deploy or merge. Open the PR green and hand it back.
 - Do not spawn sub-agents that themselves spawn sub-agents. You own your fan.
