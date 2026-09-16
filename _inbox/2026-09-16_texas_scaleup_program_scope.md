@@ -1145,7 +1145,7 @@ PHASE 0 EXIT (section 5) <- everything above, plus P-230, P-217, P-209, P-204, P
 
 | Instrument | State |
 |---|---|
-| `scripts/six-county-completeness.mjs` | Built. Self-test 11 of 11: not-vacuous, empty-county, undeclared-rail and negative-control cases. Rail names 65 of 65 against live. Live run in section 16. |
+| `scripts/six-county-completeness.mjs` | Repaired under P-253 (A-187): 29 self-tests; every setback rail; acceptances coupled to the roadmap, the vendor register and P-264's residual; P-201 strings; rail list checked at the factory pin. Rev 4 baseline `_inbox/2026-09-16_six_county_completeness_rev4_baseline.json` (INCOMPLETE). Section 16 is the rev 3 run. |
 | Parcel-grain setback queries | Ran read-only for all six counties this session. Queries at `_inbox/2026-09-16_setback_parcel_grain_queries.sql`, output at `_inbox/2026-09-16_setback_parcel_grain_results.txt`. To be promoted to a self-testing instrument as P-255. |
 | Baseline run | `_inbox/2026-09-16_six_county_completeness_baseline.json` (the section 16 run, full detail). |
 | Rail-verdict query | Inside the completeness instrument. |

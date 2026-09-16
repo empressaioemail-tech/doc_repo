@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16
+last_updated: 2026-09-16 (18:55Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -36,10 +36,11 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | P-278 | Plan to rotate the production database password (9 secrets, 40 consumers) | Planned; runs later, before Burnet's first production publish |
 | P-251 | Engine key rotated; 37 open side-door URLs removed (reports session) | Done |
 | P-280 | Commit checks run in every worktree and on merges | Live; already checked a lane's close |
+| P-253 | Phase 0 completeness check repaired (every setback rail, acceptances tied to their reasons, new verdict strings, rail-list check) | Done (A-187); live baseline INCOMPLETE, roads and edgeSignal unmeasured until P-264 |
 | P-255 | Setback count tool built and run | Done: 131,357 is P-249's real target; half the district gaps are planned developments |
 | P-201 | Gate verdicts split into three kinds | Merged; did not close the zero-earned gap (P-252 does) |
 | P-252 dry run | What P-252 changes in the six counties | Done: 25 verdicts flip; publishing unaffected once P-292 lands |
-| P-248, P-261 | Footprints on every sheet; PDF prints an area only when verified | Merged (engine #459, #460); **deploy owed** |
+| P-248, P-261 | Footprints on every sheet; PDF prints an area only when verified | Merged (engine #459, #460); **deploy owed**; closes not yet filed |
 | P-210 | "Is this county covered" endpoint | Merged (engine #458); **deploy owed**, then P-205 can deploy |
 | P-206, P-241, P-242c, P-246, P-247, P-213 | Reports rows | Merged; deploy state not checked by this seat |
 
@@ -53,13 +54,12 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | P-249 | Unverified "no buildable area" data stops hiding envelopes | PRs LDT #701, map #409 open | Review; staging proof on the served surface |
 | P-284 | Cost and timing records for every stage | PR factory #158 open | Review; apply the migration on staging |
 | P-230 | Map and MCP serve current data, not an old snapshot | Dispatched by the reports session | Wait for its close |
-| P-253 | Phase 0 completeness check repaired | Integration seat building | Self-test, live baseline |
 
 ## Left for Phase 0 (the six counties)
 
 | Group | Rows | Blocked on |
 |---|---|---|
-| **Finish-line checks (integration seat)** | P-253 completeness check (in flight), P-254 customer-surface checks, P-277 duplicate-id check, P-286 blocker list as a checklist | Nothing |
+| **Finish-line checks (integration seat)** | P-254 customer-surface checks (next), P-277 duplicate-id check, P-286 blocker list as a checklist | Nothing |
 | **Setbacks** | P-256 stop false "no setbacks required"; P-257 decline wording and the PUD message; **P-258 setback table work, the longest task (54 cities with no table plus 209 city-and-district gaps)**; P-259 Austin zoning source; P-260 one setback registry; P-156 per-city declarations | P-256 needs P-252; P-257 needs P-256 and P-249; P-260 needs P-258 in part |
 | **Envelopes** | P-262 one edge labeller; P-263 clean up bad envelope data; P-264 re-derive every envelope (also measures whether road data blocks envelopes) | P-263 and P-264 need P-281; P-264 needs P-260 and P-262 |
 | **Hays and the ledger** | P-211 Hays envelope rails; P-265 Hays reader lists; P-266 three simple rails and `citationUrl`; P-268 unexplained refusals; P-204 rails still read from old sources | P-265 needs P-211; P-266 needs P-252 |
@@ -109,3 +109,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | When (UTC) | Change |
 |---|---|
 | 2026-09-16 18:45 | Created from the roadmap given to the operator in session. |
+| 2026-09-16 18:55 | P-253 done (A-187); P-254 next. |
