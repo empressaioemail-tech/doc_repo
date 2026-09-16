@@ -82,3 +82,33 @@ that service's traffic back to its prior revision immediately and do not disable
 version until every service is confirmed on the new value. If disabling the old version breaks
 something not caught in step 4, re-enable it immediately — disable is a single reversible
 `gcloud secrets versions disable` call away from undone.
+
+## Correction, 2026-09-16, same day: a sixth consumer was missed
+
+"Five services consume it" above was wrong. `hauska-map`'s `property-explorer` Vercel
+deployment holds its own synced copy of the same value, outside GCP entirely, as Vercel
+production env vars `HAUSKA_RETRIEVAL_API_KEY` and `RETRIEVAL_API_KEY`
+(`.github/workflows/property-explorer-sync-retrieval-key.yml`, whose own header states the
+rotation path in full: "add SM version → redeploy retrieval-api → redeploy MCP → run this
+workflow"). That workflow was never run as part of this rotation, because the discovery
+process (`gcloud run services describe` across two GCP projects) structurally could not see a
+Vercel-hosted consumer.
+
+**Consequence, found by a downstream lane (P-230), not by this seat's own verification**:
+`GET /api/spine/property-atoms/{id}/facets` on `property-explorer` returned `503
+retrieval_auth_failed` project-wide from shortly after the rotation until fixed. **Fixed same
+day**: `property-explorer-sync-retrieval-key.yml` run via `workflow_dispatch`
+(`hauska-map` run `35134588299`); it pulled the current secret version, authoritative-replaced
+both Vercel env vars, and redeployed `property-explorer` to production. Verified directly:
+`GET /api/spine/property-atoms/48021:34137/facets` now returns `200` with a full real payload
+(re-checked outside the workflow's own run, not trusting its self-report alone). The workflow's
+own built-in live-verify step still reports failure, but on an unrelated, pre-existing
+assertion (`readPath` expected `atom-chain-warm`, got `record`) that traces to P-230's bake-
+staleness finding (`bakedAt` on this exact parcel is six days old), not to authentication —
+confirmed by reading the actual HTTP status and body, not the workflow's pass/fail alone.
+
+**What this changes about the decision above:** "five consuming services" should read six.
+Any future credential rotation touching `HAUSKA_ENGINE_API_KEY` must include this Vercel sync
+workflow as a required step, not an optional one — the discovery method used here (`gcloud run
+services describe`) cannot find non-GCP consumers by construction, so a rotation checklist
+needs an explicit non-GCP consumer step, not just a wider GCP scan.
