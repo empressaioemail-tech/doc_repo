@@ -1,7 +1,7 @@
 ---
 id: 2026-09-15_reports_and_envelope_WDLL
 title: WDLL — the reports and envelope arc. Rows, rulings, findings, owed items, each with done-looks-like and an instrument.
-date: 2026-09-15
+date: 2026-09-15 (updated 2026-09-16)
 status: durable card — read this before touching any reports or envelope row
 kind: wdll
 owner: nick
@@ -70,176 +70,119 @@ unmerged for fear of a deploy that cannot happen (PR #154).
 
 ## LIVE AND VERIFIED ON THE CUSTOMER SURFACE
 
+Read by field on 2026-09-16. Every row below was verified on the surface a customer touches, never
+on the API behind it.
+
 | Row | Serving | Instrument that verified it |
 |---|---|---|
-| P-214 | `cortex-api-00805-jil` | envelope disclosure is human prose, no raw diagnostic |
-| P-216 + P-218 | `property-explorer-8r0btsuy9` | asset existence on the live alias, NOT `Age:` |
-| P-219 | `hauska-engine-api-00228-zat` | decoded PDF: 30/10/30 cited Ord. 2026-06; **0** occurrences of repealed `2019-51`, stale `19,052`, retired `bastrop-per-parcel` |
-| P-229 | both writer jobs, `af5fd158…` / `b35bc2d0…` | proven BY VIOLATION on the deployed image: `UNKNOWN_ARGUMENT` exit(1), `COUNTY_UNKNOWN` exit(1), and a valid `--county` still runs scopedly |
-| **P-232** | `cortex-api-00805-jil` | **1010 Chestnut St (GC): 404 no-district → 200 ok, Polygon, 20/5/20, 16,965 sq ft matching the facets route.** 3,825 Bastrop parcels |
-| P-221 + P-234 | `hauska-engine-api-00230-cic` + `hauska-mcp-server-00094-nis` | **the X-ray generates**: `pdf-dossier`, 3 sheets, verdict verbatim, `FRONT SETBACK 30'` agreeing with Feasibility, and **all 10 Studio-only markers ABSENT** from the Solo SKU |
-| P-228 | `hauska-engine-api-00230-cic` | chrome masthead renders on the dossier; footer counter verified `01/10`..`10/10` on a 10-sheet Feasibility by the lane. Dossier footer gap → **P-238** |
+| P-214 | `cortex-api-00807-wib` | envelope disclosure is human prose, no raw diagnostic |
+| P-216 + P-218 | `property-explorer` alias `index-Dm73unVg.js` | asset existence on the live alias, NOT `Age:` |
+| P-219 | `hauska-engine-api-00236-few` | decoded PDF: 30/10/30 on Ord. 2026-06, **0** occurrences of repealed `2019-51` |
+| P-229 | factory jobs gen 5 / gen 4 | proven BY VIOLATION on the deployed image: `UNKNOWN_ARGUMENT` exit(1) |
+| P-232 | `cortex-api-00807-wib` | 1010 Chestnut: 404 -> 200, Polygon, 20/5/20, 16,965 sq ft matching facets |
+| P-221 + P-234 | engine + `hauska-mcp-server-00098-rol` | the X-ray generates: 3 sheets, verdict verbatim, 10 Studio markers absent from Solo |
+| P-228 | `hauska-engine-api-00236-few` | chrome masthead on the dossier; footer counter `01/10`..`10/10` on a 10-sheet Feasibility |
+| **P-235** | `cortex-api-00807-wib` | real-ring fixture FAILED before / PASSED after; straight-frontage control **byte-identical** |
+| **P-236** | factory `factory-parcel-*-cells` gen 46 | refusal proven by violation both ways; build digest `sha256:10e6911c` matched by field |
+| **P-239** | `hauska-engine-api-00236-few` | decoded a LIVE dossier for `48021:34137`: stroke 4x30/76, all four ticks `7.10526` |
+| **P-240** | engine `00236-few` + mcp `00098-rol` + PE | site-plan export returns immediately with a stable jobRef instead of blocking past the 55s abort |
+| **P-242** | `smartsite-mcp-00124-bub` | broke it live: `artifact_id_malformed`, no table name, no columns, no driver text |
+| **P-242b** | PE `index-Dm73unVg.js` | served bundle carries `catalogStatus:"coming"` twice + `reports-coming-soon-button` disabled |
+| **P-220** | `smartsite-mcp-00124-bub` | **CODE-LEVEL ONLY.** Lane deleted the fix, 8 tests red with owner data visible, restored, 203/203. **The live failing direction is unverifiable - see P-245** |
+| **P-222** | `hauska-engine-api-00236-few` | D5, D7, D8, D11 fixed; lane decoded live-exported PDF bytes and REVERSED a code-only conclusion |
+| **P-237** | `hauska-mcp-server-00098-rol` | metering-order check proven by breaking the real handler and watching it go RED |
 
----
+Bold shipped 2026-09-15 into 2026-09-16. **Eleven rows this session.**
 
-## MERGED AND DEPLOYED — nothing is sitting unshipped
-
-As of 2026-09-15 evening every merged row is live. Serving revisions, read by field:
+## SERVING REVISIONS, read by field 2026-09-16
 
 ```
-hauska-engine-api   00230-cic   (P-219 + P-221 + P-228)
-hauska-mcp-server   00094-nis   (P-234)
-cortex-api          00805-jil   (P-214 + P-232)
-property-explorer   8r0btsuy9   (P-216 + P-218)
-factory writer jobs af5fd158… / b35bc2d0…  (P-229)
+hauska-engine-api   00236-few   digest sha256:87d7e580...f4d3   (P-219 P-228 P-239 P-240 P-222)
+hauska-mcp-server   00098-rol                                   (P-234 P-240 P-237)
+cortex-api          00807-wib                                   (P-214 P-232 P-235)
+smartsite-mcp       00124-bub                                   (P-242 P-220)
+property-explorer   alias serves index-Dm73unVg.js              (P-216 P-218 P-240 P-242b)
+factory writer jobs gen 5 / gen 4 / publish gen 46              (P-229 P-236)
 ```
+
+**Nothing is merged-but-unshipped.** Every PR opened this session is merged AND deployed.
 
 ## IN FLIGHT
 
-None. Three lanes ran 2026-09-15 evening (P-235, P-236, P-239), all three closed, merged and
-verified by the integration seat. `g131-tenant-resolution`'s claim was STALE, not live: the lane
-had FINISHED (PR #56 `8bea7fa5`, deployed `smartcity-api-00142-yuv` at 100 percent, lease released)
-and only the claim was never released. Confirm a claim against its close artifact before treating
-it as a live lane.
+None. Four lanes ran 2026-09-15 into 09-16 (P-240, P-242b, then P-220 / P-222 / P-237) and all
+closed, merged and deployed. No open lane claims.
 
----
 
-## WAVE 2 — 2026-09-15 evening, three lanes, all verified by the integration seat
 
-| Row | State | Verified how |
-|---|---|---|
-| **P-239** canonical logo | **CUSTOMER-DONE.** PR #452 merged `746e7b9`; engine built from a clean checkout at that commit, deployed by DIGEST `sha256:38d2d040…0d00` as `hauska-engine-api-00232-dos`, traffic shifted under a P-170 lease taken and released | **Decoded a live dossier for `48021:34137` (908 PINE) through the real MCP export path.** Stroke `1.5789473684210527` = 4×30/76 exactly; all four ticks `7.10526` = 18×30/76 on the 30pt mark and `3.55263` = 18×15/76 on the 15pt running-header mark. The pre-fix build carries neither that stroke width nor four equal ticks, so this predicate cannot pass on the old geometry |
-| **P-236** county coverage floor | **ARMED IN PRODUCTION.** PR #155 merged `bfb7303`; publish jobs rebuilt from that commit, build `abaa0c62` SUCCESS, output digest `sha256:10e6911c…4425` matched by field to `factory-bastrop-publish` generation 46 | Refusal proven by violation in BOTH directions on fixtures (floor 0.00 → exit 1 on 4 mismatches; floor 1.01 → exit 1 on 2; 0.95 → exit 0). Call path read: `requireCountyCoverageFloor` runs inside `runBastropPublish` before `bakesFn`, records the verdict, then RETHROWS. **Residual, stated: the refusal has NOT been proven by violation on the deployed image**, because doing so means executing a production publish |
-| **P-235** envelope front line | **DEPLOYED ON THE PATH THE MAP CALLS; RENDERED-POLYGON CHECK OWED.** PR #693 merged `0b498606`, 11/11 CI `success`, cortex-api `00807-wib` at 100 percent under a lease taken and released. P-226 traced the map's live call as `fetchBuildableEnvelope` -> `POST {cortex}/brokerage/v1/place/buildable-envelope`, so the fix is on that path. **MCP refusing the polygon is NOT a P-235 gap:** per P-217 instance 2 the baked-facets route unconditionally nulls `facets.envelope` and MCP has no equivalent of the panel's live-derive augment, so MCP has never carried an envelope polygon for any parcel. The integration seat first recorded this row as "not customer-done" from that MCP read and CORRECTED it within the session | Mechanism CORRECTED: the gap is at **reflex** joints, not convex as P-226 and the dispatch both said. On a CCW ring a convex vertex overlaps and is safe; a reflex vertex splays, and the uncovered wedge has its apex ON the parcel boundary. Fix is an INSCRIBED quarter-arc cap, provably a no-op where rectangles already meet, which is why the straight-frontage control came back **byte-identical** rather than merely close |
+## THE QUEUE, as of 2026-09-16 01:30Z
 
-**P-235's real finding is how large the error was.** 704 Wickford Cir drew **1,828.4 sqft (14.5 percent)**
-of envelope inside a setback, and Simsbrook — the very parcel that produced `stripRingSpikes` on
-2026-08-24 — has been **14.6 percent too large on its front setback ever since**. The lane's own two
-early probes REFUTED its hypothesis before an area measurement confirmed it; it distrusted the
-instrument because the answer was convenient in the wrong direction. Both bad probes sampled points
-ON the strip boundary, which `polygonClipping.intersection` counts as membership.
+**Repo is the sequencing constraint: one owning seat per repo, so same-repo rows serialise.**
 
-**A test bound was restated, correctly.** `geometry.test.ts`'s Simsbrook range was asserted against
-this function's own output WHILE THAT OUTPUT WAS WRONG. `3,797.1 - 555.1 = 3,242.0` closes on the new
-`3,243.1`, adjudicated by an independent pure-trig audit sharing no machinery with the code under
-test. That is a second derivation, not a re-baseline.
+### DISPATCH-READY
 
-**Falsifiers changed the answer again.** P-239 scored its own falsifier 3 WRONG and said so (it
-predicted the wordmark would not decode on the `StandardFonts` hazard; the chrome already uses
-fontkit-embedded Barlow, so it decodes). P-235 lost falsifier 4 on magnitude, pre-registering a
-sub-sqft area change against an actual 1,825.8 sqft. Neither would have surfaced from re-reading a
-conclusion.
+**P-243 — the MCP app is published and never bound · legacy-design-tools · COMPILED, UNFIRED**
+Three compounding causes, one lane. `ui://smartsite/app-p562.html` exists and serves (its sibling
+probe returns `probe-ok`) and NO tool result references it. The vocabulary is resource-addressable
+at `docs://smartsite/vocabulary-p91v3.json` and is inlined anyway on EVERY call, roughly 5 KB,
+measured riding along with a four-line refusal. And there is no response shaping, so the model
+improvises from 30-plus raw rails plus a glossary.
+**Done: the panel RENDERS on the operator's client.** Not that the resource resolves - it already
+does, and the operator still sees nothing.
 
-**A CORRECTION THIS SEAT MADE ON ITSELF, kept because the shape recurs.** P-235 was first written up
-here as "not customer-done, pattern 1 fourth instance" on the strength of an MCP read. The dispatch's
-own known-traps section said **"Verify on the MAP, not the API"** and the seat measured MCP anyway,
-then reasoned from it. The real mechanism was already root-caused in P-217 instance 2 and is neither
-of the two the seat named. **A wrong surface produces a confident wrong answer that no amount of
-re-reading the conclusion will catch** - only going back to what the row actually said to measure.
+**P-244 leg A — site-plan compose fails at ~116s · hauska-engine**
+**P-244 leg B — a declared wait is returned as `status: error` · hauska-mcp-server**
+See the P-244 row. Leg B is small and high-value: every agent and UI currently reads a healthy
+queued job as a failure.
 
-**AND A NEW P-217 INSTANCE, number 8, found while verifying P-235.** `get_smart_site` contradicts
-ITSELF across depths on one parcel: depth **stub** reports `envelope: "present"` for `48453:289990`,
-depth **node** refuses the polygon on the same parcel in the same breath. Stub is the triage read an
-agent runs across a whole screen. Likely mechanism: stub reports the BRIEF SECTION disposition
-(`setbacks-envelope`, genuinely present 25/5/10/15 with a matched `setbackRulesFact`) while node
-reports the POLYGON state, two different things under one name. A second mechanism, a real
-inconsistency in one value, is not excluded without reading both producers. A consumer cannot tell
-them apart either way, which is the P-217 predicate.
+**P-241 — the ETJ build · legacy-design-tools `lib/cad-ingest/src/boundary/`**
+Repo established by the P-241 enumeration lane, NOT hauska-engine as the planner had guessed.
+**20 of 23 wired cities publish a directly queryable ETJ layer**; 4 combine city limits and ETJ in
+one layer as Austin does; only Round Rock and Cedar Park publish none; only Lockhart is unresolved
+behind `Token Required`. City limits was ALREADY unwired by a 2026-09-12 lane - only ETJ remains
+hardcoded, at `report-model.ts:966` and `feasibility.ts:210-212`, plus **5 more duplicate hardcode
+sites** the lane found beyond those two. SB 2038 (2023) is CONFIRMED against capitol.texas.gov and
+Austin cites SB 1844 (2025) for a separate subset, which RETIRES the §42.021 derivation rather than
+deferring it.
 
-**A false verification claim was found and corrected in code.** `report-chrome-tokens.ts` recorded
-`--ss-print-gold #B87116` as **4.6:1** on paper from the day it landed. Measured against `--ss-paper`
-`#FCFBF9` it is **3.751:1**, recomputed independently by the integration seat: it FAILS the 4.5:1
-normal-text floor it claimed and passes only the 3:1 large-text floor. Same class as the
-`zoning-layers.ts` false "verified" claim still owed below.
+**P-242c — coming-soon, the MCP half · legacy-design-tools**
+Per the 2026-09-15 ruling: tools stay LISTED and return a declared coming-soon refusal.
 
----
+**P-238 — dossier footer counter and deep link · hauska-engine**
 
-## THE QUEUE, in the order I would run it
+**R-11 — the SEAT-01 gate's three verified holes · doc_repo**
+Over-broad (`ownerOfRepoPath` returns the FIRST seat-product entry per repoPath) plus two silent
+halves (the gate never parses `git -C`, and shell mode gates only git writes so heredoc/sed/python
+writes never meet the path check). **Three near-misses on seat isolation in one night**: P-240's
+lane ran a destructive git command against the shared reference checkout, the P-222 lane reviewed
+another seat's in-progress work in hauska-map from a working-directory mismatch, and the planner
+wrote every doc_repo edit through Bash. All three caught by lane discipline, none by the control.
 
-Each carries done-looks-like and the instrument. Repo is the sequencing constraint: one owning
-seat per repo, so same-repo rows serialize.
+### NEEDS SCOPING BEFORE A LANE
 
-### P-235 — the write-time envelope fix · legacy-design-tools
-**Not hauska-engine.** P-226 traced the live call and contradicted its own dispatch's repo
-attribution; the implementation is entirely in `artifacts/api-server/src/lib/buildableEnvelope/
-{derive,geometry,edgeLabeling}.ts`. Candidate cause, **named and explicitly unverified**:
-`geometry.ts`'s `buildForbiddenStrips` per-edge rectangle-strip union has no mitred or rounded
-join at ring vertices, so it can under-cover the forbidden area at each convex joint of a
-multi-chord curved frontage.
-**Done:** on a named radius-street parcel the drawn front edge is offset from the frontage by
-the front setback and never crosses it; a straight-frontage parcel is unchanged.
-**Instrument:** a fixture built from that parcel's REAL ring that fails before and passes after.
-**Do not:** wire up `insetParcelBySetbacks` (confirmed dead code, uniform inset, cannot produce
-a correct front setback by construction).
+P-231 standalone site-plan caller (repo still TBD; P-227 established the engine is symmetric) ·
+P-230 cells written vs pre-write bake · P-217 instances 8 and 9 · P-233's 131 districts ·
+P-225 uncodified districts · P-223 / P-224 from the QA passes · P-215 two nodes one lot ·
+the Austin parser (`ZONING_BASE` carries COLLAPSED codes; a naive split on `-` yields `CS` where
+the base is `CS-1`).
 
-### P-240 — the async port · hauska-engine · NEXT, DISPATCH COMPILED
-**Carded 2026-09-15 as P-240.** It was queued here without a row number, which is why it could
-not be dispatched: `dispatch.mjs` refuses a row that is not in the plan of record.
-**Scope covers SITE-PLAN EXPORT as well.** It is not flood-specific, see pattern 2.
-**Done:** both routes return immediately and the client polls a download, per P-155's pattern.
-**Instrument:** the engine's own request log, showing the client no longer aborts, plus a
-customer-surface generation of each artifact.
+### OPERATOR ACTION, NOT A LANE
 
-### P-241 — ETJ and city limits · acquisition, hauska-map + hauska-engine
-From QA-04. The `etj` toggle already exists at `live: false`; the blocker was a missing source.
-**Austin publishes one**, measured anonymously 2026-09-15: 388 jurisdiction polygons including
-270 two-mile and 24 five-mile ETJ, plus FULL and LIMITED purpose city limits in the same layer,
-so one acquisition closes two rails. The §42.021 derivation ruling is recommended DEFERRED and
-converted into an enumeration of which footprint cities publish a layer.
+**P-245 — one paid-Solo account, ideally a free-tier too.** Unblocks three stuck verifications and
+is the cheapest row on the board.
 
-### P-242 — record request coming-soon · hauska-map PE + hauska-mcp-server
-From QA-05. Not a label: `ReportsTool.tsx` line 1 rules that coming-soon cannot sit on the
-purchase surface, and P-223's raw-Postgres error envelope plus its untested tier gate sit
-underneath. **Operator ruling owed on scope.** Fix the error envelope regardless.
+### INHERITED, STATUS NOT RE-VERIFIED
 
-### P-231 — the standalone site-plan caller · repo TBD, NOT hauska-engine
-**Done:** a customer-visible standalone site plan prints the parcel's real address and county.
-**Instrument:** the caller is named with file and function, and why the composed path populates
-the descriptor while the standalone path does not.
-**Do not:** fix it in the renderer. A renderer that invents an address it was not given is the
-fabrication class this program refuses.
+**P-200 through P-213.** OPS-24 rails, the `excluded` taxonomy, the capability roadmap, the SEV-1
+mass false retirement (P-212) and the blast-radius refusal (P-213, which P-236's lane recorded as
+still unbuilt). **The 2026-09-15 session did not verify any of these and did not guess.**
+Re-establishing this block is its own task and is the largest blind spot on the board.
 
-### P-230 — cells written, customer served a pre-write bake · hauska-engine + LDT
-**Done:** a written cell demonstrably reaches `get_smart_site` with a `bakedAt` LATER than the
-write, and any close claiming a rail is served cites that read rather than a gate verdict.
-**Instrument:** read the bake's trigger. Two mechanisms to discriminate — the bake is merely
-late, or nothing re-bakes a parcel when its cells change. **Do not assume the cheaper one.**
+**Structural note that makes all of the above harder than it should be: OPS-16 HAS NO STATUS
+COLUMN.** Every row from P-200 to P-245 carries `ADDED` in its third field; real status lives
+scattered across 170 amendments and the lane closes. "Where are we" cannot be queried, only
+re-read. That is an instrument gap, and it is why every handoff so far has re-derived the board by
+archaeology.
 
-### P-236 — the county coverage floor · hauska-factory
-A Travis bake with only Pflugerville and Lakeway stamped would overwrite ~233k zoned nodes with
-~35k, and **the existing row-level monotonic guard would not catch it**, because every row it
-wrote would be valid.
-**Done:** a county column REFUSES to promote when its zoned-node count falls below a declared
-fraction (recommended 95 percent) of the prior bake.
-**Instrument:** proven BY VIOLATION against a deliberately undersized bake. A **refusal**, not a
-detector — this operation has a long record of detectors later found dormant or starved.
-
-### P-222 — five remaining reporting defects · hauska-engine
-D5, D7, D8, D9, D11 are untouched (D3 split to P-231). D7, D8 and D9 share one shape: **the
-facet has the data and the report does not ask.** Probably one lane, not five.
-
-### P-233 — the setback acquisition program · scoping, then acquisition
-**RULED 2026-09-15 (operator):** a PUD parcel gets an honest *"your setbacks come from your PUD
-ordinance"* message for now, **not** per-parcel acquisition. That disposes of the largest bucket
-(35 districts, 9,485 parcels) without acquiring anything.
-Remaining: **acquire 131 districts / 5,095 parcels**, sequenced by parcel count, not district
-count.
-
-### Austin re-acquisition · engineering, NOT a credential
-**Measured 2026-09-15, anonymously, no token:** org `0L95CJ0VTaxqcmED`,
-`PLANNINGCADASTRE_zoning_large_map_scale/FeatureServer/0`, HTTP 200, **22,504 polygons**,
-`wkid 102739 / latestWkid 2277`.
-**The schema check has two halves.** `ZONING_BASE` carries COLLAPSED codes (`SF`, `MF`, no
-numeric suffix) and our table keys on SF-1/2/3 and MF-1..6 **which carry different setbacks** —
-stamping from it would be fabrication. `ZONING_ZTYPE` carries the full code (SF-1, SF-2, SF-3,
-MF-1, MF-3, MF-6 all present) across **557 compound values** appending overlay districts, so the
-base must be parsed off a prefix. **A naive split on `-` yields `CS` where the base is `CS-1`.**
-`SF-6` (153 polygons) is a genuine uncodified district, not a parser miss.
-**Fallback:** Path 1 remains viable — the org's `tokenServicesUrl` is
-`www.arcgis.com/sharing/generateToken`, i.e. ArcGIS Online, not a city portal.
-**STANDING RULE until P-236 exists: Travis stays OUT of any bake while Austin is unmeasured.**
-
----
 
 ## RULINGS IN FORCE
 
@@ -249,21 +192,41 @@ base must be parsed off a prefix. **A naive split on `-` yields `CS` where the b
 - **X-ray metering** (operator, 2026-09-15, P-237): **accept** the meter tick on a hollow
   refresh. A tick costs nothing today — verified on deployed main: `handleSettledOveragePayment`
   has zero call sites, `amount_minor` lands `null` with `graceTerms: "pending-rate"`.
-  **TRIGGER, and it is unenforced today: moving metering after the engine's verdict must land
-  BEFORE any real `perReferenceRateMinor` is set.** The moment a rate exists those rows stop
+  **TRIGGER, ENFORCED AS OF 2026-09-16 (P-237 shipped, `hauska-mcp-server-00098-rol`): moving
+  metering after the engine's verdict must land BEFORE any real `perReferenceRateMinor` is set,
+and a CI check now fails when it does not.** The lane proved it by breaking the real handler and
+  watching the check go RED, then reverting. **Its named hole: the rate's VALUE lives in an
+  external npm package (`@empressaio/atom-contract`), so the check can never see a dependency
+  bump that introduces a real rate.** That is a separate, real hole, recorded as a leave-behind. The moment a rate exists those rows stop
   being free and start being wrong. "Someone remembers" is not a control — the enforcing check
   (CI fails when a finite rate resolves while the metering order is unchanged) is owed.
   Option (c), a cheap pre-engine hollow pre-check, is **refused**: it is the shape of the
   defect P-234 removed.
-- **Travis stays OUT of any bake** while Austin is unmeasured, until P-236 exists.
+- **Travis stays OUT of any bake** while Austin is unmeasured. **P-236 now EXISTS and is armed**
+  (`factory-parcel-*-cells` gen 46), so re-read this rule before the next Travis bake rather than
+  inheriting it; its precondition has changed.
+- **Record request is coming-soon on ALL surfaces, DISABLED AND LABELLED, with the MCP tools
+  STAYING LISTED and returning a declared coming-soon refusal** (operator, 2026-09-15, P-242,
+  recorded at `_decisions/2026-09-15_record_request_coming_soon_all_surfaces.md`). Basis: the flow
+  completes and delivers nothing readable - 42 `records_request_jobs`, the operator owns 2, both
+  `needs-human`, both completed, **both with zero artifacts**. Point three follows this repo's
+  disclosure posture over the reflex to unregister a dead tool. **The web half SHIPPED (P-242b);
+  the MCP half is P-242c and is NOT done.**
+- **The §42.021 ETJ derivation is RETIRED, not deferred.** SB 2038 (2023) confirmed against
+  capitol.texas.gov, and Austin cites SB 1844 (2025) for a separate parcel subset, so ETJ is shaped
+  by two statutes plus per-parcel agreements. A population-keyed buffer would contradict the
+  cities' own published data. Per-city GIS is the path: 20 of 23 wired cities publish a layer.
 
 ## OWED, and not to be quietly folded into something else
 
 1. **Lockhart.** Its ArcGIS service is gone from its org entirely (`400 Invalid URL`). No public
    replacement has been searched for. **This is NOT resolved by Austin's answer.**
 2. **The 7 remaining Hays cities** for the envelope group (P-211 leave_behind).
-3. **`surface-probe.mjs` has no leg** for P-214, P-216, P-218, P-219, P-221 or P-228. Six rows
-   shipped that it could not confirm. Named by four separate closes now.
+3. **`surface-probe.mjs` has no leg** for P-214, P-216, P-218, P-219, P-221, P-228, and now
+   P-220, P-222, P-235, P-236, P-237, P-239, P-240 and P-242. **Fourteen rows shipped that it
+   could not confirm**, and every OPS-24 close now discharges its predicate through
+   `probe.notApplicable`. Named by seven separate closes. **The program's own Law 1 finish line
+   does not exist for most of what ships.**
 4. **`derive.ts` does not read `max_lot_coverage_pct`'s own `not_specified` provenance** —
    affects real codified Bastrop rows today. Found by P-232, not fixed.
 5. **`zoning-layers.ts` carries a false "verified" claim** about a Georgetown `RL` code the live
@@ -272,6 +235,22 @@ base must be parsed off a prefix. **A naive split on `-` yields `CS` where the b
    revive.
 7. **The "Cloud Run Deploy (cortex-api)" workflow is named for something it does not do on
    push.** Rename it or make the push job state build-only.
+8. **No sub-privileged identity exists anywhere** — P-245. Blocked three verifications in two days
+   and is the reason P-220 existed at all (the test fixture defaults to Studio-tier, so no test
+   ever ran a Solo or free caller against `get_smart_site` or `run_report`). **Operator action.**
+9. **P-222's residue**, confirmed real and deliberately not fixed in that lane: D9 traces to a
+   DIFFERENT service's stale cache, not hauska-engine's code; the setback edge3-vs-4 inconsistency
+   needs a write-path atom fix, too broad for a report-composer lane. The 7-vs-13 page question
+   closed as a partial no-op (7 vs 12 now, drifted from 13) — the gap is caller-side.
+10. **P-220's leave-behind**: a batch (multi-parcel) `get_smart_site` read checks account-wide tier
+    only, not per-parcel property-unlock. Conservative (never-leaks) narrowness, documented.
+11. **The claim-scope control is PROPOSED, NOT CARDED.** DEV_PROCESS 1.1 says a coverage figure
+    travels with its denominator; the general rule is that EVERY claim does. The close skeleton
+    already demands `scopeBasis`, `completionPredicate`, `missionPremise` and `contradicted`, and
+    **the probe-close gate reads NONE of them** — zero references, verified. Awaiting an operator
+    ruling on whether to build it.
+12. **OPS-16 has no status column.** Every row P-200..P-245 carries `ADDED`; status lives scattered
+    across 170 amendments. "Where are we" cannot be queried, only re-read.
 
 ---
 

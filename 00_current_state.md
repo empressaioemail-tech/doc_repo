@@ -2,12 +2,41 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-16 (session close / design completion and five lenses)
+last_updated: 2026-09-16 (two session closes: design completion and five lenses; 2026-09-15e eleven rows shipped and the async cutover)
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
 
 # Current state snapshot
+
+**2026-09-15e SESSION CLOSE. The serving revisions in this paragraph are the ones to trust, and
+they were read by field on 2026-09-16.** Eleven rows shipped and verified on customer surfaces in
+one session: P-220, P-222, P-235, P-236, P-237, P-239, P-240, P-242 and P-242b, plus
+re-verification of the inherited set. Serving: `hauska-engine-api-00236-few` (digest
+`sha256:87d7e580...f4d3`), `hauska-mcp-server-00098-rol`, `cortex-api-00807-wib`,
+`smartsite-mcp-00124-bub`, property-explorer alias serving `index-Dm73unVg.js`, factory writer jobs
+gen 5 / gen 4 and publish gen 46. **Nothing is merged-but-unshipped.**
+
+P-240 was a three-repo coordinated cutover, run as migrations then engine then consumers because it
+retired the synchronous response shape rather than leaving it coexisting. It worked and immediately
+exposed **P-244**: site-plan compose fails on its own at roughly 116 seconds, which the 55,000 ms
+client abort had been masking as a cold start. **That affects the STANDALONE export route only; the
+composed feasibility path is healthy (9 of 9 jobs ready), which is how site plans actually reach
+customers.** The planner initially recorded this as a product-wide failure and the operator
+corrected it.
+
+**P-245 is the highest-leverage open item and it is an operator action, not a lane.** No
+sub-privileged identity exists anywhere in the organisation, which blocked three verifications in
+two days and is the reason P-220 existed at all: the test fixture defaults to Studio-tier, so no
+test ever exercised a Solo or free caller. One paid-Solo account clears all three.
+
+**P-200 through P-213 were NOT re-verified in this session and were not guessed.** That block is the
+largest blind spot on the board. Related: **OPS-16 carries no status column** - every row from P-200
+to P-245 reads `ADDED`, and real status lives scattered across 170 amendments, so "where are we"
+cannot be queried, only re-read.
+
+Durable card: `_inbox/2026-09-15_reports_and_envelope_WDLL.md`. Session:
+`_sessions/2026-09-15e_qa_reconciliation_and_async_cutover_claude_code.md`.
 
 Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not treat this file as the serving-revision ledger. **Caveat added 2026-08-31: `_STATE.md` is a pure concatenation of the six `_state/<seat>/STATE.md` files and carries NO smartsite-mcp or cortex-api revision at all; every seat source file predates its 2026-08-29T01:39Z generation, so regenerating it would refresh only its timestamp. For Smart Site MCP and cortex-api revisions, read Cloud Run by field name, not this file and not `_STATE.md`.**
 
