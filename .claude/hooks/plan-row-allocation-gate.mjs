@@ -17,7 +17,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { evaluate, isGitCommit, targetsDocRepo, stagedFiles, DOC_REPO } from "../../scripts/enforcement/plan-row-allocation-gate.mjs";
+import { evaluate, isGitCommit, targetsDocRepo, stagedFiles, readStaged, DOC_REPO } from "../../scripts/enforcement/plan-row-allocation-gate.mjs";
 
 let raw = "";
 process.stdin.setEncoding("utf8");
@@ -41,7 +41,8 @@ process.stdin.on("end", () => {
       process.stderr.write(`PLAN-ROW-ALLOCATION-GATE could not read plan_registry.json (${e?.message ?? e}); not blocking. This line exists so a dead control is visible.\n`);
       process.exit(0);
     }
-    const read = (rel) => { const p = join(DOC_REPO, rel); return existsSync(p) ? readFileSync(p, "utf8") : null; };
+    // P-277: read what is being COMMITTED (the index), not the working tree.
+    const read = (rel) => readStaged(DOC_REPO, rel);
     const verdict = evaluate(staged, read, registry);
     if (verdict.block) {
       const msg = verdict.message.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r/g, "").replace(/\n/g, "\\n");

@@ -8,6 +8,16 @@
  * against the plan file, which is the authoritative allocation record, and a commit that
  * introduces a SECOND definition of an ID already defined is refused.
  *
+ * P-277 (2026-09-16): AMENDMENT IDS ARE CLAIMS TOO. The gate checked only each plan's row prefix
+ * (P-, G-, R-, F-), so amendment ids (A-) collided unseen: seven were live on 2026-09-16, six in
+ * OPS-16 (A-016, A-060, A-061, A-136, A-145, A-146) and one in OPS-19 (A-017). Every plan is now
+ * checked for its row prefix AND for each id prefix in its registry entry's `idPrefixes`
+ * (default ["A"]). The seven existing collisions were annotated in place (the later row's id cell
+ * reads "A-xxx (second use of this id; cite as A-xxxb, P-277)"), which is not a definition, so a
+ * clean file is the baseline and any NEW duplicate is refused. The staged copy is read from the
+ * INDEX (`git show :path`), not the working tree, so a file edited after `git add` cannot pass
+ * on content that is not being committed.
+ *
  * WHAT THIS DOES NOT CATCH, stated so nobody mistakes its scope for its name.
  * There are TWO failure modes and this covers ONE.
  *   (a) COVERED: two sessions allocating the same NEW id. Both write `| P-200 | ...` into the
@@ -92,6 +102,24 @@ export function targetsDocRepo(command, cwd) {
   return norm(cwd).startsWith(norm(DOC_REPO));
 }
 
+/** The id prefixes checked in one plan: its row prefix plus its declared id prefixes (default A). */
+export function prefixesForPlan(plan) {
+  const extra = Array.isArray(plan?.idPrefixes) ? plan.idPrefixes : ["A"];
+  return [...new Set([plan?.rowPrefix, ...extra].filter((x) => typeof x === "string" && x.length > 0))];
+}
+
+/** The STAGED content of a repo-relative path (the index), or null when it cannot be read. */
+export function readStaged(repo, rel) {
+  try {
+    return execFileSync("git", ["show", `:${rel}`], {
+      cwd: repo,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  } catch { return null; }
+}
+
 export function stagedFiles(repo) {
   try {
     return execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
@@ -106,7 +134,7 @@ export function stagedFiles(repo) {
 export function evaluate(staged, read, registry) {
   const plans = registry?.plans ?? {};
   const byFile = new Map();
-  for (const [id, p] of Object.entries(plans)) byFile.set(String(p.file).replace(/\\/g, "/"), { id, prefix: p.rowPrefix });
+  for (const [id, p] of Object.entries(plans)) byFile.set(String(p.file).replace(/\\/g, "/"), { id, prefixes: prefixesForPlan(p) });
 
   const problems = [];
   const checked = [];
@@ -120,8 +148,10 @@ export function evaluate(staged, read, registry) {
       continue;
     }
     checked.push(`${plan.id} (${key})`);
-    for (const d of duplicatesIn(text, plan.prefix)) {
-      problems.push(`- ${key}: ${d.id} is DEFINED ${d.lines.length} times, at lines ${d.lines.join(", ")}. A row id is a claim; a second claim on the same id is refused.`);
+    for (const prefix of plan.prefixes) {
+      for (const d of duplicatesIn(text, prefix)) {
+        problems.push(`- ${key}: ${d.id} is DEFINED ${d.lines.length} times, at lines ${d.lines.join(", ")}. A row or amendment id is a claim; a second claim on the same id is refused.`);
+      }
     }
   }
 
@@ -168,6 +198,18 @@ function selfTest() {
   check("a plan file NOT staged is not checked even if duplicated", evaluate(["_inbox/x.json"], readDup, registry).block === false);
   check("a staged plan that cannot be read -> BLOCK (loud, not open)", evaluate(["90_operations/OPS-17.md"], () => null, registry).block === true);
   check("checked[] names what was actually examined", evaluate(["90_operations/OPS-16.md"], readClean, registry).checked[0] === "OPS-16 (90_operations/OPS-16.md)");
+  const amendDup = one + "| A-190 | 2026-09-16 | RULING | x |\n| A-190 | 2026-09-16 | OTHER | y |\n";
+  const readAmendDup = (p) => (p === "90_operations/OPS-16.md" ? amendDup : null);
+  check("P-277 NOT VACUOUS: a duplicated AMENDMENT id in a staged plan -> BLOCK, naming it",
+    evaluate(["90_operations/OPS-16.md"], readAmendDup, registry).block === true &&
+    /A-190 is DEFINED 2 times/.test(evaluate(["90_operations/OPS-16.md"], readAmendDup, registry).message));
+  const annotated = one + "| A-190 | 2026-09-16 | RULING | x |\n| A-190 (second use of this id; cite as A-190b, P-277) | 2026-09-16 | OTHER | y |\n";
+  check("P-277: the in-place annotation is not a second definition -> allow",
+    evaluate(["90_operations/OPS-16.md"], (p) => (p === "90_operations/OPS-16.md" ? annotated : null), registry).block === false);
+  check("P-277: a plan that declares idPrefixes: [] is not checked for A- ids",
+    evaluate(["90_operations/OPS-16.md"], readAmendDup, { plans: { "OPS-16": { file: "90_operations/OPS-16.md", rowPrefix: "P", idPrefixes: [] } } }).block === false);
+  check("P-277: prefixesForPlan defaults to the row prefix plus A",
+    JSON.stringify(prefixesForPlan({ rowPrefix: "F" })) === JSON.stringify(["F", "A"]));
   check("isGitCommit matches plain and -C forms", isGitCommit("git commit -m x") && isGitCommit("git -C P:/doc_repo commit -F m.txt") && !isGitCommit("git status && echo commit"));
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
@@ -186,6 +228,11 @@ function scan() {
     const dupes = duplicatesIn(text, p.rowPrefix);
     total += dupes.length;
     console.log(`${id.padEnd(8)} rows ${String(defs.size).padEnd(5)} duplicates ${dupes.length === 0 ? "none" : JSON.stringify(dupes)}`);
+    for (const extra of prefixesForPlan(p).filter((x) => x !== p.rowPrefix)) {
+      const extraDupes = duplicatesIn(text, extra);
+      total += extraDupes.length;
+      console.log(`${"".padEnd(8)} ${extra}- ids ${String(rowDefinitions(text, extra).size).padEnd(5)} duplicates ${extraDupes.length === 0 ? "none" : JSON.stringify(extraDupes)}`);
+    }
   }
   console.log(total === 0 ? "\nscan: no duplicate row definitions" : `\nscan: ${total} duplicated row id(s)`);
   return total;
