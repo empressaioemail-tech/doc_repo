@@ -159,3 +159,21 @@ planner wrote every doc_repo edit through Bash, which never meets SEAT-01's path
 - item: P-243 compiled and unfired; P-244 legs A and B owed as dispatches.
   owner: doc_repo integration seat
   plan_row: P-243, P-244
+
+## Addendum after close, 2026-09-16
+
+The operator fired P-243, P-244a and P-244b, then moved the test account to paid Solo. The planner
+used the new identity immediately, read-only, and recorded the results as A-171.
+
+- **P-220 verified live in the failing direction.** `ownerFact` came back as the MCP strip's own
+  refusal object, whose reason string exists nowhere else in the codebase.
+- **P-242's tier gate verified live in the failing direction** on both records tools.
+- **P-246 carded.** The same first read showed `valueHistoryFact` carrying the 2025 dollar values
+  that `cadRoll` refuses a Solo caller. Code reading agrees: the loader was reused in the 2026-09-07
+  parity audit without the gate. Mission written; it waits for P-243 to release legacy-design-tools.
+- **The switch touches the lanes in flight.** Site-plan export now refuses the operator's account, so
+  P-244's live checks need an unlock on `48021:34049` or a direct hauska-mcp-server call, and P-243's
+  dispatch describes the account as Studio-or-above, which is no longer true.
+
+The leave_behind item "P-243 compiled and unfired; P-244 legs A and B owed as dispatches" is
+superseded: all three are fired.

@@ -25,10 +25,13 @@ composed feasibility path is healthy (9 of 9 jobs ready), which is how site plan
 customers.** The planner initially recorded this as a product-wide failure and the operator
 corrected it.
 
-**P-245 is the highest-leverage open item and it is an operator action, not a lane.** No
-sub-privileged identity exists anywhere in the organisation, which blocked three verifications in
-two days and is the reason P-220 existed at all: the test fixture defaults to Studio-tier, so no
-test ever exercised a Solo or free caller. One paid-Solo account clears all three.
+**P-245 is PARTLY SATISFIED (2026-09-16, A-171).** The operator moved the test account to paid
+Solo, and the server confirms `subscriptionTier: solo`. That closed P-220's and P-242's live failing
+directions and, on its first read, found **P-246**: `get_smart_site` refuses a Solo caller the 2025
+dollar values in `cadRoll` and hands them over in `valueHistoryFact` in the same response. Still
+owed under P-245: a free-tier identity, one CI can use, and a change to the Studio-tier default test
+fixture. **P-243, P-244a and P-244b are in flight**, fired by the operator from the 2026-09-16
+dispatches.
 
 **P-200 through P-213 were NOT re-verified in this session and were not guessed.** That block is the
 largest blind spot on the board. Related: **OPS-16 carries no status column** - every row from P-200

@@ -86,9 +86,9 @@ on the API behind it.
 | **P-236** | factory `factory-parcel-*-cells` gen 46 | refusal proven by violation both ways; build digest `sha256:10e6911c` matched by field |
 | **P-239** | `hauska-engine-api-00236-few` | decoded a LIVE dossier for `48021:34137`: stroke 4x30/76, all four ticks `7.10526` |
 | **P-240** | engine `00236-few` + mcp `00098-rol` + PE | site-plan export returns immediately with a stable jobRef instead of blocking past the 55s abort |
-| **P-242** | `smartsite-mcp-00124-bub` | broke it live: `artifact_id_malformed`, no table name, no columns, no driver text |
+| **P-242** | `smartsite-mcp-00124-bub` | broke it live: `artifact_id_malformed`, no table name, no columns, no driver text. **Tier gate refused the Solo account live 2026-09-16** on both tools, before the id check |
 | **P-242b** | PE `index-Dm73unVg.js` | served bundle carries `catalogStatus:"coming"` twice + `reports-coming-soon-button` disabled |
-| **P-220** | `smartsite-mcp-00124-bub` | **CODE-LEVEL ONLY.** Lane deleted the fix, 8 tests red with owner data visible, restored, 203/203. **The live failing direction is unverifiable - see P-245** |
+| **P-220** | `smartsite-mcp-00124-bub` | **LIVE IN BOTH DIRECTIONS as of 2026-09-16.** A Studio account saw owner data; the Solo account gets `OWNER_FACT_NOT_CARRIED_FOR_CALLER`, a reason string only the MCP strip emits. Code level: 8 tests red on deletion, 203/203 |
 | **P-222** | `hauska-engine-api-00236-few` | D5, D7, D8, D11 fixed; lane decoded live-exported PDF bytes and REVERSED a code-only conclusion |
 | **P-237** | `hauska-mcp-server-00098-rol` | metering-order check proven by breaking the real handler and watching it go RED |
 
@@ -109,8 +109,21 @@ factory writer jobs gen 5 / gen 4 / publish gen 46              (P-229 P-236)
 
 ## IN FLIGHT
 
-None. Four lanes ran 2026-09-15 into 09-16 (P-240, P-242b, then P-220 / P-222 / P-237) and all
-closed, merged and deployed. No open lane claims.
+Fired by the operator 2026-09-16 from the compiled dispatches in `_dispatches/2026-09-16_*`. Three
+repos, no collision.
+
+| Row | Repo | Predicate the planner verifies after merge and deploy |
+|---|---|---|
+| P-243 MCP app binding | legacy-design-tools | the panel RENDERS on the operator's client; payload bytes and rails before and after |
+| P-244a site-plan compose timeout | hauska-engine | the `site_plan_export_jobs` row for `48021:34049` reaches `ready` and the artifact downloads |
+| P-244b declared wait envelope | hauska-mcp-server | running, ready and failed each get a distinct envelope; failed carries the real `error_class` |
+
+**The operator moved the test account to paid Solo AFTER these fired (A-171).** Three consequences:
+site-plan export now refuses that account (Studio, Team or a parcel unlock required), which touches
+P-244b's live reproduction and the planner's check of P-244a, and the recommended fix is a 30-day
+unlock on `48021:34049`. P-243's dispatch says the account is Studio-or-above, which is now false.
+P-243 must not render `valueHistoryFact` dollars while P-246 is open. If P-244b reports the envelope
+is set in legacy-design-tools, that edit waits for P-243 to release the repo.
 
 
 
@@ -120,7 +133,14 @@ closed, merged and deployed. No open lane claims.
 
 ### DISPATCH-READY
 
-**P-243 — the MCP app is published and never bound · legacy-design-tools · COMPILED, UNFIRED**
+**P-246: the valuation gate misses the history rail · legacy-design-tools · MISSION WRITTEN, compile when P-243 releases the repo**
+A Solo caller is refused the 2025 dollar values in `cadRoll` and handed them in `valueHistoryFact` in the
+same response. Live paid-tier bypass, so it goes FIRST in the legacy-design-tools queue after P-243, ahead
+of P-242c and the P-241 build. Mission `_catalog/dispatch_missions/mission_p246_value_history_tier_gate.md`.
+**Done:** no CAD dollar value reaches an ungranted caller on any reachable surface; the same live read on
+the Solo account shows refusals where the dollars were.
+
+**P-243 — the MCP app is published and never bound · legacy-design-tools · FIRED 2026-09-16, see IN FLIGHT**
 Three compounding causes, one lane. `ui://smartsite/app-p562.html` exists and serves (its sibling
 probe returns `probe-ok`) and NO tool result references it. The vocabulary is resource-addressable
 at `docs://smartsite/vocabulary-p91v3.json` and is inlined anyway on EVERY call, roughly 5 KB,
@@ -129,8 +149,8 @@ improvises from 30-plus raw rails plus a glossary.
 **Done: the panel RENDERS on the operator's client.** Not that the resource resolves - it already
 does, and the operator still sees nothing.
 
-**P-244 leg A — site-plan compose fails at ~116s · hauska-engine**
-**P-244 leg B — a declared wait is returned as `status: error` · hauska-mcp-server**
+**P-244 leg A — site-plan compose fails at ~116s · hauska-engine · FIRED 2026-09-16**
+**P-244 leg B — a declared wait is returned as `status: error` · hauska-mcp-server · FIRED 2026-09-16**
 See the P-244 row. Leg B is small and high-value: every agent and UI currently reads a healthy
 queued job as a failure.
 
@@ -145,7 +165,8 @@ Austin cites SB 1844 (2025) for a separate subset, which RETIRES the §42.021 de
 deferring it.
 
 **P-242c — coming-soon, the MCP half · legacy-design-tools**
-Per the 2026-09-15 ruling: tools stay LISTED and return a declared coming-soon refusal.
+Per the 2026-09-15 ruling: tools stay LISTED and return a declared coming-soon refusal. Also fix the
+records tools' tier refusal, which says "required for this export" on a tool that exports nothing.
 
 **P-238 — dossier footer counter and deep link · hauska-engine**
 
@@ -167,8 +188,12 @@ the base is `CS-1`).
 
 ### OPERATOR ACTION, NOT A LANE
 
-**P-245 — one paid-Solo account, ideally a free-tier too.** Unblocks three stuck verifications and
-is the cheapest row on the board.
+**P-245: PARTLY SATISFIED 2026-09-16.** The operator's account is now paid Solo, confirmed by the
+server (`subscriptionTier: solo`). It closed P-220's and P-242's live failing directions and found
+P-246 on its first read. **Still owed:** a free-tier identity, a sub-Studio identity CI can use, and a
+change to the Studio-tier default test fixture that let P-220 happen. **Recommended next spend:** a
+30-day unlock on `48021:34049`, which restores site-plan export for the P-244 checks and exercises the
+per-parcel unlock branch, never observed live.
 
 ### INHERITED, STATUS NOT RE-VERIFIED
 
@@ -235,7 +260,8 @@ and a CI check now fails when it does not.** The lane proved it by breaking the 
    revive.
 7. **The "Cloud Run Deploy (cortex-api)" workflow is named for something it does not do on
    push.** Rename it or make the push job state build-only.
-8. **No sub-privileged identity exists anywhere** — P-245. Blocked three verifications in two days
+8. **PARTLY DISCHARGED 2026-09-16: a paid-Solo identity now exists (A-171). Free-tier, CI-usable,
+   and the Studio default fixture remain.** Original entry: **no sub-privileged identity existed** — P-245. Blocked three verifications in two days
    and is the reason P-220 existed at all (the test fixture defaults to Studio-tier, so no test
    ever ran a Solo or free caller against `get_smart_site` or `run_report`). **Operator action.**
 9. **P-222's residue**, confirmed real and deliberately not fixed in that lane: D9 traces to a
