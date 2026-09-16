@@ -577,8 +577,8 @@ before Phase 0 exits.
 | C2 | Dead controls 4, 6, 7 and 8 (edge starvation self-compare; lookup key as proof; a registry validated then ignored; a tautological CI step). | engine, LDT, factory |
 | C3 | P-195 leave-behinds: F26 (a never-acquired county grades 1 of 65 rails), F28 (160 of 391 cells excluded, unaudited, which P-201 and this instrument address), F29 (walk image older than gate image). | factory |
 | C4 | P-212 follow-on: live-currency checks for the other five counties, and P-206 (serve honours retirement) re-evaluated. | engine |
-| C5 | **LDT `STAGING_ATOMS_DATABASE_URL` points at the stale 2026-08-28 planner branch** (A-180). The staging-reset job rotates the other staging secrets and misses this one, a class C4 missed sibling. Repoint it and add it to the rotation. **This is a secret write, an operator stop point.** | factory staging-reset, Secret Manager |
-| C6 | **Sub-agent depth as a check, not a sentence** (pending the operator's answer; see A-180). | doc_repo hooks, close gate |
+| C5 | **LDT `STAGING_ATOMS_DATABASE_URL`: REPOINTED 2026-09-16 (A-181)** to the live staging branch; the stale planner branch is quarantined. **Still owed:** add it to `secret-rotation.mjs` so the next rotation does not strand it again (a class C4 missed sibling). | hauska-factory |
+| C6 | **Sub-agent depth: BUILT 2026-09-16 (A-181).** `FAN-DEPTH` is compiled into every dispatch and enforced at commit and at launch. Proven by violation. Armed in the next session. | doc_repo (done) |
 | C7 | **Main already carries six duplicate amendment ids** (A-016, A-060, A-061, A-136, A-145, A-146). Extend the allocation gate to A-, F- and R- prefixes. | doc_repo |
 
 ### 4.7 Cotality in Phase 0: measure, do not serve
@@ -837,12 +837,11 @@ two farms.
 5. **Orphaned branches:** quarantined, not deleted (A-180).
 6. **The area figure:** "we need to verify". A figure appears only when a verified atom backs it.
 7. **The session-gap follow-up:** yes.
+8. **Sub-agent depth:** "I go with your rec on both"; built (A-181).
+9. **LDT's staging atoms secret:** "go on secret"; repointed (A-181).
 
 **Still owed:**
 
-8. **Sub-agent depth as an enforced check.** Explained to the operator on 2026-09-16; answer
-   pending.
-9. **The go to repoint LDT's `STAGING_ATOMS_DATABASE_URL`** (a secret write).
 10. **Ag-valuation sources** for Bastrop, Caldwell, Hays and McLennan: which CAD product per
     county.
 

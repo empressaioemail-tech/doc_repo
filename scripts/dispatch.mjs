@@ -4,6 +4,7 @@
  *
  *   node scripts/dispatch.mjs --lane L17 --plan-row P-22,P-23 [--title "Zoning depth wave 1"]
  *                             [--mission-file path/to/mission.md] [--repo hauska-engine]
+ *                             [--fan-depth 0|1]   (default 0: the lane launches no sub-agents; A-181)
  *                             [--plan OPS-16|OPS-17]   (default OPS-16)
  *
  * Assembles: CANON-PREAMBLE (regenerated from _STATE.md) + AGENT-CONTRACT (hash maintained here)
@@ -29,9 +30,17 @@ const getArg = (name) => {
 const lane = getArg('lane');
 const planRowArg = getArg('plan-row');
 if (!lane || !planRowArg) {
-  console.error('Usage: node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx[,P-yy]> [--title t] [--mission-file f] [--repo r] [--program-preamble f]');
+  console.error('Usage: node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx[,P-yy]> [--title t] [--mission-file f] [--repo r] [--program-preamble f] [--fan-depth 0|1]');
   process.exit(1);
 }
+// FAN-DEPTH (A-181): how deep this lane may launch sub-agents. Default 0. Enforced by
+// scripts/enforcement/fan-depth-gate.mjs at commit time and, in Claude Code sessions, at launch.
+const fanDepthArg = getArg('fan-depth') ?? '0';
+if (!/^[01]$/.test(fanDepthArg)) {
+  console.error(`--fan-depth must be 0 or 1 (got "${fanDepthArg}"). A deeper fan is not a supported topology.`);
+  process.exit(1);
+}
+const fanDepth = Number(fanDepthArg);
 const title = getArg('title') || `${lane} dispatch`;
 const repo = getArg('repo');
 const missionFile = getArg('mission-file');
@@ -257,7 +266,10 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 ${m0Block}
 
 PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
-${repo ? `repo: ${repo}\n` : ''}
+${repo ? `repo: ${repo}\n` : ''}FAN-DEPTH: ${fanDepth}
+${fanDepth === 0
+  ? 'This lane launches NO sub-agents. Do the work yourself. The commit gate refuses a close that declares any (A-181).'
+  : 'This lane may launch sub-agents one level deep; those sub-agents launch none. The commit gate refuses a close that declares a deeper fan (A-181).'}
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 
@@ -296,12 +308,15 @@ the commit rather than guessing what you meant):
     "status": "closed | closed-partial | blocked",
     "probe": { "artifact": "_inbox/<date>_<HHMMSS>_surface_probe.json" },
     "falsifier": "...", "contradicted": "...", "leave_behind": [...],
-    "missionPremise": "...", "completionPredicate": "...", "scopeBasis": "..."
+    "missionPremise": "...", "completionPredicate": "...", "scopeBasis": "...",
+    "subAgents": { "spawned": <int>, "maxDepth": <int> }
   }
   A close that says "closed" must be PASS for every parcel of every row in planRows on the cited
   artifact. A close that says "closed-partial" or "blocked" must still cite an artifact that
   measured its rows; the verdicts may be FAIL or UNMEASURED. planRows is an array, never a
   string; probe.artifact is a path under _inbox/ produced by scripts/surface-probe.mjs.
+  subAgents is required and honest: spawned counts every sub-agent this lane launched, maxDepth
+  is the deepest level reached (0 when none), and neither may exceed FAN-DEPTH ${fanDepth}.
 `;
 
 mkdirSync(join(root, '_dispatches'), { recursive: true });
