@@ -65,6 +65,12 @@ PHASE 2   BELL AND MILAM, IN PARALLEL, THROUGH THE SAME FARM
             v
 PHASE 3   THE REST OF TEXAS
           Gated on Phase 2's measured improvement and on merge capacity.
+
+LATER     THE ROAD-NODE PASS (operator 2026-09-16, A-177)
+          TIGER cross-check, a street-name dictionary, classification rules,
+          and the roads and edgeSignal ledger rails. After Phase 2, unless a road
+          issue blocks envelope or footprint rendering, in which case that part
+          moves into Phase 0.
 ```
 
 **The point of Phases 1 and 2 is the system, not the three counties.** The six counties took a
@@ -76,7 +82,11 @@ Four more rulings from the same conversation apply throughout:
 - **Covered** means what actually serves the customer (P-210 settled).
 - **`agValuation` is Texas-wide.**
 - **Cotality is part of the farm setup.**
-- **The Hays symptom is a road-node and data-coverage problem, not a map problem.**
+- **The Hays symptom is a data problem in specific areas, not a map problem.**
+- **Road nodes wait (A-177).** Customers do not care about them yet. The full pass comes after
+  Phase 2, except where a road issue blocks envelope or footprint rendering.
+- **The shortest path to an "ok" envelope comes first (P-249).**
+- **Footprints must render on the site plan and every study (P-248).**
 
 ## 2. Where the six counties actually stand (measured 2026-09-16)
 
@@ -403,7 +413,17 @@ dependencies. Existing rows are named; new rows are allocated after approval.
 
 Smithville falls under the eCode360 scrape ruling.
 
-### 4.2 Road nodes and the envelope family (classes B, C and E)
+### 4.2 The envelope family (classes B, C and E), with P-249 first
+
+**Order, per the operator (A-177):**
+
+1. **P-249.** A stale or unverified zero atom stops suppressing the live polygon. This is the
+   shortest path to "ok", and the research lane L-B proves or breaks it first.
+2. **P-248.** Footprints drawn on every sheet.
+3. The atom clean-up and re-derive (R4, R5), which improves the figures and the verification
+   but is not needed for drawing.
+4. **R1, R2 and R8 are DEFERRED** to the road-node pass after Phase 2. They move up only if L-B
+   shows a road issue that still blocks rendering after P-249.
 
 The envelope family is every rail and atom that decides what may be built:
 
@@ -461,6 +481,17 @@ The envelope family is every rail and atom that decides what may be built:
 | D3 | Remove Bastrop-specific decline wording ("layer-23") from non-Bastrop parcels. | The Kyle fixture reads a correct reason. | hauska-map |
 | D4 | **P-246** (queued): no dollar value reaches an ungranted caller. | Solo read of both test parcels shows refusals. | LDT |
 
+### 4.5b Customer experience items the research already found
+
+| ID | Work | Repo |
+|---|---|---|
+| X1 | **P-248**: footprint polygons on the site plan, the feasibility study and the X-ray, labelled as ML-derived and unsurveyed | hauska-engine (after P-238) |
+| X2 | **The card names the governing city.** The address line takes city and ZIP from the ledger (`situsCity`, `situsZip`), and the zoning and setback rows name the jurisdiction. The Pflugerville card read only "Travis County". | hauska-map, LDT |
+| X3 | **P-250**: an address-keyed envelope call can return another county's parcel with no mismatch signal; a mismatch must refuse | LDT |
+| X4 | Parcel-specific decline wording everywhere (no Bastrop "layer-23" text on a Kyle lot); PUD parcels read the PUD message (S2) | hauska-map, LDT |
+
+L-E's per-city audit extends this list; it does not replace it.
+
 ### 4.6 Controls the six need before they can be a control group
 
 | ID | Work | Repo |
@@ -485,7 +516,7 @@ The envelope family is every rail and atom that decides what may be built:
 
 1. **`scripts/six-county-completeness.mjs` exits 0 (COMPLETE).** Every rail in every county is
    either `pass` or excluded under a named ruling, and zero cells carry a false earned state.
-   - Built and self-tested this session: 10 of 10 checks.
+   - Built and self-tested this session: 11 of 11 checks (the eleventh added for the A-177 deferral).
    - Its 65 declared rails match the live verdict table exactly.
    - It reports UNMEASURED, never COMPLETE, on an empty county.
 2. **The per-city surface probe passes.** At least four fixtures per wired city (a codified
@@ -727,7 +758,7 @@ the stage-record format).
 
 | Instrument | State |
 |---|---|
-| `scripts/six-county-completeness.mjs` | Built. Self-test 10 of 10: not-vacuous, empty-county, undeclared-rail and negative-control cases. Rail names 65 of 65 against live. Live run in section 16. |
+| `scripts/six-county-completeness.mjs` | Built. Self-test 11 of 11: not-vacuous, empty-county, undeclared-rail and negative-control cases. Rail names 65 of 65 against live. Live run in section 16. |
 | Parcel-grain setback queries | Ran read-only for all six counties this session. Queries at `_inbox/2026-09-16_setback_parcel_grain_queries.sql`, output at `_inbox/2026-09-16_setback_parcel_grain_results.txt`. To be promoted to a self-testing instrument as S0. |
 | Baseline run | `_inbox/2026-09-16_six_county_completeness_baseline.json` (the section 16 run, full detail). |
 | Rail-verdict query | Inside the completeness instrument. |

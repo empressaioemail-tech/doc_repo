@@ -29,6 +29,11 @@ The overseer lands this branch's 24 wave 6 commits on main before sending you th
 
 - **If the fast-forward fails, STOP.** Report the divergence and do not reset, rebase or discard
   anything.
+- **Two files will disappear from your worktree on the fast-forward.** They are
+  `_inbox/2026-09-14_p156-bastrop_close.json` and
+  `_inbox/2026-09-14_p186-remint-wrapper_close.json`. The probe close gate (R-4) held them off
+  main when your branch landed (A-176). They are preserved at `d8b61021`. **Do not restore them
+  onto main.** L-C reads them from that commit, and re-grading them is owed.
 - Declare the commit you are on in your first output.
 
 ### Store access, for every lane
@@ -66,7 +71,7 @@ timestamp.
 | Lane | Id | Mission | Plan rows (compile flag) | Reads |
 |---|---|---|---|---|
 | L-A ledger truth | `scaleup-la-ledger-truth` | `_catalog/dispatch_missions/mission_scaleup_la_ledger_truth.md` | `P-201,P-204` | factory store, atoms store (first), code |
-| L-B envelope and road nodes | `scaleup-lb-envelope-roads` | `_catalog/dispatch_missions/mission_scaleup_lb_envelope_roads.md` | `P-233,P-235` | atoms store (after L-A), factory store, live surfaces, code |
+| L-B envelope unlock and footprints | `scaleup-lb-envelope-roads` | `_catalog/dispatch_missions/mission_scaleup_lb_envelope_roads.md` | `P-249,P-248` | atoms store (after L-A), factory store, live surfaces, code |
 | L-C blocker history | `scaleup-lc-blocker-history` | `_catalog/dispatch_missions/mission_scaleup_lc_blocker_history.md` | `P-188` | doc_repo history, closes, code |
 | L-D farm architecture | `scaleup-ld-farm-architecture` | `_catalog/dispatch_missions/mission_scaleup_ld_farm_architecture.md` | `P-187,P-198` | code, config, Cloud Run and Neon metadata, store catalogs |
 | L-E customer experience | `scaleup-le-customer-experience` | `_catalog/dispatch_missions/mission_scaleup_le_customer_experience.md` | `P-197` | live surfaces, factory store for fixture selection |

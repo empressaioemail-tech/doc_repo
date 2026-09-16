@@ -1,8 +1,45 @@
-## Mission — L-B ENVELOPE AND ROAD NODES: why the envelope draws where it draws, and what the road data needs before the six can draw everywhere
+## Mission — L-B ENVELOPE UNLOCK: the shortest path to an "ok" envelope wherever the ledger holds setbacks, and the whole envelope family including footprints
 
 **Read-only lane in the Texas scale-up research wave.** You spawn nothing. You write no product
 code and change no store. **You start your atoms-store reads only when your planner says L-A has
 finished its own.** Everything else can start at once.
+
+### The operator's direction, 2026-09-16, which sets your priorities
+
+1. **Envelope rendering first.** "Getting that ok is great; we want the shortest path to
+   unlocking all that."
+2. **Footprints must render.** The building footprint must render on the site plan and the
+   other studies. That was reported as QA-08 on 2026-09-15 and never routed; it is now P-248.
+3. **Road nodes are NOT a priority.** "Customers don't care about road nodes right now." A full
+   road-node pass (a TIGER cross-check, a street-name normalisation dictionary,
+   classification rules, and the `roads` and `edgeSignal` ledger rails) comes **after**
+   Phase 2. **Study road data only where it blocks envelope or footprint rendering, and say
+   exactly where it does.**
+
+**The overseer's reading of the shortest path, which you must test, not assume (P-249).**
+
+- LDT `artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.ts` lets **any**
+  `no-buildable-area` atom replace a good live-derived envelope with an empty one. The only
+  exception is when its reason looks like a machine-verify diagnostic.
+- "Unzoned", "not yet onboarded" and reason-less July zeros are not diagnostics, so they clobber
+  today's setbacks.
+- The 2026-09-11 ruling (envelope drawn, figure refused) says the modelled polygon draws wherever
+  a district and a setback table exist, and only the AREA waits on an atom.
+- **Proposed fix:** a stale or unverified zero atom keeps governing the area figure (which is
+  withheld anyway) and stops suppressing the live polygon. hauska-map
+  `atom-chain-to-facets.ts`'s `envelope-unverified` decline changes to match.
+
+**Your first job is to prove or break that:**
+
+- Which parcels would draw after the change, counted per city.
+- Which would fall to the live derive's own geometry gates (`validation-failed`), and what the
+  customer would then see.
+- Whether the live labeller draws a sane polygon on `48209:97658` and on a sample of each atom
+  class. Run LDT's derive locally, read-only, against the parcel ring.
+- What could go wrong map-wide, since P-216 took the map down once with a one-branch change.
+  Specify the staging proof.
+
+**Road-node questions below are answered ONLY as far as they block rendering after P-249.**
 
 ### What is already established (scope section 2c), and what you verify first
 
@@ -36,7 +73,7 @@ second mechanism for the San Marcos symptom and say whether it survives.
    them up in the atoms store in index-bounded batches. **The headline is "setbacks on record,
    no envelope drawn", per city.** Confirm the rendering on at least three parcels per class
    through the facets endpoint and the live derive.
-2. **The whole envelope family, per county.** Each item is counted, or sampled and declared:
+2. **The whole envelope family, per county, footprints included.** For footprints, also trace why no sheet draws the footprint polygon (engine `site-plan/site-model.ts` and `site-plan/pdf/*` carry footprints only as text today) and what drawing it requires (P-248). Each item is counted, or sampled and declared:
    - setback-rule atoms;
    - boundary-edge atoms: edges per parcel, role distribution, and the edge-level setback state,
      including how many carry "No setback table configured for jurisdiction descriptor";
@@ -45,7 +82,7 @@ second mechanism for the San Marcos symptom and say whether it survives.
    - the matching ledger rails;
    - `maxHeightFt`, `maxLotCoveragePct`, `maxFootprintSqFt` and `parcelAreaSqFt`, including
      Hays's 27,949 refusals.
-3. **Road nodes, per county.**
+3. **Road nodes, per county. ONLY where they block rendering after P-249; the full pass is deferred.**
    - `road-node` atom counts; the provenance kinds (OSM, county roadway authoritative, county
      surveyed); vintages.
    - **A second derivation:** compare road coverage against Census TIGER for the same county,
@@ -86,8 +123,7 @@ Pre-register your answers before you run anything.
 1. Your class totals must reproduce the scope's, or you show which query is wrong.
 2. **Not vacuous:** the draw-gap instrument must report San Marcos `48209:97658` in the "setbacks
    on record, no envelope" bucket and Pflugerville `48453:427599` outside it.
-3. The TIGER comparison must disagree somewhere, or you explain why perfect agreement is
-   plausible for that county.
+3. **Not vacuous for the unlock:** your P-249 count must include `48209:97658`, or explain why the live derive still refuses it, and it must exclude a genuinely consumed lot. Find one (a verified `no-buildable-area` from `depth-warm-verify-promote`, or a tiny lot).
 
 ### Close
 
@@ -103,7 +139,7 @@ Pre-register your answers before you run anything.
 
 **Close JSON.** `_inbox/<date>_scaleup-lb-envelope-roads_close.json`, carrying:
 
-- `planRows` `["P-233", "P-235"]`;
+- `planRows` `["P-249", "P-248"]`;
 - `probe` `{"notApplicable": "read-only research lane"}`;
 - `falsifier` scored;
 - `leave_behind`.

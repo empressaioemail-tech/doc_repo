@@ -40,7 +40,7 @@ export const SIX = {
  * Per-rail policy. `accept` lists the non-pass verdicts the program has RULED acceptable, with
  * the ruling named. Anything else that is not `pass` is an open item of the named class.
  * Classes: must-pass | ruled-withheld | county-scoped | ruled-unavailable | mid-cutover |
- * no-source | make-unbuilt | derived-trivial.
+ * no-source | make-unbuilt | derived-trivial | deferred (accepted until its ruling is lifted).
  */
 export const RAIL_POLICY = {
   // Ruled withheld (R-2, _decisions/2026-09-11_ruling_b_reversed_polygon_only.md).
@@ -54,7 +54,8 @@ export const RAIL_POLICY = {
   salesHistory: { cls: "ruled-unavailable", accept: ["excluded"], ruling: "P-209" },
   // P-204: data exists and serves by another path; the ledger is the serving path, so these cut over.
   parcelGeometry: { cls: "mid-cutover" },
-  roads: { cls: "mid-cutover" },
+  // Operator 2026-09-16 (A-177): the road-node pass comes after Phase 2 unless it blocks rendering.
+  roads: { cls: "deferred", accept: ["excluded"], ruling: "A-177 road-node pass deferred" },
   pipelines: { cls: "mid-cutover" },
   railCorridor: { cls: "mid-cutover" },
   etjStatus: { cls: "mid-cutover" },
@@ -70,7 +71,7 @@ export const RAIL_POLICY = {
   publicRecordRefs: { cls: "no-source", accept: ["excluded"], ruling: "P-242 coming soon" },
   // Manufactured by us, writer missing or not wired to the gate.
   citationUrl: { cls: "make-unbuilt" },
-  edgeSignal: { cls: "make-unbuilt" },
+  edgeSignal: { cls: "deferred", accept: ["excluded"], ruling: "A-177 road-node pass deferred" },
   // Trivially derived; written for Hays only as of 2026-09-16.
   acreageSqft: { cls: "derived-trivial" },
   landUseVintage: { cls: "derived-trivial" },
@@ -197,7 +198,7 @@ function selfTest() {
   const full = (fips, overrides = {}) => Object.keys(RAIL_POLICY).map((rail) => {
     const pol = RAIL_POLICY[rail];
     let verdict = "pass";
-    if (pol.cls === "ruled-withheld" || pol.cls === "no-source" || pol.cls === "ruled-unavailable") verdict = "excluded";
+    if (["ruled-withheld", "no-source", "ruled-unavailable", "deferred"].includes(pol.cls)) verdict = "excluded";
     if (pol.cls === "county-scoped" && !pol.onlyIn.includes(fips)) verdict = "excluded";
     return { county: fips, rail, verdict: overrides[rail] ?? verdict, unaccounted: 0 };
   });
@@ -209,9 +210,9 @@ function selfTest() {
   const falseAv = classify(full("48209"), [{ county: "48209", id: "setback-no-ruled-table", n: 1026 }], one);
   check("2 NOT VACUOUS: one false absent-verified population makes it INCOMPLETE", falseAv.verdict === "INCOMPLETE");
 
-  const midCut = classify(full("48209", { roads: "excluded" }), [], one);
+  const midCut = classify(full("48209", { parcelGeometry: "excluded" }), [], one);
   check("3 a mid-cutover rail left excluded is open", midCut.verdict === "INCOMPLETE"
-    && midCut.counties["48209"].open.some((o) => o.rail === "roads" && o.cls === "mid-cutover"));
+    && midCut.counties["48209"].open.some((o) => o.rail === "parcelGeometry" && o.cls === "mid-cutover"));
 
   const undeclared = classify([...full("48209"), { county: "48209", rail: "newRail", verdict: "pass" }], [], one);
   check("4 an undeclared rail fails closed", undeclared.counties["48209"].open.some((o) => o.cls === "undeclared-rail"));
@@ -232,6 +233,10 @@ function selfTest() {
   check("9 a refusal is open even on a must-pass rail with a count", refuse.verdict === "INCOMPLETE");
 
   check("10 the policy declares exactly 65 rails", Object.keys(RAIL_POLICY).length === 65);
+
+  const deferred = classify(full("48209", { roads: "excluded", edgeSignal: "excluded" }), [], one);
+  check("11 NEGATIVE CONTROL: rails deferred by A-177 stay accepted while the ruling stands", deferred.verdict === "COMPLETE"
+    && deferred.counties["48209"].accepted.some((a) => a.rail === "roads" && /A-177/.test(a.ruling)));
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}`);
   const bad = results.filter((r) => !r.ok).length;

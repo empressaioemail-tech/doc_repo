@@ -97,3 +97,22 @@ integration seat can absorb. That is the documented failure mode of the farm mod
 
 **Revisit ruling 2** only if a customer-facing surface is found that the serving path does not
 describe.
+
+## Addendum, same day: four more directions (A-177)
+
+1. **The road-node pass waits.** "Customers don't care about road nodes right now; that is more
+   for internal future plans. An actual road node pass can come after everything else,
+   including the farm and the additional three counties, so long as it's not blocking anything
+   else." The full pass (TIGER cross-check, a street-name dictionary, classification rules, the
+   `roads` and `edgeSignal` ledger rails) moves after Phase 2. Any road issue that blocks
+   envelope or footprint rendering stays in Phase 0.
+2. **The shortest path to an "ok" envelope comes first** (P-249). A stale or unverified
+   "no-buildable-area" atom stops suppressing the live polygon. That is already what the
+   2026-09-11 "envelope drawn, figure refused" ruling requires.
+3. **Footprints render on the site plan and the other studies** (P-248). The 2026-09-15 request
+   was never routed.
+4. **The lease self-grant rule is adopted.** It had been recorded on a branch as the operator's
+   ruling. "I didn't actually make that call, but I don't mind it." Corrected and landed (A-176).
+
+Correction to ruling 5 above: the Hays symptom is stale envelope atoms overriding the ledger,
+not the road data itself. Road data explains only the atoms that failed verification.
