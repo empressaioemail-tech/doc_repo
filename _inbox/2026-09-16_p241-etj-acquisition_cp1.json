@@ -1,0 +1,60 @@
+{
+  "lane": "p241-etj-acquisition",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRows": ["P-241"],
+  "seat": "dispatch-planner",
+  "at": "2026-09-16T17:40:00.000Z",
+  "filingNote": "Filed at close rather than mid-flight. This lane ran as ONE continuous session with no interruption to recover from (AGENT CONTRACT section 2 never triggered), and its checkpoints were not filed as they were reached. The `at` below is the FILING time, not the decision time; every claim in this artifact is nonetheless drawn from state measured during the lane, and the design decisions it records are the ones the code actually made. Stated here rather than back-dated, because a checkpoint whose timestamp is fiction is worse than a late one.",
+  "repo": "legacy-design-tools",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/p241-etj-acquisition/legacy-design-tools",
+    "branch": "lane/p241-etj-acquisition",
+    "startedFrom": "0bf2377f (origin/main at clone; declared before any file was written)",
+    "rebasedOnto": "ba6a5a69 (#699, P-206 — no file overlap: it touched api-server routes/serveGuards and smartsite-mcp)",
+    "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo (seat/dispatch-planner)",
+    "contract": "AGENT-CONTRACT v378cd643, FAN-DEPTH 0, sub-agents: none launched"
+  },
+  "missionPremise": "P-241 dispatch: give ETJ a real data source, mirroring txCityBoundary's already-wired Chain A. Acquisition half only. There is no statewide ETJ layer (TxGIO City_Boundaries publishes incorporated places only), 20 of the footprint's 23 wired cities publish their own ETJ layer on their own ArcGIS host, and the read-only enumeration lane found ETJ hardcoded \"unresolved\" at eight sites across three repos with NO ETJ geometry anywhere in the product. Unwiring the consumers before this exists swaps one hardcoded \"unresolved\" for another.",
+  "completionPredicate": "A real ETJ query against a real onboarded-footprint address returns a genuine present / absent-verified / unresolved disposition backed by live source data — not a hardcoded string — and the mechanism generalizes to the other 19-of-23 cities with a confirmed layer without a per-city code branch. Measured by scripts/surface-probe.mjs's P-241 row, all four pre-registered parcels PASS.",
+  "scopeBasis": "The dispatch names lib/cad-ingest/src/boundary/ and lib/db/src/schema/, mirroring txCityBoundary. Chain B (the ledger/atom architecture) is excluded by the dispatch's own instruction — it covers few counties and hauska-factory's parcel-record-rail-registry.ts already carries a dead etjStatus slot that populating is explicitly NOT this mission. artifacts/api-server/src/routes/ is excluded (concurrent P-206); artifacts/smartsite-mcp and hauska-engine/hauska-map are excluded as follow-on. The read path is added as a NEW lib file with no caller, which is inside the dispatch's item 4 while staying outside P-206's file set.",
+  "decisionsTakenBeforeWritingAnything": [
+    {
+      "decision": "Schema mirrors txCityBoundary.ts rather than being designed fresh.",
+      "reason": "The dispatch's item 1: 'read that file's actual column shape and mirror it; do not invent a different one without a stated reason.'",
+      "consequence": "tx_etj_boundary carries the same id / city_key / city_name / geometry / bbox / source / vintage / citation family as tx_city_boundary, so the same readers and the same containment helpers apply."
+    },
+    {
+      "decision": "A SECOND table, tx_etj_source, is added that txCityBoundary does not have.",
+      "reason": "STATED DEVIATION. ETJ has a per-city source problem that city limits does not: 20 publishers on 20 different hosts, three of which publish no ETJ layer at all. Without a register table, 'this city has no ETJ source' and 'this city's source was never pulled' are indistinguishable in the store, which is exactly the absent-vs-unresolved collapse falsifier 3 tests.",
+      "consequence": "Mode (combined / etj_layer / city_limits_only), layer url, predicate, label field, verified feature count and provenance are durable rows, not code."
+    },
+    {
+      "decision": "Boundary key is <city_key>:<publisher object id>; ring label is the publisher's verbatim string.",
+      "reason": "One publisher's layer can carry several jurisdictions (Belton's carries 17) and one city's rings can come from another city's host (Killeen). A bare object id is not unique across publishers. The label is kept verbatim because the label IS the evidence — Austin's rings distinguish 2 MILE ETJ from 5 MILE ETJ from AG DEVELOPMENT AGREEMENT from LTD from FULL PURPOSE, and re-labelling would destroy the only thing that makes the disposition auditable.",
+      "consequence": "etj_id is stable across re-ingest; a re-pull cannot silently merge two cities' rings."
+    },
+    {
+      "decision": "Containment is EXTENDED IN containment.ts, not added as a sibling module.",
+      "reason": "The dispatch left this open ('your call, but state which and why'). containment.ts already owns the ETJ vocabulary — it defines EtjStatus and it already carries an etjUnresolved() that was unconditional until this lane. A sibling module would either duplicate that vocabulary or import it while leaving the owning module's unconditional function in place, which is the two-implementations-disagreeing shape.",
+      "consequence": "EtjStatus widens in place from a single-value type to present | absent | unresolved, so every existing reader that pinned 'unresolved' fails to compile until it is given a real answer. That is deliberate: the compiler, not a reviewer, enumerates the consumer sites."
+    },
+    {
+      "decision": "NO statutory derivation. No 42.021 buffer, no population-keyed ring.",
+      "reason": "Dispatch 'Known traps': retired as a candidate, not merely deferred. Austin's real ETJ is shaped by individual AG-development agreements and disannexation actions (SB 2038 releases land FROM the ETJ; SB 1844/43.141 lands water/wastewater disannexations back IN it), and a formula would contradict the published layer it claims to describe.",
+      "consequence": "42.021 appears nowhere in the read path; a test asserts it does not, with a non-vacuity check so the assertion can actually fail."
+    },
+    {
+      "decision": "Publisher configuration is a declarative registry (ETJ_REGISTRY), never an if-chain.",
+      "reason": "The predicate's generality requirement: 'generalizes to the other 19-of-23 cities without a per-city code branch (a config/registry entry per city, not an if-chain).'",
+      "consequence": "etjIngest/etjCli/etjVerify are all driven by the registry; adding the 24th city is a data edit. A unit test asserts every combined layer carries a predicate and every multi-jurisdiction layer requires a selective one."
+    }
+  ],
+  "preRegisteredFalsifierAnswers": {
+    "note": "Written before the resolver existed, per the dispatch's 'pre-register your answers before you run anything'. The instrument was then required to AGREE with these, and a probe row fails if it does not.",
+    "1_austin_inside_2mile_etj": "present",
+    "2_austin_inside_city_limits": "absent",
+    "3_round_rock_or_cedar_park": "unresolved",
+    "4_city_outside_the_23": "unresolved"
+  },
+  "leave_behind_so_far": "none yet — CP1 only"
+}

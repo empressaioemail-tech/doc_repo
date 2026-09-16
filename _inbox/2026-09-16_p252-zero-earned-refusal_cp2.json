@@ -1,0 +1,105 @@
+{
+  "checkpoint": "CP2",
+  "kind": "implementation + evidence, filed after the code and tests were written and run, before the close",
+  "lane": "p252-zero-earned-refusal",
+  "planRows": ["P-252"],
+  "seat": "p252-lane",
+  "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo",
+  "productRepo": {
+    "repo": "hauska-factory",
+    "clone": "P:/tmp/p252-zero-earned-refusal",
+    "branch": "fix/p252-zero-earned-refusal",
+    "startCommit": "91712795ea2a1eb7c27f7328cf7f52fcb7810b59",
+    "endCommit": "d728e6b (local commit 'fix(P-252): a county that earned nothing must not clear the gate'), pushed to origin/fix/p252-zero-earned-refusal",
+    "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/157"
+  },
+  "whichEvaluateRailGateCopyRuns": {
+    "answer": "the FACTORY's vendored copy, src/lib/parcel-record-engine/publish-gate.js",
+    "howIknow": "src/jobs/publish-gate-sched.mjs exports GATE_CLI_PATH = path.join(HERE, '..', 'lib', 'parcel-record-engine', 'gate-rail-cli.mjs') and runGateCli() passes it as argv to a node subprocess; gate-rail-cli.mjs imports evaluateRailGate from ./index.js, which re-exports ./publish-gate.js. Read at source, both call sites, 2026-09-16 -- not inferred from the pin file.",
+    "consequence": "the dispatch's conditional did not fire (the executed copy is NOT the engine's), so the edit is in this repo; the engine original was read-only throughout."
+  },
+
+  "whatChanged": {
+    "src/lib/parcel-record-engine/publish-gate.js": "P-252 branch in evaluateRailGate's no-earned-cell path: !live && rail NOT declared-ahead program-wide && cellStateCounts.unaccounted > 0 -> ok:false, unaccountedCount = those cells, code RAIL_ZERO_EARNED_UNACCOUNTED. New summarizeCountyCells (per-kind census) and the two return-shape additions that carry it (cellStateCounts on every return, so the classifier never has to re-derive). P-195's cells.length === 0 branch is checked FIRST and untouched. Doc block records the amendment, the retired P-195 reasoning, and the divergence from the pin. Verified by reading: production callers of this file are gate-rail-cli.mjs only (index.js is a re-export surface).",
+    "src/lib/parcel-record-engine/index.js": "re-exports summarizeCountyCells and RAIL_ZERO_EARNED_UNACCOUNTED (the classifier consumes both).",
+    "src/lib/gate-exclusion-classifier.mjs": "REFUSED ('refuse') kind added; BASIS.LIVE_ELSEWHERE retired (and recorded as retired, because an older parcel_gate_verdict row may still carry the string); the live-program-wide branch now REQUIRES the county's own census and decides from it: unaccounted > 0 -> refuse, cellCount === 0 -> refuse, notApplicable === cellCount -> excluded-not-applicable (the only road to (a) for a live rail), anything else -> refuse. Declared-ahead branch (b)/(c) untouched and needs no census. Header re-written to record the amendment rather than quietly dropping the paragraph it supersedes.",
+    "src/jobs/publish-gate-sched.mjs": "writeVerdict threads countyCells: payload.verdict.cellStateCounts ?? null into the context toGateVerdictKind passes to classifyExclusion. No flag or slate change; DEFAULT_SCHED_RAIL_KEYS is untouched (still the derived 65).",
+    "src/lib/publish-readiness-gate.mjs": "evaluatePreBakeReadiness is an ALLOWLIST: PRE_BAKE_CLEARING_VERDICTS = ['pass', EXCLUDED_NOT_APPLICABLE]; anything else refuses with the new RAIL_EXCLUSION_UNPROVEN, naming rail + verdict + unaccounted count. Header states the rollout requirement (the rail half reads the STORED verdict, so one scheduler run under the new code must precede it meaning anything).",
+    "src/lib/parcel-record-engine/ENGINE_PIN.json": "NEW factoryDivergence block: what diverges (publish-gate.js behaviour + index.js exports), why, what is NOT divergent, the engine-side status, and how to retire it. engineSha unchanged; parcel-record-fill.mjs reads only pin.engineSha, so the added field is inert to production.",
+    "test/p252-zero-earned-refusal.test.mjs": "NEW -- the fixture that must refuse, at both layers, plus the two controls. Falsifiers 1, 2 and 3 are scored here.",
+    "test/gate-caller-registry.test.mjs": "NEW -- mission item 4's enforcement (see missionItem4Resolution below).",
+    "test/engine-pin-divergence.test.mjs": "NEW -- falsifier 5, plus the assertion that ENGINE_PIN.json actually records the divergence.",
+    "test/fixtures/engine-pin-2cc2057/parcel-record-publish-gate.js": "NEW -- an executable copy of the PINNED pre-fix source (header names its provenance and the mechanical import-path edits), so the divergence has a control that runs rather than a remembered claim.",
+    "test/publish.test.mjs": "AMENDED -- the 'a bare excluded clears the gate' test becomes the allowlist test (legacy 'excluded', mid-cutover and no-acquisition-path all refuse RAIL_EXCLUSION_UNPROVEN; pass + excluded-not-applicable clear).",
+    "test/publish-gate-sched.test.mjs": "AMENDED -- fakeVerdictPayload grows cellStateCounts (an excluded payload without it is now a stale shape and throws, which is itself asserted); the P-201 end-to-end test now covers Bastrop (refuse), Caldwell (excluded-not-applicable) and Travis (pass) so both branches of the live-path decision run through the real job.",
+    "test/gate-exclusion-classifier.test.mjs": "AMENDED -- the LIVE_ELSEWHERE assertion becomes the county-cells assertion; scenario A2 (all 65 rails for an untouched county) must now refuse; the declared-ahead branch is asserted NOT to be touched by P-252's refusal.",
+    "test/gate-county-scoped-rail.test.mjs": "AMENDED -- see amendedTestsAndWhy below. This is the dispatch's own contradiction, resolved in the open."
+  },
+
+  "amendedTestsAndWhy": {
+    "theContradiction": "Dispatch step 1 requires the rail gate to refuse the zero-earned-all-unaccounted shape AND requires test/gate-county-scoped-rail.test.mjs to stay green as the empirical proof of the county-scoped property. That file's first and last tests assert exactly the shape now required to refuse.",
+    "theResolution": "The file's own header (written by the F-01/9 lane) said the writer 'never writes ANY cell state there, not even not-applicable', which is why those cells are unaccounted -- i.e. the file already recorded that this shape is NOT an explicit not-applicable sweep, and then asserted it should read as an exclusion anyway. The dispatch's parenthetical ('the way maxImperviousCoverPct's out-of-scope sweep writes them outside Travis') is what is wrong; the propagation is that the county-scoped property survives, but only for the all-not-applicable shape.",
+    "whatWasChanged": "The two all-unaccounted assertions now assert refusal with RAIL_ZERO_EARNED_UNACCOUNTED; the tests built on explicit not-applicable cells are untouched; toGateVerdictKind calls on excluded verdicts now pass the county census (the pre-fix call signature is no longer valid, which is the point).",
+    "whatWasNotTouched": "Every county-scoped property that does not depend on the all-unaccounted shape: the loadCountyRailCellsPage WHERE-clause bound (a county cannot see another county's earned cells), the paging row-count mismatch refusal, P-195's RAIL_NEVER_FILLED, the declared-ahead exclusion control, and the zoningDistrict 'refused counts as earned' case.",
+    "reportedRatherThanSilentlyRewritten": true
+  },
+
+  "missionItem4Resolution": {
+    "decision": "RETIRED AS A CONTROL, kept as an INSTRUMENT. Not wired.",
+    "whyNotWired": "evaluatePublishGate is a whole-county gate over records that must each carry all 65 rails (assertFullRecordCells); the publish path's rail half reads per-(county, rail) rows written per rail by a subprocess. Wiring it would require fabricating the other 64 rails per record -- which corrupts deriveLiveRailKeys' cross-record liveness, the reason PARCEL-B-GATE-SCHED was built -- or duplicate an already-correct decision with a second implementation. The publish path is not ungated: RAIL_UNACCOUNTED, RAIL_REFUSED, RAIL_EXCLUSION_UNPROVEN.",
+    "enforcement": "test/gate-caller-registry.test.mjs parses every gate-shaped export from the engine index and the readiness gate, requires each to be registered (publish-control | instrument | uncalled) or explicitly declared not-a-gate, asserts the classification agrees with where the symbol actually sits relative to the publish path, and asserts the declared caller list EQUALS the src/ files that reference the symbol in code (comments stripped -- a header that merely discusses a gate cannot satisfy the registry). A new exported gate with undeclared caller status fails, and so does wiring a retired gate in without updating the registry.",
+    "whatTheRegistrySays": "evaluatePublishGate + poisonCell = instrument (parcel-record-fill.mjs's POISON_GATE_VACUOUS self-test, still asserted to exist); assertPublishableCounty + allRailKeys = uncalled; evaluateRailGate, requirePreBakeReadiness, evaluatePreBakeReadiness, requireCountyPopulation, evaluatePopulation, classifyExclusion = publish controls."
+  },
+
+  "testEvidence": {
+    "command": "node --test --test-reporter=tap test/*.test.mjs (npm test)",
+    "withThisLane": "1459 tests, 1451 pass, 2 fail, 4 skipped, 2 todo",
+    "baselineAtHead_9171279": "1435 tests, 1428 pass, 1 fail (same tree, my changes stashed and restored: 'git stash push -u' -> run -> 'git stash pop')",
+    "deterministicFailureThatIsNotMine": "not ok 264 - CTX-B3 leaf list: read from the bake's own pin, not the walk, with a divergence guard -- fails identically at HEAD (baseline above, three consecutive HEAD runs) and is a mirror-vs-pinned-LDT-checkout drift in a file this lane never touches.",
+    "intermittentFailureNamedNotHidden": "not ok 559 - 'F2: long chunk with short heartbeat interval yields multiple lease heartbeats' (test/p2-juris-57p01.test.mjs) appeared in 2 of 4 full-suite runs WITH this lane's tree and 0 of 4 at HEAD, and passes in isolation at both revisions. It is a wall-clock assertion (await sleep(SHORT_HEARTBEAT_MS * 4) then >= 3 heartbeats); adding 24 tests to the suite shifts the runner's scheduling. This lane touches no lease/heartbeat module (no shared import), and the failure is not deterministic. Named here so a red CI check is not misread as a regression and not silently retried.",
+    "preexistingTodosNotOurs": "the two p3-absence 'EXPECTED (non-vacuity)' tests are TODO-marked (OPS-21 S3, another lane's open finding)."
+  },
+
+  "falsifierScores": {
+    "1_allUnaccountedRefusesBothLayers": {
+      "predicted": "PASS",
+      "result": "PASS",
+      "evidence": "test/p252-zero-earned-refusal.test.mjs: 1a rail gate (ok:false, RAIL_ZERO_EARNED_UNACCOUNTED, unaccountedCount 3, excludedDeclaredAhead []); 1b store-facing verdict 'refuse' built from the gate's own output; 1c evaluatePreBakeReadiness throws RAIL_REFUSED with rail and count, end to end through toGateVerdictKind; plus the whole-county version (all 65 rails -> 65 'refuse' rows -> refused) and an independent layer-2 assertion that classifyExclusion refuses the unaccounted shape and throws when the census is absent."
+    },
+    "2_allNotApplicableStaysAnExclusion": {
+      "predicted": "PASS",
+      "result": "PASS",
+      "evidence": "the all-not-applicable maxImperviousCoverPct fixture keeps ok:true + excludedDeclaredAhead, classifies EXCLUDED_NOT_APPLICABLE with basis county-not-applicable-cells, and clears evaluatePreBakeReadiness. Same result through the real job path in publish-gate-sched.test.mjs (Caldwell -> 'excluded-not-applicable' stored)."
+    },
+    "3_zeroCellsStillRailNeverFilled": {
+      "predicted": "PASS by construction",
+      "result": "PASS",
+      "evidence": "zero cells in a live rail -> ok:false, code RAIL_NEVER_FILLED, count 0 (asserted in the fixture file, in the structural reachability table, and through the real loader in gate-county-scoped-rail.test.mjs). The new branch is asserted NOT to fire for this shape (different code), and the declared-ahead zero-cell control still excludes."
+    },
+    "4_dryRunVerdictChanges": {
+      "predicted": "UNMEASURED",
+      "result": "UNMEASURED -- unchanged from CP1's pre-registration",
+      "evidence": "see dryRun below"
+    },
+    "5_divergenceTestFailsWhenACopyIsEdited": {
+      "predicted": "PASS",
+      "result": "PASS, both directions, by actually editing each copy in a scratch run",
+      "evidence": "(a) factory copy: 'if (!declaredAheadProgramWide.has(railKey) && cellStateCounts.unaccounted > 0)' -> 'if (false)' made the test fail with actual: [] vs expected: ['zero-earned-unaccounted-live']; (b) pinned fixture copy: RAIL_NEVER_FILLED's value suffixed '_SCRATCH_FALSIFIER_5' made it fail with actual: ['zero-earned-unaccounted-live','zero-cells-live'] vs expected: ['zero-earned-unaccounted-live'], and a second test also failed. Both edits reverted immediately; 'git diff --stat' afterwards lists only the intended files, and the divergence test is green again (6/6)."
+    }
+  },
+
+  "dryRun": {
+    "status": "UNMEASURED",
+    "reason": "FACTORY_DATABASE_URL_RO is not in this environment. Checked: process env (no FACTORY*/DATABASE*/PG* variable other than NEON_API_KEY), and every *.env under P:/tmp (P:/tmp/.phase1-anti-zombie.env, clean.env, cockpit.env, b2_wave4_parcel_node_sweep_20260812/.env, brief-l3-serve-run01/web/.env, parcel_node_sweep_20260809/.env, w5a_48257_20260825/.env) -- variable NAMES only, no values read: none defines FACTORY_DATABASE_URL_RO. No other credential substituted (DATABASE_URL / CORTEX_DATABASE_URL / NEON_API_KEY all present in the environment or in those files and all deliberately unused).",
+    "exactReproductionCommandForTheIntegrationSeat": "FACTORY_DATABASE_URL_RO='<ro dsn>' node src/jobs/publish-gate-sched.mjs --county=48021 --county=48055 --county=48209 --county=48309 --county=48453 --county=48491 --rail=<each of PUBLISH_FLOOR_RAIL_KEYS> --rail=<each rail to be measured>   # DRY: no --apply, so nothing is written and no factory connection is required by the job itself. Run it twice: once at 9171279 (or with the four gate files stashed) and once at this PR's commit, and diff the printed verdicts. gate-rail-cli.mjs sets default_transaction_read_only=on and a 20s statement_timeout itself.",
+    "whatItWouldHaveTestedAndHowThatIsArguedInstead": "Falsifier 4's claim is that changes are confined to rails that are live elsewhere and unaccounted in that county. Asserted structurally instead, by enumerating the neighbouring shapes and where they land (test/p252-zero-earned-refusal.test.mjs, 'STRUCTURAL (dry run UNMEASURED)'): declared-ahead+unaccounted -> exclusion (unchanged); declared-ahead+zero cells -> exclusion (unchanged); live+zero cells -> RAIL_NEVER_FILLED (P-195); live+all not-applicable -> exclusion; live+all earned -> pass; live+one unaccounted among earned -> refuse on the PRE-EXISTING path with no new code; live+no earned+unaccounted -> the new code. The new code is therefore reachable for exactly one shape, which is the falsifier's content stated as code structure rather than as a store measurement.",
+    "publishFloorConsequence_NAME_THIS": "PUBLISH FLOOR CONSEQUENCE, derived from code read at source (not measured): maxImperviousCoverPct is in PUBLISH_FLOOR_RAIL_KEYS (SLATE_1B) and its writer (parcel-max-impervious-cover.mjs) refuses COUNTY_NOT_IN_SCOPE for every county but Travis and writes NO cell state there -- so its cells in Bastrop, Caldwell, Hays, McLennan and Williamson are unaccounted, which under P-252 is a refusal. Consequence: after the scheduler runs under the new code, requirePreBakeReadiness will refuse a publish for all five non-Travis counties of the six on that floor rail alone. agValuation's expected refusals (Bastrop, Caldwell, Hays, McLennan) are NOT floor rails and cannot refuse a publish by themselves. The remedy is the out-of-scope not-applicable sweep reaching those counties (writeAgValuationNotApplicable is the precedent) -- a data/writer action this lane is forbidden to take (P-266/P-267) and does not take."
+  },
+
+  "noStoreWritesNoDeploy": {
+    "writes": "none; no job was run against any store; npm test uses fakes only",
+    "deploy": "none",
+    "subAgents": { "spawned": 0, "maxDepth": 0 },
+    "filesOutsideThisLane": "none -- P-284's files (migrations, job-runner record writing) were not touched; no other lane's checkout was written to; only P:/tmp/p252-zero-earned-refusal (this lane's clone) and P:/seat-worktrees/dispatch-planner/doc_repo (this session's rooted doc_repo worktree)"
+  }
+}

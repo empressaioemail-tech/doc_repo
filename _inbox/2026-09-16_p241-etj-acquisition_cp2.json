@@ -1,0 +1,58 @@
+{
+  "lane": "p241-etj-acquisition",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRows": ["P-241"],
+  "seat": "dispatch-planner",
+  "at": "2026-09-16T17:45:00.000Z",
+  "filingNote": "Same disclosure as CP1: filed at close, not mid-flight. Contents are the lane's measured pilot state, not a reconstruction.",
+  "repo": "legacy-design-tools",
+  "snapshot": {
+    "branch": "lane/p241-etj-acquisition",
+    "head": "fa08d2fc (rebased onto origin/main ba6a5a69)",
+    "pr": 700
+  },
+  "pilotState": {
+    "register": "23 cities enumerated; 20 publishers with rings, 3 enumerated without a layer (Round Rock, Cedar Park, and one more of the wired set), 355 ETJ rings acquired live.",
+    "austin": "Publisher BOUNDARIES_jurisdictions/FeatureServer/0 reports 388 features; the register's predicate selects 298 of them as ETJ rings. The 90 not selected are Austin's city-limits jurisdictions (FULL PURPOSE, the two LTD labels), which is the partition falsifier 2 depends on. Measured live via returnCountOnly + groupByFieldsForStatistics on JURISDICTION_LABEL, not inferred.",
+    "falsifierRun": "All four pre-registered answers reproduced live by the instrument, then re-measured independently by scripts/surface-probe.mjs's P-241 row: 4/4 PASS.",
+    "instrumentsBuilt": [
+      "lib/cad-ingest/src/boundary/etjVerify.ts — ETJ_CONTROL_POINTS + a per-publisher guard that refuses a predicate selecting the whole layer, a truncated read, or an unreadable extent.",
+      "scripts/surface-probe.mjs P-241 row — runs `etjCli --verify --json` as a subprocess and grades its output against the pre-registered expectations; the row FAILS on a predicate-guard trip, a missing citation, a dropped control point, a generic unresolved message, or an instrument refusal."
+    ]
+  },
+  "findingsThisCheckpoint": [
+    {
+      "finding": "THREE TRAPS, each found live and each now encoded in the register rather than in prose.",
+      "detail": "(1) COMBINED LAYERS: Austin, New Braunfels, Kyle, Cibolo and Bastrop carry city limits AND ETJ in ONE layer separated by an attribute value; Austin's 'AUSTIN LIMITED PURPOSE' is limited-purpose ANNEXATION, i.e. inside the city, not ETJ. A predicate selecting the whole layer would put city-limits geometry into the ETJ rings and would pass a naive 'did we get features' check while being wrong. (2) BORROWED HOSTS: Elgin's layer carries six Bastrop-county cities; Killeen's ETJ exists ONLY inside Belton's seventeen-city regional layer — a city's ETJ is not necessarily on the city's host. (3) A PUBLISHER'S EXTENT IS A LOOSE BOX: Austin's published extent is a rectangle that covers Round Rock, which publishes no ETJ layer at all. A box-only rule therefore reports a city with NO SOURCE as a verified absence.",
+      "consequence": "The register carries layerJurisdictions and layerCarriesCityLimits per entry, and etjPredicateMustBeSelective() decides whether a predicate is mandatory; the verifier refuses a predicate that selected the whole layer or a read that came back short."
+    },
+    {
+      "finding": "TRAP 3 WAS A REAL DEFECT IN MY OWN FIRST RESOLVER, caught by falsifier 3 rather than by review.",
+      "detail": "The first cut earned `absent` from 'inside a published extent, not inside any ring'. Round Rock is inside Austin's extent, so a Round Rock address came back a CONFIDENT ABSENT — a false negative dressed as a verified answer, exactly the shape the dispatch's falsifier 3 was written to catch and exactly the shape DEV_PROCESS forbids. Fix: the miss case is decided by the CONTAINING city's own register row. `absent` is earned only when the city that contains the point is registered as publishing ETJ rings AND its rings were actually read. A city registered city_limits_only, or not registered at all, is `unresolved` with the mode named in the basis.",
+      "consequence": "'checked, no ETJ here' and 'no source to check' cannot collapse. Two unit tests pin both directions, including the paired control: a point inside a city limits whose city DOES publish ETJ is absent, not unresolved."
+    },
+    {
+      "finding": "A READ-PATH HOLE FOUND BY A TEST AND CLOSED: a claimed-but-empty ring table answered `absent`.",
+      "detail": "loadEtjFact treated 'tx_etj_source lists publishers with rings, tx_etj_boundary is empty' as a verified absence. That is an INCOMPLETE ACQUISITION — the register asserts rings exist and the store holds none — and it is the single most likely state during a partial ingest. Fixed: that state is now `unresolved` with an incomplete-acquisition basis. The complementary case (rings present, none covering the point) still earns a real `absent`, and both directions are tested.",
+      "consequence": "The read path cannot report a verified absence on the strength of a table it never confirmed was loaded."
+    },
+    {
+      "finding": "The shape check in the probe extractor refused my own first fixture.",
+      "detail": "The P-241 row's extractor validates the instrument's JSON shape before grading it; the first synthetic fixture lacked `publishers` and was refused rather than graded as empty. Kept as evidence that the extractor is not vacuous, and the fixture was replaced with a real 20+3 publisher list carrying a cross-check.",
+      "consequence": "A probe that cannot parse its instrument reports that, instead of reporting PASS on an empty read."
+    },
+    {
+      "finding": "The local full api-server suite does not complete on this Windows box.",
+      "detail": "398 test files; a prior attempt was killed at 55%, and this session's run was still going at ~9 minutes with no verdict. Three full-suite attempts have not produced a tally. CI is authoritative (the repo's own merge rule is the check-run conclusion string 'success').",
+      "consequence": "Disclosed rather than papered over. Locally measured instead: the boundary-neighbourhood subset (etjFactRead, cityLimitsFactRead, cityLimitsFactFromParcelRecord, cityLimitsFactServeCutover, boundaryEdgeFactRead, railScoring/cityBoundaryDenominator, serveGuards) = 91 tests across 7 files, all passing; lib/cad-ingest and lib/db suites green; the schema-drift fixture regenerated from a real pg_dump so fixture-drift and schema.integration both pass."
+    }
+  ],
+  "constraintsHonored": [
+    "Did not touch artifacts/api-server/src/routes/ (P-206's file set) — the read path is a new lib file with no caller.",
+    "Did not touch artifacts/smartsite-mcp, hauska-engine or hauska-map.",
+    "Did not run the ingest CLI against any production store.",
+    "No sub-agents spawned (FAN-DEPTH 0).",
+    "No statutory derivation; 42.021 absent from the read path under a non-vacuous assertion."
+  ],
+  "leave_behind_so_far": "none yet — close pending CI and merge"
+}

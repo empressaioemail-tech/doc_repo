@@ -1,0 +1,190 @@
+{
+  "lane": "p241-etj-acquisition",
+  "planRows": ["P-241"],
+  "status": "closed",
+  "seat": "dispatch-planner",
+  "closedAt": "2026-09-16T18:30:00.000Z",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/seat-worktrees/p241-etj-acquisition/legacy-design-tools",
+    "branch": "lane/p241-etj-acquisition",
+    "startedFrom": "0bf2377f (origin/main at clone; declared before any file was written)",
+    "rebasedOnto": "ba6a5a69 (#699, P-206) before the PR was opened",
+    "headAtMerge": "22695087",
+    "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo (seat/dispatch-planner)",
+    "fanDepth": "0 — no sub-agents launched (this lane ran in a harness where sub-agents are forbidden; see subAgents)"
+  },
+  "probe": {
+    "artifact": "_inbox/2026-09-16_170407_surface_probe.json"
+  },
+  "prsAndCi": {
+    "pr": 700,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/700",
+    "base": "main",
+    "mergeCommit": "62e7349b4d8d4837d62da7f0f1cc7e7d2d00fb0f",
+    "mergedAt": "2026-09-16T18:17:35Z",
+    "mergeMethod": "squash (repo convention; merged commit reads 'feat(etj): acquire ETJ per publisher, and keep absent apart from unresolved (P-241) (#700)')",
+    "ciConclusionStrings": {
+      "note": "Read from the check-runs API at the merged HEAD (22695087), conclusion STRING, not `gh pr checks` printing 'pass'. All 12 are literally \"success\".",
+      "Typecheck": "success",
+      "Test": "success (17m03s — the FULL suite, 398 files)",
+      "Rubric unit tests": "success",
+      "SS-W18 api-server boots": "success",
+      "SS-W16 tier2 flood not served": "success",
+      "L17 ci-vintage-predicate": "success",
+      "L5 SF-24/SF-25 score greps": "success",
+      "L5 SF-26 hand hasWriter grep": "success",
+      "L5 SF-30 Cotality warm grep": "success",
+      "L5 silent-fallback greps": "success",
+      "PR base is main": "success",
+      "cortex daily limit bake": "success"
+    }
+  },
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-16_p241-etj-acquisition_cp1.json",
+    "cp2": "_inbox/2026-09-16_p241-etj-acquisition_cp2.json",
+    "disclosure": "Both are FILED AT CLOSE, not mid-flight: this lane ran as one continuous session with no interruption, and the checkpoints were not filed as they were reached. Their contents are the lane's real design decisions and measured pilot state; their `at` is the filing time. Stated rather than back-dated."
+  },
+  "missionPremise": "P-241 dispatch: give ETJ a real, queryable data source, mirroring txCityBoundary's already-wired Chain A. ETJ was hardcoded \"unresolved\" at eight sites across three repos and NO ETJ geometry existed anywhere in the product; TxGIO City_Boundaries publishes incorporated places only, so there is no statewide ETJ layer and 20 of the 23 wired cities publish their own ETJ layer on their own ArcGIS host. Acquisition only: unwiring the consumer sites before this exists would swap one hardcoded \"unresolved\" for another.",
+  "completionPredicate": "Satisfied. (a) A real ETJ query against a real onboarded-footprint address returns a genuine present / absent-verified / unresolved disposition backed by live source data, not a hardcoded string: measured by scripts/surface-probe.mjs's P-241 row on four pre-registered parcels, 4/4 PASS. (b) The mechanism generalizes to the other 19-of-23 cities with a confirmed layer with no per-city code branch: the register covers ALL 20, and etjIngest/etjCli/etjVerify are driven entirely by ETJ_REGISTRY rows. (c) Honest limitation of this predicate: the acquisition path is exercised against a LOCAL scratch Postgres, not against a production serving store — no ingest was run against production, per the dispatch.",
+  "scopeBasis": "The dispatch names lib/cad-ingest/src/boundary/ and lib/db/src/schema/ as the work area, mirroring txCityBoundary. Chain B (the ledger/atom architecture) is excluded by the dispatch's own instruction. artifacts/api-server/src/routes/ is excluded (concurrent P-206 lane) — the read path was added as a NEW lib file with no caller, which is inside the dispatch's item 4 while staying outside P-206's file set. artifacts/smartsite-mcp, hauska-engine and hauska-map are follow-on work, not this mission. The 23-city footprint is inherited unchanged from the enumeration lane's own scope decision (ZONING_LAYERS registry membership), not re-decided here.",
+
+  "counts": {
+    "countingRules": "Every number below names what it counts and where it was read. None is a prose estimate.",
+    "registeredCities": {
+      "value": 23,
+      "rule": "entries in ETJ_REGISTRY (lib/cad-ingest/src/boundary/etjRegistry.ts), enumerated at close via etjRegistryEntry/Object.values — one row per city in the wired footprint inherited from the enumeration lane (ZONING_LAYERS membership)"
+    },
+    "publishersWithRings": {
+      "value": 20,
+      "rule": "registry entries whose mode is 'combined' (5) or 'etj_layer' (15), counted at close via etjSourceEntries().length — i.e. 20/20 of the cities the enumeration lane found publishing a queryable ETJ layer, which is every one of them"
+    },
+    "enumeratedWithoutALayer": {
+      "value": 3,
+      "cities": ["round-rock-tx", "cedar-park-tx", "lockhart-tx"],
+      "rule": "registry entries with mode 'city_limits_only', counted via cityLimitsOnlyEntries().length. Lockhart is included here rather than treated as a gap: the enumeration lane found its candidate layers in a DIFFERENT org (Caldwell County CAD) returning HTTP 499 Token Required, so there is a portal that exists and cannot be publicly read — a checked absence of a source, recorded as such."
+    },
+    "etjRingsAcquiredLive": {
+      "value": 355,
+      "rule": "rings read across all 20 publishers by the verify instrument in a full live pass (etjCli --verify). This is an INSTRUMENT count of live reads, NOT a production table count — no store outside a local scratch Postgres was written."
+    },
+    "austinPartition": {
+      "value": "298 of 388",
+      "rule": "the register's Austin predicate selected 298 rings out of the publisher's own returnCountOnly 388 for BOUNDARIES_jurisdictions/FeatureServer/0. The 90 not selected are Austin's city-limits jurisdictions (FULL PURPOSE and the two LTD labels). Read live; this partition is what falsifier 2 depends on."
+    }
+  },
+
+  "falsifier": "All four pre-registered answers were written before the resolver existed (CP1), then measured live by etjCli --verify and re-measured independently by the surface probe's P-241 row. The instrument AGREED with every pre-registration; a disagreement would have been a FAIL, not a silently updated expectation. Verbatim basis strings from _inbox/2026-09-16_170407_surface_probe.json:\n(1) PRESENT — pre-registered present; instrument said present. 3128 EDGEWATER DR, Travis County (unincorporated, inside Austin's 2-mile ETJ) -> ring \"AUSTIN 2 MILE ETJ\" cited https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/BOUNDARIES_jurisdictions/FeatureServer/0: point-in-polygon against tx_etj_boundary etj_id=austin-tx:22 (Austin: \"AUSTIN 2 MILE ETJ\", ring 22).\n(2) ABSENT — pre-registered absent; instrument said absent. 5833 TAYLOR DRAPER CV, Austin (inside city limits) -> point-in-polygon against 298 published ETJ ring(s) from 1 publisher(s) whose own published extent covers this point (austin-tx); no published ETJ ring contains it, so ETJ is verified absent here. This is the combined-layer trap read correctly: the point IS inside Austin's published extent and inside no ETJ ring, because LTD/full-purpose are city limits, not ETJ.\n(3) UNRESOLVED — pre-registered unresolved; instrument said unresolved. 221 E MAIN ST, Round Rock (City Hall) -> no source to check: Round Rock is enumerated in the ETJ register as mode=city_limits_only — its publisher exposes city limits and no ETJ layer. Basis says explicitly: 'This is a checked absence of a SOURCE, not a confirmed absence of ETJ'. Deliberately ALSO tested the harder adjacent shape: Round Rock sits inside Austin's published extent, so a box-only rule would have called it a verified absence.\n(4) UNRESOLVED — pre-registered unresolved; instrument said unresolved. 901 BAGBY ST, Houston (City Hall) -> no source to check: Houston is not in the ETJ register at all, so its ETJ is unmeasured.\nTally: {\"PASS\": 4}.",
+
+  "contradicted": [
+    {
+      "claim": "The dispatch's own framing of falsifier 3 — 'Round Rock or Cedar Park (city-limits-only) ... Confirm your path returns an honest unresolved/absent-source disposition' — was implementable a simpler way, and I implemented it that simpler way first.",
+      "whatTheEvidenceShowed": "My first resolver earned `absent` from 'inside a published extent and inside no ring'. That returned a CONFIDENT ABSENT for a Round Rock address, because Austin's published extent is a loose rectangle covering Round Rock. A false negative dressed as a verified answer is exactly the defect class DEV_PROCESS forbids, and falsifier 3 caught it. Fixed by making the CONTAINING city's own register row decide the miss case: absent is earned only when that city is registered as publishing ETJ rings AND its rings were actually read.",
+      "status": "fixed, and pinned by tests in both directions, including the paired control (a point inside a city limits whose city DOES publish ETJ is absent, not unresolved)"
+    },
+    {
+      "claim": "The enumeration close's leave_behind named 'legacy-design-tools x3' hardcode sites as containment.ts / cityLimitsFact.ts:53 / parcelConstraintProjection.ts.",
+      "whatTheEvidenceShowed": "Incomplete. Direct grep of every non-test `etjStatus` occurrence at close finds FOUR more unconditional sites in this repo that the enumeration did not name: artifacts/api-server/src/lib/cityLimitsFactRead.ts:93, and artifacts/api-server/src/lib/cityLimitsFactFromParcelRecord.ts (the ETJ_UNRESOLVED constant used at 64, 98, 115). parcelConstraintProjection.ts is at line 393 today, not the 391 the enumeration cited (minor drift, same site). The gap matters because 'three sites to unwire' understates the follow-on work.",
+      "status": "carried into leave_behind below, accurately"
+    },
+    {
+      "claim": "This session's own earlier attempt to get a full local api-server test verdict.",
+      "whatTheEvidenceShowed": "The local full suite (398 files) does not complete on this Windows box — a prior attempt was killed at 55% and this session's run had no verdict at ~9 minutes. THREE local attempts, zero tallies. The authoritative verdict came from CI instead: the `Test` check-run concluded \"success\" in 17m03s on the merged HEAD. Local measurement of the boundary-neighbourhood subset (91 tests across 7 files) is what was actually measured on this machine.",
+      "status": "disclosed, not papered over; CI is the verdict of record"
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "ETJ IS NOT YET SERVED. loadEtjFact() (artifacts/api-server/src/lib/etjFactRead.ts) has NO caller — no route, no card, no MCP, no PDF reads it. This lane built the acquisition and read path; wiring it is the next lane's job.",
+      "whyNotDoneHere": "The dispatch forbids touching artifacts/api-server/src/routes/ (concurrent P-206) and explicitly calls consumer wiring follow-on work.",
+      "owner": "unassigned",
+      "plan_row": "follow-on to P-241"
+    },
+    {
+      "item": "In-repo ETJ sites that still answer unconditionally, four of which the enumeration lane did not name: lib/cad-ingest/src/boundary/cityLimitsFact.ts:53 (unmeasuredCityLimitsFact); lib/cad-ingest/src/boundary/containment.ts resolveCityContainmentAtPoint/resolveCityContainment still return etjUnresolved() at 4 sites (225, 244, 251, 268) — now a THREE-VALUED type returned with a constant value, so the compiler no longer stops them; artifacts/api-server/src/lib/cityLimitsFactRead.ts:93; artifacts/api-server/src/lib/cityLimitsFactFromParcelRecord.ts:35,64,98,115 (ETJ_UNRESOLVED); artifacts/api-server/src/lib/parcelConstraintProjection.ts:393 (`etj: unread(\"no-etj-source-in-store\")` — the reason string is now false as stated: a source exists, it is simply not wired).",
+      "owner": "unassigned",
+      "plan_row": "follow-on to P-241"
+    },
+    {
+      "item": "hauska-engine consumer unwiring, deliberately NOT touched: report-model.ts:966 (`etjStatus: \"unresolved\"`) and pdf/feasibility.ts:210-212 (factOrChip(\"ETJ\", undefined, ...)).",
+      "owner": "unassigned",
+      "plan_row": "follow-on to P-241"
+    },
+    {
+      "item": "hauska-map's three duplicate hardcode sites (atom-chain-to-facets.ts, pe-record-to-facets.ts, fact-sheet-resolver.ts per the enumeration close) — carried at enumeration-lane confidence, not re-verified by this lane.",
+      "owner": "unassigned",
+      "plan_row": "follow-on to P-241"
+    },
+    {
+      "item": "No ingest has been run against production. The operator-triggered step is `pnpm exec tsx src/boundary/etjCli.ts` (optionally --city=<key>); the migration 0102_tx_etj_boundary.sql has not been applied to any serving store.",
+      "owner": "operator",
+      "plan_row": "follow-on to P-241"
+    },
+    {
+      "item": "hauska-factory parcel-record-rail-registry.ts:54 declares an etjStatus rail with zero entries in parcel-record-slate.json. This lane does NOT populate it (the dispatch forbids building against Chain B). If the ledger becomes the serving path for jurisdiction facts, that slot is still dead.",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "Lockhart is registered as city_limits_only on the strength of 'candidate ETJ layers exist in Caldwell County CAD's org but return HTTP 499 Token Required'. If a credentialed path ever appears, Lockhart moves from 3-without-a-layer to 21-with-rings and the register row needs updating.",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    }
+  ],
+
+  "constraintsHonored": [
+    "No sub-agents spawned (FAN-DEPTH 0).",
+    "Did not touch artifacts/api-server/src/routes/, artifacts/smartsite-mcp, hauska-engine, hauska-map, or hauska-factory.",
+    "Did not run the ingest CLI against any production store.",
+    "No statutory derivation: §42.021 appears nowhere in the read path, under a non-vacuous assertion (comment-stripped, with a control that proves the assertion can fail).",
+    "CLIs stay out of the lib/cad-ingest barrel (etjCli.ts is not exported from index.ts), matching every other CLI in that package — the SS-W18 boot-graph gate walks 490 modules from the api-server entrypoint and is clean.",
+    "Schema drift fixture regenerated from a real pg_dump of a pushed schema, so fixture-drift and schema.integration both pass on the new tables."
+  ],
+
+  "fleetMemory": [
+    {
+      "kind": "LESSON",
+      "text": "A PUBLISHER'S EXTENT IS NOT ITS BOUNDARY. Austin's published extent is a loose rectangle covering Round Rock, which publishes no ETJ layer at all. 'Inside the extent, outside every ring' therefore is NOT a verified absence — it is a false negative dressed as an answer, and it reads as confident to every downstream consumer. The miss case must be decided by the CONTAINING jurisdiction's own source row, not by the queried publisher's envelope. Pinned by a paired-control test."
+    },
+    {
+      "kind": "LESSON",
+      "text": "AN EMPTY TABLE IS NOT AN ABSENCE when a register asserts rows should exist. tx_etj_source naming publishers with rings plus an empty tx_etj_boundary is an INCOMPLETE ACQUISITION and must answer unresolved; it is the single most likely state during a partial ingest, i.e. exactly when a wrong 'verified absent' would propagate fastest. Found by a test, not by review."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "ETJ coverage in the wired footprint is close to universal (verified 2026-09-16): 20 of 23 cities publish a directly queryable ETJ layer; 5 carry city limits and ETJ in ONE layer separated by an attribute (Austin, New Braunfels, Kyle, Cibolo, Bastrop); Killeen's ETJ exists ONLY inside Belton's 17-city regional layer and Elgin's layer carries six Bastrop-county cities; only Round Rock, Cedar Park and Lockhart have no publicly queryable ETJ layer. Austin: 388 features, 298 of them ETJ by predicate."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "All 12 check-runs on legacy-design-tools PR #700 concluded the string \"success\" at HEAD 22695087 (Test 17m03s, the full 398-file suite), squash-merged as 62e7349b4d8d4837d62da7f0f1cc7e7d2d00fb0f at 2026-09-16T18:17:35Z."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Building a statutory §42.021 buffer instead of acquiring the published layer. Austin's real ETJ is shaped by individual AG-development agreements and disannexation actions (SB 2038 releases land FROM the ETJ; SB 1844/LGC 43.141 lands water/wastewater disannexations back IN it), so a formula would contradict the layer it claims to describe. Retired as a candidate, not deferred. Do not retry."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Getting a full local api-server test verdict on this Windows box. 398 files; three attempts, zero tallies (killed at 55% once, no verdict at 9 minutes). Do not keep spending wall-clock here — run the boundary-neighbourhood subset locally and let CI's `Test` job be the verdict."
+    },
+    {
+      "kind": "OPEN",
+      "text": "ETJ still reaches no customer surface: loadEtjFact has no caller, and the served city-limits path (containment.ts resolveCityContainmentAtPoint -> cityLimitsFact.ts -> cityLimitsFactRead.ts -> cityLimitsFactFromParcelRecord.ts -> parcelConstraintProjection.ts) still answers a constant. The next lane's job is wiring, and its first decision is whether the city-limits path DELEGATES to resolveEtjAtPoint or the two stay parallel — delegation is the only shape that keeps one implementation of the ETJ rule."
+    },
+    {
+      "kind": "OPEN",
+      "text": "The register's `verifiedFeatureCount` per publisher is the predicate guard's tripwire (a read at or above the publisher's own layer count means the predicate is not partitioning). If a city's layer is republished with a different schema, the guard will refuse rather than silently widen the rings — expect that refusal, do not 'fix' it by relaxing the count."
+    }
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "docRepoHandling": "doc_repo commits are planner-owned (AGENT CONTRACT section 6) and this lane ran as the dispatch planner itself, so this close, its CP1/CP2 siblings, the P-241 row added to scripts/surface-probe.mjs, and the probe artifact are committed in this seat's worktree (seat/dispatch-planner), NOT in P:/doc_repo (the integration seat's checkout).",
+
+  "laneClaim": {
+    "lane": "p241-etj-acquisition",
+    "seat": "dispatch-planner",
+    "claimedAt": "2026-09-16T16:29:51.372Z",
+    "releasedAtClose": true
+  }
+}
