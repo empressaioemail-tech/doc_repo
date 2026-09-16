@@ -19,7 +19,7 @@ scope `_inbox/2026-09-16_texas_scaleup_program_scope.md`):
 3. **Phase 2:** Bell and Milam through the farm in parallel.
 4. **Then** the rest of Texas.
 
-## Six laws
+## Seven laws
 
 1. **The customer predicate is the definition of done.** `scripts/surface-probe.mjs` with a
    real address in the county is the finish line for every stage, not stage 12's private
@@ -66,6 +66,18 @@ scope `_inbox/2026-09-16_texas_scaleup_program_scope.md`):
 6. **Nothing is measured once and published as state.** A number on this program's card
    names its SHA and its date. OPS-23's live card is authoritative where the two programs
    touch (serving, identity, the ledger).
+7. **The county verdict is a grade, not the serve switch** (operator ruling 2026-09-16, A-193,
+   `_decisions/2026-09-16_county_verdict_is_not_the_serve_switch.md`, build row P-297).
+   - `parcel_gate_verdict` answers "is this rail complete enough in this county to publish".
+     The publish gate reads it; nothing else may use it to choose what a parcel shows.
+   - On a slated rail each parcel is served from its OWN cell: an earned value as that value; an
+     absence as the stated absence with its reason; `refused`, `unaccounted`, a missing cell or an
+     unreadable store as a declared refusal with its reason. Never the legacy or baked value.
+   - Until P-297 is live, the serve path still switches on the county verdict (LDT
+     `resolveAllowlistState`, retrieval-api `parcel-record-reader.ts`). So **any write that puts
+     an unaccounted cell on a slated rail turns that whole county's ledger values back to the
+     bake**. A lane whose writer can do that states it in CP1 and does not apply before P-297.
+   - An instrument never reads "slated and `pass`" as "served from the ledger"; it reads the cell.
 
 ## Identity and vintage, inherited as law
 

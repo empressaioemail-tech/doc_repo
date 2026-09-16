@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (21:15Z)
+last_updated: 2026-09-16 (21:40Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -50,15 +50,17 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | Row | What | State | Next step |
 |---|---|---|---|
 | P-258 | Setback table campaign (planner wave) | Dispatched 2026-09-16 | Grade by the census after the writer run |
-| P-256 | Stop false "no setbacks required" | Lane closed partial; PR factory #160 green, rebased on `afdda42`. It also releases the cells this job wrote falsely (about 219,472 parcels, five rails each) | **Held (A-192).** Applying it would turn every county's `setbackFrontFt` verdict to `refuse`, and LDT then drops ledger setbacks for the whole county back to the stale bake. Needs the serve-semantics ruling, and a factory blast-radius guard or explicit authorisation |
+| P-256 | Stop false "no setbacks required" | Lane closed partial; PR factory #160 green, rebased on `afdda42`. It also releases the cells this job wrote falsely (about 219,472 parcels, five rails each) | **Held (A-192).** Applying it would turn every county's `setbackFrontFt` verdict to `refuse`, and LDT then drops ledger setbacks for the whole county back to the stale bake. **Ruled (A-193):** applies after P-297 is live, with a factory blast-radius guard or an explicit share authorisation |
 | P-262 | One edge labeller and ring scrub | Dispatched 2026-09-16 | Feeds P-264 |
-| P-281 | Job and heavy-scan leases | Dispatched 2026-09-16 | Unblocks P-263, P-264, P-294 |
+| P-281 | Job and heavy-scan leases | Lane closed partial; PR factory #161 green, plus a doc_repo seat branch | Integration seat: review and merge; migration `0013`; deploy `factory-control`; a real contention run |
 | P-252 | Empty counties refuse at the gate | **Merged** (factory `28cec4c`); publish jobs deployed; migration `0011a` applied (it had never been). The scheduler image is not deployed: its hourly `--apply` is the only step, and it writes the table production reads | Scheduler image after retrieval-api serves the new strings |
 | P-292 | Impervious-cover rail required for publishing only in Travis | **Merged** (factory `e86bc51`); in the deployed publish jobs | Graded with P-252 |
 | P-293 | LDT reads the factory's new verdict strings | **LDT deployed** (`cortex-api-00815-fiw`, 100 percent). Engine remainder (`parcel-record-db.ts:160`) compiled as lane `p293r-retrieval-vocabulary` | Operator fires the engine lane; deploy retrieval-api; then the scheduler image |
 | P-249 | Unverified "no buildable area" data stops hiding envelopes | Lane closed partial; PRs LDT #701, map #409 reviewed (sound). The verification field it reads is on the live atom chain (checked on promoted and unverified atoms) | Integration seat: staging proof on the served surface |
 | P-284 | Cost and timing records for every stage | **Merged** (`afdda42`); migration `0012` applied; writer images deployed; a real dry run wrote its record. **The compute cost can never be measured yet**: the lookup asks for job `factory-atoms-cad` (404), and the backfill runs in an old reaper image | Lane `p284r-compute-cost-job-name` compiled; then rebuild the reaper image |
-| P-293 remainder, P-269, P-295 (phase 1), P-205 follow-on, P-284 remainder | Compiled 2026-09-16, not yet fired | `_dispatches/2026-09-16_{p293r-retrieval-vocabulary,p269-dollar-rails-refuse,p295-ledger-serving-measure,p205b-coverage-ambiguous-locality,p284r-compute-cost-job-name}_dispatch.md` | Operator fires them |
+| P-293 remainder | Fired by the operator 2026-09-16 | `_dispatches/2026-09-16_p293r-retrieval-vocabulary_dispatch.md` | PR, then the integration seat deploys retrieval-api and the scheduler image |
+| P-205 follow-on, P-284 remainder, P-295 (phase 1), P-297 with P-269 | Compiled 2026-09-16, safe to fire now | `_dispatches/2026-09-16_{p205b-coverage-ambiguous-locality,p284r-compute-cost-job-name,p295-ledger-serving-measure,p297-cell-serve-ldt}_dispatch.md` | Operator fires them. **Do not fire `p269-dollar-rails-refuse`**: withdrawn, folded into `p297-cell-serve-ldt` |
+| P-297 | The county verdict stops being the serve switch (operator ruling A-193) | LDT half compiled with P-269; engine half follows the P-293 remainder | Blocks P-256's apply |
 | P-230 | Map and MCP serve current data, not an old snapshot | Lane closed partial: **nothing re-runs the bake**; five counties serve 09-10 data, Hays 09-14 | **Operator decision:** the refresh path (A-189) |
 
 ## Left for Phase 0 (the six counties)
@@ -70,7 +72,7 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | **Envelopes** | P-263 clean up bad envelope data (P-262 in flight); P-264 re-derive every envelope (also measures whether road data blocks envelopes) | P-263 and P-264 need P-281; P-264 needs P-260 and P-262 |
 | **Hays and the ledger** | P-211 Hays envelope rails; P-265 Hays reader lists; P-266 three simple rails and `citationUrl`; P-268 unexplained refusals; P-204 rails still read from old sources | P-265 needs P-211; P-266 needs P-252 |
 | **Ag valuation** | P-267, from Cotality | **The Cotality contract and credentials** |
-| **What customers see** | P-269 dollar rails fall back to old values; P-270 card names the city and the citation date; P-271 Williamson missing snapshot and address; P-272 malformed address breaks the envelope; P-217 contradictory answers; P-209 sales history labelled Unavailable | Nothing |
+| **What customers see** | P-297 each parcel served from its own cell (ruled A-193; lane compiled with P-269); P-269 dollar rails fall back to old values; P-270 card names the city and the citation date; P-271 Williamson missing snapshot and address; P-272 malformed address breaks the envelope; P-217 contradictory answers; P-209 sales history labelled Unavailable | Nothing |
 | **Controls and cleanup** | P-273 dead controls; P-274 P-195 leftovers; P-275 retirement checks in the other five counties; P-276 staging password rotation; P-279 stop stale tagged revisions; P-282 paired-code consistency tests; R-11 doc_repo seat-gate scope (P-281 in flight) | P-274 needs P-252 |
 | **Earlier rows still open** | P-175, P-183, P-184 (Hays and Williamson identity); P-176 Cotality accuracy test; P-205 (LDT side live on `cortex-api`; Marble Falls fix ruled, lane compiled); site-plan compose timeouts in Travis and Williamson (P-244 class) | P-205 needs its engine follow-on |
 | **Serving path (A-190: both)** | P-294 republish a county when its ledger changed (stopgap); P-295 the surfaces read the ledger (direction; measure the atoms question first); republish the six now (operator go, after the gate fix) | P-294 needs P-252 and P-281 |
@@ -102,8 +104,8 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 
 ## Open with the operator
 
-- **Ruling (A-192):** should the county verdict stop being the serve switch, so each parcel serves its own cell (earned value, or a declared refusal) and never the stale bake? P-256 waits on it. Recommended: yes.
-- **Fire the compiled lanes:** the P-293 remainder (blocks the scheduler), P-205 follow-on, P-269, P-295 phase 1, P-284 remainder.
+- **Fire the compiled lanes:** P-205 follow-on, P-284 remainder, P-295 phase 1, P-297 with P-269 (not the withdrawn P-269 dispatch).
+- **P-256's apply** will need an explicit authorisation with its declared share, unless the factory gets a blast-radius guard first (A-192).
 
 - The "waiting on vendor" acceptance for ag valuation stands unless the operator wants Burnet to wait for the Cotality data.
 - An account check for P-243 (the MCP app in a real Claude client) and P-244a.
@@ -130,3 +132,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | 2026-09-16 20:25 | New integration session. P-292 merged (factory `e86bc51`), P-293 merged (LDT `9ce30b8`), P-252 merged (factory `28cec4c`). The engine vocabulary lane is compiled. Two rollout findings: the gate scheduler runs hourly with `--apply` on the one verdict table production reads, so there is no staging step for it and deploying its image is the apply; and migration `0011a` (the new verdict strings) is not applied to the factory store, so the new scheduler would fail its writes. Publish image build started at `28cec4c`. |
 | 2026-09-16 21:05 | LDT P-293 deployed (`cortex-api-00815-fiw`). Migration `0011a` applied. P-284 merged (`afdda42`), migration `0012` applied, writer images deployed, and a real dry run wrote its stage record; its compute cost is unmeasurable (wrong job name, proven both ways), remainder lane compiled. P-249 PRs reviewed. P-205 Marble Falls rule decided and its engine lane compiled; P-269 and P-295 (phase 1) compiled. P-256 closed partial with PR #160. A-191 records it. |
 | 2026-09-16 21:15 | P-256 held (A-192): its apply would switch all six counties' setbacks from the ledger back to the bake, because the county verdict is the serve switch. P-213's blast-radius guard exists only in the engine. Serve-semantics ruling owed. |
+| 2026-09-16 21:40 | Operator ruling A-193: the county verdict is a grade, not the serve switch (decision record, OPS-24 law 7, row P-297). P-297's LDT half compiled together with P-269; the separate P-269 dispatch withdrawn. P-293 remainder fired. P-281 closed partial (factory #161); P-256 landed earlier; P-258 and P-262 still in flight. |
