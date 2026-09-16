@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (18:55Z)
+last_updated: 2026-09-16 (19:15Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -40,19 +40,19 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | P-255 | Setback count tool built and run | Done: 131,357 is P-249's real target; half the district gaps are planned developments |
 | P-201 | Gate verdicts split into three kinds | Merged; did not close the zero-earned gap (P-252 does) |
 | P-252 dry run | What P-252 changes in the six counties | Done: 25 verdicts flip; publishing unaffected once P-292 lands |
-| P-248, P-261 | Footprints on every sheet; PDF prints an area only when verified | Merged (engine #459, #460); **deploy owed**; closes not yet filed |
-| P-210 | "Is this county covered" endpoint | Merged (engine #458); **deploy owed**, then P-205 can deploy |
+| P-248, P-261 | Footprints on every sheet; PDF prints an area only when verified | **Deployed and verified live** (engine `00247-san`, A-188); one P-261 leg rests on the lane's probe because candidate exports fail on both old and new code |
+| P-210 | "Is this county covered" endpoint | **Deployed and verified live** (retrieval `00092-lag`, A-188); Marble Falls reads indeterminate (ZIP split), a Burnet finding |
 | P-206, P-241, P-242c, P-246, P-247, P-213 | Reports rows | Merged; deploy state not checked by this seat |
 
 ## In flight
 
 | Row | What | State | Next step |
 |---|---|---|---|
-| P-252 | Empty counties refuse at the gate | PR factory #157 open, green | Merge after P-292 and P-293; run on staging, then production |
+| P-252 | Empty counties refuse at the gate | Lane closed partial; PR factory #157 open, green | Merge after P-292 and P-293; run on staging, then production |
 | P-292 | Impervious-cover rail required for publishing only in Travis | Lane running | Merge first |
 | P-293 | LDT reads the factory's new verdict strings | Lane running | Merge first |
-| P-249 | Unverified "no buildable area" data stops hiding envelopes | PRs LDT #701, map #409 open | Review; staging proof on the served surface |
-| P-284 | Cost and timing records for every stage | PR factory #158 open | Review; apply the migration on staging |
+| P-249 | Unverified "no buildable area" data stops hiding envelopes | Lane closed partial; PRs LDT #701, map #409 open | Integration seat: review, then staging proof on the served surface |
+| P-284 | Cost and timing records for every stage | Lane closed partial; PR factory #158 open | Integration seat: review; apply the migration on staging |
 | P-230 | Map and MCP serve current data, not an old snapshot | Dispatched by the reports session | Wait for its close |
 
 ## Left for Phase 0 (the six counties)
@@ -66,7 +66,7 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | **Ag valuation** | P-267, from Cotality | **The Cotality contract and credentials** |
 | **What customers see** | P-269 dollar rails fall back to old values; P-270 card names the city and the citation date; P-271 Williamson missing snapshot and address; P-272 malformed address breaks the envelope; P-217 contradictory answers; P-209 sales history labelled Unavailable | Nothing |
 | **Controls and cleanup** | P-273 dead controls; P-274 P-195 leftovers; P-275 retirement checks in the other five counties; P-276 staging password rotation; P-279 stop stale tagged revisions; P-281 heavy-job locks; P-282 paired-code consistency tests | P-274 needs P-252 |
-| **Earlier rows still open** | P-175, P-183, P-184 (Hays and Williamson identity); P-176 Cotality accuracy test; P-205 deploy | P-205 needs the P-210 deploy |
+| **Earlier rows still open** | P-175, P-183, P-184 (Hays and Williamson identity); P-176 Cotality accuracy test; P-205 deploy; site-plan compose timeouts in Travis and Williamson (P-244 class) | P-205 can deploy now that P-210 is live |
 | **Phase 0 exit** | Stored data complete, customer checks pass, coverage, road measurement, the operator's walkthrough | Everything above |
 
 ## Farm and Burnet (Phase 1)
@@ -100,7 +100,7 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 
 ## Owed by the integration seat
 
-- Engine deploy for P-248, P-261 and P-210, then the LDT deploy for P-205.
+- The LDT deploy for P-205 (P-210 is live). Burnet finding first: Marble Falls reads indeterminate.
 - The P-252 rollout in order: P-292 and P-293 merged, P-252 merged, the gate scheduler dry run and apply on staging, then production.
 - Staging proof for P-249 once its PRs are reviewed.
 
@@ -110,3 +110,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 |---|---|
 | 2026-09-16 18:45 | Created from the roadmap given to the operator in session. |
 | 2026-09-16 18:55 | P-253 done (A-187); P-254 next. |
+| 2026-09-16 19:15 | Engine and retrieval deployed and verified (A-188); P-248/P-261, P-249, P-284 closes landed. |

@@ -1,0 +1,251 @@
+{
+  "lane": "p284-stage-telemetry",
+  "title": "every stage records what it cost, so `Bell and Milam beat Burnet` is a query -- the table, the writers, the three states, and the audit that fails when a stage run leaves no record",
+  "planRows": ["P-284"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-16_p284-stage-telemetry_dispatch.md",
+  "closedAt": "2026-09-16T18:14:00Z",
+  "status": "closed-partial",
+  "seat": "p284-stage-telemetry",
+  "repo": "hauska-factory",
+  "worktree": {
+    "doc_repo": "P:/seat-worktrees/p284-stage-telemetry/doc_repo",
+    "build": "P:/tmp/p284-stage-telemetry"
+  },
+  "branch": "feat/p284-stage-telemetry",
+  "baseCommit": "91712795ea2a1eb7c27f7328cf7f52fcb7810b59",
+  "headSha": "7993e4322123c4a0443f29b4d6a36e6f14ffd165",
+  "pr": 158,
+  "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/158",
+  "merged": false,
+  "mergeSha": "not applicable: the dispatch forbids applying the migration, deploying, or merging",
+  "checkpoints": [
+    "_inbox/2026-09-16_p284-stage-telemetry_cp1.json",
+    "_inbox/2026-09-16_p284-stage-telemetry_cp2.json"
+  ],
+  "probe": {
+    "notApplicable": "build lane, migration not applied; graded when a staging run writes a record"
+  },
+
+  "snapshotDeclared": "repo hauska-factory, branch feat/p284-stage-telemetry, three commits (f620283, 1144c5d, 7993e43) cut from origin/main 91712795ea2a1eb7c27f7328cf7f52fcb7810b59, head 7993e4322123c4a0443f29b4d6a36e6f14ffd165. NO STORE WAS WRITTEN: the only database this lane touched is a scratch PostgreSQL 18 container it started itself (p284-scratch-pg, port 55432, database `factory`, empty, disposable), used to apply all 14 migrations and to run the writer's real SQL. LDT, hauska-engine and hauska-map were not opened. No deploy, no Cloud Run execution, no --apply, no store read of any production or staging database.",
+
+  "missionPremise": "OPS-24 law 5, ruled by the operator on 2026-09-16 (`_decisions/2026-09-16_texas_scaleup_sequence_and_four_rulings.md`, scope `_inbox/2026-09-16_texas_scaleup_program_scope.md`) and written into the dispatch: 'every stage meters itself -- compute dollars and operator minutes per county per stage go on the stage's run record, so commitment 3 (under 200 dollars and one hour per county) can fire as a kill, not a slogan. As of 2026-09-16 nothing records either.' The premise was RE-DERIVED at source rather than inherited: `git grep -n -E 'computeCost|compute_cost|costUsd|cost_usd|billable|instance_time|instanceTime' 9171279 -- src` returns ZERO matches, and A-179 measured the two depth writers writing no row and no count on any of 14 sampled runs. The consequence the row names is real and specific: the Burnet-versus-Bell-and-Milam decision (whether Bell and Milam need isolated stores) is to be made FROM these numbers, and the numbers did not exist.",
+
+  "completionPredicate": "A stranger can evaluate this row in two halves. BUILD HALF, evaluable now, from a clone of the branch: `npm install`, `node src/db/migrate.mjs` against an empty PostgreSQL applies all 14 migrations including 0012; then `docker exec ... psql -f scripts/p284-stage-run-records-probe.sql` prints only 'ok:' NOTICE lines and ROLLBACKs; `node --test test/p284-stage-run-records.test.mjs` passes 34/34 with no database at all; with FACTORY_DATABASE_URL set to that database, adding test/p284-stage-run-records-live.test.mjs passes 42/42. ROW HALF, evaluable only after the integration seat acts: the migration is applied on staging, ONE real Cloud Run run of a depth writer completes, and `node src/cli.mjs stage-runs audit` returns ok:true for that run with the record present (and `stage-runs speed --county <fips>` returns a row for stage 6 with either a priced cost and its basis or NULL with a named reason). Until that happens this row is closed-partial BY CONSTRUCTION, not by omission: nothing in the fleet can write a real record until the schema exists in a store a job can reach.",
+
+  "scopeBasis": "hauska-factory only, and inside it only the telemetry path: the migration, src/lib/stage-map.mjs, src/lib/compute-cost.mjs, src/lib/operator-minutes.mjs, src/control/stage-runs.mjs, the reaper's close/backfill hook, the two depth writers, src/cli.mjs, and tests. The four gate files the dispatch names (publish-gate.js, gate-exclusion-classifier.mjs, publish-readiness-gate.mjs, publish-gate-sched.mjs) were NOT touched -- P-252 is editing them concurrently, and the stage map refers to the publish-gate-sched PHASE without touching the module. Stated exclusions, so a successor can tell a decision from an oversight: (a) no cost was measured against a real Cloud Run execution -- that needs a real execution's monitoring series, so the arithmetic is unit-tested and the state a self-measuring job lands in is a named absence (METRIC_NOT_YET_PUBLISHED) that the reaper backfills; (b) nothing declares operator minutes today, so real records will carry an unmeasured reason until a runbook or P-285 declares one -- the column, the basis and the CHECK exist, the declarer does not; (c) only stage 6's depth writers write records; the other mapped stages are COUNTED by the audit with ownerRow P-285, and the map is built so that when P-285 wires each runner its phase flips to writesRecords: true and the audit starts failing on it that day.",
+
+  "whatShipped": {
+    "migrations/0012_stage_run_records.sql": "NEW, 274 lines. Table stage_run_records; two unique identities; three views. NOT applied to any store by this lane.",
+    "src/lib/stage-map.mjs": "NEW. The thirteen OPS-24 stages as a frozen enum 0-12, and the one map from runs.phase to { stage, stage_detail, writesRecords }, plus PHASE_UNASSIGNED and PHASE_NOT_A_STAGE. 40 mapped phases, each naming its writer and quoting the evidence its stage was read from.",
+    "src/lib/compute-cost.mjs": "NEW, 366 lines. The published Cloud Run Jobs tier-1 rates with their source, the execution's CPU/memory shape, billable milliseconds to CPU and memory seconds, and the conversion to dollars. COMPUTE_UNMEASURED names every absence, including METRIC_NOT_YET_PUBLISHED.",
+    "src/lib/operator-minutes.mjs": "NEW, 136 lines. Operator minutes as a declared value with declaredBy/declaredAt/stopPoint, restricted to the three stop points, plus the environment plumbing a Cloud Run job needs.",
+    "src/control/stage-runs.mjs": "NEW, 744 lines. openStageRun / closeStageRun / recordStageRun / recordStageRunsForRun / closeOpenStageRunsForRun / countiesFromScope / missingStageRecords / backfillStageComputeCosts / compareCounties / countyStageSpeed / computeColumns / operatorColumns.",
+    "src/jobs/parcel-envelope-cells.mjs": "MODIFIED. Records stage 6 / depth; cellsMovedByCounty counted per county inside processCityPage from the rows the UPDATE returned.",
+    "src/jobs/parcel-setback-cells.mjs": "MODIFIED. The same, plus companionRowsByCounty.",
+    "src/control/reaper.mjs": "MODIFIED. stageOutcomeForExitKind: a reaper-closed record is never marked succeeded, even when the execution succeeded.",
+    "src/jobs/reap.mjs": "MODIFIED. Closes the open stage records of every run it terminates, and backfills compute costs for records whose metric was not yet published.",
+    "src/cli.mjs": "MODIFIED. stage-runs audit | assert | speed | compare | backfill-compute, with strict flag parsing.",
+    "scripts/p284-stage-run-records-probe.sql": "NEW, 196 lines. The live schema probe: 20+ NOTICE assertions over the three-state CHECKs, both unique identities, a refused write leaving no row behind, and the views' NULL-not-zero behaviour. ROLLBACKs, leaving the database as it found it.",
+    "test/p284-stage-run-records.test.mjs": "NEW. 34 offline tests, in-process fake client, no socket.",
+    "test/p284-stage-run-records-live.test.mjs": "NEW. 8 tests running the writer's real SQL against a real database; skipped when FACTORY_DATABASE_URL is unset, so `npm test` gained no hidden database dependency.",
+    "test/parcel-envelope-cells.test.mjs / test/parcel-setback-cells.test.mjs": "MODIFIED. Their factory doubles now model INSERT ... RETURNING and the tests assert the stage record is opened once and closed, which is a stronger assertion than the one they carried before."
+  },
+
+  "theMigration": {
+    "name": "migrations/0012_stage_run_records.sql",
+    "numbering": "0012 is the next free number after 0011a_parcel_gate_verdict_excluded_kinds.sql, the highest migration on origin/main at the moment this PR opened (git ls-tree --name-only origin/main migrations/). P-252 adds one concurrently: RE-CHECK before merge.",
+    "table": "stage_run_records -- one row per (county, stage, sub-stage, run). Columns: id, county_fips, stage, stage_detail, run_id (nullable, references runs(id)), run_mode, started_at, ended_at, outcome, instrument_verdict, instrument_artifact_path, rows_written, rows_written_basis, manifest_pin, compute_cost_usd, compute_cost_basis, compute_cost_unmeasured_reason, operator_minutes, operator_minutes_basis, operator_minutes_unmeasured_reason, created_at, updated_at.",
+    "threeStatesInTheSchema": "CONSTRAINT stage_run_records_compute_three_states_check CHECK ((compute_cost_usd IS NOT NULL AND compute_cost_basis IS NOT NULL AND compute_cost_unmeasured_reason IS NULL) OR (compute_cost_usd IS NULL AND compute_cost_unmeasured_reason IS NOT NULL)); the identical shape for operator_minutes; plus compute_cost_usd IS NULL OR compute_cost_usd >= 0 so a measured ZERO remains a legitimate distinct value; plus operator_minutes_basis ? 'declaredBy' AND ? 'declaredAt' AND ? 'stopPoint', so a declared value names who declared it, when, and at which of the three stop points.",
+    "otherConstraints": "county_fips ~ '^[0-9]{5}$'; stage BETWEEN 0 AND 12; run_mode IN ('apply','dry-run'); run_mode <> 'apply' OR run_id IS NOT NULL; outcome IN ('running','succeeded','failed','killed','orphaned','refused'); outcome = 'running' OR ended_at IS NOT NULL; ended_at IS NULL OR ended_at >= started_at; rows_written IS NULL OR rows_written >= 0.",
+    "identity": "UNIQUE (run_id, county_fips, stage, coalesce(stage_detail,'')) WHERE run_id IS NOT NULL -- one record per stage execution per run; and UNIQUE (county_fips, stage, coalesce(stage_detail,''), started_at) WHERE run_id IS NULL for dry runs, which have no run row to key on.",
+    "views": "stage_run_speed (one row per county/stage/sub-stage, with the UNMEASURED counted in its own column), stage_run_speed_per_10k (the same normalised per 10,000 parcels, carrying parcels_basis beside the figure), stage_run_comparison (two counties, one row per stage, ratios stated from county_a's side).",
+    "whyNewTableNotColumnsOnRuns": "`runs` is one row per PROCESS INVOCATION, and the depth writers each open ONE run for a multi-city sweep spanning several counties -- so a cost column on `runs` would have had to be divided across counties by hand, and the only thing to divide by is the run's scope LIST, which is a guess about how the work divided. That guess would have poisoned the exact number the program is going to make the isolated-store decision from. `runs` keeps what only it knows (image digest, engine sha, execution identity, the SIGTERM/reaper lifecycle) and the new table references it by run_id.",
+    "durability": "Nothing in the migration's SQL references leases, so releasing a lease cannot remove a record. The test asserts this against the SQL with comments stripped, AND asserts the file still discusses leases in prose, so the check is about the SQL and not about a deletion."
+  },
+
+  "theDepthWriters": {
+    "whatTheyRecord": "stage 6, stage_detail 'depth', one record per county per run, opened at the start of the county's page work and closed with the outcome, the ended time and rows_written.",
+    "whereTheRowCountComesFrom": "cellsMovedByCounty, counted per county from the rows parcel-setback-cells' UPDATE ... RETURNING actually returned (and companionRowsByCounty where a companion write is what the stage did), never inferred from the manifest or the scope list. rows_written_basis names the statement that counted them.",
+    "dryRuns": "a dry run records too (falsifier 4): run_mode 'dry-run' with run_id NULL. The run that produced nothing is exactly the one whose cost you want to see."
+  },
+
+  "theAudit": {
+    "whatFailsTheAudit": "missingStageRecords walks every run that has a termination_record, maps its phase through the stage map, and for a phase whose runner DOES write records, requires a record for every county the run's scope names. A county it cannot key (no county in scope) is reported in `unkeyable` rather than silently passing.",
+    "whatIsCountedRatherThanFailed": "a phase that IS one of the thirteen but whose runner does not write records yet goes to `pendingWriter` with its ownerRow (P-285). Failing a store for a writer that does not exist would make the audit red for a reason nobody can act on, and a gate that is red for no actionable reason gets ignored -- which is how the last four controls on this program died.",
+    "theOtherBuckets": "notAStage, phaseAbsent, unassigned (a phase known to be stage work whose stage cannot be read off the code -- currently p2-juris-containment), and unknownPhase (a phase nobody has ever mapped). Five different reasons, five different owners; 'unmentioned' and 'out of scope' do not look the same.",
+    "theReaper": "reap.mjs closes every open record of a run it terminates, with stageOutcomeForExitKind so a killed run's record is never marked succeeded, and backfills compute costs whose metric was not yet published while the job was still running."
+  },
+
+  "falsifiers": [
+    {
+      "id": "F1",
+      "preRegistered": "A run killed mid-stage still leaves a record with outcome and ended time (the reaper path).",
+      "outcome": "HELD",
+      "evidence": "test/p284-stage-run-records.test.mjs 'a stage record the reaper has to close is never marked succeeded, even for a successful execution'; the live test 'a killed run's records are closed by the run, not left open for a query to average over' -- which closes THREE open records of a terminated run and then asserts zero remain open, because an open record is included by every later median."
+    },
+    {
+      "id": "F2",
+      "preRegistered": "A stage that is not a Cloud Run execution records cost as null with a reason, not 0.",
+      "outcome": "HELD, in the code AND in the schema",
+      "evidence": "COMPUTE_UNMEASURED.{NOT_A_CLOUD_RUN_EXECUTION,LOCAL_OR_TEST_HOST,METRIC_NOT_YET_PUBLISHED} each yield compute_cost_usd NULL with the reason column set. The probe independently prints 'ok: a NULL cost with no reason is refused by the schema' and 'ok: a measured ZERO is a value, not an absence' -- so even a future writer that sends 0 cannot make an unmeasured cost look measured."
+    },
+    {
+      "id": "F3",
+      "preRegistered": "The comparison query returns a row per stage for two fixture counties, and a stage missing from one county shows as missing, not as zero.",
+      "outcome": "HELD, and then made to hold in a case its wording did not cover",
+      "evidence": "probe output, comparison block: 48021 vs 48453 stage 6 depth-zero -> records_a NULL, records_b 1, missing_a t, missing_b f, wall_clock_s_total_a NULL. The per-10k block additionally shows 48021, which has no parcel_record rows in the fixture, getting NULL per-10k figures rather than 0. The case the wording did NOT cover is a county with NO records at all -- see contradicted, item 1."
+    },
+    {
+      "id": "F4",
+      "preRegistered": "The depth writers' dry runs produce records.",
+      "outcome": "HELD",
+      "evidence": "the live test 'a DRY RUN leaves a record with no run row, and the audit does not then wait for one', plus the two depth-writer tests, which now assert the record is opened exactly once and CLOSED on a dry run of --county=48209."
+    }
+  ],
+
+  "contradicted": "Three things, recorded rather than quietly corrected. (1) MY FIRST COMPARISON WAS SILENT FOR A COUNTY WITH NO RECORDS. compareCounties read stage_run_comparison directly. The view is correct for the case F3 states -- it builds its key set from the two counties' own records, so a stage present in either county appears with missing_a/missing_b set (the probe shows it) -- but a county with NO records at all contributes no key, so asking about it returned ZERO ROWS, and zero rows reads as 'nothing to report' rather than 'this county cannot be compared yet'. The question the table exists for is literally asked while Burnet has not run. Fixed by building the pair from the counties that were ASKED about, returning coverage/comparable, and exiting 4 from the CLI on an incomparable pair. That introduced a deliberate duplication of the ratio expressions between the function and the view, which is the paired-implementation shape DEV_PROCESS says drifts, so a live test asserts the two AGREE on a pair where both counties have data. (2) MY COMPLETENESS SWEEP WAS BLIND AND ITS FIRST GREEN WAS NOT EVIDENCE. The stage-map test matched only `phase: \"literal\"` and went green over 40 phases. SEVENTEEN assignment sites in src/ name their phase through a const (`phase: JOB_ID` with `const JOB_ID = \"...\"`), so sixteen live phases were invisible to it -- the guard was bypassed by writing a job the way seventeen existing jobs already are. Resolving the consts surfaced all sixteen; fifteen carry a stage read off their own header (quoted into the entry and marked provisional: true), one is DECLINED as a verification check that fills no rail, and one could not be read off the code at all, so PHASE_UNASSIGNED exists rather than a guessed stage number that the per-stage cost roll-up would then report as fact. (3) MY CHANGE BROKE TWO EXISTING TESTS AND THEY WERE RIGHT. The two depth-writer tests drove the jobs with a blanket `{ query: async () => ({ rows: [] }) }` double, which is not a model of `INSERT ... ON CONFLICT DO NOTHING RETURNING id`: an empty row set is indistinguishable from a conflict, so a successful write looked like a duplicate and the run refused. I strengthened the doubles to answer the three statements the writer runs and to assert the record is opened exactly once and closed, rather than weakening the writer's conflict detection to suit a fake.",
+
+  "countsAndTheirCountingRules": {
+    "p284Tests": "42 with a database attached (34 offline + 8 live, disjoint files; `node --test test/p284-stage-run-records.test.mjs test/p284-stage-run-records-live.test.mjs`, 42 pass 0 fail). 34 pass 0 fail with FACTORY_DATABASE_URL unset.",
+    "fullSuite": "npm test -> 1477 tests, 1462 pass, 12 skipped, 2 todo, and 3 failing test LOCATIONS (1 counted by Node as fail, 2 as todo). Node's summary counter and the location count differ because the two p3-absence findings are declared `{ todo: ... }`; the LOCATION count is the one comparable with the base commit.",
+    "migrationsApplied": "14 of 14, in filename order, to an EMPTY database (`node src/db/migrate.mjs`), including 0012 -- not 'it parses', but 'it applies to nothing and the schema then refuses the writes it is supposed to refuse'.",
+    "probeAssertions": "every NOTICE line is prefixed 'ok:'; the script ends in ROLLBACK. Transcript: _inbox/2026-09-16_p284-stage-run-records-probe-output.txt.",
+    "phasesMapped": "40 mapped to a stage, 18 declined, 1 unassigned, 0 unknown -- measured by the sweep walking src/ and resolving consts, not by a hand count.",
+    "rowsWrittenToAnyStore": "0."
+  },
+
+  "citedCommands": {
+    "migrate": "FACTORY_DATABASE_URL=postgres://postgres:scratch@localhost:55432/factory node src/db/migrate.mjs -> {\"ok\":true,\"ran\":[14 files],...} on an empty database",
+    "probe": "docker exec -e PGPASSWORD=scratch p284-scratch-pg psql -U postgres -d factory -v ON_ERROR_STOP=1 -f /tmp/probe.sql -> all NOTICEs 'ok:', tables printed, ROLLBACK",
+    "p284Tests": "node --test test/p284-stage-run-records.test.mjs test/p284-stage-run-records-live.test.mjs -> tests 42, pass 42, fail 0",
+    "fullSuite": "npm test -> tests 1477, pass 1462, fail 1, skipped 12, todo 2; failing locations ctx-b3-store-census.test.mjs:137, p3-absence.test.mjs:545, p3-absence.test.mjs:568",
+    "baseCommitControlForThoseThree": "git stash -u; git checkout 9171279; node --test test/ctx-b3-store-census.test.mjs test/p3-absence.test.mjs; git checkout feat/p284-stage-telemetry; git stash pop -- the SAME three locations fail at the base commit with the same messages",
+    "compareVerb": "node src/cli.mjs stage-runs compare --a 48453 --b 48021 -> comparable:false, coverage {48021:0, 48453:1}, exit 4",
+    "ci": "gh pr view 158 --json statusCheckRollup -> six check runs, every conclusion the string \"SUCCESS\": test, gate8, ldt-sha-comment-presence (each on run 35132995824 for the push and run 35132999500 for the pull_request, at head 7993e43)"
+  },
+
+  "constraintsHonored": [
+    "Lane claimed FIRST, before any read, per the dispatch's own ordering (exit 0; seat p284-stage-telemetry, P-284, claimed 2026-09-16T17:39:33Z).",
+    "FAN-DEPTH 0: no sub-agent was launched, ever (spawned 0, maxDepth 0). Every line of this lane was produced by this session directly.",
+    "The migration was NOT applied to any store; no deploy; no Cloud Run execution; no writer run with --apply against a store. The one database touched is a scratch container this lane started and disposes of.",
+    "The four gate files named in the dispatch were not touched (P-252 owns them concurrently).",
+    "The migration number was the next free one at PR time and is flagged for re-check before merge.",
+    "Every rate is recorded with its source and written into the record as a basis, so a later rate change cannot silently re-price history.",
+    "Exit-bounded verification throughout: no watch, no tail -f, no non-exiting server; the single background process is a database container.",
+    "Nothing was graded on a store-reading instrument (A-183): the customer predicate cannot exist for this row until the migration is applied and a real run writes a record, which is stated in probe.notApplicable rather than implied."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "PR #158 open and unmerged on hauska-factory (branch feat/p284-stage-telemetry, head 7993e43). Merging is not this lane's act; the migration must be applied to staging FIRST, per the dispatch.",
+      "owner": "integration seat",
+      "plan_row": "P-284"
+    },
+    {
+      "item": "migrations/0012_stage_run_records.sql is UNAPPLIED to every real store. Applying it on staging is the first act of the integration seat, and the row stays closed-partial until a real Cloud Run run writes a record.",
+      "owner": "integration seat",
+      "plan_row": "P-284"
+    },
+    {
+      "item": "RE-CHECK THE MIGRATION NUMBER BEFORE MERGE: 0012 was free at PR time; P-252 adds a migration concurrently on its own branch.",
+      "owner": "integration seat",
+      "plan_row": "P-284"
+    },
+    {
+      "item": "Twenty-one stages' worth of records are still unwritten: only stage 6/depth has writers. Stages 1, 3, 4, 5, 7, 9, 10 and the other eleven stage-6 rail writers are mapped with writesRecords: false and ownerRow P-285, and the audit COUNTS them rather than failing. When P-285 wires each runner, its phase flips to true and the audit starts failing on it that day -- nothing has to be remembered by hand.",
+      "owner": "P-285",
+      "plan_row": "P-285"
+    },
+    {
+      "item": "Fifteen PHASE_STAGE entries are marked provisional: true. Each quotes the header line its stage was read from (eleven stage-6 rail writers, one stage-3 acquirer, one stage-4 bind writer, one stage-7 atom re-stamp, one stage-9 gate scheduler). P-285 confirms or corrects them in one pass rather than re-deriving them.",
+      "owner": "P-285",
+      "plan_row": "P-285"
+    },
+    {
+      "item": "p2-juris-containment has NO stage: its own header calls it a 'containment-persist' job, not a rail and not a stage, so it is reported in the audit's `unassigned` bucket. It needs a stage number from whoever owns it, or its cost cannot be rolled up per stage.",
+      "owner": "unassigned: needs the row that owns p2-juris / containment",
+      "plan_row": "backlog: needs a row"
+    },
+    {
+      "item": "No cost has ever been measured against a real Cloud Run execution by this lane: the arithmetic is unit-tested against a synthetic billable series and the rate table is pinned, and the first staging run will be the first real measurement. A self-measuring job lands in METRIC_NOT_YET_PUBLISHED until the reaper backfills.",
+      "owner": "integration seat",
+      "plan_row": "P-284"
+    },
+    {
+      "item": "Nothing declares operator minutes anywhere in the fleet. The column, the basis and the CHECK exist and the environment plumbing is in place, but every real record will carry an unmeasured reason until a runbook or P-285 declares one. This is the honest state, not a defect, and the 200-dollars-and-one-hour kill cannot fire on the human half until it changes.",
+      "owner": "unassigned: needs a declarer (runbook or P-285)",
+      "plan_row": "backlog: needs a row"
+    },
+    {
+      "item": "Found while establishing the baseline, NOT this lane's to fix, and it matters more than it looks: test/ctx-b3-store-census.test.mjs's pinned-LDT-vs-mirror divergence guard only arms when an LDT checkout exists on disk, so it is DORMANT in CI (which has none) and RED on a machine that does. DEV_PROCESS says guardrails that do not survive a clone are not guardrails; this one does not. The mirror is behind pin bae48d40, whose resolveLeafPaths also emits baseFacts.situsAddress.",
+      "owner": "the row that owns scripts/ctx-b3/ and that test",
+      "plan_row": "backlog: needs a row"
+    },
+    {
+      "item": "Two p3-absence non-vacuity findings (test/p3-absence.test.mjs:545,568) remain declared as `{ todo: ... }` by their own author, annotated 'not fixed by this lane (out of scope): runP3Absence never calls the ledger's classify/serve functions'. Pre-existing, unchanged by this lane, still unfixed.",
+      "owner": "the row that owns OPS-21 S3 / P-134",
+      "plan_row": "P-134"
+    },
+    {
+      "item": "UNCOMMITTED doc_repo changes for the planner to commit by pathspec: _inbox/2026-09-16_p284-stage-telemetry_cp1.json, _inbox/2026-09-16_p284-stage-telemetry_cp2.json, _inbox/2026-09-16_p284-stage-telemetry_close.json and _inbox/2026-09-16_p284-stage-run-records-probe-output.txt. Four new files; nothing else in doc_repo was modified, because the lane claim was RELEASED at close and _catalog/lane_claims.json is byte-identical to its committed state (verified with git status after the release).",
+      "owner": "integration seat",
+      "plan_row": "P-284"
+    },
+    {
+      "item": "Lane claim p284-stage-telemetry was held by seat p284-stage-telemetry and has been RELEASED at close (`node scripts/lane-claim.mjs release --lane p284-stage-telemetry --seat p284-stage-telemetry` -> RELEASED, exit 0). No successor needs to release it.",
+      "owner": "this lane (done)",
+      "plan_row": "P-284"
+    },
+    {
+      "item": "Local scratch resources this lane created and disposed of: docker container p284-scratch-pg (postgres:18-alpine, port 55432). Stopped and removed at close; nothing in it is needed by any successor.",
+      "owner": "this lane (done)",
+      "plan_row": "P-284"
+    }
+  ],
+
+  "openItems": [
+    "The migration is not applied anywhere real, so no real record exists yet: the row is closed-partial by construction.",
+    "Operator minutes have no declarer in the fleet as of this close.",
+    "p2-juris-containment needs a stage number.",
+    "The 15 provisional stage readings wait on P-285.",
+    "The CTX-B3 dormant divergence guard and the two p3-absence findings are pre-existing and still open."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "fleetMemory": {
+    "LESSON": [
+      "A per-county number cannot come from a per-run row when the writer SWEEPS counties. Count the split where the writer knows it (inside the page loop, from the rows the UPDATE returned) rather than dividing the run's total by its scope list -- the scope list is a guess dressed as a denominator, and it would have poisoned the exact comparison the table exists to make.",
+      "The three-state rule has to be a CHECK in the schema, not a convention in the writer: the writer is the thing that would be wrong. A measured zero stays legal (>= 0 AND a basis), an absence carries a reason, and every other combination is refused by PostgreSQL.",
+      "A job cannot price its own execution while it is still running: the billable-instance-time series is not published until the execution ends. The honest state is a NAMED absence (METRIC_NOT_YET_PUBLISHED) that a later pass backfills, not a zero and not a guess.",
+      "`INSERT ... ON CONFLICT DO NOTHING RETURNING id` returning no rows is ambiguous to a reader (conflict OR nothing happened). Read the identity back and, if the read also finds nothing, refuse with 'the store did not answer the write' -- inferring a conflict from an absence is the silent-fallback defect class this program hunts.",
+      "A comparison built on a view can only compare what the view can SEE. Joining two counties through their own records means a county with no records produces zero rows, which reads as 'nothing to report'. If the question is 'does A beat B yet', build the pair from the names you were ASKED about and return an explicit incomparable flag.",
+      "A test that sweeps the source for a pattern must resolve the ways the codebase actually writes that pattern. A `phase: \"literal\"` sweep missed SEVENTEEN `phase: CONST` sites, which is the majority shape of a phase assignment in this repo: the guard was bypassed by writing a new job the ordinary way. Its green was 'I looked at a subset', not 'there is nothing there'.",
+      "A sweep must also not read PROSE. The stage-map module's own doc block quotes the pattern the sweep searches for, and the first widened run demanded a stage number for a sentence.",
+      "Test doubles must model the SQL they are asked to run. A blanket `{ rows: [] }` fake is not a model of RETURNING, and adapting the CODE to suit that fake would have removed real duplicate-detection."
+    ],
+    "DEAD-END": [
+      "Cost columns on `runs`. Wrong grain (one run per process invocation, many counties per run) and no way to carry a CHECK on the stage enum, a per-stage ended_at, or the three states.",
+      "Cost on `termination_records`. It records WHY a run ended, is written by a different actor at a different time, and would make a run's stage numbers depend on its ending cleanly.",
+      "Reading the comparison from stage_run_comparison when the caller has named two counties. Correct for a stage present in one county, silent for a county with no records at all.",
+      "A synthetic `runs` row for a dry run. It would put a never-run execution where the reaper reads, and make the audit wait for a run that will never end.",
+      "A `phase: \"literal\"`-only completeness sweep. Seventeen real assignment sites escape it."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-16: hauska-factory origin/main is 9171279 (fix(P-201) excluded is three states wearing one word, PR #156); the highest migration on origin/main is 0011a_parcel_gate_verdict_excluded_kinds.sql. PR #158 open at head 7993e43, six check runs all conclusion \"SUCCESS\".",
+      "2026-09-16: at 9171279, `git grep -n -E 'computeCost|compute_cost|costUsd|cost_usd|billable|instance_time|instanceTime' -- src` returns ZERO matches. Nothing recorded compute cost anywhere in the factory before this lane. (The 106 hits for `cost|usd|dollar|billing` are all property dollar VALUES.)",
+      "2026-09-16: 44 `phase:` assignment sites in src/, of which SEVENTEEN name the phase through a const. The phase string is the ONLY handle from a `runs` row to an OPS-24 stage; there is no stage column anywhere in the factory schema before 0012.",
+      "2026-09-16: all 14 migrations apply clean, in filename order, to an empty PostgreSQL 18 database; scripts/p284-stage-run-records-probe.sql then passes every assertion and rolls back.",
+      "2026-09-16: `npm test` on this Windows machine reports 3 failing test LOCATIONS -- ctx-b3-store-census.test.mjs:137, p3-absence.test.mjs:545, p3-absence.test.mjs:568 -- and the SAME three fail at 9171279 with the same messages. CI's `test` check is SUCCESS on the same commit.",
+      "2026-09-16: test/ctx-b3-store-census.test.mjs's pinned-LDT-vs-mirror guard skips itself when no LDT checkout is on disk, which is why CI is green and a developer machine is red."
+    ],
+    "OPEN": [
+      "0012 must be applied on staging before any real record can exist; the row stays closed-partial until a staging run writes one.",
+      "P-285 wires the remaining stage runners into writesRecords: true, and confirms the fifteen provisional stage readings.",
+      "p2-juris-containment needs a stage number.",
+      "Operator minutes need a declarer before the one-hour half of commitment 3 can fire.",
+      "The CTX-B3 divergence guard is dormant in CI and needs a row."
+    ]
+  }
+}

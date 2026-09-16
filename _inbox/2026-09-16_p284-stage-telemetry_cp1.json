@@ -1,0 +1,103 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p284-stage-telemetry",
+  "title": "design / pre-build adversarial checkpoint: at what GRAIN a per-county-per-stage number can even exist, and what the three states are made of",
+  "planRows": ["P-284"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-16_p284-stage-telemetry_dispatch.md",
+  "at": "2026-09-16T18:14:00Z (filed; the lane claimed at 2026-09-16T17:39:33Z, see the honesty note below)",
+  "seat": "p284-stage-telemetry",
+  "repo": "hauska-factory",
+  "worktree": {
+    "doc_repo": "P:/seat-worktrees/p284-stage-telemetry/doc_repo (this seat's registered worktree; not P:/doc_repo, the integration seat's checkout)",
+    "build": "P:/tmp/p284-stage-telemetry (fresh clone of origin/main under P:/tmp, per the dispatch)"
+  },
+  "branch": "feat/p284-stage-telemetry",
+  "baseCommit": "91712795ea2a1eb7c27f7328cf7f52fcb7810b59",
+  "headCommitAtCheckpoint": "7993e4322123c4a0443f29b4d6a36e6f14ffd165",
+  "pr": 158,
+  "snapshotDeclared": "repo hauska-factory, branch feat/p284-stage-telemetry, cut from origin/main at 9171279 (fix(P-201) excluded is three states wearing one word, PR #156). Nothing was read from a store: every measurement in this lane is fixture-based against the real module, or the real SQL against a scratch PostgreSQL 18 container started for this lane (p284-scratch-pg, port 55432, database factory, empty and disposable). LDT was never checked out. No deploy, no Cloud Run execution, no --apply against any store.",
+
+  "honestyNoteOnThisCheckpointsTiming": "CP1 and CP2 were FILED at the end of the lane, not mid-flight, the same way P-236 filed its pair. What is recorded here as pre-registered was genuinely fixed before the corresponding run: the falsifier block in the header of test/p284-stage-run-records.test.mjs and the assertions in scripts/p284-stage-run-records-probe.sql were both written before the runs they govern, and the four falsifiers are quoted from the dispatch rather than reworded after seeing results. What is NOT claimed: two of the decisions below were CHANGED by evidence produced later in the lane (the comparison's row set, and the completeness sweep's coverage). They are recorded here as the design, and CP2 records the change and the finding that forced it. A checkpoint that quietly rewrote itself to have been right all along would be the failure mode this note exists to prevent.",
+
+  "theQuestionThatDecidedTheDesign": {
+    "question": "The row asks for a per-(county, stage, run) record. Where does a per-county number even come from, when the writers that must produce it sweep MANY counties in ONE process?",
+    "whyItIsNotObvious": "`runs` already exists (src/control/runs.mjs, startRun) and is where every job's lifecycle already lands, so 'add columns to runs' is the cheap answer. But `runs` is one row per PROCESS INVOCATION. parcel-setback-cells.mjs and parcel-envelope-cells.mjs each open ONE run for a multi-city sweep whose scope can span several counties, and one stage (rail fill, stage 6) is many jobs. A `compute_cost_usd` column on `runs` would therefore have had to be divided across counties by hand, and the only thing available to divide by is the run's scope LIST -- which is a guess about how the work actually divided, made by exactly the person least able to know. The dispatch's own framing ('so Bell and Milam beat Burnet is a query') is per county, so a guessed denominator would have poisoned the one answer the table exists to give.",
+    "answer": "A new table, `stage_run_records`, keyed (run_id, county_fips, stage, coalesce(stage_detail,'')), with the writers measuring their own split where they know it: cellsMovedByCounty and companionRowsByCounty are counted inside processCityPage, per county, from the UPDATE ... RETURNING rows the writer actually moved. `runs` keeps what only it knows (image digest, engine sha, execution identity, the SIGTERM/reaper lifecycle) and the new table references it by run_id."
+  },
+
+  "codeReadFindingsBeforeAnyMeasurement": {
+    "note": "ENFORCEMENT: code reading outranks output measuring. Each of these was read at 9171279 before anything was built, and each one constrained the design rather than decorating it.",
+    "f1_nothing_records_compute_cost_anywhere": {
+      "where": "git grep -n -E 'computeCost|compute_cost|costUsd|cost_usd|billable|instance_time|instanceTime' 9171279 -- src",
+      "rule": "ZERO matches. The dispatch's premise was re-derived rather than inherited: a grep for every cost-shaped identifier in src/ returns nothing. (`grep -iE 'cost|usd|dollar|billing'` returns 106 lines, all of which are property DOLLAR VALUES -- valueBasis, dollar rails -- which is why the teardown's phrasing was 'only property dollar values'.)",
+      "consequence": "There is no existing cost path to extend, so the rate, its source, and the conversion all had to be built and pinned in one module. It also means there is nothing to compare the new numbers against, which is why the rate is recorded NEXT TO the number (compute_cost_basis) rather than assumed."
+    },
+    "f2_the_grain_finding": {
+      "where": "src/jobs/parcel-setback-cells.mjs, src/jobs/parcel-envelope-cells.mjs -- one startRun for a multi-city sweep; src/lib/... resolveCountyScope",
+      "rule": "One run row, N counties, and the counties are only known as a list on the run's scope",
+      "consequence": "The deciding fact for a new table over columns on `runs` (see theQuestionThatDecidedTheDesign)."
+    },
+    "f3_the_gate_files_are_shared_with_p252": {
+      "where": "the dispatch's own 'Do not touch' list: publish-gate.js, gate-exclusion-classifier.mjs, publish-readiness-gate.mjs, publish-gate-sched.mjs",
+      "rule": "P-252 is editing them concurrently",
+      "consequence": "The stage map maps the publish-gate-sched PHASE without touching the file, and every claim about the gate in this lane's artifacts is a claim about the phase name, never about that module's contents."
+    },
+    "f4_the_three_states_need_a_carrier_that_can_refuse": {
+      "where": "the dispatch item 2 text: 'Absent, zero and unmeasured are three different states'; DEV_PROCESS: every absence carries its basis",
+      "rule": "A nullable numeric column cannot express three states -- NULL/0/0 are indistinguishable and a writer that forgot to measure looks identical to a stage that cost nothing",
+      "consequence": "Each of compute_cost_usd and operator_minutes gets a three-column shape (value, basis, unmeasured_reason) plus a CHECK that refuses every other combination, so the DATABASE refuses a half-written state and not only the writer. A measured zero stays legal: >= 0 with a basis. This is the one design decision in this lane that must not be softened later."
+    },
+    "f5_the_phase_string_is_the_only_handle_from_a_run_to_a_stage": {
+      "where": "git grep -n -E '^\\s*phase[,:]' 9171279 -- src -- 44 assignment sites",
+      "rule": "runs.phase is free text. There is no stage column and no enum in the database before this migration. 44 sites name a phase, some as literals and some through a const.",
+      "consequence": "The audit's central judgement -- 'this ended run owed a record and has none' -- rests entirely on a map from phase to stage, so that map is a module (src/lib/stage-map.mjs) with a test that walks src/ and fails on any phase it neither maps nor declines. 44 sites is also why the map is generated from a SWEEP and not from a hand list: a hand list would be right today and wrong at the next job."
+    }
+  },
+
+  "preRegisteredFalsifiers": {
+    "note": "Quoted from the dispatch, answered before the runs. The predictions live in the header block of test/p284-stage-run-records.test.mjs and in the NOTICE assertions of scripts/p284-stage-run-records-probe.sql, both written before their runs.",
+    "F1": {
+      "claim": "A run killed mid-stage still leaves a record with outcome and ended time (the reaper path).",
+      "predicted": "terminate() in a live reaper fixture ends with the record closed as 'killed' (never 'succeeded'), ended_at set, and a second reap of the same run not reopening or double-closing it.",
+      "wouldFalsify": "an open record left behind by the reaper, or a killed run whose record says succeeded -- either one makes every later average wrong."
+    },
+    "F2": {
+      "claim": "A stage that is not a Cloud Run execution records cost as null with a reason, not 0.",
+      "predicted": "COMPUTE_UNMEASURED.NOT_A_CLOUD_RUN_EXECUTION (and LOCAL_OR_TEST_HOST) as compute_cost_unmeasured_reason with compute_cost_usd NULL, and the schema refusing the write if the code were to send 0 with no basis.",
+      "wouldFalsify": "any path where a non-Cloud-Run stage writes a number, or where 'unmeasured' arrives as 0."
+    },
+    "F3": {
+      "claim": "The comparison query returns a row per stage for two fixture counties, and a stage missing from one county shows as missing, not as zero.",
+      "predicted": "one row per stage, per 10,000 parcels, with a NULL ratio and a stated reason where a side is absent, and the missing side never contributing a 0.",
+      "wouldFalsify": "a stage of one county omitted from the output entirely (so 'not comparable' and 'equal' look the same), or a 0 in a per-parcel figure whose denominator does not exist."
+    },
+    "F4": {
+      "claim": "The depth writers' dry runs produce records.",
+      "predicted": "a dry run (run_mode 'dry-run', run_id NULL) still writes a record with outcome and rows_written, and the two writers' existing tests keep passing.",
+      "wouldFalsify": "a dry run that leaves no record -- the run whose cost you most want -- or a dry-run record that invents a run_id and puts a never-run execution into `runs`, where the reaper reads."
+    }
+  },
+
+  "designAlternativesConsideredAndRejected": {
+    "extend_runs_with_cost_columns": "REJECTED on grain (f2). Would have needed either a column per stage or a JSON blob; neither can carry a CHECK on the stage enum, a per-stage ended_at, or the three-state constraints, and the per-county split would have been a guess.",
+    "extend_termination_records": "REJECTED. It is per-run, it is the reaper's record of WHY a run ended, and it is written by a different actor at a different time (src/control/termination.mjs). Adding stage cost to it would mean the run's ending and the stage's metering share a row, so a run that never ended cleanly would lose its stage numbers with it.",
+    "a_stage_costs_side_table_keyed_to_run_only": "REJECTED. Re-introduces the per-county split problem and separates the number from the outcome it belongs to.",
+    "hardcoding_the_rate_in_the_job": "REJECTED. The rate is a published Cloud Run Jobs tier-1 figure that will change; it lives in one exported frozen object (COMPUTE_RATE_JOBS_TIER1_USD) with its source line, and it is written into each record as compute_cost_basis so a later rate change cannot silently re-price history.",
+    "a_single_thirteen_value_stage_column_without_sub_stage": "REJECTED. The scope's own Burnet table calls the depth writers '6b'. Making depth a fourteenth enum value would contradict the dispatch's 'the thirteen OPS-24 stages, 0 to 12'; making it 6 with no marker would make the two different instruments indistinguishable in a comparison. It is stage 6 with stage_detail 'depth'.",
+    "inventing_a_run_row_for_a_dry_run": "REJECTED (F4). A dry run takes no lease and executes no run; a synthetic `runs` row would put a never-run execution where the reaper reads and would make the missing-record audit wait for a run that will never end."
+  },
+
+  "adversarialReviewOfMyOwnPlan": {
+    "howThisTableCouldBeWrongAndStillLookRight": [
+      "It reports a per-county cost that is really a per-run cost divided by a list. Closed by counting inside processCityPage from the UPDATE ... RETURNING rows.",
+      "It writes a 0 for a cost nobody measured. Closed by the three-state CHECK, which is in the schema and not only in the writer -- the writer is the thing that would be wrong.",
+      "It closes a stage record as 'succeeded' because the RUN succeeded, when the stage itself was killed. Closed in the reaper: stageOutcomeForExitKind never maps a non-success exit to 'succeeded', and there is a test for exactly that.",
+      "It leaves a phantom OPEN record for a killed run, which every later median silently includes. Closed by closeOpenStageRunsForRun being called from the reaper's terminate path.",
+      "It counts a run's counties from a scope field that is empty, and then reports no missing records for it. Closed by the `unkeyable` bucket: a run whose scope names no county is REPORTED rather than silently checked-and-passed."
+    ],
+    "howThisAuditCouldBeOverBroad": "A phase mapped to the wrong stage makes the audit demand a record that no runner will ever write, which turns the audit red for a reason no reader can act on -- and a gate that is red for a reason nobody can act on gets ignored, which is how the last four controls died. Closed by the writesRecords/pendingWriter split: a phase that IS a stage but has no writer yet is COUNTED, not failed. The cost of that choice is that the audit is not yet a complete gate for stages 1-5 and 8-12; it is stated in the map (ownerRow P-285) rather than hidden."
+  },
+
+  "scopeBasis": "hauska-factory only, and inside it only the telemetry path: the migration, src/lib/stage-map.mjs, src/lib/compute-cost.mjs, src/lib/operator-minutes.mjs, src/control/stage-runs.mjs, the reaper's close/backfill hook, the two depth writers, src/cli.mjs, and tests. The four gate files named in the dispatch were not touched (P-252 owns them). No store was written; the scratch PostgreSQL container exists only to validate the migration and the writer's real SQL, and the probe script ROLLBACKs. No deploy, no Cloud Run execution, no --apply. Nothing was graded on a store-reading instrument: the customer predicate (scripts/surface-probe.mjs) cannot exist for this row until the migration is applied and a real run writes a record, which is why the close is closed-partial with a declared notApplicable probe."
+}

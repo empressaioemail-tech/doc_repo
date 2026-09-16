@@ -1,0 +1,73 @@
+{
+  "artifact": "CP1",
+  "lane": "p249-envelope-unlock",
+  "planRows": ["P-249"],
+  "seat": "p249-lane",
+  "filedAt": "2026-09-16T18:17:18Z",
+  "repos": {
+    "legacy-design-tools": {
+      "clone": "P:/tmp/legacy-design-tools-p249-envelope-unlock",
+      "branch": "fix/p249-envelope-unlock",
+      "startCommit": "ba6a5a69aebf8ac5e4900a8e9b50bfd04a04ec27",
+      "headCommit": "52ac6c95d19c1fe39759a1c13338e181d7eab851"
+    },
+    "hauska-map": {
+      "clone": "P:/tmp/hauska-map-p249-envelope-unlock",
+      "branch": "fix/p249-envelope-unlock",
+      "startCommit": "88ac6c517b12701502d88decfdd7cd938aaaa621",
+      "headCommit": "ee7e3c760bbbe5d13b1610239236738e21640108"
+    }
+  },
+  "question": "For a parcel that HAS a baked snapshot and whose facets say status \"ok\" (Pflugerville 48453:427599), where does the drawn polygon come from: the atom's geojson, or a live place/buildable-envelope call?",
+  "answer": "The LIVE call. The atom carries no geometry at all, so no baked facet holds a drawable envelope polygon for this parcel; the polygon is fetched by the live place/buildable-envelope (labelEdges+derive) POST fired from fact-sheet-resolver, and that fetch is gated on the BAKED FACETS' envelope status. So the integration seat's reading is REFUTED in its strong form (the facets do not supply the polygon) and CONFIRMED in its weak form (for a baked parcel the facets decide whether a polygon is ever drawn). Consequence: the hauska-map branch is the real fix for the DRAWING, and the LDT change is necessary for the FIGURE and for the served outcomes but not sufficient for the polygon.",
+  "evidence": [
+    {
+      "claim": "Atom/baked facets carry setback scalars and an area outcome, never a shape.",
+      "file": "hauska-map:apps/property-explorer/src/lib/live-envelope-augment.ts",
+      "lines": "2-3, 14-16",
+      "quote": "\"Facets carry setback scalars only; geometry is never trusted from depth-warm atoms.\" / \"Live-derive still owns geometry (the atom never carries a shape)\"."
+    },
+    {
+      "claim": "The live derive is gated on the BAKED FACET status, not on the absence of a snapshot. This is the line the old declined branch tripped.",
+      "file": "hauska-map:apps/property-explorer/src/lib/live-envelope-augment.ts",
+      "lines": "69-81",
+      "quote": "facetsNeedLiveEnvelopeDerive(): `if (!env || env.status !== \"ok\") return false;` then requires at least one of front_ft / side_ft / rear_ft / side_interior_ft / side_corner_ft."
+    },
+    {
+      "claim": "The card no longer fetches an envelope itself; it resolves ONE sealed fact sheet (so the source preference in InspectCard.tsx's header is now a data-source statement, not two fetches).",
+      "file": "hauska-map:apps/property-explorer/src/browse/InspectCard.tsx",
+      "lines": "6-13 (header), 912-972 (the single resolve + onEnvelope)",
+      "quote": "\"1. PREFERRED the BAKED node facets ... 2. FALLBACK the live buildable-envelope client. Used ONLY when a node has NO baked snapshot\" (lines 6-13); the effect at 925-969 resolves the sheet and emits onEnvelope(state.env, parcelNodeId)."
+    },
+    {
+      "claim": "The sheet runs the live derive when the facets need one, and builds the envelope from the AUGMENTED facets.",
+      "file": "hauska-map:apps/property-explorer/src/lib/fact-sheet-resolver.ts",
+      "lines": "2745-2762, 2771",
+      "quote": "`if (facetsNeedLiveEnvelopeDerive(facets)) { envelopeFacets = await augmentFacetsWithLiveEnvelope(...) }` then `const envelope = envelopeValue(envelopeFacets, setbacks, lotAreaSqFt);`"
+    },
+    {
+      "claim": "The POST is the same place/buildable-envelope client call, and the geometry it returns is what gets stamped on the facet (source \"live-derive\").",
+      "file": "hauska-map:apps/property-explorer/src/lib/live-envelope-augment.ts",
+      "lines": "146-155 (fetchBuildableEnvelope), 183 (applyLiveDeriveToFacets), 249-257 (geojson stamped source: \"live-derive\")",
+      "quote": "`let live = await fetchBuildableEnvelope({ address, lat, lng }, input.cortexBase, input.fetchImpl ?? fetch);` ... `properties: { kind: \"buildable-envelope\", source: \"live-derive\" }`"
+    },
+    {
+      "claim": "The only other read of facets.envelope.geojson is a placement SEED (a centroid), not the drawn outline; even there the live-augmented geometry supersedes it.",
+      "file": "hauska-map:apps/property-explorer/src/lib/fact-sheet-resolver.ts",
+      "lines": "2900-3010",
+      "quote": "\"1. The baked envelope polygon: real coordinates, already on hand\" is used to derive a centroid seed; the drawn envelope still comes from envelopeFacets after augmentation."
+    },
+    {
+      "claim": "On the serving side the atom's outcome is read in exactly one place, so no second path can serve an unverified figure.",
+      "file": "legacy-design-tools:artifacts/api-server/src/lib/buildableEnvelope/composeBuildableEnvelopeDerivation.ts",
+      "lines": "135-144",
+      "quote": "`reconcileWithAtomEnvelope(rawDerived, atomChain?.buildableEnvelope?.outcome ?? null, { depthWarmPromotion, sourceCitation })` is the sole consumer of the atom outcome; the quoted atom sentence lives at reconcileAtomEnvelope.ts:176."
+    }
+  ],
+  "consequence_for_build": [
+    "hauska-map: the unverified no-buildable-area branch must serve status \"ok\" + real setback scalars, or the live derive never fires and no polygon is ever drawn (this was the actual over-refusal). The unverified atom's zero must not be served, and the augmentation must not stamp its own recomputed area onto a withheld payload.",
+    "legacy-design-tools: reconciliation must be gated on the atom's VERIFICATION (depthWarmPromotion / sourceCitation), so an unverified zero cannot empty a live envelope that has a district and a table, and an unverified positive area cannot replace the live figure.",
+    "Neither repo may take geometry from the atom (there is none): the polygon is always the live derive's."
+  ],
+  "status": "complete"
+}

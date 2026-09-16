@@ -1,0 +1,65 @@
+﻿=== scripts/p284-stage-run-records-probe.sql against a database with all 14 migrations applied ===
+database: postgres:18-alpine, fresh, factory; applied by node src/db/migrate.mjs; command:
+  docker exec -e PGPASSWORD=scratch p284-scratch-pg psql -U postgres -d factory -v ON_ERROR_STOP=1 -f /tmp/probe.sql
+
+BEGIN
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+DO
+psql:/tmp/probe.sql:56: NOTICE:  ok: a measured cost and declared operator minutes are accepted with their bases
+INSERT 0 1
+DO
+psql:/tmp/probe.sql:68: NOTICE:  ok: a measured ZERO is a value, not an absence: >= 0 and a basis are enough
+INSERT 0 1
+psql:/tmp/probe.sql:80: NOTICE:  ok: an unmeasured cost IS a row, carrying its reason rather than a zero
+DO
+psql:/tmp/probe.sql:90: NOTICE:  ok: a NULL cost with no reason is refused by the schema
+psql:/tmp/probe.sql:100: NOTICE:  ok: a measured cost with no basis is refused
+psql:/tmp/probe.sql:110: NOTICE:  ok: operator minutes must name declaredBy, declaredAt AND stopPoint
+DO
+DO
+DO
+psql:/tmp/probe.sql:122: NOTICE:  ok: run_mode=apply requires a run_id
+psql:/tmp/probe.sql:131: NOTICE:  ok: stage is bounded to 0..12
+psql:/tmp/probe.sql:140: NOTICE:  ok: county_fips must be five digits
+psql:/tmp/probe.sql:149: NOTICE:  ok: a closed outcome requires an ended_at
+DO
+DO
+DO
+DO
+DO
+DO
+--- stage_run_speed: one row per (county, stage, sub-stage), with the unmeasured counted ---
+psql:/tmp/probe.sql:160: NOTICE:  ok: the identity is a real key (run_id NULL case)
+psql:/tmp/probe.sql:170: NOTICE:  ok: a refused write leaves no row behind
+ county_fips | stage | stage_detail | records | rows_written | compute_cost_usd | compute_cost_unmeasured_records | operator_minutes 
+-------------+-------+--------------+---------+--------------+------------------+---------------------------------+------------------
+ 48021       |     6 | depth        |       1 |              |                  |                               1 |                 
+ 48453       |     6 | depth        |       1 |         1200 |         0.079200 |                               0 |            25.00
+ 48453       |     6 | depth-zero   |       1 |              |         0.000000 |                               0 |             0.00
+(3 rows)
+
+--- per 10k: 48453 has three parcel rows so it normalises; 48021 has none, so its ratios are NULL, not 0 ---
+ county_fips | stage | stage_detail | parcels | wall_clock_s_total | wall_clock_s_per_10k | wall_clock_s_median_per_10k | compute_cost_usd_per_10k 
+-------------+-------+--------------+---------+--------------------+----------------------+-----------------------------+--------------------------
+ 48021       |     6 | depth        |         |        1800.000000 |                      |                             |                         
+ 48453       |     6 | depth        |       3 |        1800.000000 |         6000000.0000 |                6000000.0000 |               264.000000
+ 48453       |     6 | depth-zero   |       3 |           1.000000 |            3333.3333 |                   3333.3333 |                 0.000000
+(3 rows)
+
+--- comparison: a stage only one county has survives, with missing_a/missing_b set ---
+ county_a | county_b | stage | stage_detail | records_a | records_b | missing_a | missing_b | wall_clock_s_total_a | wall_clock_s_total_b 
+----------+----------+-------+--------------+-----------+-----------+-----------+-----------+----------------------+----------------------
+ 48021    | 48453    |     6 | depth        |         1 |         1 | f         | f         |          1800.000000 |          1800.000000
+ 48021    | 48453    |     6 | depth-zero   |           |         1 | t         | f         |                      |             1.000000
+(2 rows)
+
+DO
+ROLLBACK
+rolled back: the scratch database is left as it was found
+psql:/tmp/probe.sql:193: NOTICE:  ok: no denominator -> NULL ratios, never 0
