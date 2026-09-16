@@ -1,0 +1,36 @@
+{
+  "lane": "scaleup-le-customer-experience",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review",
+  "seat": "dispatch-planner-le",
+  "whatWasBuilt": [
+    "Deep-probed 24 of the 39 fixture-list buckets' primary fixtures live: map surface (facets + buildable-envelope POST, via a helper script in scratchpad that imports scripts/surface-probe.mjs's own extractFacets/extractEnvelope so extraction logic matches the canonical instrument) and MCP surface (get_smart_site, both batched and single calls; export_instrument for one PDF leg).",
+    "All 6 counties represented in the deep-probe set: Bastrop x4, Hays x5, Travis x4, McLennan x4, Williamson x3 (map) + 5 (MCP, wider than the map set once the bake-gap was found), Caldwell x4.",
+    "Confirmed both required falsifier fixtures live: Pflugerville 48453:427599 and Kyle PC R2 48209:100698, plus the Bastrop control 48021:34049.",
+    "PDF leg: export_instrument(kind=dossier) on the Bastrop control succeeded (valid ~436 KB PDF, Solo-accessible, confirms P-199). Page-content grading not completed: this environment has no PDF renderer (pdftoppm/poppler-utils absent); leg graded measured-accessible, unmeasured-content."
+  ],
+  "adversarialChecks": [
+    {
+      "check": "Is the R-2 'figure stays refused' violation real, or an artifact of my own extraction script?",
+      "result": "Checked two independent code paths for it: (1) the facets GET payload's own env.buildableAreaSqFt field (read directly, not through my helper), (2) the separate buildable-envelope POST payload's structured buildableAreaSqFt field AND its prose disclosure string. All three agree on the same numbers (19052 / 5152 / 805 sq ft) on the 3 of 3 'status:ok' fixtures tested. Not an extraction artifact -- the raw JSON itself carries the number twice per fixture, in two different response shapes."
+    },
+    {
+      "check": "Is the Williamson MCP bake-gap real, or a batch-size/argument mistake on my part?",
+      "result": "Re-tested with single, non-batch calls at both stub and node depth on 5 different Williamson parcels across 3 cities (Round Rock x2, Leander x2, Georgetown x1); all 5 returned the identical baked_snapshot_not_found/parcelExists:unmeasured pair. Cross-checked with find_parcel on 2 of the 5 ids using their real situs addresses pulled fresh from the factory store -- both resolved instantly via situs search, proving the ids and the underlying parcel data are real and the miss is specific to get_smart_site's bake, not a bad id."
+    },
+    {
+      "check": "Does the spec actually fail the two required falsifier parcels, or did I write it to pass everything?",
+      "result": "Re-read spec sections 1, 3, 4, 8 against the live Pflugerville and Kyle reads after writing the spec (spec was written first, per the lane's own step order, before any live read). Pflugerville fails section 1 (city absent from onRecord/composedAddress) and section 8 (jurisdiction present elsewhere but not surfaced). Kyle PC R2 fails section 3 (PUD message not shown) and section 4 (Bastrop's own wording on a Kyle lot; MCP shows a confirmed-absence-shaped state for a real planned-development district). Falsifier 1 scores PASS (the spec is not too weak)."
+    },
+    {
+      "check": "Does at least one city score well, per falsifier 2?",
+      "result": "The Bastrop control (48021:34049, 1109 Pecan St -- the exact parcel the operator confirmed looks right) scores well on every city-specific dimension: composed address with city+ZIP, zoning with jurisdiction, setbacks with citation AND a real effective date (2026-04-14), envelope drawn with a real polygon, flood present with zone, land use present, year built present, owner and ag-valuation correctly and honestly refused. Its only defects (the R-2 figure leak, the missing salesHistory field, the valueHistoryFact tier-gate leak) are present on every fixture regardless of city, so they are recorded as cross-cutting/program-wide defects rather than scored against Bastrop specifically -- otherwise no city could ever 'score well' and falsifier 2 would be unfalsifiable by construction."
+    }
+  ],
+  "scopeDecisionHeld": "39 total fixture-list buckets exist (all delivered in the fixture list artifact); 24 were deep-probed on the map leg, ~10 on the MCP leg (including the Williamson bake-gap investigation, which needed extra calls beyond the original plan once the pattern emerged), 1 on the PDF leg. The remaining ~15 buckets (mostly smaller Travis/Williamson sub-100-parcel city fragments and a few no-table/PUD secondary fixtures) are listed in the fixture artifact but not live-graded this pass -- named explicitly in the report's per-city tables and in leave_behind, not silently omitted.",
+  "risksNowConfirmed": [
+    "D1 (buildable-area figure leak) is the single highest-severity finding: a direct, structural, reproducible (3/3) violation of a named, dated operator ruling (Ruling B reversed, 2026-09-11 / R-2), found on the exact endpoint the ruling names.",
+    "D6/D7 (Williamson county-wide MCP bake gap + map address-composition gap) is the broadest-scope finding: reproduced on every single Williamson fixture tried, across 3 cities, on 2 independent surfaces."
+  ],
+  "nextStep": "Write the final report with per-bucket scorecards and the full defect list, the close JSON, then release the lane claim."
+}

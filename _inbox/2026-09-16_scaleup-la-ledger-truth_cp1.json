@@ -1,0 +1,23 @@
+{
+  "lane": "scaleup-la-ledger-truth",
+  "seat": "dispatch-planner-la",
+  "checkpoint": "CP1-design",
+  "filedAt": "2026-09-16T13:00:00Z",
+  "preRegisteredFalsifiers": [
+    "1. setbackFrontFt county totals by kind (value/refused/unaccounted/absent-verified/not-applicable) must equal _inbox/2026-09-16_setback_parcel_grain_results.txt AND a live run of scripts/six-county-completeness.mjs.",
+    "2. Mode 1 on 48209:97658 must show setbackSideFt as legacy-transitional, and an envelope atom with outcome no-buildable-area from source_adapter cortex-tier1-snapshot-breadth-bake disagreeing with the ledger's own setbacks; 48453:427599 must show a buildable envelope atom.",
+    "3. NOT VACUOUS: a self-test fixture where cell and atom disagree must report disagree; a fixture with no atom must never report agree.",
+    "4. Any count that cannot be made exact is labelled a sample, with its size and selection rule."
+  ],
+  "architecturePlan": {
+    "storeAccessPattern": "Reused scripts/six-county-completeness.mjs's psql spawnSync pattern verbatim (DSN from env, never printed; default_transaction_read_only + statement_timeout set every session). Atoms-store sessions additionally set PGOPTIONS per the operational constraint.",
+    "serveStateModel": "Read live from hauska-engine services/retrieval-api/src/parcel-record-reader.ts (origin/main, via git show -- never checked out into the shared worktree) rather than assumed: the one-reader's serve state is a pure function of (a) engine-vendored slate membership and (b) the COUNTY-LEVEL gate verdict (parcel_gate_verdict has no place_key column -- verdicts are per county+rail, not per parcel). This instrument's own vocabulary (record/refused/legacy-transitional/not-cut-over/atom-chain/other) is a deliberate superset of the reader's three-value enum, justified per-bucket from each rail's own *FactServeCutover.ts module doc (legacy-design-tools origin/main).",
+    "atomFamilyMap": "P-162 (OPS-16 row, ADDED 2026-09-11, 'RAIL-TO-ATOM MAP') has not landed a code-owned map as of this build. This instrument's RAIL_TO_ATOM_FAMILY is its own provisional, evidence-based map, cross-checked against live atoms for both probe parcels before use, not assumed.",
+    "queryBudget": "Cell-kind counts: 12 queries total (1 county-wide + 1 city-split per county x 6), all indexed on the (place_key,rail_key) primary key's prefix range -- exact, not sampled. Atom presence/agreement for mode 2: SAMPLED, 200 parcels/county selected by `order by md5(place_key)` (the same deterministic convention scripts/vendor-testset-ctx.mjs / P-176 already uses), declared as a sample with its size and rule. road-node has no parcel-bounded index (confirmed against pg_indexes) and is declared un-sampleable at parcel grain, county-level only.",
+    "heavyScanNote": "No full-table scan issued against either store. Largest single query: the exact 6-county-scoped buildable-envelope no-buildable-area count (index-bounded on entity_type + the parcelNodeId partial index), ~31s. Runs sequentially, one county at a time, per the heavy-scan serialization rule; this lane holds the atoms store until its own reads finish, then releases via the atoms-reads-done marker for L-B."
+  },
+  "openQuestionsAtDesignTime": [
+    "Whether hauska-engine's vendored slate JSON and LDT's own PARCEL_RECORD_SLATE currently agree -- answered during CP1 exploration: they do NOT (6 Hays dollar-rail entries live in LDT post-P-180 lift, 2026-09-13T19:30:32-05:00, never resynced into the engine's vendored copy last touched 2026-09-13T16:14:12-05:00, three hours earlier). Reported as a finding, not resolved by this lane.",
+    "Whether place_layer_snapshots (the 'third copy' the dispatch's premise names) lives in FACTORY_DATABASE_URL_RO or ATOMS_DATABASE_URL -- answered: neither. `select table_name from information_schema.tables` against FACTORY_DATABASE_URL_RO does not list it; it is legacy-design-tools' own Postgres/Neon store (per P-183's own text), for which this lane holds no credential. Declared as a measurement boundary, not silently assumed reachable."
+  ]
+}
