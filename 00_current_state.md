@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-13 (session close / model-switch reconciliation)
+last_updated: 2026-09-16 (session close / design completion and five lenses)
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -196,3 +196,4 @@ findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 - Hauska inbound meter / ICC store UPDATE waits a quiet L26 slot.
 - `MEMORY.md` exists (six prose rows, unenforced). Do not invent a second copy this close.
 - cortex-api traffic is pinned. Read `status.traffic[]` before asserting serving. Baked `CORTEX_USER_DAILY_API_LIMIT=50000` in LDT deploy-canary (`ci-cortex-daily-limit-50000`). Do not shift staging `00644-soz`.
+- **SmartCity design is 10 of 15 nav surfaces, not "48 boards" (2026-09-16).** All nine lenses now have a design; Citizen (G-142), Records search (G-147) and People and access (G-143) are the three uncovered surfaces, and Assets and Connections are excluded by ruling. Measured by `node scripts/govtech/design-completion-gate.mjs`, which refuses rather than reports and exits 1 while design is unfinished. **Five designs past DRAFT still carry no instrument and two are dispatched to build (G-148, HELD).** Separately: the Bastrop zoning the map serves comes from a city ArcGIS layer last edited 2023-04-28 while three newer ones are published, and nothing errors, because the query succeeds (G-140, `_inbox/2026-09-15_bastrop_zoning_layer_findings.md`). Session `_sessions/2026-09-16_design_completion_and_five_lenses_claude_code.md`, amendments A-136 to A-139.

@@ -1,5 +1,8 @@
 # Design index
 
+**Picking SmartCity back up? Open [SMARTCITY_PACKAGE.md](SMARTCITY_PACKAGE.md) first.** It carries the live
+product link, the design gallery, the canvas, the measured state of design and build, and what is owed by whom.
+
 One line per design. Read this first; open the folder README for the artifact URL and status.
 
 - [SmartCity Overview lens](smartcity-overview-lens/) — v2 Overview at three data states; Connections promotes on empty. RATIFIED, dispatched G-120. Map pinned G-121.
