@@ -37,7 +37,8 @@
  */
 import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
 export const SIX = {
@@ -327,4 +328,5 @@ function main() {
   process.exit(0);
 }
 
-main();
+// Only when run directly: scripts/setback-parcel-census.mjs imports classifyReason (P-255).
+if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) main();

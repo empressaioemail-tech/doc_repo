@@ -438,12 +438,13 @@ across the six.
 
 - **131,357 parcels** in the six have setbacks on record and no drawn envelope. The largest
   groups: Georgetown 23,484, Round Rock 17,761, Leander 17,045, Kyle 9,847, San Marcos 9,335.
-  **Rev 4: this is an upper bound on what P-249 unlocks.** The instrument counts parcels with a
-  `setbackFrontFt` value; P-249's predicate needs a district and a table. The five named cities
-  hold 77,472 (59 percent) and all have layers and tables; the remaining 53,885 are where the
-  predicate is least likely to hold. P-255 measures the predicate population. **Denominators
+  **Rev 4, measured (P-255, A-185): this IS P-249's predicate population.** The teardown held
+  that the count (parcels with a `setbackFrontFt` value) differs from the predicate (a district
+  and a table). In the ledger they coincide: all 387,237 setback value cells carry
+  `resolvedTableKey` and `districtCode`, and the census counts 131,357 both ways. **Denominators
   differ:** the 490,185, 208,868, 153,775 and 123,706 figures above are atom counts; 131,357 is a
-  parcel count. How many parcels are blocked by a reason-less zero is measured nowhere yet (P-255).
+  parcel count. Parcels blocked by a reason-less zero (an empty reason): 26,597, Hays 23,712 and
+  Caldwell 2,885 (P-255).
 - **Waco and Austin have large setback populations but small gaps in that bucket, because no
   envelope atom exists for most of their parcels.** P-249 does not reach them; a re-derive (R5)
   does.
@@ -532,7 +533,8 @@ authority where it and a table below differ.
 | C4 | P-275 | L4 | P-267 | V1 | P-176 |
 | C5 | P-276 | L5 | P-268 | V2, V4 | P-283 |
 | C7 | P-277 | new: dollar rails | P-269 | V3 | done |
-| C8 | P-278 | new: C9, C10, C11 | P-279, P-280, P-281 | new: section 4.8 | P-253, P-254, P-282, P-284 to P-291 |
+| C8 | P-278 | new: C9, C10, C11 | P-279, P-280 (built), P-281 | new: section 4.8 | P-253, P-254, P-282, P-284 to P-291 |
+| new: a county-scoped floor rail | P-292 | | | | |
 
 **L-E's defect list, renamed XD-1 to XD-16** (rev 3 cited it as D1 to D16, which collided with
 section 4.5):
@@ -574,8 +576,11 @@ section 4.5):
   classified first into one of the four categories in section 2b.
 - **The district misses** in the wired cities, 125,212 parcels, Travis heavy (60,115), led by
   Austin (Travis and Williamson parts together, about 60,000), Round Rock, Leander, Kyle, Waco,
-  Cedar Park, San Marcos, Pflugerville, Hutto and Bastrop. P-233's census counted 172 uncodified
-  district codes.
+  Cedar Park, San Marcos, Pflugerville, Hutto and Bastrop. **Measured (P-255, A-185): 61,725 of
+  them (49.3 percent) are planned-development codes** (PUD, PDD, PD, PC), which A-164 answers
+  with the PUD message through P-256 and P-257, not by acquisition. **The acquisition half is 209
+  distinct (city, district) units holding 63,487 parcels**, led by Austin SF-4A (15,664), Austin
+  CS (4,111, a parser case for P-259), Austin SF-6 (2,951) and Waco's O-2, C-3, M-2, C-2 and O-3.
 
 The halves are not comparable workstreams. Travis's work is almost all district tables in cities
 whose layer we hold; McLennan's is almost all no-table cities, the expensive half. "Largest
@@ -756,7 +761,7 @@ a leg of the Phase 0 exit (section 5), through P-254.** The row for each item is
 |---|---|---|---|---|
 | P-253 | The exit instrument repaired: a false-earned predicate per setback rail, the `no-source` rows tied to the roadmap by a check, the `deferred` rows tied to P-264's residual, any county, the rail list read from the factory | The ledger leg of section 5; the only check that can be pointed at Burnet | doc_repo | now |
 | P-254 | `surface-probe.mjs` OPS-24 legs over the 39-bucket fixture list, with build identity and fresh contexts | The customer leg of section 5 | doc_repo | now |
-| P-255 | The census instrument (S0) plus P-249's predicate population | Makes 219,472 re-runnable and gives P-249 a count it can be measured against | doc_repo | now |
+| P-255 | The census instrument (S0) plus P-249's predicate population | Makes 219,472 re-runnable and gives P-249 a count it can be measured against. **Built and run 2026-09-16** (`_inbox/2026-09-16_setback_parcel_census.json`) | doc_repo | done |
 | P-282 | A divergence harness for paired implementations | C2, 19 instances; P-249, P-260, P-262 and P-265 each land a pair on it | engine, LDT, factory | now |
 | P-284 | Stage and cost telemetry, as a migration | OPS-24 law 5 and commitment 3; "Bell and Milam beat Burnet" as a query | hauska-factory | before Burnet |
 | P-285 | The farm runner | Nothing runs a county end to end with per-stage records | hauska-factory | skeleton before Burnet's stage 3 |
@@ -988,8 +993,9 @@ two farms.
   P-251 (operator-ruled).
 
 **The critical path to Burnet is the Phase 0 exit, and its longest pole is P-258**, the setback
-acquisition campaign: every (city, district) unit across the 54 no-table cities and the district
-misses in the wired cities. It is not P-201, P-252 or P-249. Every other Phase 0 row is shorter,
+acquisition campaign: the 54 no-table cities (94,260 parcels) and 209 (city, district) units in the
+wired cities (63,487 parcels). The other 61,725 district-miss parcels are planned developments that
+P-256 and P-257 answer with the PUD message (A-185). It is not P-201, P-252 or P-249. Every other Phase 0 row is shorter,
 and the farm machinery builds alongside the campaign. If the operator wants Burnet sooner, the
 lever is a ruling on how much of P-258's tail must finish first; nothing else moves the date.
 
@@ -997,7 +1003,9 @@ lever is a ruling on how much of P-258's tail must finish first; nothing else mo
 
 ```
 START NOW, in parallel
-  P-252  zero-earned refusal ........... hauska-factory, gate files
+  P-252  zero-earned refusal ........... hauska-factory, gate files (PR #157 green; runs in
+         production only after P-292)
+  P-292  maxImperviousCoverPct not-applicable outside Travis ... hauska-factory (before P-252 runs)
   P-284  stage and cost telemetry ...... hauska-factory, a migration (different files)
   P-249  envelope unlock ............... legacy-design-tools + hauska-map
   P-248 -> P-261  footprints, PDF figure hauska-engine, one lane
