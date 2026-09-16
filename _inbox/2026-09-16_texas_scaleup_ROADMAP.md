@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (19:40Z)
+last_updated: 2026-09-16 (20:00Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -42,12 +42,17 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | P-252 dry run | What P-252 changes in the six counties | Done: 25 verdicts flip; publishing unaffected once P-292 lands |
 | P-248, P-261 | Footprints on every sheet; PDF prints an area only when verified | **Deployed and verified live** (engine `00247-san`, A-188); one P-261 leg rests on the lane's probe because candidate exports fail on both old and new code |
 | P-210 | "Is this county covered" endpoint | **Deployed and verified live** (retrieval `00092-lag`, A-188); Marble Falls reads indeterminate (ZIP split), a Burnet finding |
-| P-206, P-241, P-242c, P-246, P-247, P-213 | Reports rows | Merged; deploy state not checked by this seat |
+| P-246, P-247, P-238, P-213, P-242b, P-242c, P-206, P-251 | Reports rows (reports session, retired; A-190) | Closed by that session, deployed and verified where applicable |
+| P-241 | ETJ acquisition build | Merged; reaches no customer yet (P-296) |
 
 ## In flight
 
 | Row | What | State | Next step |
 |---|---|---|---|
+| P-258 | Setback table campaign (planner wave) | Dispatched 2026-09-16 | Grade by the census after the writer run |
+| P-256 | Stop false "no setbacks required" | Dispatched 2026-09-16 | Merge after P-252 is live; staging apply |
+| P-262 | One edge labeller and ring scrub | Dispatched 2026-09-16 | Feeds P-264 |
+| P-281 | Job and heavy-scan leases | Dispatched 2026-09-16 | Unblocks P-263, P-264, P-294 |
 | P-252 | Empty counties refuse at the gate | Lane closed partial; PR factory #157 open, green | Merge after P-292 and P-293; run on staging, then production |
 | P-292 | Impervious-cover rail required for publishing only in Travis | Lane closed partial; PR factory #159 open, green | Merge first |
 | P-293 | LDT reads the factory's new verdict strings | Lane closed partial; PR LDT #702 open; **the retrieval service has the same gap** (`parcel-record-db.ts:160`), one-line engine fix owed | Merge first, with the engine fix |
@@ -60,13 +65,15 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | Group | Rows | Blocked on |
 |---|---|---|
 | **Finish-line checks (integration seat)** | P-254 customer-surface checks (next), P-277 duplicate-id check, P-286 blocker list as a checklist | Nothing |
-| **Setbacks** | P-256 stop false "no setbacks required"; P-257 decline wording and the PUD message; **P-258 setback table work, the longest task (54 cities with no table plus 209 city-and-district gaps)**; P-259 Austin zoning source; P-260 one setback registry; P-156 per-city declarations | P-256 needs P-252; P-257 needs P-256 and P-249; P-260 needs P-258 in part |
-| **Envelopes** | P-262 one edge labeller; P-263 clean up bad envelope data; P-264 re-derive every envelope (also measures whether road data blocks envelopes) | P-263 and P-264 need P-281; P-264 needs P-260 and P-262 |
+| **Setbacks** | P-257 decline wording and the PUD message (P-256 and P-258, the longest task, are in flight); P-259 Austin zoning source; P-260 one setback registry; P-156 per-city declarations | P-256 needs P-252; P-257 needs P-256 and P-249; P-260 needs P-258 in part |
+| **Envelopes** | P-263 clean up bad envelope data (P-262 in flight); P-264 re-derive every envelope (also measures whether road data blocks envelopes) | P-263 and P-264 need P-281; P-264 needs P-260 and P-262 |
 | **Hays and the ledger** | P-211 Hays envelope rails; P-265 Hays reader lists; P-266 three simple rails and `citationUrl`; P-268 unexplained refusals; P-204 rails still read from old sources | P-265 needs P-211; P-266 needs P-252 |
 | **Ag valuation** | P-267, from Cotality | **The Cotality contract and credentials** |
 | **What customers see** | P-269 dollar rails fall back to old values; P-270 card names the city and the citation date; P-271 Williamson missing snapshot and address; P-272 malformed address breaks the envelope; P-217 contradictory answers; P-209 sales history labelled Unavailable | Nothing |
-| **Controls and cleanup** | P-273 dead controls; P-274 P-195 leftovers; P-275 retirement checks in the other five counties; P-276 staging password rotation; P-279 stop stale tagged revisions; P-281 heavy-job locks; P-282 paired-code consistency tests | P-274 needs P-252 |
+| **Controls and cleanup** | P-273 dead controls; P-274 P-195 leftovers; P-275 retirement checks in the other five counties; P-276 staging password rotation; P-279 stop stale tagged revisions; P-282 paired-code consistency tests; R-11 doc_repo seat-gate scope (P-281 in flight) | P-274 needs P-252 |
 | **Earlier rows still open** | P-175, P-183, P-184 (Hays and Williamson identity); P-176 Cotality accuracy test; P-205 deploy; site-plan compose timeouts in Travis and Williamson (P-244 class) | P-205 can deploy now that P-210 is live |
+| **Serving path (A-190: both)** | P-294 republish a county when its ledger changed (stopgap); P-295 the surfaces read the ledger (direction; measure the atoms question first); republish the six now (operator go, after the gate fix) | P-294 needs P-252 and P-281 |
+| **From the retired reports session** | P-296 ETJ rollout (P-241 merged, reaches no customer); P-243 and P-244a need an operator account check | Nothing |
 | **Phase 0 exit** | Stored data complete, customer checks pass, coverage, road measurement, the operator's walkthrough | Everything above |
 
 ## Farm and Burnet (Phase 1)
@@ -94,16 +101,19 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 
 ## Open with the operator
 
-- **The serving path (P-230, A-189):** nothing refreshes what customers see after the ledger changes. Choose the direction, and give a go for republishing the six counties.
 
 - The "waiting on vendor" acceptance for ag valuation stands unless the operator wants Burnet to wait for the Cotality data.
+- An account check for P-243 (the MCP app in a real Claude client) and P-244a.
 - The Cotality contract and credentials unblock P-267 and P-283.
 - The production password rotation (P-278) runs on the operator's go.
 
 ## Owed by the integration seat
 
 - The LDT deploy for P-205 (P-210 is live). Burnet finding first: Marble Falls reads indeterminate.
-- The P-252 rollout in order: P-292 and P-293 merged, P-252 merged, the gate scheduler dry run and apply on staging, then production.
+- The P-252 rollout in order: P-292 and P-293 merged (plus the retrieval-api one-line vocabulary fix), P-252 merged, the gate scheduler dry run and apply on staging, then production.
+- Republish the six counties after the gate fix (operator go, A-190).
+- P-284 staging migration; P-205 with the Marble Falls fix; P-254, P-277, P-286.
+- The full ordered queue is in `_inbox/2026-09-16_HANDOFF_integration_seat.md`.
 - Staging proof for P-249 once its PRs are reviewed.
 
 ## Change log
@@ -114,3 +124,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | 2026-09-16 18:55 | P-253 done (A-187); P-254 next. |
 | 2026-09-16 19:15 | Engine and retrieval deployed and verified (A-188); P-248/P-261, P-249, P-284 closes landed. |
 | 2026-09-16 19:40 | P-292, P-293, P-230 closed partial (A-189); the bake has no trigger; decision owed. |
+| 2026-09-16 20:00 | Operator rulings (A-190): both serving-path fixes, republish the six; P-258, P-256, P-262, P-281 dispatched; reports session retired and merged in; P-294 to P-296 carded; session closed with a handoff. |
