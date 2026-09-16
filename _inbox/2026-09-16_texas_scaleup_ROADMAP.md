@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (23:06Z)
+last_updated: 2026-09-16 (23:18Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -50,7 +50,7 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 
 | Row | What | State | Next step |
 |---|---|---|---|
-| P-258 | Setback table campaign (planner wave) | Lane closed partial. **Corpus 1.3.0 published** (258 rows, 14 new tables); LDT half in one PR (#709, CI running) | Factory pin to 1.3.0 with P-256; writer re-run after P-256 (which waits on P-297); then the census re-grade. Rulings OT-1, OT-2, OT-3, OT-10 owed |
+| P-258 | Setback table campaign (planner wave) | Lane closed partial. **Corpus 1.3.0 published** (258 rows, 14 new tables); LDT half **merged** (#709 as `44029db`, 11/11 green; #703 to #708 closed as merged; reaches customers with the next `cortex-api` deploy) | Factory pin to 1.3.0 with P-256; writer re-run after P-256 (which waits on P-297); then the census re-grade. Rulings OT-1, OT-2, OT-3, OT-10 owed |
 | P-256 | Stop false "no setbacks required" | Lane closed partial; PR factory #160 green, rebased on `afdda42`. It also releases the cells this job wrote falsely (about 219,472 parcels, five rails each) | **Held (A-192).** Applying it would turn every county's `setbackFrontFt` verdict to `refuse`, and LDT then drops ledger setbacks for the whole county back to the stale bake. **Ruled (A-193):** applies after P-297 is live, with a factory blast-radius guard or an explicit share authorisation |
 | P-262 | One edge labeller and ring scrub | **Merged** (engine `e7cd0ae`). Curved frontages are labelled right and still drawn wrong (a boundary-primitive row is owed) | Graded by P-264 |
 | P-281 | Job and heavy-scan leases | **Live and proven** (A-195): migration `0013` applied, writers and `factory-control-00008-vid` deployed, a real job refused `LEASE_HELD` while a session held its store | Eleven heavy jobs still take no lease (named in its close); P-263, P-264 and P-294 can use it |
@@ -59,7 +59,7 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | P-293 | Both verdict readers read every verdict string | **Deployed**: LDT `cortex-api-00815-fiw`, retrieval `hauska-retrieval-api-00094-wed` (A-195) | Graded once the scheduler writes an `excluded-*` verdict |
 | P-249 | Unverified "no buildable area" data stops hiding envelopes | Lane closed partial; PRs LDT #701, map #409 reviewed (sound). The verification field it reads is on the live atom chain (checked on promoted and unverified atoms) | Integration seat: staging proof on the served surface |
 | P-284 | Cost and timing records for every stage | **Merged** (`afdda42`); migration `0012` applied; writer images deployed; a real dry run wrote its record. **The compute cost can never be measured yet**: the lookup asks for job `factory-atoms-cad` (404), and the backfill runs in an old reaper image | Lane `p284r-compute-cost-job-name` compiled; then rebuild the reaper image |
-| P-205 follow-on, P-284 remainder, P-295 (phase 1), P-297 with P-269 | Compiled 2026-09-16, safe to fire now | `_dispatches/2026-09-16_{p205b-coverage-ambiguous-locality,p284r-compute-cost-job-name,p295-ledger-serving-measure,p297-cell-serve-ldt}_dispatch.md` | Operator fires them. **Do not fire `p269-dollar-rails-refuse`**: withdrawn, folded into `p297-cell-serve-ldt` |
+| P-205 follow-on, P-284 remainder, P-295 (phase 1), P-297 with P-269 | P-205 follow-on, P-284 remainder and P-295 fired 2026-09-16; P-297 LDT half cleared to fire | `_dispatches/2026-09-16_{p205b-coverage-ambiguous-locality,p284r-compute-cost-job-name,p295-ledger-serving-measure,p297-cell-serve-ldt}_dispatch.md` | Operator fires them. **Do not fire `p269-dollar-rails-refuse`**: withdrawn, folded into `p297-cell-serve-ldt` |
 | P-298 | The scheduler reads a whole county per rail; a cold cache makes it take hours; it takes no lease | Carded (A-196) | Not dispatched |
 | P-297 | The county verdict stops being the serve switch (operator ruling A-193) | LDT half compiled with P-269; engine half compiled (`_dispatches/2026-09-16_p297-cell-serve-engine_dispatch.md`) | Fire the engine half after the LDT half publishes its shared fixture; blocks P-256's apply |
 | P-230 | Map and MCP serve current data, not an old snapshot | Lane closed partial: **nothing re-runs the bake**; five counties serve 09-10 data, Hays 09-14 | **Operator decision:** the refresh path (A-189) |
@@ -139,3 +139,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | 2026-09-16 21:27 | Engine #462 (P-293 remainder) merged as `9e5e793`; retrieval-api image building. P-262 closed partial (engine #461). P-297 engine half compiled. Earlier change-log times corrected to the commit times. |
 | 2026-09-16 21:45 | Retrieval-api deployed (`00094-wed`): both verdict readers live. P-281 live and proven by a refused job. Scheduler image deployed with its hourly trigger paused; apply pending (A-195). |
 | 2026-09-16 23:06 | Old-code scheduler run cancelled; apply running and four counties grade clean (A-196). P-258 integrated: corpus 1.3.0 published, LDT #709 open. P-262 merged. P-298 carded. |
+| 2026-09-16 23:18 | LDT #709 (P-258 tables) merged; P-205 follow-on, P-284 remainder and P-295 phase 1 fired; P-297 LDT half cleared to fire. |
