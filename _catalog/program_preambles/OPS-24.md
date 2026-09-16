@@ -27,15 +27,25 @@ scope `_inbox/2026-09-16_texas_scaleup_program_scope.md`):
    program. ARMED 2026-09-14 on the enforcement side: `probe-close-gate.mjs` gates every
    OPS-24 row and prints the predicate debt on each close until `surface-probe.mjs` carries
    the stage's row (P-197); a close with neither an artifact nor a declared
-   `probe.notApplicable` (read-only reviews only) is refused.
-2. **The gate is fixed before anything trusts it.**
-   - **Fixed:** P-195 closed the ZERO-ROW case. A county with no cells refuses
-     (`RAIL_NEVER_FILLED`, `BAKE_POPULATION_UNMEASURED`).
-   - **Still open (A-179):** the ZERO-EARNED case. `evaluatePublishGate` reads a county whose
-     cells exist but are all `unaccounted` as every rail "declared ahead" and passes it, and
-     that is exactly what a freshly instantiated county looks like.
-   - **Therefore P-201 lands, proven by violation on an instantiated, unfilled county, before
-     any new county's verdict is trusted.**
+   `probe.notApplicable` (read-only reviews only) is refused. **A store-reading instrument is
+   never the customer predicate** (A-183): the factory-store and atoms-store instruments were
+   green through the whole 2026-09-15 map incident. The probe's OPS-24 legs are P-254.
+2. **The gate is fixed before anything trusts it. Three things are called "the gate"; know
+   which one you are touching (A-183).**
+   - **The publish refusal** is `requirePreBakeReadiness` (factory
+     `src/lib/publish-readiness-gate.mjs`, called by the publish job): a population check, then
+     `evaluatePreBakeReadiness` over the publish-floor rails' verdicts.
+   - **The rail verdicts** are `evaluateRailGate`, written hourly to `parcel_gate_verdict` by
+     `publish-gate-sched.mjs` and labelled by P-201's `classifyExclusion`.
+   - **`evaluatePublishGate` and `assertPublishableCounty` have no production caller.** Do not
+     cite them as a control.
+   - **Fixed:** P-195 closed the ZERO-ROW case (`RAIL_NEVER_FILLED`,
+     `BAKE_POPULATION_UNMEASURED`).
+   - **Still open, measured by violation 2026-09-16 after P-201 merged:** the ZERO-EARNED case.
+     A county whose 65 rails all hold `unaccounted` cells gets `excluded-not-applicable` on
+     every rail (basis `LIVE_ELSEWHERE`), and the pre-bake rail check clears it because it tests
+     only `verdict === "refuse"`. **P-252 closes it, proven by a checked-in fixture that must
+     REFUSE, before any new county's verdict is trusted.**
 3. **One county at a time until the farm is proven** (rewritten 2026-09-16 to the operator's
    sequence).
    - Burnet is the first county through the farm. The farm's machinery (manifest, pre-bake
@@ -51,7 +61,8 @@ scope `_inbox/2026-09-16_texas_scaleup_program_scope.md`):
    record naming what it touched.
 5. **Every stage meters itself.** Compute dollars and operator minutes per county per stage
    go on the stage's run record, so commitment 3 (under 200 dollars and one hour per county)
-   can fire as a kill, not a slogan.
+   can fire as a kill, not a slogan. **As of 2026-09-16 nothing records either** (no column,
+   table or writer at factory `9171279`); P-284 builds it and Burnet does not start without it.
 6. **Nothing is measured once and published as state.** A number on this program's card
    names its SHA and its date. OPS-23's live card is authoritative where the two programs
    touch (serving, identity, the ledger).
@@ -67,7 +78,34 @@ that fall off, never an upsert that keeps notice values silently.
 
 The road-node pass: a TIGER cross-check, a street-name dictionary, classification rules, and the
 `roads` and `edgeSignal` ledger rails. Study road data only where it blocks envelope or footprint
-rendering, and say exactly where.
+rendering, and say exactly where. **The measurement of "blocks rendering" is P-264's per-city
+residual** (the verification re-derive runs in Phase 0 without the road-name dictionary);
+a city whose residual is dominated by road failures comes back to the operator for a ruling.
+
+## The Phase 0 exit (scope rev 4, section 5)
+
+One definition, all legs at once: the ledger leg (`six-county-completeness.mjs`, repaired by
+P-253), the customer leg (`surface-probe.mjs` over the 39-bucket fixture list, P-254), the
+coverage leg (P-210), the road residual (P-264), and the operator's walk. **Burnet's run waits
+on it, and the long pole is the setback acquisition campaign (P-258), not the gate rows.** The
+farm machinery builds in parallel.
+
+## Traps the final teardown found (A-183); read before touching these surfaces
+
+- The depth-warm wire field is `depthWarmPromotion === "depth-warm-promoted-v1"` (with a
+  `sourceCitation` fallback), not `depthWarmPromoted`. Four predicates read this fact in three
+  repos; a change to one carries a divergence test against the others.
+- `unaccounted` does not refuse on every surface. LDT's dollar rails keep the legacy value and
+  `valueBasis` defaults a label (P-269). A write that flips cells to `unaccounted` names its rail
+  allowlist.
+- The 2026-09-15 blank map was a stale browser tab after a rollback, not a one-branch server
+  regression (A-157). A staging proof records the serving build by asset existence, never by
+  `Age:`, and measures from a fresh browser context.
+- A buildable-area figure appears only when a VERIFIED envelope atom backs it (A-180). The MCP
+  payload and the PDF do not enforce that today (P-249, P-261).
+- The doc_repo commit gates do not fire in a seat worktree or on a merge until P-280 lands.
+  Declare `subAgents` and the probe honestly anyway; the integration seat re-grades on landing.
+- Bell already serves from the July bake (165,574 rows). It is a migration county (P-291).
 
 ## What this program absorbs
 

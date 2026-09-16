@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_program_scope
 title: Texas scale-up — six counties complete, Burnet builds the farm, Bell and Milam prove it in parallel
 date: 2026-09-16
-status: DRAFT rev 3 (2026-09-16). Revised from the five-lane research wave (A-179) and the operator's decisions (A-180). The session-gap follow-up and the final teardown run before any Phase 0 build row is dispatched.
+status: rev 4 (2026-09-16), the plan of record for the scale-up. Revised from the final teardown (A-183), whose load-bearing findings the integration seat re-checked at source. Every Phase 0 item now has a row (P-252 to P-291, plus existing rows); build dispatches follow the order in section 12.
 kind: program-scope
 owner: nick
 audience: the operator first; then the integration seat and the lane planners who will execute it
@@ -15,7 +15,12 @@ snapshot: |
   (county, rail); parcel_record_cell per city for zoningJurisdictionKey, zoningDistrict and
   setbackFrontFt. Live surface reads 2026-09-16 on the operator's paid-Solo account.
   Catalog reads: _catalog/tx_source_truth.json, _catalog/texas_roster_v1.json.
+  Rev 4 re-checks (2026-09-16): hauska-factory 9171279, hauska-map 88ac6c5, legacy-design-tools
+  0bf2377f, hauska-engine 422c7d3a; the zero-earned probe executed against an extracted factory
+  tree at 9171279.
 related:
+  - _inbox/2026-09-16_scaleup_final_teardown_review.md
+  - _inbox/2026-09-16_engine_api_tag_url_gate_bypass_finding.md
   - 90_operations/OPS-24_county_to_serving_program.md
   - _inbox/2026-09-14_county_to_serving_WDLL.md
   - _inbox/2026-09-14_HANDOFF_farm_model_and_burnet_prototype.md
@@ -31,6 +36,51 @@ related:
 ---
 
 # Texas scale-up — the work scope
+
+## Rev 4: what the final teardown changed
+
+The teardown (`_inbox/2026-09-16_scaleup_final_teardown_review.md`, landed `f9ed016c`) scored six
+of ten theses as not surviving and four as holding with conditions. The integration seat
+re-checked the load-bearing findings at source before accepting them (A-183). What changed:
+
+1. **P-201 landed and the gate hole is still open.** An instantiated county with every rail
+   `unaccounted` gets `excluded-not-applicable` on all 65 rails, and the real publish refusal
+   (`requirePreBakeReadiness`) clears it, because its rail check tests only `verdict ===
+   "refuse"`. The function this scope and OPS-24 law 2 named (`evaluatePublishGate`) has no
+   production caller. **P-252** closes the hole (section 4.4).
+2. **The Phase 0 exit measured the store, not the customer.** Section 5 is now the only exit
+   definition, with a customer leg (**P-254**), a repaired ledger leg (**P-253**), the coverage leg,
+   the road residual, and the operator's walk. Section 16's "exits when this command exits 0" is
+   withdrawn.
+3. **P-249 is corrected in four places** (section 4.2): the wire field is `depthWarmPromotion`,
+   a string marker; 131,357 is an upper bound on a different population; the map change depends on
+   a binding that must be read first; and its proof must observe the served surface, not the stores.
+   The PDF figure gate moves to **P-261**.
+4. **The P-216 risk line was wrong.** The 2026-09-15 blank map was a stale tab after a rollback
+   (A-157). The staging proof is rebuilt around build identity and fresh browser contexts.
+5. **R5 no longer waits on the deferred road-name work.** It runs in Phase 0 as **P-264**, and its
+   per-city residual is the measurement A-177's escape clause needs. R8 splits: `parcelGeometry`
+   stays in P-204; `roads` and `edgeSignal` stay deferred.
+6. **S1 carries a rail allowlist.** LDT's dollar rails keep the legacy value when the ledger says
+   `unaccounted` (**P-269**), so only the five setback rails flip (**P-256**).
+7. **The setback campaign is the critical path to Burnet.** Its work unit is (city, district), the
+   classification has a fourth category (a zoning map published only as a PDF), and a public-source
+   sample of seven no-table cities found six zoned. **P-258**.
+8. **Every item has a row.** Nine customer defects and seven X-items had a repo and no number.
+   L-E's list is renamed XD-1 to XD-16 so it no longer collides with section 4.5's D1 to D4. The
+   mapping is section 4.0.
+9. **Missing machinery is carded:** stage and cost telemetry (**P-284**), a runner (**P-285**),
+   job and heavy-scan leases (**P-281**), a divergence harness (**P-282**), the register as a
+   closed checklist (**P-286**), Burnet's unreconciled facts (**P-287**), the target pair
+   (**P-288**), branch lifecycle (**P-289**), and a two-county concurrency test (**P-290**).
+10. **Found beyond the teardown.**
+    - The doc_repo commit gates never fire in a seat worktree or on a merge (**P-280**).
+    - 37 engine tag URLs skipped the gate token. The reports lane removed them and began rotating
+      the engine key under its P-251; **P-279** adds the check that stops a recurrence.
+    - Nineteen counties already serve from the July bake, Bell among them with 165,574 rows, so
+      Bell enters Phase 2 as a migration county (**P-291**).
+11. **One teardown point was rejected:** `publicRecordRefs` accepted as "P-242 coming soon" is
+    consistent with P-242, which took records off the purchase surface on purpose.
 
 ## Rev 3: what changed and why
 
@@ -88,8 +138,8 @@ PHASE 0   THE SIX COUNTIES COMPLETE
           Hays catch-up, the setback table reconciliation, and road nodes,
           plus every other gap, done and VERIFIED on the customer surface.
             |
-            |  exit: scripts/six-county-completeness.mjs reads COMPLETE,
-            |        and the per-city surface probe passes
+            |  exit: section 5, every leg at once (ledger, customer surface,
+            |        coverage, road residual, operator walk)
             v
 PHASE 1   BURNET, WITH ITS CITIES, THROUGH THE FARM
           The farm is built and refined while Burnet runs.
@@ -117,7 +167,8 @@ that gets faster each time.
 
 Four more rulings from the same conversation apply throughout:
 
-- **Covered** means what actually serves the customer (P-210 settled).
+- **Covered** means what actually serves the customer (P-210 settled). P-210's lane measured
+  that 19 counties serve today from the July bake, 13 of them outside the six (P-291).
 - **`agValuation` is Texas-wide.**
 - **Cotality is part of the farm setup.**
 - **The Hays symptom is a data problem in specific areas, not a map problem.**
@@ -263,12 +314,23 @@ city or the district simply has no row in our table.
   Staples 1.
 - **Bastrop:** Smithville 2,406; Webberville 17; Mustang Ridge 1.
 
-**Each of the 54 is one of three things, and S3 must say which:**
+**Each of the 54 is one of four things, and S3 must say which** (rev 4 adds 2b):
 
 1. Zoned, with a staged layer: acquire the table.
-2. Zoned, without a layer: acquire the layer and the table.
+2. Zoned, without a staged layer:
+   - **2a.** A queryable endpoint exists but is undocumented: find it, then acquire the table.
+   - **2b.** The official map is published only as a PDF (Woodway, per the teardown's search):
+     locate an endpoint nobody documents, or digitise the map. That is a different kind of work
+     with a different error profile, and it is recorded as such.
 3. Genuinely unzoned: declare it through the per-city declaration (S7), so its cells become an
    earned `not-applicable`.
+
+**A public-source sample of seven (teardown T4) found six zoned:** Lago Vista (the ordinance
+says the official map is kept in the city GIS), Hewitt, Bellmead and Jarrell with layers,
+Wimberley with a table in its ordinance, Woodway with a PDF map, and Hallsburg probably unzoned
+(low confidence). The expensive category dominates. **The work unit is (city, district), not the
+city:** every district needs its dimensional table extracted verbatim with an effective date, so
+54 cities and 125,212 parcels are both lower bounds on the work.
 
 **Cross-checks, two derivations agreeing:**
 
@@ -376,6 +438,12 @@ across the six.
 
 - **131,357 parcels** in the six have setbacks on record and no drawn envelope. The largest
   groups: Georgetown 23,484, Round Rock 17,761, Leander 17,045, Kyle 9,847, San Marcos 9,335.
+  **Rev 4: this is an upper bound on what P-249 unlocks.** The instrument counts parcels with a
+  `setbackFrontFt` value; P-249's predicate needs a district and a table. The five named cities
+  hold 77,472 (59 percent) and all have layers and tables; the remaining 53,885 are where the
+  predicate is least likely to hold. P-255 measures the predicate population. **Denominators
+  differ:** the 490,185, 208,868, 153,775 and 123,706 figures above are atom counts; 131,357 is a
+  parcel count. How many parcels are blocked by a reason-less zero is measured nowhere yet (P-255).
 - **Waco and Austin have large setback populations but small gaps in that bucket, because no
   envelope atom exists for most of their parcels.** P-249 does not reach them; a re-derive (R5)
   does.
@@ -442,29 +510,81 @@ A fix that lands in the ledger is not visible until serving catches up.
 ## 4. Phase 0 — the six counties complete
 
 Each item carries a done condition that can fail, its instrument, its repo and its
-dependencies. Existing rows are named; new rows are allocated after approval.
+dependencies. **Rev 4: every item now has a row** (A-183). The row text in OPS-16 is the
+authority where it and a table below differ.
+
+### 4.0 Item to row
+
+| Item | Row | Item | Row | Item | Row |
+|---|---|---|---|---|---|
+| S0, R0 | P-255 | R4 | P-263 | L6 | P-201 (landed), P-252 |
+| S1 | P-256 | R5, R9 | P-264 | L7 | P-192 |
+| S2, X4, X8, X10, D3 | P-257 | R6 | P-208 | D1 | P-230 |
+| S3, S5, S8 | P-258 | R8 | P-204 (`parcelGeometry`); `roads` and `edgeSignal` deferred | D2 | P-217 |
+| S4 | P-259 | H1 | P-265 | D4 | P-246 (done) |
+| S6, R7 | P-260 | H2, H3 | P-211 | X1 | P-248, then P-261 |
+| S7 | P-156, every wired city | H4 | P-175 | X2, X11 | P-270 |
+| R1, R2 | deferred (A-177) | H5 | P-183 | X3 | P-250 |
+| R3 | P-262 | H6 | integration seat | X5 | P-249 |
+| C1 | P-213 (merged) | H7 | P-184 | X6 | P-271 |
+| C2 | P-273 | L1 | P-204 | X7 | P-209 |
+| C3 | P-274 | L2, L3 | P-266 | X9 | P-272 |
+| C4 | P-275 | L4 | P-267 | V1 | P-176 |
+| C5 | P-276 | L5 | P-268 | V2, V4 | P-283 |
+| C7 | P-277 | new: dollar rails | P-269 | V3 | done |
+| C8 | P-278 | new: C9, C10, C11 | P-279, P-280, P-281 | new: section 4.8 | P-253, P-254, P-282, P-284 to P-291 |
+
+**L-E's defect list, renamed XD-1 to XD-16** (rev 3 cited it as D1 to D16, which collided with
+section 4.5):
+
+| XD | Defect | Row |
+|---|---|---|
+| XD-1 | buildable-area figure in payloads and disclosure strings | P-249 (map and MCP), P-261 (PDF) |
+| XD-2 | Waco's panel declines what its own endpoint draws | P-249 (named fixture) |
+| XD-3 | site plan asserts a miss that did not happen | P-222 |
+| XD-4 | Bastrop "layer-23" wording on other parcels | P-257 |
+| XD-5 | no-table cities decline while the payload holds the district | P-257 |
+| XD-6, XD-7 | Williamson: no MCP snapshot, no composed address | P-271 |
+| XD-8 | card does not name the governing city | P-270 |
+| XD-9 | malformed situs breaks envelope drawing | P-272 |
+| XD-10 | land-use contradiction within one payload | P-217 |
+| XD-11 | setback citation without an effective date | P-270 |
+| XD-12 | `salesHistory` absent from the MCP schema | P-209 |
+| XD-13 | dollar value reaches an ungranted caller | P-246 (done) |
+| XD-14 | "PUD"-coded districts resolve Euclidean setbacks | P-257, after the operator's ruling |
+| XD-15, XD-16 | a positive control and a leave-behind | none needed |
 
 ### 4.1 Setback table reconciliation (class A and B)
 
 | ID | Work | Done when | Instrument | Repo | Depends |
 |---|---|---|---|---|---|
 | S0 | **Parcel-grain census**, checked in as an instrument. Per city, per district: parcels, value, false absence, refused. Replaces P-225's feature counts for sizing. | The instrument runs for all six counties and self-tests (a city with no table must show a non-zero false absence). | new `scripts/setback-parcel-census.mjs` (from this session's query) | doc_repo | none |
-| S1 | **Stop writing false absences.** No table becomes `unaccounted` with an acquisition need named. A router miss becomes `unaccounted` naming the district. Zoning refused propagates `refused`. PUD-class districts become `refused` with the PUD reason (S2). | Proven by violation on staging: a Woodcreek parcel reads `unaccounted`, a Kyle PC parcel reads the PUD refusal, a zoning-refused parcel reads `refused`. The gate then REFUSES setbacks with a count, in every county. That is the honest state. | factory tests plus a staging read; `six-county-completeness` false-earned count | hauska-factory | P-201 (so the new refusals are distinguishable) |
+| S1 | **Stop writing false absences.** No table becomes `unaccounted` with an acquisition need named. A router miss becomes `unaccounted` naming the district. Zoning refused propagates `refused`. PUD-class districts become `refused` with the PUD reason (S2). | Proven by violation on staging: a Woodcreek parcel reads `unaccounted`, a Kyle PC parcel reads the PUD refusal, a zoning-refused parcel reads `refused`. The gate then REFUSES setbacks with a count, in every county. That is the honest state. **Rev 4: the five setback rails only.** A rail whose serve path keeps a legacy value on `unaccounted` (the dollar rails, P-269) is out of scope. **This makes the Phase 0 exit unreachable until S3 finishes, by design.** | factory tests plus a staging read; `six-county-completeness` false-earned count | hauska-factory | P-252, S0 |
 | S2 | **The PUD message** (ruled A-164) on the map, the MCP and the PDF. | A PUD, PC or PDD parcel reads "setbacks for this parcel are set by its planned-development ordinance, not a district schedule", on all three surfaces. | surface probe with PUD fixtures in Kyle, Bastrop and Williamson | LDT and hauska-map | S1 |
 | S3 | **Acquire every acquirable district table**, largest parcel count first, by per-city ordinance research. Codes that fit an existing row get a routing entry. Codes that are genuinely new get a row, with the verbatim ordinance and effective date. | S0 shows false absence zero, and every remaining `unaccounted` district carries either an open acquisition task or a signed declared-unacquirable decision. | S0; the corpus's own row-verification step (Z4 in the Factory 2 runbook) | LDT `lib/adapters/src/local/setbacks/` and `@empressaio/setback-corpus` | S0 |
 | S4 | **Austin's zoning source**, re-acquired from the public `PLANNINGCADASTRE` layer. `ZONING_ZTYPE` needs a base-code parser that never yields `CS` for `CS-1`. Add Austin SF-6. | Austin's census line is measured, and the parser's fixtures include the compound codes A-164 listed. | S0 plus parser tests | LDT | none |
 | S5 | **Lockhart zoning source**: find a public replacement or record a declared-unacquirable decision. | Either the layer is live or the decision record exists. | decision record or S0 | doc_repo then LDT | none |
 | S6 | **One setback registry.** The engine's jurisdiction descriptors read the same corpus the factory writes from, and a divergence test fails when they disagree. | On the Hays test parcel, per-edge setbacks match the record. The divergence test goes red when one side is edited. | divergence test | hauska-engine, corpus package | S3 in part |
-| S7 | **Per-city zoning declarations** (P-156) for every wired city, not only Bastrop, so the gate's not-applicable accounting rests on data. | Every wired city in the six has a versioned declaration. | the declaration loader's divergence control, with more than one city | hauska-factory | none |
+| S7 | **Per-city zoning declarations** (P-156) for every wired city, not only Bastrop, so the gate's not-applicable accounting rests on data. **Rev 4: P-252's declared not-applicable basis reads these declarations**, so S7 and P-252 must agree on the shape. | Every wired city in the six has a versioned declaration. | the declaration loader's divergence control, with more than one city | hauska-factory | none |
 | S8 | **Stale docs that mislead setback lanes:** LDT `AGENTS.md` STOP; the coverage doc on Bastrop routing; `zoning-layers.ts:22` Georgetown `RL`. | Corrected, with the Georgetown claim re-verified or removed. | read | LDT | none |
 
-**S3's worklist has two halves:**
+**S3's worklist has two halves, and they run in parallel** (rev 4):
 
-- **The 54 no-table cities** in section 2b, 94,260 parcels. Each is classified first as zoned
-  with a layer, zoned without one, or unzoned.
-- **The district misses** in the wired cities, 125,212 parcels, led by Austin (Travis and
-  Williamson parts together, about 60,000), Round Rock, Leander, Kyle, Waco, Cedar Park, San
-  Marcos, Pflugerville, Hutto and Bastrop.
+- **The 54 no-table cities** in section 2b, 94,260 parcels, McLennan heavy (33,139). Each is
+  classified first into one of the four categories in section 2b.
+- **The district misses** in the wired cities, 125,212 parcels, Travis heavy (60,115), led by
+  Austin (Travis and Williamson parts together, about 60,000), Round Rock, Leander, Kyle, Waco,
+  Cedar Park, San Marcos, Pflugerville, Hutto and Bastrop. P-233's census counted 172 uncodified
+  district codes.
+
+The halves are not comparable workstreams. Travis's work is almost all district tables in cities
+whose layer we hold; McLennan's is almost all no-table cities, the expensive half. "Largest
+first" within one queue would leave McLennan to last, behind the exit Burnet waits on.
+
+**Per (city, district) unit, four steps:** locate the governing instrument and its effective date
+at source; determine what the official map is (a layer, a PDF, or a GIS-kept map published as a
+PDF); find or fail the endpoint, recording a negative with its basis; extract the dimensional
+table verbatim with citation and date, routing PUD, PC and PDD districts to the PUD refusal.
 
 Smithville falls under the eCode360 scrape ruling.
 
@@ -472,24 +592,61 @@ Smithville falls under the eCode360 scrape ruling.
 
 **Order, per the operator (A-177, A-180):**
 
-1. **P-249: the unlock.** L-B confirmed the mechanism in `reconcileAtomEnvelope.ts`. The build:
-   - Carry the structural `depthWarmPromoted` signal (hauska-map already uses it) on LDT's wire
-     type.
+1. **P-249: the unlock.** L-B confirmed the mechanism in `reconcileAtomEnvelope.ts`, and the
+   teardown could not break it: the shape-only-zero versus verified-zero distinction is already an
+   explicit predicate there. **The build, corrected in rev 4:**
+   - **Read the atom's `depthWarmPromotion` field** and treat `"depth-warm-promoted-v1"` as
+     verified, with the `sourceCitation` fallback hauska-map uses and its precedence stated. There
+     is no `depthWarmPromoted` field on the atom: hauska-map reads `depthWarmPromotion`
+     (`atom-chain-to-facets.ts:190`) and writes a `depthWarmPromoted` flag only into its own facet
+     output. LDT reads neither today. **Four predicates read this fact in three repos**
+     (hauska-map, LDT's `isMachineVerifyDiagnostic`, and the doc_repo instrument's string and
+     boolean forms); the row carries a divergence test across them, on P-282's harness.
    - A `no-buildable-area` atom that is not verified-promoted stops emptying a live envelope that
      has a district and a table.
    - **The area figure appears only when a verified atom backs it** (operator: "we need to
-     verify"). This also closes L-E's D1 (the figure in map payloads and disclosure strings).
-   - The map's `envelope-unverified` decline changes to match.
-   - **Proof:** a verified zero minted on staging (none exists in production) stays empty;
-     `48209:97658` draws; a `validation-failed` ring declines honestly. The staging
-     before-and-after uses the L-B instrument (`scripts/envelope-draw-gap.mjs`), and the unlock
-     count is reconciled to the 131,357 baseline.
-2. **P-248: footprints drawn on every sheet.**
-3. **R5: the verification re-derive**, which unlocks the area figure where verification passes
-   and reaches Waco and Austin, where no atom exists.
-4. **R4: the atom clean-up.**
-5. **R1, R2 and R8 are DEFERRED** to the road-node pass after Phase 2, unless a road issue still
-   blocks rendering after P-249.
+     verify"), **on the MCP payload too.** Today `reconcileAtomEnvelope` keeps an unverified live
+     geometry and the Pflugerville response quotes "Buildable area from the property atom chain
+     ... 5027 sq ft". The PDF leg is P-261.
+   - **Read first: what `envelope` is bound to** in hauska-map's `envelope-unverified` branch
+     (`atom-chain-to-facets.ts`, around line 2080). If it is the live geometry, the LDT change
+     alone draws and the map clause shrinks; if it is the atom's, the map clause is the real fix
+     and must add geometry. Waco's panel declining what its own endpoint draws (XD-2) is a named
+     fixture either way.
+   - `validation-failed` must reach a named decline, never a silent empty.
+   - **Proof, rebuilt in rev 4 around the served surface** (the stores were green through the
+     whole 2026-09-15 incident):
+     - the serving build recorded before and after by asset existence, never by `Age:`;
+     - every measurement taken from a fresh browser context;
+     - three branches per city, each asserting `status`, `declineReason`, `envelopeCovered`,
+       whether geometry is present, and whether a figure is present: (a) an unverified zero on a
+       parcel with a district and a table, such as `48209:97658`, draws with no figure; (b) a
+       verified zero minted on staging (none exists in production) stays empty with a named
+       reason; (c) a `validation-failed` ring declines with that reason and draws nothing;
+     - a rollback rehearsal on staging, with the build identity shown to move both ways;
+     - the unlock count reported against P-255's predicate population, with 131,357 kept only as
+       the upper bound.
+   - **What it does not unlock:** the 123,706 reason-less zeros become named declines, not
+     draws, where the live derive fails its own geometry gates. Waco and Austin need P-264.
+2. **P-248: footprints drawn on every sheet**, then **P-261** in the same hauska-engine lane: the
+   PDF prints a figure only from a verified atom.
+3. **P-262, one edge labeller and a ring scrub.** It is the rendering blocker on `48209:97658`, so
+   it stays in Phase 0 under A-177's escape clause, without the road-name dictionary.
+4. **P-263, the atom clean-up (R4)**, under P-281's lease.
+5. **P-264, the verification re-derive (R5)**, which unlocks the area figure where verification
+   passes and reaches Waco and Austin, where no atom exists. **Rev 4: it no longer depends on R1.**
+   Its per-city residual counts road-name and road-class failures, and that count is the
+   measurement A-177's escape clause needs.
+6. **R1 and R2 are DEFERRED** to the road-node pass after Phase 2, unless P-264's residual shows
+   a city where road failures block rendering; that city comes back for a ruling. **R8 splits:**
+   `parcelGeometry` stays in P-204 (Phase 0); `roads` and `edgeSignal` stay deferred, accepted by
+   the exit only while P-264's residual supports it (P-253).
+
+**The P-216 risk, corrected (A-157).** Rev 3 said "P-216 took the map down with a one-branch
+change here." The same corpus refutes that: the map-wide blank was a stale browser tab after a
+rollback, and the unaliased P-216 build moved only four San Marcos parcels to `declined`. The
+real risks here are deploy mechanics (a merge is not a deploy, a rollback is not a reload) and
+proofs that read stores instead of the surface. The proof above is built against those.
 
 The envelope family is every rail and atom that decides what may be built:
 
@@ -506,13 +663,13 @@ The envelope family is every rail and atom that decides what may be built:
 | R0 | **Measure the draw gap per city**: parcels with setbacks in the ledger joined to their envelope atom's outcome and class. Also measure road-node coverage and quality per county against Census TIGER and county roadway data, as a second derivation. | A per-city table exists, from a checked-in instrument that reads both stores with index-bounded queries. | L-B instrument | doc_repo | none |
 | R1 | **Road-name normalisation** used by front labelling handles state highways, farm-to-market roads, directionals, suffixes and misspellings, from a tested dictionary rather than one-off fixes. | Every Bastrop `facesAnswer` mismatch in the atoms store resolves; the fixtures include the ones quoted in 2c. | engine tests | hauska-engine | none |
 | R2 | **Road classification conflicts** (OSM tag against county roadway class) resolve by a declared rule, not a decline. | The 1,119 Bastrop failures re-run and each resolves or carries a named residual. | engine tests plus a re-run | hauska-engine | R1 |
-| R3 | **One edge labeller** (logical-edge grouping, curved frontage, situs-named front first), or a shared primitive with a divergence test. Plus a **ring scrub** for GIS artifact vertices. | Fixture `48209:97658` gets one front and a non-zero envelope that passes P1 to P3. The divergence test goes red when one path changes. | engine and LDT tests | hauska-engine, LDT | R1 |
-| R4 | **Retire the mislabelled breadth-bake outcomes.** Unzoned becomes `not-applicable`; not-onboarded becomes whatever the current ledger supports. Writers can no longer emit `no-buildable-area` without a computed, verified zero. | Zero atoms carry `no-buildable-area` with a "no district" or "unzoned" reason. The false-zero guard in the completeness instrument goes red if one is written. | atoms store count; guard | hauska-engine | P-213 (blast radius), C1 |
-| R5 | **Re-derive every envelope** whose ledger now holds setbacks, through the fixed labeller, with ground truth (P1 to P3). This includes the 123,706 unexplained zeros. Serialised as a heavy write, dry run first, apply on the operator's go. | Every in-city zoned parcel either draws a verified envelope or carries a specific, named failure; the per-city residual is counted. | R0 re-run | hauska-engine jobs | R1 to R4, S6 |
+| R3 | **One edge labeller** (logical-edge grouping, curved frontage, situs-named front first), or a shared primitive with a divergence test. Plus a **ring scrub** for GIS artifact vertices. | Fixture `48209:97658` gets one front and a non-zero envelope that passes P1 to P3. The divergence test goes red when one path changes. | engine and LDT tests | hauska-engine, LDT | none (rev 4: R1 deferred; situs-named fronts only where names already match) |
+| R4 | **Retire the mislabelled breadth-bake outcomes.** Unzoned becomes `not-applicable`; not-onboarded becomes whatever the current ledger supports. Writers can no longer emit `no-buildable-area` without a computed, verified zero. | Zero atoms carry `no-buildable-area` with a "no district" or "unzoned" reason. The false-zero guard in the completeness instrument goes red if one is written. | atoms store count; guard | hauska-engine | P-213 (merged), P-281 |
+| R5 | **Re-derive every envelope** whose ledger now holds setbacks, through the fixed labeller, with ground truth (P1 to P3). This includes the 123,706 unexplained zeros. Serialised as a heavy write, dry run first, apply on the operator's go. | Every in-city zoned parcel either draws a verified envelope or carries a specific, named failure; the per-city residual is counted. | R0 re-run; its residual artifact feeds P-253 | hauska-engine jobs | R3, R4, S6, P-281 (rev 4: not R1) |
 | R6 | **Fix the re-mint no-op (P-208)** and **enforce the warm preflight gate in every runner.** | A declined re-mint exits non-zero; a runner that skips the gate refuses to start. | violation tests | hauska-engine | none |
 | R7 | **Registry rows** for every wired city in the six, so verified promotion is possible everywhere, not only in Bastrop, Elgin and Lockhart. **One setback registry (S6).** | Each row loads and its cohort count matches the ledger. | registry tests | hauska-engine | S6 |
-| R8 | **Cut `roads`, `parcelGeometry` and `edgeSignal` into the ledger** (P-204), with each cell pointing at its atom. | All three pass in all six counties. | six-county-completeness | hauska-factory | R3 |
-| R9 | **The surfaces draw what R5 produced** and keep an honest, specific decline elsewhere, in words that name the actual reason. No Bastrop "layer-23" wording outside Bastrop. | The per-city probe draws on a verified parcel and declines correctly on a failed one. | surface probe | hauska-map, LDT | R5, D1 |
+| R8 | **Cut `roads`, `parcelGeometry` and `edgeSignal` into the ledger** (P-204), with each cell pointing at its atom. | **Rev 4: split.** `parcelGeometry` passes in all six (P-204, Phase 0). `roads` and `edgeSignal` are deferred with the road-node pass and accepted by the exit only while P-264's residual supports it. | six-county-completeness | hauska-factory | P-204 |
+| R9 | **The surfaces draw what R5 produced** and keep an honest, specific decline elsewhere, in words that name the actual reason. (Rev 4: the wording clause moved to P-257, the single owner of the decline-wording surface.) | The per-city probe draws on a verified parcel and declines correctly on a failed one. | surface probe | hauska-map, LDT | R5, D1 |
 
 ### 4.3 Hays close-out (from P-200 and P-211)
 
@@ -535,7 +692,7 @@ The envelope family is every rail and atom that decides what may be built:
 | L3 | `citationUrl`: a writer exists in `parcel-r5-zoning.mjs`, yet the rail is excluded in all six. Diagnose, then fix. | Pass in all six; the "citation degraded" flag clears where a citation exists. | hauska-factory |
 | L4 | **`agValuation` Texas-wide**: acquire ag valuation for Bastrop, Caldwell, Hays and McLennan from each CAD (318,000 cells unaccounted today). Delete the never-run not-applicable sweep so it cannot write the false state. Confirm Travis's join key (the writer's own open item; 373,406 values suggest it holds). | Pass in all six. The instrument's `ag-valuation-no-source` guard stays at zero. | hauska-factory |
 | L5 | `exemptionCodes` (Williamson 187,186; Caldwell 8,958), `landUseSource` (five counties) and `acreageMethod` (Caldwell, Hays) refusals: diagnose each. Fix it, or rule it an earned refusal with a count. | Each has a verdict. | hauska-factory |
-| L6 | **P-201**: `excluded` split into ruled, mid-cutover and no-source. | The gate reports the three distinctly, proven by violation. | hauska-factory |
+| L6 | **P-201** (landed 2026-09-16, factory `9171279`): `excluded` split into not-applicable, mid-cutover and no-acquisition-path. **It does not close the zero-earned hole** (rev 4 item 1). **P-252** does: a rail live elsewhere with nothing earned here refuses unless a declared basis says it does not apply; the pre-bake rail check becomes an allowlist; the uncalled `evaluatePublishGate` is wired or retired; a checked-in all-`unaccounted` county must refuse. Dry run and staging first, because the honest state turns verdicts red. | P-252's fixture refuses; `maxImperviousCoverPct` outside Travis stays not-applicable. | hauska-factory |
 | L7 | **P-192**: the six lease-less writers take a lease; the false `lease_released: true` is removed. | Owner, land use and flood re-run without throwing, under a lease with run records. | hauska-engine, factory |
 
 ### 4.5 Serving truth (class D)
@@ -544,7 +701,7 @@ The envelope family is every rail and atom that decides what may be built:
 |---|---|---|---|
 | D1 | **P-230**: the surface serves the ledger's current cells, not a bake that predates them. Includes F25 (the `bakedAt` label). | A cell written on staging appears on the staging surface without a manual bake, with the cell's own vintage printed. | hauska-engine |
 | D2 | **P-217**: a payload whose parts contradict refuses rather than printing both halves (Hays brief 25/5/20/15 against a draw saying "unruled"). | Proven on the Hays test parcel before and after. | LDT |
-| D3 | Remove Bastrop-specific decline wording ("layer-23") from non-Bastrop parcels. | The Kyle fixture reads a correct reason. | hauska-map |
+| D3 | Closed into **P-257** (rev 4), the single owner of the decline-wording surface. | The Kyle fixture reads a correct reason. | hauska-map |
 | D4 | **P-246** (queued): no dollar value reaches an ungranted caller. | Solo read of both test parcels shows refusals. | LDT |
 
 ### 4.5b Customer experience items the research already found
@@ -555,19 +712,18 @@ The envelope family is every rail and atom that decides what may be built:
 | X2 | **The card names the governing city.** The address line takes city and ZIP from the ledger (`situsCity`, `situsZip`), and the zoning and setback rows name the jurisdiction. The Pflugerville card read only "Travis County". | hauska-map, LDT |
 | X3 | **P-250**: an address-keyed envelope call can return another county's parcel with no mismatch signal; a mismatch must refuse | LDT |
 | X4 | Parcel-specific decline wording everywhere (no Bastrop "layer-23" text on a Kyle lot); PUD parcels read the PUD message (S2) | hauska-map, LDT |
-
-| X5 | **Waco's panel declines an envelope its own live endpoint can draw** (D2, the 2026-08-28 Ruling B defect recurring on a 47,679-parcel city) | hauska-map |
-| X6 | **Williamson: no MCP baked snapshot and no composed map address on any tested parcel** (D6, D7, 5 of 5 and 3 of 3). Root cause unread; possibly P-184. | engine bake, hauska-map; code read first |
-| X7 | **`salesHistory` absent from the MCP schema** rather than declared Unavailable (D12, against P-209) | LDT smartsite-mcp |
-| X8 | **No-table cities decline with "no zoning district observed"** while the same payload holds the district (D5) | hauska-map |
-| X9 | **A malformed situs (", ,") breaks envelope drawing** for a parcel whose zoning and setbacks resolve (D9) | hauska-map, LDT |
-| X10 | **"PUD"-coded districts resolve Euclidean setbacks** (D14). Settle what the code means before the PUD message ships. | ruling first, then LDT |
-| X11 | **Setback citation without an effective date** on Pflugerville (D11) | LDT |
+| X5 | **Waco's panel declines an envelope its own live endpoint can draw** (XD-2, the 2026-08-28 Ruling B defect recurring on a 47,679-parcel city) | hauska-map |
+| X6 | **Williamson: no MCP baked snapshot and no composed map address on any tested parcel** (XD-6, XD-7, 5 of 5 and 3 of 3). Root cause unread; possibly P-184. | engine bake, hauska-map; code read first |
+| X7 | **`salesHistory` absent from the MCP schema** rather than declared Unavailable (XD-12, against P-209) | LDT smartsite-mcp |
+| X8 | **No-table cities decline with "no zoning district observed"** while the same payload holds the district (XD-5) | hauska-map |
+| X9 | **A malformed situs (", ,") breaks envelope drawing** for a parcel whose zoning and setbacks resolve (XD-9) | hauska-map, LDT |
+| X10 | **"PUD"-coded districts resolve Euclidean setbacks** (XD-14). Settle what the code means before the PUD message ships. | ruling first, then LDT |
+| X11 | **Setback citation without an effective date** on Pflugerville (XD-11) | LDT |
 
 The card spec (`_inbox/2026-09-16_scaleup-le_card_spec.md`) and the 39-bucket fixture list
 (`_inbox/2026-09-16_scaleup-le_fixture_list.json`) are the acceptance standard for these items
-and the per-city probe (P-197). Fifteen buckets and the PDF leg remain ungraded; they are graded
-before Phase 0 exits.
+and the per-city probe. Fifteen buckets and the PDF leg remain ungraded. **Rev 4: grading them is
+a leg of the Phase 0 exit (section 5), through P-254.** The row for each item is in section 4.0.
 
 ### 4.6 Controls the six need before they can be a control group
 
@@ -576,11 +732,14 @@ before Phase 0 exits.
 | C1 | **P-213** blast-radius refusal in factory and engine writers. Phase 0 includes the largest writes this program has run. | factory, engine |
 | C2 | Dead controls 4, 6, 7 and 8 (edge starvation self-compare; lookup key as proof; a registry validated then ignored; a tautological CI step). | engine, LDT, factory |
 | C3 | P-195 leave-behinds: F26 (a never-acquired county grades 1 of 65 rails), F28 (160 of 391 cells excluded, unaudited, which P-201 and this instrument address), F29 (walk image older than gate image). | factory |
-| C4 | P-212 follow-on: live-currency checks for the other five counties, and P-206 (serve honours retirement) re-evaluated. | engine |
-| C5 | **LDT `STAGING_ATOMS_DATABASE_URL`: REPOINTED 2026-09-16 (A-181)** to the live staging branch; the stale planner branch is quarantined. **Still owed:** add it to `secret-rotation.mjs` so the next rotation does not strand it again (a class C4 missed sibling). | hauska-factory |
-| C6 | **Sub-agent depth: BUILT 2026-09-16 (A-181).** `FAN-DEPTH` is compiled into every dispatch and enforced at commit and at launch. Proven by violation. Armed in the next session. | doc_repo (done) |
-| C8 | **ADD-084: `PRODUCTION_NEONDB_URL` exposed in a lane's output 2026-09-04, still unrotated** (version 1, 2026-08-28). Nine secrets across two projects share the production role, so rotation is a coordinated change: new password, all nine secrets, and every consumer redeployed. **An operator decision; the teardown tests whether it blocks Burnet (A-182).** | GCP, Neon, every consumer |
-| C7 | **Main already carries six duplicate amendment ids** (A-016, A-060, A-061, A-136, A-145, A-146). Extend the allocation gate to A-, F- and R- prefixes. | doc_repo |
+| C4 | P-212 follow-on: live-currency checks for the other five counties (P-275). Rev 4 correction: P-206 is "a provenanced retirement is served as `parcel_not_found`"; its open PR (LDT #699) relabels declines that already happen and refuses nothing new. | engine |
+| C5 | **LDT `STAGING_ATOMS_DATABASE_URL`: REPOINTED 2026-09-16 (A-181)** to the live staging branch; the stale planner branch is quarantined. **Still owed (P-276), and "add a key" would silently do nothing:** `ROTATION_TARGETS` is a frozen two-key object whose loop also reads `branchRecords[key]` (from `staging-reset`) and `projectIds[key]` and writes to one GCP project. The fix is a third target, its branch record, its project id and its own project, with a test that fails when a consumed staging secret is missing. | hauska-factory |
+| C6 | **Sub-agent depth: BUILT 2026-09-16 (A-181).** `FAN-DEPTH` is compiled into every dispatch and enforced at commit and at launch. Proven by violation. Armed in the next session. **Rev 4: the commit layer does not fire in a seat worktree or on a merge** (C10). | doc_repo (done, with C10 owed) |
+| C8 | **ADD-084: `PRODUCTION_NEONDB_URL` exposed in a lane's output 2026-09-04, still unrotated** (version 1, 2026-08-28). Nine secrets across two projects share the production role, so rotation is a coordinated change: new password, all nine secrets, and every consumer redeployed. **Rev 4 (P-278): it blocks Burnet's first production publish** (teardown T9), which is operator stop point 2. The engine key exposed 2026-09-15 is rotating separately under the reports lane's P-251. | GCP, Neon, every consumer |
+| C7 | **Main already carries six duplicate amendment ids** (A-016, A-060, A-061, A-136, A-145, A-146). Extend the allocation gate to A-, F- and R- prefixes, and reconcile the register's C15 count of three (P-277). | doc_repo |
+| C9 | **Tag URLs that skip a security setting** (P-279). The 37 engine tags are gone (reports lane, P-251); a post-deploy check stops the next set. | engine deploy, every Cloud Run service |
+| C10 | **The commit gates fire where lanes commit** (P-280): tracked `pre-commit` and `pre-merge-commit` hooks on the shared git directory run both gates against the worktree being committed. | doc_repo |
+| C11 | **Leases for job executions and heavy-scan windows** (P-281), before P-263, P-264 and Burnet's first heavy stage. The register's C17 has 11 instances. | doc_repo tooling, factory and engine runners |
 
 ### 4.7 Cotality in Phase 0: measure, do not serve
 
@@ -591,22 +750,53 @@ before Phase 0 exits.
 | V3 | **Correct the canon** (`_STATE.md`, then the regenerated `DISPATCH_PREAMBLE.md`, and `00_current_state.md`) from "extinguished" to "REST dead, re-engaged for the farm". | The next compiled dispatch carries the corrected line. |
 | V4 | **A vendor-versus-CAD disagreement ruling**, on the pattern of `_decisions/2026-09-11_setback_source_most_current_wins.md`. | Decision record exists. |
 
+### 4.8 Instruments and machinery the plan depended on and nobody owned (rev 4)
+
+| Row | What | Why it is needed | Repo | When |
+|---|---|---|---|---|
+| P-253 | The exit instrument repaired: a false-earned predicate per setback rail, the `no-source` rows tied to the roadmap by a check, the `deferred` rows tied to P-264's residual, any county, the rail list read from the factory | The ledger leg of section 5; the only check that can be pointed at Burnet | doc_repo | now |
+| P-254 | `surface-probe.mjs` OPS-24 legs over the 39-bucket fixture list, with build identity and fresh contexts | The customer leg of section 5 | doc_repo | now |
+| P-255 | The census instrument (S0) plus P-249's predicate population | Makes 219,472 re-runnable and gives P-249 a count it can be measured against | doc_repo | now |
+| P-282 | A divergence harness for paired implementations | C2, 19 instances; P-249, P-260, P-262 and P-265 each land a pair on it | engine, LDT, factory | now |
+| P-284 | Stage and cost telemetry, as a migration | OPS-24 law 5 and commitment 3; "Bell and Milam beat Burnet" as a query | hauska-factory | before Burnet |
+| P-285 | The farm runner | Nothing runs a county end to end with per-stage records | hauska-factory | skeleton before Burnet's stage 3 |
+| P-286 | The blocker register as a closed checklist | 18 of 19 classes have no executable check; C7 and C14 have none named | doc_repo | before Burnet's stage 2 |
+| P-287 | Burnet's unreconciled facts: 59,785 parcels against 50,138 features; address points re-counted | No Find-box lookup can pass in Burnet without address points | hauska-factory | before Burnet |
+| P-288 | The generalised target pair | A second farm cannot run under its own name | factory, engine | before Phase 2, if isolation is chosen |
+| P-289 | Branch lifecycle | The six quarantined branches had no owner or expiry | factory, operations | before Phase 2, if isolation is chosen |
+| P-290 | Two counties publishing in one hour, tested | The shared-store tolerance is a schema fact, not a tested one | hauska-factory | before Phase 2 |
+| P-291 | The July bake and the farm: 19 baked counties, Bell a migration county | Customers in 13 counties outside the six are answered from an ungraded bake | engine, LDT | census now; Bell in Phase 2 |
+
 ## 5. Phase 0 exit: the definition of done
 
-**Phase 0 is done when all four hold at once:**
+**Rev 4: this section is the only definition.** Rev 3's section 16 also said "Phase 0 exits when
+this command exits 0"; that sentence is withdrawn, because the command reads the factory store
+and the failures that matter to a customer are on the served surface.
 
-1. **`scripts/six-county-completeness.mjs` exits 0 (COMPLETE).** Every rail in every county is
-   either `pass` or excluded under a named ruling, and zero cells carry a false earned state.
-   - Built and self-tested this session: 11 of 11 checks (the eleventh added for the A-177 deferral).
-   - Its 65 declared rails match the live verdict table exactly.
-   - It reports UNMEASURED, never COMPLETE, on an empty county.
-2. **The per-city surface probe passes.** At least four fixtures per wired city (a codified
-   district, a formerly uncodified district, a PUD, and a parcel where an envelope is promoted),
-   plus one unincorporated parcel per county, on the map, the MCP and the PDF.
-   `scripts/surface-probe.mjs` needs these legs (P-197).
-3. **Coverage per the serving path** (ruling 2): every parcel in the six answers on the customer
-   surface, and an address outside them says "not covered" rather than `no-hit`.
-4. **The operator walks it** and signs off.
+**Phase 0 is done when all five hold at once:**
+
+1. **The ledger leg: `scripts/six-county-completeness.mjs` exits 0 (COMPLETE)** after P-253.
+   Every rail in every county is either `pass` or excluded under a named ruling whose coupling is
+   checked, and no setback rail carries a false earned state.
+   - Today: 11 of 11 self-tests; 65 declared rails match the live verdict table; UNMEASURED,
+     never COMPLETE, on an empty county.
+   - **Reachability, stated:** exit 0 is not reachable until P-256 has flipped the false absences
+     and P-258 has cleared them, and until P-266 closes the three derived rails and `citationUrl`.
+2. **The customer leg: `scripts/surface-probe.mjs` passes** after P-254. Every one of the 39
+   fixture buckets is graded on the map, the MCP and the PDF, including the 15 ungraded today, and
+   the open count of customer-visible defects (the XD and X lists) is zero or each is ruled.
+   At least four fixtures per wired city (a codified district, a formerly uncodified district, a
+   PUD, a promoted envelope) plus one unincorporated parcel per county. Every envelope fixture
+   asserts `status`, `declineReason`, `envelopeCovered`, geometry presence and figure presence.
+3. **The coverage leg** (ruling 2): every parcel in the six answers on the customer surface, and
+   an address outside them says "not covered" rather than `no-hit` (P-205, P-210).
+4. **The road residual:** P-264's per-city residual is on file, and every city where road
+   failures block rendering is either fixed or ruled (A-177's escape clause, measured).
+5. **The operator walks it** and signs off.
+
+**A close graded only on a store instrument does not count toward this exit.** Every Phase 0
+row that Burnet depends on is re-graded on the customer leg before Burnet starts (A-153: the gate
+and the customer surface are not the same mechanism).
 
 **What "complete" deliberately does not require.** It does not require values for rails with no
 source anywhere (the P-203 eight, carried on the capability roadmap), for R-2 rails, or for
@@ -626,6 +816,17 @@ partition by county. The factory store's read-write endpoint scales to 8 CU and 
 read-only endpoint (2 to 8 CU) now carries planner reads. **Bell and Milam's storage is decided
 from Burnet's measured stage records.**
 
+**Rev 4, two conditions on "safe" and one correction to "measurable":**
+
+- **One heavy scan per shared database** (AGENT_CONTRACT section 4) has no registry and no check,
+  and Burnet's stages 3 to 8 include full-county PostGIS phases. P-281 (leases for job executions
+  and heavy-scan windows) lands before Burnet's first heavy stage. The register's C17 already holds
+  a scheduled job writing the verdict table a walk was grading.
+- **The shared-store tolerance is untested under concurrency.** P-290 tests it before Phase 2.
+- **"Measurable" was false.** No cost column, table or writer exists (factory `9171279`). The
+  isolation decision cannot be made from records that do not exist, so P-284 is a Burnet
+  precondition, not a refinement.
+
 **Three preconditions for isolated stores, built alongside so the choice is open when Burnet
 reports:**
 
@@ -637,12 +838,15 @@ reports:**
    five orphaned branches from the per-run staging era, now quarantined, and one stale branch
    still bound by a secret.
 3. **Stage telemetry on the depth writers.** `parcel-envelope-cells` and `parcel-setback-cells`
-   write no row or cost counts on any of 14 sampled runs. Without them "Bell and Milam beat
-   Burnet" cannot be a query.
+   write no row or cost counts on any of 14 sampled runs. Rev 4: this is part of P-284, which
+   covers all thirteen stages and is a Burnet precondition.
+
+Rev 4 rows: P-288 (target pair), P-289 (branch lifecycle).
 
 **The farm also includes, per the operator:**
 
-- the bake audit (the pre-bake audit, stage 2), with the blocker register as its checklist;
+- the bake audit (the pre-bake audit, stage 2), with the blocker register as its checklist once
+  P-286 closes the class set and gives every class a check or an explicit audit-only line;
 - the completeness check;
 - the stage meter;
 - the manifest and merge gate;
@@ -658,10 +862,10 @@ diagram where they differ.
 **Measured today:**
 
 - CAD rest-reachable.
-- Geometry ingest passed, but read 50,138 features against 59,785 parcels on production. The
-  completeness check exists for exactly this.
+- Geometry ingest passed, but read 50,138 features against 59,785 parcels on production. Nobody
+  has reconciled it (P-287).
 - A 2025 roll of 49,243 accounts.
-- Address points: 0.
+- Address points: 0 when last counted (2026-08-08). Re-counted immediately before the run (P-287).
 - `parcel_record`: 0 rows.
 - Seven places:
   - **Marble Falls** has a verified-live zoning layer (261 features). It has no setback table
@@ -676,7 +880,7 @@ diagram where they differ.
 | 2 Pre-bake | Run the normalised register against Burnet's sources. | the runner |
 | 3 Acquire | Parcels, roll with declared vintage, address points (StratMap statewide set), Marble Falls zoning, road nodes (checked against TIGER), ag valuation from the Burnet CAD. Vendor stage only if V2 allows. | address-point loader for a new county; vendor stage gate |
 | 4 Identity | Measure the CAD-to-GIS join. | the generalised H1 instrument |
-| 5 Instantiate | 65-rail full shape. **P-201 must already be live, or the instantiated county passes the gate with nothing earned (A-179).** | none |
+| 5 Instantiate | 65-rail full shape. **P-252 must already be live**: with P-201 alone, the instantiated county reads `excluded-not-applicable` on every rail and clears the pre-bake rail check (A-183). | none |
 | 6 Rail fill | Every writer under lease with run records. | none (L7 lands first) |
 | 6b Depth | Registry row for Marble Falls, setback table for Marble Falls (MAKE), depth-warm. | depth stage |
 | 7 Atoms | County atoms with identity reconciled. | P-193 |
@@ -685,6 +889,9 @@ diagram where they differ.
 | 10 Publish | Staging, then production; retract-by-run-id proven once on staging. | retract verb (P-196) |
 | 11 Probe and meter | A Marble Falls address draws a cited district, setbacks and an envelope. A Bertram address says no zoning layer is on file. Six-county-completeness generalised to take Burnet. | probe legs; instrument county list |
 | 12 Merge | Through the merge gate. | merge gate, row versions |
+
+**Burnet does not start until** the Phase 0 exit holds, and P-252, P-253, P-278 (the production
+credential), P-281, P-284, P-286 and P-287 have landed, with P-285's runner skeleton in place.
 
 **Burnet is done when** it reads COMPLETE on the generalised instrument, both addresses pass on
 all three surfaces, the run record exists with every stage's numbers, and the defect-class list
@@ -695,6 +902,12 @@ names each class found with its fixture and its upstream fix. That record is the
 **Bell 48027.**
 
 - CAD rest-reachable. Geometry ingest not run. Not in the registry.
+- **Rev 4: Bell already serves customers from the July bake** (165,574 Tier-1 rows; a real
+  parcel, `48027:520164`, returns earned facts on `get_smart_site`), measured by P-210's lane.
+  Bell is a MIGRATION county: the farm must take it onto the ledger, serve it from there, and
+  retire the bake rows after, with a divergence test during the overlap (P-291). Milam and Burnet
+  have no bake rows, so Phase 2 compares a migration with a new county. That is useful, because 13
+  more baked counties will need the same path.
 - In August it ran the older atom pipeline as an unzoned county: a 20-parcel certification and
   13,987 road nodes. It has a known boundary divergence (694 parcels north of the Census line,
   ruled "serve as-is"). It has no ledger rows.
@@ -711,7 +924,8 @@ names each class found with its fixture and its upstream fix. That record is the
 - Five towns, none probed.
 
 **Prerequisites from Phase 1:** the merge gate, row versions, the farm runbook, and a parallel
-safety test (two county runs cannot touch each other's cells, with a divergence test).
+safety test (P-290: two county runs cannot touch each other's cells, with a divergence test).
+If Burnet's records call for isolated stores, P-288 and P-289 as well.
 
 **Done when** both read COMPLETE, both merged through the gate without a conflict, and both beat
 Burnet's baseline on the section 10 measures.
@@ -762,32 +976,68 @@ two farms.
 - **Its first real job:** V1, the bake-off on the six, before Burnet. That makes Burnet's vendor
   stage a measured choice rather than a catalog claim.
 
-## 12. Sequencing (rev 3)
+## 12. Sequencing (rev 4)
 
 **Done:**
 
 - the five-lane research wave, landed `f1dd3e06` and read in A-179;
 - the session-gap sweep, landed `b100c36c`, which takes the register to 486 instances (A-182);
-- the final teardown, compiled against this rev 3 (A-182).
+- the final teardown, landed `f9ed016c` and re-checked at source (A-183);
+- P-201, merged at factory `9171279`; the hole it was meant to close is still open (P-252);
+- the 37 engine tag URLs removed and the engine key rotation begun, by the reports lane under its
+  P-251 (operator-ruled).
 
-**Next, in order:**
+**The critical path to Burnet is the Phase 0 exit, and its longest pole is P-258**, the setback
+acquisition campaign: every (city, district) unit across the 54 no-table cities and the district
+misses in the wired cities. It is not P-201, P-252 or P-249. Every other Phase 0 row is shorter,
+and the farm machinery builds alongside the campaign. If the operator wants Burnet sooner, the
+lever is a ruling on how much of P-258's tail must finish first; nothing else moves the date.
 
-1. **The session-gap follow-up** (`scaleup-lc2-session-gap`). It reads the 61 session files from
-   2026-08-21 to 2026-09-13 into the blocker register.
-2. **The final adversarial teardown of this rev 3 scope**, recompiled against it and the
-   completed register.
-3. **Then Phase 0 build rows** are allocated and dispatched by repo availability.
-   - **P-201 (factory) and P-249 (LDT and hauska-map) lead.**
-   - P-248 follows P-238 in hauska-engine.
-   - P-213 (blast radius) was re-fired by the other integration session (A-178).
+**Build order, by dependency** (no dates; parallel wherever the edges allow):
 
-**What can start now, because the teardown will not change it:**
+```
+START NOW, in parallel
+  P-252  zero-earned refusal ........... hauska-factory, gate files
+  P-284  stage and cost telemetry ...... hauska-factory, a migration (different files)
+  P-249  envelope unlock ............... legacy-design-tools + hauska-map
+  P-248 -> P-261  footprints, PDF figure hauska-engine, one lane
+  P-258  acquisition campaign .......... legacy-design-tools corpus, two worklists in parallel
+  P-259  Austin zoning source .......... legacy-design-tools zoning adapter
+  P-253, P-254, P-255, P-277, P-280, P-286   doc_repo, integration seat
+  P-281  leases ........................ doc_repo tooling, then the runners
+  P-276  staging rotation targets ...... hauska-factory, secret-rotation files
+  P-278  production credential ......... operator go
 
-- P-201;
-- the stage-record format and the telemetry on the two depth writers;
-- the manifest format;
-- the normalised assumption register;
-- the canon fix for LDT's staging atoms secret (an operator go point).
+THEN, as each dependency lands
+  P-256  false absences stop ........... after P-252, P-255
+  P-257  decline wording ............... after P-249 (map branch changes once), P-256, the PUD ruling
+  P-266, P-267, P-274 .................. after P-252
+  P-262  labeller, and P-263 clean-up (after P-281); then P-264 re-derive (after both, P-260, P-281)
+  P-260  one registry .................. after P-258 in part
+  P-265  Hays slates ................... after P-211's envelope apply
+  P-285  runner ........................ after P-284, P-281
+  P-290  concurrency test .............. after P-281, P-285
+
+PHASE 0 EXIT (section 5) <- everything above, plus P-230, P-217, P-209, P-204, P-211, P-156,
+                            P-269, P-270, P-271, P-272, P-273, P-275, P-282
+  -> BURNET, with P-278, P-286 and P-287 landed
+```
+
+**Where repos will be contended:**
+
+- **hauska-factory:** P-252 and P-284 touch different files and run together. P-256, P-266,
+  P-267 and P-274 follow P-252. P-276 is independent.
+- **legacy-design-tools:** P-249 (`buildableEnvelope/`), P-258 (the corpus package), P-259 (the
+  zoning adapter), P-269 (`cadRollFactFromParcelRecord.ts`), P-270 and P-272 (serve and card),
+  plus the reports lane's open P-206 and P-241. Different files; one lane at a time on
+  `buildableEnvelope/`.
+- **hauska-map:** P-249's map clause first; P-257, P-270, P-271 and P-272 after it, so the
+  envelope decline branch changes once.
+- **hauska-engine:** P-248 then P-261 in one lane; P-230; P-260; P-262 to P-264; P-271. P-230 and
+  P-271 both touch the bake, so P-271 reads first and coordinates.
+- **doc_repo:** two integration sessions write to the same checkout and the same row numbers.
+  P-251 was taken between two reads on 2026-09-16. Row allocation should go through the id gate
+  (P-277).
 
 ## 13. Teardown: where this plan is most likely wrong
 
@@ -803,9 +1053,12 @@ two farms.
    re-derived it.**
 
 1. **S1 will turn green gates red in every county, on purpose.** That is the honest state. It will
-   read as a regression unless it is announced first. Surfaces must also be checked for how they
-   render `unaccounted` before the flip, and it goes to staging first. The P-216 outage was a
-   one-branch change with map-wide effect.
+   read as a regression unless it is announced first. It goes to staging first. **Rev 4:** the
+   surface check has been run (teardown T4): the map, agValuation and cityLimits refuse; flood
+   falls through to its atom; the dollar rails keep the legacy value and `valueBasis` defaults a
+   label (P-269), so S1 carries a setback-only allowlist. The rev 3 claim that "the P-216 outage
+   was a one-branch change with map-wide effect" was refuted by A-157 (a stale tab after a
+   rollback) and is withdrawn.
 2. **"Router miss" may include legitimate cases.** Partly answered this session. All 125,212
    carry one reason, `SETBACK_ROUTER_NOT_A_DISTRICT`, and no not-specified population exists
    among them. Some raw codes may still be non-districts (right-of-way, water, sentinels), so S0
@@ -820,14 +1073,27 @@ two farms.
    live) but the memory on hand-declared `has_writer` is the warning. A policy change is a
    ruling, reviewed, never a quiet edit.
 6. **"Completely done before Burnet" can stall the farm.** Mitigated by section 12: farm machinery
-   builds in parallel, and only the Burnet run waits.
+   builds in parallel, and only the Burnet run waits. **Rev 4: the wait is long.** The exit is
+   gated on the whole acquisition campaign (P-258), by design of S1 and of the operator's ruling.
 7. **Two labellers may not be reconcilable by import alone.** The engine path works on scrubbed
    rings and the LDT path on raw rings with grouping. R1 may need a shared primitive plus a
    divergence test rather than one file.
 8. **Vendor values and first-party values will disagree.** Without V4 the first disagreement
    becomes a silent pick, which R-1 prohibits.
 9. **The P-183, P-178 and wave 6 record never reached main.** Some state in this document may be
-   older than what that branch holds. H6 comes early for that reason.
+   older than what that branch holds. H6 comes early for that reason. (Rev 4: wave 6 landed under
+   A-176; the two held closes are still off main.)
+10. **The teardown lane had no store access.** Its figures are cited, not re-derived. The next
+    review dispatch mounts the read-only DSNs or states that the query clause is unavailable.
+11. **P-252 will turn verdicts red in the six, like S1.** If a publish-floor rail flips to refuse,
+    that county's next publish refuses. The dry run lists those rails before anything deploys.
+12. **P-210's coverage answer is a county-level presence check on bake rows** (open as engine
+    PR #458). One stale row makes a county "covered", and when P-230 moves the serving path to the
+    ledger the coverage check must move with it. A divergence test between the coverage answer
+    and the serve path belongs on that PR or on P-230.
+13. **P-264 without the road-name dictionary is a planner call** inside A-177. If its residual is
+    dominated by name failures in the largest cities, the deferral is the wrong call, and the
+    operator decides.
 
 ## 14. Decisions
 
@@ -844,22 +1110,34 @@ two farms.
 7. **The session-gap follow-up:** yes.
 8. **Sub-agent depth:** "I go with your rec on both"; built (A-181).
 9. **LDT's staging atoms secret:** "go on secret"; repointed (A-181).
+10. **The 37 engine tags and the engine key:** removed and rotating, by the reports lane under its
+    P-251, operator-ruled (verification of the rotation owed once it completes).
 
 **Still owed:**
 
-10. **Ag-valuation sources** for Bastrop, Caldwell, Hays and McLennan: which CAD product per
-    county.
+11. **Ag-valuation sources** for Bastrop, Caldwell, Hays and McLennan: which CAD product per
+    county (P-267).
+12. **The production database credential** (P-278, ADD-084): a planned rotation. It blocks
+    Burnet's first production publish.
+13. **What a bare "PUD" code means** where it resolves Euclidean setbacks today (P-257, XD-14).
+14. **Answers served from the July bake in 13 counties outside the six** (P-291): keep serving
+    them with a declared quality statement, or refuse them until onboarded. Recommendation: keep
+    serving, with the statement visible, because refusing would remove answers customers have
+    today and the farm will replace them county by county.
+15. **P-264 without the road-name dictionary** (a planner call inside A-177): stands unless the
+    operator overrules it.
 
 ## 15. Instruments in this package
 
 | Instrument | State |
 |---|---|
 | `scripts/six-county-completeness.mjs` | Built. Self-test 11 of 11: not-vacuous, empty-county, undeclared-rail and negative-control cases. Rail names 65 of 65 against live. Live run in section 16. |
-| Parcel-grain setback queries | Ran read-only for all six counties this session. Queries at `_inbox/2026-09-16_setback_parcel_grain_queries.sql`, output at `_inbox/2026-09-16_setback_parcel_grain_results.txt`. To be promoted to a self-testing instrument as S0. |
+| Parcel-grain setback queries | Ran read-only for all six counties this session. Queries at `_inbox/2026-09-16_setback_parcel_grain_queries.sql`, output at `_inbox/2026-09-16_setback_parcel_grain_results.txt`. To be promoted to a self-testing instrument as P-255. |
 | Baseline run | `_inbox/2026-09-16_six_county_completeness_baseline.json` (the section 16 run, full detail). |
 | Rail-verdict query | Inside the completeness instrument. |
-| Surface probe per city | Owed (P-197). Fixture parcels named in section 2. |
-| Verified-envelope coverage (R0) | Owed. The atoms store needs a planned query. |
+| Surface probe per city | Owed: P-254 (the Phase 0 fixture legs); P-197 keeps the per-stage county legs. |
+| Verified-envelope coverage (R0) | `scripts/envelope-draw-gap.mjs` (L-B) measures the upper bound; P-255 adds the predicate population. |
+| Zero-earned gate probe | Run 2026-09-16 against an extracted factory tree at `9171279`; to be checked in as P-252's fixture test in hauska-factory. |
 
 ## 16. Live run of the Phase 0 instrument
 
@@ -891,4 +1169,5 @@ two farms.
 The ag-valuation guard read 0, and that is correct. Those cells are `unaccounted`, not falsely
 `not-applicable`.
 
-**This run is the Phase 0 baseline. Phase 0 exits when this command exits 0.**
+**This run is the baseline for the ledger leg of the Phase 0 exit.** Rev 4 withdraws rev 3's
+sentence "Phase 0 exits when this command exits 0": the exit is section 5, all five legs.

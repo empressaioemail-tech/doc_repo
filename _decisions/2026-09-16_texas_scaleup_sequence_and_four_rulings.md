@@ -130,3 +130,28 @@ not the road data itself. Road data explains only the atoms that failed verifica
 
 Reversal: the quarantine is undone per branch by re-enabling the endpoint and restoring the name.
 Deletion needs a separate operator go.
+
+## Addendum: the final teardown (A-183)
+
+No new operator ruling was made. The integration seat made four calls inside the existing
+rulings, each reversible by the operator:
+
+1. **The verification re-derive (P-264) runs in Phase 0 without the road-name dictionary.** Its
+   per-city residual is the measurement A-177's escape clause needs. A city where road failures
+   block rendering comes back for a ruling.
+2. **R8 splits.** `parcelGeometry` stays in Phase 0 under P-204; `roads` and `edgeSignal` stay
+   deferred with the road-node pass.
+3. **One owner for the decline-wording surface** (P-257).
+4. **The Phase 0 exit is one definition with a customer leg** (scope section 5), and a close
+   graded only on a store instrument does not count toward it.
+
+**Consequence of the operator's sequence, recorded:** Burnet's run waits on the whole setback
+acquisition campaign (P-258), because "the setback table rec completely done and verified before
+Burnet" includes every acquirable district table.
+
+**Owed to the operator:** the production database credential rotation (P-278); ag-valuation CAD
+products (P-267); what a bare "PUD" code means (P-257); and whether the 13 counties outside the six
+that answer from the July bake keep serving with a declared quality statement or refuse until
+onboarded (P-291).
+
+Reversal: any of the four calls is undone by an operator ruling and a scope revision.
