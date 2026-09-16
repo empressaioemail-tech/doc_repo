@@ -1005,7 +1005,7 @@ lever is a ruling on how much of P-258's tail must finish first; nothing else mo
 START NOW, in parallel
   P-252  zero-earned refusal ........... hauska-factory, gate files (PR #157 green; runs in
          production only after P-292)
-  P-292  maxImperviousCoverPct not-applicable outside Travis ... hauska-factory (before P-252 runs)
+  P-292  county-scoped floor rail (maxImperviousCoverPct required only in Travis) ... hauska-factory (before P-252 runs)
   P-284  stage and cost telemetry ...... hauska-factory, a migration (different files)
   P-249  envelope unlock ............... legacy-design-tools + hauska-map
   P-248 -> P-261  footprints, PDF figure hauska-engine, one lane
