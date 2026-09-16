@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (21:05Z)
+last_updated: 2026-09-16 (21:15Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -50,7 +50,7 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | Row | What | State | Next step |
 |---|---|---|---|
 | P-258 | Setback table campaign (planner wave) | Dispatched 2026-09-16 | Grade by the census after the writer run |
-| P-256 | Stop false "no setbacks required" | Lane closed partial; PR factory #160 green, rebased on `afdda42`. It also releases the cells this job wrote falsely (about 219,472 parcels, five rails each) | Integration seat: review as a mass state change; merge after P-252 is live; dry run, then apply |
+| P-256 | Stop false "no setbacks required" | Lane closed partial; PR factory #160 green, rebased on `afdda42`. It also releases the cells this job wrote falsely (about 219,472 parcels, five rails each) | **Held (A-192).** Applying it would turn every county's `setbackFrontFt` verdict to `refuse`, and LDT then drops ledger setbacks for the whole county back to the stale bake. Needs the serve-semantics ruling, and a factory blast-radius guard or explicit authorisation |
 | P-262 | One edge labeller and ring scrub | Dispatched 2026-09-16 | Feeds P-264 |
 | P-281 | Job and heavy-scan leases | Dispatched 2026-09-16 | Unblocks P-263, P-264, P-294 |
 | P-252 | Empty counties refuse at the gate | **Merged** (factory `28cec4c`); publish jobs deployed; migration `0011a` applied (it had never been). The scheduler image is not deployed: its hourly `--apply` is the only step, and it writes the table production reads | Scheduler image after retrieval-api serves the new strings |
@@ -102,6 +102,8 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 
 ## Open with the operator
 
+- **Ruling (A-192):** should the county verdict stop being the serve switch, so each parcel serves its own cell (earned value, or a declared refusal) and never the stale bake? P-256 waits on it. Recommended: yes.
+- **Fire the compiled lanes:** the P-293 remainder (blocks the scheduler), P-205 follow-on, P-269, P-295 phase 1, P-284 remainder.
 
 - The "waiting on vendor" acceptance for ag valuation stands unless the operator wants Burnet to wait for the Cotality data.
 - An account check for P-243 (the MCP app in a real Claude client) and P-244a.
@@ -127,3 +129,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | 2026-09-16 20:00 | Operator rulings (A-190): both serving-path fixes, republish the six; P-258, P-256, P-262, P-281 dispatched; reports session retired and merged in; P-294 to P-296 carded; session closed with a handoff. |
 | 2026-09-16 20:25 | New integration session. P-292 merged (factory `e86bc51`), P-293 merged (LDT `9ce30b8`), P-252 merged (factory `28cec4c`). The engine vocabulary lane is compiled. Two rollout findings: the gate scheduler runs hourly with `--apply` on the one verdict table production reads, so there is no staging step for it and deploying its image is the apply; and migration `0011a` (the new verdict strings) is not applied to the factory store, so the new scheduler would fail its writes. Publish image build started at `28cec4c`. |
 | 2026-09-16 21:05 | LDT P-293 deployed (`cortex-api-00815-fiw`). Migration `0011a` applied. P-284 merged (`afdda42`), migration `0012` applied, writer images deployed, and a real dry run wrote its stage record; its compute cost is unmeasurable (wrong job name, proven both ways), remainder lane compiled. P-249 PRs reviewed. P-205 Marble Falls rule decided and its engine lane compiled; P-269 and P-295 (phase 1) compiled. P-256 closed partial with PR #160. A-191 records it. |
+| 2026-09-16 21:15 | P-256 held (A-192): its apply would switch all six counties' setbacks from the ledger back to the bake, because the county verdict is the serve switch. P-213's blast-radius guard exists only in the engine. Serve-semantics ruling owed. |
