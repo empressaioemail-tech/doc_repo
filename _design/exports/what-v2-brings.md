@@ -79,13 +79,15 @@ others, which is where most of the calendar time actually goes.
 You can see where an application is sitting and how long it has been there. And the applicant
 receives **one consolidated letter** instead of three arriving on different days.
 
-## See the tax picture, including who has not filed
+## See the tax picture in one place
 
 Hotel occupancy filings, what was reported, what exemptions were claimed, and how the period
-compares with the last twelve months.
+compares with the last twelve months — reconciled against what the city actually booked, with any
+difference shown and explained rather than blended into a single revenue figure.
 
-Most usefully: **who has not filed at all.** A list of filings tells you who did. Knowing who is
-missing is the harder question and the one worth asking.
+Identifying who has **not** filed is the natural next question and the more valuable one. Whether
+this feed can answer it depends on what the source system provides, which is an open question with
+the vendor and is scoped separately.
 
 ## Find anything, inside the documents
 

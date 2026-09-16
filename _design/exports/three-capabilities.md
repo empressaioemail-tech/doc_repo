@@ -39,8 +39,8 @@ a decision needs a defensible basis.
 
 ## Hotel occupancy tax
 
-**A read-only window onto what has been filed, what has been claimed, and who has not filed at
-all.**
+**A read-only window onto what has been filed, what has been claimed, and how it reconciles against
+what the city actually booked.**
 
 **What has come in.** Each filing, what was reported, what was paid, and how the current period
 compares with the last twelve months. The trend is on the page rather than assembled by hand each
@@ -49,9 +49,10 @@ quarter.
 **What was claimed.** Exemptions are shown alongside the filings that claim them, so a pattern is
 visible rather than buried in individual returns.
 
-**Who has not filed.** This is the part a spreadsheet cannot give you. A list of filings tells you
-who did file. Knowing who is missing is the question worth asking, and it is the one that is
-hardest to answer today.
+**Who has not filed, subject to one open question.** A list of filings tells you who did file.
+Knowing who is missing is the harder question and the more valuable one. Whether this feed can
+answer it depends on whether the source provides a way to identify a taxpayer across filings —
+an open question with the vendor, and scoped separately for that reason.
 
 **Where the numbers came from.** Every figure names the system it came from and the date it was
 read, so a question in a council meeting has an answer in the room.
