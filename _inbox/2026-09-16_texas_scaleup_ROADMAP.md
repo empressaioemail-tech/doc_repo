@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-16 (21:27Z)
+last_updated: 2026-09-16 (21:45Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom.
 kind: roadmap
 owner: nick
@@ -53,10 +53,10 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | P-258 | Setback table campaign (planner wave) | Dispatched 2026-09-16 | Grade by the census after the writer run |
 | P-256 | Stop false "no setbacks required" | Lane closed partial; PR factory #160 green, rebased on `afdda42`. It also releases the cells this job wrote falsely (about 219,472 parcels, five rails each) | **Held (A-192).** Applying it would turn every county's `setbackFrontFt` verdict to `refuse`, and LDT then drops ledger setbacks for the whole county back to the stale bake. **Ruled (A-193):** applies after P-297 is live, with a factory blast-radius guard or an explicit share authorisation |
 | P-262 | One edge labeller and ring scrub | Lane closed partial; PR engine #461 clean and green. Curved frontages are labelled right and still drawn wrong (a boundary-primitive row is owed) | Merge after the retrieval-api deploy, so that deploy carries only the P-293 remainder; graded by P-264 |
-| P-281 | Job and heavy-scan leases | **Merged** (factory `35007fb`; doc_repo seat branch merged as `9c0881cb`) | Integration seat: publish image and migration `0013`, writer images, `factory-control` revision, then a real contention run |
-| P-252 | Empty counties refuse at the gate | **Merged** (factory `28cec4c`); publish jobs deployed; migration `0011a` applied (it had never been). The scheduler image is not deployed: its hourly `--apply` is the only step, and it writes the table production reads | Scheduler image after retrieval-api serves the new strings |
+| P-281 | Job and heavy-scan leases | **Live and proven** (A-195): migration `0013` applied, writers and `factory-control-00008-vid` deployed, a real job refused `LEASE_HELD` while a session held its store | Eleven heavy jobs still take no lease (named in its close); P-263, P-264 and P-294 can use it |
+| P-252 | Empty counties refuse at the gate | **Scheduler image deployed** (`2c23c52e`), hourly trigger **paused**; apply waits for the old-code 21:00 run to finish | Run the apply by hand, verify the 25 flips, resume the trigger, re-run both instruments |
 | P-292 | Impervious-cover rail required for publishing only in Travis | **Merged** (factory `e86bc51`); in the deployed publish jobs | Graded with P-252 |
-| P-293 | LDT reads the factory's new verdict strings | **LDT deployed** (`cortex-api-00815-fiw`). **Engine remainder merged** (engine #462 as `9e5e793`); retrieval-api image building | Deploy retrieval-api; then the scheduler image |
+| P-293 | Both verdict readers read every verdict string | **Deployed**: LDT `cortex-api-00815-fiw`, retrieval `hauska-retrieval-api-00094-wed` (A-195) | Graded once the scheduler writes an `excluded-*` verdict |
 | P-249 | Unverified "no buildable area" data stops hiding envelopes | Lane closed partial; PRs LDT #701, map #409 reviewed (sound). The verification field it reads is on the live atom chain (checked on promoted and unverified atoms) | Integration seat: staging proof on the served surface |
 | P-284 | Cost and timing records for every stage | **Merged** (`afdda42`); migration `0012` applied; writer images deployed; a real dry run wrote its record. **The compute cost can never be measured yet**: the lookup asks for job `factory-atoms-cad` (404), and the backfill runs in an old reaper image | Lane `p284r-compute-cost-job-name` compiled; then rebuild the reaper image |
 | P-205 follow-on, P-284 remainder, P-295 (phase 1), P-297 with P-269 | Compiled 2026-09-16, safe to fire now | `_dispatches/2026-09-16_{p205b-coverage-ambiguous-locality,p284r-compute-cost-job-name,p295-ledger-serving-measure,p297-cell-serve-ldt}_dispatch.md` | Operator fires them. **Do not fire `p269-dollar-rails-refuse`**: withdrawn, folded into `p297-cell-serve-ldt` |
@@ -135,3 +135,4 @@ not yet proven on the served surface. *Deploy owed* means merged and not yet run
 | 2026-09-16 21:18 | Operator ruling A-193: the county verdict is a grade, not the serve switch (decision record, OPS-24 law 7, row P-297). P-297's LDT half compiled together with P-269; the separate P-269 dispatch withdrawn. P-293 remainder fired. P-281 closed partial (factory #161); P-256 landed earlier; P-258 and P-262 still in flight. |
 | 2026-09-16 21:24 | P-277 done (A-194). P-281 merged (factory `35007fb`, doc_repo `9c0881cb`); its images and migration are in progress. |
 | 2026-09-16 21:27 | Engine #462 (P-293 remainder) merged as `9e5e793`; retrieval-api image building. P-262 closed partial (engine #461). P-297 engine half compiled. Earlier change-log times corrected to the commit times. |
+| 2026-09-16 21:45 | Retrieval-api deployed (`00094-wed`): both verdict readers live. P-281 live and proven by a refused job. Scheduler image deployed with its hourly trigger paused; apply pending (A-195). |
