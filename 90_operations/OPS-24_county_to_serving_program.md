@@ -2,8 +2,8 @@
 id: OPS-24_county_to_serving_program
 title: OPS-24 — County to serving: one pipeline, thirteen stages, one county before any farm
 date: 2026-09-14
-last_updated: 2026-09-14 (rev 2, teardown folded in as A-150)
-status: active after the 2026-09-14 teardown (A-150); P-195 is the first build row; every other build row waits on it
+last_updated: 2026-09-16 (rev 3: the operator's sequence, Phase 0 first, the farm built during Burnet, Bell and Milam in parallel; A-176 to A-180)
+status: active, rev 3. The operative work plan is `_inbox/2026-09-16_texas_scaleup_program_scope.md` (draft rev 3, pending the final teardown); this document holds the stage rows and the order
 owner: integration seat (overseer); lanes on the property, substrate and dispatch-planner seats
 plan_rows: P-186 through P-198 (OPS-16 A-149); absorbs P-124, P-156, P-181, P-182, P-184 and OPS-21's writer leftovers
 snapshot: doc_repo main 82e6b503. Stage statuses trace to _inbox/2026-09-14_county_to_serving_program_map.md rev 2 (measured 2026-09-13/14) and to OPS-23's card. Re-run the instruments named per row before trusting a status.
@@ -18,6 +18,24 @@ related:
 ---
 
 # OPS-24 — County to serving
+
+> **Rev 3, 2026-09-16.** The operator ruled the sequence
+> (`_decisions/2026-09-16_texas_scaleup_sequence_and_four_rulings.md`):
+>
+> 1. **Phase 0.** The six counties complete and verified, including the setback table
+>    reconciliation, the envelope unlock (P-249) and footprints on the sheets (P-248).
+> 2. **Phase 1.** Burnet with its cities as the first county through the farm, with the farm
+>    built during that run.
+> 3. **Phase 2.** Bell and Milam in parallel.
+> 4. **Then** the rest of Texas.
+>
+> **Deferred:** the road-node pass waits until after Phase 2 (A-177).
+>
+> **The research wave's findings are in A-179:** the frozen target pair, the zero-earned gate
+> hole, and 131,357 parcels waiting on P-249.
+>
+> **Where the scope governs:** section 3's order below is superseded by it. The stage table in
+> section 2 stands.
 
 ## 0. Why a program and not a card
 
@@ -61,15 +79,30 @@ Stage 13 of the map (merge back) is P-198 with the Burnet run, since the run dec
 farm's shape. Access policy per county and the calibration hook per cell are named as owed
 design items in section 5, not rows, until the teardown says where they belong.
 
-## 3. Order
+## 3. Order (rev 3, 2026-09-16)
 
-1. Adversarial teardown: DONE 2026-09-14 (`_inbox/2026-09-14_ops24_teardown_review.md`); its findings are this revision.
-2. P-195, the gate. Proven on an empty county by violation.
-3. P-188, the pre-bake audit, on Burnet's sources.
-4. P-189 through P-197 on Burnet through the existing pipeline, in stage order, one lane per
-   stage where a stage needs code, the overseer running the probe between stages.
-5. P-186 for Burnet's places, feeding the fixed gate.
-6. P-187 and P-198, the farm and the merge gate, designed from what steps 3 to 5 broke.
+1. Adversarial teardown of rev 2: DONE 2026-09-14 (`_inbox/2026-09-14_ops24_teardown_review.md`).
+2. P-195, the gate: DONE for the zero-row case (2026-09-14). **P-201 closes the zero-earned case
+   and is the first gate row now.**
+3. **Phase 0, the six counties complete.** The work is in scope section 4. Its exit is
+   `node scripts/six-county-completeness.mjs` exiting 0, plus the per-city surface probe.
+4. **Farm machinery, built alongside Phase 0 and refined during Burnet:**
+   - P-187, the manifest;
+   - P-188, the pre-bake audit, with the blocker register as its checklist;
+   - P-194, the completeness check;
+   - P-197, the probe and the stage meter, including row and cost telemetry on the envelope and
+     setback writers;
+   - P-196, retract-by-run-id;
+   - P-198, the merge gate.
+5. **Phase 1, Burnet** through stages 0 to 12 on the shared stores, with every stage recorded.
+   Burnet's run record is the speed baseline.
+6. **Phase 2, Bell and Milam in parallel.** The storage for Phase 2 is decided from Burnet's
+   stage records. If isolated stores are needed, three preconditions come first:
+   - the frozen target pair is generalised;
+   - branch lifecycle and cleanup exist;
+   - telemetry covers the depth stages.
+7. The final adversarial teardown of the rev 3 scope runs before any Phase 0 build row is
+   dispatched, after the session-gap follow-up to the blocker register returns.
 
 ## 3a. The farm rationale, restated on two legs
 

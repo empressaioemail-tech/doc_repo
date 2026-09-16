@@ -116,3 +116,17 @@ describe.
 
 Correction to ruling 5 above: the Hays symptom is stale envelope atoms overriding the ledger,
 not the road data itself. Road data explains only the atoms that failed verification.
+
+## Addendum: the research wave decisions (A-180)
+
+1. **Farm storage.** "Go with your rec." Burnet runs on the shared stores with full stage
+   telemetry. Isolation for Bell and Milam is decided from Burnet's measured stage records.
+2. **Orphaned database branches.** "Can we quarantine them temporarily since deleting is
+   permanent." Five were quarantined reversibly and none deleted; the record is at
+   `_inbox/2026-09-16_neon_branch_quarantine_record.json`.
+3. **The buildable-area figure.** "We need to verify." A figure appears only when a verified
+   envelope atom backs it. An unverified atom does not count.
+4. **The session-gap follow-up** runs before the final teardown.
+
+Reversal: the quarantine is undone per branch by re-enabling the endpoint and restoring the name.
+Deletion needs a separate operator go.

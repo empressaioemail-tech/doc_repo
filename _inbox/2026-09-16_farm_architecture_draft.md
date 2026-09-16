@@ -18,6 +18,15 @@ snapshot: |
 
 # Farm architecture — draft
 
+> **Superseded in part, 2026-09-16.** L-D's report
+> (`_inbox/2026-09-16_scaleup-ld_farm_architecture_report.md`) corrects this draft's map and
+> adds the frozen target pair, the branch facts and the telemetry gap.
+>
+> **The storage decision is in scope section 6 (A-180):** shared stores for Burnet; isolation
+> decided from Burnet's records.
+>
+> Read this draft for the option framing only.
+
 ## 1. The system as it stands
 
 ```
