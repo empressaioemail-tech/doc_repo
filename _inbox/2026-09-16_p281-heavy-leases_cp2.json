@@ -1,0 +1,182 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p281-heavy-leases",
+  "title": "pilot / mid-work: the mechanism is built, wired and falsified; the PR is up and CI is running; nothing is deployed and no migration is applied",
+  "planRows": ["P-281"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-16_p281-heavy-leases_dispatch.md",
+  "at": "2026-09-16T21:05:00Z",
+  "seat": "p281-heavy-leases",
+  "filedWhyNow": "The dispatch asks for a mid-work checkpoint and the lane's own gates need one: the build is complete and the falsifiers are proven, but the PR's CI is still running and the integration seat has not applied the migration anywhere. Everything below is measured; nothing below is inferred from a green local run.",
+
+  "startCommitsDeclared": {
+    "hauska-factory": {
+      "buildClone": "P:/tmp/p281-heavy-leases",
+      "branch": "feat/p281-heavy-leases",
+      "baseCommit": "afdda42 (origin/main, the squash-merge of PR #158 / P-284; fetched at 2026-09-16T20:56Z)",
+      "wasItTheBaseCp1Predicted": "no, and CP1 said to re-check. CP1 predicted building on the head of #158 (7993e43) and opening against that branch. #158 MERGED before this lane opened its PR, as afdda42; #157 (28cec4c) and #159 (e86bc51) had also landed. The lane was moved onto origin/main (git checkout -B feat/p281-heavy-leases origin/main, stash/pop of the working tree; parcel-envelope-cells.mjs, parcel-setback-cells.mjs, reap.mjs, cli.mjs and the two job tests auto-merged because the squash carried the same content) and the whole suite re-run on the new base with a FRESH database. PR #161 is opened against main.",
+      "verdictOnCp1sConcern": "CP1's worry that building on origin/main would mean a second competing edit of the same job files did not materialise, because #158 had already merged when the PR was opened."
+    },
+    "doc_repo": {
+      "worktree": "P:/seat-worktrees/p281-heavy-leases/doc_repo (seat branch lane/p281-heavy-leases; NOT P:/doc_repo)",
+      "branchStartCommit": "15399eb8 (the seat branch before this lane)"
+    }
+  },
+
+  "whatLandedSinceCP1": {
+    "hauska-factory": [
+      "migrations/0013_heavy_scan_leases.sql (new, 146 lines): heavy_scan_leases with a PARTIAL UNIQUE INDEX on (store) WHERE released_at IS NULL, heavy_scan_lease_refusals, and the heavy_scan_lease_live view.",
+      "src/control/heavy-lease.mjs (new, 600 lines): canonicalStoreKey, storeRefFromUrl/FromEnv, leaseHolder, normalizeSpec, ttlMsFromEnv/expectedDurationMsFromEnv, take/renew/release/reap, list/read, grantHeavyScanLease (the runner handle) and assertHeld.",
+      "src/control/api.mjs: GET /heavy-scan-leases, GET /heavy-scan-lease, POST /heavy-scan-lease-take|renew|release behind the existing createControlServer bearer auth.",
+      "src/jobs/parcel-setback-cells.mjs, src/jobs/parcel-envelope-cells.mjs: lease taken BEFORE startRun (so a refusal leaves no run row claiming work that did not start), run_id attached, assertHeld at every city boundary, closed in finally.",
+      "src/jobs/bastrop-publish.mjs: the chunked conformant bake (runChunkedConformantBakes -> bakeChunkedConformantPages), assertHeld per page.",
+      "src/jobs/reap.mjs: the existing tick now also calls reapExpiredHeavyScanLeases and reports what it reaped; a reap failure is reported, never thrown, so a missing table cannot stop the reaper.",
+      "src/cli.mjs: a heavy-lease verb group (list | take | renew | release | sweep) on strict flag parsing, for the integration seat and for a hand sweep.",
+      "scripts/p281-heavy-lease-falsifiers.mjs (new): F1-F3 with real processes.",
+      "scripts/p281-heavy-scan-census.mjs (new): F4, the bypass list, by reading each job's SQL rather than listing files.",
+      "tests: test/heavy-lease.test.mjs (16), test/p281-heavy-lease-live.test.mjs (9), test/p281-heavy-lease-api.test.mjs (10), plus grant/assert assertions added to test/parcel-envelope-cells.test.mjs, test/parcel-setback-cells.test.mjs, test/publish.test.mjs and the in-process fake store (test/helpers/fake-factory.mjs)."
+    ],
+    "doc_repo": [
+      "scripts/heavy-scan-lease.mjs (new, seat branch only): list | take | renew | release | check | selftest through the control API.",
+      "This CP2. CP1 is _inbox/2026-09-16_p281-heavy-leases_cp1.json."
+    ]
+  },
+
+  "theFourCp1IntentionsThatChangedWhenMeasured": [
+    {
+      "cp1Said": "the runner helper is withHeavyScanLease(client, spec, fn, {onEvent}) -- a callback wrapper.",
+      "shipped": "grantHeavyScanLease(client, spec) returning a handle {holderToken, attachRun(runId), assertHeld(), close(outcome), state}.",
+      "whyItHadToChange": "the jobs must take the lease BEFORE startRun and then hang the lease on the run row they get back. A callback wrapper owns the run id's scope and cannot receive it, so the announce event could not name the run it belongs to. The handle keeps the same finally discipline (close() releases and stops the timer) while letting the caller sequence take -> startRun -> attachRun -> work -> close.",
+      "consequenceForTheContract": "AGENT-CONTRACT section 4's announce/confirm pair is still discharged, on run_events, but it is written by attachRun/the caller's own event hook rather than inside a wrapper."
+    },
+    {
+      "cp1Said": "storeFingerprintFromUrl / storeFingerprintFromEnv.",
+      "shipped": "canonicalStoreKey() plus storeRefFromUrl / storeRefFromEnv, and normalizeSpec now runs store through canonicalStoreKey.",
+      "whyItHadToChange": "CP1 already keyed on the host, but the SESSION route makes the hole reachable: a job arrives with a connection URL and a session arrives with whatever a human typed (`host:port`). Deriving the key only on the URL path meant a session's `db.example.com:5432` and a job's `db.example.com` were TWO keys -- both would take successfully and both would scan, while every test still passed. The canonicalization is now the single derivation, and the raw spelling is kept as store_alias so a seat can recognise its own lease.",
+      "pinnedBy": "test/heavy-lease.test.mjs 'EVERY door a caller can come through lands on one key' (six spellings incl. userinfo, case, path, IPv6) and test/p281-heavy-lease-api.test.mjs, where a job's URL takes the store and a session's host:port is refused and told by whom."
+    },
+    {
+      "cp1Said": "take = SELECT ... FOR UPDATE, then insert.",
+      "shipped": "one transaction: UPDATE the expired unreleased rows for this store (release_kind='expired', released_by=taker, reap_reason recorded), then INSERT ... ON CONFLICT DO NOTHING, and on zero rows re-read the blocking row and raise LEASE_HELD naming it, writing the refusal row in the same transaction.",
+      "whyItHadToChange": "the partial unique index is the decision and the application must not be able to overrule it; ON CONFLICT DO NOTHING makes the index the arbiter in the same statement as the write, and the sweep of expired rows has to be inside that transaction or the taker's own insert would collide with the corpse it just decided to close.",
+      "evidence": "F1 (two real processes, exactly one TAKEN), F2 (a taskkill /F'd holder: refused before expiry, taken after, corpse closed as expired)."
+    },
+    {
+      "cp1Said": "constraints: (released_at IS NULL AND release_kind IS NULL) OR (released_at IS NOT NULL AND release_kind IN (...)).",
+      "shipped": "the same, plus an EXPLICIT `release_kind IS NOT NULL` in the released arm.",
+      "whyItHadToChange": "measured by a failing live test, not by reading: `release_kind IN ('released','expired','reaped')` evaluates to NULL when release_kind IS NULL, and a CHECK constraint PASSES on NULL. A row with released_at set and release_kind unset was therefore admissible -- a closed lease that does not say how it closed, which is the one thing this table exists to answer.",
+      "pinnedBy": "test/p281-heavy-lease-live.test.mjs 'the CHECK constraints refuse the states the writer must never produce' (SQLSTATE 23514)."
+    }
+  ],
+
+  "twoDefectsOnlyTheWholePathFound": [
+    {
+      "defect": "the session script's renew and release sent no x-factory-operator header, so the API answered 401 OPERATOR_REQUIRED. A seat could TAKE a heavy-scan window and then never refresh it or hand it back: the store would sit held until the TTL expired, so the control's only exit was a timeout.",
+      "howItWasFound": "the cross-repo run (real server + real store + the doc_repo script as a subprocess), not by any unit test -- the unit tests exercise the module and the API tests used the header directly.",
+      "fixedBy": "MUTATIONS in the session script carries an operator on every mutation (take/renew/release), and renew/release now REQUIRE --holder; the API's OPERATOR_REQUIRED is also mapped to 401 on the heavy routes (it was falling into the 500 arm), matching the POST verb route's existing behaviour."
+    },
+    {
+      "defect": "the two heavy GET routes had no error handling, so a throw inside the async handler left the request unanswered AND became an unhandled rejection, which takes the control server down on modern Node. The server every route in the fleet depends on.",
+      "howItWasFound": "writing the live API test and asking what happens when the read cannot be served.",
+      "fixedBy": "both reads are wrapped and answer a coded 500; a read of an unknown holder_token is a 404 with a body, because 'I hold nothing' and 'my lease is gone' are different answers a caller must be able to tell apart."
+    }
+  ],
+
+  "falsifiers": {
+    "artifact": "_inbox/2026-09-16_p281-heavy-leases_cp2_falsifiers.txt (the literal stdout of scripts/p281-heavy-lease-falsifiers.mjs, run against a freshly created database with all 16 migrations applied)",    "F1": {
+      "verdict": "PASS",
+      "evidence": "two real node processes launched before either is awaited; child A exit=0 TAKEN holder=rig-f1-a; child B exit=3 REFUSED code=LEASE_HELD blocking=rig-f1-a message names the holder AND its expiry; exactly one TAKEN; refusal rows added: 1 with lost_to_holder=rig-f1-a"
+    },
+    "F2": {
+      "verdict": "PASS",
+      "evidence": "holder A killed with taskkill /F (killed=true, no finally ran); B launched BEFORE A's expiry -> REFUSED LEASE_HELD naming rig-f2-a; C launched AFTER expiry -> TAKEN; A's row left with release_kind=expired, released_by=rig-f2-c, reap_reason='expired unreleased; closed by the taker that found it'; the row was RECORDED, not deleted"
+    },
+    "F3": {
+      "verdict": "PASS",
+      "evidence": "two processes on two host fingerprints, both exit=0 TAKEN, both live at once, refusal rows added: 0"
+    },
+    "F4": {
+      "verdict": "MEASURED (a list, not a pass/fail)",
+      "artifact": "_inbox/2026-09-16_p281-heavy-leases_cp2_census.json (also at P:/tmp/p281-census.json, regenerated after the final code change)",
+      "sessionEndToEndArtifact": "_inbox/2026-09-16_p281-heavy-leases_cp2_session_e2e.txt",
+      "counts": { "wired": 4, "heavy-not-wired": 11, "bounded-not-heavy": 3, "control": 4 },
+      "wired": ["src/jobs/parcel-setback-cells.mjs", "src/jobs/parcel-envelope-cells.mjs", "src/jobs/bastrop-publish.mjs", "src/jobs/reap.mjs"],
+      "bypassList": [
+        "src/jobs/flood-ingest.mjs (8 ST_* calls)",
+        "src/jobs/p2-juris-store.mjs (23 ST_* calls)",
+        "src/jobs/parcel-ag-valuation.mjs (reads txgio_parcel)",
+        "src/jobs/parcel-max-impervious-cover.mjs (15 ST_* calls)",
+        "src/jobs/parcel-overlay-districts.mjs (19 ST_* calls)",
+        "src/jobs/parcel-r4-companions.mjs (14 ST_* calls)",
+        "src/jobs/parcel-r5-zoning.mjs (18 ST_* calls)",
+        "src/jobs/parcel-record-fill.mjs (reads txgio_parcel)",
+        "src/jobs/parcel-school-district.mjs (16 ST_* calls)",
+        "src/jobs/parcel-utility-service.mjs (8 ST_* calls)",
+        "src/lib/publish-cadroll-postcondition.mjs (reads txgio_parcel)"
+      ],
+      "honestyNote": "the census classifies by reading each file's SQL for ST_*() and txgio_parcel reads and by the helper's import; it is a MEASUREMENT WITH ITS METHOD ATTACHED, not a proof of heaviness. 'hoist' (a p2_ table creation) is recorded separately and did not by itself promote a file to heavy."
+    }
+  },
+
+  "evidenceLedger": {
+    "fullSuite": "npm test on the rebased branch, fresh database, all 16 migrations: 1555 tests, 1550 pass, 1 fail, 2 skipped, 2 todo.",
+    "theOneFailureIsNotThisLane": "test/ctx-b3-store-census.test.mjs 'resolveLeafPaths against the real pinned LDT checkout agrees with the maintained mirror' -- it compares against a pinned LDT checkout present on this machine. Verified pre-existing by stashing this lane's work and running the same file on a clean checkout of origin/main: 1 fail there too. CI is the authority for the PR.",
+    "newSuite": "test/heavy-lease.test.mjs 16/16; test/p281-heavy-lease-live.test.mjs 9/9; test/p281-heavy-lease-api.test.mjs 10/10 (the last two skip without FACTORY_DATABASE_URL).",
+    "migrationAppliedWhere": "ONLY on a scratch postgres:18 container (p281-lease-pg) started by this lane on 127.0.0.1:55471. Nothing was applied to staging or production and nothing was deployed -- the lane has no deployment in scope.",
+    "freshDatabaseProof": "the factory database was DROPped and CREATEed, then `node src/db/migrate.mjs` ran all 16 migrations in order, 0012_stage_run_records.sql then 0013_heavy_scan_leases.sql, and every live test and falsifier above ran against THAT database.",
+    "sessionPathRunEndToEndArtifact": "_inbox/2026-09-16_p281-heavy-leases_cp2_session_e2e.txt",
+    "sessionPathRunEndToEnd": "the doc_repo script was run as a real subprocess against this branch's real control server and a real store: take (URL spelling) took the store and its alias; a SECOND seat typing host:port was stopped with exit 5 LEASE_HELD naming the first seat; check, list (live=1 refusals=1), renew (200), release (200) and the waiting seat then proceeded; with no credential the script exited 4 naming FACTORY_CONTROL_API_URL and FACTORY_CONTROL_API_KEY and no value; against a server without the routes it exited 3 ENDPOINT_NOT_DEPLOYED."
+  },
+
+  "prs": {
+    "hauska-factory": {
+      "number": 161,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/161",
+      "base": "main",
+      "head": "feat/p281-heavy-leases",
+      "ciAtCp2": "gate8 pass (9s); ldt-sha-comment-presence pass (13s); test pending at the time of this checkpoint. The literal conclusions are recorded in the close, not here, because a checkpoint that predicts a CI result is worth nothing.",
+      "diffstat": "17 files, +2349 -3"
+    }
+  },
+
+  "collisionWatch": {
+    "migrationNumber": "0013. Highest on the base is 0012_stage_run_records.sql (P-284). No OTHER OPEN PR adds a migration: checked at 2026-09-16T21:00Z, open PRs are #161 (this lane), #160 (fix/p256-setback-honest-states: src/jobs/parcel-setback-cells.mjs and its test only) and #37 (seat/property-ctx-walk-alias-schema, long-running). CP1 asked for this re-check immediately before merge; it is recorded again here and owed once more at merge.",
+    "fileOverlap": "#160 (P-256) is open, MERGEABLE and CLEAN, and edits src/jobs/parcel-setback-cells.mjs -- the same file this lane wires the lease into, and test/parcel-setback-cells.test.mjs. The two change different regions (P-256 rewrites the header and the cell writers; P-281 adds the lease around the run), so the second to merge is a small rebase, but it MUST be done and the suite re-run, because both lanes change how that job behaves. #160 adds no migration, so there is no number to share."
+  },
+
+  "whatIsLeftOwed": [
+    "the literal CI conclusions for #161, recorded in the close (running at CP2 time).",
+    "the close artifact _inbox/2026-09-16_p281-heavy-leases_close.json with status closed-partial (the integration seat must apply 0013 on staging and run two contending jobs before this row is closed).",
+    "lane release (node scripts/lane-claim.mjs release --lane p281-heavy-leases --seat p281-heavy-leases).",
+    "NOT owed by this lane, named so it is not mistaken for an omission: no deploy, no migration applied to any real store, no Cloud Run job executed, no PostGIS SQL changed."
+  ],
+
+  "fleetMemory": {
+    "LESSON": [
+      "A CHECK constraint does not fire on NULL. `release_kind IN ('released','expired','reaped')` is NULL when release_kind is NULL, and a CHECK PASSES on NULL, so a released row with no release_kind was admissible until the constraint said `release_kind IS NOT NULL` explicitly. Any CHECK that guards 'a closed row must say how it closed' needs the NOT NULL spelled out (hauska-factory migrations/0013, 2026-09-16).",
+      "A guard keyed on a caller-supplied string is only as good as the derivation that produces it. Two spellings of one Postgres host are two keys, and two keys means two leases on one store means the guard silently does nothing while every test passes. Derive the key from the connection the caller is already using, and pin the spellings in a test (canonicalStoreKey, 2026-09-16).",
+      "An unwrapped `await` inside a node http handler is two failures at once: the request never gets an answer and the rejection takes the process down. Any new route in factory-control needs its own try/catch (src/control/api.mjs, 2026-09-16).",
+      "A helper that BOTH takes a lease and starts the run can take the lease too late: take it first, then startRun, then attach -- otherwise a refused scan leaves a run row claiming work that never happened (AGENT-CONTRACT section 4's 'announced before', 2026-09-16).",
+      "Testing a client against a server in the SAME process with spawnSync deadlocks: the child waits on a server whose event loop is blocked by the parent. Use async spawn (P:/tmp harness, 2026-09-16)."
+    ],
+    "DEAD-END": [
+      "Extending the existing `leases` table for heavy scans: its PRIMARY KEY (entity_type, county_fips) plus the leases_no_global CHECK cannot express 'per database, county optional' without weakening the guard on the writer scope, and its ON CONFLICT ... WHERE expires <= now() STEALS an expired lease silently, which is right for a writer and wrong for a rare exclusive window whose crash must be RECORDED. Read at CP1; re-litigating it costs a session.",
+      "Keying the lease on a declared alias ('cortex', 'factory'): cloudbuild.publish.yaml states at source that two env-vars point at one Neon project/branch, so an alias key lets one store carry two live heavy scans.",
+      "Vercel-style ping/keepalive for the session script: rejected in the session design; the window is held by a real row with an expiry, not by the script staying alive."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-16T20:56Z: origin/main = afdda42 (P-284 #158 squash-merged); #157 (28cec4c) and #159 (e86bc51) landed before it. Open: #160 (P-256), #37. PR #158 is MERGED, not open, so the dispatch's 'PRs #157, #158 and #159 are open' was already stale when this lane read it.",
+      "2026-09-16T21:00Z: the dispatch's claim that #158 touches src/control/runs.mjs is FALSE at source; it touches src/control/stage-runs.mjs (recorded in CP1 with git output).",
+      "2026-09-16T21:00Z: heavy_scan_leases + heavy_scan_lease_refusals + heavy_scan_lease_live exist only on the scratch container's database (127.0.0.1:55471). No real store has 0013.",
+      "2026-09-16T21:05Z: the full suite is 1555 tests / 1550 pass / 1 pre-existing fail (ctx-b3-store-census, LDT pin) on this base, and the falsifier rig passes all three at 60s-scale TTLs."
+    ],
+    "OPEN": [
+      "The integration seat must apply migrations/0013 on staging and run two contending jobs (a cell job and the publish bake) for the row to be closeable; the session script also needs the control revision that carries the four routes deployed, or it will answer ENDPOINT_NOT_DEPLOYED (which is the honest answer, not a bug).",
+      "Eleven heavy jobs are still unleased (the F4 list). The next lane that touches any of them should wire the helper while it is in the file rather than opening a P-281 follow-up per job.",
+      "A single SQL statement longer than the TTL has no boundary to check at, so a 30-minute TTL can expire under a still-running statement. If a job is measured to do that, the fix is a shorter statement or a longer declared window, not a shorter TTL.",
+      "The #160/#161 rebase on src/jobs/parcel-setback-cells.mjs is owed by whichever merges second."
+    ]
+  },
+
+  "scopeBasis": "hauska-factory (branch cut from origin/main afdda42) plus one script, CP1, this CP2 and the close in this lane's own doc_repo seat worktree. Nothing was deployed, no migration was applied to any real store, no Cloud Run job was executed, no PostGIS SQL was changed, and no other lane's files were edited. subAgents: 0 spawned (FAN-DEPTH 0)."
+}

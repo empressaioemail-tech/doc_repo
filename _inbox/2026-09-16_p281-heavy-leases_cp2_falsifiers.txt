@@ -1,0 +1,79 @@
+﻿
+=== F1: PASS ===
+claim:  Two runners racing for the same store: exactly one proceeds; the other exits non-zero with the holder named.
+method: two real node processes, both spawned before either is awaited, against one scratch Postgres and one store fingerprint
+  child A exit=0 stdout=TAKEN holder=rig-f1-a store=f1.p281.test token=9dd2459d-a903-4c33-b708-19efe5dc3415 expires=2026-09-16T20:58:02.967Z
+  child B exit=3 stdout=REFUSED holder=rig-f1-b code=LEASE_HELD blocking=rig-f1-a message=store f1.p281.test is held by rig-f1-a (heavy-scan) until 2026-09-16T20:58:02.967Z; refused rig-f1-b
+  exactly one TAKEN: yes
+  loser exit != 0: yes
+  loser names the winner: yes (rig-f1-a)
+  refusal rows added: 1 (lost_to_holder=rig-f1-a)
+
+=== F2: PASS ===
+claim:  A holder killed mid-run: its lease expires and the next runner proceeds after expiry, not before.
+method: A hard-killed (taskkill /F) holding a 60s window; B started before expiry, C after
+  A killed mid-run: killed=true exit=1 (no finally ran)
+  A's lease while alive: holder=rig-f2-a expires=Wed Sep 16 2026 15:57:09 GMT-0500 (Central Daylight Time)
+  B taken before expiry: REFUSED LEASE_HELD (correct) :: REFUSED holder=rig-f2-b code=LEASE_HELD blocking=rig-f2-a message=store f2.p281.test is held by rig-f2-a (heavy-scan) until 2026-09-16T20:57:09.295Z; refused rig-f2-b
+  B2 taken after expiry: TAKEN (correct) :: TAKEN holder=rig-f2-c store=f2.p281.test token=276b1b00-c270-4939-af17-f5e70a32ef61 expires=2026-09-16T20:59:12.763Z
+  A's row closed as: release_kind=expired released_by=rig-f2-c reap_reason=expired unreleased; closed by the taker that found it
+  A's row was RECORDED, not deleted: yes
+
+=== F3: PASS ===
+claim:  Different stores do not block each other.
+method: two processes taking two different host fingerprints, neither waiting on the other
+  child A (f3a.p281.test) exit=0 :: TAKEN holder=rig-f3-a store=f3a.p281.test token=84f2a227-129b-4620-a9f4-ea54a5194334 expires=2026-09-16T20:59:14.527Z
+  child B (f3b.p281.test) exit=0 :: TAKEN holder=rig-f3-b store=f3b.p281.test token=2214311a-fe39-4d7d-8588-13120ad2f68e expires=2026-09-16T20:59:14.527Z
+  both live at once: yes
+  refusal rows added: 0 (must be 0)
+
+=== SUMMARY ===
+F1 PASS
+F2 PASS
+F3 PASS
+{
+  "ok": true,
+  "results": [
+    {
+      "falsifier": "F1",
+      "claim": "Two runners racing for the same store: exactly one proceeds; the other exits non-zero with the holder named.",
+      "method": "two real node processes, both spawned before either is awaited, against one scratch Postgres and one store fingerprint",
+      "verdict": "PASS",
+      "evidence": [
+        "child A exit=0 stdout=TAKEN holder=rig-f1-a store=f1.p281.test token=9dd2459d-a903-4c33-b708-19efe5dc3415 expires=2026-09-16T20:58:02.967Z",
+        "child B exit=3 stdout=REFUSED holder=rig-f1-b code=LEASE_HELD blocking=rig-f1-a message=store f1.p281.test is held by rig-f1-a (heavy-scan) until 2026-09-16T20:58:02.967Z; refused rig-f1-b",
+        "exactly one TAKEN: yes",
+        "loser exit != 0: yes",
+        "loser names the winner: yes (rig-f1-a)",
+        "refusal rows added: 1 (lost_to_holder=rig-f1-a)"
+      ]
+    },
+    {
+      "falsifier": "F2",
+      "claim": "A holder killed mid-run: its lease expires and the next runner proceeds after expiry, not before.",
+      "method": "A hard-killed (taskkill /F) holding a 60s window; B started before expiry, C after",
+      "verdict": "PASS",
+      "evidence": [
+        "A killed mid-run: killed=true exit=1 (no finally ran)",
+        "A's lease while alive: holder=rig-f2-a expires=Wed Sep 16 2026 15:57:09 GMT-0500 (Central Daylight Time)",
+        "B taken before expiry: REFUSED LEASE_HELD (correct) :: REFUSED holder=rig-f2-b code=LEASE_HELD blocking=rig-f2-a message=store f2.p281.test is held by rig-f2-a (heavy-scan) until 2026-09-16T20:57:09.295Z; refused rig-f2-b",
+        "B2 taken after expiry: TAKEN (correct) :: TAKEN holder=rig-f2-c store=f2.p281.test token=276b1b00-c270-4939-af17-f5e70a32ef61 expires=2026-09-16T20:59:12.763Z",
+        "A's row closed as: release_kind=expired released_by=rig-f2-c reap_reason=expired unreleased; closed by the taker that found it",
+        "A's row was RECORDED, not deleted: yes"
+      ]
+    },
+    {
+      "falsifier": "F3",
+      "claim": "Different stores do not block each other.",
+      "method": "two processes taking two different host fingerprints, neither waiting on the other",
+      "verdict": "PASS",
+      "evidence": [
+        "child A (f3a.p281.test) exit=0 :: TAKEN holder=rig-f3-a store=f3a.p281.test token=84f2a227-129b-4620-a9f4-ea54a5194334 expires=2026-09-16T20:59:14.527Z",
+        "child B (f3b.p281.test) exit=0 :: TAKEN holder=rig-f3-b store=f3b.p281.test token=2214311a-fe39-4d7d-8588-13120ad2f68e expires=2026-09-16T20:59:14.527Z",
+        "both live at once: yes",
+        "refusal rows added: 0 (must be 0)"
+      ]
+    }
+  ]
+}
+
