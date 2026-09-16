@@ -579,6 +579,7 @@ before Phase 0 exits.
 | C4 | P-212 follow-on: live-currency checks for the other five counties, and P-206 (serve honours retirement) re-evaluated. | engine |
 | C5 | **LDT `STAGING_ATOMS_DATABASE_URL`: REPOINTED 2026-09-16 (A-181)** to the live staging branch; the stale planner branch is quarantined. **Still owed:** add it to `secret-rotation.mjs` so the next rotation does not strand it again (a class C4 missed sibling). | hauska-factory |
 | C6 | **Sub-agent depth: BUILT 2026-09-16 (A-181).** `FAN-DEPTH` is compiled into every dispatch and enforced at commit and at launch. Proven by violation. Armed in the next session. | doc_repo (done) |
+| C8 | **ADD-084: `PRODUCTION_NEONDB_URL` exposed in a lane's output 2026-09-04, still unrotated** (version 1, 2026-08-28). Nine secrets across two projects share the production role, so rotation is a coordinated change: new password, all nine secrets, and every consumer redeployed. **An operator decision; the teardown tests whether it blocks Burnet (A-182).** | GCP, Neon, every consumer |
 | C7 | **Main already carries six duplicate amendment ids** (A-016, A-060, A-061, A-136, A-145, A-146). Extend the allocation gate to A-, F- and R- prefixes. | doc_repo |
 
 ### 4.7 Cotality in Phase 0: measure, do not serve
@@ -763,7 +764,11 @@ two farms.
 
 ## 12. Sequencing (rev 3)
 
-**Done:** the five-lane research wave, landed `f1dd3e06` and read in A-179.
+**Done:**
+
+- the five-lane research wave, landed `f1dd3e06` and read in A-179;
+- the session-gap sweep, landed `b100c36c`, which takes the register to 486 instances (A-182);
+- the final teardown, compiled against this rev 3 (A-182).
 
 **Next, in order:**
 
