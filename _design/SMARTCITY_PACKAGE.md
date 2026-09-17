@@ -54,7 +54,8 @@ blocks them rather than one row per folder:
 | G-153 | Fleet, Police | D-12 only — **namespace ruling landed 2026-09-17** |
 | G-154 | Development services delta | D-12 only |
 | G-155 | Smart Files (`smart-files`) | **nothing, runs in parallel** |
-| G-156 | Finance lens | D-12 **and an operator scope call** |
+| G-156 | Finance lens | D-12 only — **scope call answered 2026-09-17: Finance ships** |
+| G-157 | City management board (v1 parity) | **a v1 capture, operator-owed** — and D-12 |
 
 Not buildable and not carded: finance-filings (G-138), plan-review-departments (G-144),
 applicant-precheck (blending ruling deferred).
@@ -64,8 +65,41 @@ answer was wrong: every lens design draws its own blocked state as design conten
 Public works, Police and Parks all ship without GoTo, FirstDue, Verkada or a Parks vendor. The
 vendor work is separate and is G-139's row, not theirs.
 
-**One operator item still gates real work:** the Finance scope call (does Finance ship in the Bastrop
-phase-1 package, when the first cohort is Development Services staff). G-156.
+## The next deliverable, named 2026-09-17 (A-143)
+
+**The Finance and city management package:** the Finance dashboard, the hotel occupancy tax, all the
+current financial tooling, proper RBAC at full department depth, and the city management board.
+Operator, in session. It spans G-137, G-138, G-143, G-144, G-134, G-156 and the new G-157.
+
+Two rulings came with it. **Finance ships**, which answers the G-156 scope call. **RBAC goes to full
+department depth and the design comes first**, so G-143 People and access is drawn before G-134,
+G-127 and G-144 are built. G-143 is one of the three surfaces this gate reports as UNCOVERED, so
+proper RBAC is design work before it is build work.
+
+**The city management board is the v1 dashboard Bastrop works from today, all departments combined**
+(operator's own words), and v1 is being RETIRED rather than run alongside. So G-157 is capability
+preservation, not a feature: if v2 ships without parity, the cutover removes the city manager's daily
+surface. The v2 counterpart already ships as the Overview lens. Nobody has measured the parity.
+
+**Three operator-owed items gate this deliverable, and none can be worked around:**
+
+1. **A capture of the v1 combined dashboard.** No lane can produce one: v1 sits behind a logged-in
+   Google OAuth session cookie (G-133), a different credential from v2's Hauska product key. The
+   Finance lens only exists because 25 pages of the v1 Finance tab were supplied on 2026-09-15.
+2. **The four Azavar credentials** (G-137). Khalid AlAli answered all four of our questions on
+   2026-09-15 and **those answers are filed nowhere in this repo**; the reply requesting the
+   credentials was drafted 2026-09-17 and never sent.
+3. **WorkOS org, client id, API key, MFA and the `bastrop_tx` key** (G-134), which gate the RBAC leg.
+
+**Two defects in the HOT build spec**, found while scoping and not previously carded.
+`_inbox/2026-09-15_localgov_filings_integration_scope.md` still reads as though all four Azavar
+questions are open, so it still forbids computing any rate or ratio and still forbids the words
+hotel occupancy tax on a label. And **its acceptance test is wrong in a way that reads as data
+corruption**: it calls the store done when a re-run changes no historical total, but `AmountPaid`
+legitimately moves as payments settle or refund, so the first refund fails the test. Split
+taxpayer-reported figures, which must never move, from payment figures, which may, before building.
+
+**G-138 is the one component blocked on nothing** and can start today.
 
 **The operator-namespace ruling landed 2026-09-17**
 (`_decisions/2026-09-17_operator_reference_namespaced_by_domain.md`): operator references are
