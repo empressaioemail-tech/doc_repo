@@ -45,6 +45,8 @@ checks in section 1, which do not wait for anyone.
 
 ## 1. Do these first (time-sensitive, nobody else will)
 
+> **Update 2026-09-17 06:56Z (after close):** the apply `8x4jk` **completed successfully at 06:54:32Z** (`succeededCount 1`, read by field; a positional read first showed it as failed, which was the formatter trap) and **grades PASS** (`_inbox/2026-09-17_p252_apply_grade.json`: all 390 pairs rewritten, the 25 predicted flips with their counts, no `pass` or `refuse` change, no bare `excluded`). The lease expired at 02:40Z unrenewed; confirm with `scripts/heavy-scan-lease.mjs list` that nothing is live, and release it with the stored handle if it still is. **Item 1 is done; item 2 is a check; start at item 3** (resume the trigger, watch the first hourly run, which may run long on a cold cache and could overlap the next hour until P-298 lands; then the completeness check and the republish).
+
 1. **The gate apply** (`factory-publish-gate-sched-8x4jk`, project `hauska-prod-497015`, region
    `us-east4`, started 22:40:32Z with a 12-hour timeout). At 00:42Z Bastrop, Caldwell, Hays and
    McLennan graded clean; Travis was 55 of 65; Williamson not started; 75 pairs left. Grade it:
