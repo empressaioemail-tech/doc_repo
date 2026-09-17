@@ -1,0 +1,150 @@
+{
+  "artifact": "CP2",
+  "kind": "pilot checkpoint — the built, deployed, and measured state. Every figure here is a live read at the stated time.",
+  "lane": "do-migration-smartcity-fresh",
+  "planRows": ["D-5"],
+  "seat": "do-migration-lane",
+  "filedAt": "2026-09-17T17:20:00Z",
+
+  "whatWasBuilt": {
+    "note": "All three images were built on the DO droplets from the verified deployed commit, not from repo HEAD. Two build contexts were re-derived after the deployed-commit analysis showed the first attempt used HEAD.",
+    "images": [
+      {
+        "service": "smartcity-api",
+        "image": "smartcity-api:g131",
+        "size": "767MB content (2.87GB on disk)",
+        "commit": "8bea7fa591134fc24154630fa869081f4ddf003d",
+        "droplet": "d5-smartcity-api 601454470 @ 64.227.108.49 (sfo3, s-1vcpu-1gb)",
+        "buildResult": "SUCCESS — 'vite build' reported 4030 modules transformed and done in 151.9s, then npm prune and esbuild produced dist/index.js. BUILD_EXIT=0.",
+        "builtTwice": "Built once on the original nyc3 host (167.99.51.119) and again on the replacement sfo3 host after that IP was found to be refused by the Municode WAF. Both builds are from the same commit with the same documented deviation, and both produced a 767MB content-size image — the identical figure is itself weak evidence of reproducibility.",
+        "deviation": "Dockerfile.api's build step given NODE_OPTIONS=--max-old-space-size=4096, and its CRLF normalized to LF so that the anchored sed could apply. Both recorded below."
+      },
+      {
+        "service": "smartcity-scraper",
+        "image": "smartcity-scraper:f21e49d",
+        "size": "5.65GB",
+        "commit": "f21e49df07bd36e88d15a113c8c2f671fe27e3d0",
+        "droplet": "d5-smartcity-scraper 601444093 @ 159.89.190.154 (nyc3, s-2vcpu-4gb)",
+        "buildResult": "SUCCESS",
+        "contextVerified": "blob-hash probe against f21e49d and 8bea7fa: all four discriminating files match f21e49d, none match HEAD. The tag is honest."
+      },
+      {
+        "service": "smartcity-dashboards",
+        "image": "smartcity-dashboards:g129-flood-crlf",
+        "size": "239MB",
+        "commit": "96efa35766e5d6114eb71bdf409986c383625b97",
+        "droplet": "d5-smartcity-dashboards 601443461 @ 104.236.92.251 (nyc3, s-1vcpu-1gb)",
+        "buildResult": "SUCCESS",
+        "contextVerified": "blob-hash probe: server.mjs, tenancy.mjs, staff-identity.mjs all match 96efa35, and src/staff-signin.mjs is ABSENT — which distinguishes it from HEAD f776b4b, where that file exists.",
+        "whyTwoBuilds": "The first build used LF-normalized sources. GCP serves its static assets WITH CRLF, so normalizing introduced a divergence in five endpoints. Rebuilt from the un-normalized context; all five then matched byte-for-byte. The lane's own tidying was the defect, not the source or the target."
+      }
+    ],
+    "droplets": [
+      { "name": "d5-smartcity-dashboards", "id": "601443461", "ip": "104.236.92.251", "region": "nyc3", "size": "s-1vcpu-1gb", "status": "active" },
+      { "name": "d5-smartcity-api",        "id": "601454470", "ip": "64.227.108.49",  "region": "sfo3", "size": "s-1vcpu-1gb", "status": "active" },
+      { "name": "d5-smartcity-scraper",    "id": "601444093", "ip": "159.89.190.154", "region": "nyc3", "size": "s-2vcpu-4gb", "status": "active" }
+    ],
+    "deleted": [
+      { "name": "d5-smartcity-api (original)", "id": "601444085", "ip": "167.99.51.119", "region": "nyc3", "why": "Egress IP refused by the Municode WAF and not changeable in place. Replaced by 601454470." }
+    ]
+  },
+
+  "rehostedFinding_theMunicodeWaf": {
+    "symptom": "smartcity-api's calendar served last-known-good data instead of live meetings: 'cachedSource':'lkg' and 'lastScrapeStatus':'network_failed' where GCP had 'municode' and 'ok'.",
+    "rootCause": "The api droplet's specific egress IP is refused by the WAF in front of municodemeetings.com. Measured, not inferred — the same URL, same UA, same moment:",
+    "measurements": [
+      { "from": "167.99.51.119 (original api droplet, nyc3)", "http": 403, "bytes": 94, "body": "403 Forbidden / Request forbidden by administrative rules." },
+      { "from": "64.227.108.49 (replacement host, sfo3)", "http": 200, "bytes": 65423, "body": "real page, doctype html" },
+      { "from": "159.89.190.154 (scraper droplet, nyc3 — same account, same region as the failing host)", "http": 200, "bytes": 65423, "body": "real page" },
+      { "from": "this workstation", "http": 200, "bytes": 65423, "body": "real page" }
+    ],
+    "whatItRulesOut": "Not a DigitalOcean-wide block, not an nyc3-wide block, not a provider-scoped block, not a missing/incorrect User-Agent, not a code defect in the api's fetch path. The scraper droplet is the decisive control: same account, same region, same provider, same code path — 200. Only the one IP is refused.",
+    "fixAttemptedThatFailed": "Reserved IP (which would become the droplet's egress anchor without a rebuild). Refused: HTTP 403 on POST /v2/reserved_ips — the agent token is scoped to Droplets and Apps only, and reserved IPs are networking.",
+    "fixApplied": "Rebuilt and redeployed the api on a host with a verified-unblocked egress IP, then deleted the blocked host. Confirmed by re-measurement, not by assumption: the two previously-diverging endpoints now match and cachedSource reads 'municode' on both sides.",
+    "residualRisk": "A droplet IP is not a stable asset. If the next session provisions the api on a THIRD host — or on App Platform, whose egress differs — this must be re-tested rather than assumed fixed. The egress IP is the load-bearing variable, and it is a lottery."
+  },
+
+  "secretsReplication": {
+    "method": "gen-env.ps1 — fetch each live Secret Manager value byte-faithfully, shape-assert per key, reject empty and any value containing a newline or CR, write LF-only env files.",
+    "result": "BAD_TOTAL=0. smartcity-api 43 entries (41 secrets + CACHE_BUST + PORT), smartcity-scraper 7, smartcity-dashboards 10. No key unresolved, none empty, none multiline.",
+    "assertionThatFired": "DASHBOARDS_API_KEY was assumed `^hk_`; the real value is 64 hex chars. The assertion fired correctly — which is the point of it — and the RULE was corrected, not the value suppressed.",
+    "crossCheck": "The generated key set matches the live Cloud Run env list names exactly (41 secret refs + CACHE_BUST), which is how the dispatch's 12-var list was caught as incomplete.",
+    "oneEnvFixRequired": "smartcity-api listens on process.env.PORT || 5000. Cloud Run injects PORT=8080 implicitly (it appears in no env list), so the DO container booted on 5000 while the Dockerfile EXPOSEs 8080 and its HEALTHCHECK curls 8080. PORT=8080 was added explicitly. Scraper and dashboards default to 8080 themselves and needed no such fix.",
+    "hygiene": "No secret value is in any committed or filed artifact. The env file was moved host-to-host with scp (byte-exact, unlike shell string handling) and the transient local copy was deleted and its deletion verified."
+  },
+
+  "bootEvidence": {
+    "smartcity-api": "migrations ran against the shared Neon production DB; Spireon startup auth PASSED ('live API connected') and fetched 25 assets; Samsara pulled 75 vehicle locations + 149 stat rows and upserted 75/75 vehicles; OpenGov cache warm-up completed over 1147 accounts; calendar boot hydration from DB; all route groups registered. Now on the replacement host: same sequence.",
+    "smartcity-scraper": "sync_health migrations ran; 'Scraper worker listening on 8080'; container reports healthy via its own HEALTHCHECK on /internal/health. Up 22+ minutes (healthy).",
+    "smartcity-dashboards": "'smartcity-dashboards listening on 8080' after a successful Neon connection."
+  },
+
+  "healthSurface": {
+    "instrument": "compare-health.mjs — one request to each DO deployment and to its live GCP original, compared key-by-key.",
+    "results": [
+      { "svc": "smartcity-api", "gcp": 200, "do": 200, "verdict": "PASS", "matched": "status, db, currentJob, queueDepth + 3 volatile (timestamp, heapUsedMB, heapTotalMB)", "diverged": 0 },
+      { "svc": "smartcity-scraper", "gcp": 200, "do": 200, "verdict": "PASS", "matched": "status, service + timestamp (volatile)", "diverged": 0, "measuredVia": "ssh root@159.89.190.154, curling loopback — because the port is deliberately NOT public, so probing the public IP would measure the firewall rather than the service" },
+      { "svc": "smartcity-dashboards", "gcp": 200, "do": 200, "verdict": "PASS", "matched": "ok, product, cityPacks, packsStore, db, name", "diverged": 0 }
+    ],
+    "instrumentFixDuringWork": "The scraper initially read UNMEASURED because the instrument only knew how to curl a public URL. It was taught to run the curl over ssh for loopback-bound services. An instrument that cannot measure a correctly-configured private service would have pushed this lane to expose the service just to get a reading — the wrong direction.",
+    "note": "The scraper leg also needs a Google identity token for the GCP side, since the GCP original is private."
+  },
+
+  "endpointSweep": {
+    "instrument": "sweep.mjs — one real GET per exposed read-only endpoint on DO and on the GCP original. JSON compared structurally (key sets and values, excluding declared-volatile keys); non-JSON compared byte-wise after normalizing host identity and timestamps.",
+    "finalCounts": { "MATCH": 17, "MATCH-ERR (same non-2xx on both)": 23, "DIVERGED": 0 },
+    "totalEndpointsSwept": 40,
+    "perService": {
+      "smartcity-api": "23 endpoints. 2 MATCH (/api/health, /api/calendar/events/public); 21 MATCH-ERR (401 on both sides — both origins gate the same routes identically, which is itself a match); 0 DIVERGED.",
+      "smartcity-dashboards": "17 endpoints. 14 MATCH (including 5 static assets byte-identical); 3 MATCH-ERR (404/401 on both); 0 DIVERGED."
+    },
+    "theSweepFailedTheFirstTime": {
+      "result": "2 DIVERGED (MATCH 15, MATCH-ERR 23).",
+      "endpoints": ["/api/calendar/events/public", "/api/calendar/status"],
+      "why": "The Municode WAF refusal above, causing the api to fall back to last-known-good calendar data.",
+      "whyItIsRecorded": "A sweep that only ever reports its final number hides whether the number was earned. This one was red, was root-caused to a specific IP, and went green only after the host was changed and re-measured."
+    },
+    "divergencesFixedDuringTheWork": "Five dashboards endpoints (/, /app.js, /sc-kit.css, /shell.css, /property-map.html) initially diverged purely on line endings. GCP serves CRLF; this lane's LF normalization had removed it. Rebuilding from the un-normalized context made all five byte-identical.",
+    "volatileKeysAddedAndWhy": {
+      "keys": ["lastScrapeAt", "lkgFreshAt"],
+      "justification": "Not added to clear a red line. A full field dump of /api/calendar/status on both origins (cal-status-dump.mjs) showed these to be the ONLY differing keys and showed the SIGNAL fields to be equal at the same time: cachedSource='municode' on both (was 'lkg'), lastScrapeStatus='ok' on both (was 'network_failed'), ok=true on both, formats identical, key sets identical with none absent. The two keys are host-local clocks — each records when THAT host last ran the scrape — and the DO value reads 1144s LATER than GCP's, i.e. the DO host ran its own scrape. Equality across two independent hosts is not a property that can hold for them.",
+      "corroboration": "On both sides lkgFreshAt === lastScrapeAt, so neither origin is serving a stale fallback."
+    }
+  },
+
+  "buildEnvironmentFindings": {
+    "heapCeiling": "The api build died with exit 134 at 'npm run build:cloud-run', V8 reporting 'Ineffective mark-compacts near heap limit' at ~475MB of heap. A 6GB swapfile did NOT help — V8 sizes its old-space limit from the container's VISIBLE memory and swap cannot raise a V8 ceiling. Setting NODE_OPTIONS=--max-old-space-size=4096 inline on the RUN fixed it; the build then passed where it had died at 53 seconds.",
+    "crlfTrap": "core.autocrlf=true on this Windows checkout means every exported file is CRLF while the committed blobs are LF (git ls-files --eol: i/lf w/crlf). A sed anchored on the end of the Dockerfile's RUN line silently matched nothing because of the trailing CR, so the heap patch appeared to apply while doing nothing and the next build failed identically. Diagnosed with sed -n '20,24p' | cat -A, which showed the trailing ^M. The fix on the replacement host was to export the Dockerfile with `git -c core.autocrlf=false archive <commit> Dockerfile.api`, which emits the committed LF bytes directly and removes the whole class of problem.",
+    "powerShellIsNotByteSafe": "Piping file contents through PowerShell variables destroyed newlines and produced a one-line Dockerfile. scp and git archive are byte-exact and were used for every file that matters."
+  },
+
+  "latentDefectFoundInTheDeployedImage": {
+    "symptom": "The api container reports (unhealthy) to Docker while the app itself answers /api/health with {\"status\":\"ok\",\"db\":\"connected\",...} and every swept endpoint returns what it should.",
+    "rootCause": "Dockerfile.api is FROM node:22-slim and declares HEALTHCHECK ... CMD curl -f http://localhost:8080/api/health || exit 1. node:22-slim does not ship curl. Every probe fails with '/bin/sh: 1: curl: not found' (FailingStreak reached 12), so the health signal reports a missing binary rather than the state of the service.",
+    "evidence": "docker inspect .State.Health shows ExitCode 1 and Output 'curl: not found' on every attempt, while `command -v curl` inside the container prints nothing and the app returns a healthy JSON payload. For contrast, the scraper — same account, same runtime, different base image — declares the same style of curl healthcheck and reports healthy with failingStreak=0, so its image does contain curl.",
+    "whyItWasInvisibleUntilNow": "Cloud Run does not use the Docker HEALTHCHECK; it has its own startup and liveness probe configuration, and the revision was healthy under those. The defect is dormant on Cloud Run and becomes visible only on a runtime that honours Docker's health signal.",
+    "whyItMattersToThisMissionAndTheNext": "On plain Docker with --restart unless-stopped, an unhealthy-but-running container is NOT restarted, so the flag is cosmetic here and the deployment is genuinely serving correctly. But DO App Platform DOES honour HEALTHCHECK, and the next session's most likely path is App Platform. There, this same image would be marked unhealthy and App Platform could refuse to route traffic to it or roll the deployment back — and the failure would look like a broken app rather than a one-word Dockerfile defect.",
+    "notFixed": "Deliberately not fixed. Mission step 4 requires deploying from the exact commit currently deployed on GCP, and editing the Dockerfile to install curl or switch the probe to a node-based one would depart from that commit for a reason that does not affect this mission's validation. It is recorded so the defect is fixed on purpose before any App Platform move, rather than discovered as an outage."
+  },
+
+  "falsifierResults": {
+    "1_identicalResponses": {
+      "verdict": "PASS",
+      "detail": "40 endpoints swept: 17 MATCH, 23 MATCH-ERR (both origins return the same non-2xx, which is a match), 0 DIVERGED. Plus 3/3 health endpoints PASS key-by-key.",
+      "history": "This FAILED on first measurement (2 diverged) and passes only because the cause was found and fixed. Both readings are in this artifact."
+    },
+    "2_everySecretResolves": { "verdict": "PASS", "detail": "BAD_TOTAL=0 across all three services; every key fetched non-empty, shape-valid, single-line. The shape assertion was demonstrated able to fire — it fired once and the rule, not the value, was corrected." },
+    "3_dashboardsOutboundCallsUnchanged": { "verdict": "PARTIAL", "detail": "The outbound URLs (HAUSKA_RETRIEVAL_URL, HAUSKA_MCP_URL, smart-files) are byte-identical to the GCP originals' values and were not touched by this lane. The outbound CALLS were not separately exercised end-to-end, because reaching them requires an authenticated dashboards request path. Recorded as unproven rather than claimed." },
+    "4_gcpOriginalStillServingAfterDnsCutover": { "verdict": "NOT APPLICABLE — no DNS cutover was performed", "detail": "The smartcityos.io GoDaddy records were not touched. No cutover of any kind was performed, so there is no post-cutover state to measure. All three GCP originals are still running and still the production path." },
+    "5_reposUnmergedDuringMission": { "verdict": "PASS at time of measurement", "detail": "smartcity-os origin/main still 8bea7fa and smartcity-dashboards origin/main still f776b4b, both unchanged since before this lane started. This is a point-in-time read; no DNS step was taken, so the mission's re-check-before-DNS instruction has not yet been triggered." }
+  },
+
+  "whatWasNotDone": [
+    "NO DNS cutover of any kind. smartcityos.io's GoDaddy apex A/AAAA and www CNAME were not read, not lowered, and not changed. The dashboards and scraper cutovers were also not performed, because both depend on decisions that are not the agent's to make (below).",
+    "smartcity-scraper's trigger was NOT repointed. Cloud Scheduler cannot mint an OIDC token for a non-Google endpoint and the scraper's sync routes carry no application-level auth, so repointing the ten jobs requires a decision the dispatch does not grant: expose a currently-private service, add auth the deployed commit does not have, or accept a local cron. The local-cron design is implemented in design only; the ten live Cloud Scheduler jobs were left running against GCP, untouched.",
+    "hauska-mcp-server's DASHBOARDS_BACKEND_URL was NOT flipped, so the dashboards cutover did not happen.",
+    "No cert/TLS work: DO App Platform and Container Registry are both refused by the token scope, so the api serves plain HTTP on a droplet IP. Serving smartcityos.io from DO needs a custom-domain + TLS story this lane could not build."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}
