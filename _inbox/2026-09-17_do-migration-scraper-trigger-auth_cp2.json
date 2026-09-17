@@ -1,0 +1,131 @@
+{
+  "artifact": "CP2",
+  "kind": "post-implementation checkpoint — what was built, deployed and measured, against CP1's pre-registered answers",
+  "lane": "do-migration-scraper-trigger-auth",
+  "planRows": ["D-10"],
+  "seat": "do-migration-lane",
+  "dispatch": "_dispatches/2026-09-17_do-migration-scraper-trigger-auth_dispatch.md",
+  "filedAt": "2026-09-17T19:52:00Z",
+  "clockNote": "Every timestamp here is true UTC: container and droplet timestamps come from the droplet, and host-side values from .NET UtcNow. The workstation shell's `date -u` is a PowerShell alias that returns LOCAL time with a literal Z appended and is not used.",
+
+  "whatWasBuilt": {
+    "codeChange": {
+      "repo": "smartcity-os",
+      "file": "server/scraper-worker.ts",
+      "change": "a global express middleware registered FIRST (before express.json() and before registerScraperHealthRoutes) that requires header X-Scraper-Trigger-Secret on EVERY request, health routes included, compared with crypto.timingSafeEqual on equal-length buffers; missing/empty header is refused 401 with a JSON body; if SCRAPER_TRIGGER_SECRET is unset the worker refuses everything with 503 rather than serving unauthenticated",
+      "pr": "https://github.com/empressaioemail-tech/smartcity-os/pull/57",
+      "prChecks": "Gitleaks pass, Semgrep pass, Trivy pass (the repo's only CI gates); mergeStateStatus CLEAN",
+      "mergedToMain": "92c73e39c9003d87cde5f9aaac5210d240229d2a (squash). The guardrail now survives a clone and a future redeploy from main, which DEV-PROCESS requires.",
+      "alsoChanged": "Dockerfile.scraper HEALTHCHECK now curls /internal/health with the header, in shell form so ${SCRAPER_TRIGGER_SECRET} is expanded from the container env at runtime"
+    },
+    "deployedImage": {
+      "image": "smartcity-scraper:f21e49d-d10auth",
+      "builtOn": "the DO droplet, from a byte-exact context exported with `git archive` of commit f21e49d plus the auth patch",
+      "whyNotFromMain": "CP1's finding, reaffirmed here: the scraper bundle dynamically imports server/routes/* (spireon, samsara, firstdue) through cache-refresh-cron/cache-warmer, and three of those files differ between f21e49d and main, so a main-based image would execute different code than the commit GCP is running. The droplet image is the deployed commit plus auth, and nothing else."
+    },
+    "droplet": {
+      "host": "d5-smartcity-scraper",
+      "id": "601444093",
+      "ip": "159.89.190.154",
+      "image": "smartcity-scraper:f21e49d-d10auth",
+      "container": "smartcity-scraper, Up, healthy, FailingStreak 0, started 2026-09-17T18:45:48Z",
+      "portBinding": "0.0.0.0:8080->8080/tcp (public, and only after the auth middleware was proven on loopback)",
+      "rollbackContainer": "smartcity-scraper-f21e49d-prev (Exited (137), image smartcity-scraper:f21e49d, no published ports) — the pre-D-10 image, retained and NOT deleted",
+      "envFile": "/opt/d5/smartcity-scraper.env, mode 600, keys: DATABASE_URL, MYGOV_BASE_URL, MYGOV_PASSWORD, MYGOV_USERNAME, NODE_ENV, DEPLOY_STAMP, DEPLOY_TS, SCRAPER_TRIGGER_SECRET"
+    },
+    "schedulerJobs": {
+      "count": 10,
+      "allEnabled": true,
+      "location": "us-central1 / smartcity-os-prod",
+      "uri": "http://159.89.190.154:8080<path> for all ten",
+      "headers": "User-Agent=Google-Cloud-Scheduler, X-Scraper-Trigger-Secret=<value> (User-Agent re-sent explicitly because --headers REPLACES the map rather than merging)",
+      "oidc": "removed from all ten (hasOidcToken false on every job)",
+      "schedulesAndTimeZone": "unchanged and byte-compared against the before-state dump: 35 * * * *; 50 * * * *; 30 * * * *; 0 5,13,21 * * *; 30 6 * * *; 0 6 * * *; 0 7 * * *; 30 7 * * *; 30 8 * * *; 30 9 * * *, all Etc/UTC",
+      "rollbackPath": "the inverse of update-jobs.ps1, with the exact original URIs and OIDC settings preserved in _inbox/2026-09-17_do-migration-scraper-trigger-auth_scheduler-jobs-before.json"
+    },
+    "secretCustody": {
+      "minted": "this lane only, 32 CSPRNG bytes as 64 lowercase hex chars, for this header only — no existing secret reused",
+      "sha256": "862d9d3a53b58417686ffaa2eaf010a7cb558996dc1c7c9af0b33c1d8274b290",
+      "threeWayMatchByHash": "the GCP Secret Manager copy (scraper-trigger-secret in smartcity-os-prod), the droplet's SCRAPER_TRIGGER_SECRET (sha256 read ON the droplet), and the value inside all ten job headers (sha256 computed per job) are all 862d9d3a... — compared by hash, never by printing the value",
+      "neverCommitted": "no secret value appears in any commit, artifact, dispatch, checkpoint or log in this lane; only the sha256 does",
+      "transientLocalCopy": "P:/tmp/d10-do-migration/scraper-trigger-secret.txt and secret-roundtrip.txt — deleted and the deletion verified as part of this close"
+    }
+  },
+
+  "falsifierAnswersAgainstCp1": {
+    "1_missingHeaderRefused": {
+      "cp1Registered": "PASS expected; a GET and a POST with no header refused 401 on both loopback and the public address",
+      "measured": "PASS on the public address, from outside the host",
+      "evidence": "_inbox/2026-09-17_do-migration-scraper-trigger-auth_public-auth-probe.json — GET /internal/health 401, GET /health 401, HEAD /internal/health 401, POST /internal/sync/manager-load-past-due 401, unknown path 401; a WRONG header of the SAME length also 401, so it is the value being compared and not the length; the app's own log shows `[auth] refused ...` for each",
+      "unregisteredFinding": "with a correct header an unknown path returns 404, i.e. auth is a gate in front of routing rather than a route-level mask. Also proven by construction on the loopback binding before the port was ever published."
+    },
+    "2_correctHeaderIdenticalBehavior": {
+      "cp1Registered": "PASS expected on the routes exercisable without starting a scrape (the two health routes); compared against D-5's recorded GCP key set; pre-registered that no fresh GCP-side read was possible",
+      "measured": "PASS, with the pre-registered limitation honoured and not papered over",
+      "evidence": "accepted GET /internal/health returns {\"status\":\"ok\",\"service\":\"smartcity-scraper\",\"timestamp\":...} — exactly D-5's recorded GCP-matched key set (status, service, timestamp), zero key-level differences; GET /health additionally returns db/freshness fields. The GCP service is private (403 at the invoker gate) and this session still cannot mint an identity token (no serviceAccountTokenCreator on scheduler-invoker@), so the GCP side is D-5's recording, not a fresh paired read.",
+      "note": "/health's freshness block is host-local by design and reads processName=active_wo_report, lastSuccessfulScrapeAt in the same minute — the DO worker is doing real sync work, not idling behind a fake health response."
+    },
+    "3_allTenJobsReachTheDroplet": {
+      "cp1Registered": "PARTIAL expected, with full-scrape named as the most likely to be partial because of its 1800s deadline",
+      "measured": "PASS for all ten, including full-scrape, which CP1 was wrong to expect to be partial: it completed 200 in 750s",
+      "evidence": "_inbox/2026-09-17_do-migration-scraper-trigger-auth_job-verification.json (per-job rows with trigger, AttemptStarted, AttemptFinished, status and host) and the raw attempt log beside it; every row is corroborated by the droplet's own `[auth] authorized POST <route>` line",
+      "unregisteredFinding": "TWO 500s did occur, at 19:40:15Z and 19:40:29Z, on jobs that were NOT the ones this lane was verifying at that moment. They were authorized, and they failed on the scraper's own Chromium lock because this lane's 750s full-scrape verification held it. Full account in the concurrencyFinding section of the verification artifact. This is the dispatch's own warning ('a job could be accepted and still return 500 — that is a job failure, not an auth failure') landing in practice, and it is reported as a failure rather than folded into 'the trigger works'."
+    },
+    "4_gcpServiceUntouched": {
+      "cp1Registered": "PASS expected, PASS by construction; verified by describing the service before and after",
+      "measured": "PASS",
+      "evidence": "latestReadyRevision = latestCreatedRevision = traffic revision = smartcity-scraper-00043-fen, created 2026-08-01T23:11:53Z and Ready=True since 23:13:12Z (identical to D-5's recorded state), image digest 461a235c... (identical to D-5's), 100% of traffic, and no new revision exists. An unauthenticated GET /internal/health still returns Google's gate page (403 now, 401 when CP1 measured it) rather than an application response, so the service is up and still enforcing run.invoker.",
+      "honestNote": "this lane issued no `gcloud run` mutation of any kind; the only GCP writes were the ten `gcloud scheduler jobs update` calls, the Secret Manager secret, and the `jobs run` triggers."
+    }
+  },
+
+  "divergencesFromCp1": [
+    "CP1 expected full-scrape to be the likely PARTIAL of falsifier 3. It was a clean PASS (750s, 200). The 500s that did happen came from a job CP1 did not flag, and from contention that CP1's risk list did not name.",
+    "CP1's risk list named the DO cloud firewall as 'the single most likely blocker'. It was not a blocker at all: the port opened to the public internet the moment the docker binding changed, with no firewall in the path.",
+    "CP1's risk 'HEALTHCHECK env expansion may not work' is resolved by measurement rather than argument: docker reports healthy / FailingStreak 0, which is only reachable if the shell-form expansion delivered the header.",
+    "CP1 recorded the GCP gate probe as 401; at close the same probe returns 403. Both are Google's page, and the service is unharmed, but the difference is recorded rather than smoothed over."
+  ],
+
+  "lessonsAndDeadEnds": {
+    "LESSON": [
+      "`gcloud logging read` on this project returns [] when the filter contains a `timestamp>=\"...\"` clause, even for entries that plainly satisfy it (verified: the identical filter with the clause gives [], without it gives the entries). Window the results client-side instead.",
+      "PowerShell 5.1's ConvertFrom-Json emits a whole JSON array as ONE object, so `@($raw | ConvertFrom-Json)` produces a 1-element array whose properties are arrays. Assign first (`$parsed = $raw | ConvertFrom-Json; $entries = @($parsed)`) or every `.field` access silently returns an array and the subsequent Where-Object filters to nothing.",
+      "PowerShell 5.1 parses an RFC3339 timestamp with 9 fractional digits but the safest comparison is a STRING comparison of the first 19 characters — two zero-padded ISO-8601 UTC strings compare chronologically, with no Kind or parsing traps.",
+      "Serializing the wrong object is expensive and silent: assigning a FileInfo-ish object to a field produced a 4 MB artifact because ConvertTo-Json then dumped .NET's whole type table (DefinedTypes, DeclaredMembers). Use [System.IO.File]::ReadAllText and cast to [string], and assert an artifact's size before writing it.",
+      "A .ps1 file with a non-ASCII character (an em dash) is read as ANSI by PowerShell 5.1 regardless of the file's UTF-8 encoding, and the mangled byte sequence broke the string that contained it. Keep generated scripts ASCII.",
+      "Quoting a remote shell one-liner through PowerShell -> ssh -> sh is not safe when it contains nested $( ) and nested quotes: the per-route counts came back empty. Ship a .sh with scp and run `sh /root/x.sh` instead.",
+      "Cloud Logging's AttemptStarted timestamp trails the app's receipt by a few seconds, and the job's own lastAttemptTime follows the app, not the log. Correlating the two clocks as if they were one would have made correct triggers look like spurious ones."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-17T19:40:49Z: all ten Cloud Scheduler jobs are ENABLED, POSTing to http://159.89.190.154:8080 with the shared secret and no OIDC, schedules and time zone unchanged; each was triggered for real and each reached the droplet and returned 200.",
+      "2026-09-17T18:45:48Z: the droplet runs smartcity-scraper:f21e49d-d10auth publicly on 0.0.0.0:8080, healthy, with the pre-D-10 image retained as the stopped container smartcity-scraper-f21e49d-prev.",
+      "2026-09-17: the shared secret's sha256 (862d9d3a...) matches three ways — GCP Secret Manager, the droplet env file (hashed on the droplet), and every one of the ten job headers.",
+      "2026-09-17T19:4xZ: smartcity-scraper on GCP is untouched — revision 00043-fen, 100% traffic, digest 461a235c, no new revision, still gated by run.invoker.",
+      "2026-09-17: the droplet's scraper holds a SINGLE global chromium lock with a 600s wait timeout; concurrent jobs on one host therefore contend in a way they did not on Cloud Run (per-instance lock). Observed: two 500s from lock timeouts while this lane's full-scrape held the lock for 750s."
+    ],
+    "DEAD-END": [
+      "Filtering Cloud Logging by timestamp server-side (see LESSON 1) — it silently returns an empty result set and makes a working job look unverified.",
+      "Running the surface-probe on this host WITHOUT `NODE_OPTIONS=--use-system-ca`: every live leg is refused (exit 2, all UNMEASURED). With the system CA it measures (PASS 4 FAIL 1 UNMEASURED 32).",
+      "Reusing the D-10 verification script's own log-poll logic as evidence without corroboration: the app-side `[auth] authorized POST <route>` line is the cheap, direct cross-check and should have been used from the start."
+    ],
+    "OPEN": [
+      "Who issued the extra `gcloud scheduler jobs run` calls at 19:08:54Z, 19:14:59Z, 19:24:09Z, 19:30:07Z and ~19:35Z from this machine's GCP identity? They changed no configuration (all ten jobs still carry this lane's secret hash) but they did add real sync traffic during verification, including one of the 500s. Unresolved; recorded so the next session does not have to rediscover the noise.",
+      "Should the scheduler's schedules be re-spaced now that all jobs serialize behind one Chromium lock on one host? A job that waits more than 600s fails 500. The retry policy absorbs some of it (retryCount 2, 300s min backoff) but not all.",
+      "The DO droplet serves plain HTTP: the shared secret and every response travel in clear text. TLS termination is outside D-10's scope and remains owed.",
+      "The droplet's port is open to the whole internet; nothing rate-limits a wrong-header attacker. ufw is inactive and the DO token in scope has no networking permission, so a cloud firewall cannot be added from here.",
+      "The GCP smartcity-scraper service is still alive and still costs money; retiring it is a follow-up decision this dispatch explicitly withheld."
+    ]
+  },
+
+  "artifactsFiled": [
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_cp1.json",
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_cp2.json",
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_job-verification.json",
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_public-auth-probe.json",
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_scheduler-jobs-before.json",
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_scheduler-jobs-after-redacted.json",
+    "_inbox/2026-09-17_do-migration-scraper-trigger-auth_scheduler-attempts.json"
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}
