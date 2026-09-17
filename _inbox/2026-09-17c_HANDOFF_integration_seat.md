@@ -3,7 +3,7 @@ id: 2026-09-17c_HANDOFF_integration_seat
 title: Handoff to a fresh integration-seat planner, 2026-09-17 evening
 date: 2026-09-17
 last_updated: 2026-09-17
-status: active handoff
+status: CONSUMED 2026-09-17 (superseded by _inbox/2026-09-17d_HANDOFF_integration_seat.md)
 kind: handoff
 owner: nick
 from: integration seat, session after 06a91261 (operator-called close, 2026-09-17 about 20:30Z)

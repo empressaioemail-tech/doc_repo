@@ -123,7 +123,7 @@ engine `50a0ba91`, factory `208baeb0`. **None of this has reached a customer yet
 
 | PR | Rows | What it does | To reach a customer |
 |---|---|---|---|
-| ~~map #416~~ **DEPLOYED 21:38Z** | P-272, P-291 | A malformed situs (`", ,"`) no longer kills the draw; the card says when a county is outside the graded six. The "is this address unusable" rule lived in FOUR files with one copy drifted, now one | **Done** — `3cpnl30o0` on smartsite.cloud |
+| ~~map #416~~ **DEPLOYED AND VERIFIED 21:38Z** | P-272, P-291 | A malformed situs (`", ,"`) no longer kills the draw; the card says when a county is outside the graded six. The "is this address unusable" rule lived in FOUR files with one copy drifted, now one | **Done** — `3cpnl30o0` on smartsite.cloud |
 | engine #471 | P-260, P-263 | One setback registry the corpus owns (the engine's hand-kept 15-key table is gone; 43 corpus keys, every one served-with-an-arm or unserved-with-a-reason). `no-buildable-area` now REQUIRES a zero proof at the type level | retrieval-api + engine-api deploy. **engine-api traffic is PINNED, so the shift is explicit.** Note this is WRITE-side only: the 490,185 legacy atoms keep printing "Setbacks consume the lot" until the apply runs |
 | engine #470 + LDT #715 | P-279 | A tagged revision cannot outlive a credential the serving revision carries. Runs at canary AND at traffic shift (at canary the old revision still serves, so a newly added credential is invisible). REFUSE (exit 2) fails the step | Takes effect on the next deploy of cortex-api / smartsite-mcp |
 | factory #171 | P-287 | Burnet's parcel surplus is explained to the row, not asserted away | Nothing to deploy; it is a hand-run instrument (which is why P-286 matters) |
@@ -146,7 +146,12 @@ created with. Nothing was deleted or repointed: removing or repointing a tag is 
 
 | Row | What | State | Next |
 |---|---|---|---|
-| Controls (P-273, P-274) | The last of the six Phase 0 lanes | **Still running.** The other five closed and all five merged | Review, merge, deploy, grade |
+| Controls (P-273, P-274) | The last of the six Phase 0 lanes | **CLOSED AND MERGED** in all three repos (factory #172 `087927bc`, engine #472, LDT #716 `388ccc5c`) | LDT's leg needs a cortex deploy, which is blocked by P-323 |
+| P-319, P-320, P-321 | Keyspace-aware retirement, blast-radius refusal, retired-share watch | **In flight.** PR factory #173 is OPEN, which satisfies P-286's precondition | Review, merge, deploy |
+| P-257 | Decline wording and PUD | **In flight.** PRs map #417 and LDT #717 are open | Review, merge, deploy |
+| P-270 | Citation effective date (29 of 31) | **In flight**, no PR yet | |
+| P-322 | Cotality rails as declared absences | **In flight**, no PR yet | |
+| Engine deploy (P-260, P-263's code) | retrieval-api and engine-api | **In flight** — handed to a fresh session, `_dispatches/2026-09-17_engine-deploy-p260-p263_dispatch.md` | Grade P-260 at the surface on landing |
 | Williamson republish | A-190 | **FAILED DESTRUCTIVELY AND WAS RECOVERED** (restore verified 20:59Z) Staging passed (`k2gnr`, retention 1.1666 scoped), production `sxv8r` (run `7b2540c8`) then retired all 602,050 rows. A-190 is NOT complete for Williamson and the county's republish is blocked on P-319 | Finish the restore, verify `get_smart_site 48491:107190` serves facts, then P-319 and P-320 before 48491 is published again |
 | P-259b's 0103 + the Austin stamp | The interim disclosure column, then the stamp | 0103 is RETRYING: each attempt takes the production lease, hits a 15 s lock timeout behind the Williamson publish's reads, and rolls back whole (nothing applied, 22 attempts by 20:20Z). The retry loop runs to about 21:58Z | After Williamson: apply 0103 (backfill population 1,184,897 rows), then the Austin stamp as a session CLI under a production lease (P-296's ruling), then the P-255 census |
 | The six new Phase 0 lanes | Card truth, Williamson identity, setbacks and envelopes, controls, tagged revisions, Burnet | **All six fired and working** | Review, merge, deploy and grade as they close |
@@ -184,7 +189,9 @@ created with. Nothing was deleted or repointed: removing or repointing a tag is 
 | `_dispatches/2026-09-17_p319-retirement-safety_dispatch.md` | P-319, P-320, P-321 | **Highest priority.** P-319 blocks every further publish of 48491, and P-320 is the refusal that would have stopped both county losses |
 | `_dispatches/2026-09-17_p270-citation-effective-date_dispatch.md` | P-270 | The widest customer defect, 29 of 31. The card-truth lane explicitly did not build it |
 | `_dispatches/2026-09-17_p257-decline-wording-and-pud_dispatch.md` | P-257 | Two customer defects: Bastrop wording on other counties' parcels (6 of 52) and PUD districts resolving Euclidean setbacks (1 of 4) |
-| `_dispatches/2026-09-17_p286-p317-burnet-preconditions_dispatch.md` | P-286, P-317 | Both block Burnet's first publish; P-317 blocks any county's first-ever publish |
+| `_dispatches/2026-09-17_p286-p317-burnet-preconditions_dispatch.md` | P-286, P-317 | **UNBLOCKED** — its precondition was P-319's PR being open, and factory #173 is open. Fire it |
+| `_dispatches/2026-09-17_p323-tag-hygiene_dispatch.md` | P-323 | Operator agreed 2026-09-17. **Blocks the next cortex-api and smartsite-mcp deploy, and therefore P-322 and P-324** |
+| `_dispatches/2026-09-17_p324-pixel-attribution-deploy_dispatch.md` | P-324 | Gate 1 is a LOCAL probe (no push); Gate 2 is a green P-279 run, so it waits on P-323 |
 | `_dispatches/2026-09-17_p322-cotality-declared-absences_dispatch.md` | P-322 | A-212: the rails that wanted the vendor ship as labelled absences |
 
 ## Owed by the operator
