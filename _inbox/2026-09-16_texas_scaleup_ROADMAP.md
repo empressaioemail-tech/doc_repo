@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (21:00Z, after the Williamson mass-retirement incident and the operator's ship-without-Cotality ruling)
+last_updated: 2026-09-17 (21:25Z, after the Williamson restore, the five Phase 0 merges, and the next-wave compile)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -13,7 +13,7 @@ related:
   - 90_operations/OPS-24_county_to_serving_program.md
   - 90_operations/OPS-16_texas_market_plan_of_record.md (row text is the authority; A-191 to A-210 cover 2026-09-16 and 2026-09-17)
   - _decisions/2026-09-16_county_verdict_is_not_the_serve_switch.md
-snapshot: Cloud Run and Vercel state read by field, GitHub mains, and doc_repo main 7e8572c4, 2026-09-17 20:25Z
+snapshot: Cloud Run and Vercel state read by field; GitHub mains map 3693d831, LDT 10468fb4, engine 50a0ba91, factory 208baeb0; doc_repo main d0bd03dd; 2026-09-17 21:25Z
 ---
 
 # Texas scale-up roadmap
@@ -36,20 +36,21 @@ every rail that wanted Cotality ships as a DECLARED absence: `unaccounted` at re
 a customer reads it, never fabricated and never silently missing. P-322 carries that work. Nothing
 is relabelled `absent-verified` to clear a gate.
 
-**Williamson's production publish retired the whole county, and it is being restored.** Run
+**Williamson's production publish retired the whole county, and it has been restored and verified.** Run
 `7b2540c8` retired all 602,050 served tier-1 rows for 48491, including the 319,480 numeric rows
 that were LIVE, because the county's published parcel index is R-keyed while its served nodes are
 numeric-keyed and the retirement step differenced the two keyspaces against each other. The county
-went dark on the customer surface at 19:26Z. Recovery is a row-level copy from a Neon point-in-time
-branch taken at 19:22:29Z. Three rows are carded: P-319 (keyspace-aware retirement), P-320 (a
+went dark on the customer surface at 19:26Z. Recovery was a row-level copy from a Neon point-in-time branch
+taken at 19:22:29Z: 319,480 rows restored, verified by an independent census and on the customer
+surface at 20:59Z. Three rows are carded: P-319 (keyspace-aware retirement), P-320 (a
 blast-radius refusal on every destructive writer, which ENFORCEMENT.md called for after the
 2026-09-15 Bastrop instance and nobody built), P-321 (retired-share per county is watched).
 
-## Where things stand (2026-09-17 21:00Z)
+## Where things stand (2026-09-17 21:25Z)
 
 | Area | State |
 |---|---|
-| **Williamson (48491) on the customer surface** | **DARK, restoring.** All 602,050 tier-1 rows retired by run `7b2540c8`; the 319,480 numeric rows are being copied back from PITR branch `br-late-rain-apffmnp2` under a heavy-scan lease, in ten batches with before and after censuses. The 282,569 R-prefixed retirements are legitimate (CAD roll) and are not touched. **No further production publish of 48491 until P-319 ships.** |
+| **Williamson (48491) on the customer surface** | **RESTORED AND VERIFIED 20:59Z.** Run `7b2540c8` retired all 602,050 tier-1 rows; the 319,480 numeric rows were copied back from PITR branch `br-late-rain-apffmnp2` in ten batches under a heavy-scan lease. After: `numeric_live 319480, numeric_retired 0, r_retired 282569, total 602050`. `48491:107190` serves facts at `bakedAt 2026-09-10`; `48491:R048816` still reads `record_retired` on its CAD-roll basis, which is what proves one keyspace was touched and not the store. **No further production publish of 48491 until P-319 ships.** |
 | **Gate (P-252, P-292, P-293, P-298)** | **Live and graded.** A six-county apply takes 26 to 33 minutes on the P-298 index (was 8h13m). The hourly trigger is enabled; the 14:00Z run succeeded in 26m. Runs refuse `LEASE_HELD` while a lane holds the factory store, which skipped 12:00Z and 13:00Z; that is the design. |
 | **Cell serving (P-297)** | **Live**, both halves (retrieval `00098-cat`, cortex `00820-jex`). All 152 slated pairs read `pass` today, so answers changed only for empty or refused slated cells, which now refuse with a reason. |
 | **Engine-api surfaces (P-302)** | **Live and graded** (engine-api `00249-kiw`). A slated refusal is printed as a refusal in the feasibility report and PDF, never the baked value. |
@@ -115,6 +116,24 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | P-253, P-255, P-277, P-251 | Ledger leg, setback census, amendment ids, key rotation | Done |
 | P-246, P-247, P-238, P-213, P-242b, P-242c, P-206 | Reports rows | Closed (A-190) |
 
+## Merged 2026-09-17 evening, NOT yet on a customer surface
+
+Five of the six Phase 0 lanes closed and all five merged. Mains: map `3693d831`, LDT `10468fb4`,
+engine `50a0ba91`, factory `208baeb0`. **None of this has reached a customer yet.**
+
+| PR | Rows | What it does | To reach a customer |
+|---|---|---|---|
+| map #416 | P-272, P-291 | A malformed situs (`", ,"`) no longer kills the draw; the card says when a county is outside the graded six. The "is this address unusable" rule lived in FOUR files with one copy drifted, now one | A Property Explorer deploy |
+| engine #471 | P-260, P-263 | One setback registry the corpus owns (the engine's hand-kept 15-key table is gone; 43 corpus keys, every one served-with-an-arm or unserved-with-a-reason). `no-buildable-area` now REQUIRES a zero proof at the type level | retrieval-api + engine-api deploy. **engine-api traffic is PINNED, so the shift is explicit.** Note this is WRITE-side only: the 490,185 legacy atoms keep printing "Setbacks consume the lot" until the apply runs |
+| engine #470 + LDT #715 | P-279 | A tagged revision cannot outlive a credential the serving revision carries. Runs at canary AND at traffic shift (at canary the old revision still serves, so a newly added credential is invisible). REFUSE (exit 2) fails the step | Takes effect on the next deploy of cortex-api / smartsite-mcp |
+| factory #171 | P-287 | Burnet's parcel surplus is explained to the row, not asserted away | Nothing to deploy; it is a hand-run instrument (which is why P-286 matters) |
+
+**P-279's live census, and an operator decision it raises:** `cortex-api` has 18 tags of which **15
+are failing** (tag `staging` is missing `RETRIEVAL_API_KEY`; others miss 5 to 15 credentials
+including `FACTORY_DATABASE_URL`, `ATOMS_DATABASE_URL`, `STRIPE_*`). `smartsite-mcp` has 33 tags of
+which **30 are failing**. Every tag URL is reachable and runs the environment its revision was
+created with. Nothing was deleted or repointed: removing or repointing a tag is the operator's call.
+
 ## Merged, not yet running
 
 | Row | What | Runs when |
@@ -127,7 +146,8 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 
 | Row | What | State | Next |
 |---|---|---|---|
-| Williamson republish | A-190 | **FAILED DESTRUCTIVELY AND IS BEING RECOVERED.** Staging passed (`k2gnr`, retention 1.1666 scoped), production `sxv8r` (run `7b2540c8`) then retired all 602,050 rows. A-190 is NOT complete for Williamson and the county's republish is blocked on P-319 | Finish the restore, verify `get_smart_site 48491:107190` serves facts, then P-319 and P-320 before 48491 is published again |
+| Controls (P-273, P-274) | The last of the six Phase 0 lanes | **Still running.** The other five closed and all five merged | Review, merge, deploy, grade |
+| Williamson republish | A-190 | **FAILED DESTRUCTIVELY AND WAS RECOVERED** (restore verified 20:59Z) Staging passed (`k2gnr`, retention 1.1666 scoped), production `sxv8r` (run `7b2540c8`) then retired all 602,050 rows. A-190 is NOT complete for Williamson and the county's republish is blocked on P-319 | Finish the restore, verify `get_smart_site 48491:107190` serves facts, then P-319 and P-320 before 48491 is published again |
 | P-259b's 0103 + the Austin stamp | The interim disclosure column, then the stamp | 0103 is RETRYING: each attempt takes the production lease, hits a 15 s lock timeout behind the Williamson publish's reads, and rolls back whole (nothing applied, 22 attempts by 20:20Z). The retry loop runs to about 21:58Z | After Williamson: apply 0103 (backfill population 1,184,897 rows), then the Austin stamp as a session CLI under a production lease (P-296's ruling), then the P-255 census |
 | The six new Phase 0 lanes | Card truth, Williamson identity, setbacks and envelopes, controls, tagged revisions, Burnet | **All six fired and working** | Review, merge, deploy and grade as they close |
 | P-263's apply | 490,185 mislabelled envelope atoms | Inside the P-260/P-263 lane as a DRY RUN | The apply needs the operator's go on the measured counts |
@@ -157,12 +177,25 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | P-262 | One edge labeller (merged) | Graded by P-264 |
 | P-254's open defects | 11 OPEN, 5 CLOSED, 7 UNMEASURED of 23 | The instrument is committed; the MCP leg needs `SURFACE_PROBE_MCP_TOKEN` (an OAuth token), which turns 28 UNMEASURED buckets into decided ones |
 
+## Compiled and ready to fire (five dispatches, in priority order)
+
+| Dispatch | Rows | Why now |
+|---|---|---|
+| `_dispatches/2026-09-17_p319-retirement-safety_dispatch.md` | P-319, P-320, P-321 | **Highest priority.** P-319 blocks every further publish of 48491, and P-320 is the refusal that would have stopped both county losses |
+| `_dispatches/2026-09-17_p270-citation-effective-date_dispatch.md` | P-270 | The widest customer defect, 29 of 31. The card-truth lane explicitly did not build it |
+| `_dispatches/2026-09-17_p257-decline-wording-and-pud_dispatch.md` | P-257 | Two customer defects: Bastrop wording on other counties' parcels (6 of 52) and PUD districts resolving Euclidean setbacks (1 of 4) |
+| `_dispatches/2026-09-17_p286-p317-burnet-preconditions_dispatch.md` | P-286, P-317 | Both block Burnet's first publish; P-317 blocks any county's first-ever publish |
+| `_dispatches/2026-09-17_p322-cotality-declared-absences_dispatch.md` | P-322 | A-212: the rails that wanted the vendor ship as labelled absences |
+
 ## Owed by the operator
 
 | Item | Note |
 |---|---|
 | An OAuth token for P-254's MCP leg | `SURFACE_PROBE_MCP_TOKEN`. Without it every one of the 45 buckets is capped at UNMEASURED |
-| P-263's apply | The lane returns measured counts for 490,185 atoms; the write needs your go |
+| P-263's apply | **Census now in hand** (`C:/Users/cente/doc_repo/_inbox/2026-09-17_p260-p263_p263-movement-census.json`, dry run 21:00:24Z, SELECT-only, population digest identical before and after). Population 490,185 = bucketSum: **208,868 to `not-applicable`, 250,883 to `provisional-front-edge`, 30,434 cannot be classified** and stay. But it moves **69.1 percent of the 709,372 envelope atoms in scope**, and P-213's blast-radius guard returned **UNMEASURED** because no `--blast-radius-max-share` was declared. Recommend: declare the share so the guard rules, and run county by county so a defect is bounded to one county |
+| The 30,434 unclassifiable envelope atoms | Inside P-263's population. One sample reason: "edge 0: R32 0ft != expected 15ft for role front". They need a ruling, not a default |
+| Burnet address points | `txgio_address` holds **0 rows** for 48053 against 35,857 in the StratMap service; a bounded dry sample read 500 and parsed 500. No Find-box lookup can pass in Burnet until this is loaded, and the load is a production write (delete-then-insert per county) |
+| 45 failing tagged revisions | P-279 measured them (15 of 18 on cortex-api, 30 of 33 on smartsite-mcp). Removing or repointing a tag is your call |
 | The Austin stamp's production run | P-296 ruled the path (a session CLI under a production lease). The stamp itself is still owed, after 0103 |
 | State files | `_STATE.md` and `_state/shared/STANDING_DECISIONS.md` still hold another writer's uncommitted 13:28Z edit, and the source's Cotality line predates the 09-16 ruling |
 | P-278 production credential rotation | Before Burnet's first production publish |
@@ -274,6 +307,7 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
 | 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-17 21:25 | **Williamson restored and verified; five of the six Phase 0 lanes merged; the next wave compiled.** Restore verified at 20:59Z on the customer surface (`48491:107190` serves facts at `bakedAt 2026-09-10`; `48491:R048816` still reads `record_retired` on its CAD-roll basis, proving one keyspace was touched and not the store). The 7.3-hour runaway query holding `AccessShareLock` on `txgio_parcel` since 13:42:05Z was cancelled with the operator's go — it, not the Williamson publish, was what blocked migration 0103, and the earlier note blaming the publish was wrong. Merged: factory #171 (P-287), engine #470 (P-279), map #416 (P-272, P-291), LDT #715 (P-279), engine #471 (P-260, P-263). LDT #715's canonical-divergence job was deliberately red until engine #470 landed and went green on re-run, which is the control working. **P-270 was NOT built by the card-truth lane** and is now its own dispatch; it is the widest customer defect at 29 of 31. **P-286 was NOT built by the Burnet lane** and is now paired with P-317. Five dispatches are compiled and ready. Preamble hash moved to `v49001500` (another seat corrected the DO-tooling bullet). |
 | 2026-09-17 21:00 | **Williamson's production publish retired the entire county, and the operator ruled that we ship without Cotality (OPS-16 A-212).** Run `7b2540c8` completed and retired all 602,050 served tier-1 rows for 48491, including 319,480 numeric rows that were LIVE with the 2026-09-10 bake; `get_smart_site 48491:107190` read `record_retired` at 19:26:04Z. Cause: the published parcel index is R-keyed, the served nodes are numeric-keyed, and the retirement step differenced one keyspace against the other, so every numeric node was absent by construction. P-306 had fixed the coverage FLOOR for exactly this keyspace split; the retirement decision beside it was left keyspace-blind, which is why the floor passed at 1.1666 while the writer emptied the county. Production payloads were retirement stubs (1,579 bytes) against the branch's full ones (2,226 bytes), so facts were destroyed and un-retiring keys would not have restored them: recovery is a row copy from Neon PITR branch `br-late-rain-apffmnp2` (19:22:29Z) over `dblink`, ten batches under a heavy-scan lease, R-prefixed retirements untouched. Carded: **P-319** keyspace-aware retirement (blocks 48491's republish), **P-320** a blast-radius refusal on every destructive writer, **P-321** retired-share per county watched. P-320 is the control ENFORCEMENT.md named after the 2026-09-15 Bastrop reconcile that retired 92.5 percent of a county; it was never built, and two days later the same class took a second county through a different writer. **A-212 also rules Cotality out of Phase 0**: about two weeks away, nothing waits on it, P-267 and P-283 deferred to Phase 1, and **P-322** ships every Cotality-dependent rail as a declared, labelled absence. |
 | 2026-09-17 20:25 | **Session close (integration session after 06a91261).** Merged and deployed: P-304 (cortex `00822-wef`), P-296 (cortex `00824-qay`, 0102 applied and 355 ETJ rings ingested, `etjStatus` is a real read), P-299's engine half with P-282's slate (retrieval `00100-hut`, engine-api `00251-qed`), P-307 (factory-control `00010-hax`), P-306 (publish image `9760ff71`), P-308, P-275, P-318 and P-305. **Applied:** P-256 in all six counties (219,472 parcels, each county exactly at its ceiling, equal to the pre-apply movable set) and P-266/P-268 in five counties plus the zoning writer (situsState per-parcel everywhere, two out-of-state refusals, zero silent; Austin/Waco/Round Rock citations filled). **Williamson staging PASSED** with P-306's fix (retention 1.1666 scoped against 0.575 unscoped); production `sxv8r` running at close. **0103 is retrying** behind the publish's table locks and has applied nothing. Rows P-310 to P-318 carded; six Phase 0 lanes compiled, fired and running. Handoff: `_inbox/2026-09-17c_HANDOFF_integration_seat.md`. |
 | 2026-09-17 18:10 | **P-304 live and graded** (cortex `00822-wef`, canary first, then the customer surface; P-303 and P-249 unchanged). **P-307 live and graded** (factory-control `00010-hax`; `factory-store` refused on the service URL; client patch applied). **P-306 merged** (`05e5de7b`) and the publish image rebuilt to `9760ff71`. **P-256's apply bound measured**: movable parcels equal A-199's ceilings exactly in all six counties, all false absences, zero unaccounted setback cells; Hays additionally has 27,949 parcels of unaccounted envelope cells. Dry runs clean so far. **Williamson republishing** on the new image. P-317 carded (a first-ever publish would refuse `COVERAGE_UNMEASURED`). |
