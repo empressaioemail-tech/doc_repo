@@ -1,0 +1,35 @@
+P-308: IS THE FOLLOW-ON'S RE-VENDOR COMMAND REAL? (measured, not written from prose)
+
+The factory pins hauska-engine by sha and vendors the parcel-record module as FLAT .js files in src/lib/parcel-record-engine/. ENGINE_PIN.json's note documents the emit as: TypeScript emitted with tsc --module nodenext --moduleResolution nodenext --target ES2022 --lib ES2023,DOM from a named sha. Before writing that command into the follow-on as an instruction for the integration seat, this lane ran it and compared the bytes against the factory's vendored copy at origin/main. Nothing was written into hauska-factory: the comparison reads git show output in Node and never touches that checkout.
+
+EMIT COMMAND USED (run from P:/tmp/p308-engine, whose node_modules supplies typescript and @types/node):
+  pnpm exec tsc <SRC>/packages/engine-core/src/parcel-record/index.ts --module nodenext --moduleResolution nodenext --target ES2022 --lib "ES2023,DOM" --types node --outDir <OUT> --skipLibCheck
+
+TWO FINDINGS THE FOLLOW-ON MUST CARRY:
+  1. The engine repo's own build cannot produce this emit: tsconfig.base.json sets noEmit: true and engine-core's build script is 	sc -b over an include:['src'] / exclude:['src/**/__tests__/**'] project, so pnpm -r run build emits nothing. The pin's documented invocation is the only way, which is why it is copied verbatim above.
+  2. On Windows PowerShell the --lib value MUST be quoted. Unquoted, --lib ES2023,DOM is split on the comma and tsc fails with TS6046 ('Argument for --lib option must be: es5, es6, ...'). Measured, then fixed by quoting.
+
+METHOD: emit at (A) the pinned sha 2cc2057 and (B) this lane's HEAD 532e39f; compare each emitted file to the vendored bytes with CRLF normalised; report every difference. Char counts below are CRLF-normalised characters, sizes elsewhere in this close are bytes.
+
+
+A) emit at the PINNED sha 2cc2057 vs the factory's vendored copy
+  vendored .js files: 13
+  byte-identical (CRLF-normalised): 11
+  differ: index.js (differs (emitted 4525 chars, vendored 4577 chars)), publish-gate.js (differs (emitted 6569 chars, vendored 10833 chars))
+  emitted but not vendored: none
+
+B) emit at this lane's HEAD 532e39f vs the factory's vendored copy
+  vendored .js files: 13
+  byte-identical (CRLF-normalised): 10
+  differ: index.js (differs (emitted 4525 chars, vendored 4577 chars)), ingest-existing.js (differs (emitted 13441 chars, vendored 10409 chars)), publish-gate.js (differs (emitted 6569 chars, vendored 10833 chars))
+  emitted but not vendored: none
+
+READING OF A: 11 of 13 vendored files are reproduced byte-for-byte by the documented command. The 2 that differ are index.js and publish-gate.js -- EXACTLY the two files ENGINE_PIN.json's factoryDivergence block names as divergent by design (P-252's factory-side zero-earned refusal; the factory's copy is the one that executes). So the command is validated, and the exceptions are recorded divergences rather than emit noise.
+
+READING OF B: against this lane's HEAD the same command differs in the same two divergent files PLUS ingest-existing.js. That is the P-308 change and nothing else -- one file. So the re-vendor at this PR's merge sha is a ONE-FILE paste (ingest-existing.js) with the two divergent files deliberately NOT copied.
+
+THE HAZARD THIS EXPOSES, quoted from ENGINE_PIN.json's own factoryDivergence.howToRetire:
+  'When hauska-engine carries the same refusal at a new sha: re-vendor from the new pin, regenerate test/fixtures/engine-pin-2cc2057/ to the new pre-fix source (its header names the sha it came from), empty EXPECTED_DIVERGENCE in test/engine-pin-divergence.test.mjs, and delete this block. Do NOT regenerate this directory from 2cc2057 while this block is present: it would silently revert the fix, and both the divergence test and the fixture test would then fail by design.'
+  'engineSideStatus: not fixed in hauska-engine at 2cc2057 -- the engine-side lane owns that work; the factory's copy is the one that executes (publish-gate-sched.mjs -> gate-rail-cli.mjs -> index.js)'
+
+Therefore: this PR's merge sha does NOT carry P-252's zero-earned refusal (that is a different lane), so the re-vendor must LEAVE the divergence block in place, must NOT regenerate test/fixtures/engine-pin-2cc2057/, and must NOT copy index.js or publish-gate.js. It must, however, move test/engine-pin-divergence.test.mjs's ENGINE_PIN_SHA (line 38) to the new sha, whose source leg it reads with git show <sha>:<path>.

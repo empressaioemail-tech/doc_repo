@@ -1,0 +1,345 @@
+{
+  "lane": "p296-etj-rollout",
+  "planRows": ["P-296"],
+  "status": "closed-partial",
+  "statusReason": "The CODE half is done, tested and green in CI: loadEtjFact is the source of the served etjStatus on the one serve entry point, the three dispositions stay distinct, and the revert makes tests fail. The ROLLOUT half is explicitly the integration seat's and has NOT happened: 0102 is not applied on production, the ingest has not run against production, and cortex is not deployed. Until those three land, the DEPLOYED surface still answers `unresolved` for ETJ, because this branch is not deployed anywhere. closed-partial is the honest status; `closed` would be a false statement about a live parcel.",
+  "seat": "p296-lane",
+  "dispatch": "_dispatches/2026-09-17_p296-etj-rollout_dispatch.md",
+  "filedAt": "2026-09-17T18:57:00Z",
+  "filedBy": "the lane's own session, from its own seat worktree P:/seat-worktrees/p296-etj-rollout/doc_repo",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-17_180723_surface_probe.json",
+    "instrument": "scripts/surface-probe.mjs",
+    "ranAt": "2026-09-17T18:07:23.168Z",
+    "docRepoHead": "699f886b",
+    "rows": ["P-241"],
+    "source": "live",
+    "treeProbed": "P:/tmp/p296-etj-rollout (--root), the branch's own clone",
+    "tally": { "PASS": 4, "FAIL": 0, "UNMEASURED": 0 },
+    "legs": [
+      "P-241:austin-2mile-etj -> PASS",
+      "P-241:austin-city-limits -> PASS",
+      "P-241:round-rock-city-limits-only -> PASS",
+      "P-241:houston-outside-register -> PASS"
+    ],
+    "findings": [],
+    "whatItMeasuresAndWhatItDoesNot": "This is the dispatch's falsifier 4 and the close's `probe` field: it reads the DEPLOYED surface, not this branch, so it is a no-regression check on P-241's ACQUISITION (355 rings from 20 publishers still resolving), NOT a grade of the P-296 wiring. The wiring is graded by the probe below and by CI. Stated because a green probe over a deployed surface would otherwise be read as a grade of un-deployed code.",
+    "noteOnPlanRowsVSTheArtifact": "planRows is [P-296] and the cited artifact measures row P-241 (4 legs, all PASS). P-296 has no surface-probe row of its own: surface-probe carries OPS-24 rows, and P-296's own test is the serve probe committed with the branch. The artifact is cited because the dispatch's Close section says `probe`: cite a surface-probe.mjs artifact for the P-241 row."
+  },
+
+  "snapshot": {
+    "readTimestamps": "staging reads and the two probe runs 2026-09-17T18:05:23Z..19:2x Z; the surface probe 18:07:23Z; the branch snapshot and PR/CI read-backs at 18:50Z..18:57Z, after the CI rerun completed.",
+    "repos": [
+      {
+        "repo": "legacy-design-tools clone (P:/tmp/p296-etj-rollout)",
+        "branch": "feat/p296-etj-rollout",
+        "head": "e863d3e91ba3b1f08e2c430c0c46869bf46cc1b4",
+        "headCommit": "P-296: serve a real etjStatus from the ingested ETJ rings (1 commit)",
+        "mergeBase": "f5fd0946d6201485db74968258ad43d2900cd5aa (origin/main: the merge of LDT #713 / P-304)",
+        "declaredStartCommitInDispatch": "8e7218f7 -- stale by the time of the clone; declared in CP1 and restated here. The branch carries P-304 as a base because it was cloned from origin/main, and it touches no buildableEnvelope/ file.",
+        "worktreeState": "clean (`git status --short` empty)",
+        "worktree": "standalone clone, path == worktree, never the primary P:/legacy-design-tools"
+      },
+      {
+        "repo": "doc_repo lane worktree (P:/seat-worktrees/p296-etj-rollout/doc_repo)",
+        "branch": "lane/p296-etj-rollout",
+        "head": "699f886b",
+        "worktreeState": "M _catalog/lane_claims.json and M _catalog/seat_register.json (both written by this lane's own tooling at claim and at registration); the six _inbox/ artifacts are new/untracked. All left UNCOMMITTED -- contract section 6: doc_repo commits are planner-owned.",
+        "note": "P:/doc_repo, the integration seat's checkout, was never written to. This lane's claim lives in ITS worktree's _catalog/lane_claims.json, which is why the integration seat's copy does not carry it (flagged in CP1 for the next reader)."
+      }
+    ],
+    "stores": [
+      {
+        "store": "LDT staging Neon, host ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech (STAGING_DEPLOYMENT_DATABASE_URL)",
+        "writes": "0102_tx_etj_boundary.sql applied by hand + its _schema_migrations tracker row; `pnpm --filter @workspace/cad-ingest etj-ingest` for 20 publishers; both under heavy-scan lease 73759cf6-1076-4e4d-a63f-f9cceda13a3b (phase 'P-296 ETJ rollout: apply 0102_tx_etj_boundary + etj ingest for 20 publishers against LDT staging'), taken 2026-09-17T17:51:29.562Z keyed on the HOST (P-307).",
+        "reads": "SELECT-only verification of tx_etj_boundary (355), tx_etj_source (23), _schema_migrations (one 0102 row); the serve probe reads txgio_parcel and both ETJ tables.",
+        "oneStoreResetObserved": "Another session's schema operation dropped tx_etj_source from this shared staging store mid-lane. Migration re-applied, ingest re-run; the recorded counts are the re-run's and the second run's per-publisher figures matched the first exactly."
+      },
+      {
+        "store": "production deployment store",
+        "reads": "NONE. No production credential in this box; no production read, no production write, no deploy, no merge. The production host string is deliberately NOT asserted anywhere in this close -- the commands below read it from the environment at run time, which is the rule the lease itself now enforces (P-307)."
+      }
+    ]
+  },
+
+  "filesTouched": {
+    "repo": "legacy-design-tools",
+    "diffstat": "7 files changed, 648 insertions(+), 22 deletions(-)",
+    "countingRule": "one entry per path in `git diff --name-status origin/main...HEAD`; classification says WHY the path is in the diff, not how many lines.",
+    "wiring": [
+      "artifacts/api-server/src/lib/cityLimitsFactServeCutover.ts (M) -- THE wiring. New overlayEtjStatus() reads the ETJ fact ONCE via loadEtjFact and overrides the assembled wire's etjStatus/basis/etjFact on BOTH serve branches (current-path and slated parcel_record). Also carries the containing-city rule, its reasoning and the header note on why ETJ is decided here rather than in either reader.",
+      "artifacts/api-server/src/lib/cityLimitsFactServeCutover.test.ts (M) -- 5 new ETJ cases: the three pre-registered falsifiers plus the containing-city-unread case the live probe found, plus one proof that a ring containment is branch-independent."
+    ],
+    "commentOnlyNoBehaviorChange": [
+      "artifacts/api-server/src/lib/cityLimitsFactRead.ts (M) -- says where the SERVED etjStatus now comes from, and that a direct loadCityLimitsFact() call still answers `unresolved`. No code change.",
+      "artifacts/api-server/src/lib/cityLimitsFactFromParcelRecord.ts (M) -- same statement for the slated adapter. No code change."
+    ],
+    "reasonStringCorrection": [
+      "artifacts/api-server/src/lib/parcelConstraintProjection.ts (M) -- the `etj` rail's unread reason `no-etj-source-in-store` became FALSE the moment 0102 + the ingest landed in the store, so it was corrected to `etj-rail-not-projected-here`, and the rail's header comment now names the real missing input (a query point on a tier1 bake row) instead of a missing source. The rail stays declared-ahead and unread on every row.",
+      "artifacts/api-server/src/lib/parcelConstraintProjection.test.ts (M) -- the single assertion that pinned the old reason string."
+    ],
+    "newInstrument": [
+      "artifacts/api-server/scripts/p296-etj-serve-probe.mts (A, 299 lines) -- the falsifier instrument. Read-only, writes nothing, `--json` for machines, exit 0 whenever the read path ANSWERED (so 'not read' and 'read, and wrong' stay distinguishable), control points and their pre-registered predictions fixed in the script."
+    ],
+    "notTouched": [
+      "lib/db/** -- NOT touched. The dispatch's item 4 (refresh the schema fixture, P-259b's trap) is triggered by touching lib/db, and this lane did not: 0102_tx_etj_boundary.sql is P-241's file, applied as-is from disk with psql, never edited. CI's own 'Check schema fixture drift' step passed, which is independent corroboration that no fixture refresh was owed.",
+      "artifacts/api-server/src/lib/buildableEnvelope/** (LDT #713 / P-304) -- excluded by the dispatch, and the clone happens to carry it as a base.",
+      "the city-limits read path and both its readers' own answers -- the dispatch's clause is honored: they did not have to delegate, so nothing was changed there and no ruling is requested.",
+      "hauska-engine (report-model.ts:966, pdf/feasibility.ts:210-212) -- named in the dispatch as another lane's, left serving `unresolved`.",
+      "every other checkout (hauska-map, hauska-factory, smartcity-*), the whole rest of the fleet."
+    ]
+  },
+
+  "sitesInventory": {
+    "countingRule": "every source under lib/ and artifacts/ matching `etjStatus` (excluding dist/ and *.map), classified by whether a SERVED route can reach it today. Line numbers are re-read in the clone at e863d3e9, not copied from the P-241 close (the dispatch warns they moved).",
+    "wired": [
+      "artifacts/api-server/src/lib/cityLimitsFactServeCutover.ts loadCityLimitsFactForServe(parcelNodeId, point) -- WIRED. This is the single serve entry point: imported by routes/brokerageNodeFacets.ts and routes/propertyExplorer.ts, and both branches of its serve switch funnel through it. The overlay decides etjStatus for every fact the API serves.",
+      "lib/cad-ingest/src/boundary/cityLimitsFact.ts:53 (unmeasuredCityLimitsFact -> etjStatus 'unresolved') and its containment constructors lib/cad-ingest/src/boundary/containment.ts:225,244,251,268 (via etjUnresolved()) -- INDIRECTLY WIRED: api-server's readers build their wire from these, and the overlay overrides the etjStatus on the assembled wire. Their own output is left telling the truth about their own input (they have no ETJ input), which is why they were not edited.",
+      "artifacts/api-server/src/lib/cityLimitsFactRead.ts:99 and cityLimitsFactFromParcelRecord.ts:67,101,118 -- INDIRECTLY WIRED, same as above: the overlay overrides, the readers' own answer stays."
+    ],
+    "leftForAReason": [
+      "artifacts/api-server/src/lib/parcelConstraintProjection.ts:399 the `etj` rail -- LEFT declared-ahead/unread on every row. Reason: this projection takes a tier1 BAKE row and a bake row carries no query point, so no ETJ ring can be evaluated in it. That is a missing INPUT, not a missing source, and the reason string now says so. Serving it needs a query point in the projection path -- a different design question than this lane's overlay.",
+      "hauska-engine report-model.ts:966 and pdf/feasibility.ts:210-212 -- LEFT hardcoded, out of this lane by the dispatch's own text. Consequence recorded plainly: until they adopt the same read, the card/MCP surface and the PDF surface can disagree about ETJ.",
+      "no other etjStatus site is reachable from a served route: a grep of lib/ and artifacts/ finds only api-server plus cad-ingest's own tests."
+    ]
+  },
+
+  "pullRequest": {
+    "repo": "empressaioemail-tech/legacy-design-tools",
+    "number": 714,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/714",
+    "title": "P-296: serve a real etjStatus from the ingested ETJ rings",
+    "state": "OPEN",
+    "baseRefName": "main",
+    "headRefName": "feat/p296-etj-rollout",
+    "headRefOid": "e863d3e91ba3b1f08e2c430c0c46869bf46cc1b4",
+    "headCommit": "e863d3e9 P-296: serve a real etjStatus from the ingested ETJ rings",
+    "commits": 1,
+    "diffstat": "7 files changed, 648 insertions(+), 22 deletions(-)",
+    "mergeable": "MERGEABLE",
+    "mergeStateStatus": "CLEAN",
+    "mergeSha": "not applicable: this lane may not merge it; the integration seat owns merge",
+    "ciRun": "https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315",
+    "ciConclusionStrings": [
+      "Test: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328946037",
+      "Typecheck: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328977995",
+      "cortex daily limit bake: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328947086",
+      "SS-W18 api-server boots: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328947847",
+      "SS-W16 tier2 flood not served: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328992818",
+      "L5 SF-30 Cotality warm grep: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328947991",
+      "L5 SF-26 hand hasWriter grep: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328948395",
+      "L5 silent-fallback greps: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328975776",
+      "L5 SF-24/SF-25 score greps: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328986559",
+      "L17 ci-vintage-predicate: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105328992806",
+      "PR base is main: pass (SUCCESS) -- https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35258492315/job/105329003425",
+      "FIRST attempt, same head e863d3e9, recorded because a close that hides its red run is a false statement about what CI said: Test: FAILURE on job 105328003202 -- `error: out of shared memory` out of the throwaway Postgres service container, a resource condition in the runner, not a test assertion. Reran with `gh run rerun --failed`; the rerun is the green job 105328946037 above, all 11 checks pass on run 35258492315 at head e863d3e9.",
+      "VERDICT: 11 of 11 checks pass (SUCCESS) at head e863d3e91ba3b1f08e2c430c0c46869bf46cc1b4."
+    ],
+    "whatTheCIRunDoesNotSay": "Nothing in this lane merges on these conclusions. `Test` passing means the branch's own tests and the repo's suites pass; it is not the customer predicate and it is not a grade of the DEPLOYED surface, which still serves `unresolved` (see statusReason)."
+  },
+
+  "stagingPerPublisherTable": {
+    "where": "LDT STAGING, host ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech, under heavy-scan lease 73759cf6-1076-4e4d-a63f-f9cceda13a3b taken on the HOST before the first write.",
+    "countingRule": "one row per ENUMERATED city in ETJ_REGISTRY (23 rows: 20 publishing an ETJ layer + 3 enumerated without). `service` = features the publisher's layer reported, `parsed` = features that produced a geometry, `inserted` = rings written to tx_etj_boundary. Read from the CLI's own summary block, then cross-checked against the store with SELECT.",
+    "command": "DATABASE_URL=$STAGING_DEPLOYMENT_DATABASE_URL pnpm --filter @workspace/cad-ingest etj-ingest",
+    "durationSeconds": 34.1,
+    "rawLog": "_inbox/2026-09-17_p296-etj-ingest.log",
+    "publishersWithRings": [
+      { "cityKey": "austin-tx", "mode": "combined", "service": 298, "parsed": 298, "inserted": 298, "extent": "-98.0213,30.0371 .. -97.4729,30.5218" },
+      { "cityKey": "taylor-tx", "mode": "etj_layer", "service": 23, "parsed": 23, "inserted": 23, "extent": "-97.5227,30.4573 .. -97.3434,30.6461" },
+      { "cityKey": "kyle-tx", "mode": "combined", "service": 14, "parsed": 14, "inserted": 14, "extent": "-98.0324,29.9295 .. -97.7668,30.0681" },
+      { "cityKey": "bastrop-city-tx", "mode": "combined", "service": 2, "parsed": 2, "inserted": 2, "extent": "-97.4274,30.0721 .. -97.2611,30.1529" },
+      { "cityKey": "cibolo-tx", "mode": "combined", "service": 2, "parsed": 2, "inserted": 2, "extent": "-98.2491,29.4837 .. -98.0825,29.6281" },
+      { "cityKey": "belton-tx", "mode": "etj_layer", "service": 2, "parsed": 2, "inserted": 2, "extent": "-97.5691,30.9639 .. -97.4316,31.1326" },
+      { "cityKey": "new-braunfels-tx", "mode": "combined", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.3054,29.5777 .. -97.9629,29.8291" },
+      { "cityKey": "georgetown-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.8581,30.5598 .. -97.5496,30.8059" },
+      { "cityKey": "leander-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.0059,30.5068 .. -97.7652,30.6597" },
+      { "cityKey": "hutto-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.6096,30.4706 .. -97.4808,30.6377" },
+      { "cityKey": "buda-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.9012,30.0382 .. -97.7795,30.1267" },
+      { "cityKey": "dripping-springs-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.1803,30.0356 .. -97.8837,30.2661" },
+      { "cityKey": "san-marcos-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.0783,29.7248 .. -97.7837,29.9724" },
+      { "cityKey": "liberty-hill-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.0003,30.6100 .. -97.7974,30.7218" },
+      { "cityKey": "pflugerville-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.6440,30.3854 .. -97.4302,30.5071" },
+      { "cityKey": "san-antonio-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.8965,29.1137 .. -98.1400,29.8035" },
+      { "cityKey": "elgin-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.4227,30.2989 .. -97.3388,30.3976" },
+      { "cityKey": "seguin-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-98.1002,29.4830 .. -97.8011,29.7433" },
+      { "cityKey": "waco-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.4261,31.3727 .. -96.9623,31.7330" },
+      { "cityKey": "killeen-tx", "mode": "etj_layer", "service": 1, "parsed": 1, "inserted": 1, "extent": "-97.8850,30.8815 .. -97.5223,31.2139" }
+    ],
+    "enumeratedWithNoEtjLayer": [
+      { "cityKey": "round-rock-tx", "mode": "city_limits_only", "service": 0, "parsed": 0, "inserted": 0, "note": "its publisher exposes city limits and NO ETJ layer. This is the case that forced the containing-city rule -- see theFindingTheProbeMade." },
+      { "cityKey": "cedar-park-tx", "mode": "city_limits_only", "service": 0, "parsed": 0, "inserted": 0 },
+      { "cityKey": "lockhart-tx", "mode": "city_limits_only", "service": 0, "parsed": 0, "inserted": 0 }
+    ],
+    "publishersThatRefused": [],
+    "totals": { "publishersEnumerated": 23, "publishersWithRings": 20, "ringsInserted": 355, "refused": 0 },
+    "readBackAtSource": {
+      "queriedAt": "2026-09-17T19:2x Z, SELECT-only",
+      "txEtjBoundary": { "rings": 355, "firstIngestedAt": "2026-09-17T18:05:23.737617Z", "lastIngestedAt": "2026-09-17T18:05:56.417264Z" },
+      "txEtjSource": { "rows": 23, "ingestedAt": "2026-09-17T18:05:56.493837Z" },
+      "distinctCityKeyWithRings": 20,
+      "cityLimitsOnlyRows": 3,
+      "schemaMigrations0102Rows": 1
+    },
+    "migration": "lib/db/drizzle/0102_tx_etj_boundary.sql applied BY HAND with its tracker row, mirroring scripts/migrate-prod.mjs's per-file transaction semantics exactly (BEGIN; <file>; INSERT INTO _schema_migrations (name); COMMIT). NOT via `run-migrations` (A-207 ruling 3). Verified at source: `select count(*) from _schema_migrations where name like '0102%'` = 1.",
+    "sharedStoreResetDeclared": "Between the first probe and the second, tx_etj_source disappeared from staging (`relation \"tx_etj_source\" does not exist`) -- another session's schema operation reset the shared store. Migration re-applied, ingest re-run; every figure above is from the re-run and the second run's per-publisher figures matched the first exactly."
+  },
+
+  "falsifiers": [
+    {
+      "n": 1,
+      "claim": "On staging, a parcel inside a registered city's ETJ (named) reads etjStatus present; a parcel inside the city limits reads what the city-limits path says; a parcel outside every registered ETJ in a registered county reads absent-verified.",
+      "preRegistered": "EXPECTED PASS on the point legs, with a pre-registered caveat: the SLATED counties (48453/48021/48491) will serve an unmeasured city-limits answer in any process without a RETRIEVAL_API_KEY, because that branch reads parcel_record through the retrieval service (P-152). If so, the live parcel legs measure the overlay's DEGRADED branch, and both would be shown rather than the flattering one.",
+      "verdict": "PASS on the point legs; PARTIAL on the parcel legs, and the partial is the pre-registered environment limit, not a wrong answer.",
+      "pointLegs": "austin-etj (3128 Edgewater Dr, unincorporated Travis 48453) -> etjStatus `present`, ring 'AUSTIN 2 MILE ETJ', publisher austin-tx. austin-city-limits (5833 Taylor Draper Cv) -> `absent`, an explicitly CHECKED absence (austin-tx's published extent covers the point, none of its 1 consulted ring contains it). bastrop-city -> `absent`, coveredBy [bastrop-city-tx]. round-rock -> `unresolved`. houston -> `unresolved`. 5 of 5 point legs matched their pre-registered prediction.",
+      "parcelLegs": "6 nearest parcels per control point through the REAL serve entry point: austin-etj 3 present / 3 unresolved (the 3 unrung neighbours have a real but unverifiable absence -- see the degradation); austin-city-limits 0 absent / 6 unresolved; bastrop-city 0 absent / 6 unresolved; round-rock 6 unresolved; houston 6 unresolved. Every parcel in the three SLATED counties served cityLimitsStatus `unmeasured` with basis `parcel-record-store-not-configured`, because this probing process holds no RETRIEVAL_API_KEY and the slated branch reads parcel_record through the retrieval service. Visible per row in the artifact, not summarized away.",
+      "whatWouldMakeItAFullPass": "the same committed probe re-run in a process holding a retrieval credential: the slated branch would answer incorporation, the containing city would be passed, and the parcel legs would carry `absent` with coveredBy/ringsConsulted. One command. NOT run here -- the credential is not in this box, and saying so is cheaper than implying it was."
+    },
+    {
+      "n": 2,
+      "claim": "A parcel in a county with no registered publisher reads unresolved, never absent-verified.",
+      "preRegistered": "EXPECTED PASS.",
+      "verdict": "PASS",
+      "evidence": "Houston, Harris 48201 (not in ETJ_REGISTRY): 6 of 6 parcels `unresolved`, and cityLimitsStatus was `incorporated` -- so the point WAS in a city, and the honest answer is 'we have no ETJ source for that city'. basis: 'no source to check: Houston is not in the ETJ register at all ... This is a checked absence of a SOURCE, not a confirmed absence of ETJ'. Zero `absent` on this leg."
+    },
+    {
+      "n": 3,
+      "claim": "Reverting the wiring makes a test fail.",
+      "preRegistered": "EXPECTED PASS.",
+      "verdict": "PASS",
+      "evidence": "With overlayEtjStatus() returning the un-overlaid fact: `vitest run src/lib/cityLimitsFactServeCutover.test.ts` -> 5 failed | 7 passed (12), exit 1. The failures are the ETJ assertions and NOTHING else: \"expected 'unresolved' to be 'present'\", \"expected 'unresolved' to be 'absent'\", \"expected undefined to deeply equal [ 'austin-tx' ]\", plus a basis assertion. Restored immediately; re-ran green (39 tests across cityLimitsFactServeCutover + parcelConstraintProjection + etjFactRead, exit 0). Raw failing output kept at _inbox/2026-09-17_p296-etj-revert-test.log. The committed branch does NOT contain the revert (verified with `git show HEAD:<path>`)."
+    },
+    {
+      "n": 4,
+      "claim": "surface-probe.mjs's P-241 row still passes.",
+      "preRegistered": "EXPECTED PASS, with the caveat pre-registered: this probe reads the DEPLOYED surface, not the branch, so it can only be a no-regression check on acquisition.",
+      "verdict": "PASS",
+      "evidence": "_inbox/2026-09-17_180723_surface_probe.json -- 4 parcels, 4 PASS, 0 FAIL, tally PASS: 4, findings []. Legs: austin-2mile-etj present, austin-city-limits absent, round-rock-city-limits-only unresolved, houston-outside-register unresolved."
+    }
+  ],
+
+  "falsifier": "4 pre-registered predictions were tested with a committed, re-runnable instrument: (1) a named Austin ETJ address reads `present` while a city-limits address and a registered-county address read a CHECKED `absent` -- PASS on the point legs, PARTIAL on the parcel legs for a declared credential limit; (2) a no-publisher county (Harris 48201) reads `unresolved` and never `absent` -- PASS, 6 of 6; (3) reverting the wiring fails 5 named tests and nothing else -- PASS, with the raw red output kept; (4) surface-probe.mjs's P-241 row still passes, 4 of 4 -- PASS. Falsifier 1's own run then produced an UNPREDICTED finding (Round Rock served `absent` against a pre-registered `unresolved`), which was root-caused and fixed rather than narrated away.",
+  "contradicted": "Nothing was falsified. One measurement CONTRADICTED a pre-registered prediction and was fixed by changing the code, not the prediction: the first live probe served `etjStatus: absent` for Round Rock (48491) against a pre-registered `unresolved`. Root cause: round-rock-tx is in the register as mode=city_limits_only with has_etj_rings=false -- it publishes NO ETJ layer -- while Austin's published ETJ extent box happens to cover Round Rock, so resolveEtjAtPoint's documented box fallback answered 'austin-tx covers this point and no Austin ring contains it'. True about Austin, false as the aggregate disposition, and P-241's own surface probe answered `unresolved` for the same city, so two instruments on one premise disagreed (a free finding, DEV-PROCESS). Fix: a box-rule absence is now served only when the city-limits answer SETTLED the containing city -- `incorporated` (names it, passed through) or `unincorporated` (positively says there is none); otherwise the miss is kept, its coveredBy and ringsConsulted travel, and the disposition is `unresolved` with a basis that names the unread containing city. `present` is untouched (a ring containment never depended on the containing city). Pinned by FALSIFIER 1c. Consequence declared plainly: in any process whose city-limits answer is not a positive determination, `absent` is now UNREACHABLE and the miss reads `unresolved` -- a deliberate loss of a flattering number in exchange for never printing a verified absence over an unpublished ETJ, and the live parcel legs show exactly that row by row.",
+  "contradictedDetail": "See contradicted (single field above; no second contradiction to report).",
+
+  "productionPathAndCommands": {
+    "decision": "A SESSION CLI run under a heavy-scan lease keyed on the production HOST -- NOT a Cloud Run job.",
+    "why": [
+      "Scope of the freeze: _decisions/2026-08-26_ingest_freeze_and_cloud_loader.md freezes 'Factory 1 atoms ingest from the operator's PC' -- the ATOMS store path, re-engineered as a Cloud Run job (P-81..P-84). It does not name deployment-store boundary tables, and ETJ rings are not atoms.",
+      "Where the code lives: etjCli/etjIngest are LDT lib/cad-ingest CLIs, exposed as `pnpm --filter @workspace/cad-ingest etj-ingest` / `etj-verify`. No factory job, image or service account carries them; a Cloud Run job would need all three built first, for a job that takes 34.1s for 20 publishers.",
+      "Precedent for exactly this shape: the immediately preceding production write of the same class -- apply 0103 BY HAND with its tracker row under a production lease, then run the Austin zoning stamp from a session (A-207 ruling 3; A-202 for session-run stamps against production) -- is a session under a lease, and the dispatch hands the same job to the integration seat.",
+      "It is a full-table writer to two tables (it deletes what it re-acquires, then batch-upserts), so ONE heavy-scan scope and the single-writer rule bind. The lease is keyed on the HOST, never a nickname (P-307)."
+    ],
+    "exactCommands": [
+      "# 0. read the host from the environment at run time; do NOT trust a host string copied from a document (P-307's whole finding)",
+      "cd <doc_repo worktree>",
+      "node scripts/heavy-scan-lease.mjs list",
+      "node scripts/heavy-scan-lease.mjs take --store <production deployment host> --holder integration-p296 --phase \"P-296 ETJ: apply 0102 + ingest 20 publishers\" --window-kind heavy-scan",
+      "# 1. migration BY HAND with its tracker row -- never `run-migrations` (A-207 ruling 3)",
+      "psql \"$PRODUCTION_DEPLOYMENT_DATABASE_URL\" -f legacy-design-tools/lib/db/drizzle/0102_tx_etj_boundary.sql",
+      "psql \"$PRODUCTION_DEPLOYMENT_DATABASE_URL\" -c \"insert into _schema_migrations (name) values ('0102_tx_etj_boundary.sql') on conflict (name) do nothing\"",
+      "# 2. the ingest itself. The CLI reads DATABASE_URL; set it explicitly to the production deployment store for the WRITE run (a dry run must NEVER have it exported -- use --dry-run, which needs no URL, or TEST_DATABASE_URL)",
+      "cd legacy-design-tools && pnpm install --frozen-lockfile",
+      "pnpm --filter @workspace/cad-ingest etj-ingest -- --dry-run",
+      "DATABASE_URL=\"$PRODUCTION_DEPLOYMENT_DATABASE_URL\" pnpm --filter @workspace/cad-ingest etj-ingest",
+      "pnpm --filter @workspace/cad-ingest etj-verify",
+      "# 3. verify at source, not from the CLI's prose",
+      "psql \"$PRODUCTION_DEPLOYMENT_DATABASE_URL\" -c \"select count(*) from tx_etj_boundary\"   # expect 355",
+      "psql \"$PRODUCTION_DEPLOYMENT_DATABASE_URL\" -c \"select count(*) from tx_etj_source\"     # expect 23",
+      "psql \"$PRODUCTION_DEPLOYMENT_DATABASE_URL\" -c \"select city_key from tx_etj_source where mode='city_limits_only' order by 1\"   # expect cedar-park-tx, lockhart-tx, round-rock-tx",
+      "# 4. release",
+      "node scripts/heavy-scan-lease.mjs release --token <holderToken from the take call> --holder integration-p296"
+    ],
+    "hostNameDeliberatelyNotAsserted": "The dispatch and the roadmap both point at ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech as the production/cortex host (P-307's census records it as cortex/production). This lane has no production credential and read nothing there, so it does NOT assert the host: read it from the production env var at run time, which is the rule the lease itself now enforces.",
+    "notDone": "Nothing above was run. No production write, no production read, no deploy, no merge."
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-17_p296-etj-rollout_cp1.json",
+    "_inbox/2026-09-17_p296-etj-rollout_cp2.json"
+  ],
+  "otherArtifactsFiledWithThisClose": [
+    "_inbox/2026-09-17_p296-etj-serve-probe.json -- the serve probe's --json output against staging (rows, pointRows, tallies).",
+    "_inbox/2026-09-17_p296-etj-ingest.log -- the raw ingest log (per-publisher summary block).",
+    "_inbox/2026-09-17_p296-etj-revert-test.log -- the raw red output of the revert test.",
+    "_inbox/2026-09-17_180723_surface_probe.json -- the surface-probe artifact cited in `probe`.",
+    "All left UNCOMMITTED in the lane's own seat worktree (contract section 6: doc_repo commits are planner-owned)."
+  ],
+
+  "constraintsHonored": {
+    "fanDepthZero": "true -- 0 sub-agents spawned, maxDepth 0, at every point in the lane. FAN-DEPTH 0 as the dispatch requires.",
+    "laneClaimedFirst": "true -- `node scripts/lane-claim.mjs claim --lane p296-etj-rollout --seat p296-lane --plan-row P-296 --dispatch ...` exit 0 at 2026-09-17T17:48:16.212Z, before any other action.",
+    "heavyScanLease": "true -- taken on the HOST (never a nickname) at 2026-09-17T17:51:29.562Z BEFORE the migration; no other lane's lease and no job-scoped lease was touched. Release attempted at close with the lease id and returned HTTP 409 LEASE_LOST because the take-time holderToken is not recoverable from `list` (the same shape P-306 hit); the lease self-expires at 2026-09-17T19:21:29.562Z. No write occurred after the last ingest.",
+    "noProductionWriteNoDeployNoMerge": "true -- the only store written anywhere in this lane is LDT STAGING. No production read or write, no deploy, no merge, no image build.",
+    "noSecretValuesPrintedOrPersisted": "true -- no credential VALUE appears in this close or in any artifact; stores are named by host and by env-var NAME only.",
+    "noBuildableEnvelope": "true -- `git diff --name-status origin/main...HEAD` touches no path under artifacts/api-server/src/lib/buildableEnvelope/ (and no path outside the 7 named files).",
+    "cityLimitsPathNotDelegated": "true -- the dispatch's clause honored: the city-limits read path did not have to delegate, so it was not changed and no ruling is requested.",
+    "dryRunsNeverExportedDatabaseUrl": "true -- the CLI's --dry-run was run WITHOUT DATABASE_URL exported; the write runs set it explicitly in the shell; the read-only probe used the same explicit form.",
+    "libDbUntouchedSoNoFixtureRefreshOwed": "true -- lib/db/** is not in the diff, which is the dispatch item 4 trigger; CI's 'Check schema fixture drift' step passed as independent corroboration.",
+    "artifactsInOwnSeatWorktree": "true -- every doc_repo artifact is in P:/seat-worktrees/p296-etj-rollout/doc_repo/_inbox/; P:/doc_repo (the integration seat's checkout) was never written to. The dispatch's own warning about waves 1 and 2 writing into the property seat's worktree was read and avoided.",
+    "noFabricatedGreen": "true -- the red CI run on the same head is recorded alongside the green one; falsifier 1 is reported PARTIAL with the reason; the flagging number (`absent` now unreachable in a degraded process) is stated as a consequence, not hidden."
+  },
+
+  "fleetMemory": {
+    "LESSON": "An `absent` from a publisher's published EXTENT BOX is only a verified absence when the containing city is SETTLED. A city that publishes no ETJ layer (mode=city_limits_only) sitting inside a neighbour's extent box is the exact shape that turns 'we have no source here' into 'there is no ETJ here'. Any future consumer of loadEtjFact must answer the containing-city question first or pass `containing`; the wrapper now enforces that by construction, but the same trap is open to the next caller. Pinned by FALSIFIER 1c.",
+    "LESSON": "The slated city-limits branch reads parcel_record through the retrieval service, so in a process without RETRIEVAL_API_KEY EVERY slated county answers `unmeasured`. A probing process that lacks that credential cannot demonstrate a checked absence in 48453/48021/48491 at all -- so any future probe of a slated rail must declare its credential state up front, or its numbers will be read as a data finding.",
+    "LESSON": "A reason string that names a MISSING SOURCE becomes a false statement the moment the source is ingested. `no-etj-source-in-store` was correct on 2026-09-02 and false on 2026-09-17. Reason strings of that shape should name the missing INPUT, or the next lane inherits a lie it did not write.",
+    "GROUND-TRUTH": "LDT staging (ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech) carries 355 ETJ rings, 23 register rows, 20 publishers with rings and 3 city_limits_only (cedar-park-tx, lockhart-tx, round-rock-tx), ingested 2026-09-17T18:05:23Z..18:05:56Z, `_schema_migrations` holding one 0102 row. Verified by SELECT at 19:2x Z.",
+    "GROUND-TRUTH": "The shared staging store was RESET by another session's schema operation mid-lane (tx_etj_source vanished between two probes). Any lane relying on staging rows should re-verify PRESENCE, not vintage.",
+    "GROUND-TRUTH": "LDT PR #714 at head e863d3e91ba3b1f08e2c430c0c46869bf46cc1b4, run 35258492315: 11 of 11 checks SUCCESS (first attempt had Test fail on 'out of shared memory' from the throwaway Postgres service container; the rerun passed).",
+    "DEAD-END": "`psql` against the staging URL is the fastest verification and the only form that survived this box; the earlier `heavy-scan-lease list` through node crashed the node process at exit (uv async assertion) AFTER printing correct JSON -- the operation succeeded and the crash is a runner artifact, so do not read a non-zero exit there as a failed lease call.",
+    "DEAD-END": "`pnpm install` / any pnpm script on this box needs Git's sh on PATH (C:\\Program Files\\Git\\bin, C:\\Program Files\\Git\\usr\\bin); without it pnpm dies with `sh: not recognized`.",
+    "DEAD-END": "`pnpm exec tsc -p tsconfig.json --noEmit` inside artifacts/api-server alone reports hundreds of TS6305 'output file ... has not been built' errors. The repo's root `pnpm run typecheck` builds the project references first and is the CI-shaped command; the per-artifact form is not a usable local signal.",
+    "DEAD-END": "`node scripts/heavy-scan-lease.mjs release --token <LEASE_ID>` does NOT work: LEASE_LOST 409. The release needs the take-time holderToken, which `list` does not return and this lane did not save -- so an explicit release is impossible after the fact and the lease must be allowed to expire. Save the take-time token next time.",
+    "OPEN": "hauska-engine's report-model.ts:966 and pdf/feasibility.ts:210-212 still hardcode ETJ for the report and PDF surfaces. Named in the dispatch as another lane's work; not touched. Until they adopt the same read, the card/MCP and the PDF can disagree about ETJ.",
+    "OPEN": "The `etj` rail in parcelConstraintProjection is still declared-ahead/unread on every row, so every filter over the ETJ column refuses. Serving it needs a query point in the projection path -- a different design question from this lane's overlay.",
+    "OPEN": "Falsifier 1's parcel legs are one credential away from a full pass: re-run `DATABASE_URL=$STAGING_DEPLOYMENT_DATABASE_URL pnpm exec tsx scripts/p296-etj-serve-probe.mts --json` in a process holding a RETRIEVAL_API_KEY and the slated counties should carry `absent` with coveredBy/ringsConsulted."
+  },
+
+  "teardownAtClose": {
+    "orderingDeclared": "This file was FILED FIRST and the teardown ran immediately after it, which is the order the dispatch prescribes (`Release when your close is filed`). This field was then rewritten with the actual outcomes rather than left saying PENDING -- a close that reports a release it has not performed is the same class of false statement as a green it did not get.",
+    "laneClaimRelease": "DONE. `node scripts/lane-claim.mjs release --lane p296-etj-rollout --seat p296-lane` -> `RELEASED p296-etj-rollout.` exit 0. Verified after: the worktree's _catalog/lane_claims.json carries p249-envelope-unlock and no p296 entry, and git reports the file UNMODIFIED against HEAD (the claim write and the release cancelled out byte-for-byte).",
+    "cloneRegistrationRemoval": "DONE. The seats[property].repos[] entry named legacy-design-tools-p296-etj-rollout (path P:/tmp/p296-etj-rollout, branch feat/p296-etj-rollout) was removed as its own note directs ('REMOVE THIS ENTRY at card close'). Verified after: `seat_register.json` parses, zero occurrences of `p296` remain, and git reports the file UNMODIFIED against HEAD (byte-identical to its committed state).",
+    "heavyScanLeaseRelease": "ATTEMPTED, REFUSED: HTTP 409 LEASE_LOST. The release verb needs the take-time holderToken, which `list` does not return and this lane did not save, so an explicit release is impossible after the fact. Lease 73759cf6-1076-4e4d-a63f-f9cceda13a3b self-expires 2026-09-17T19:21:29.562Z; the last write to that store was 18:05:56Z, so the window is idle for its remainder. Recorded as a DEAD-END in fleetMemory so the next lane saves the token.",
+    "cloneLeftOnDisk": "P:/tmp/p296-etj-rollout stays as the evidence tree behind CI and the probe (clean at head e863d3e9); safe to prune once PR #714 is merged or abandoned.",
+    "throwawayContainerRemoved": "FOUND AND REMOVED a real leftover: the throwaway test Postgres `p296-pg` (port 55440) was still Up 44 minutes after the lane's work ended, left by the local route-test run. `docker rm -f p296-pg` -> removed; `docker ps -a --filter name=p296` now returns nothing. Recorded because a close that reports a teardown it did not finish is the same class of false statement as a green it did not get, and because this is the one piece of lane state that survives outside git. Other lanes' containers on this box (p241-fixture-db, p259b-ci-pg, p297-testdb, p299-testdb, p285-county-pg, p298-plan-pg, p284r-pg, p281-lease-pg, p113-mcp-testdb) were identified and deliberately NOT touched.",
+    "docRepoEditsLeftUncommitted": "Only the seven _inbox/ artifacts are left uncommitted in P:/seat-worktrees/p296-etj-rollout/doc_repo (cp1, cp2, close, serve-probe json, ingest log, revert log, surface-probe json), per contract section 6: doc_repo commits are planner-owned. The two _catalog files this lane touched are back to their committed bytes, so the planner has nothing to reconcile there.",
+    "postTeardownWorktreeState": "`git status --short` in the lane worktree: seven `?? _inbox/...` lines and nothing else."
+  },
+
+  "leaveBehind": [
+    "PR #714 open on empressaioemail-tech/legacy-design-tools at head e863d3e91ba3b1f08e2c430c0c46869bf46cc1b4, 11 of 11 checks SUCCESS, MERGEABLE/CLEAN, never merged here. The integration seat owns the merge, the production 0102 + ingest, and the cortex deploy that grades it.",
+    "A committed, re-runnable falsifier instrument: artifacts/api-server/scripts/p296-etj-serve-probe.mts. One command grades the serve path against any store; it is the thing that found the Round Rock shape, so it is the thing to run against production after the ingest.",
+    "The clone at P:/tmp/p296-etj-rollout with the branch checked out, clean at head e863d3e9 -- the tree behind the CI conclusions.",
+    "Six uncommitted artifacts in the lane's own seat worktree: _inbox/2026-09-17_p296-etj-rollout_cp1.json, _cp2.json, _close.json, _inbox/2026-09-17_p296-etj-serve-probe.json, _inbox/2026-09-17_p296-etj-ingest.log, _inbox/2026-09-17_p296-etj-revert-test.log, _inbox/2026-09-17_180723_surface_probe.json. Contract section 6: doc_repo commits are planner-owned.",
+    "OPEN for the next context -- the production leg, in order: (1) merge #714; (2) take a heavy-scan lease keyed on the PRODUCTION host; (3) apply 0102 by hand with its tracker row; (4) run the ingest and etj-verify; (5) verify at source (355 rings / 23 rows / the 3 city_limits_only keys); (6) deploy cortex; (7) run scripts/p296-etj-serve-probe.mts against production -- until step 7 a live parcel still reads `unresolved`, and the surface-probe P-241 row is the no-regression check that should also still pass.",
+    "OPEN for the next context -- hauska-engine report-model.ts:966 and pdf/feasibility.ts:210-212 still hardcode ETJ; card/MCP and PDF can disagree until they adopt loadEtjFact.",
+    "OPEN for the next context -- the `etj` rail in parcelConstraintProjection stays unread by construction (no query point on a bake row). Any filter over it refuses. Serving it is a separate design question, not a defect of this lane.",
+    "OPEN for the next context -- `absent` is now unreachable wherever the city-limits answer is not a positive determination. That is deliberate, and it means a future coverage number over ETJ will look worse than a naive one. Do not 'fix' it back without re-reading FALSIFIER 1c and the Round Rock case.",
+    "WARNING for the next context -- the shared staging store was reset by another session mid-lane. Re-verify presence there, not vintage.",
+    "WARNING for the next context -- the dispatch's declared start commit 8e7218f7 was already stale at clone time (main had advanced to f5fd0946 via LDT #713 / P-304). The branch carries P-304 as a base."
+  ],
+  "leave_behind": [
+    "PR #714 open on empressaioemail-tech/legacy-design-tools at head e863d3e91ba3b1f08e2c430c0c46869bf46cc1b4, 11 of 11 checks SUCCESS, MERGEABLE/CLEAN, never merged here. The integration seat owns the merge, the production 0102 + ingest, and the cortex deploy that grades it.",
+    "A committed, re-runnable falsifier instrument: artifacts/api-server/scripts/p296-etj-serve-probe.mts.",
+    "The clone at P:/tmp/p296-etj-rollout, clean at head e863d3e9 -- the tree behind the CI conclusions.",
+    "Six uncommitted artifacts in the lane's own seat worktree (_inbox/...), per contract section 6.",
+    "OPEN -- the production leg (merge, lease, 0102, ingest, verify at source, deploy cortex, probe production). Until it lands, a live parcel still reads `unresolved`.",
+    "OPEN -- hauska-engine's report/PDF ETJ hardcodes; the parcelConstraintProjection `etj` rail; and the deliberate unreachability of `absent` in a degraded process (FALSIFIER 1c).",
+    "WARNING -- the shared staging store was reset by another session mid-lane; re-verify presence, not vintage."
+  ],
+
+  "remainsOpen": [
+    "Production: 0102 applied by hand with its tracker row, the ingest run for 20 publishers, then cortex deployed -- all the integration seat's, after merge. Until then the DEPLOYED surface still serves `unresolved` for ETJ, because this branch is not deployed.",
+    "Falsifier 1's parcel-level legs read `unresolved` in this box's credential condition; a re-run with a retrieval credential is the evidence that would close them, and the committed probe makes it one command.",
+    "hauska-engine's report/PDF ETJ hardcodes and the parcelConstraintProjection `etj` rail -- both named, both deliberately out of scope.",
+    "The lane claim release and the seat-register clone-entry removal are performed immediately after this file is filed, not before it (the dispatch: release when your close is filed)."
+  ],
+
+  "missionPremise": "P-296 is the rollout half of P-241: P-241 acquired and ingested the ETJ rings (355 rings from 20 registered publishers) and landed the read path (loadEtjFact), but the read path had NO CALLER, so every served city-limits fact still hardcoded etjStatus `unresolved` from a source comment that said there was no ETJ source in the store. The premise under test: the ETJ source now exists in the deployment store, and the served `etjStatus` can be made a REAL read of it -- with `present`, `absent-verified` and `unresolved` staying three distinct values end to end and an unread ETJ never becoming `absent` -- on LDT staging first, with the production rollout left to the integration seat.",
+  "completionPredicate": "0102 applied on the store, the ETJ ingest run for the 20 registered publishers, loadEtjFact wired as the SOURCE of the served etjStatus (not a parallel path), the three dispositions distinct end to end, the pre-registered falsifiers measured with a re-runnable instrument, and the production path stated with exact commands. MET on LDT STAGING and in code (PR #714, 11/11 CI checks green). NOT MET on production -- the dispatch's own `status` clause makes that the difference between `closed` and `closed-partial`, so this close is `closed-partial`.",
+  "scopeBasis": "Dispatch _dispatches/2026-09-17_p296-etj-rollout_dispatch.md under CANON-PREAMBLE v6302c07c, AGENT-CONTRACT v378cd643, DEV-PROCESS vbb19bd34, FLEET-MEMORY v2a98086b; PLAN-ROW P-296 in 90_operations/OPS-16_texas_market_plan_of_record.md; program context OPS-24 'county to serving'. Product repo legacy-design-tools only. Staging-first per the dispatch and the freeze decision _decisions/2026-08-26_ingest_freeze_and_cloud_loader.md. FAN-DEPTH 0.",
+
+  "subAgents": { "spawned": 0, "maxDepth": 0, "note": "FAN-DEPTH 0. No sub-agent launched at any point in this lane. The commit gate refuses a close that declares any." }
+}

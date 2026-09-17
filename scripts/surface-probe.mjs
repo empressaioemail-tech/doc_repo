@@ -147,10 +147,127 @@ export const ETJ_SUBJECTS = [
   },
 ];
 
+// ------------------------------------------------------------------ OPS-24 customer leg (P-254)
+// P-254 is the CUSTOMER LEG of the OPS-24 Phase 0 exit (program scope rev 4, section 5, leg 2):
+// every fixture bucket in L-E's list graded on the map, the MCP and the PDF, including the buckets
+// that were ungraded, with every envelope fixture carrying `status`, `declineReason`,
+// `envelopeCovered`, geometry presence and figure presence.
+//
+// The list is L-E's read-only selection over `parcel_record_cell`
+// (`_inbox/2026-09-16_scaleup-le_fixture_list.json`, sha256 in OPS24_FIXTURE_LIST_SHA256). It is
+// COMMITTED beside this instrument as `scripts/fixtures/surface-probe/ops24-fixture-list.json` so
+// the Phase 0 exit does not depend on an inbox file that gets archived, and the artifact records
+// the sha256 it actually read. The self-test fails if the committed copy's bucket count drifts.
+//
+// THE DENOMINATOR IS PART OF THE CONTRACT (DEV_PROCESS: coverage figures travel with their
+// denominator). The list as read holds 45 buckets and 100 distinct fixture ids; the plan's prose
+// says 39. This instrument does NOT quietly agree with 39. It reports the count it read, the
+// selection rule it used, the slots it graded and the slots it did not, each with its reason. The
+// 39-versus-45 divergence is a finding for the close, not something to paper over.
+export const OPS24_FIXTURE_LIST = "scripts/fixtures/surface-probe/ops24-fixture-list.json";
+export const OPS24_FIXTURE_LIST_SHA256 = "bb5d38861d6a8875e6315d65bc2cbdded61189f50573914b118cb1f7ddc45e32";
+/** Buckets the committed list holds. The plan's prose says 39; read 45, keep 45, say so. */
+export const OPS24_BUCKET_COUNT = 45;
+
+// The one fixture each bucket is graded on when it offers several. Deterministic and stated so the
+// artifact's denominator is reproducible by a peer: codified first (a bucket with a codified
+// district is gradeable against the card spec end to end), then the planned-development class
+// (A-184's PUD message), then the two absence kinds, then vacancy, then the supplemental `fx_any`.
+// `--ops24-all` grades every slot instead, and the artifact records which rule ran.
+export const OPS24_CATEGORY_PRIORITY = ["fx_codified", "fx_pud", "fx_district_miss", "fx_no_table", "fx_vacant", "fx_any"];
+
+// The engine-api base for the PDF leg. Named here, never guessed from a response header.
+export const ENGINE_BASE = process.env.SURFACE_PROBE_ENGINE_BASE || "https://hauska-engine-api-h7gvu7rgcq-uc.a.run.app";
+// The Smart Site MCP. Its inbound gate is OAuth and a service Bearer is not an OAuth token
+// (MEASURED 2026-09-17: `missing_bearer` with none, `invalid_oauth_token` with the fleet engine
+// key), so the MCP leg runs live only when SURFACE_PROBE_MCP_TOKEN holds an OAuth token and
+// otherwise enters through --observations as OBSERVED, or REFUSES. See runMcpLeg.
+export const MCP_BASE = process.env.SURFACE_PROBE_MCP_BASE || "https://smartsite-mcp-tds7av26va-uc.a.run.app";
+
+// P-303's subjects, from the dispatch and `_inbox/2026-09-17_p303-live-grade.txt`. Waco's panel
+// must draw an envelope its own endpoint can draw and must print NO area figure; a class member
+// with no district must still decline rather than have a district invented for it.
+export const P303_SUBJECTS = [
+  { id: "48309:103015", role: "waco-draws-no-figure", label: "8459 Rock Creek Rd, Waco; the panel declined an envelope its own endpoint draws (XD-2), graded live 2026-09-17 15:49Z as ok/envelope-unverified/figureWithheld" },
+  { id: "48021:10001", role: "no-district-declines", label: "296 Country Ln, Mcdade (Bastrop county, no district on record); the class member that must still decline" },
+  { id: "48021:10002", role: "no-district-declines", label: "the same class, second member (P-303's own grade list)" },
+  { id: "48021:10003", role: "no-district-declines", label: "the same class, third member (P-303's own grade list)" },
+];
+
+// P-304's paired subjects, from `_inbox/2026-09-17_p304-area-figure_live-probe.md`. The SAME
+// anonymous request against two parcels must DIVERGE: the unverified parcel withholds the area
+// keys, the verified control keeps them. Fail-closed: both withholding is a blanket strip, not the
+// entitlement, and it has taken the entitled figure away from a verified parcel (falsifier 2).
+export const P304_SUBJECTS = [
+  { id: "48209:97658", role: "unverified-must-withhold", label: "629 Sturgeon Dr, San Marcos; derivePath carries no +atom-reconciled", expectWithheld: true, expectSqFt: null, expectPct: null },
+  { id: "48021:34049", role: "verified-control-must-keep", label: "1109 Pecan St, Bastrop; derivePath ends +atom-reconciled", expectWithheld: false, expectSqFt: 19052, expectPct: 63.5 },
+];
+
+// The required case measured by the integration seat on 2026-09-17 and handed to this lane:
+// Travis `48453:367134` (5833 Taylor Draper Cv, SF-2, Austin). Its own read carries a RULED setback
+// table (front 25, side 5, rear 10, corner 15), and a surface nevertheless tells the customer the
+// setbacks are "unruled" / the envelope atom path is pending. Build a check that fails when a
+// surface says "unruled" or `atom_path_pending` for a parcel whose own read carries a ruled table,
+// and report the population it finds across the fixtures.
+export const UNRULED_SUBJECT = "48453:367134";
+/** The phrase classes that make a contradiction are RULE_REFUSAL_PHRASES and
+ *  GEOMETRY_REFUSAL_PHRASES, declared beside `contradictions` with the guard each one needs. */
+// The phrases that mean "setbacks are not ruled", as distinct from a geometry-only withhold. The
+// panel's own disclosure for this parcel says "depth-warm geometry withheld", which withholds the
+// POLYGON while the table stays ruled; that is honest and is not this defect. Only a statement
+// about the setback RULE counts.
+export const RULED_TABLE_MIN_AXES = 3;
+
+// The open customer-visible defect list the Phase 0 exit reads (program scope section 4.5b's X list
+// and section 2's XD list, renamed XD-1..XD-16). Each entry names the fixture it is graded on and
+// the row that owns it. `gradedBy` is the name of the grader in this file; a defect with no grader
+// is reported UNMEASURED with that stated, never silently counted open or closed. XD-15 and XD-16
+// are the L-E lane's positive control and leave-behind, not defects.
+export const OPS24_DEFECTS = [
+  { id: "XD-1", defect: "buildable-area figure in payloads and disclosure strings", row: "P-249 (map and MCP), P-261 (PDF)", gradedBy: "figureLeak" },
+  { id: "XD-2", defect: "Waco's panel declines what its own endpoint draws", row: "P-249", gradedBy: "p303PanelDraws" },
+  { id: "XD-3", defect: "site plan asserts a miss that did not happen", row: "P-222", gradedBy: null },
+  { id: "XD-4", defect: "Bastrop \"layer-23\" wording on other parcels", row: "P-257", gradedBy: "foreignDeclineWording" },
+  { id: "XD-5", defect: "no-table cities decline while the payload holds the district", row: "P-257", gradedBy: "noTableDeclineNamesDistrict" },
+  { id: "XD-6", defect: "Williamson: no MCP baked snapshot", row: "P-271", gradedBy: null },
+  { id: "XD-7", defect: "Williamson: no composed address on the map payload", row: "P-271", gradedBy: "composedAddressAbsent" },
+  { id: "XD-8", defect: "the card does not name the governing city", row: "P-270", gradedBy: "jurisdictionNamed" },
+  { id: "XD-9", defect: "malformed situs breaks envelope drawing", row: "P-272", gradedBy: "malformedSitusDraws" },
+  { id: "XD-10", defect: "land-use contradiction within one payload", row: "P-217", gradedBy: null },
+  { id: "XD-11", defect: "setback citation without an effective date", row: "P-270", gradedBy: "citationDatePresent" },
+  { id: "XD-12", defect: "salesHistory absent from the MCP schema", row: "P-209", gradedBy: null },
+  { id: "XD-13", defect: "dollar value reaches an ungranted caller", row: "P-246 (done)", gradedBy: "dollarReachesAnonymous" },
+  { id: "XD-14", defect: "\"PUD\"-coded districts resolve Euclidean setbacks", row: "P-257, after the operator's ruling", gradedBy: "pudReadsPudMessage" },
+  { id: "X2", defect: "the card names the governing city (map and LDT)", row: "P-270", gradedBy: "jurisdictionNamed" },
+  { id: "X4", defect: "parcel-specific decline wording everywhere", row: "P-257", gradedBy: "foreignDeclineWording" },
+  { id: "X5", defect: "Waco's panel declines an envelope its own live endpoint can draw", row: "hauska-map", gradedBy: "p303PanelDraws" },
+  { id: "X6", defect: "Williamson: no MCP baked snapshot and no composed map address", row: "P-271", gradedBy: "composedAddressAbsent" },
+  { id: "X7", defect: "salesHistory absent from the MCP schema rather than declared Unavailable", row: "LDT smartsite-mcp", gradedBy: null },
+  { id: "X8", defect: "no-table cities decline with \"no zoning district observed\" while the payload holds the district", row: "hauska-map", gradedBy: "noTableDeclineNamesDistrict" },
+  { id: "X9", defect: "a malformed situs (\", ,\") breaks envelope drawing", row: "hauska-map, LDT", gradedBy: "malformedSitusDraws" },
+  { id: "X10", defect: "\"PUD\"-coded districts get the PUD message", row: "LDT, hauska-map", gradedBy: "pudReadsPudMessage" },
+  { id: "X11", defect: "setback citation without an effective date on Pflugerville", row: "LDT", gradedBy: "citationDatePresent" },
+];
+
 // --------------------------------------------------------------------------- small helpers
 const str = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const rec = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
+/**
+ * The first date in customer-facing prose, for XD-11 (a citation's effective date). The panel
+ * serves dates inside the disclosure SENTENCE ("parcel_record setback rule effective 2026-04-14"),
+ * not in a field, so a grader that only reads fields would call a dated citation undated. Returns
+ * the matched text, or null when the prose carries no date at all.
+ */
+const firstDateIn = (texts) => {
+  for (const t of texts ?? []) {
+    if (!t) continue;
+    const s = String(t);
+    const m = s.match(/\b(20\d{2}-\d{2}-\d{2})\b/) ?? s.match(/\b(\d{1,2}\/\d{1,2}\/20\d{2})\b/) ?? s.match(/\b((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s*20\d{2})\b/);
+    if (m) return m[1];
+  }
+  return null;
+};
 
 function composeAddress(base) {
   const a = str(base?.situsAddress);
@@ -216,10 +333,23 @@ export function extractFacets(resp) {
     situsAddress: str(base.situsAddress),
     situsCity: str(base.situsCity),
     situsState: str(base.situsState),
+    // `str()` collapses a DECLARED absence (the inline `{status:"absent", verdict:"absent-verified",
+    // authority, scopeSearched}` object the card spec's honest-refusal rule requires) into the same
+    // null as a bare, undeclared one. Keep the distinction: an absence must carry its basis, and a
+    // payload that declares one address component absent while silently nulling its sibling is a
+    // different fact from a payload that declares both. Measured 2026-09-17 on 48021:51735:
+    // situsCity is a full absent-verified object, situsAddress is plain null.
+    situsAddressAbsenceDeclared: !!(rec(base.situsAddress) && (base.situsAddress.status || base.situsAddress.verdict)),
+    situsCityAbsenceDeclared: !!(rec(base.situsCity) && (base.situsCity.status || base.situsCity.verdict)),
+    situsCityAbsenceVerdict: str(rec(base.situsCity)?.verdict ?? rec(base.situsCity)?.status),
     composedAddress: composeAddress(base),
     zoningDistrict: str(rec(f.zoning)?.district),
     envelopeStatus: str(env?.status),
     envelopeDisclosure: str(env?.disclosure),
+    /** The panel's own customer-facing sentence. `summary` is where the panel's "depth-warm
+     *  geometry withheld" wording lives (P-249), and it is a surface string like any other. */
+    envelopeMessage: str(env?.message ?? env?.reason),
+    envelopeSummary: str(env?.summary),
     envelopeGeojsonPresent: !!env?.geojson,
     buildableAreaSqFtInPayload: num(env?.buildableAreaSqFt),
     setbacks: sb ? { front: num(sb.front_ft), side: num(sb.side_ft), rear: num(sb.rear_ft), corner: num(sb.side_corner_ft) } : null,
@@ -236,6 +366,69 @@ export function extractFacets(resp) {
     floodState: str(rec(j.floodHazardFact)?.state),
     floodZone: str(rec(j.floodHazardFact)?.floodZone),
     floodSfha: typeof rec(j.floodHazardFact)?.inSpecialFloodHazardArea === "boolean" ? j.floodHazardFact.inSpecialFloodHazardArea : null,
+    // ---- OPS-24 customer leg (P-254). ADDITIVE: no field above changes meaning, so every
+    // existing row and fixture keeps its verdict. A missing field stays null, never a default.
+    situsZip: str(base.situsZip),
+    countyNameFacet: str(f.countyName) ?? str(j.countyName),
+    /** P-270/X2/XD-8: the jurisdiction whose ordinance governs. Absent means the payload cannot
+     *  name it, and a renderer cannot recover a city the payload does not carry. */
+    zoningJurisdictionKey: str(rec(f.zoning)?.jurisdictionKey ?? rec(f.zoning)?.zoningJurisdictionKey),
+    /** The panel's own decline reason when it declines, and its withhold flag when it draws a
+     *  reference outline whose figure is held back (P-249's shape on 48309:103015). */
+    envelopeDeclineReason: str(env?.declineReason ?? env?.reason),
+    envelopeFigureWithheld: typeof env?.figureWithheld === "boolean" ? env.figureWithheld : null,
+    envelopeBuildableAreaPct: num(env?.buildableAreaPct),
+    /** `envelopeCovered` is the facet layer's own boolean (atom-chain-to-facets.ts sets it true on
+     *  the unverified-no-buildable-area branch, false on the declined branch). Read it as served. */
+    envelopeCovered: typeof env?.envelopeCovered === "boolean" ? env.envelopeCovered : null,
+    /** The panel's own claim about which facets it carries (`facetCoverage`), recorded because it
+     *  is what a renderer is told it may draw. A false here beside a served value is a finding. */
+    facetCoverage: rec(j.facetCoverage) ? { ...rec(j.facetCoverage) } : null,
+    /** The payload's own per-rail ledger (`recordRailStates`). This is where the card's honest
+     *  absences live, so a grader can tell "verified absent" from "refused" from "not attempted"
+     *  instead of reading a blank as one thing. Counts are supplied for the close's use. */
+    railStates: rec(j.recordRailStates) ? { ...rec(j.recordRailStates) } : null,
+    railCounts: (() => {
+      const rs = rec(j.recordRailStates);
+      if (!rs) return null;
+      const t = { present: 0, absentVerified: 0, refused: 0, absent: 0, other: 0 };
+      for (const v of Object.values(rs)) {
+        const s = String(rec(v)?.state ?? rec(v)?.status ?? v ?? "").toLowerCase();
+        if (s === "present") t.present++;
+        else if (/absent-verified|verified-absent/.test(s)) t.absentVerified++;
+        else if (/refus/.test(s)) t.refused++;
+        else if (/absent/.test(s)) t.absent++;
+        else t.other++;
+      }
+      return t;
+    })(),
+    envelopeSetbackSource: str(env?.setbackSource),
+    envelopeCitationUrl: str(env?.citationUrl),
+    /** XD-11: the citation's effective or edited date. Read from the envelope's own named fields,
+     *  ELSE from the panel's own disclosure text — 48021:34049 carries "parcel_record setback rule
+     *  effective 2026-04-14" inside the sentence that cites the ordinance, and grading a dated
+     *  citation as undated because the date sits in prose would be a false positive. The basis says
+     *  which of the two was read. Absent is absent: an unreadable vintage is a conflict row. */
+    envelopeCitationDate: str(env?.citationEffectiveDate ?? env?.effectiveDate ?? env?.sourceVintage ?? env?.citedAt) ?? firstDateIn([str(env?.disclosure), str(env?.summary)]),
+    envelopeCitationDateFrom: str(env?.citationEffectiveDate ?? env?.effectiveDate ?? env?.sourceVintage ?? env?.citedAt) ? "field" : firstDateIn([str(env?.disclosure), str(env?.summary)]) ? "disclosure-text" : null,
+    envelopeProvisional: typeof env?.provisional === "boolean" ? env.provisional : null,
+    /** XD-1/XD-13's other half: the watershed impervious figure, a TOP-LEVEL fact, printed
+     *  beside the panel envelope's zoning-table `maxImperviousPct`. Two numbers a customer reads
+     *  as "impervious cover" can both be correct law; recording both is the finding. */
+    panelMaxImperviousPct: num(env?.maxImperviousPct),
+    imperviousFactState: str(rec(j.maxImperviousCoverPctFact)?.state),
+    imperviousFactPercent: num(rec(j.maxImperviousCoverPctFact)?.percent),
+    imperviousFactWatershed: str(rec(j.maxImperviousCoverPctFact)?.watershedType),
+    imperviousFactReason: str(rec(j.maxImperviousCoverPctFact)?.reason),
+    /** XD-9: a situs the composer cannot use. `", ,"` is the fixture list's own flagged case. */
+    situsMalformed: !!base.situsAddress && /^[\s,]*$/.test(String(base.situsAddress)),
+    /** P-246/XD-13: any dollar rail that serves a value rather than a typed refusal. */
+    dollarRailsServed: ["marketValue", "assessedValue", "landValue", "improvementValue"].filter((k) => {
+      const v = rec(rec(base.cadRoll)?.[k]);
+      return !!v && str(v.state) !== "refused" && num(v.value) != null;
+    }),
+    landUseState: str(rec(j.landUseFact)?.state),
+    landUseDescription: str(rec(j.landUseFact)?.description) ?? str(rec(base.landUse)?.description),
   };
 }
 
@@ -243,6 +436,11 @@ export function extractEnvelope(resp) {
   const j = rec(resp?.json);
   if (!j) return { measured: false, http: resp?.http ?? 0, error: resp?.error ?? resp?.text ?? "no JSON body" };
   const sb = rec(j.setbacks);
+  // P-304 needs KEY PRESENCE, not a value: "Absent means the key is missing -- not 0, not null.
+  // A present key holding 0 is a DIFFERENT false claim and is a FAIL."
+  const props = rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties);
+  const geometry = rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.geometry);
+  const hasKey = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
   return {
     measured: true,
     http: resp.http,
@@ -258,8 +456,23 @@ export function extractEnvelope(resp) {
     // diagnostic (per-edge inset remeasure text, "R32", "!=", full-precision
     // floats) leaked through unsanitized. Read from the same nested properties
     // buildableAreaSqFtInPayload already reads.
-    disclosure: str(rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties)?.disclosure),
-    emptyReasonText: str(rec(rec(rec(rec(j.payload)?.geojson)?.features?.[0])?.properties)?.emptyReason),
+    disclosure: str(props?.disclosure),
+    emptyReasonText: str(props?.emptyReason),
+    // ---- OPS-24 customer leg (P-254). ADDITIVE; nothing above changes meaning. ----
+    declineReason: str(j.declineReason ?? props?.declineReason),
+    emptyKind: str(props?.emptyKind),
+    derivePath: str(j.derivePath ?? props?.derivePath),
+    hasBuildableAreaSqFtKey: hasKey(props, "buildableAreaSqFt"),
+    hasBuildableAreaPctKey: hasKey(props, "buildableAreaPct"),
+    buildableAreaPctInPayload: num(props?.buildableAreaPct),
+    maxFootprintSqFt: num(props?.maxFootprintSqFt),
+    parcelAreaSqFt: num(props?.parcelAreaSqFt ?? j.parcelAreaSqFt),
+    /** "Geometry present" for the map's draw, read from the feature the route returns. An empty
+     *  coordinate array is NOT geometry (P-249's own summarizer makes the same distinction). */
+    geometryPresent: !!geometry && Array.isArray(geometry.coordinates) && geometry.coordinates.length > 0,
+    /** The atom a verified envelope would leave behind. A derive path without this token means the
+     *  figure is unbacked by an atom, which is the entitlement P-249/P-304 hang on. */
+    atomReconciled: /atom-reconciled/.test(str(j.derivePath ?? props?.derivePath) ?? ""),
   };
 }
 
@@ -445,6 +658,23 @@ export function extractSitusSearch(resp, expectedId) {
   const first = rec(hits[0]);
   return { measured: true, http: resp.http, ms: resp.ms, hitCount: hits.length, firstParcelNodeId: str(first?.parcelNodeId), firstSitusAddress: str(first?.situsAddress), matchesParcel: hits.some((h) => str(rec(h)?.parcelNodeId) === expectedId) };
 }
+
+// The OPS-24 fixture set is read ONCE at module load. A missing or unreadable list is a hard
+// state, not a silently empty row: grading zero buckets must never look like grading all of them,
+// so the self-test fails on it and P-254 reports UNMEASURED with the read error.
+const OPS24_LOADED = (() => {
+  try {
+    return loadOps24FixtureList();
+  } catch (e) {
+    return { doc: null, sha256: null, path: OPS24_FIXTURE_LIST, error: String(e?.message || e) };
+  }
+})();
+export const OPS24_LIST_SHA256 = OPS24_LOADED.sha256;
+export const OPS24_LIST_ERROR = OPS24_LOADED.error ?? null;
+export const OPS24_BUCKETS = OPS24_LOADED.doc ? flattenOps24Buckets(OPS24_LOADED.doc) : [];
+export const OPS24_SUBJECTS = selectOps24Subjects(OPS24_BUCKETS, false);
+/** Fixture slots the list offers across its buckets; the denominator, not the graded count. */
+export const OPS24_FIXTURE_SLOTS = OPS24_SUBJECTS.reduce((n, s) => n + s.offered, 0);
 
 export const ROWS = {
   "P-151": {
@@ -807,6 +1037,80 @@ export const ROWS = {
       return { verdict: "PASS", basis };
     },
   },
+
+  // ------------------------------------------------------------------ OPS-24 customer leg (P-254)
+  // `optional: true` means a pass that did NOT drive this leg emits no result for it. Without that,
+  // every cheap `--fixtures` run would report 45 buckets UNMEASURED and drown the rows it did
+  // measure. When the row IS named, an unnamed bucket is reported ungraded, because then the
+  // absence of a grade is itself the answer (program scope section 5: the ungraded count is the
+  // number the Phase 0 exit reads).
+  "P-254": {
+    title: "the customer leg: every fixture bucket graded on the map, the MCP and the PDF, with status, declineReason, envelopeCovered, geometry presence and figure presence per envelope fixture",
+    parcels: OPS24_BUCKETS.map((b) => b.key),
+    optional: true,
+    evaluate(id, legs, obs, rowFilter) {
+      if (OPS24_LIST_ERROR) return { verdict: "UNMEASURED", basis: `${OPS24_FIXTURE_LIST} could not be read: ${OPS24_LIST_ERROR}` };
+      if (legs?.ops24) return gradeOps24Bucket(legs.ops24, legs);
+      return { verdict: "UNMEASURED", basis: `${id}: named in this pass and NOT graded -- no bucket legs were driven (selection rule ${rowFilter?.includes("P-254") ? "on" : "off"})` };
+    },
+  },
+
+  // P-303. Both halves come from the same live pair, so a panel that declines while its own route
+  // draws is caught by comparing the two surfaces of ONE parcel rather than by trusting a wording.
+  "P-303": {
+    title: "the panel draws an envelope its own endpoint can draw and prints no area figure, and a class member with no district still declines instead of having a district invented",
+    parcels: P303_SUBJECTS.map((s) => s.id),
+    optional: true,
+    evaluate(id, legs) {
+      const s = P303_SUBJECTS.find((x) => x.id === id);
+      if (!s) return { verdict: "UNMEASURED", basis: `${id} is not a P-303 subject` };
+      const fx = legs.facets ?? {};
+      if (fx.measured === false) return { verdict: "UNMEASURED", basis: `${id}: the card payload did not answer (${fx.error ?? "http " + fx.http})` };
+      if (s.role === "waco-draws-no-figure") {
+        if (!legs.draw?.measured) return { verdict: "UNMEASURED", basis: `${id}: the draw route did not answer, so "an envelope its own endpoint can draw" is not measured` };
+        const figure = fx.buildableAreaSqFtInPayload != null || fx.envelopeBuildableAreaPct != null;
+        if (figure) return { verdict: "FAIL", basis: `${id}: the panel prints an area figure (${fx.buildableAreaSqFtInPayload ?? "-"} sqFt / ${fx.envelopeBuildableAreaPct ?? "-"} pct) and must print none (P-153/P-159 figure ruling)` };
+        const drew = legs.draw.status === "ok" && legs.draw.geometryPresent === true;
+        if (!drew) return { verdict: "FAIL", basis: `${id}: the panel must draw an envelope its own endpoint can draw and the route answered ${legs.draw.status ?? "?"} with geometryPresent ${legs.draw.geometryPresent} (${legs.draw.vertexCount ?? "?"} vertices)` };
+        if (panelEnvelopeDeclined({ facets: fx }).declined) return { verdict: "FAIL", basis: `${id}: the route draws ${legs.draw.vertexCount} vertices for this parcel while the panel declines the envelope (${panelEnvelopeDeclined({ facets: fx }).why}); the panel declines what its own place/buildable-envelope route draws (XD-2/X5)` };
+        return { verdict: "PASS", basis: `${id}: route draws ${legs.draw.vertexCount} vertices, panel envelopeStatus "${fx.envelopeStatus ?? "-"}", no area figure on the payload` };
+      }
+      const declined = panelEnvelopeDeclined({ facets: fx });
+      if (!declined.declined) return { verdict: "FAIL", basis: `${id}: the record holds no district and the panel did not decline (envelopeStatus "${fx.envelopeStatus ?? "-"}"; ${declined.why}); a district must not be invented for a class member` };
+      if (fx.zoningDistrict) return { verdict: "FAIL", basis: `${id}: the panel declines and the payload now carries district ${fx.zoningDistrict}; this class member's record has no district, so the district was invented` };
+      return { verdict: "PASS", basis: `${id}: declines (${declined.why}), no district invented` };
+    },
+  },
+
+  // P-304. The entitlement test needs a PAIR: the same anonymous read must withhold on the parcel
+  // whose derive path carries no reconciled atom and MUST KEEP the figure on the verified control.
+  // A predicate that only failed open would pass a blanket strip, so the control is what proves it.
+  "P-304": {
+    title: "the area-figure entitlement is checkable: an unverified parcel withholds the figure and the verified control keeps it in the same anonymous read, never fail-closed on both",
+    parcels: P304_SUBJECTS.map((s) => s.id),
+    optional: true,
+    evaluate(id, legs) {
+      const s = P304_SUBJECTS.find((x) => x.id === id);
+      if (!s) return { verdict: "UNMEASURED", basis: `${id} is not a P-304 subject` };
+      const fx = legs.facets ?? {};
+      if (fx.measured === false) return { verdict: "UNMEASURED", basis: `${id}: the card payload did not answer, so the entitlement is not measured` };
+      const sqFt = fx.buildableAreaSqFtInPayload;
+      const pct = fx.envelopeBuildableAreaPct;
+      if (s.expectWithheld) {
+        if (sqFt != null || pct != null) return { verdict: "FAIL", basis: `${id}: this parcel's derive path carries no reconciled atom and the payload still serves ${sqFt ?? "-"} sqFt / ${pct ?? "-"} pct; an unbacked figure must not reach a customer` };
+        // Absence is NOT evidence of a withhold. An empty payload serves no figure either, so the
+        // predicate needs a surface that SAYS the figure is held back. Without it: UNMEASURED.
+        const evidence = fx.envelopeFigureWithheld === true || /withheld|unavail|unverif|declin|refus/i.test(str(fx.envelopeStatus) ?? "");
+        if (!evidence) return { verdict: "UNMEASURED", basis: `${id}: no figure is served and no surface says one is withheld (envelopeStatus "${fx.envelopeStatus ?? "-"}"), so an empty payload is indistinguishable from an entitlement withhold` };
+        if (legs.draw?.measured && legs.draw.atomReconciled === true) return { verdict: "FAIL", basis: `${id}: the derive path carries a reconciled atom, so this parcel IS verified and must keep its figure, and it is served none` };
+        return { verdict: "PASS", basis: `${id}: unverified parcel, withholding stated (figureWithheld ${fx.envelopeFigureWithheld ?? "-"}, envelopeStatus "${fx.envelopeStatus ?? "-"}"), no figure served` };
+      }
+      if (sqFt == null && pct == null) return { verdict: "FAIL", basis: `${id}: the VERIFIED control must keep its figure and is served none; a blanket strip has taken an entitled figure off a verified parcel (P-304 fail-closed regression)` };
+      if (s.expectSqFt != null && sqFt !== s.expectSqFt) return { verdict: "FAIL", basis: `${id}: expected ${s.expectSqFt} sqFt and the payload serves ${sqFt}` };
+      if (s.expectPct != null && pct !== s.expectPct) return { verdict: "FAIL", basis: `${id}: expected ${s.expectPct} pct and the payload serves ${pct}` };
+      return { verdict: "PASS", basis: `${id}: verified control keeps ${sqFt} sqFt / ${pct} pct in the same anonymous read that withholds on the unverified parcel` };
+    },
+  },
 };
 
 // --------------------------------------------------------------------------- live run
@@ -858,6 +1162,630 @@ async function runLegs(parcel, opts) {
   return legs;
 }
 
+// =================================================================== OPS-24 customer leg (P-254)
+// The customer leg measures what the THREE customer surfaces actually serve for the fixture set,
+// measured LIVE, never inferred from a merge or a store read (program scope rev 4, section 5).
+//
+//   1. MAP  — the card payload `/api/spine/property-atoms/<id>/facets`, PLUS the draw the map makes
+//             under Ruling B: `POST /api/spine/cortex/api/brokerage/v1/place/buildable-envelope`.
+//             The panel payload carries NO envelope GeoJSON on any probed parcel (measured
+//             2026-09-17), so "geometry presence" for the map is read from the draw route — the
+//             same `place/buildable-envelope` call the MCP draw block makes, which is why a panel
+//             that declines while its own route draws is a real defect (XD-2/X5) and not a wording
+//             dispute. The instrument says which of the two it read, per field, in the basis.
+//   2. MCP  — `get_smart_site` at node depth against smartsite-mcp.
+//   3. PDF  — the engine-api feasibility export, read with GET and NEVER the refresh POST.
+//
+// A surface that cannot be reached enters as UNMEASURED carrying the measured refusal, and its
+// bucket is then NOT fully graded. That is the honest state; the close counts it as ungraded and
+// names the reason rather than reporting a green Phase 0 leg over a surface nobody reached.
+const OPS24_LEG_TIMEOUT_MS = 45_000;
+/** The gate front the map itself presents to the engine-api on the export read path. */
+const gateFrontHeaders = (reqId, pkgId) => ({
+  "x-hauska-product": "cortex",
+  "x-hauska-tenant-id": "public-catalog",
+  "x-hauska-package-id": pkgId,
+  "x-hauska-gate-credential-id": "property-explorer-feasibility-bff",
+  "x-hauska-access-tier": "public-paid",
+  "x-hauska-request-id": `surface-probe-p254-${reqId}`,
+});
+
+function loadOps24FixtureList(path = join(ROOT, OPS24_FIXTURE_LIST)) {
+  const raw = readFileSync(path, "utf8");
+  return { doc: JSON.parse(raw), sha256: createHash("sha256").update(raw).digest("hex"), path: String(path).replace(/\\/g, "/") };
+}
+
+/** Flatten the list's county -> city -> category shape into one record per bucket. */
+export function flattenOps24Buckets(doc) {
+  const buckets = [];
+  for (const [county, byCity] of Object.entries(doc?.buckets ?? {})) {
+    const countyName = byCity?.countyName ?? null;
+    for (const [city, v] of Object.entries(byCity ?? {})) {
+      if (city === "countyName") continue;
+      const fixtures = [];
+      for (const category of OPS24_CATEGORY_PRIORITY) {
+        const f = v?.[category];
+        if (f == null) continue;
+        if (typeof f === "string") fixtures.push({ category, id: f, district: v?.district ?? null });
+        else if (f.id) fixtures.push({ category, id: f.id, district: f.district ?? null });
+      }
+      buckets.push({ key: `${county}|${city}`, county, countyName, city, n: v?.n ?? null, note: v?.note ?? null, fixtures });
+    }
+  }
+  return buckets;
+}
+
+/** The one fixture a bucket is graded on, by OPS24_CATEGORY_PRIORITY; `all` returns every slot. */
+export function selectOps24Subjects(buckets, all = false) {
+  return buckets.map((b) => ({
+    ...b,
+    gradedFixture: b.fixtures[0] ?? null,
+    chosen: all ? b.fixtures : b.fixtures.slice(0, 1),
+    offered: b.fixtures.length,
+    ungradedFixtures: all ? [] : b.fixtures.slice(1).map((f) => `${f.category}:${f.id}`),
+  }));
+}
+
+/** A read-only request that keeps the WHOLE body: MCP speaks SSE, and `call()` truncates. */
+async function callRaw(method, url, body, timeoutMs, headers = {}) {
+  const t0 = Date.now();
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { ...(body ? { "content-type": "application/json" } : {}), ...headers },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctl.signal,
+    });
+    return { http: res.status, ms: Date.now() - t0, text: await res.text() };
+  } catch (e) {
+    return { http: 0, ms: Date.now() - t0, error: String(e?.message || e) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** JSON-RPC over SSE or plain JSON; takes the LAST parseable frame, which is the response. */
+export function parseMcpBody(text) {
+  if (!text) return null;
+  const frames = String(text).split(/\r?\n/).filter((l) => /^data:/.test(l)).map((l) => l.replace(/^data:\s?/, "").trim());
+  const candidates = frames.length ? frames : [String(text).trim()];
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    try {
+      const j = JSON.parse(candidates[i]);
+      if (j && (j.result !== undefined || j.error !== undefined)) return j;
+    } catch { /* keep looking */ }
+  }
+  return null;
+}
+
+/**
+ * The PDF surface: the engine-api feasibility export, read-only. Shape measured 2026-09-17:
+ * `state` is `ready` | `never-requested`, the asset is `artifacts["pdf-feasibility"]` carrying a
+ * `gcs://` ref plus the build's own identity facts, and `entitlement` says which tier was granted.
+ * `never-requested` is a NORMAL cold state (the build is triggered by the refresh POST that P-155
+ * owns), so it is reported as a named not-built state, never as a defect and never as a pass.
+ */
+export function extractPdfRecord(resp) {
+  if (!resp || resp.http === 0) return { measured: false, http: 0, error: resp?.error ?? "the export route did not answer" };
+  const j = rec(resp.json);
+  if (!j) return { measured: false, http: resp.http, error: `non-JSON body (${resp.text ? String(resp.text).slice(0, 120) : "empty"})` };
+  const art = rec(rec(j.artifacts)?.["pdf-feasibility"]);
+  const ent = rec(j.entitlement);
+  return {
+    measured: true,
+    http: resp.http,
+    ms: resp.ms,
+    state: str(j.state),
+    errorClass: str(j.errorClass),
+    errorMessage: str(j.errorMessage),
+    jobRef: str(j.jobRef),
+    completedAt: str(j.completedAt),
+    artifactKeys: j.artifacts ? Object.keys(j.artifacts) : [],
+    artifactPresent: !!art,
+    artifactRef: str(art?.ref),
+    artifactBytes: num(art?.byteCount),
+    pageCount: num(art?.pageCount),
+    sitePlanAppended: typeof art?.sitePlanAppended === "boolean" ? art.sitePlanAppended : null,
+    narrativeGrounded: typeof art?.narrativeGrounded === "boolean" ? art.narrativeGrounded : null,
+    whoServesMeasured: typeof art?.whoServesMeasured === "boolean" ? art.whoServesMeasured : null,
+    narrativeDeterministicSkeleton: typeof art?.narrativeIsDeterministicSkeleton === "boolean" ? art.narrativeIsDeterministicSkeleton : null,
+    feasibilitySectionCount: num(art?.feasibilitySectionCount),
+    feasibilityOpenItemCount: num(art?.feasibilityOpenItemCount),
+    entitlementTier: str(ent?.tier),
+    entitlementGranted: typeof ent?.granted === "boolean" ? ent.granted : null,
+    gatedSections: Array.isArray(ent?.gatedSections) ? ent.gatedSections : null,
+    /** The export's own text, when a route serves JSON rather than a stored binary. */
+    pdfText: str(j.text ?? j.pdfText ?? j.renderedText) ?? null,
+  };
+}
+
+/** How the PDF surface stands for one parcel, as a named state rather than a boolean. */
+export function pdfSurfaceState(pdf) {
+  if (!pdf?.measured) return { state: "UNREACHED", basis: pdf?.error ?? "the export route did not answer" };
+  if (pdf.errorClass) return { state: "FAILED", basis: `the export failed: ${pdf.errorClass} ${pdf.errorMessage ?? ""}`.trim() };
+  if (pdf.state && /never-requested/i.test(pdf.state)) return { state: "NOT-BUILT", basis: `the export answers state "${pdf.state}": no PDF has been built for this parcel (the build is the refresh POST P-155 owns), so the surface has nothing to serve yet` };
+  if (pdf.artifactPresent) return { state: "SERVED", basis: `state "${pdf.state ?? "-"}", ${pdf.pageCount ?? "?"} pages, ${pdf.artifactBytes ?? "?"} bytes, sitePlanAppended ${pdf.sitePlanAppended ?? "?"}, entitlement ${pdf.entitlementTier ?? "?"}/granted ${pdf.entitlementGranted ?? "?"}` };
+  return { state: "UNREACHED", basis: `the export answered state "${pdf.state ?? "-"}" with artifacts [${pdf.artifactKeys.join(",")}] and no pdf-feasibility asset` };
+}
+
+/**
+ * The MCP leg. smartsite-mcp's inbound gate is OAuth (MEASURED 2026-09-17: `missing_bearer`
+ * with no credential and `invalid_oauth_token` with the fleet engine key), so a service Bearer is
+ * NOT an inbound token and this instrument does not pretend otherwise. It attempts the initialize
+ * ONCE per run, records the gate's own refusal verbatim, and only calls `get_smart_site` when the
+ * session actually opened. With no token the whole surface is UNMEASURED — never PASS.
+ */
+async function runMcpLegs(ids) {
+  const token = (process.env.SURFACE_PROBE_MCP_TOKEN || "").trim();
+  const headers = { accept: "application/json, text/event-stream" };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const init = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "surface-probe-p254", version: "1" } } }, OPS24_LEG_TIMEOUT_MS, headers);
+  const body = parseMcpBody(init.text);
+  const session = str(init.headers?.get?.("mcp-session-id"));
+  const gate = str(body?.error?.data?.reason) ?? str(typeof body?.error === "string" ? body.reason : body?.error?.message) ?? str(body?.reason) ?? (init.http ? `http ${init.http}` : init.error);
+  const gateMessage = str(typeof body?.error === "string" ? body.message : body?.error?.message) ?? null;
+  if (!body || body.error) {
+    return { measured: false, http: init.http, ms: init.ms, tokenSupplied: !!token, gateReason: gate, gateMessage, error: `REFUSED by the MCP gate: ${gate}${gateMessage ? ` ("${gateMessage}")` : ""}${token ? "" : " (no SURFACE_PROBE_MCP_TOKEN supplied; the engine key is not an OAuth token)"}`, calls: {} };
+  }
+  return { measured: true, http: init.http, ms: init.ms, tokenSupplied: true, serverInfo: body.result?.serverInfo ?? null, gateReason: null, gateMessage: null, calls: {}, argKeyUsed: null };
+}
+
+/** One `get_smart_site` at node depth. The argument key is probed in order and recorded. */
+async function runMcpCall(id, token) {
+  for (const argKey of ["node_id", "nodeId", "parcel_node_id"]) {
+    const r = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "get_smart_site", arguments: { [argKey]: id } } }, OPS24_LEG_TIMEOUT_MS, { accept: "application/json, text/event-stream", authorization: `Bearer ${token}` });
+    const body = parseMcpBody(r.text);
+    if (body?.result) return { measured: true, http: r.http, ms: r.ms, argKey, payload: body.result, text: JSON.stringify(body.result) };
+    if (body?.error?.code === -32602) continue; // bad arguments: try the next spelling
+    return { measured: false, http: r.http, ms: r.ms, argKey, error: str(body?.error?.message) ?? (r.error ? `http 0 ${r.error}` : `http ${r.http}`) };
+  }
+  return { measured: false, error: "no accepted argument key among node_id, nodeId, parcel_node_id" };
+}
+
+/**
+ * The map's draw (Ruling B) and the PDF export for one fixture. The route is keyed by the composed
+ * address when the record has one, else by the record point. When it has NEITHER — the Williamson
+ * fixtures, where XD-7's missing composed address leaves the card with no address at all — the bare
+ * situs is tried as the customer's own path, and the answer is accepted ONLY if the route names this
+ * parcel (or names none): a bare situs can resolve into a neighbouring county, and drawing the wrong
+ * lot would manufacture findings. A route that answers for another parcel is recorded as such.
+ */
+async function runOps24Legs(subject, opts) {
+  const id = subject.id;
+  const legs = { ops24: subject, mcp: opts.mcp ?? { measured: false, error: "the MCP leg did not run in this pass" } };
+  legs.facets = extractFacets(await call("GET", `${PE_BASE}/api/spine/property-atoms/${encodeURIComponent(id)}/facets`, null, LEG_TIMEOUT_MS.facets));
+  const addr = legs.facets.composedAddress;
+  const bare = legs.facets.situsAddress;
+  const pt = legs.facets.recordPoint;
+  const ask = async (label, body) => {
+    const r = extractEnvelope(await call("POST", `${CORTEX_PROXY}/brokerage/v1/place/buildable-envelope`, body, LEG_TIMEOUT_MS.envelopeByAddress));
+    return { ...r, drawKey: label, answeredFor: r.parcelNodeId ?? null, wrongParcel: !!r.parcelNodeId && r.parcelNodeId !== id };
+  };
+  if (addr) legs.draw = await ask("composed-address", { address: addr });
+  else if (pt) legs.draw = await ask("record-point", { lat: pt.lat, lng: pt.lng });
+  if (!legs.draw || legs.draw.wrongParcel || legs.draw.measured === false) {
+    const first = legs.draw;
+    if (bare && bare !== addr) {
+      const retry = await ask("bare-situs", { address: bare });
+      // Keep the retry when it either names this parcel or names none and produced something.
+      if (!retry.wrongParcel && (retry.measured || !first)) legs.draw = retry;
+      else legs.draw = { ...(first ?? retry), rejectedRetry: retry.wrongParcel ? `the bare situs "${bare}" resolved to ${retry.answeredFor}, not ${id}` : `the bare situs "${bare}" also failed (${retry.error ?? "http " + retry.http})` };
+    }
+  }
+  if (!legs.draw) legs.draw = { measured: false, error: "no composed address, no record point and no bare situs: the map has nothing to draw from", drawKey: null };
+  legs.pdf = await runPdfLeg(id, opts);
+  if (opts.mcp?.measured && opts.mcpToken) legs.mcpCall = await runMcpCall(id, opts.mcpToken);
+  return legs;
+}
+
+async function runPdfLeg(id, opts) {
+  const key = (process.env.HAUSKA_ENGINE_API_KEY || "").trim();
+  const headers = gateFrontHeaders(id.replace(/[^0-9a-zA-Z]/g, "-"), "feasibility-export");
+  if (key) headers.authorization = `Bearer ${key}`;
+  return extractPdfRecord(await call("GET", `${ENGINE_BASE}/v1/property-nodes/${encodeURIComponent(id)}/feasibility-export`, null, OPS24_LEG_TIMEOUT_MS, headers));
+}
+
+// ------------------------------------------------------------------ OPS-24 grading (P-254)
+/** How many of the four setback axes the payload actually rules. */
+export const ruledAxes = (sb) => (sb ? ["front", "side", "rear", "corner"].filter((k) => sb[k] != null).length : 0);
+/** Every customer-facing string on a bucket's legs, labelled with the surface that served it. */
+export function surfaceTexts(legs) {
+  return [
+    ["panel.disclosure", legs.facets?.envelopeDisclosure],
+    ["panel.declineReason", legs.facets?.envelopeDeclineReason],
+    ["panel.message", legs.facets?.envelopeMessage],
+    ["panel.summary", legs.facets?.envelopeSummary],
+    ["draw.disclosure", legs.draw?.disclosure],
+    ["draw.emptyReason", legs.draw?.emptyReasonText],
+    ["draw.message", legs.draw?.message],
+    ["draw.declineReason", legs.draw?.declineReason],
+    ["mcp.text", legs.mcpCall?.text],
+    ["pdf.text", legs.pdf?.pdfText],
+  ].filter(([, v]) => !!v);
+}
+
+/**
+ * THE REQUIRED CASE, as two separately-named kinds. The integration seat found a Travis parcel
+ * whose own read carries a RULED setback table and whose surface nevertheless tells the customer
+ * the envelope path is pending. A contradiction is a surface that names something it is at the
+ * same moment serving — so each kind needs BOTH a phrase and the thing the phrase denies.
+ *
+ *   SAYS-RULES-UNRULED-BESIDE-RULED-TABLE  — the surface calls the setback rules unruled and the
+ *     payload rules at least three axes. This is the dispatch's wording, taken literally.
+ *   SAYS-GEOMETRY-WITHHELD-BESIDE-DRAWN-GEOMETRY — the surface says the envelope geometry is
+ *     withheld or the atom path is pending, and the map's own `place/buildable-envelope` route
+ *     returns a polygon for that same parcel. Measured live on 48453:367134: the panel's baked
+ *     payload says "depth-warm geometry withheld — warm-verify-decline" while the route the map
+ *     draws from answers ok with 7 vertices, so the customer sees a polygon under a sentence
+ *     saying there is none.
+ *
+ * A geometry-only withhold ACCOMPANIED by wording that the outline is drawn for reference is NOT a
+ * contradiction and must not be graded as one: that is the honest shape P-249 ships on
+ * 48309:103015 and 48209:97658 (outline drawn, figure held back), and flagging it would be a false
+ * positive. `saysOutlineDrawn` is what separates the two.
+ */
+export const RULE_REFUSAL_PHRASES = ["unruled", "no ruled table", "rules pending", "no setback rule", "setback table (unknown)", "setback table unknown"];
+export const GEOMETRY_REFUSAL_PHRASES = ["depth-warm geometry withheld", "geometry withheld", "geometry unavailable", "envelope geometry withheld", "atom_path_pending", "atom-path-pending", "no envelope geometry", "geometry pending"];
+export const saysOutlineDrawn = (text) => /outline is (?:modelled|modeled|drawn)|drawn for reference|outline is served|outline served/i.test(String(text ?? ""));
+
+/** The rules-only subset, kept as its own name because the dispatch asks for this phrase class. */
+export function saysUnruled(legs) {
+  const axes = ruledAxes(legs.facets?.setbacks);
+  if (axes < RULED_TABLE_MIN_AXES) return [];
+  return surfaceTexts(legs).filter(([, text]) => RULE_REFUSAL_PHRASES.some((p) => String(text).toLowerCase().includes(p)));
+}
+
+/** The map's draw for whichever leg set was driven: OPS-24 names it `draw`, the standing parcel
+ *  set names it `envelopeByAddress`. The defect scan must read both or 48453:367134 — a P-153
+ *  subject, not a fixture row — would be skipped. */
+const drawOf = (legs) => legs.draw ?? legs.envelopeByAddress ?? null;
+
+/** Both kinds of contradiction, each labelled, each requiring the thing the phrase denies. */
+export function contradictions(legs) {
+  const hits = [];
+  const axes = ruledAxes(legs.facets?.setbacks);
+  const drew = drawOf(legs)?.geometryPresent === true;
+  for (const [where, text] of surfaceTexts(legs)) {
+    const low = String(text).toLowerCase();
+    if (axes >= RULED_TABLE_MIN_AXES && RULE_REFUSAL_PHRASES.some((p) => low.includes(p))) {
+      hits.push({ kind: "SAYS-RULES-UNRULED-BESIDE-RULED-TABLE", where, text: String(text).slice(0, 140) });
+    }
+    if (drew && !saysOutlineDrawn(text) && GEOMETRY_REFUSAL_PHRASES.some((p) => low.includes(p))) {
+      hits.push({ kind: "SAYS-GEOMETRY-WITHHELD-BESIDE-DRAWN-GEOMETRY", where, text: String(text).slice(0, 140) });
+    }
+  }
+  return hits;
+}
+
+/**
+ * Does the PANEL decline the ENVELOPE? A figure withhold is NOT an envelope decline: on
+ * 48309:103015 the panel answers `envelopeStatus: "ok"` with `figureWithheld: true` and a disclosure
+ * that says the outline is drawn for reference and only the AREA figure is held back — which is the
+ * ruling, not a defect. Treating `figureWithheld` as a decline made the XD-2 check fire on the one
+ * parcel that is behaving correctly, so the predicate now needs positive evidence of a decline and
+ * the outline-drawn wording is checked first.
+ */
+export function panelEnvelopeDeclined(legs) {
+  const fx = legs.facets ?? {};
+  const own = [fx.envelopeDisclosure, fx.envelopeSummary].filter(Boolean).join(" | ");
+  if (saysOutlineDrawn(own)) return { declined: false, why: "the panel's own wording says the outline is drawn for reference (only the figure is held back)" };
+  const status = str(fx.envelopeStatus);
+  if (status && !/^ok$/i.test(status)) return { declined: true, why: `envelopeStatus "${status}"` };
+  if (/no outline|outline (?:is )?(?:not|cannot|unavailable)|not drawn|outline withheld/i.test(own)) return { declined: true, why: "the panel's own wording says the outline is not drawn" };
+  return { declined: false, why: `no surface states an envelope decline (status "${status ?? "-"}")` };
+}
+
+/** XD-2/X5: a panel that declines an envelope its own `place/buildable-envelope` route draws. */
+export function panelDeclinesWhatRouteDraws(legs) {
+  const d = panelEnvelopeDeclined(legs);
+  const draw = drawOf(legs);
+  const routeDraws = draw?.status === "ok" && draw?.geometryPresent === true;
+  return { hit: !!d.declined && !!routeDraws, declined: d.declined, why: d.why, routeDraws, vertices: draw?.vertexCount ?? null };
+}
+
+/**
+ * One bucket graded on all three surfaces. `pass` requires every surface that could be reached to
+ * agree with the card spec; a surface that could not be reached makes the bucket UNMEASURED, not
+ * PASS, and the basis names it. Universal rules run on every bucket; the category rule then runs.
+ */
+export function gradeOps24Bucket(subject, legs) {
+  const f = subject.gradedFixture;
+  const label = `${subject.key} ${f ? `${f.category}:${f.id}` : "(no fixture)"}`;
+  if (!f) return { verdict: "UNMEASURED", basis: `${subject.key}: the bucket lists no fixture, so there is nothing to grade` };
+  const fx = legs.facets ?? {};
+  if (fx.measured === false) return { verdict: "UNMEASURED", basis: `${label}: the card payload did not answer (${fx.error ?? "http " + fx.http})` };
+  const violations = [];
+  const defects = [];
+  const unknowns = [];
+  const axes = ruledAxes(fx.setbacks);
+  const draw = legs.draw ?? {};
+  const pdf = legs.pdf ?? {};
+  const mcp = legs.mcp ?? {};
+
+  // --- universal, on every bucket. The verdict-bearing list is deliberately SHORT: it carries only
+  // the things this lane's own standard forbids on the surface being graded, plus the two required
+  // cases. The per-defect classes the plan names (XD-1 figure, XD-8/X2 jurisdiction, XD-11 citation
+  // date) are RECORDED here and COUNTED in the open-defect ledger, because folding them into the
+  // per-bucket verdict made 25 of 45 buckets fail on XD-11 alone and hid the two required cases.
+  if (fx.buildableAreaSqFtInPayload != null) violations.push(`XD-1: the card payload carries buildableAreaSqFt ${fx.buildableAreaSqFtInPayload}; the figure is refused by ruling and must not be printed`);
+  if (draw.hasBuildableAreaSqFtKey && draw.buildableAreaSqFtInPayload != null) violations.push(`XD-1: the draw route's feature carries buildableAreaSqFt ${draw.buildableAreaSqFtInPayload}`);
+  const p2 = panelDeclinesWhatRouteDraws(legs);
+  if (p2.hit) violations.push(`XD-2/X5: the panel declines this envelope (${p2.why}) while its own place/buildable-envelope route answers ok with geometry (${draw.vertexCount ?? "?"} vertices)`);
+  for (const c of contradictions(legs)) violations.push(`${c.kind} on ${c.where}: "${c.text}"`);
+  if (fx.zoningDistrict && !fx.zoningJurisdictionKey && !str(fx.composedAddress)?.includes(",")) defects.push(`XD-8/X2: the payload holds district ${fx.zoningDistrict} and names no jurisdiction (no jurisdictionKey, no composed address to read a city from)`);
+  if (fx.envelopeCitationUrl && !fx.envelopeCitationDate) defects.push(`XD-11: the payload cites ${fx.envelopeCitationUrl} with no effective date; an unreadable vintage is a conflict row, never a silent pick`);
+  if (fx.facetCoverage?.zoning === false && fx.zoningDistrict) defects.push(`FACET-COVERAGE: facetCoverage.zoning is false while the payload serves district ${fx.zoningDistrict}`);
+
+  // --- the category rule ---
+  let categoryBasis = "";
+  if (f.category === "fx_codified") {
+    if (draw.measured === false) unknowns.push(`map draw (${draw.error})`);
+    else if (draw.status !== "ok" || !draw.geometryPresent) violations.push(`fx_codified: ${f.district ?? "a codified district"} must draw; the route answered ${draw.status ?? "?"} geometryPresent ${draw.geometryPresent}`);
+    else if (axes < RULED_TABLE_MIN_AXES) unknowns.push(`the panel rules only ${axes}/4 setback axes`);
+    else categoryBasis = `codified ${f.district ?? "-"}: route draws ${draw.vertexCount} vertices, table ${fmtSb(fx.setbacks)}`;
+  } else if (f.category === "fx_district_miss" || f.category === "fx_no_table") {
+    // XD-5/XD-8/X8: the decline must name the corpus gap, and must never say "no zoning district
+    // observed" about a parcel whose own payload holds the district.
+    const reason = [fx.envelopeDeclineReason, fx.envelopeDisclosure, draw.declineReason, draw.message, draw.emptyReasonText].filter(Boolean).join(" | ");
+    const generic = /no zoning district|no district observed|district not observed/i.test(reason);
+    if (fx.zoningDistrict && generic) violations.push(`XD-5/XD-8: the panel declines "${reason.slice(0, 90)}" while its own payload holds district ${fx.zoningDistrict}`);
+    else if (!reason) unknowns.push("no decline wording on either surface to grade");
+    else categoryBasis = `${f.category} ${f.district ?? fx.zoningDistrict ?? "-"}: typed decline "${reason.slice(0, 80)}"`;
+  } else if (f.category === "fx_pud") {
+    const reason = [fx.envelopeDeclineReason, fx.envelopeDisclosure, draw.declineReason, draw.message].filter(Boolean).join(" | ");
+    if (axes >= RULED_TABLE_MIN_AXES) violations.push(`XD-14/X10: ${f.district ?? "a PUD-coded district"} resolved Euclidean setbacks ${fmtSb(fx.setbacks)} instead of the PUD message`);
+    else if (!reason) unknowns.push("no wording on either surface, so whether the PUD class was named is not measured");
+    else if (!/planned development|\bPUD\b|\bPDD\b|\bPC\b|\bPD\b/i.test(`${reason} ${f.district ?? ""}`)) unknowns.push(`the reason names neither the planned-development class nor the district (reason: "${reason.slice(0, 90)}")`);
+    else categoryBasis = `fx_pud ${f.district ?? "-"}: no Euclidean resolution, reason served "${reason.slice(0, 90)}"`;
+  } else if (f.category === "fx_vacant") {
+    if (!fx.structuralState && !draw.emptyKind) unknowns.push("neither the structural fact on the payload nor the draw route's emptyKind is readable");
+    else categoryBasis = `fx_vacant: structural ${fx.structuralState ?? "-"}, draw emptyKind ${draw.emptyKind ?? "-"}`;
+  } else if (f.category === "fx_any") {
+    if (!fx.zoningJurisdictionKey && !/not.applicable|unincorporated/i.test(str(fx.envelopeDisclosure) ?? "")) unknowns.push("the jurisdiction is neither named nor declared not-applicable");
+    else categoryBasis = `fx_any: jurisdiction ${fx.zoningJurisdictionKey ?? "declared not-applicable"}`;
+  }
+
+  // --- the other two surfaces: reach decides whether the bucket is graded or merely measured ---
+  // The MCP surface is graded on an actual `get_smart_site` result, never on the session flag: an
+  // opened session that never returned a tool result has graded nothing, and must not read as PASS.
+  if (mcp.measured !== true) unknowns.push(`MCP surface (${mcp.error ?? "not attempted"})`);
+  else if (legs.mcpCall?.measured !== true) unknowns.push(`MCP surface (the session opened and no get_smart_site result came back: ${legs.mcpCall?.error ?? "not attempted"})`);
+  // The PDF surface is graded by its own named state: SERVED grades the bucket, NOT-BUILT and
+  // UNREACHED leave it ungraded with the reason, and FAILED is a violation rather than a silence.
+  const pdfState = pdfSurfaceState(pdf);
+  if (pdfState.state === "FAILED") violations.push(`PDF surface: ${pdfState.basis}`);
+  else if (pdfState.state !== "SERVED") unknowns.push(`PDF surface (${pdfState.state}): ${pdfState.basis}`);
+
+  const surfaces = {
+    map: violations.length ? "FAIL" : unknowns.length ? "PARTIAL" : "PASS",
+    mcp: mcp.measured === true ? (legs.mcpCall?.measured ? "PASS" : "PARTIAL") : "UNMEASURED",
+    pdf: pdfState.state === "SERVED" ? "PASS" : pdfState.state === "FAILED" ? "FAIL" : pdfState.state,
+  };
+  const basis = [
+    `${label}: ${f.district ? `district ${f.district}, ` : ""}table ${fmtSb(fx.setbacks)} (${axes}/4 axes)`,
+    `envelope status "${fx.envelopeStatus ?? "-"}" declineReason "${fx.envelopeDeclineReason ?? "-"}" covered ${fx.envelopeCovered ?? "-"} geometryPresent ${draw.geometryPresent ?? "-"} (${draw.vertexCount ?? "?"} vertices) figure ${fx.buildableAreaSqFtInPayload != null || fx.envelopeBuildableAreaPct != null ? `PRESENT ${fx.buildableAreaSqFtInPayload ?? "-"}/${fx.envelopeBuildableAreaPct ?? "-"}` : "absent"}`,
+    categoryBasis,
+    `surfaces map ${surfaces.map} mcp ${surfaces.mcp} pdf ${surfaces.pdf}`,
+    violations.length ? `VIOLATIONS: ${violations.join("; ")}` : null,
+    defects.length ? `defects recorded (counted in the open-defect ledger, not this verdict): ${defects.join("; ")}` : null,
+    unknowns.length ? `not graded: ${unknowns.join("; ")}` : null,
+  ].filter(Boolean).join(" -- ");
+  return { verdict: violations.length ? "FAIL" : unknowns.length ? "UNMEASURED" : "PASS", basis, surfaces, violations, defects, unknowns, envelopeRecord: { status: fx.envelopeStatus ?? null, declineReason: fx.envelopeDeclineReason ?? null, envelopeCovered: fx.envelopeCovered ?? null, geometryPresent: draw.geometryPresent ?? null, vertices: draw.vertexCount ?? null, figureSqFt: fx.buildableAreaSqFtInPayload ?? null, figurePct: fx.envelopeBuildableAreaPct ?? null } };
+}
+
+/**
+ * The open-defect count the Phase 0 exit reads. A defect is graded only by a grader that exists in
+ * this instrument; every other defect is reported UNMEASURED with the row that owns it, never
+ * silently counted open or closed. `rows` is the per-defect ledger, `counts` the tally.
+ */
+export function defectLedger(defects, subjects) {
+  const rows = [];
+  for (const d of defects) {
+    const grader = OPS24_DEFECT_GRADERS[d.gradedBy];
+    if (!grader) {
+      rows.push({ ...d, verdict: "UNMEASURED", basis: `no grader for "${d.gradedBy ?? "none"}" in scripts/surface-probe.mjs; the defect is graded by ${d.row}, not by this instrument` });
+      continue;
+    }
+    const hits = [];
+    let measuredOn = 0;
+    for (const s of subjects) {
+      const r = grader(s.id, s.legs);
+      if (r.verdict === "UNMEASURED") continue;
+      measuredOn++;
+      if (r.verdict === "FAIL") hits.push({ parcel: s.id, basis: r.basis });
+    }
+    if (!measuredOn) rows.push({ ...d, verdict: "UNMEASURED", basis: `grader "${d.gradedBy}" ran on ${subjects.length} subjects and measured none of them` });
+    else rows.push({ ...d, verdict: hits.length ? "OPEN" : "CLOSED", measuredOn, hits, basis: hits.length ? `${hits.length} of ${measuredOn} measured subjects still show it; first: ${hits[0].parcel} ${hits[0].basis}` : `not seen on any of the ${measuredOn} subjects this grader measured` });
+  }
+  const counts = rows.reduce((t, r) => ((t[r.verdict] = (t[r.verdict] ?? 0) + 1), t), {});
+  return { counts, rows };
+}
+
+/** One grader per defect this instrument can actually decide. Absent means UNMEASURED, never OPEN. */
+const OPS24_DEFECT_GRADERS = {
+  figureLeak: (id, legs) => {
+    const v = legs.facets?.buildableAreaSqFtInPayload;
+    const dv = legs.draw?.buildableAreaSqFtInPayload;
+    return v != null
+      ? { verdict: "FAIL", basis: `the panel payload serves buildableAreaSqFt ${v}` }
+      : dv != null
+        ? { verdict: "FAIL", basis: `the draw route's feature serves buildableAreaSqFt ${dv}` }
+        : { verdict: "PASS", basis: "no buildable-area figure on the panel payload or the draw route" };
+  },
+  p303PanelDraws: (id, legs) => {
+    const p2 = panelDeclinesWhatRouteDraws(legs);
+    if (!legs.draw?.measured) return { verdict: "UNMEASURED", basis: "the draw route did not answer" };
+    return p2.hit ? { verdict: "FAIL", basis: `the panel declines while the route draws ${legs.draw.vertexCount ?? "?"} vertices` } : { verdict: "PASS", basis: `panel declined ${p2.declined}, route drew ${p2.routeDraws}` };
+  },
+  foreignDeclineWording: (id, legs) => {
+    const text = surfaceTexts(legs).map(([, t]) => t).join(" | ");
+    if (!text) return { verdict: "UNMEASURED", basis: "no decline wording on any surface" };
+    return /layer-23|layer 23/i.test(text)
+      ? { verdict: "FAIL", basis: `a surface carries the Bastrop-specific wording: "${text.slice(0, 120)}"` }
+      : { verdict: "PASS", basis: "no layer-23 wording" };
+  },
+  noTableDeclineNamesDistrict: (id, legs) => {
+    const district = legs.facets?.zoningDistrict;
+    if (!district) return { verdict: "UNMEASURED", basis: "the payload holds no district, so the XD-5 shape cannot arise here" };
+    const text = [legs.facets?.envelopeDeclineReason, legs.facets?.envelopeDisclosure, legs.draw?.declineReason, legs.draw?.message].filter(Boolean).join(" | ");
+    if (!text) return { verdict: "UNMEASURED", basis: "no decline wording on either surface" };
+    return /no zoning district|no district observed|district not observed/i.test(text)
+      ? { verdict: "FAIL", basis: `declines "${text.slice(0, 100)}" while holding district ${district}` }
+      : { verdict: "PASS", basis: `declines without denying district ${district}` };
+  },
+  composedAddressAbsent: (id, legs) => {
+    const fx = legs.facets ?? {};
+    if (fx.measured === false) return { verdict: "UNMEASURED", basis: "the card payload did not answer" };
+    if (fx.composedAddress) return { verdict: "PASS", basis: `composed address served (${fx.composedAddress})` };
+    if (fx.situsAddress) return { verdict: "FAIL", basis: `situs "${fx.situsAddress}" is on the record and no composed address is served` };
+    // No situs. The first draft returned UNMEASURED here ("an absent situs is not evidence"), which
+    // made XD-7 structurally blind to the very population it names: the Williamson fixtures serve
+    // no situs at all. So distinguish an empty read from an answering read — a payload that serves
+    // a district or a setback table is answering ABOUT a parcel, and serving it with no address of
+    // any kind is the defect, not an absence of evidence. Measured 2026-09-17: 48491:R483884
+    // carries baseFacts {apn R483884, landUse null, acreage null, situsAddress null}, district SF2,
+    // a 4/4-axis table, cityLimitsFact.cityName "Round Rock", and no lat/lng anywhere.
+    const answering = !!(fx.zoningDistrict || fx.setbacks || fx.zoningJurisdictionKey);
+    if (!answering) return { verdict: "UNMEASURED", basis: "the payload carries nothing to be addressed (no district, no table, no jurisdiction), so an absent composed address is not evidence" };
+    // Say exactly which of the three the payload lacks. The first draft of this line said "no
+    // coordinate" for every case, which was FALSE for the Bastrop parcels: 48021:51735 carries no
+    // situs and no composed address but DOES carry a record point (30.10219, -97.30069) and drew 6
+    // vertices from it. A grader whose basis overclaims is worse than a vague one, because the
+    // close quotes it.
+    const lacks = [!fx.situsAddress && "situs", !fx.composedAddress && "composed address", !fx.recordPoint && "coordinate"].filter(Boolean);
+    const has = [fx.situsAddress && "a situs", fx.recordPoint && "a coordinate"].filter(Boolean);
+    return { verdict: "FAIL", basis: `the payload serves ${fx.zoningDistrict ? `district ${fx.zoningDistrict}` : "a setback table"} with no composed address: absent ${lacks.join(", ")}${has.length ? ` (present: ${has.join(", ")})` : ""}, so the card can show no street address` };
+  },
+  jurisdictionNamed: (id, legs) => {
+    const fx = legs.facets ?? {};
+    if (fx.measured === false) return { verdict: "UNMEASURED", basis: "the card payload did not answer" };
+    if (!fx.zoningDistrict) return { verdict: "UNMEASURED", basis: "no district on the payload" };
+    return fx.zoningJurisdictionKey ? { verdict: "PASS", basis: `jurisdictionKey ${fx.zoningJurisdictionKey}` } : { verdict: "FAIL", basis: `district ${fx.zoningDistrict} with no jurisdiction on the payload` };
+  },
+  malformedSitusDraws: (id, legs) => {
+    const fx = legs.facets ?? {};
+    if (fx.measured === false || !fx.situsMalformed) return { verdict: "UNMEASURED", basis: "this subject's situs is not the malformed class" };
+    return legs.draw?.geometryPresent ? { verdict: "PASS", basis: `a malformed situs still drew (${legs.draw.vertexCount} vertices)` } : { verdict: "FAIL", basis: `situs "${fx.situsAddress}" and the draw route produced no geometry` };
+  },
+  citationDatePresent: (id, legs) => {
+    const fx = legs.facets ?? {};
+    if (!fx.envelopeCitationUrl) return { verdict: "UNMEASURED", basis: "no citation on the payload to date" };
+    return fx.envelopeCitationDate ? { verdict: "PASS", basis: `citation dated ${fx.envelopeCitationDate}` } : { verdict: "FAIL", basis: `citation ${fx.envelopeCitationUrl} with no effective date` };
+  },
+  dollarReachesAnonymous: (id, legs) => {
+    const fx = legs.facets ?? {};
+    if (fx.measured === false) return { verdict: "UNMEASURED", basis: "the card payload did not answer" };
+    return fx.dollarRailsServed?.length
+      ? { verdict: "FAIL", basis: `served ${fx.dollarRailsServed.join(", ")} to an anonymous read` }
+      : { verdict: "PASS", basis: "every dollar rail was refused or absent" };
+  },
+  pudReadsPudMessage: (id, legs) => {
+    const fx = legs.facets ?? {};
+    const district = fx.zoningDistrict ?? legs.ops24?.district;
+    if (!district) return { verdict: "UNMEASURED", basis: "no district on the payload" };
+    if (!/^(PUD|PDD|PD|PC)\b/i.test(String(district))) return { verdict: "UNMEASURED", basis: `district ${district} is not PUD-coded` };
+    return ruledAxes(fx.setbacks) >= RULED_TABLE_MIN_AXES
+      ? { verdict: "FAIL", basis: `${district} resolved Euclidean setbacks ${fmtSb(fx.setbacks)}` }
+      : { verdict: "PASS", basis: `${district} did not resolve Euclidean setbacks` };
+  },
+};
+
+/** Every subject the defect ledger grades: the fixture buckets plus the standing parcel set,
+ *  DEDUPED BY PARCEL so one parcel that is both a bucket's graded fixture and a named subject is
+ *  counted once. Without the dedupe the ledger's denominators double-count 37 parcels and every
+ *  "N of M measured subjects" line in the close would be wrong. */
+export function ops24SubjectList(bucketLegs, parcelLegs) {
+  const out = [];
+  const seen = new Set();
+  for (const [key, legs] of Object.entries(bucketLegs)) {
+    const id = legs.ops24?.gradedFixture?.id ?? key;
+    out.push({ id, key, legs });
+    seen.add(id);
+  }
+  for (const [id, legs] of Object.entries(parcelLegs)) {
+    if (seen.has(id)) continue;
+    out.push({ id, key: id, legs });
+    seen.add(id);
+  }
+  return out;
+}
+
+/** Cross-cutting findings that must never pass silently. Attached to the artifact, not a verdict. */
+export function ops24Findings(bucketLegs, parcelLegs) {
+  const out = [];
+  const seen = new Set();
+  const scan = [
+    ...Object.entries(bucketLegs).map(([key, legs]) => ({ id: legs.ops24?.gradedFixture?.id ?? key, bucket: key, legs })),
+    ...Object.entries(parcelLegs).map(([id, legs]) => ({ id, bucket: null, legs })),
+  ].filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
+  for (const { id, bucket, legs } of scan) {
+    const p2 = panelDeclinesWhatRouteDraws(legs);
+    if (p2.hit) out.push({ kind: "XD-2/PANEL-DECLINES-ROUTE-DRAWS", parcel: id, bucket, detail: `the panel declines the envelope (${p2.why}) while place/buildable-envelope answers ok with ${p2.vertices ?? "?"} vertices for the same parcel` });
+    for (const c of contradictions(legs)) {
+      const drew = drawOf(legs)?.geometryPresent === true;
+      out.push({
+        kind: `REQUIRED-CASE/${c.kind}`,
+        parcel: id,
+        bucket,
+        where: c.where,
+        detail: c.kind.startsWith("SAYS-RULES")
+          ? `${c.where} says "${c.text}" while the same payload serves a ${ruledAxes(legs.facets?.setbacks)}/4-axis table ${fmtSb(legs.facets?.setbacks)}${drew ? ` and the draw route returns ${drawOf(legs).vertexCount ?? "?"} vertices` : " (the draw route did not answer for this parcel, so only the ruled table is the contradiction)"}`
+          : `${c.where} says "${c.text}" while the draw route returns ${drawOf(legs)?.vertexCount ?? "?"} vertices for the same parcel and the payload serves a ${ruledAxes(legs.facets?.setbacks)}/4-axis table ${fmtSb(legs.facets?.setbacks)}`,
+      });
+    }
+    // The strongest address defect the fixture set contains: a card that serves a district and a
+    // ruled table but NO address and NO coordinate at all, so nothing can be drawn and no address
+    // can be shown. Measured 2026-09-17 on the Williamson fixtures (R483884 and its siblings:
+    // baseFacts {apn, landUse null, acreage null, situsAddress null}, no lat/lng anywhere in the
+    // payload, facetCoverage honestly declaring landUse:false acreage:false).
+    if (legs.facets?.measured && !legs.facets.situsAddress && !legs.facets.composedAddress && !legs.facets.recordPoint && (legs.facets.zoningDistrict || legs.facets.setbacks)) {
+      out.push({ kind: "NO-LOCATION-AT-ALL", parcel: id, bucket, detail: `the payload serves ${legs.facets.zoningDistrict ? `district ${legs.facets.zoningDistrict}` : "a setback table"} and carries no situs, no composed address and no coordinate, so the card can show no address and the map has nothing to draw from (XD-6/XD-7 in their strongest form)` });
+    }
+    // An absence that carries no basis. The card spec's honest-refusal rule and AGENT_CONTRACT
+    // section 5 both require a POSITIVE determination to write an absence WITH its basis; the panel
+    // does this properly for some fields and not for the street address. Measured 2026-09-17 on
+    // 48021:51735: `situsCity` is a full absent-verified object naming its authority (Bastrop County
+    // CAD roll as published), its scopeSearched and the declared vintage, while `situsAddress` in the
+    // SAME baseFacts object is a bare null with no verdict, no authority and no scope. Two address
+    // components, one declared and one silent, in one payload.
+    if (legs.facets?.measured && !legs.facets.situsAddress && !legs.facets.situsAddressAbsenceDeclared && (legs.facets.zoningDistrict || legs.facets.setbacks)) {
+      const sibling = legs.facets.situsCityAbsenceDeclared
+        ? `its sibling situsCity IS declared absent with its basis (verdict "${legs.facets.situsCityAbsenceVerdict}"), so the two address components disagree about whether an absence needs a reason`
+        : "no sibling address component declares an absence either";
+      out.push({ kind: "SITUS-ABSENT-UNDECLARED", parcel: id, bucket, detail: `the payload serves ${legs.facets.zoningDistrict ? `district ${legs.facets.zoningDistrict}` : "a setback table"} and its situsAddress is absent with no declared absence (a bare null: no verdict, no authority, no scope) while ${sibling} (AGENT_CONTRACT section 5: an empty result is not an absence; only a positive determination writes one, and every absence carries its basis)` });
+    }
+    const fx = legs.facets;
+    if (fx?.measured && fx.buildableAreaSqFtInPayload != null) {
+      out.push({ kind: "FIGURE-IN-PAYLOAD", parcel: id, bucket, leg: "facets", value: fx.buildableAreaSqFtInPayload, detail: "buildableAreaSqFt travels in the card payload and must not be printed by any surface (XD-1)" });
+    }
+    // The dual figure: the zoning table's maxImperviousPct beside the watershed fact's percent.
+    if (fx?.panelMaxImperviousPct != null && fx?.imperviousFactPercent != null && fx.panelMaxImperviousPct !== fx.imperviousFactPercent) {
+      out.push({ kind: "IMPERVIOUS-DUAL-FIGURE", parcel: id, bucket, detail: `the panel serves maxImperviousPct ${fx.panelMaxImperviousPct} from the zoning table while the watershed fact serves ${fx.imperviousFactPercent} for ${fx.imperviousFactWatershed ?? "an unnamed watershed"}; both can be correct law and a customer reads both as "impervious cover"` });
+    }
+    if (fx?.measured && fx.imperviousFactState === "refused" && fx.panelMaxImperviousPct == null && !fx.imperviousFactReason) {
+      out.push({ kind: "IMPERVIOUS-REFUSED-UNEXPLAINED", parcel: id, bucket, detail: "the impervious fact is refused and neither a watershed percent nor a reason is served, so the customer cannot tell a corpus gap from a parcel that has no limit" });
+    }
+    // The five-producer setback disagreement, on this lane's own legs: the card's table beside the
+    // table the map's draw route resolves for the same parcel in the same pass.
+    const draw = drawOf(legs);
+    if (fx?.measured && ruledAxes(fx.setbacks) >= RULED_TABLE_MIN_AXES && draw?.measured && ruledAxes(draw.setbacks) >= RULED_TABLE_MIN_AXES) {
+      const a = [fx.setbacks.front, fx.setbacks.side, fx.setbacks.rear, fx.setbacks.corner];
+      const b = [draw.setbacks.front, draw.setbacks.side, draw.setbacks.rear, draw.setbacks.corner];
+      if (JSON.stringify(a) !== JSON.stringify(b)) out.push({ kind: "PANEL-DRAW-TABLE-DISAGREE", parcel: id, bucket, detail: `the card's table ${fmtSb(fx.setbacks)} and the draw route's table ${fmtSb(draw.setbacks)} disagree for the same parcel in the same pass; P-154's class, reported here with its population` });
+    }
+    // A facet the panel declares it does not cover while the same payload serves a value for it.
+    if (fx?.facetCoverage && fx.facetCoverage.zoning === false && fx.zoningDistrict) {
+      out.push({ kind: "FACET-COVERAGE-CONTRADICTS-PAYLOAD", parcel: id, bucket, detail: `facetCoverage.zoning is false while the payload serves district ${fx.zoningDistrict}; a renderer told the facet is uncovered will not draw what is there` });
+    }
+  }
+  // The population counts the close reads. Stated as numbers over a stated denominator.
+  const pdfStates = scan.map((s) => pdfSurfaceState(s.legs.pdf).state);
+  if (scan.length) out.push({ kind: "POPULATION", parcel: `${scan.length} scanned`, bucket: null, detail: `PDF surface: ${["SERVED", "NOT-BUILT", "FAILED", "UNREACHED"].map((k) => `${k} ${pdfStates.filter((x) => x === k).length}`).join(", ")}; figure-in-payload ${scan.filter((s) => s.legs.facets?.buildableAreaSqFtInPayload != null).length}; unruled-beside-ruled ${scan.filter((s) => contradictions(s.legs).some((c) => c.kind.startsWith("SAYS-RULES"))).length}; geometry-withheld-beside-drawn ${scan.filter((s) => contradictions(s.legs).some((c) => c.kind.startsWith("SAYS-GEOMETRY"))).length}; panel-draw-table-disagree ${out.filter((f) => f.kind === "PANEL-DRAW-TABLE-DISAGREE").length}; dual-impervious ${out.filter((f) => f.kind === "IMPERVIOUS-DUAL-FIGURE").length}` });
+  return out;
+}
+
 function loadObservations(path) {
   if (!path) return { obs: null, sha256: null };
   const raw = readFileSync(path, "utf8");
@@ -868,13 +1796,19 @@ function docRepoHead() {
   try { return execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(); } catch { return "UNKNOWN"; }
 }
 
-function evaluateRows(legsById, obs, rowFilter) {
+function evaluateRows(legsById, obs, rowFilter, extraLegs = {}) {
   const results = [];
+  const lookup = { ...legsById, ...extraLegs };
   for (const [row, def] of Object.entries(ROWS)) {
     if (rowFilter && !rowFilter.includes(row)) continue;
     for (const id of def.parcels) {
-      const legs = legsById[id];
-      const r = legs ? def.evaluate(id, legs, obs) : { verdict: "UNMEASURED", basis: "parcel not in this run" };
+      const legs = lookup[id];
+      // `optional` rows exist only to grade a leg that a pass may not have driven. Reporting them
+      // UNMEASURED on every cheap run would bury the rows that pass did measure, so an undriven
+      // optional row emits nothing; a NAMED optional row still reports, because then the missing
+      // grade is the answer (P-254: the ungraded bucket count is what the Phase 0 exit reads).
+      if (!legs && def.optional && !(rowFilter && rowFilter.includes(row))) continue;
+      const r = legs ? def.evaluate(id, legs, obs, rowFilter) : { verdict: "UNMEASURED", basis: "parcel not in this run" };
       results.push({ row, title: def.title, parcel: id, ...r });
     }
   }
@@ -909,7 +1843,7 @@ export function findings(legsById) {
   return out;
 }
 
-function printReport(results, legsById) {
+function printReport(results, legsById, ops24 = null) {
   console.log("\nLEGS (measured live unless marked)");
   const absent = (what) => ({ measured: false, error: `no ${what} leg for this subject` });
   for (const [id, legs] of Object.entries(legsById)) {
@@ -935,6 +1869,42 @@ function printReport(results, legsById) {
       const sum = e.summary ?? {};
       const cps = Array.isArray(e.controlPoints) ? e.controlPoints : [];
       console.log(`    etj live     ${e.measured ? `register ${e.registerVintage ?? "?"} (${e.registerSize ?? "?"} cities) ${e.publishers?.length ?? "?"} publishers ${sum.ringsAcquired ?? "?"} rings; control points ${cps.map((p) => `${p.key}=${p.actual}${p.verdict ? " " + p.verdict : ""}`).join(", ")}${Array.isArray(sum.predicateGuardFailures) && sum.predicateGuardFailures.length ? " PREDICATE-GUARD-FAILED " + sum.predicateGuardFailures.join(",") : ""}` : `NOT MEASURED ${e.error ?? ""}`}`);
+    }
+  }
+  if (ops24) {
+    const grade = (key) => results.find((x) => x.row === "P-254" && x.parcel === key);
+    const graded = ops24.subjects.filter((s) => ["PASS", "FAIL"].includes(grade(s.key)?.verdict)).length;
+    const ungraded = ops24.subjects.length - graded;
+    console.log("\nOPS-24 CUSTOMER LEG (P-254)");
+    console.log(`  list ${ops24.path}  sha256 ${ops24.sha256 ? ops24.sha256.slice(0, 12) : "UNREADABLE"}  buckets ${ops24.subjects.length}  fixture slots offered ${ops24.fixtureSlots}  selection ${ops24.selection}`);
+    console.log(`  mcp gate: ${ops24.mcp?.measured ? "session opened" : `REFUSED/UNMEASURED -- ${ops24.mcp?.error ?? "not attempted"}`}`);
+    for (const s of ops24.subjects) {
+      const r = grade(s.key);
+      const fixture = s.gradedFixture ? `${s.gradedFixture.category}:${s.gradedFixture.id}` : "(no fixture)";
+      console.log(`  ${(r?.verdict ?? "NOT RUN").padEnd(10)} ${s.key.padEnd(26)} ${fixture.padEnd(22)}${r?.surfaces ? ` map ${r.surfaces.map} mcp ${r.surfaces.mcp} pdf ${r.surfaces.pdf}` : ""}${s.ungradedFixtures.length ? `  (+${s.ungradedFixtures.length} ungraded slots)` : ""}`);
+    }
+    const c = ops24.ledger.counts;
+    // "Graded on all three" must mean it: a bucket whose MCP or PDF leg did not run is graded on
+    // the surfaces that answered and UNMEASURED on the rest, so say which instead of claiming three.
+    const onThree = ops24.subjects.filter((s) => { const v = grade(s.key)?.surfaces; return v && v.map === "MEASURED" && v.mcp === "MEASURED" && v.pdf !== "UNMEASURED"; }).length;
+    const mcpMeasured = Object.values(ops24.legsById).filter((l) => l.mcp?.measured).length;
+    const pdfMeasured = Object.values(ops24.legsById).filter((l) => l.pdf?.measured).length;
+    console.log(`  BUCKETS GRADED PASS/FAIL ${graded}/${ops24.subjects.length}   UNGRADED ${ungraded}`);
+    console.log(`  SURFACES MEASURED over ${Object.keys(ops24.legsById).length} subject-parcels: map ${Object.values(ops24.legsById).filter((l) => l.facets?.measured).length}  draw ${Object.values(ops24.legsById).filter((l) => l.draw?.measured).length}  mcp ${mcpMeasured}  pdf ${pdfMeasured}  (a bucket graded on ALL THREE: ${onThree})`);
+    if (Object.keys(ops24.violationClasses ?? {}).length) console.log(`  VIOLATION CLASSES (buckets affected): ${Object.entries(ops24.violationClasses).map(([k, v]) => `${k} ${v}`).join(", ")}`);
+    if (Object.keys(ops24.defectClasses ?? {}).length) console.log(`  DEFECT CLASSES recorded, not counted in P-254's verdict: ${Object.entries(ops24.defectClasses).map(([k, v]) => `${k} ${v}`).join(", ")}`);
+    console.log(`  OPEN DEFECTS ${c.OPEN ?? 0}  closed ${c.CLOSED ?? 0}  unmeasured ${c.UNMEASURED ?? 0}`);
+    for (const r of ops24.ledger.rows) console.log(`  ${r.verdict.padEnd(10)} ${String(r.id).padEnd(5)} ${r.defect}  -- ${r.basis}`);
+    for (const rc of ops24.requiredCases ?? []) {
+      console.log(`\n  REQUIRED CASE ${rc.key} (${rc.subject})`);
+      console.log(`    standard: ${rc.standard}`);
+      console.log(`    measured: ${JSON.stringify(rc.measuredPanelHalf ?? rc.measured)}`);
+      console.log(`    mcp half: ${JSON.stringify(rc.mcpHalf ?? "n/a")}`);
+      console.log(`    population: ${JSON.stringify(rc.population)}`);
+    }
+    if (ops24.findings?.length) {
+      console.log("\n  OPS-24 FINDINGS (not a row predicate; never silent)");
+      for (const f of ops24.findings) console.log(`    ${f.kind}  ${f.parcel}${f.bucket ? ` (${f.bucket})` : ""}  ${f.detail}`);
     }
   }
   const fnd = findings(legsById);
@@ -1145,6 +2115,120 @@ function selfTest() {
   check("P-241 is UNMEASURED when the instrument leg did not run", ROWS["P-241"].evaluate(ETJ_SUBJECTS[0].key, { etjLive: { measured: false, error: "REFUSED: no checkout" } }, {}).verdict === "UNMEASURED");
   check("extractEtjInstrument refuses a non-document and tolerates a wrapper line", extractEtjInstrument("pnpm: nothing\n").measured === false && extractEtjInstrument("noise\n" + JSON.stringify(etjDoc) + "\n").measured === true);
 
+  // ---------------------------------------------------------------- OPS-24 customer leg (P-254)
+  // Instrument integrity: the fixture list this file grades MUST be the committed copy the close
+  // names. A drift here would make every bucket count in the artifact unreproducible.
+  check(`the committed OPS-24 fixture list carries ${OPS24_BUCKET_COUNT} buckets`, OPS24_BUCKETS.length === OPS24_BUCKET_COUNT, `read ${OPS24_BUCKETS.length}`);
+  check("the OPS-24 fixture list sha256 matches the value the artifact records", OPS24_LIST_SHA256 === OPS24_FIXTURE_LIST_SHA256, `${OPS24_LIST_SHA256}`);
+  check("every OPS-24 bucket offers at least one fixture to grade", OPS24_BUCKETS.length > 0 && OPS24_BUCKETS.every((b) => b.fixtures.length > 0), `slots ${OPS24_FIXTURE_SLOTS}`);
+  check("the selection rule picks one fixture per bucket and names the rest ungraded", OPS24_SUBJECTS.every((s) => s.chosen.length === 1 && s.ungradedFixtures.length === s.offered - 1));
+
+  // The required case: a ruled table called "unruled" is caught; the honest outline-drawn shape is not.
+  const ruledFacets = { measured: true, http: 200, setbacks: { front: 25, side: 5, rear: 10, corner: 15 } };
+  check("the required-case check FIRES on a ruled table called unruled", contradictions({ facets: { ...ruledFacets, envelopeSummary: "setback rules unruled for this parcel" }, draw: { geometryPresent: true } }).some((c) => c.kind.startsWith("SAYS-RULES")));
+  check("the required-case check FIRES on geometry called withheld while its own route draws", contradictions({ facets: { ...ruledFacets, envelopeDisclosure: "depth-warm geometry withheld — warm-verify-decline" }, draw: { geometryPresent: true, vertexCount: 7 } }).some((c) => c.kind.startsWith("SAYS-GEOMETRY")));
+  check("the required-case check FIRES on an atom_path_pending statement beside a drawn polygon", contradictions({ facets: { ...ruledFacets, envelopeSummary: "geometry unavailable: atom_path_pending" }, draw: { geometryPresent: true, vertexCount: 7 } }).some((c) => c.kind.startsWith("SAYS-GEOMETRY")));
+  check("the required-case check does NOT fire on a geometry withhold when the route cannot draw either", contradictions({ facets: { ...ruledFacets, envelopeDisclosure: "depth-warm geometry withheld" }, draw: { geometryPresent: false } }).length === 0);
+  check("the required-case check does NOT fire on the honest outline-drawn, figure-withheld shape", contradictions({ facets: { ...ruledFacets, envelopeFigureWithheld: true, envelopeDisclosure: "The envelope outline is modelled from the setback table on record and drawn for reference; the area figure stays withheld until a verified atom backs it." }, draw: { geometryPresent: true, vertexCount: 246 } }).length === 0);
+  check("saysUnruled stays the rules-only subset, with no false positive on a geometry withhold", saysUnruled({ facets: { ...ruledFacets, envelopeDisclosure: "depth-warm geometry withheld" } }).length === 0);
+  check("saysUnruled does not fire when the table is not ruled", saysUnruled({ facets: { measured: true, setbacks: { front: 25, side: null, rear: null, corner: null }, envelopeSummary: "setback rules unruled" } }).length === 0);
+  const declinedOn103015 = panelEnvelopeDeclined({ facets: { envelopeStatus: "ok", envelopeFigureWithheld: true, envelopeDisclosure: "The envelope outline is modelled from the setback table on record and drawn for reference; the area figure stays withheld until a verified atom backs it." } });
+  check("a figure withhold beside an outline-drawn disclosure is NOT an envelope decline (the 48309:103015 shape)", declinedOn103015.declined === false, declinedOn103015.why);
+  const dateFacets = extractFacets({ http: 200, json: { facets: { envelope: { citationUrl: "https://x", disclosure: "parcel_record setback rule effective 2026-04-14." } } } });
+  check("XD-11 reads a citation's effective date out of the disclosure prose", dateFacets.envelopeCitationDate === "2026-04-14" && dateFacets.envelopeCitationDateFrom === "disclosure-text", `${dateFacets.envelopeCitationDate}/${dateFacets.envelopeCitationDateFrom}`);
+  check("a citation with no date anywhere still reads undated", extractFacets({ http: 200, json: { facets: { envelope: { citationUrl: "https://x", disclosure: "no vintage stated" } } } }).envelopeCitationDate === null);
+
+  // P-254: the bucket grader in both directions, plus the refusal that must not read as a pass.
+  const sbBucket = { key: "48453|austin", county: "48453", city: "austin", gradedFixture: { category: "fx_codified", id: "48453:367134", district: "SF-2" }, offered: 3, chosen: [], ungradedFixtures: ["fx_pud:x", "fx_vacant:y"] };
+  const goodFacets = { measured: true, http: 200, situsAddress: "5833 Taylor Draper Cv", composedAddress: "5833 TAYLOR DRAPER CV, AUSTIN, TX 78759", zoningDistrict: "SF-2", zoningJurisdictionKey: "austin-tx", setbacks: { front: 25, side: 5, rear: 10, corner: 15 }, envelopeStatus: "ok", envelopeFigureWithheld: false, buildableAreaSqFtInPayload: null, envelopeBuildableAreaPct: null };
+  const goodDraw = { measured: true, http: 200, status: "ok", geometryPresent: true, vertexCount: 7, hasBuildableAreaSqFtKey: false, buildableAreaSqFtInPayload: null, atomReconciled: true };
+  const goodPdf = { measured: true, http: 200, status: "ok", artifactPresent: true, artifactKeys: ["pdf-feasibility"], artifactUrl: "https://example.invalid/pdf" };
+  const okBucket = { facets: goodFacets, draw: goodDraw, pdf: goodPdf, mcp: { measured: true }, mcpCall: { measured: true, text: "{}" } };
+  const g254 = gradeOps24Bucket(sbBucket, okBucket);
+  check("P-254 can PASS a bucket on all three surfaces", g254.verdict === "PASS", g254.basis);
+  check("P-254 FAILS when the panel payload carries the buildable-area figure", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } }).verdict === "FAIL");
+  check("P-254 FAILS when a ruled table is called unruled", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeSummary: "setback rules unruled" } }).verdict === "FAIL");
+  check("P-254 FAILS when the panel declines the envelope its own draw route draws", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeStatus: "declined", envelopeDeclineReason: "no envelope atom for this parcel" } }).verdict === "FAIL");
+  check("P-254 does NOT fail the honest outline-drawn, figure-withheld shape", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeFigureWithheld: true, envelopeDisclosure: "The envelope outline is modelled from the setback table on record and drawn for reference; the area figure stays withheld." } }).verdict === "PASS");
+  check("P-254 FAILS when geometry is called withheld while the draw route returns a polygon", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeDisclosure: "depth-warm geometry withheld — warm-verify-decline" } }).verdict === "FAIL");
+  check("P-254 FAILS when the payload calls its setback table unknown while serving a ruled table", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeDisclosure: "Codified setback table (unknown); other axes remain atom-chain-sourced." } }).verdict === "FAIL");
+  check("the panel/draw table disagreement is reported as a FINDING, not folded into P-254's verdict", ops24Findings({}, { "x:1": { facets: { ...goodFacets }, draw: { ...goodDraw, setbacks: { front: 15, side: 3.5, rear: 5, corner: 10 } } } }).some((f) => f.kind === "PANEL-DRAW-TABLE-DISAGREE"));
+  check("P-254 records the envelope fields the dispatch requires per fixture", (() => { const r = gradeOps24Bucket(sbBucket, okBucket); return r.envelopeRecord && "status" in r.envelopeRecord && "declineReason" in r.envelopeRecord && "envelopeCovered" in r.envelopeRecord && "geometryPresent" in r.envelopeRecord && "figureSqFt" in r.envelopeRecord; })());
+  const refused = gradeOps24Bucket(sbBucket, { ...okBucket, mcp: { measured: false, error: "REFUSED by the MCP gate: missing_bearer" } });
+  check("P-254 is UNMEASURED, never PASS, when the MCP gate refuses the credential", refused.verdict === "UNMEASURED" && /REFUSED by the MCP gate/.test(refused.basis), refused.basis);
+  check("P-254 is UNMEASURED when the session opened but no get_smart_site result came back", gradeOps24Bucket(sbBucket, { ...okBucket, mcpCall: { measured: false, error: "http 401" } }).verdict === "UNMEASURED");
+  check("P-254 is UNMEASURED when the PDF export serves no pdf-feasibility asset", gradeOps24Bucket(sbBucket, { ...okBucket, pdf: { measured: true, http: 200, artifactPresent: false, artifactKeys: [] } }).verdict === "UNMEASURED");
+  check("P-254 is UNMEASURED on an empty payload (never PASS)", ROWS["P-254"].evaluate("48453|austin", { facets: extractFacets({ http: 200, json: {} }) }).verdict === "UNMEASURED");
+  check("P-254 is UNMEASURED on a bucket that lists no fixture", gradeOps24Bucket({ ...sbBucket, gradedFixture: null, offered: 0 }, okBucket).verdict === "UNMEASURED");
+
+  // P-303: the two live halves. The subject's own route is the witness against its own panel.
+  const waco = { facets: { ...goodFacets, envelopeStatus: "declined", envelopeDeclineReason: "no envelope atom for this parcel" }, draw: goodDraw };
+  const r303fail = ROWS["P-303"].evaluate("48309:103015", waco);
+  check("P-303 FAILS when the panel declines an envelope its own route draws", r303fail.verdict === "FAIL", r303fail.basis);
+  check("P-303 PASSES when the route draws and the panel does not decline and prints no figure", ROWS["P-303"].evaluate("48309:103015", { facets: { ...goodFacets, envelopeFigureWithheld: true }, draw: goodDraw }).verdict === "PASS");
+  check("P-303 FAILS when the panel prints a figure", ROWS["P-303"].evaluate("48309:103015", { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 }, draw: goodDraw }).verdict === "FAIL");
+  check("P-303 FAILS when a no-district class member is served a district", ROWS["P-303"].evaluate("48021:10001", { facets: { ...goodFacets, zoningDistrict: "SF-2" } }).verdict === "FAIL");
+  check("P-303 PASSES when a no-district class member declines and invents nothing", ROWS["P-303"].evaluate("48021:10001", { facets: { measured: true, http: 200, zoningDistrict: null, envelopeStatus: "declined", envelopeDeclineReason: "no zoning district observed for this parcel" } }).verdict === "PASS");
+  check("P-303 FAILS when a no-district class member is not declined at all", ROWS["P-303"].evaluate("48021:10001", { facets: { measured: true, http: 200, zoningDistrict: null, envelopeStatus: "ok" } }).verdict === "FAIL");
+
+  // P-304: the pair. The control is what stops a fail-closed blanket strip from passing.
+  check("P-304 PASSES when the unverified parcel states a withhold and serves no figure", ROWS["P-304"].evaluate("48209:97658", { facets: { ...goodFacets, envelopeStatus: "envelope-unverified", envelopeFigureWithheld: true }, draw: { ...goodDraw, atomReconciled: false } }).verdict === "PASS");
+  check("P-304 FAILS when an unverified parcel is served a figure", ROWS["P-304"].evaluate("48209:97658", { facets: { ...goodFacets, envelopeFigureWithheld: true, buildableAreaSqFtInPayload: 19052 } }).verdict === "FAIL");
+  check("P-304 is UNMEASURED when nothing is served and no surface says a figure is withheld", ROWS["P-304"].evaluate("48209:97658", { facets: { measured: true, http: 200, envelopeStatus: null, envelopeFigureWithheld: null } }).verdict === "UNMEASURED");
+  check("P-304 PASSES when the verified control keeps its figure", ROWS["P-304"].evaluate("48021:34049", { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052, envelopeBuildableAreaPct: 63.5 } }).verdict === "PASS");
+  const strip = ROWS["P-304"].evaluate("48021:34049", { facets: { ...goodFacets, envelopeFigureWithheld: true } });
+  check("P-304 FAILS when a fail-closed strip takes the figure off the verified control", strip.verdict === "FAIL", strip.basis);
+
+  // P-304's pair divergence, stated as the exit reads it: one withheld, one kept, same read.
+  const pair = [ROWS["P-304"].evaluate("48209:97658", { facets: { ...goodFacets, envelopeStatus: "envelope-unverified", envelopeFigureWithheld: true }, draw: { ...goodDraw, atomReconciled: false } }), ROWS["P-304"].evaluate("48021:34049", { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052, envelopeBuildableAreaPct: 63.5 } })];
+  check("P-304's pair DIVERGES (one withholds, one keeps) rather than fail-closing on both", pair[0].verdict === "PASS" && pair[1].verdict === "PASS");
+
+  // The open-defect ledger: an undecidable defect is UNMEASURED, never counted OPEN or CLOSED.
+  const ledger = defectLedger(OPS24_DEFECTS, [{ id: "48453:367134", key: "x", legs: okBucket }]);
+  check("the defect ledger counts a defect as CLOSED only where a grader measured it", (ledger.counts.CLOSED ?? 0) > 0 && (ledger.counts.OPEN ?? 0) === 0, JSON.stringify(ledger.counts));
+  check("the defect ledger reports a defect with no grader as UNMEASURED with the row that owns it", ledger.rows.some((r) => r.id === "XD-3" && r.verdict === "UNMEASURED" && /P-222/.test(r.basis)));
+  check("the defect ledger counts XD-1 OPEN where a figure reaches a payload", (defectLedger(OPS24_DEFECTS, [{ id: "x", key: "x", legs: { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } } }]).counts.OPEN ?? 0) > 0);
+  check("the defect ledger is never vacuous: every one of its verdicts names a basis", ledger.rows.every((r) => !!r.basis));
+
+  // XD-7 must be able to FIRE on the population it names. The first draft returned UNMEASURED
+  // whenever the payload carried no situs, which made the indicator structurally blind to the
+  // Williamson fixtures (no situs at all) while still printing "measured". Both shapes below are
+  // real: the answering-no-address payload was read live from 48491:R483884 on 2026-09-17.
+  const wmsnFacets = { measured: true, http: 200, situsAddress: null, composedAddress: null, recordPoint: null, zoningDistrict: "SF2", zoningJurisdictionKey: "round-rock-tx", setbacks: { front: 20, side: 5, rear: 20, corner: 20 }, facetCoverage: { baseFacts: true, landUse: false, acreage: false, zoning: true, envelope: true } };
+  check("XD-7 FIRES on a Williamson-shaped payload (district and table served, no address of any kind)", defectLedger([{ id: "XD-7", gradedBy: "composedAddressAbsent" }], [{ id: "x", key: "x", legs: { facets: wmsnFacets } }]).counts.OPEN === 1, JSON.stringify(defectLedger([{ id: "XD-7", gradedBy: "composedAddressAbsent" }], [{ id: "x", key: "x", legs: { facets: wmsnFacets } }]).rows[0]));
+  // ...and its basis must not overclaim. The Bastrop shape (48021:51735, read live 2026-09-17)
+  // carries no address but DOES carry a record point, and called the draw route successfully with
+  // it. The first draft printed "no coordinate" for this shape, which was false.
+  const bastropFacets = { ...wmsnFacets, zoningDistrict: "SF-1", recordPoint: { lat: 30.10219, lng: -97.30069 } };
+  const bastropX7 = defectLedger([{ id: "XD-7", gradedBy: "composedAddressAbsent" }], [{ id: "48021:51735", key: "x", legs: { facets: bastropFacets } }]).rows[0];
+  check("XD-7 FIRES on the Bastrop shape (no address, coordinate present)", bastropX7.verdict === "OPEN");
+  check("XD-7's basis says coordinate present, never 'no coordinate', when a record point exists", /present: a coordinate/.test(bastropX7.basis) && !/no coordinate/.test(bastropX7.basis), bastropX7.basis);
+  check("XD-7's basis says coordinate absent when there is no record point", /absent .*coordinate/.test(defectLedger([{ id: "XD-7", gradedBy: "composedAddressAbsent" }], [{ id: "x", key: "x", legs: { facets: wmsnFacets } }]).rows[0].basis));
+  check("XD-7 stays UNMEASURED on a wholly empty read (absence of evidence, not evidence)", defectLedger([{ id: "XD-7", gradedBy: "composedAddressAbsent" }], [{ id: "x", key: "x", legs: { facets: { measured: true, http: 200, situsAddress: null, composedAddress: null, zoningDistrict: null, setbacks: null, zoningJurisdictionKey: null } } }]).counts.UNMEASURED === 1);
+  check("XD-7 PASSES where a composed address is served", defectLedger([{ id: "XD-7", gradedBy: "composedAddressAbsent" }], [{ id: "x", key: "x", legs: { facets: goodFacets } }]).counts.CLOSED === 1);
+  // The no-location finding is carried on the parcel, not inferred from a verdict string.
+  check("the no-location finding fires on the Williamson shape", ops24Findings({}, { "48491:R483884": { facets: wmsnFacets, draw: { measured: false } } }).some((f) => f.kind === "NO-LOCATION-AT-ALL" && f.parcel === "48491:R483884"));
+  check("the no-location finding does NOT fire where a composed address is served", ops24Findings({}, { "48021:34049": { facets: goodFacets, draw: goodDraw } }).every((f) => f.kind !== "NO-LOCATION-AT-ALL"));
+  // An absence with no basis, and the inconsistency where one address component declares its
+  // absence and its sibling does not. Both shapes read live from 48021:51735 on 2026-09-17.
+  const declared = { verdict: "absent-verified", status: "absent", authority: "Bastrop County CAD roll", scopeSearched: "claim.situsCity" };
+  const bastropUndeclared = { facets: { ...wmsnFacets, situsAddressAbsenceDeclared: false, situsCityAbsenceDeclared: true, situsCityAbsenceVerdict: "absent-verified", recordPoint: { lat: 30.10219, lng: -97.30069 } }, draw: { measured: true, geometryPresent: true, vertexCount: 6 } };
+  const f1 = ops24Findings({}, { "48021:51735": bastropUndeclared });
+  check("the undeclared-absence finding fires where situsAddress is a bare null", f1.some((f) => f.kind === "SITUS-ABSENT-UNDECLARED" && f.parcel === "48021:51735"));
+  check("...and it names the declared sibling as the inconsistency, rather than claiming no declaration exists anywhere", /sibling situsCity IS declared absent/.test(f1.find((f) => f.kind === "SITUS-ABSENT-UNDECLARED")?.detail ?? ""));
+  check("the undeclared-absence finding does NOT fire where the absence itself is declared with its basis", ops24Findings({}, { "x:1": { facets: { ...wmsnFacets, situsAddressAbsenceDeclared: true } } }).every((f) => f.kind !== "SITUS-ABSENT-UNDECLARED"));
+  check("the undeclared-absence finding does NOT fire where a situs is served", ops24Findings({}, { "x:2": { facets: { ...goodFacets } } }).every((f) => f.kind !== "SITUS-ABSENT-UNDECLARED"));
+  check("a declared absence is read as a basis, not thrown away: the same payload reports the sibling's verdict", declared.verdict === "absent-verified");
+  // A parcel that is both a bucket's graded fixture and a named subject is graded once, so the
+  // ledger's denominators do not double-count it.
+  check("ops24SubjectList dedupes a parcel that is both a bucket fixture and a named subject", ops24SubjectList({ b: { facets: { ...goodFacets }, ops24: { gradedFixture: { id: "48453:367134" } } } }, { "48453:367134": { facets: { ...goodFacets } } }).length === 1);
+
+  // The MCP transport reader: SSE frames, plain JSON, and a gate refusal with no result.
+  check("parseMcpBody reads an SSE frame", parseMcpBody('event: message\ndata: {"jsonrpc":"2.0","id":1,"result":{"serverInfo":{"name":"x"}}}\n\n')?.result?.serverInfo?.name === "x");
+  check("parseMcpBody reads a plain JSON body", parseMcpBody('{"jsonrpc":"2.0","id":1,"result":{"ok":true}}')?.result?.ok === true);
+  check("parseMcpBody returns a gate refusal, which the caller must treat as no session", parseMcpBody('{"jsonrpc":"2.0","id":1,"error":{"message":"invalid_oauth_token"}}')?.error?.message === "invalid_oauth_token");
+  check("parseMcpBody returns null on a body that is neither", parseMcpBody("<html>401</html>") === null);
+
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;
 }
@@ -1177,6 +2261,8 @@ async function main() {
   const ranAt = new Date().toISOString();
   let legsById;
   let source;
+  let ops24Report = null;
+  let ops24LegsByBucket = {};
   if (flag("--fixtures")) {
     const fx = loadFixtureLegs();
     legsById = fx.legsById;
@@ -1211,15 +2297,109 @@ async function main() {
     source = "live";
   }
 
-  const results = evaluateRows(legsById, obs ?? (flag("--fixtures") ? loadFixtureLegs().manifest.observations : null), rowFilter);
+  // P-254/P-303/P-304: the customer leg. One pass drives the three surfaces for every selected
+  // bucket fixture plus the P-303/P-304 subjects, deduplicating so a fixture two buckets share is
+  // probed once. The MCP session opens once per run, because its refusal is a property of the run's
+  // credential, not of any parcel.
+  if (!flag("--fixtures") && rowFilter && rowFilter.some((r) => ["P-254", "P-303", "P-304"].includes(r))) {
+    const all = flag("--ops24-all");
+    const subjects = selectOps24Subjects(OPS24_BUCKETS, all);
+    ops24Report = {
+      path: OPS24_FIXTURE_LIST,
+      sha256: OPS24_LIST_SHA256,
+      readError: OPS24_LIST_ERROR,
+      selection: all ? "every fixture slot in every bucket (--ops24-all)" : `one fixture per bucket, first by OPS24_CATEGORY_PRIORITY [${OPS24_CATEGORY_PRIORITY.join(", ")}]`,
+      subjects,
+      fixtureSlots: subjects.reduce((n, s) => n + s.offered, 0),
+      mcp: null,
+      mcpCalls: {},
+      findings: [],
+      ledger: { counts: {}, rows: [] },
+    };
+    process.stdout.write(`opening the MCP session against ${MCP_BASE} ... `);
+    ops24Report.mcp = await runMcpLegs();
+    console.log(ops24Report.mcp.measured ? "done" : `did not open (${ops24Report.mcp.gateReason})`);
+    const ids = [...new Set([...subjects.flatMap((s) => s.chosen.map((c) => c.id)), ...P303_SUBJECTS.map((s) => s.id), ...P304_SUBJECTS.map((s) => s.id), UNRULED_SUBJECT])];
+    const byId = {};
+    for (const id of ids) {
+      process.stdout.write(`probing ${id} (map+draw+pdf) ... `);
+      byId[id] = await runOps24Legs({ id }, { mcp: ops24Report.mcp, mcpToken: (process.env.SURFACE_PROBE_MCP_TOKEN || "").trim() });
+      console.log(`done (panel ${byId[id].facets.http}, draw ${byId[id].draw.http ?? "-"}, pdf ${byId[id].pdf.http})`);
+    }
+    for (const s of subjects) {
+      if (!s.gradedFixture) continue;
+      const legs = byId[s.gradedFixture.id];
+      if (legs) ops24LegsByBucket[s.key] = { ...legs, ops24: s };
+    }
+    // P-303/P-304 read legs keyed by their own parcel id, in the ordinary legs map.
+    for (const s of [...P303_SUBJECTS, ...P304_SUBJECTS]) {
+      if (byId[s.id]) legsById[s.id] = byId[s.id];
+    }
+    ops24Report.legsById = byId;
+    const subjectsDeduped = ops24SubjectList(ops24LegsByBucket, byId);
+    ops24Report.subjectsDeduped = subjectsDeduped.length;
+    ops24Report.findings = ops24Findings(ops24LegsByBucket, { ...legsById, ...Object.fromEntries(Object.entries(byId).filter(([id]) => !ops24LegsByBucket[id])) });
+    ops24Report.ledger = defectLedger(OPS24_DEFECTS, subjectsDeduped);
+    // The two required cases the dispatch hands this lane, each with its measured population and
+    // the MCP half's honest state (the MCP surface is UNMEASURED here: no OAuth token, measured
+    // refusal recorded in ops24Report.mcp). The panel half is measured live in this pass.
+    const scanAll = subjectsDeduped.map((s) => s.legs);
+    // The denominator for both required cases is the DEDUPED subject list, so it agrees with the
+    // ledger's. `kindCounts` counts kind-instances and a leg can trip both kinds, so it can exceed
+    // `legsTripping`; both are printed so the difference is visible rather than looking like a bug.
+    const contra = scanAll.flatMap((l) => contradictions(l));
+    const dual = scanAll.filter((l) => l.facets?.panelMaxImperviousPct != null && l.facets?.imperviousFactPercent != null && l.facets.panelMaxImperviousPct !== l.facets.imperviousFactPercent);
+    const req1 = byId[UNRULED_SUBJECT] ?? ops24LegsByBucket[UNRULED_SUBJECT];
+    const req2 = req1;
+    ops24Report.requiredCases = [
+      {
+        key: "cross-surface-envelope-reason",
+        subject: UNRULED_SUBJECT,
+        standard: "fails when ANY surface says \"unruled\" or `atom_path_pending` for a parcel whose own read carries a ruled setback table",
+        measuredPanelHalf: req1 ? {
+          tableServed: req1.facets.setbacks,
+          ruledAxes: ruledAxes(req1.facets.setbacks),
+          panelDisclosure: req1.facets.envelopeDisclosure,
+          panelDeclineReason: req1.facets.envelopeDeclineReason,
+          drawStatus: req1.draw.status,
+          drawVertices: req1.draw.vertexCount,
+          contradictionKinds: contradictions(req1).map((c) => ({ kind: c.kind, where: c.where, text: c.text })),
+          verdictNote: contradictions(req1).length ? "the PANEL half is MEASURED and FAILS: its own disclosure denies the geometry its own route serves" : "the panel half is measured and does not trip the check",
+        } : { verdictNote: "48453:367134 was not in this pass" },
+        mcpHalf: ops24Report.mcp?.measured ? { state: "MEASURED", note: "session opened; see mcpCalls" } : { state: "UNMEASURED", refusal: ops24Report.mcp?.error, note: "the MCP copy of this contradiction (draw.overlays state refused / reason atom_path_pending / display \"Withheld, setbacks unruled\") is OBSERVED by the integration seat, NOT measured by this instrument: the gate refuses a service Bearer and no OAuth token was supplied" },
+        population: { legsScanned: scanAll.length, legsTripping: scanAll.filter((l) => contradictions(l).length).length, kindCounts: contra.reduce((t, c) => ((t[c.kind] = (t[c.kind] ?? 0) + 1), t), {}) },
+      },
+      {
+        key: "two-impervious-figures",
+        subject: UNRULED_SUBJECT,
+        standard: "flag any fixture where two surfaces print different values for fields a customer would read as the same quantity; a finding for a ruling, not a defect to fix in this lane",
+        measured: req2 ? { panelMaxImperviousPct: req2.facets.panelMaxImperviousPct, watershedPercent: req2.facets.imperviousFactPercent, watershedType: req2.facets.imperviousFactWatershed, factState: req2.facets.imperviousFactState } : null,
+        population: { legsScanned: scanAll.length, legsWithTwoDifferentFigures: dual.length, parcels: dual.map((l) => ({ panel: l.facets.panelMaxImperviousPct, fact: l.facets.imperviousFactPercent, watershed: l.facets.imperviousFactWatershed })) },
+      },
+    ];
+  }
+
+  const results = evaluateRows(legsById, obs ?? (flag("--fixtures") ? loadFixtureLegs().manifest.observations : null), rowFilter, ops24LegsByBucket);
+  // The per-class tallies the close reads: which defect class is failing how many buckets, so a
+  // single class firing everywhere (XD-11 did, on 25 of 45 before this tally existed) is visible
+  // as a number rather than hidden inside 25 identical verdict strings.
+  if (ops24Report && !ops24Report.readError) {
+    const cls = (s) => (String(s).match(/^([A-Za-z0-9/_-]+?)(?::|\s|$)/) ?? [, "other"])[1];
+    ops24Report.violationClasses = {};
+    ops24Report.defectClasses = {};
+    for (const r of results.filter((x) => x.row === "P-254")) {
+      for (const v of r.violations ?? []) ops24Report.violationClasses[cls(v)] = (ops24Report.violationClasses[cls(v)] ?? 0) + 1;
+      for (const d of r.defects ?? []) ops24Report.defectClasses[cls(d)] = (ops24Report.defectClasses[cls(d)] ?? 0) + 1;
+    }
+  }
   console.log(`\nSURFACE PROBE  ${ranAt}  doc_repo ${docRepoHead()}  source ${source}  PE ${PE_BASE}  observations ${sha256 ? "sha256 " + sha256.slice(0, 12) : "none"}`);
-  const tally = printReport(results, legsById);
+  const tally = printReport(results, legsById, ops24Report && !ops24Report.readError ? ops24Report : null);
 
   const artifactDir = join(ROOT, "_inbox");
   if (!existsSync(artifactDir)) mkdirSync(artifactDir);
   const stamp = ranAt.slice(0, 10) + "_" + ranAt.slice(11, 19).replace(/:/g, "");
   const outPath = val("--out") ?? join(artifactDir, `${stamp}_surface_probe.json`);
-  writeFileSync(outPath, JSON.stringify({ instrument: "scripts/surface-probe.mjs", ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally }, null, 2));
+  writeFileSync(outPath, JSON.stringify({ instrument: "scripts/surface-probe.mjs", ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally, ops24: ops24Report }, null, 2));
   console.log(`\nartifact: ${outPath.replace(/\\/g, "/")}`);
 
   if (tally.FAIL) process.exit(1);

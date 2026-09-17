@@ -1,0 +1,81 @@
+{
+  "lane": "p308-join-miss-companions",
+  "planRows": ["P-308"],
+  "checkpoint": "CP2 (pilot / mid-work adversarial checkpoint)",
+  "at": "2026-09-17T17:58:00Z",
+  "seat": "cente-vsc-p308",
+  "docRepoWorktree": "C:/Users/cente/doc_repo (main; the only doc_repo worktree on this machine — CP1 recorded the worktree-list evidence)",
+  "buildDir": "P:/tmp/p308-engine",
+  "branch": "fix/p308-join-miss-companions",
+  "startCommit": "7b3dda0b4212861f62c2dcbd6ca502ef3de1f189",
+  "headCommit": "532e39f6bff5257e37a2b5bc5aa0286c927ba6f5",
+  "pr": { "number": 468, "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/468", "mergeSha": null, "merged": false, "whyNotMerged": "the dispatch puts the merge behind a maintainer decision; this lane does not merge, deploy or re-vendor. The PR is parked at CP2 with the evidence posted as the PR comment https://github.com/empressaioemail-tech/hauska-engine/pull/468#issuecomment-5718950911" },
+  "subAgents": { "spawned": 0, "maxDepth": 0, "fanDepth": 0 },
+
+  "ciConclusionStrings": {
+    "_rule": "AGENT-CONTRACT section 6 requires the PR's CI conclusion strings literally. Both commands and their raw output follow; nothing here is paraphrased.",
+    "gh pr checks 468 --json name,state,bucket,link": "[{\"bucket\":\"pass\",\"link\":\"https://github.com/empressaioemail-tech/hauska-engine/actions/runs/35255390349/job/105317639860\",\"name\":\"typecheck + test\",\"state\":\"SUCCESS\"}]",
+    "gh run view 35255390349 --json conclusion,status,headSha,event,workflowName": "{\"conclusion\":\"success\",\"event\":\"pull_request\",\"headSha\":\"532e39f6bff5257e37a2b5bc5aa0286c927ba6f5\",\"status\":\"completed\",\"workflowName\":\"ci\"}",
+    "whatOneCheckCovers": "one job: pnpm typecheck, then pnpm test across the monorepo — so the green check is the typecheck AND the full suite, not the parcel-record file alone",
+    "conclusionCounts": { "checks": 1, "success": 1, "failure": 0, "pending": 0 }
+  },
+
+  "diffCounted": {
+    "_rule": "DEV-PROCESS: a count travels with its counting rule.",
+    "command": "git diff --stat 7b3dda0b4212861f62c2dcbd6ca502ef3de1f189 HEAD",
+    "filesChanged": 2,
+    "insertions": 410,
+    "deletions": 0,
+    "perFile": [
+      { "path": "packages/engine-core/src/parcel-record/ingest-existing.ts", "insertions": 65, "deletions": 0, "what": "isCadJoinMissBasis guard + stampProvenanceBesidePrimary, applied to the two companion pairs at the end of applyCadJoinMiss" },
+      { "path": "packages/engine-core/src/parcel-record/__tests__/parcel-record.test.ts", "insertions": 345, "deletions": 0, "what": "7 new tests (falsifiers 1, 2, 3a, 3b, 6, 7 and the parity test) plus the fixture set and the frozen factory oracle" }
+    ],
+    "correctionToTheSummaryOfRecord": "instantiate.ts is NOT modified by this lane. Its `nowIso?: string` parameter already existed at the start commit (git grep nowIso 7b3dda0b -- .../instantiate.ts shows it at lines 84 and 88 there), and the parity test simply passes a pinned value through it. A cross-session summary carried the claim that this lane added that parameter; the committed diff and the start-commit grep both say otherwise, and this artifact records the measured fact rather than the summary.",
+    "workingTreeClean": "git status --porcelain prints nothing after the commit, and again after each revert/restore experiment in the falsifier-4 log"
+  },
+
+  "falsifiers": [
+    { "id": "F1", "claim": "a join-miss fixture yields BOTH acreageMethod and landUseSource absent-verified, basis {source: cad_property, countyFips, propId, vintage}, NO taxYear", "verdict": "PASS", "test": "parcel-record.test.ts:878 '(P-308 falsifier 1)'", "evidence": "both companions deep-equal the same basis object the primary carries" },
+    { "id": "F2", "claim": "a matched-row fixture is unchanged (matched basis, WITH taxYear)", "verdict": "PASS", "test": "parcel-record.test.ts:901 '(P-308 falsifier 2)'", "evidence": "the pre-existing (a)-(d) tests and both 'resolves to absent-verified alongside' tests also still pass, unmodified" },
+    { "id": "F3a", "claim": "a companion already value or absent-verified is never rewritten by the join miss", "verdict": "PASS, guard proven able to fire", "test": "parcel-record.test.ts:923", "evidence": "_inbox/2026-09-17_p308-join-miss-companions_guard-fires.log VIOLATION A: removing guard A alone makes the test FAIL at test line 926 ('expected { kind: unaccounted }' where an earned cell had to survive), then the file is restored from a byte copy and the restore verified by git diff" },
+    { "id": "F3b", "claim": "a primary absent-verified WITHOUT the join-miss badge never earns a join-miss provenance beside it", "verdict": "PASS, guard proven able to fire", "test": "parcel-record.test.ts:959", "evidence": "guard-fires.log VIOLATION B: removing guard B alone makes the test FAIL at test line 961 ('expected unaccounted to be absent-verified'), restore verified. This is the test of the CP1 rule choice, and it is the one new test that passes pre-fix (correctly: its subject is the ABSENCE of a stamp)" },
+    { "id": "F4", "claim": "reverting the fix fails the old-shape test", "verdict": "MEASURED — 5 failed, 34 passed (39)", "evidence": "_inbox/2026-09-17_p308-join-miss-companions_falsifier4-revert.log, re-run against the FINAL test file with ONLY ingest-existing.ts checked out from 7b3dda0b: the failures are falsifier 1, falsifier 3a, falsifier 7, falsifier 6 and the parity test. Restore verified (diff vs HEAD empty, porcelain empty). The pre-existing log of this experiment was against an earlier test revision with a combined falsifier 3; it was re-run rather than left stale" },
+    { "id": "F5 (parity)", "claim": "one fixture set through the engine == engine + the factory's job-level step, cell for cell, and the factory step moves 0 cells on the engine's post-fix output", "verdict": "PASS", "test": "parcel-record.test.ts:1027 '(P-308 parity)'", "evidence": "oracle is a frozen copy of factory 1fa850e7 src/jobs/parcel-record-fill.mjs:889-923, named in the test; pre-fix it fails with 'record 0 (48209:88885) rail landUseSource: ... expected { kind: unaccounted } to deeply equal { kind: absent-verified, ... }' (quoted in the falsifier-4 log)" },
+    { "id": "F6", "claim": "a replay of the join-miss pass moves nothing", "verdict": "PASS", "test": "parcel-record.test.ts:1010", "evidence": "cellsMoved 0 on the second pass" },
+    { "id": "F7", "claim": "exactly the 13 value-scalars plus the 2 provenance fields move, nothing else", "verdict": "PASS", "test": "parcel-record.test.ts:978", "evidence": "cellsMoved 15 and the changed-key set is exactly those 15 rails; pre-fix the same assertion reads 'expected [situsAddress, situsCity, ...(11)] to have a length of 15 but got 13'" }
+  ],
+
+  "testEvidence": {
+    "localTargetedRun": "pnpm exec vitest run src/parcel-record/__tests__/parcel-record.test.ts -> Test Files 1 passed (1); Tests 39 passed (39) — 32 existed before this change, 7 are added",
+    "typecheck": "pnpm typecheck at the repo root: exit 0 on the pushed commit",
+    "preexistingFailures": "_inbox/2026-09-17_p308-join-miss-companions_preexisting-failures.log: the same commit (7b3dda0b) with the change stashed and with it applied fails the same 5 test files / 2 tests either way (src/registry/__tests__/preflight-probes.test.ts 2 tests, plus collection errors in scripts/__tests__/{cert-grade-and-report,detect-placeholder-setback-citation,preflight-and-report,retire-road-class-setback-table}.test.ts). So they are not attributable to this change.",
+    "theCIReconciliation": "IMPORTANT AND NEW AT CP2: CI on the pushed SHA is GREEN (conclusion success) while those same suites fail on THIS machine. That is the resolution of the local baseline: those failures are this worktree's environment (they need things CI supplies and the local box does not), not the repo's state and not this lane's. The lane's own file is green in both places. A successor should not read the local baseline log as 'main is red'.",
+    "flakeFoundAndKilled": "the parity test was flaky for an unrelated reason: instantiateParcelRecord stamps countyFips' vintage from new Date().toISOString(), so a millisecond crossing between the engine-only and engine-then-factory instantiations made two otherwise identical records differ. Both sides now instantiate with a pinned nowIso (2026-09-17T00:00:00.000Z) through the pre-existing optional parameter. This is a test-side pin only; no production default changed"
+  },
+
+  "cp1RuleChoiceHeld": {
+    "decision": "gate the companion stamp on the PRIMARY's own join-miss badge (isCadJoinMissBasis), not on the record's join-miss state",
+    "why": "applyCadJoinMiss runs for every record whose propId missed, but each cell is written only while it is `unaccounted`. A cell may already be absent-verified from an earlier matched-row pass, with a taxYear-bearing basis; stamping a join-miss provenance beside it would write an internally inconsistent pair and diverge from the factory predicate, which also keys on the primary's badge. Gating on the badge makes the pair self-consistent, makes the pass idempotent, and is exactly what lets the parity test be an exact cell-for-cell equality rather than an approximation.",
+    "adversarialRecheck": "the one way this choice could be wrong is a record whose primary is absent-verified with a join-miss-SHAPED basis that did NOT come from a join miss (e.g. a matched row that somehow lost its taxYear). No such producer exists in this repo at 7b3dda0b: cadNullVerified (ingest-existing.ts:126-140) REFUSES to emit without a taxYear, so a taxYear-less cad_property basis can only come from cadJoinMissVerified. Recorded as the residual assumption behind the rule."
+  },
+
+  "hazardDirectionsStated": {
+    "ops24Law7": "OPS-24 law 7 warns that a write putting an `unaccounted` cell on a slated rail turns that county's ledger values back to the bake until P-297. This lane's writer moves cells unaccounted -> absent-verified on two provenance rails beside primaries that are already absent-verified with a declared basis, i.e. it REMOVES unaccounted cells and never adds one, and this lane writes no store at all (no read, no lease). Stated at CP1 and repeated here on the record.",
+    "enforcementNeverRelabel": "ENFORCEMENT forbids converting `unaccounted` to `absent-verified` to clear a gate. Not gate-driven here: no gate is consulted or cleared, something DID look (the CAD ingest query ran for the county and observed no row for this propId in any tax year), the absence is already written on the primary with a declared basis, and the companion is a provenance field whose only honest value is that same absence. Any cell whose primary is not itself verified absent is untouched — which is what falsifier 3b measures."
+  },
+
+  "whatThisLaneDidNotVerify": {
+    "cohortFigures": "the dispatch's Hays census (acreageMethod 433, landUseSource 636) is INHERITED from the P-266/P-268 close's read-only factory-store scan under a heavy-scan lease, not re-measured here: re-deriving it needs a factory-store read this lane is not assigned. Context, not this lane's measurement.",
+    "theFixInTheRunningProduct": "not measured and not measurable from here: hauska-factory vendors the engine at ENGINE_PIN.json engineSha 2cc2057 and its vendored src/lib/parcel-record-engine/ingest-existing.js still carries the 13-stamp form with no companion stamp. Until the integration seat re-vendors, the running factory does not have this fix. This is exactly why status is closed-partial."
+  },
+
+  "leaveBehindAtCP2": [
+    { "kind": "OPEN", "text": "PR 468 is parked at CP2 awaiting a maintainer merge decision. Nothing will merge it on its own; if it is still open at the next lane's start, that lane must decide (merge, or close with a written reason) rather than leave an ambiguous PR." },
+    { "kind": "OPEN", "text": "the factory follow-on is not performed by this lane: re-vendor hauska-engine at the PR's merge SHA, then retire completeJoinMissCompanionsOntoRecords in the SAME change. Enumerated call sites (factory origin/main): definition src/jobs/parcel-record-fill.mjs:902; the pass call :1156; the pass-result field :1173; the county-wide accumulator init :1426 and its two accumulations :1456-1457; the county-wide result field :1514; the log line :1595 (joinMissCompanionCells=); the county summary :1715; and the two rail NOTES that name the function in prose and would otherwise go stale — :203 (landUseSource) and :221 (acreageMethod). Tests that call it: test/parcel-record-fill.test.mjs:57 (import), :1251 (the P-268 describe), :1259, :1271, :1283, :1291, :1302 (five direct calls), :1310, :1481-1482. Nothing outside src/jobs/parcel-record-fill.mjs and that test file reads the field." },
+    { "kind": "GROUND-TRUTH", "text": "as of 2026-09-17T17:59Z, origin/main of hauska-engine CI is green (runs 35243439195, 35229576204, 35219904238 all success), and the local engine-core suite's 5 file failures are local-environment only — CI green on the identical SHA 532e39f proves it. Measured, not assumed." },
+    { "kind": "GROUND-TRUTH", "text": "as of 2026-09-17T17:59Z, the factory pin is engineSha 2cc2057 (ENGINE_PIN.json) and its vendored ingest-existing.js still lacks the companion stamp; the factory's job-level pass therefore still has live work to do until the re-vendor." },
+    { "kind": "LESSON", "text": "a parity test that compares two instantiations of the same fixture is a time bomb if any cell's vintage comes from new Date().toISOString(): pin the instant. The engine already had the optional nowIso parameter; the flake was in the test, and it failed ~1 run in N until pinned." },
+    { "kind": "LESSON", "text": "a revert-proof log goes stale the moment the test file is edited. The first falsifier-4 log measured an earlier revision with a combined falsifier 3; re-running it against the final file took seconds and changed the figure from 5-of-a-filtered-subset to 5-of-39. Re-run the experiment at the end, not in the middle." },
+    { "kind": "DEAD-END", "text": "gating the companion stamp on the record's join-miss state (i.e. stamping unconditionally inside applyCadJoinMiss) was tried and rejected: it writes a join-miss provenance beside a matched-row primary when the cell was already earned earlier, breaking the pair invariant and the parity equality. Falsifier 3b is the standing test against it." }
+  ]
+}

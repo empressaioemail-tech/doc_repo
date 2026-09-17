@@ -1,0 +1,100 @@
+{
+  "lane": "p299-engine-corpus-and-slate",
+  "planRows": ["P-299", "P-282"],
+  "status": "closed-partial",
+  "probe": { "notApplicable": "build lane; graded on the deployed reader and export" },
+  "seat": "cente-vsc-p299",
+  "docRepoWorktree": "C:/Users/cente/doc_repo",
+  "row": "OPS-24 (mission: the engine reads corpus 1.4.0 and LDT's current slate)",
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "snapshot": {
+    "engineMainAtCompileAndAtCut": "7b3dda0b4212861f62c2dcbd6ca502ef3de1f189 (declared start commit; fresh clone under P:/tmp/p299-engine, branch fix/p299-engine-corpus-and-slate cut BEFORE any edit)",
+    "branchHead": "e423c16a9817f30a90e7a9bad8dee114ec02d1ca",
+    "commits": ["b210c52 fix(P-299): read corpus 1.4.0 — move the pin, the lockfile and the 14 vendored tables together", "8fad50b fix(P-299): never serve a flagged height as a number", "e423c16 fix(P-282): re-vendor the reader slate from LDT main 8e7218f7 — and make the drift test bite on a stale copy"],
+    "pr": "https://github.com/empressaioemail-tech/hauska-engine/pull/469",
+    "prState": "OPEN, MERGEABLE, mergeStateStatus CLEAN",
+    "corpus": { "pin": "exact 1.4.0 (was ^1.2.0, lockfile 1.2.0)", "vendoredTables": "10 of 14 rewritten to 1.4.0; 4 already equal (grand-county-ut, lemhi-county-id, utah-unincorporated, idaho-unincorporated)" },
+    "slate": { "pairs": 158, "sourceCommit": "8e7218f7c81cc8a8225386558ef22ec38383650a", "equalsLdtAtThatCommit": true, "digest": "7ce702652581b23a478f1e2e124b6babe1874bf983cca076a62e7643f1e1ba1c" },
+    "merged": false,
+    "deployed": false,
+    "whyNotMerged": "The dispatch says: merge? no. deploy? no. The integration seat deploys hauska-retrieval-api and hauska-engine-api after merge.",
+    "notGradedLive": "No customer predicate was run by this lane: it is a build lane and the dispatch prescribes probe.notApplicable. CODE-DONE != CUSTOMER-DONE, so status is closed-partial until the integration seat deploys and a Hays record-overlay rail and a Round Rock height are graded on the deployed surface."
+  },
+
+  "filesTouched": [
+    { "file": "packages/adapters/package.json", "why": "pin @empressaio/setback-corpus to exact 1.4.0 (Part 1's first fact)" },
+    { "file": "pnpm-lock.yaml", "why": "same fact in the lockfile: 10-line diff, no toolchain entry touched (measured)" },
+    { "file": "packages/adapters/src/local/setbacks/{austin-tx,bastrop-city-tx,bastrop-development-code,bastrop-tx,elgin-development-code,kyle-tx,pflugerville-tx,round-rock-tx,san-antonio-tx,waco-tx}.json", "why": "vendored tables re-vendored to corpus 1.4.0 (source selection: LDT at 8e7218f7 when districts equal, else the corpus package)" },
+    { "file": "packages/adapters/src/local/setbacks/__tests__/corpus-divergence.test.ts", "why": "rank map gains transcription-read; unranked states now reported instead of passing silently" },
+    { "file": "packages/adapters/src/__tests__/bastropCityTxSetbackHashLock.test.ts", "why": "hash-lock constant follows the re-vendored bastrop-city-tx.json bytes" },
+    { "file": "packages/engine-core/src/property-reasoning/setback-table-from-adapter.ts", "why": "NOT_SPECIFIED_MAX_HEIGHT_FT + heightIsAbsent: absence decided in one place" },
+    { "file": "packages/engine-core/src/property-reasoning/types.ts", "why": "ResolvedSetbackRow.heightAbsent carries that decision to the emit path" },
+    { "file": "packages/engine-core/src/property-reasoning/emit-setback-rule.ts", "why": "a flagged height is omitted from the atom; the reason travels on fieldProvenance.height.notSpecified" },
+    { "file": "packages/atoms/src/property-instances.ts", "why": "additive fieldProvenance.height on SetbackRuleAtomInstance" },
+    { "file": "packages/engine-core/src/property-reasoning/__tests__/setback-height-absence.test.ts", "why": "NEW: falsifier 2 through the engine's own consumer, with a positive control" },
+    { "file": "services/retrieval-api/src/parcel-record-slate.json", "why": "re-vendored from LDT main 8e7218f7: +6 pairs, -0, sourceCommit/vendoredAt/$comment updated" },
+    { "file": "services/retrieval-api/src/__fixtures__/ldt-parcel-record-slate-8e7218f7.json", "why": "NEW: LDT's own slate literal bytes at that commit + sha256, so a stale copy fails in-repo" },
+    { "file": "services/retrieval-api/src/__tests__/parcel-record-slate.test.ts", "why": "hash pin updated; new cross-artifact set-equality tests; the P-177 absence assertion inverted to the P-180 state (named as an inversion, not deleted)" },
+    { "file": "services/retrieval-api/src/__tests__/parcel-record-route.test.ts", "why": "falsifier 4: a slated Hays record-overlay rail served from its cell, with verdict/cell/unslation controls" },
+    { "notTouchedByDesign": "services/retrieval-api/src/__fixtures__/cell-serve-rule.json (adjudicated: must not change -- same git blob 540499a765a16514ff71a755e1dec90835d487b6 as LDT's copy); any LDT file; any corpus file; any store; any deploy" }
+  ],
+
+  "ciChecks": {
+    "command": "gh pr checks 469 --repo empressaioemail-tech/hauska-engine",
+    "literalConclusionStrings": ["typecheck + test\tpass\t4m6s\thttps://github.com/empressaioemail-tech/hauska-engine/actions/runs/35258006635/job/105326366952"],
+    "whatItRan": ".github/workflows/ci.yml job `ci` (name `typecheck + test`) on ubuntu-latest: pnpm install, python worker deps, hydrology mask-tracer parity, `pnpm typecheck`, four grep/retire gates, then `pnpm test` (= pnpm -r run test, every package's vitest)",
+    "significance": "Green on Linux across the same suites that show 5 red FILES on this Windows box. Those five are identically red on the pristine baseline with this branch's changes stashed (_inbox/…_baseline-5-red-pre-existing-proof.txt), so they are neither this lane's regressions nor repo-local failures.",
+    "evidence": "_inbox/2026-09-17_p299-engine-corpus-and-slate_pr469-ci-checks.txt"
+  },
+
+  "tableAndHeightCorrectionsByJurisdiction": {
+    "artifact": "_inbox/2026-09-17_p299-engine-corpus-and-slate_p1-table-and-height-corrections.json (tool: doc_repo scripts/p299_engine_table_corrections.mjs, base b210c52^ vs the tree, per district and per provenance field)",
+    "totals": "87 districts added, 9 removed (all renames), 56 districts with changed fields, 23 max_height_ft VALUE changes, 91 per-field verification-state transitions, 20 max_height_ft not_specified flags (true -> absent), 0 other scalar changes",
+    "heights": { "san-antonio-tx": 17, "bastrop-city-tx": 6, "total": 23, "matchesP299": true, "note": "identical to the counts P-299's engine verdict reported (17 + 6): independent reproduction" },
+    "states": { "elgin-development-code": "56 x transcribed -> asserted", "waco-tx": "35 x primary-source-verified -> transcription-read", "totalTransitions": 91, "measuredStateCensusAfter": "623 transcription-read, 315 asserted, 91 human-verified, 21 primary-source-verified across the 14 vendored tables" },
+    "districtsAdded": { "austin-tx": 28, "round-rock-tx": 24, "waco-tx": 16, "kyle-tx": 16, "pflugerville-tx": 3, "total": 87 },
+    "renamesNotLosses": "the 9 'removed' are round-rock-tx SF-R/SF-1/SF-2/SF-3 and kyle-tx R-1-1/R-1-2/R-1-3/R-1-A/R-2 under the corpus's stricter display names; both tables grew (round-rock 4 -> 24, kyle 5 -> 16)",
+    "topLevelOnly": { "bastrop-tx": ["note"], "bastrop-development-code": ["effectiveDate"], "others": ["note"] },
+    "unchanged": ["grand-county-ut", "lemhi-county-id", "utah-unincorporated", "idaho-unincorporated"]
+  },
+
+  "slateDelta": {
+    "before": { "sourceCommit": "3f5aa5f307e3bee75277939a34565fd131b0101a", "vendoredAt": "2026-09-13", "pairs": 152 },
+    "after": { "sourceCommit": "8e7218f7c81cc8a8225386558ef22ec38383650a", "vendoredAt": "2026-09-17", "pairs": 158 },
+    "added": ["48209:marketValue", "48209:assessedValue", "48209:landValue", "48209:improvementValue", "48209:livingAreaSqft", "48209:yearBuilt"],
+    "removed": [],
+    "reasonFromLdtHistory": "all six are the 48209 (Hays) record-overlay rails: LDT a003bd99 (fix(P-177) holdback, PR #671, 2026-09-13) removed them for a live CAD-account collision, and LDT 1ca3c7fe (fix(P-180): lift the P-177 Hays holdback from the six PARCEL-B-SLATE2 record-overlay rails, 2026-09-13T19:30:31-05:00) put them back. The engine's copy was vendored between the two commits, so it kept the hold while LDT had lifted it.",
+    "liveVerdictsForAddedPairs": { "read": "2026-09-17T18:03:41.951Z-18:03:55.323Z", "role": "parcel_record_ro (SELECT-only)", "project": "hauska-prod-497015", "result": "all six pass", "evidence": "_inbox/2026-09-17_p299-engine-corpus-and-slate_p2-six-added-pairs-verdicts-live.txt" },
+    "whyTheOldGuardDidNotBite": "EXPECTED_SLATE_HASH pins this file's own digest and a test in the same file pinned the six pairs as ABSENT; nothing in the repo reads LDT at test time, so the stale copy passed -- and its staleness was asserted. Measured: old test vs pre-resync copy = 5 passed (5).",
+    "whatNowBites": "the LDT literal fixture + its pinned digest + either-direction set equality against the engine's copy; measured red on the pre-resync copy (5 failed | 3 passed of 8) and green on the re-vendored one",
+    "notBuildableHere": "detecting that LDT moves AFTER a resync needs legacy-design-tools checked out in engine CI (no cross-repo checkout, no LDT read token in .github/workflows) or the same digest pinned on LDT's side; named, not implied"
+  },
+
+  "falsifier": "1 HELD: pin 1.4.0 with uncorrected tables red (…_f1-uncorrected-red.txt), corrected green (…_f1-adapters-suite-final.txt, 456/456), and a table left at primary-source-verified where the corpus now says transcription-read fails (…_f1-rank-before-stale-kyle.txt green=blind vs …_f1-rank-after-stale-kyle.txt red). 2 HELD: a flagged height never reaches an engine output as a number -- pre-fix 999 on the atom with no provenance (…_f2-prefix-probe-999.txt), post-fix the key absent and the reason on fieldProvenance.height (…_f2-height-absence.txt), positive control round-rock MU-1 still 48. 3 HELD: the re-vendored slate equals LDT's at the recorded commit in both directions, and the drift test fails on the pre-resync copy (…_f3-old-guard-green-on-stale-copy.txt, …_f3-new-guard-red-on-stale-copy.txt, …_f3-revendored-green.txt). 4 HELD: a slated Hays record-overlay rail is served from its own cell (48209:156346's live marketValue cell = 65460/cad_property/2026-09-13T23:43:55.984Z), still served when the verdict refuses (A-193), refused by code no-such-parcel-or-rail when the cell is missing, and legacy-transitional for the same cell on an unslated rail.",
+
+  "contradicted": "P-299's LDT-side report sized the 1.4.0 gap at 23 heights + 98 state changes; measured here the 23 heights reproduce EXACTLY (san-antonio-tx 17, bastrop-city-tx 6) but the gap was much wider in districts: 87 districts the corpus has and the engine's tables did not, 9 renames, 56 districts with changed fields, 91 per-field state transitions in two directions (56 transcribed -> asserted, 35 primary-source-verified -> transcription-read -- not 98 in one direction), 20 not_specified flags. Also contradicted: the corpus-divergence rank map had no transcription-read, so 623 transcription-read values now in the tables were compared as unknown; and parcel-record-slate.test.ts's stated reason for excluding Hays from the three setback siblings ('its own gate verdict is excluded') is measurably false today -- all four 48209 setback rails read pass live at 2026-09-17T18:04:23-18:04:32Z (the assertion still holds because the exclusion is LDT's slate decision; only the reason was wrong, and it is corrected). Dispatch premise otherwise confirmed: the slate's 6-pair lift, the 152-pair pre-state, the start commit, and the corpus package's latest = 1.4.0.",
+
+  "leave_behind": [
+    "OPEN: engine CI cannot see LDT move. Either add a job that checks out legacy-design-tools at parcel-record-slate.json's sourceCommit and re-runs the extraction in doc_repo scripts/p299_slate_revendor.mjs, or have LDT pin literalSha256 = def0791f82746613caf8b113534f7ed2457652905eb7ed95c7ac27290a9774cd in its own test. Until one lands, a stale copy is caught at the next resync, not by LDT moving.",
+    "OPEN (planner/LDT): 48209's three setback siblings read pass live (side 18:04:26Z, rear 18:04:29Z, corner 18:04:32Z) but neither repo's slate carries them, so those rails keep their pre-cutover path under A-193. Slating them edits LDT's literal, not this copy. Evidence: _inbox/…_p2-hays-setback-siblings-live-finding.txt",
+    "OPEN: the corpus/LDT side should know its own report understated the engine's tables' distance from 1.4.0 (87 missing districts, not just heights and states).",
+    "GROUND-TRUTH (2026-09-17, this box): engine main 7b3dda0b; branch head e423c16a9817f30a90e7a9bad8dee114ec02d1ca; PR #469 OPEN/MERGEABLE/CLEAN with `typecheck + test` = pass (4m6s); the 14 vendored tables equal corpus 1.4.0; slate = 158 pairs = LDT at 8e7218f7c81cc8a8225386558ef22ec38383650a; all six added pairs' verdicts = pass as role parcel_record_ro.",
+    "LESSON: a hash pin over one repo's copy is an EDIT guard, not a divergence guard -- it cannot see the other repo move, and a stale copy can pass deliberately if a test asserts the stale state. Pair the pin with the other side's own BYTES at a named commit (and, to catch upstream movement, that side in CI).",
+    "LESSON: when the corpus remints verification states, teach the rank map the new state AND make unknown states a mismatch -- otherwise 'primary-source-verified -> transcription-read' compares as unknown-to-unknown and 98 real changes pass a test whose whole job is to catch them.",
+    "DEAD-END: PowerShell `>` / `Out-File` around `git show` writes UTF-16 with a BOM and breaks JSON.parse; extract LDT bytes with node's execFileSync instead (learned re-deriving the slate byte-identity for cell-serve-rule.json).",
+    "DEAD-END: do not key district sets by `d.district ?? d.id ?? d` -- these tables key by `district_name`; a wrong key reports every district as added+removed (this lane's own tool reported 87/0 before the key was fixed)."
+  ],
+
+  "missionPremise": "hauska-engine pinned @empressaio/setback-corpus ^1.2.0 with 14 vendored setback tables at 1.2.0-era content while the factory pins exact 1.4.0 and LDT ships 1.4.0's tables; and its vendored reader slate (parcel-record-slate.json, vendored 2026-09-13 at 3f5aa5f3) lacked the six 48209 Hays record-overlay rails LDT put back in 1ca3c7fe (fix(P-180)), with a drift test that could not see either problem.",
+  "completionPredicate": "engine main's pin reads exact 1.4.0 with the lockfile and the 14 vendored tables at 1.4.0; the divergence test knows transcription-read and reports unranked states; no engine output can serve a flagged height as a number; the reader slate equals LDT's PARCEL_RECORD_SLATE at a recorded commit with the added pairs' verdicts read live; and the slate drift test fails on a stale copy -- all on a merged PR with green CI, then graded live by the integration seat after deploy.",
+  "scopeBasis": "dispatch _dispatches/2026-09-17_p299-engine-corpus-and-slate_dispatch.md (rows P-299 engine half + P-282), OPS-24 program law (law 7 / A-193 on the slate as the cut-over switch and the cell as the answer), A-202, A-204, A-177 (road rails out of scope), and the dispatch's Do-not list: no merge, no deploy, no store write, no LDT edit, no corpus edit, no sub-agents (FAN-DEPTH 0).",
+
+  "scratch": [
+    { "kind": "GROUND-TRUTH", "text": "All six added slate pairs' parcel_gate_verdict = pass, read 2026-09-17T18:03:41-18:03:55Z as role parcel_record_ro against project hauska-prod-497015 (non-interactive: `gcloud secrets versions access latest --secret=FACTORY_DATABASE_URL_RO`, URL never written to disk and never placed on a command line, PGPASSWORD passed via env then cleared)." },
+    { "kind": "GROUND-TRUTH", "text": "48209's full verdict vocabulary today: pass 36, excluded-no-acquisition-path 15, excluded-mid-cutover 6, refuse 8. The three setback siblings and setbackFrontFt all read pass; acreageMethod/agValuation/landUseSource/maxFootprintSqFt/maxHeightFt/maxImperviousCoverPct/maxLotCoveragePct/parcelAreaSqFt read refuse." },
+    { "kind": "LESSON", "text": "Windows-local vitest cannot parse four packages/engine-core/scripts/__tests__/*.test.ts suites (SyntaxError inside a doc comment) although node --check parses every imported .mjs; Linux CI runs the same suites green. Do not debug those four locally -- check the baseline and CI." },
+    { "kind": "LESSON", "text": "One store read is worth three assumptions about a slate: the six pairs' live verdicts, and the discovery that Hays' three setback siblings now pass, both came from two SELECTs that cost seconds." },
+    { "kind": "DONE", "text": "Seat registration and lane claim released at close, verified rather than asserted. Claim: `node scripts/lane-claim.mjs release --lane p299-engine-corpus-and-slate --seat cente-vsc-p299` -> exit 0, 'RELEASED p299-engine-corpus-and-slate.'; the lane is absent from _catalog/lane_claims.json while the three unrelated lanes (p249-envelope-unlock, p262-edge-labeller, p285-county-runner) are untouched. Registration: scripts/p299_seat_deregister.mjs removed exactly one object (name hauska-engine-p299) from _catalog/seat_register.json as a byte splice, pre- and post-validated by re-parsing and by comparing the whole parsed document with only that object deleted (identicalApartFromTheEntry true; entries 310 -> 309; delta 1; stillThereAfter false; the P-308 lane's entry in the same file survived unchanged). The file is now byte-identical to HEAD: 245281 bytes before and after, blob 94a8d63272731eaef3c1730e22def677796f216b on both sides, `git status --porcelain` silent for it." }
+  ]
+}

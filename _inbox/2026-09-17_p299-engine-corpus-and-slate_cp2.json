@@ -1,0 +1,181 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p299-engine-corpus-and-slate",
+  "planRows": ["P-299", "P-282"],
+  "seat": "cente-vsc-p299",
+  "docRepoWorktree": "C:/Users/cente/doc_repo -- the doc_repo checkout this session is rooted in (not P:/doc_repo, the integration seat's checkout; not the property seat worktree). CP1 and this file are both here.",
+  "pr": {
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/469",
+    "repo": "hauska-engine",
+    "base": "main",
+    "baseCommit": "7b3dda0b4212861f62c2dcbd6ca502ef3de1f189",
+    "head": "fix/p299-engine-corpus-and-slate",
+    "headCommit": "e423c16a9817f30a90e7a9bad8dee114ec02d1ca",
+    "commits": [
+      { "sha": "b210c52", "subject": "fix(P-299): read corpus 1.4.0 — move the pin, the lockfile and the 14 vendored tables together" },
+      { "sha": "8fad50b", "subject": "fix(P-299): never serve a flagged height as a number" },
+      { "sha": "e423c16", "subject": "fix(P-282): re-vendor the reader slate from LDT main 8e7218f7 — and make the drift test bite on a stale copy" }
+    ],
+    "merged": false,
+    "deployed": false,
+    "whyNotOneCommit": "The dispatch says the pin, the lockfile and the vendored tables move in ONE commit (they are one fact) -- they do, in b210c52. The height-absence fix and the slate re-vendor are separate facts with separate falsifiers, so they are separate commits; a reviewer can revert either without the corpus pin moving."
+  },
+
+  "part1_corpus": {
+    "pin": { "file": "packages/adapters/package.json", "before": "^1.2.0", "after": "1.4.0 (exact)" },
+    "lockfile": {
+      "file": "pnpm-lock.yaml",
+      "diffLines": 10,
+      "changed": ["printer/importer specifier for @empressaio/setback-corpus", "'@empressaio/setback-corpus@1.2.0' -> '1.4.0' (two snapshot entries)"],
+      "noToolchainEntryTouched": "measured: `git diff -U0 -- pnpm-lock.yaml | grep -E '^[+-].*(esbuild|vite|vitest|rollup|typescript):'` returns nothing. This matters because it decides whether a red suite can be blamed on the install; it cannot."
+    },
+    "tablesRewritten": {
+      "of": 14,
+      "changed": 10,
+      "unchanged": ["grand-county-ut", "lemhi-county-id", "utah-unincorporated", "idaho-unincorporated"],
+      "sourceSelection": "per file: legacy-design-tools' copy at 8e7218f7 when its DISTRICTS equal the pinned corpus table's districts (LDT bytes preferred, because bastrop-city-tx.json is under a cross-repo byte lock whose stated premise is 'identical LF bytes'), else the corpus package's own dist table. District-level not document-level equality: kyle-tx.json's `note` is provenance prose both sides already agreed may differ and corpus-divergence.test.ts never compares it.",
+      "tool": "C:/Users/cente/doc_repo/scripts/p299_engine_tables_revendor.mjs (dry-run default; --apply writes bytes verbatim, LF, never re-serialized)",
+      "perFileEvidence": "_inbox/2026-09-17_p299-engine-corpus-and-slate_f1-table-revendor.json (before/after sha256, byte counts, first-diff, source per file)"
+    },
+    "tableAndHeightCorrectionsByJurisdiction": {
+      "evidence": "_inbox/2026-09-17_p299-engine-corpus-and-slate_p1-table-and-height-corrections.json (tool: C:/Users/cente/doc_repo/scripts/p299_engine_table_corrections.mjs, comparing b210c52^ against the working tree, per district and per provenance field)",
+      "totals": { "districtsAdded": 87, "districtsRemoved": 9, "districtsChanged": 56, "heightValueChanges": 23, "otherScalarChanges": 0, "perFieldStateTransitions": 91, "notSpecifiedFlagsChanged": 20 },
+      "byJurisdiction": {
+        "san-antonio-tx": { "heightValueChanges": 17, "districtsChanged": 21, "notSpecifiedChanges": 4 },
+        "bastrop-city-tx": { "heightValueChanges": 6, "districtsChanged": 6 },
+        "elgin-development-code": { "districtsChanged": 8, "stateTransitions": 56, "direction": "transcribed -> asserted" },
+        "waco-tx": { "districtsChanged": 5, "stateTransitions": 35, "direction": "primary-source-verified -> transcription-read", "districtsAdded": 16 },
+        "austin-tx": { "districtsAdded": 28, "districtsChanged": 9, "notSpecifiedChanges": 9 },
+        "round-rock-tx": { "districtsAdded": 24, "districtsRemoved": 4 },
+        "kyle-tx": { "districtsAdded": 16, "districtsRemoved": 5 },
+        "pflugerville-tx": { "districtsAdded": 3, "districtsChanged": 7, "notSpecifiedChanges": 7 },
+        "bastrop-tx": { "districtsChanged": 0, "topLevelOnly": ["note"] },
+        "bastrop-development-code": { "districtsChanged": 0, "topLevelOnly": ["effectiveDate"] }
+      },
+      "theNineRemovedDistrictsAreRenamesNotLosses": {
+        "round-rock-tx": ["SF-R Single-Family Rural -> SF-R Single-Family Residential Rural", "SF-1 Single-Family Large Lot -> SF-1 Single-Family Residential 1", "SF-2 Single-Family Standard Lot -> SF-2 Single-Family Residential 2 (Conventional)", "SF-3 Single-Family Mixed Lot -> SF-3 Single-Family Residential 3"],
+        "kyle-tx": ["R-1-1 Single-Family Residential District 1 -> R-1-1 Single-Family Residential 1", "R-1-2 ... District 2 -> R-1-2 ... 2", "R-1-3 ... District 3 -> R-1-3 ... 3", "R-1-A Single-Family Attached District (Garden Home) -> R-1-A ...", "R-2 Residential Two-Family District (Duplex) -> R-2 Residential Two-Family (Duplex)"],
+        "whyItMatters": "A bare '9 districts removed' reads like data loss. It is display-name normalization by the corpus: the district codes are identical and the new names are strictly more informative, and both tables grew (round-rock 4 -> 24 districts, kyle 5 -> 16)."
+      },
+      "heightCorrectionsMatchP299Exactly": "23 height value changes, san-antonio-tx 17 + bastrop-city-tx 6 -- literally the counts P-299's engine verdict reported ('23 numeric mismatches, all max_height_ft (san-antonio-tx 17, bastrop-city-tx 6)'). Independent reproduction, same numbers."
+    },
+    "rankMap": {
+      "file": "packages/adapters/src/local/setbacks/__tests__/corpus-divergence.test.ts",
+      "before": "{ asserted: 0, human-verified: 2, primary-source-verified: 3 }",
+      "after": "{ asserted: 0, transcription-read: 1, human-verified: 2, primary-source-verified: 3 }",
+      "and": "either side carrying a state the map does not know now yields an `unranked-verification-state` mismatch instead of passing silently (new TableMismatch member, both directions)",
+      "whyItWasNeeded": "P-299's fourth state is not cosmetic: the 14 vendored tables now carry 623 `transcription-read` values (measured, this file), and before the change a table relabelled primary-source-verified -> transcription-read compared RANK-EQUAL-ish (unknown) and passed.",
+      "proofByViolation": "_inbox/..._f1-rank-before-stale-kyle.txt (old map + deliberately stale kyle-tx.json = green, i.e. blind) vs _inbox/..._f1-rank-after-stale-kyle.txt (new map, same stale file = red)"
+    },
+    "cellServeRuleFixture": {
+      "dispatchItem": "Update services/retrieval-api/src/__fixtures__/cell-serve-rule.json where it cites @1.3.0 sources, or say why it must not change.",
+      "ruling": "MUST NOT CHANGE",
+      "evidenceFile": "_inbox/2026-09-17_p299-engine-corpus-and-slate_cell-serve-rule-adjudication.md",
+      "threeProofs": [
+        "Same stored git blob in both repos: engine HEAD:services/retrieval-api/src/__fixtures__/cell-serve-rule.json and LDT f5fd0946:artifacts/api-server/src/lib/__fixtures__/cell-serve-rule.json are both 540499a765a16514ff71a755e1dec90835d487b6 (8169 bytes, 11 rows, same _ruleId and pinnedRowNames). The file's own _purpose says both readers consume the same rows; editing one side forks the object, and LDT is out of scope for this lane.",
+        "`source` is cell DATA (the corpus version the cell was minted against), not a dependency pin: parcel-record-reader.ts never reads it (one doc-comment mention, no code). In-repo precedent runs the other way -- ledger-serving-measure.test.ts:41 keeps a live-quoted cell at @1.1.0 for exactly this reason. Relabelling to 1.4.0 would assert that every cell cites the newest corpus, which is the assumption P-297 exists to kill.",
+        "It would delete the engine's only version-skew coverage: that a cell minted under an older corpus is still served as the cell's own claim after the pin moves."
+      ],
+      "auditOfEveryCitation": "only 5 sites in the repo cite @empressaio/setback-corpus@<ver>: the two in this fixture (1.3.0), ledger-serving-measure.test.ts:41 (1.1.0, live-quoted), and two prose mentions of 1.2.0 in a depth-warm test docstring and RUNBOOK.depth-warm-remint.md. No site is a pin; the pins are package.json + pnpm-lock.yaml. services/retrieval-api/corpus/snapshot.json matches '1.3.0' only as Bastrop code SECTION NUMBERS (bastrop-b3-code-april-2025/1-3-002)."
+    },
+    "guardedAtRuntimeVsOnlyByTest": {
+      "runtime": "the PIN. packages/adapters imports @empressaio/setback-corpus at load time, so a wrong version is a wrong table on a serving path.",
+      "testOnly": "the 14 vendored tables. No serving path reads packages/adapters/src/local/setbacks/*.json -- corpus-divergence.test.ts and bastropCityTxSetbackHashLock.test.ts are their only guards, which is why the pin and the tables must move in one commit and why the rank map had to be taught the fourth state.",
+      "notGuardedAtAll": "the vendored reader slate (see part2): it now has a cross-artifact guard, but nothing can see LDT move after a resync from inside this repo."
+    }
+  },
+
+  "part1_heightAbsence": {
+    "rule": "a flagged height is never served as a number (999, or provenance.not_specified) -- the same rule LDT's buildableEnvelope/derive.ts and /local-setbacks now follow",
+    "files": [
+      "packages/engine-core/src/property-reasoning/setback-table-from-adapter.ts (NOT_SPECIFIED_MAX_HEIGHT_FT, heightIsAbsent, heightFieldFrom)",
+      "packages/engine-core/src/property-reasoning/types.ts (ResolvedSetbackRow.heightAbsent)",
+      "packages/engine-core/src/property-reasoning/emit-setback-rule.ts (omit maxHeightFt, carry the reason)",
+      "packages/atoms/src/property-instances.ts (additive fieldProvenance.height.notSpecified)",
+      "packages/engine-core/src/property-reasoning/__tests__/setback-height-absence.test.ts (new)"
+    ],
+    "beforeObserved": "PROBE round-rock-tx/SF-2 -> atom.maxHeightFt=999 in-atom=true fieldProvenance.height=undefined; bastrop-city-tx/P-3 the same; (evidence _inbox/..._f2-prefix-probe-999.txt, produced by a probe test on the stashed pre-fix tree, probe test deleted afterwards)",
+    "afterObserved": "the test asserts `\"maxHeightFt\" in atom === false` and that the serialized atom does not contain the key at all, with the reason on fieldProvenance.height.notSpecified; positive control round-rock-tx/MU-1 still emits 48"
+  },
+
+  "part2_slate": {
+    "file": "services/retrieval-api/src/parcel-record-slate.json",
+    "tool": "C:/Users/cente/doc_repo/scripts/p299_slate_revendor.mjs (dry-run default; reads LDT's literal at a named rev and writes it as data, never retyped, in LDT's own order)",
+    "sourceCommit": { "before": "3f5aa5f307e3bee75277939a34565fd131b0101a (PR #678 branch tip, vendored 2026-09-13)", "after": "8e7218f7c81cc8a8225386558ef22ec38383650a (LDT main, 'Merge pull request #712 from empressaioemail-tech/feat/p259-austin-zoning-source')" },
+    "delta": {
+      "added": ["48209:marketValue", "48209:assessedValue", "48209:landValue", "48209:improvementValue", "48209:livingAreaSqft", "48209:yearBuilt"],
+      "removed": [],
+      "addedReason": "LDT's a003bd99 (fix(P-177): hold Hays back from the six PARCEL-B-SLATE2 record-overlay rails, PR #671, 2026-09-13) removed these six for a live CAD-account collision; LDT's 1ca3c7fe (fix(P-180): lift the P-177 Hays holdback from the six PARCEL-B-SLATE2 record-overlay rails, 2026-09-13T19:30:31-05:00) put them back once it was resolved. The engine's copy was vendored between the two and never resynced, so it kept the hold while LDT had lifted it.",
+      "setSizes": { "before": 152, "after": 158, "ldtAtRecordedCommit": 158 },
+      "digests": { "before": "89afce1401f978998ad68703b2f85ad933253713922754456b5f5f0e35076adc", "after": "7ce702652581b23a478f1e2e124b6babe1874bf983cca076a62e7643f1e1ba1c" },
+      "evidence": "_inbox/…_p2-slate-revendor.json (applied), _inbox/…_p2-slate-revendor-dryrun.json, _inbox/…_p2-slate-delta.json"
+    },
+    "liveVerdictsForAddedPairs": {
+      "role": "parcel_record_ro (SELECT-only)",
+      "project": "hauska-prod-497015, via `gcloud secrets versions access latest --secret=FACTORY_DATABASE_URL_RO` (never written to disk, never on a command line)",
+      "readAt": "2026-09-17T18:03:41.951Z - 18:03:55.323Z",
+      "result": "all six read `pass`",
+      "evidence": "_inbox/2026-09-17_p299-engine-corpus-and-slate_p2-six-added-pairs-verdicts-live.txt"
+    },
+    "whyTheOldGuardDidNotBite": {
+      "mechanism": "EXPECTED_SLATE_HASH pins this file's own sorted-set digest, and the sibling test pinned the six pairs as ABSENT (written 2026-09-13, when LDT had just removed them). Neither can see LDT move: nothing in this repo reads LDT at test time. So the stale copy passed, and its staleness was actively asserted.",
+      "measured": "_inbox/…_f3-old-guard-green-on-stale-copy.txt: the pre-change test file against the pre-resync copy = 5 passed (5)"
+    },
+    "whatNowBites": {
+      "artifact": "services/retrieval-api/src/__fixtures__/ldt-parcel-record-slate-8e7218f7.json -- LDT's own PARCEL_RECORD_SLATE literal text at the recorded commit, byte-for-byte, with literalSha256 = def0791f82746613caf8b113534f7ed2457652905eb7ed95c7ac27290a9774cd, written by the same tool",
+      "tests": [
+        "sha256(literalText) equals the pinned LDT_SLATE_LITERAL_SHA256 (an edit to the vendored LDT bytes fails)",
+        "the pairs parsed out of those bytes equal the engine's serving set in BOTH directions (a stale or invented pair fails)",
+        "the fixture's sourceCommit/sourcePath equal the JSON's (a resync that moves one and not the other fails)"
+      ],
+      "measured": "_inbox/…_f3-new-guard-red-on-stale-copy.txt: 5 failed | 3 passed of 8 on the pre-resync copy (including `expected [ '48209:assessedValue', …(5) ] to deeply equal []`); _inbox/…_f3-revendored-green.txt: green on the re-vendored copy",
+      "resyncCost": "four places move in one commit: the JSON, EXPECTED_SLATE_HASH, the literal fixture (whose FILE NAME carries the commit), and LDT_SLATE_LITERAL_SHA256"
+    },
+    "realCrossRepoCheckNotBuildableHere": "A live check needs CI to check out legacy-design-tools at `sourceCommit` and re-run the extraction. .github/workflows/{ci.yml,block13-cert-grade.yml} contain zero references to legacy-design-tools and there is no LDT read token in this repo, so it cannot be built in this lane; the alternative is LDT pinning the same literal digest in its own test. Both are named in the PR and the close rather than implied."
+  },
+
+  "falsifiers": {
+    "1": {
+      "prediction": "with the pin at 1.4.0 and the tables uncorrected, the divergence test fails on the 23 heights; corrected, it passes; and a table left at a primary-source-verified state the corpus now calls transcription-read fails the test",
+      "result": "HELD",
+      "evidence": ["_inbox/…_f1-uncorrected-red.txt (red, uncorrected, pin 1.4.0)", "_inbox/…_f1-adapters-suite-final.txt (green, 35 files / 456 tests)", "_inbox/…_f1-rank-before-stale-kyle.txt (old rank map, deliberately stale kyle-tx.json: green = blind)", "_inbox/…_f1-rank-after-stale-kyle.txt (new rank map, same stale file: red)"],
+      "contradictedDetail": "the uncorrected state under 1.4.0 was WORSE than P-299's LDT-side numbers: 87 districts present in the corpus and absent here, 9 absent from the corpus, and not only the 23 heights and 98 state changes -- see contradicted[]."
+    },
+    "2": { "prediction": "a flagged height never reaches an engine output as a number", "result": "HELD", "evidence": ["_inbox/…_f2-prefix-probe-999.txt (pre-fix: maxHeightFt=999 on the atom, no provenance.height)", "_inbox/…_f2-height-absence.txt (post-fix: the key is absent, the reason travels)", "_inbox/…_f2-before-fix.txt (the same test file failing before the fix was applied)"] },
+    "3": { "prediction": "the re-vendored slate equals LDT's at the recorded commit, and the drift test fails on the pre-resync copy", "result": "HELD", "evidence": ["_inbox/…_f3-old-guard-green-on-stale-copy.txt", "_inbox/…_f3-new-guard-red-on-stale-copy.txt", "_inbox/…_f3-revendored-green.txt", "_inbox/…_p2-slate-revendor.json (set equality with LDT at 8e7218f7 asserted by the tool)"] },
+    "4": { "prediction": "a slated Hays record-overlay rail is served from its cell by the retrieval reader in a test", "result": "HELD", "test": "services/retrieval-api/src/__tests__/parcel-record-route.test.ts, 'P-299/P-282 falsifier 4' (5 tests)", "fixtures": "live 2026-09-17T18:03:41-18:03:55Z: place 48209:156346, cell {kind:value, value:65460, source:cad_property, vintage:2026-09-13T23:43:55.984Z}, verdict pass evaluated 18:03:45.026Z; the one synthesized pairing (a refusing verdict on a slated rail) is labelled as such in the test", "covers": ["served as `record` with the cell verbatim", "still served when the county verdict refuses (A-193: the verdict travels and decides nothing)", "refused with code no-such-parcel-or-rail, never a legacy value, when the cell is missing", "control: the same cell on the unslated rail `pipelines` stays legacy-transitional, so the slate is what makes the difference"] }
+  },
+
+  "gate": {
+    "retrieval-api": { "command": "pnpm exec vitest run (services/retrieval-api)", "result": "Test Files 21 passed (21); Tests 205 passed (205)", "evidence": "_inbox/…_p2-retrieval-api-suite-final.txt" },
+    "adapters": { "command": "pnpm exec vitest run (packages/adapters)", "result": "Test Files 35 passed (35); Tests 456 passed (456)", "evidence": "_inbox/…_f1-adapters-suite-final.txt" },
+    "engine-core": { "command": "pnpm exec vitest run (packages/engine-core)", "result": "Test Files 5 failed | 219 passed (224); Tests 2 failed | 1838 passed | 13 skipped (1853)", "theFiveFailuresArePreExisting": "PROVEN side by side, not argued: the same five files fail on the pristine origin/main content with this branch's changes stashed (_inbox/…_baseline-5-red-pre-existing-proof.txt). Four are scripts/__tests__ suites that fail to PARSE under this Windows/vite toolchain (`SyntaxError: Invalid or unexpected token` with the caret inside a doc comment) although `node --check` parses all four .mjs files cleanly, and no toolchain package changed in the lockfile diff; the fifth is preflight-probes.test.ts's two environment-dependent probes. Two site-plan files that timed out under full-suite load in an earlier run pass in isolation and passed in the final run.", "ciIsAuthoritativeAndGreen": "PR #469's `typecheck + test` job ran `pnpm -r run test` on ubuntu-latest and concluded `pass` in 4m6s -- the same suites, green on Linux. That is the stronger statement: the five red files are LOCAL to this Windows box (vite/esbuild transform), not repo-local, and they are red identically on the baseline so they cannot be this lane's regressions either way.", "evidence": "_inbox/…_final-engine-core-suite.txt, _inbox/…_engine-core-suite-before-slate.txt, _inbox/…_baseline-5-red-pre-existing-proof.txt" },
+    "typecheck": { "command": "pnpm -r run typecheck", "result": "clean, exit 0 (one error was introduced by this lane's own new test and fixed: a `string | undefined` from matchAll under noUncheckedIndexedAccess)", "evidence": "_inbox/…_typecheck-final.txt" }
+  },
+
+  "contradicted": [
+    "P-299's LDT-side report sized the engine's 1.4.0 gap as 23 heights + 98 state changes. Measured here: the same 23 height value changes (san-antonio-tx 17, bastrop-city-tx 6) AND 87 districts the corpus has and the engine's tables did not (austin-tx 28, round-rock-tx 24, waco-tx 16, kyle-tx 16, pflugerville-tx 3), 9 district renames, 56 districts with changed fields, 91 per-field state transitions (56 transcribed -> asserted, 35 primary-source-verified -> transcription-read) and 20 max_height_ft not_specified flags (true -> absent). The engine's tables were further behind than the report said; the difference is district coverage, not the heights.",
+    "The dispatch's '98 verification-state changes' does not reproduce as a count here: 91 per-field provenance transitions measured, in two directions (56 transcribed -> asserted, 35 primary-source-verified -> transcription-read). Reported as measured rather than restated as 98.",
+    "packages/adapters/src/local/setbacks/__tests__ corpus-divergence.test.ts's rank map had no `transcription-read`, so 623 `transcription-read` values now in the vendored tables (measured) were compared as an unknown state -- a state change could pass the test. Fixed in b210c52.",
+    "The sibling-coverage test justified keeping Hays out of the three setback siblings with 'its own gate verdict is excluded'. Measured live 2026-09-17T18:04:23-18:04:32Z: all four 48209 setback rails read `pass`. The assertion still holds (LDT's slate excludes them and this copy may not invent entries) but the stated REASON was false; corrected to the measurement and raised as a finding.",
+    "'9 districts removed' from the vendored tables would read as data loss. It is not: all nine are display-name renames of districts that exist under stricter names in the corpus (round-rock-tx SF-R/SF-1/SF-2/SF-3, kyle-tx R-1-1/R-1-2/R-1-3/R-1-A/R-2), and both tables grew (round-rock 4 -> 24, kyle 5 -> 16)."
+  ],
+
+  "leaveBehind": [
+    "OPEN: a real cross-repo slate check. Needs engine CI to check out legacy-design-tools at `sourceCommit` and re-run scripts/p299_slate_revendor.mjs's extraction (no cross-repo checkout, no LDT read token today), or LDT to pin literalSha256 = def0791f82746613caf8b113534f7ed2457652905eb7ed95c7ac27290a9774cd in its own test. Until then, a stale copy is caught at the NEXT resync (its digest/literal pair disagrees) but not by LDT moving.",
+    "OPEN (planner/LDT call, measured): 48209's three setback siblings (setbackSideFt, setbackRearFt, setbackCornerFt) read `pass` live today (18:04:26Z/18:04:29Z/18:04:32Z) but neither repo's slate carries them, so under A-193 those rails keep their pre-cutover path. Slating them means editing LDT's literal, not this copy.",
+    "OPEN: uncorrected-1.4.0 divergence was larger than P-299's report (87 missing districts). The engine's tables are now equal to the corpus, but the corpus/LDT side should know the report understated the gap.",
+    "GROUND-TRUTH (2026-09-17): engine main 7b3dda0b; this branch e423c16a9817f30a90e7a9bad8dee114ec02d1ca; PR #469; corpus 1.4.0 tables now equal the pinned package for all 14 vendored files; slate = 158 pairs = LDT's set at 8e7218f7c81cc8a8225386558ef22ec38383650a.",
+    "LESSON: a hash pin over one repo's copy is not a divergence guard against the other repo; it is an edit guard. Pair it with the other side's own BYTES at a named commit (which is what _fixtures__/ldt-parcel-record-slate-8e7218f7.json adds) and, if you want to catch upstream movement, that still needs the other repo in CI.",
+    "LESSON: a test can make a stale copy pass DELIBERATELY -- the six-pair absence assertion was correct when written and became the reason nothing failed. When a decision is reversed upstream, invert the assertion (named as such) rather than deleting it; the history is what makes the next reader trust the flip.",
+    "DEAD-END: `git show`-ing LDT through PowerShell's `>` writes UTF-16 with a BOM and the JSON parse fails; extract with node's execFileSync to keep the bytes (learned re-deriving the slate byte-identity for cell-serve-rule.json).",
+    "DEAD-END: do not compare district sets by `d.district ?? d.id ?? d` -- these tables key districts by `district_name`, and a wrong key reports every district as added+removed. Verify the key against a real file before trusting a delta (this lane reported 87/0 before the fix was applied to its own tool)."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "nextStepsPendingAtCP2": [
+    "PR #469 CI checks to conclusion (recording every literal conclusion string) -- in flight when this was written",
+    "CLOSE file",
+    "release the lane claim and remove the hauska-engine-p299 entry from _catalog/seat_register.json (only that object; the P-308 lane's entry in the same file stays untouched)"
+  ]
+}

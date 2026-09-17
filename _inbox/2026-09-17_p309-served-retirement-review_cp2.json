@@ -1,0 +1,96 @@
+{
+  "lane": "p309-served-retirement-review",
+  "planRow": "P-309",
+  "kind": "CP2 — pilot/mid-work adversarial checkpoint (AGENT-CONTRACT §1)",
+  "filedAtNote": "Written AFTER the full six-county census, the full successor axis, the full county-source axis for four counties, and the roll axis — i.e. after the measurements exist, which is what makes it adversarial rather than decorative.",
+  "pilotScope": "All six dispatched counties, full populations. Nothing in this lane is a sample except the five-per-class SAMPLES the dispatch asks for, and the 400-id namespace CONTROL.",
+
+  "whatWasMeasuredAndHow": {
+    "census": {
+      "instrument": "P:/tmp/p309-scratch/export-county.ps1 — ONE pass per county over place_layer_snapshots, adapter_key='node-facets:tier1', bounded by the unique index (adapter_key, place_key) via place_key like 'node:<fips>:%'. One heavy-scan lease taken and released PER COUNTY through the deployed factory-control API.",
+      "countingRule": "a served retirement is exactly a row with payload_json->'recordRetirement'->>'status'='retired'. (adapter_key, place_key) is UNIQUE, so rows == nodes; the analyzer ASSERTS the identity per county and reports it rather than assuming it.",
+      "rowsEqualNodes": "TRUE for every county with retirements (Caldwell 267/267, Hays 58,015/58,015, Travis 7,456/7,456, Williamson 282,570/282,570). No duplicate place_key exists.",
+      "counted": "48021 Bastrop 0 retired / 77,799 live; 48309 McLennan 0 retired / 114,255 live; 48055 Caldwell 267 / 48,382; 48209 Hays 58,015 / 115,035; 48453 Travis 7,456 / 492,851; 48491 Williamson 282,570 / 319,480."
+    },
+    "successorAxisInstrument": "P:/tmp/p309-scratch/analyze2.mjs. Situs decomposed into (street, city, state, zip) by splitting the RAW commas FIRST and normalizing each component, then joined retired->live on the exact (street|city|state|zip) key inside one county. First version of this instrument normalized before splitting, which erased the commas and mis-read every Travis row as a street; the bug, its symptom and the fix are recorded here because the first pass's numbers were wrong and are not used.",
+    "countySourceAxis": "the P-275 registry's tri-state reader, UNMODIFIED, imported from the P-275 clone whose four files are byte-identical to engine main 7b3dda0b. Chunk size is the registry's own default (100). Requests made: Caldwell 4, Hays 582, Travis 76, Williamson 2,827. Unmeasured returned by the reader: 0 in all four counties.",
+    "namespaceControl": "P:/tmp/p309-scratch/control-live.mjs — 400 LIVE node ids per county (deterministic every-k-th sample) asked of the SAME reader. This is the instrument that decides whether an 'absent' means anything. RESULTS: Hays 0.9975 live, Travis 0.7725, Caldwell 0.5725, Williamson 0.0000.",
+    "rollAxis": "P:/tmp/p309-scratch/run-roll-axis.ps1 — one heavy-scan lease, one bounded index-supported statement set per county on cad_property (PK county_fips, prop_id, tax_year) plus txgio_parcel, released after; then ONE follow-up lease for the Hays vintage question and the per-county txgio distinct-id count."
+  },
+
+  "theCentralFinding": "Every served retirement in three of the four retired counties points at a parcel the county still PUBLISHES. `txgio_parcel` holds a row for 267/267 Caldwell, 7,456/7,456 Travis and 282,570/282,570 Williamson retired ids (100% in each). For Hays it holds 1,386/58,015 — and that 1,386 is EXACTLY the non-account-keyed class (58,015 - 1,386 = 56,629 = the P-180 account-keyed class). So the retirements are overwhelmingly not 'this parcel ceased to exist'; they are 'this served NODE ID ceased to be the key the bake uses'. The customer-facing harm is therefore bounded by the successor axis, not by the retirement count.",
+
+  "falsifierAccounting": [
+    {
+      "id": "F1",
+      "quoted": "Hays's 58,015 are all P-180 account-keyed (a basis other than P-180's appears: prediction fails).",
+      "verdict": "PREDICTION FAILS — CONFIRMED",
+      "evidence": "Hays carries TWO basis strings. 56,629 rows quote the txgio_parcel account-keyed exclusion and name authority 'Hays County GIS published parcel index (txgio_parcel) for county_fips 48209'; 1,386 rows quote a CAD-roll-absence sentence and name authority 'Hays County CAD roll (cad_property) for county_fips 48209 at declared tax_year 2026'. Both are quoted verbatim in _inbox/2026-09-17_p309-served-retirement-review_close.json."
+    },
+    {
+      "id": "F2",
+      "quoted": "Every Williamson R retirement has a live numeric successor at the same situs address.",
+      "verdict": "PREDICTION FAILS — CONFIRMED",
+      "evidence": "280,305 of 282,570 retired R rows (99.20%) share a normalized situs with at least one live node; 2,264 R-prefixed rows do not. Failure size named: 2,264."
+    },
+    {
+      "id": "F3",
+      "quoted": "Caldwell's 267 are all absent from the county's current roll.",
+      "verdict": "CORROBORATED AT THE ROLL — but NOT on the axis the pre-registration expected",
+      "evidence": "cad_property holds 267/267 of these ids at tax_year 2025 and ZERO at tax_year 2026. The declared-roll absence is TRUE. The registered ArcGIS reader, however, answers LIVE for 152 of the 267 — and that reader fails its own namespace control (0.5725 live on the county's own LIVE nodes, i.e. essentially the same 152/267 = 0.569 rate). A reader that cannot tell the county's live nodes from its retired ones carries no evidence either way, so the 152 is reported as NOT INTERPRETABLE, not as a contradiction."
+    },
+    {
+      "id": "F4",
+      "quoted": "An unreachable source reports UNMEASURED, never absent (prove it with the TLS flag, as P-275 did).",
+      "verdict": "VERIFIED",
+      "evidence": "The same reader, same ids, same code path, run with NODE_OPTIONS cleared (the local TLS-interception root CA is then not trusted by Node): every one of the 267 Caldwell ids is reported unmeasured with reason 'whole-layer failure: LIVE_CURRENCY_UNREACHABLE ... could not be read: fetch failed', and ZERO is reported absent. Artifact preserved at P:/tmp/p309-scratch/out/negative-control-tls-48055.json (idsAsked 267, everyIdUnmeasured 267, reason quoted). The positive run of the same command over the same ids returns 152 live / 115 absent."
+    }
+  ],
+
+  "ownedPredictionAccounting": [
+    {
+      "id": "P309-P5",
+      "verdict": "HOLDS",
+      "evidence": "Williamson's retired population is one dominant basis class (282,569 rows, the cad-roll-absence sentence, authority 'Williamson County CAD roll (cad_property) for county_fips 48491 at declared tax_year 2026') plus ONE row whose 'prop_id' is the literal string 'PRIVATE ROAD'. No second material class appeared."
+    },
+    {
+      "id": "P309-P6",
+      "verdict": "SUBSTANCE HOLDS, STATED MECHANISM WRONG — corrected here",
+      "evidence": "The reader answers LIVE for 279,910 of 282,570 retired R ids (99.06%) and ABSENT for 2,660. The substance — a live answer here is a DIFFERENT CLAIM from the retirement basis, so calling these retirements contradicted would be an inversion — holds. The mechanism I pre-registered was wrong: I said QuickRefID is the parcel-map id. The CONTROL says the same QuickRefID answers live for 0 of 400 of the store's LIVE node ids, so QuickRefID is the R-ACCOUNT namespace and the store's live numeric nodes are not expressible in it at all. Correct statement: the WCAD layer still holds a polygon for the retired R accounts, while the store's live population is keyed in a namespace that layer does not expose."
+    },
+    {
+      "id": "P309-P7",
+      "verdict": "FALSIFIED (the prediction, and its reasoning)",
+      "evidence": "I predicted the Hays reader would answer absent for essentially all 58,015 BECAUSE it was being asked the wrong namespace (account ids vs map-id prop_id), and therefore that those absences must be reported UNMEASURED-BY-THIS-READER and never 'confirmed absent'. The control refutes the premise: the SAME reader answers LIVE for 399/400 of the store's LIVE Hays node ids (0.9975). It is being asked the right namespace. So the 57,316 absences are REAL readings and Hays is the one county where 'confirmed absent at the county's own source' is available without qualification. The correction is that my pre-registered reason for the absence was an artifact of the registry comment ('prop_id ... = the parcel MAP id, which is what the 2026-09-13 ruling says the Hays node id is'), which I had inverted."
+    },
+    {
+      "id": "P309-P8",
+      "verdict": "FALSIFIED as written",
+      "evidence": "I wrote 'Falsified if either axis answers live'. The ArcGIS axis answered live for 152 of 267. The falsification is REAL but not a county fact — it is the namespace control failing (0.5725). Recorded as falsified rather than excused."
+    },
+    {
+      "id": "P309-P9",
+      "verdict": "FALSIFIED",
+      "evidence": "Every one of Travis's 7,456 retired ids is a plain all-digit cadastral id. The reader accepted all 7,456 and returned 0 unmeasured; no '_feature-...' synthetic key appears in the SERVED retired population, so P-275's 40 retired ATOMS do not generalise to served rows. The generalisable part of the Travis finding is the opposite of my prediction: the ids are askable but 97.0% of them (7,231 of 7,456) carry a situs with NO STREET AT ALL (values like ', TX' and ', TX 78731'), so the successor axis is UNMEASURED for almost the whole county."
+    },
+    {
+      "id": "P309-P10",
+      "verdict": "BAND FAILED AT THE TOP; the pre-registered tie-breaker decided it in favour of a real re-key",
+      "evidence": "I pre-registered the successor share would land in [0.50, 0.95] and that above 0.99 is 'a finding either way'. Observed: 280,305/282,570 = 0.9920 — above the band. The tie-breaker I pre-registered alongside it (fan-out) says re-key, not alias: the 280,305 retired claims land on 267,894 DISTINCT live nodes, of which 263,433 (98.4%) are claimed by EXACTLY ONE retired R node; only 4,461 are claimed by more than one (maximum 67). A neighbour-alias artifact would concentrate many retired rows on few live nodes; a crosswalk-shaped re-key is 1:1. Both numbers are reported; the band failure is not hidden behind the tie-breaker."
+    }
+  ],
+
+  "theAdversarialQuestionThisCheckpointAsksOfItself": "Is the cheap explanation for this whole lane — 'the bake re-keyed Williamson and the retirements are cosmetic' — actually measured, or is it inferred from 99.20%? It is measured three independent ways: (1) situs equality with 98.4% 1:1 fan-out; (2) the county's own layer still holds a polygon for 99.06% of the retired R ids; (3) `txgio_parcel` holds a row for 100% of them. But NONE of those three is a roll-membership reading, and the retirement's basis IS roll membership. So the honest statement is: the retired R nodes have live geometry and a live published index row, and their CAD account left the declared roll — which is exactly what the basis says and is not contradicted anywhere measured. The population with NO measured successor (2,264) plus a source-confirmed absence (164 of them) is the only part of this lane where a customer meets a decline with nothing behind it, and it is 164 rows, not 282,570.",
+
+  "deviationsDisclosed": [
+    "CP1 declared the census would scan each county ONCE. This lane scanned cad_property twice and txgio_parcel twice for the retired id sets: the first roll-axis pass grouped by tax_year only and produced a number (57,342 rows at tax_year 2026 for Hays retired ids) that looked like a mass contradiction; the follow-up pass grouped by source_vintage and declared_source_file and showed the table holds FOUR vintages for Hays. The first pass's reading was wrong and is superseded, not averaged. Both passes are file artifacts (roll-*.txt, roll-followup.txt).",
+    "CP1 said txgio_parcel would be used only as an in-store cross-check in the successor axis. It was used as an in-store cross-check on the ROLL axis as well. It was never used as a live-currency source, and no absence is ever claimed from it.",
+    "A 282,570-element IN-list and a 58,015-element IN-list were sent as psql -f files of 11.3 MB and 1.9 MB respectively. Both are PK-array lookups, both ran under a lease, and both are the read the dispatch's roll question needs; recorded because it is far larger than 'a keyed lookup'."
+  ],
+
+  "stillOpen": [
+    "Hays basis class 2 (1,386 rows): the roll holds a tax_year-2026 row for 846 of them under the declared drop hays_20260826_certified (plus 3 rows explicitly marked roll_membership='absent-from-declared-drop', plus 537 with only a 2025 row). So 846 of 1,386 roll-absence claims are contradicted BY THE STORE'S OWN ROLL, and only 3 rows carry the explicit absent-from-declared-drop marker the schema provides for exactly this statement. This is the strongest candidate in the lane for a named fix, and it is a claim about the BAKE's reading of the drop, not about the customer's map.",
+    "The `place_layer_snapshots` payload puts a JSON DOCUMENT inside the situs string on 20 rows (15 Hays, 5 Williamson; e.g. place_key node:48491:PRIVATE ROAD). A served situs that is a claim object rather than an address cannot be joined, geocoded or shown; it is a data defect with a count.",
+    "Williamson's retired population contains a node whose 'prop_id' is the literal string 'PRIVATE ROAD' — a non-identity that the roll-absence basis nonetheless treats as an account id."
+  ]
+}
