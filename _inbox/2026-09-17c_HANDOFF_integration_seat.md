@@ -32,17 +32,41 @@ not your working tree.
    state, with a change-log line, and take timestamps from `date -u`.
 3. OPS-16 amendments **A-207 to A-211** and rows **P-306 to P-318**.
 
+## 0. Two things happened after this handoff was first written. Read these first.
+
+**Williamson's production publish emptied the county, and the county has been restored.** Run
+`7b2540c8` retired all 602,050 served tier-1 rows for 48491, including 319,480 that were live,
+because the parcel index is R-keyed and the served nodes are numeric-keyed. The rows were copied
+back from a Neon point-in-time branch and verified on the customer surface at 20:59Z. Full record:
+`_inbox/2026-09-17_williamson_mass_retirement_INCIDENT.md`. **A-190 is NOT complete for Williamson,
+and no production publish of 48491 may run until P-319 ships.** Two leave-behinds are yours: the
+PITR branch `br-late-rain-apffmnp2` (delete after 48491 republishes successfully; it is the only
+copy of the pre-incident payloads) and the `dblink` extension created on production (drop it unless
+a lane needs it, and say which).
+
+**Cotality is off the critical path** (A-212, `_decisions/2026-09-17_ship_without_cotality.md`).
+About two weeks out; struck from the Phase 0 exit; P-267 and P-283 deferred to Phase 1; P-322 ships
+the affected rails as declared, labelled absences. Do not let a row sit idle naming the vendor.
+
+Two dispatches are compiled and committed, ready to fire:
+`_dispatches/2026-09-17_p319-retirement-safety_dispatch.md` (P-319, P-320, P-321 — the highest
+priority lane in the program) and `_dispatches/2026-09-17_p322-cotality-declared-absences_dispatch.md`.
+
+**One trap this surfaced:** the canon preamble carried "COTALITY IS EXTINGUISHED", a third and wrong
+vendor state, because `_state/shared/STANDING_DECISIONS.md` held it and every regeneration of
+`_STATE.md` propagated it into every compiled dispatch. The source is fixed and the preamble hash is
+now `v0d6978dd`. **The six dispatches fired earlier on 2026-09-17 carry the wrong line**; if one of
+those lanes touches vendor-sourced data, correct it in the lane rather than assuming it read canon.
+
 ## 1. Finish what is mid-flight
 
-1. **Williamson's production publish** `factory-bastrop-publish-sxv8r` (started 19:24:19Z; its
-   staging sibling took 1h21m). When it ends, grade it on the authoritative row: read
-   `place_layer_snapshots` (`adapter_key='node-facets:tier1'`, `place_key='node:48491:107190'`, a
-   LIVE numeric parcel) on `PRODUCTION_NEONDB_URL` read-only and check the bake time is later than
-   19:24Z, then read `get_smart_site` for the same parcel. That completes A-190 for all six
-   counties. The staging leg already passed with P-306's fix at retention 1.1666.
-2. **Migration 0103**, then the Austin stamp. `bash P:/tmp/integration-handoff/p259b-0103-retry.sh`
-   is looping (about 60 attempts, roughly to 21:58Z); each attempt takes the production lease, hits
-   a 15 s lock timeout behind the publish's reads, and rolls back whole. Nothing is applied. Do not
+1. ~~Grade Williamson's production publish~~ — **done, and it failed destructively. See section 0.**
+   What remains: fire the P-319 lane, ship it, and only then republish 48491 and complete A-190.
+2. **Migration 0103**, then the Austin stamp. **The retry loop was STOPPED at 20:49Z** because it
+   took the production lease every three minutes, applied nothing, and blocked the Williamson
+   recovery's first attempt. Restart it by hand now that the store is quiet:
+   `bash P:/tmp/integration-handoff/p259b-0103-retry.sh`. Each attempt takes the production lease, hits
+   a 15 s lock timeout behind a long reader, and rolls back whole. Nothing is applied. Do not
    lengthen that lock timeout: a queued ALTER blocks every new reader behind it. Backfill
    population, measured: 1,184,897 rows. After 0103, run the Austin stamp as a session CLI under a
    production lease (P-296's lane established that path at source), then re-run the P-255 census.

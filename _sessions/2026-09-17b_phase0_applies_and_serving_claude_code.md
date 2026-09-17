@@ -111,3 +111,39 @@ established the production path, which it did at source.
 stamp follows it. Williamson's production publish was running. The gate's verdict table predates
 today's applies, so the completeness re-grade is owed. P-263's apply needs the operator's go, and
 P-254's MCP leg needs a token. Six Phase 0 lanes are running.
+
+## After the close: the publish that was running emptied the county
+
+The session was reopened because Williamson's production publish completed and retired **all
+602,050 served tier-1 rows for 48491**, including the 319,480 numeric rows that were live on the
+2026-09-10 bake. The county was dark on the customer surface from 19:26Z. The published parcel
+index is R-keyed, the served nodes are numeric-keyed, and the retirement step differenced one
+keyspace against the other. P-306 had fixed the coverage FLOOR for exactly that split, so the floor
+passed at retention 1.1666 while the writer emptied the county.
+
+Production payloads were 1,579-byte retirement stubs against 2,226-byte payloads on a point-in-time
+branch taken four minutes before the publish started, so facts were destroyed and un-retiring keys
+would not have restored them. The rows were copied back over `dblink` in ten batches under a
+heavy-scan lease: 319,480 restored, exactly the pre-incident count, verified by an independent
+census and on the customer surface, with the R-keyed retirements shown still intact. The full
+record is `_inbox/2026-09-17_williamson_mass_retirement_INCIDENT.md`.
+
+**The finding worth keeping is not the defect.** ENFORCEMENT.md has said "a mass state change
+refuses before it lands" since the 2026-09-15 Bastrop reconcile retired 92.5 percent of that county
+by the same presence-shaped comparison. Nobody built the refusal. Two days later the class took a
+second county through a different writer. A doctrine paragraph is not a control. P-320 builds it.
+
+I also stopped my own 0103 retry loop: it was taking the production lease every three minutes,
+applying nothing, and it blocked the recovery's first attempt.
+
+## And the operator ruled that we ship without Cotality
+
+The vendor is about two weeks out, so it leaves the critical path: struck from the Phase 0 exit,
+P-267 and P-283 deferred to Phase 1, and P-322 ships the rails it would have filled as declared,
+labelled absences. `_decisions/2026-09-17_ship_without_cotality.md`.
+
+Fixing that ruling's home surfaced a live defect in the canon preamble. The fleet-wide bullet in
+`_state/shared/STANDING_DECISIONS.md` still read "COTALITY IS EXTINGUISHED", a third and wrong
+state, and every regeneration of `_STATE.md` propagated it into the preamble of every compiled
+dispatch — which is why the six dispatches fired earlier today carry it. The source is corrected
+and the preamble hash moved to `v0d6978dd`.

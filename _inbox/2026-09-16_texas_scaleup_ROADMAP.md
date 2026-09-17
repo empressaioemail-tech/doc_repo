@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (20:25Z, session close, integration session after 06a91261)
+last_updated: 2026-09-17 (21:00Z, after the Williamson mass-retirement incident and the operator's ship-without-Cotality ruling)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -28,10 +28,28 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 *In flight* means a lane or a job is working it. *Held* means ready and deliberately not applied.
 *Not started* means carded and not dispatched.
 
-## Where things stand (2026-09-17 20:25Z, at session close)
+## Two rulings that govern everything below (2026-09-17, OPS-16 A-212)
+
+**Ship without Cotality.** The vendor is about two weeks out. Nothing waits on it. Cotality is
+struck from the Phase 0 exit criteria, P-267 and P-283 are deferred by declaration to Phase 1, and
+every rail that wanted Cotality ships as a DECLARED absence: `unaccounted` at rest, labelled where
+a customer reads it, never fabricated and never silently missing. P-322 carries that work. Nothing
+is relabelled `absent-verified` to clear a gate.
+
+**Williamson's production publish retired the whole county, and it is being restored.** Run
+`7b2540c8` retired all 602,050 served tier-1 rows for 48491, including the 319,480 numeric rows
+that were LIVE, because the county's published parcel index is R-keyed while its served nodes are
+numeric-keyed and the retirement step differenced the two keyspaces against each other. The county
+went dark on the customer surface at 19:26Z. Recovery is a row-level copy from a Neon point-in-time
+branch taken at 19:22:29Z. Three rows are carded: P-319 (keyspace-aware retirement), P-320 (a
+blast-radius refusal on every destructive writer, which ENFORCEMENT.md called for after the
+2026-09-15 Bastrop instance and nobody built), P-321 (retired-share per county is watched).
+
+## Where things stand (2026-09-17 21:00Z)
 
 | Area | State |
 |---|---|
+| **Williamson (48491) on the customer surface** | **DARK, restoring.** All 602,050 tier-1 rows retired by run `7b2540c8`; the 319,480 numeric rows are being copied back from PITR branch `br-late-rain-apffmnp2` under a heavy-scan lease, in ten batches with before and after censuses. The 282,569 R-prefixed retirements are legitimate (CAD roll) and are not touched. **No further production publish of 48491 until P-319 ships.** |
 | **Gate (P-252, P-292, P-293, P-298)** | **Live and graded.** A six-county apply takes 26 to 33 minutes on the P-298 index (was 8h13m). The hourly trigger is enabled; the 14:00Z run succeeded in 26m. Runs refuse `LEASE_HELD` while a lane holds the factory store, which skipped 12:00Z and 13:00Z; that is the design. |
 | **Cell serving (P-297)** | **Live**, both halves (retrieval `00098-cat`, cortex `00820-jex`). All 152 slated pairs read `pass` today, so answers changed only for empty or refused slated cells, which now refuse with a reason. |
 | **Engine-api surfaces (P-302)** | **Live and graded** (engine-api `00249-kiw`). A slated refusal is printed as a refusal in the feasibility report and PDF, never the baked value. |
@@ -109,7 +127,7 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 
 | Row | What | State | Next |
 |---|---|---|---|
-| Williamson republish | A-190, unblocked by P-306 | **Staging PASSED** with the keyspace fix (`k2gnr`, 1h21m, retention 1.1666 scoped against 0.575 unscoped, walk pass, 282,570 rows). **Production `sxv8r` running** since 19:24:19Z | Grade on the `node-facets:tier1` row for `node:48491:107190` and on `get_smart_site`; record A-190 complete |
+| Williamson republish | A-190 | **FAILED DESTRUCTIVELY AND IS BEING RECOVERED.** Staging passed (`k2gnr`, retention 1.1666 scoped), production `sxv8r` (run `7b2540c8`) then retired all 602,050 rows. A-190 is NOT complete for Williamson and the county's republish is blocked on P-319 | Finish the restore, verify `get_smart_site 48491:107190` serves facts, then P-319 and P-320 before 48491 is published again |
 | P-259b's 0103 + the Austin stamp | The interim disclosure column, then the stamp | 0103 is RETRYING: each attempt takes the production lease, hits a 15 s lock timeout behind the Williamson publish's reads, and rolls back whole (nothing applied, 22 attempts by 20:20Z). The retry loop runs to about 21:58Z | After Williamson: apply 0103 (backfill population 1,184,897 rows), then the Austin stamp as a session CLI under a production lease (P-296's ruling), then the P-255 census |
 | The six new Phase 0 lanes | Card truth, Williamson identity, setbacks and envelopes, controls, tagged revisions, Burnet | **All six fired and working** | Review, merge, deploy and grade as they close |
 | P-263's apply | 490,185 mislabelled envelope atoms | Inside the P-260/P-263 lane as a DRY RUN | The apply needs the operator's go on the measured counts |
@@ -129,6 +147,10 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | P-315 | The read-only factory role reads the lease tables (D5) | Carded, low priority |
 | P-316 | The staging secret drift check gets a scheduled home | The IAM grant is DONE (operator, 2026-09-17). The check still needs an image with `gcloud` or a REST transport, plus a job and a schedule |
 | P-317 | A county's first-ever publish refuses `COVERAGE_UNMEASURED` | Carded. **Burnet precondition** |
+| P-319 | The publish retires every served node whose keyspace differs from the index's | Carded. **Blocks every further production publish of 48491** and is a precondition for any county whose served and indexed keys differ |
+| P-320 | A blast-radius refusal on every destructive writer | Carded. Second county lost to this gap; the doctrine existed since 2026-09-15 and the control did not |
+| P-321 | Retired-share per county is watched and a move outside its band fails | Carded; P-309's by-basis breakdown feeds it |
+| P-322 | Cotality-dependent rails ship as declared absences | Carded under A-212; dispatchable now |
 | P-296's production ETJ | Applied and live | Done this session; `etjStatus` is a real read |
 | verify-walk production template | `factory-verify-walk` lacks the production store secrets | A small factory change (`cloudbuild.publish.yaml`) |
 | Empty `utilityService` value cells | `48453:941709` has a `value` cell with no payload | A read-only measurement when the production store is quiet |
@@ -144,7 +166,7 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | The Austin stamp's production run | P-296 ruled the path (a session CLI under a production lease). The stamp itself is still owed, after 0103 |
 | State files | `_STATE.md` and `_state/shared/STANDING_DECISIONS.md` still hold another writer's uncommitted 13:28Z edit, and the source's Cotality line predates the 09-16 ruling |
 | P-278 production credential rotation | Before Burnet's first production publish |
-| Cotality contract and credentials (P-267, P-283) | Open |
+| Cotality contract and credentials (P-267, P-283) | **Ruled 2026-09-17 (A-212): about two weeks out, and nothing waits on it.** Deferred by declaration to Phase 1; P-322 ships the declared absences meanwhile. Bring it back when the credentials land |
 | Account check for P-243 and P-244a | Open |
 | First automated production run of P-294 | After its dry cycle is graded |
 
@@ -171,14 +193,16 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | Envelopes | P-303, P-304 (compiled), P-263, P-264 | P-264 needs P-260 |
 | Open rails | P-266, P-268 (running) | The lane |
 | Hays and the ledger | P-211, P-265, P-204 | P-265 needs P-211 |
-| Ag valuation | P-267 | The Cotality contract |
+| Ag valuation | ~~P-267~~ → P-322 | **Out of Phase 0 (A-212).** The rail ships as a declared absence; the sourced version is Phase 1 |
 | What customers see | P-270, P-271, P-272, P-217, P-209 | Nothing |
 | Walk and republish | P-301 grade, Travis, Williamson | In flight |
 | Controls and cleanup | P-273, P-274, P-275 (running), P-276 venue, P-279, P-282, P-305, R-11 | Nothing |
 | Earlier rows | P-175, P-183, P-184, P-176, site-plan compose timeouts | Nothing |
 | Serving path | P-294 dry cycle, P-295 build | The republish; a P-295 design review |
 | From the reports session | P-296, P-243 and P-244a checks | Dispatch; operator account check |
-| **Phase 0 exit** | Ledger complete, customer checks pass, coverage, road residual, operator walk | Everything above |
+| Williamson recovery | P-319, P-320, P-321 | Nothing. P-319 blocks 48491's republish |
+| Cotality-shaped gaps | P-322 | Nothing (A-212) |
+| **Phase 0 exit** | Ledger complete **with Cotality-dependent rails counted as declared absences, not as gaps**, customer checks pass (P-254's OPEN list at zero), coverage, road residual, operator walk, and every county's served population intact after its republish | Everything above. **Cotality is no longer an exit condition (A-212)** |
 
 ## Farm and Burnet (Phase 1)
 
@@ -250,6 +274,7 @@ Mains at 20:25Z: engine `3809275f`, LDT `7219b707`, map `0489bc85`, factory `d2e
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
 | 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-17 21:00 | **Williamson's production publish retired the entire county, and the operator ruled that we ship without Cotality (OPS-16 A-212).** Run `7b2540c8` completed and retired all 602,050 served tier-1 rows for 48491, including 319,480 numeric rows that were LIVE with the 2026-09-10 bake; `get_smart_site 48491:107190` read `record_retired` at 19:26:04Z. Cause: the published parcel index is R-keyed, the served nodes are numeric-keyed, and the retirement step differenced one keyspace against the other, so every numeric node was absent by construction. P-306 had fixed the coverage FLOOR for exactly this keyspace split; the retirement decision beside it was left keyspace-blind, which is why the floor passed at 1.1666 while the writer emptied the county. Production payloads were retirement stubs (1,579 bytes) against the branch's full ones (2,226 bytes), so facts were destroyed and un-retiring keys would not have restored them: recovery is a row copy from Neon PITR branch `br-late-rain-apffmnp2` (19:22:29Z) over `dblink`, ten batches under a heavy-scan lease, R-prefixed retirements untouched. Carded: **P-319** keyspace-aware retirement (blocks 48491's republish), **P-320** a blast-radius refusal on every destructive writer, **P-321** retired-share per county watched. P-320 is the control ENFORCEMENT.md named after the 2026-09-15 Bastrop reconcile that retired 92.5 percent of a county; it was never built, and two days later the same class took a second county through a different writer. **A-212 also rules Cotality out of Phase 0**: about two weeks away, nothing waits on it, P-267 and P-283 deferred to Phase 1, and **P-322** ships every Cotality-dependent rail as a declared, labelled absence. |
 | 2026-09-17 20:25 | **Session close (integration session after 06a91261).** Merged and deployed: P-304 (cortex `00822-wef`), P-296 (cortex `00824-qay`, 0102 applied and 355 ETJ rings ingested, `etjStatus` is a real read), P-299's engine half with P-282's slate (retrieval `00100-hut`, engine-api `00251-qed`), P-307 (factory-control `00010-hax`), P-306 (publish image `9760ff71`), P-308, P-275, P-318 and P-305. **Applied:** P-256 in all six counties (219,472 parcels, each county exactly at its ceiling, equal to the pre-apply movable set) and P-266/P-268 in five counties plus the zoning writer (situsState per-parcel everywhere, two out-of-state refusals, zero silent; Austin/Waco/Round Rock citations filled). **Williamson staging PASSED** with P-306's fix (retention 1.1666 scoped against 0.575 unscoped); production `sxv8r` running at close. **0103 is retrying** behind the publish's table locks and has applied nothing. Rows P-310 to P-318 carded; six Phase 0 lanes compiled, fired and running. Handoff: `_inbox/2026-09-17c_HANDOFF_integration_seat.md`. |
 | 2026-09-17 18:10 | **P-304 live and graded** (cortex `00822-wef`, canary first, then the customer surface; P-303 and P-249 unchanged). **P-307 live and graded** (factory-control `00010-hax`; `factory-store` refused on the service URL; client patch applied). **P-306 merged** (`05e5de7b`) and the publish image rebuilt to `9760ff71`. **P-256's apply bound measured**: movable parcels equal A-199's ceilings exactly in all six counties, all false absences, zero unaccounted setback cells; Hays additionally has 27,949 parcels of unaccounted envelope cells. Dry runs clean so far. **Williamson republishing** on the new image. P-317 carded (a first-ever publish would refuse `COVERAGE_UNMEASURED`). |
 | 2026-09-17 17:25 | **Hays done; P-301 graded on production** (retry `m22ql`, run `086fa515`, walk `20f5e98e` pass, 16 of 16; read independently). A-190's republish is at five of six. The 16:00Z gate run `mkjp4`, the first on the new scheduler image, succeeded in 34m; `c5p8r` (17:00Z) is running. **P-306 and P-307 closed partial** with factory #170 and #169 green; A-207's Williamson attribution corrected. **Operator rulings D1 to D5 (A-209)**; rows P-308 to P-316 added. **Compiled, ready to fire:** P-254, P-296, P-299 engine half with P-282 slate, P-308, P-309. P-316 waits on the operator's IAM grant. |

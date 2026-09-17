@@ -118,6 +118,23 @@ farm machinery builds in parallel.
 - The doc_repo commit gates do not fire in a seat worktree or on a merge until P-280 lands.
   Declare `subAgents` and the probe honestly anyway; the integration seat re-grades on landing.
 - Bell already serves from the July bake (165,574 rows). It is a migration county (P-291).
+- **A county's served keys and its published parcel index can be in DIFFERENT KEYSPACES, and the
+  publish retirement step does not check.** On 2026-09-17 Williamson's production publish (run
+  `7b2540c8`) retired all 602,050 served tier-1 rows for 48491, including 319,480 numeric rows
+  that were live, because the index is R-keyed and the served nodes are numeric-keyed. P-306 had
+  fixed the coverage FLOOR for exactly this split, so the floor passed at retention 1.1666 while
+  the writer emptied the county. **No production publish of 48491 until P-319 ships**, and any
+  county whose served and indexed keys differ carries the same hazard. A control that measures one
+  thing does not protect the thing beside it.
+- **No writer in this program refuses on blast radius yet (P-320).** Two counties have now been
+  emptied by presence-shaped comparisons: Bastrop 48021 at 92.5 percent on 2026-09-15 and
+  Williamson 48491 at 100 percent on 2026-09-17, through different writers. Until P-320 lands,
+  treat every destructive status write as unguarded and measure its population before running it.
+- **Cotality is out of the Phase 0 exit (A-212, operator 2026-09-17).** The vendor is about two
+  weeks out. `agValuation` in Bastrop, Caldwell, Hays and McLennan (about 318,000 cells) stays
+  honestly `unaccounted` and ships as a DECLARED absence that a customer can read (P-322). P-267's
+  not-applicable sweep must never run: it would write the false state across all of them. P-267
+  and P-283 are deferred to Phase 1.
 
 ## What this program absorbs
 
