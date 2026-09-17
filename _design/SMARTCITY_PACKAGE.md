@@ -42,8 +42,31 @@ the DigitalOcean app builds from branch `d9-pin-96efa35`, diverged from main in 
 until D-12 repoints it a merge to main does not even reach the build source. `plan-review` has the
 identical traffic pin (`plan-review-00025-ley`). Both are inside D-12's scope.
 
-**Carded build rows:** G-149 (flood study, blocked on D-12) and G-150 (reasoner path, `plan-review`,
-not blocked). The other eight approved designs have no row yet and need a carding pass.
+**Every approved design now has a build row.** Carded 2026-09-17 (A-141, A-142), grouped by what
+blocks them rather than one row per folder:
+
+| Row | Designs | Blocked on |
+|---|---|---|
+| G-149 | Flood study | D-12 |
+| G-150 | Reasoner path (`plan-review`) | **nothing, runs in parallel** |
+| G-151 | Parks | D-12 only |
+| G-152 | Public works, Fire and EMS | D-12 only |
+| G-153 | Fleet, Police | D-12 **and the operator-namespace ruling, which does not exist** |
+| G-154 | Development services delta | D-12 only |
+| G-155 | Smart Files (`smart-files`) | **nothing, runs in parallel** |
+| G-156 | Finance lens | D-12 **and an operator scope call** |
+
+Not buildable and not carded: finance-filings (G-138), plan-review-departments (G-144),
+applicant-precheck (blending ruling deferred).
+
+**No lens is blocked on a vendor.** That was checked at source rather than assumed, and the obvious
+answer was wrong: every lens design draws its own blocked state as design content, so Fire and EMS,
+Public works, Police and Parks all ship without GoTo, FirstDue, Verkada or a Parks vendor. The
+vendor work is separate and is G-139's row, not theirs.
+
+**Two operator items gate real work:** the operator-namespace ruling (is `OPR-01` the same person in
+Fleet and in Police) and the Finance scope call (does Finance ship in the Bastrop phase-1 package,
+when the first cohort is Development Services staff). Both are cheap and both block a carded row.
 
 ## The three links
 
