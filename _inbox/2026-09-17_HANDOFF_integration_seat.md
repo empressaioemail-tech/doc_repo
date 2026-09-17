@@ -47,6 +47,8 @@ checks in section 1, which do not wait for anyone.
 
 > **Update 2026-09-17 06:56Z (after close):** the apply `8x4jk` **completed successfully at 06:54:32Z** (`succeededCount 1`, read by field; a positional read first showed it as failed, which was the formatter trap) and **grades PASS** (`_inbox/2026-09-17_p252_apply_grade.json`: all 390 pairs rewritten, the 25 predicted flips with their counts, no `pass` or `refuse` change, no bare `excluded`). The lease expired at 02:40Z unrenewed; confirm with `scripts/heavy-scan-lease.mjs list` that nothing is live, and release it with the stored handle if it still is. **Item 1 is done; item 2 is a check; start at item 3** (resume the trigger, watch the first hourly run, which may run long on a cold cache and could overlap the next hour until P-298 lands; then the completeness check and the republish).
 
+> **CONSUMED 2026-09-17 06:57Z by the fresh integration session (06a91261), which now holds the seat. The closed session (9d27b9bd) must take no further action.** State as of 06:57Z: the lease was retaken at 04:53Z as `cdcf84fd` (live until 08:53:17Z, handle in the stored file; **do not release it**; the fresh session releases it after grading the first hourly run). The trigger was **resumed at 06:56:34Z** after the fresh session's own PASS grade, whose self-test passed 8 of 8; the first run fires at 07:00Z and is being watched. If it is still running at 07:55Z, the trigger will be paused again before the 08:00Z fire.
+
 1. **The gate apply** (`factory-publish-gate-sched-8x4jk`, project `hauska-prod-497015`, region
    `us-east4`, started 22:40:32Z with a 12-hour timeout). At 00:42Z Bastrop, Caldwell, Hays and
    McLennan graded clean; Travis was 55 of 65; Williamson not started; 75 pairs left. Grade it:
