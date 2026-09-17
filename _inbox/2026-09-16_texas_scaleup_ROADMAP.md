@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (00:04Z, regrouped)
+last_updated: 2026-09-17 (00:12Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -36,7 +36,7 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | **Serving semantics (P-297)** | **Ruled** (A-193): the county verdict is a grade, not the serve switch. The LDT half is in flight (PR #710 open); the engine half waits for its fixture. |
 | **Setbacks (P-256, P-258)** | P-258's 258 new rows are merged everywhere and published as corpus **1.3.0**. P-256 is **held** until P-297 is live, and its apply needs an explicit authorisation (about 1.1M cells). |
 | **Coverage (P-205, P-210)** | **Customer-done.** An un-onboarded county names itself on `find_parcel`; Marble Falls names Burnet. |
-| **Controls (P-277, P-281, P-284)** | Amendment ids gated (P-277). Heavy-scan leases live and proven (P-281). Stage records live; the compute-cost fix is deployed and waiting on its first measured figure (P-284). |
+| **Controls (P-277, P-281, P-284)** | Amendment ids gated (P-277). Heavy-scan leases live and proven (P-281). Stage records live with a measured compute cost (P-284). |
 | **Serving path (P-230, P-294, P-295)** | The bake still has no trigger. P-295 measured that no ledger cell carries an atom pointer; three rulings are owed before its build. |
 | **Envelopes (P-249, P-262)** | P-262 merged. P-249's two PRs are reviewed and wait on the staging proof. |
 
@@ -64,6 +64,7 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | P-255 | Setback census | Done: 131,357 is P-249's real target |
 | P-277 | Amendment ids gated; seven collisions annotated; C15 is 7 | Done (A-194) |
 | P-280 | Commit checks run in every worktree and on merges | Live |
+| P-284 | Stage cost and timing records | **Live and graded**: the 00:10Z reaper tick (`factory-conformant-tr9j9`) filled dry run `dr7bf`'s record with a measured $0.000484 (execution window at the tier-1 jobs rate). Reconcile against the billing export later |
 | P-281 | Job and heavy-scan leases | **Live and proven** (A-195); eleven heavy jobs still take no lease |
 | P-293 (both halves) | Both verdict readers read all six verdict strings | Live (LDT `00815-fiw`, retrieval `00094-wed` then `00096-div`); seen returning `excluded-no-acquisition-path` on real data |
 | P-246, P-247, P-238, P-213, P-242b, P-242c, P-206 | Reports rows | Closed by the retired reports session (A-190) |
@@ -74,7 +75,6 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 |---|---|---|---|
 | P-252 (with P-292) | Empty counties refuse at the gate | **Applying** (`8x4jk`); graded by `scripts/p252-apply-compare.mjs` | Grade PASS, resume the hourly trigger, rerun the completeness check, then the six-county republish |
 | P-297 LDT half (with P-269) | Each slated parcel served from its own cell | Lane working; LDT PR #710 open | Review, merge; then fire the engine half |
-| P-284 | Stage cost and timing records | Remainder live (`47c7dfc`, migration `0014`); first reaper tick clean | One new record carries a measured window cost, then reconcile against the billing export |
 
 ## Ready, waiting on something
 
@@ -112,7 +112,6 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | 2 | Republish the six counties, one at a time, staging first, checking served `bakedAt` |
 | 3 | P-297: review and merge LDT #710, then release the engine half |
 | 4 | P-249 staging proof, then one `cortex-api` deploy (P-258 tables, P-297, P-249) and the map deploy |
-| 5 | P-284: confirm a measured window cost on a new record |
 | 6 | P-256 integration (rebase on `47c7dfc`, corpus pin to 1.3.0) and its apply, after P-297 and the authorisation |
 | 7 | Build P-254 (customer-surface legs reading the cell, per A-193) and P-286 |
 | 8 | Dispatch as lanes free: P-298 (scheduler read shape), P-294, P-296, P-259, P-260, P-263 and P-264, P-266, P-268, P-270 to P-276, P-279, P-282, P-285, P-287, the P-291 note |
@@ -137,7 +136,7 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 
 | Row | What | State |
 |---|---|---|
-| P-284 | Stage cost and timing records | Live; first measured cost pending |
+| P-284 | Stage cost and timing records | Live and graded |
 | P-285 | County runner, all thirteen stages | Not started (P-284 and P-281 are now live) |
 | P-286 | Blocker list as the pre-bake checklist | Not started |
 | P-287 | Burnet's unreconciled parcels; address points | Not started |
@@ -175,3 +174,4 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | 2026-09-16 23:18 | LDT #709 (P-258 tables) merged; P-205 follow-on, P-284 remainder and P-295 phase 1 fired; P-297 LDT half cleared to fire. |
 | 2026-09-16 23:47 | P-205 customer-done (retrieval `00096-div`, `find_parcel` names Burnet). P-295 phase 1 and P-284 remainder closed; #162 merged with a planner call on the cost quantity. A-197. |
 | 2026-09-17 00:04 | Regrouped. P-284 remainder deployed (migration `0014`, publish, writers and reaper on `47c7dfc`; first reaper tick clean). P-297's LDT lane opened PR #710. This page rewritten to current state and now carries the live queue (A-198). |
+| 2026-09-17 00:12 | P-284 graded: the reaper backfilled a real dry run's record with a measured $0.000484. P-258 corpus rulings explained to the operator; decision pending. |
