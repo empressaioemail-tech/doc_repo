@@ -1,0 +1,125 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint. Filed BEFORE any parcel-level measurement of the changed code. Its job is to freeze (a) the instrument design, (b) where the interim disclosure lands, (c) every falsifier's expected answer and band, so a later measurement can only agree or disagree with it, never define it.",
+  "lane": "p259b-interim-and-accounts",
+  "planRows": ["P-259"],
+  "seat": "p259b-lane",
+  "filedAt": "2026-09-17T13:05:00Z",
+  "laneClaim": "p259b-interim-and-accounts / seat p259b-lane / row P-259, claimed 2026-09-17T12:57Z via `node scripts/lane-claim.mjs claim ...` from P:/seat-worktrees/dispatch-planner/doc_repo -> exit 0 (lane was FREE; no competing claim in _catalog/lane_claims.json).",
+  "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo -- the dispatch planner's own seat worktree, which is where every lane artifact of the current wave (p249, p256, p262, p293, p293r, p295, p297, p299, p301) lives. P:/doc_repo is the INTEGRATION seat's checkout (seat_register.json: role 'doc_repo primary checkout and merge target. Not a planner seat. Planner seats do not do seat work here'), so nothing of this lane is written there.",
+  "snapshot": {
+    "legacyDesignTools": {
+      "worktree": "P:/tmp/p259b-interim-and-accounts (fresh `git clone` of origin, per the mission's 'fresh clone from origin under P:/tmp into a NEW directory'; NOT P:/tmp/p259-austin-zoning-source, which is the predecessor lane's checkout and was left untouched)",
+      "branch": "feat/p259-austin-zoning-source (the mission's branch; the predecessor lane's PR #712 is continued, not replaced)",
+      "cloneMainAtClone": "dca5ec2e184e4a4d9f6585914e70c087db528318 (the dispatch said LDT main was 710d5bb7 at compile; main has advanced past it -- reported, not matched)",
+      "branchHeadAtClone": "3a806acb6dfeb966cbf79db39ca882bc87ddb3df (matches the dispatch's declared PR #712 head at compile, verified at source via the branches API)",
+      "mergeOriginMain": "74b6f9d5 -- `git merge origin/main` into the branch, exit 0, NO CONFLICTS. The dispatch warned that P-258 (#709) and P-299 (#711) rewrote the vendored setback tables; the merge produced no conflict in any file, so nothing had to be resolved before the first line was changed. Recorded so a successor does not go looking for a conflict resolution that never happened.",
+      "filesToTouch": [
+        "lib/cad-ingest/src/txgio/zoning-base-code.ts (the interim leading-qualifier rule + the `interim` disclosure on the parse result)",
+        "lib/cad-ingest/src/txgio/zoning-layers.ts (AUSTIN_INTERIM_QUALIFIERS + the three Austin baseCodeParse entries + the now-stale comments that call the I-* family unrecognised)",
+        "lib/cad-ingest/src/txgio/zoning-stamp.ts (doc only: the parse carries the disclosure into the index)",
+        "lib/cad-ingest/src/txgio/zoning-stamp-db.ts (the no-account skip, the feature/account/skipped counts, the interim counts, the interim column on the write)",
+        "lib/cad-ingest/src/txgio/zoning-cli.ts (the two counts + the skip-by-reason + 'of which interim' on every leg; the layer audit's interim counts)",
+        "lib/cad-ingest/src/__tests__/zoningBaseCode.test.ts (the 14 live interim values, I-SF-2-NP / I-RR-NP / I-PUD, the removal test, the updated whole-vocabulary classes)",
+        "lib/cad-ingest/src/__tests__/zoningStamp.test.ts (the no-account skip in both directions, the feature/account/skipped counts, the interim flag on the batched UPDATE)",
+        "lib/db/src/schema/txgioParcel.ts + lib/db/drizzle/0103_txgio_parcel_zoning_district_interim.sql (where the disclosure lands on the stamped row)"
+      ]
+    }
+  },
+  "whereTheInterimDisclosureLands": {
+    "decision": "A new NULLABLE BOOLEAN column on the stamped row: `txgio_parcel.zoning_district_interim` (migration `lib/db/drizzle/0103_txgio_parcel_zoning_district_interim.sql`). The mission's item 1 says the disclosure must be carried 'so the stamped row records that the district is interim' and offers 'column, JSON field or provenance note'. `txgio_parcel` has no JSON provenance column, so a column is the only form that actually lands the fact ON THE ROW; the other two would land it only on the run, which is a different claim.",
+    "semantics": "NULL = nothing was stamped for this parcel (the pre-existing honest-absence state). true = a district was stamped and the published value carried a declared interim qualifier. false = a district was stamped from a published value with no interim qualifier. Explicit false, not NULL, for a stamped non-interim district, so 'stamped and not interim' cannot be read as 'not stamped'.",
+    "secondDisclosureSurface": "The same fact is carried in the run's provenance as well, because the row alone cannot be read without the run: `ZoningStampSummary.parcelsInterim` + `interimBaseHistogram` (the base each interim value resolved to), the CLI's 'of which interim' line, and `LayerParseAudit.interimBase` / `interimPlannedDevelopment` (the layer-level audit printed before any PIP).",
+    "whyNotAParserOnlyFact": "The parse result carries `interim: boolean` and travels to the polygon, the PIP index and the stamp summary regardless. That is necessary but not sufficient: the mission's words are 'the stamped row records that the district is interim'.",
+    "servePath": "NONE reads it today, and this lane builds none (the mission forbids a serve change). Stated plainly: `zoning_district_interim` is written and never read. Nothing in the envelope route, the router, the MCP payload or the PDF consults it. It exists so the fact is recoverable from the store instead of only from a log.",
+    "prerequisiteForTheSeat": "The integration seat must apply migration 0103 before running the stamp with --apply. The stamp FAILS CLOSED (Postgres errors on an unknown column in the UPDATE, so the very first batch aborts and zero rows are written) rather than silently stamping districts without the disclosure. This is the same prerequisite shape the CLI already documents for migration 0059 (`zoning_district`). Declared here, in the CLI docstring, and in the close.",
+    "migrationNumberClaim": "0103 -- the highest number committed on main OR anywhere in any fetched ref is 0102 (`git log --all --diff-filter=A --name-only -- 'lib/db/drizzle/*.sql'`), and no open PR touches lib/db/drizzle (checked against all six open PRs: #712, #701, #637, #636, #554, #510). Per lib/db/drizzle/README.md the number is claimed against main AND in-flight branches, both checked."
+  },
+  "theInterimRule": {
+    "config": "`BaseCodeParseConfig.interimQualifiers?: readonly string[]`, set to `['I']` on the three Austin registry entries (austin-tx, austin-tx-williamson, austin-tx-hays) as `AUSTIN_INTERIM_QUALIFIERS`.",
+    "rule": "When the published value has no direct resolution AND a declared qualifier heads it at a separator boundary, the qualifier is STRIPPED and the SAME rule runs on the remainder: the longest known base district at a separator boundary, then the planned-development pattern, then unrecognised. `I-SF-2-NP` -> base SF-2 with overlay NP and interim true; `I-RR-NP` -> RR with NP; `I-PUD` -> the planned-development route with interim true; `I-SF-4A` -> SF-4A. A qualifier followed by nothing (`I`, `I-`), or by a remainder matching no base (`I-XYZ`), stays `unrecognised` with the reason naming the qualifier.",
+    "vocabularyStaysFirst": "The direct resolution is attempted on the whole value BEFORE any qualifier is stripped, so a city that really rows a district whose code starts with a declared qualifier wins over the strip. No divergence from the existing order for any value that already resolved.",
+    "noBehaviourChangeWhenUnconfigured": "With `interimQualifiers` absent or empty, `parseBaseCode` returns exactly what it returned before this lane, field for field (the new `interim` field is `false`). The existing falsifier fixtures -- CS-1 longest match, SF-4 unrecognised, SF-4.5 unrecognised, R&D, W/LO, the `-`/`/`/whitespace separator rules, the empty value -- are re-asserted unchanged.",
+    "orderOfTheMeasuredBands": "The 14 live interim values move OUT of `unrecognised` (they are 14 of the 31 unrecognised values / 1,229 of the 1,544 unrecognised polygons measured by the predecessor at layer grain). That is the whole point of the lane, and it is why two existing test expectations in `zoningBaseCode.test.ts` (LIVE_SAMPLE['I-SF-2'], LIVE_SAMPLE['I-RR'], LIVE_SAMPLE['I-SF-4A'], the unrecognised-family histogram and the layer-audit bucket test) MUST change: they assert the old behaviour. Named here so the change is a declared consequence of the ruling, not a test edited to go green."
+  },
+  "theNoAccountSkip": {
+    "rule": "At stamp time a feature whose `prop_id` is `'0'`, empty/whitespace, or NULL writes no row and is counted by reason. The check runs BEFORE the PIP, so a no-account feature is never stamped by any bucket.",
+    "whereCounted": "`ZoningStampSummary.parcelsSkippedNoAccount` + `skippedNoAccountByReason` ('zero' | 'empty' | 'null'). The five-way bucket invariant replaces the four-way one: matched + plannedDevelopment + unrecognised + unmatched + skippedNoAccount == parcelsRead. Nothing is derived by subtraction (DEV-PROCESS 1.3), and no parcel can be silently dropped.",
+    "denominations": "`parcelsRead` keeps its existing meaning (distinct `feature_index` read for the county -- the number the predecessor's bands were written in). Three NEW numbers are reported beside it on every leg: `accountsRead` (distinct REAL `prop_id` among the features read), `accountBearingFeatures` (features read minus skipped), and `parcelsSkippedNoAccount`. The CLI prints all three, so no figure travels without its denominator or its denomination (DEV-PROCESS 1.1/1.2).",
+    "interimCounts": "`parcelsInterim` counts parcels whose stamped district came through an interim qualifier and whose kind is 'base' (a resolved interim district); `parcelsInterimPlannedDevelopment` counts `I-PUD`-class values. `interimBaseHistogram` names the base each interim value resolved to (the disclosure of WHAT it was read as, not just that it was interim)."
+  },
+  "wdlCardFrozenAtCp1": {
+    "whatDoneLooksLike": "An Austin dossier parcel that sits in a polygon publishing `I-SF-2` (a) is stamped `SF-2`, not left unstamped and not stamped `SF`; (b) carries the fact that the district is interim; (c) the run's own output names, on every leg, how many features and how many accounts were read, how many features were skipped for carrying no CAD account and why, and how many of the matched districts were interim; and (d) a Travis feature carrying `prop_id '0'` writes no row at all.",
+    "howItIsGradedHere": "Unit tests over the frozen live fixture (all 14 interim values), plus three staging dry runs whose only writes are none (`rows updated: 0`). The ROW ITSELF IS NOT CUSTOMER-DONE and cannot be graded here: the mission forbids applying the stamp, so the completion condition stays `closed-partial` until the integration seat applies it and P-255's census re-run shows Austin's district misses falling.",
+    "inTheLaneOwnWords": "An interim district reads as its base, and says so; a feature with no CAD account is skipped, and is counted."
+  },
+  "falsifiersPreRegistered": [
+    {
+      "id": 1,
+      "asWritten": "After the change, the Hays and Williamson interim parcels match a base, and the unrecognised count falls by at least the interim count on each leg.",
+      "preRegisteredAnswer": "PASS",
+      "band": {
+        "hays": "unrecognised_new = 0; fall = 361 (= the interim count). PASS band: unrecognised_new <= 5 and fall >= 356.",
+        "williamson": "unrecognised_new = 0; fall = 6,108 (= the interim count). PASS band: unrecognised_new <= 5 and fall >= 6,058.",
+        "reasoning": "In Hays and Williamson the ENTIRE unrecognised population measured by the predecessor is the interim family (Hays: I-RR 272 + I-SF-2 89 = 361; Williamson: I-SF-2 5,129 + I-RR 734 + I-MF-2 245 = 6,108), so resolving the interim family empties the bucket and the fall equals the interim count exactly.",
+        "denomination": "feature grain (the CLI's own `parcels read` denominator); the predecessor's Hays/Williamson bands were written in the same denomination because their feature/account ratio is 1.009 / 1.0015.",
+        "confoundDeclared": "The no-account skip changes the PIP denominator on the same run. If any interim-carrying feature also carries no CAD account it is now SKIPPED rather than matched, so the fall could be SHORT of the interim count. The skip is counted by reason, so this is separable and will be reported rather than absorbed. Recorded now, before measuring.",
+        "layerVintageCaveat": "The layer's `editingInfo.lastEditDate` was 2026-09-16T23:11:33.427Z when the predecessor measured it. The run reads and prints the vintage at source; if the layer has moved, the absolute numbers move with it and the band is graded against the vintage actually printed."
+      }
+    },
+    {
+      "id": 2,
+      "asWritten": "I-SF-2-NP parses to base SF-2, overlay NP, interim true (test).",
+      "preRegisteredAnswer": "PASS",
+      "band": "Exactly: kind='base', base='SF-2', overlays=['NP'], additionalBases=[], unmatchedParts=[], interim=true. Also asserted: I-RR-NP -> base RR + overlays ['NP'] + interim true; I-PUD -> kind 'planned-development' + interim true (base null); and all 14 live interim values resolve (12 to a base, I-PUD and no other to planned development).",
+      "denomination": "n/a (a unit assertion)."
+    },
+    {
+      "id": 3,
+      "asWritten": "With the qualifier rule removed, a test fails.",
+      "preRegisteredAnswer": "PASS",
+      "band": "The SAME shipped `parseBaseCode` run over the SAME 14 live values with only `interimQualifiers` removed (`[]`) yields `kind='unrecognised'` for 14 of 14, so a fixture-bound test asserting the resolved base for any of them fails. The test is written as a paired control: it re-runs the production parser with one config field changed and compares against the frozen expectations, so it cannot pass by both sides being wrong.",
+      "denomination": "n/a (a unit assertion, both directions)."
+    },
+    {
+      "id": 4,
+      "asWritten": "Travis's stamped-row count in the dry run equals its account-bearing feature count, and the skipped count equals the no-account feature count.",
+      "preRegisteredAnswer": "PASS, graded as a DECOMPOSITION rather than as the sentence's literal arithmetic, and the decomposition is stated here before measuring.",
+      "band": {
+        "legs": [
+          "skippedNoAccount == the count of features whose prop_id is '0'/empty/NULL (predecessor's measured Travis figure: 423,540 of 828,773 features carry prop_id '0'; band +/- 2%);",
+          "accountBearingFeatures == parcelsRead - skippedNoAccount;",
+          "bucketsSum (matched + plannedDevelopment + unrecognised + unmatched) == accountBearingFeatures -- i.e. no account-bearing feature is lost;",
+          "accountsRead == the store's distinct real prop_id for the county (predecessor measured 380,918; band +/- 2%);",
+          "reported separately: matched + plannedDevelopment + unrecognised, which is the count of features that actually reach the write path."
+        ],
+        "whyNotLiteral": "The sentence's first half is TRUE only if every account-bearing feature also falls inside an Austin zoning polygon. In Travis it does not: the predecessor measured 572,765 of 828,773 features in the 'no polygon' bucket (most of Travis is outside Austin). 'Stamped rows' therefore cannot equal 'account-bearing features' for any honest reading; what can equal it is the count of features ACCOUNTED FOR by the run, which is exactly what the five-way invariant asserts. The literal shortfall is not a defect and is not smoothed: the unmatched count is printed on the same line.",
+        "preRegisteredNumbers": "expected skipped ~= 423,540; accountBearingFeatures ~= 405,233; accountsRead ~= 380,918; unmatched ~= the predecessor's 572,765 minus any no-account features that used to sit in it."
+      }
+    }
+  ],
+  "measurementPlan": {
+    "instrument": "pnpm --filter @workspace/cad-ingest zoning-stamp -- --city=austin-tx-hays|austin-tx-williamson|austin-tx --dry-run, three separate legs, against the LDT STAGING store ONLY.",
+    "store": "LDT STAGING, host ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech (read-only in effect: --dry-run SELECTs and writes nothing; the run prints `rows updated: 0`).",
+    "lease": "scripts/heavy-scan-lease.mjs (from P:/doc_repo, where the script exists; the dispatch names it 'in doc_repo') take/release around all three legs, serializing the scan against every other lane. holder p259b-lane. The holderToken is persisted in scratch at take time (the predecessor's recorded LESSON: the API looks leases up BY TOKEN, and `list` prints the id).",
+    "announcement": "Before the first leg: target (three Austin legs over Hays 48209 / Williamson 48491 / Travis 48453), expected duration (the predecessor measured 676s / 278s / 1048s => ~34 min total), and the lease.",
+    "unitTests": "vitest over lib/cad-ingest (the two zoning test files plus the whole cad-ingest suite for the regression control), run locally before the dry runs.",
+    "noStoreWrite": "No --apply, no migration application, no INSERT/UPDATE/DELETE anywhere. The only database work is the stamp's own SELECTs.",
+    "noSecretPrinted": "hosts, lengths and presence only; the DSN never appears in an artifact, a log or a command line."
+  },
+  "constraintsHonoredSoFar": [
+    "FAN-DEPTH 0: no sub-agent launched by this lane (subAgents will be {spawned: 0, maxDepth: 0}).",
+    "Lane claimed before any work: exit 0.",
+    "Work in an ISOLATED checkout: a NEW clone at P:/tmp/p259b-interim-and-accounts; the predecessor's P:/tmp/p259-austin-zoning-source was read (its scratch is the provenance of every pre-change number) and never written.",
+    "Branched off the mission's declared branch and merged origin/main FIRST, before changing a line; no conflict arose.",
+    "No store written, no stamp applied, no merge, no deploy, no sub-agent, no setback table edited.",
+    "No secret printed: the staging DSN is read into a process env var and used only as a connection argument."
+  ],
+  "adversarialNotes": [
+    "THE BAND THE PREDECESSOR LEFT BROKEN. Falsifier 1 of the PREDECESSOR lane (P-259) pre-registered a Travis `parcelsRead` band of 380,917 +/- 2% and measured 828,773 -- a 2.18x miss -- because the band was written in ACCOUNT terms and the CLI reports FEATURES. This lane's falsifier 1 band is therefore written in the denomination the instrument actually prints, and the denomination is stated beside every number in the table. The predecessor's PARTIAL is inherited, not re-graded.",
+    "THE INTERIM VALUES ARE NOT ALL NUMBERED. `I-AV` (1 polygon) is in the live family and is easy to miss (it does not appear in any of the three county dry-run histograms the predecessor printed, because its one polygon covers no sampled parcel). The 14-value test is driven off the FIXTURE'S vocabulary (`allDistinctValues`), not off the parcel histograms, so a value that stamps nothing is still covered.",
+    "THE DISCLOSURE IS A ROW FACT, NOT A LOG FACT. Writing it only to the CLI's output would make it unrecoverable from the store and would not satisfy 'the stamped row records that the district is interim'. The column is the decision; the log is the second copy.",
+    "A GREEN TEST SUITE IS NOT THE GRADE. Two of the four falsifiers are statements about a staging run; the unit tests can be fully green with the dry-run table wrong, which is why the table is produced and transcribed literally rather than summarised."
+  ],
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

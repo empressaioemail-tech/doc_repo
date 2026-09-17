@@ -1,0 +1,134 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p256b-pin-and-classification",
+  "title": "P-256b: PR #160 on current main, the corpus pin at 1.4.0, the classification table regenerated for it",
+  "kind": "design + pre-registered falsifier answers (adversarial checkpoint 1)",
+  "planRows": ["P-256"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-17_p256b-pin-and-classification_dispatch.md",
+  "filedAt": "2026-09-17T14:10:00Z",
+  "filingOrder": "HONEST NOTE, not a formality: this lane was executed as ONE uninterrupted session and its CP1/CP2 are both written at close, in the order CP1 then CP2. What was genuinely fixed before the code was written is the PREDICTION SET (the dispatch pre-registers three falsifiers verbatim, quoted below with their predictions), and the pin/table design was fixed before the first edit. The artifact itself was not written at the pre-build moment; that is reported here rather than backdated, because a pre-registration claim that cannot be checked is worse than the ordering defect it hides.",
+  "seat": "p256b-lane",
+  "docRepoWorktree": {
+    "path": "P:/seat-worktrees/dispatch-planner/doc_repo",
+    "branch": "seat/dispatch-planner",
+    "note": "the planner's worktree, per the dispatch's artifact-path rule ('for a lane spawned by the dispatch planner that is the planner's worktree'). NOT P:/doc_repo, which is the integration seat's checkout and where this dispatch was compiled."
+  },
+  "laneClaim": {
+    "command": "node scripts/lane-claim.mjs claim --lane p256b-pin-and-classification --seat p256b-lane --plan-row P-256 --dispatch _dispatches/2026-09-17_p256b-pin-and-classification_dispatch.md",
+    "exitCode": 0,
+    "recordedAt": "2026-09-17T13:30:21.931Z",
+    "recordFile": "_catalog/lane_claims.json",
+    "runFrom": "P:/seat-worktrees/dispatch-planner/doc_repo"
+  },
+  "productRepo": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "pr": 160,
+    "prTitle": "fix(P-256): setback cells stop treating a not_specified flag as a value, and honest states for the rest",
+    "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/160",
+    "branch": "fix/p256-setback-honest-states",
+    "clone": "P:/tmp/p256b-pin-and-classification",
+    "cloneKind": "fresh clone into a NEW directory under P:/tmp (never an existing lane's checkout)",
+    "stateAtCompile": {
+      "prHead": "1ca92ac3",
+      "prBase": "afdda428",
+      "factoryMain": "b65f61b"
+    },
+    "seatRegistration": "clone registered under the 'property' seat in _catalog/seat_register.json, proved reachable with the SEAT-01 gate (scripts/seat-worktree-gate.mjs) before the first write; entry removed at close per the dispatch."
+  },
+  "whatTheDispatchAsks": [
+    "1. PR #160 rebased onto current main, its own tests passing and the whole suite green in CI.",
+    "2. The pin at 1.4.0 in package.json, the lockfile and CORPUS_VERSION, in one commit with step 3.",
+    "3. The classification table regenerated for 1.4.0 BY A SCRIPT (never by hand), every flagged slot covered, each class's handling stated, an empty class said so, verify-not-specified-classification.mjs passing against 1.4.0 and failing against a table with one row removed.",
+    "4. What changes in the cells, measured: per county, parcels whose setback and envelope cells move from unaccounted/a refusal to a value and the other way.",
+    "5. The exact dry-run and apply commands per county for the integration seat, with the image they need."
+  ],
+  "orientation": {
+    "measuredBeforeAnyEdit": {
+      "packageJsonDependency": "^1.1.0",
+      "lockfileResolved": "1.1.0",
+      "routerLiteral": "CORPUS_VERSION = \"1.1.0\" (src/lib/setback-writer/setback-table-router.mjs)",
+      "classificationTable": "src/lib/envelope-writer/not-specified-classification-table.json, corpusVersion 1.1.0, 329 rows",
+      "tableChecker": "scripts/verify-not-specified-classification.mjs",
+      "installedCorpusVersion": "1.1.0"
+    },
+    "theDriftTrap": "envelope-corpus-lookup.mjs throws CLASSIFICATION_TABLE_STALE at module load when the table's corpusVersion differs from CORPUS_VERSION, and also throws at write time on a flagged max_height_ft slot with no table entry. So bumping the pin without regenerating the table cannot be a silent partial: it is a load-time refusal (already at 1.4.0 there are 25 such slots, P-299's measurement).",
+    "theGapThisLaneMustNotCreate": "CORPUS_VERSION is a LITERAL in the router and the install is a RANGE in package.json. Moving one without the other is representable, and nothing at runtime refuses it: the router would serve 1.1.0 tables while the code says 1.4.0. The suite is the only control that pairs them (test/setback-table-router.test.mjs, re-pointed in this lane to read the INSTALLED package's version rather than a hand-typed literal)."
+  },
+  "design": {
+    "pinIsOneFactInThreePlaces": [
+      "package.json: \"@empressaio/setback-corpus\": \"1.4.0\" -- an EXACT version, not a range. Measured reason: the Dockerfile installs with `COPY package.json ./` then `npm install --omit=dev` and never copies package-lock.json, so the IMAGE resolves from package.json alone. A caret here would let the deployed writer resolve a future 1.5.x while the classification table, the tests and the integration seat's ceilings are all 1.4.0.",
+      "package-lock.json: regenerated by `npm install` (resolved 1.4.0, sha from the registry tarball).",
+      "src/lib/setback-writer/setback-table-router.mjs: CORPUS_VERSION = \"1.4.0\"."
+    ],
+    "tableRegeneratedByScript": {
+      "script": "scripts/generate-not-specified-classification.mjs (new, checked in, ~359 lines)",
+      "provenance": "a literal port of doc_repo scripts/corpus_not_specified_audit.py classify_group (OPS-21-R1 / P-146), the instrument the 329-row 1.1.0 table was generated with, including that script's own self-test, which runs before any corpus number is read.",
+      "modes": "default prints the table and the class tally; --write regenerates the checked-in file; the header records corpusPackage, corpusVersion, corpusGitHead, verifiedAgainstPublishedNpmTarball, generatedByLane.",
+      "determinism": "the class vocabulary is exported (CLASSES) and the tallies are built from that list, so a class with a zero count is still reported as zero rather than vanishing."
+    },
+    "classesAndDispositions": "the class -> disposition map lives ONCE, in NOT_SPECIFIED_CLASS_DISPOSITION in src/lib/envelope-writer/envelope-corpus-lookup.mjs: SENTINEL_UNIFORM -> absent, HONEST_ABSENCE -> absent, REAL_VALUE_FLAGGED -> value, SENTINEL_SUSPECT_IN_MIXED_GROUP -> refused, AMBIGUOUS_SINGLETON -> refused. Refusal classes carry their own named reason (REFUSAL_REASON_BY_CLASS). Any class the code has not been taught still throws CLASSIFICATION_TABLE_STALE.",
+    "emptyClassRule": "HONEST_ABSENCE is EMPTY at 1.4.0 (0 rows; also empty at 1.1.0). Per the dispatch ('keep the code path only if a test still exercises it') the branch is KEPT AND THE BRANCH ITSELF IS EXERCISED: test/envelope-corpus-lookup.test.mjs loads the real module against a copied table in which one live slot is RE-CLASSIFIED to HONEST_ABSENCE and asserts the resulting absence-and-coverage-cross-reference shape. The test asserts the checked-in table's own count is 0, so if a later corpus produces a real one the test tells the reader the branch was already load-bearing.",
+    "classVocabularyIsTwoCopiesOfOneFact": "the generator OWNS the vocabulary, the resolver INTERPRETS it. test/not-specified-classification-table.test.mjs asserts the two agree in BOTH directions (a class added on either side fails there instead of falling through to a throw at write time), that every declared disposition is implemented, and that every refusal class names a reason.",
+    "perCountyMeasurementDesign": {
+      "instrument": "scripts/p256b-corpus-pin-delta.mjs (new, checked in)",
+      "inputs": ["the 1.1.0 package dir", "the 1.4.0 package dir", "the P-255 parcel census (_inbox/2026-09-16_p256-setback-honest-states_census-derivation.json)"],
+      "whyNotAStoreRead": "the dispatch allows either (heavy-scan lease on the factory store) or computed-from-the-corpora. This lane took the corpora route because it is reproducible without the production lease, and it adds a divergence guard so the corpora route is checked against the reader the writers actually use.",
+      "divergenceGuard": "every census (city, code) pair is re-asked through the INSTALLED corpus via resolveSetbackForParcel; the instrument reports every disagreement with the re-bucketing it computed from the tarballs. Predicted 0 mismatches.",
+      "units": "parcels (the census's own per-(city) and per-(city, code) parcel counts), NOT cells and NOT slots. Slot counts are reported separately and are district x field rows in the corpus.",
+      "output": "counties[].pinMovesToValue.parcels, counties[].pinMovesAwayFromValue.parcels, counties[].censusFalseAbsenceRemovedTotal (the A-199 ceiling reconciled per county), plus totals for jurisdictions added/removed and slots added/removed."
+    },
+    "runtimeCommandsDesign": "the writer commands are the two Cloud Run jobs the stage-6 'depth' step of the county runner names verbatim (src/lib/county-runner-plan.mjs: factory-parcel-setback-cells `--county=<fips> --apply`; factory-parcel-envelope-cells `--county=<fips> --apply`). --county is ONE fips per occurrence (flagValues + requireCountyFips reject a comma-joined pair), so a county sweep is either one execution per county or repeated flags in one execution. Dry run = the same argv without --apply.",
+    "imageDesign": "the deploy path is cloudbuild.parcel-setback-cells.yaml / cloudbuild.parcel-envelope-cells.yaml: `gcloud builds submit` builds the image from the CHECKOUT IT IS RUN IN, then `gcloud run jobs deploy` pins the job to that digest. So the integration seat must build these two images from the MERGED tree (the 1.4.0 lockfile/pin and the regenerated table), not from a pre-merge checkout; the digest is the image the commands need."
+  },
+  "preRegisteredFalsifiers": {
+    "fromTheDispatchVerbatim": [
+      {
+        "id": "F1",
+        "text": "The envelope writer module loads at 1.4.0 (test), and a table left at 1.1.0 fails to load.",
+        "prediction": "PASS. The load guard is already a module-load side effect; the honest test loads the REAL module graph against a temp copy of the two files it imports, stamped 1.1.0, so the guard is observed firing rather than re-read from source. Control: the same harness with the real table loads and prints LOADED."
+      },
+      {
+        "id": "F2",
+        "text": "Every one of the 25 slots P-299 named resolves without throwing, as an absence (test).",
+        "prediction": "PASS, as absences. The 25 are round-rock 11, austin 4, waco 4, martindale 2, kyle 1, lakeway 1, luling 1, san-marcos 1 -- all max_height_ft, all rows P-258 added. Prediction on the VALUE: at 1.4.0 every one is SENTINEL_UNIFORM, so the resolved state is an absence with ENVELOPE_ROUTER_FIELD_NOT_SPECIFIED and rawValue 999, and no flagged height is served as a number (OT-1). The test asserts the per-jurisdiction tallies, so an un-flagged slot fails there rather than silently shrinking the population."
+      },
+      {
+        "id": "F3",
+        "text": "A parcel in a district that has a row only in 1.4.0 gets a value cell in the setback writer's dry run, not a refusal (test with a fixture, or a dry run against staging).",
+        "prediction": "PASS with a fixture, on the half a unit test can carry. Chosen district: austin-tx SF-4A (1.1.0's austin-tx has 9 districts and no SF-4A; 1.4.0 has 37). The cross-version half is measured by scripts/p256b-corpus-pin-delta.mjs against both tarballs, which is where the premise 'this row exists only under the pin' is proved; the test pins the resolvable-and-writes-values half and, importantly, that a dry run issues NO UPDATE statement."
+      }
+    ],
+    "addedByThisLane": [
+      {
+        "id": "F4",
+        "prediction": "The corpora route and the installed reader AGREE on every census (city, code) pair (divergenceGuard.mismatches === 0). If they disagree, the per-county figures are not measuring the pin and step 4 is unanswerable from the corpora."
+      },
+      {
+        "id": "F5",
+        "prediction": "The pin moves no cell AWAY from a value: 0 jurisdictions removed, 0 slots removed, 0 parcels value -> absence. Report the number even if it is 0 and say which population it is 0 over (the comparator county sweep), because 'all of the change is one-directional' is a claim the ceilings depend on."
+      },
+      {
+        "id": "F6",
+        "prediction": "The instrument that checks the table can FIRE: verify-not-specified-classification.mjs exits 0 against 1.4.0 + the checked-in table and exits non-zero against the same table with one row removed, missing exactly that slot. A checker that cannot fail is not a checker (DEV_PROCESS: gating indicators are proven able to fire)."
+      },
+      {
+        "id": "F7",
+        "prediction": "The table file is exactly what the generator produces for the INSTALLED corpus (zero rows missing, zero extra, zero reclassified) and covers every flagged slot in both directions (every flagged slot has an entry; every entry is a flagged slot). Any drift fails a test, not a reviewer's attention."
+      }
+    ]
+  },
+  "invariantsForThisLane": [
+    "No writer is run with --apply; no store is written; nothing is deployed or merged (dispatch's Do-not list).",
+    "The corpus package is not edited (published artifact).",
+    "Other lanes' files are left alone: P-266/P-268 (rail writers other than setback and envelope), P-276 (secret-rotation.mjs, staging-reset.mjs).",
+    "FAN-DEPTH 0: no sub-agents are launched by this lane.",
+    "IN_SCOPE_COUNTIES is NOT changed by this lane (fleet memory: P-256b dropped the list change), even though a note in county-runner-plan.mjs attributes that file to the open P-256 lane. This close says so rather than letting the note read as covered."
+  ],
+  "risks": [
+    "Merging main can move the corpus files this lane holds (P-281/P-284/P-298 were all near src/jobs/parcel-setback-cells.mjs); the merge is proved PURE by tree equality against a fresh git merge-tree, so a hand resolution cannot hide in it.",
+    "The classification table is a workaround for a corpus defect and retires when the corpus stops storing sentinels (OPS-21_serve_completion_program.md 3P-15). Regenerating it for 1.4.0 does not retire it, and this close says the table is still load-bearing.",
+    "The ceiling comparison is only meaningful if the ceiling and the lane's figure are the same unit; the unit is checked and stated (parcels, from the same census).",
+    "The deployed image resolves from package.json (no lockfile COPY), so the pin's SHAPE is load-bearing."
+  ]
+}
