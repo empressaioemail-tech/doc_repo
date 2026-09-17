@@ -2,7 +2,7 @@
 id: smartcity_package
 title: "SmartCity OS — the package: links, state, and what is next"
 status: active
-last_updated: 2026-09-16
+last_updated: 2026-09-17
 applies_to: smartcity
 owner: nick
 programs: [OPS-17]
@@ -17,7 +17,33 @@ related:
 
 # SmartCity OS — the package
 
-Parked 2026-09-16. Open this first, then `_design/INDEX.md` for the designs themselves.
+Unparked 2026-09-17. Open this first, then `_design/INDEX.md` for the designs themselves.
+
+## Read this before anything else, 2026-09-17
+
+**Every design is approved** (`_decisions/2026-09-17_design_ratification_all_approved.md`). Three of
+them are approved and still not buildable, and the reasons are defects and deferrals rather than
+review states: `smartcity-finance-filings` (G-138), `plan-review-departments` (G-144) and
+`smartcity-applicant-precheck` (the blending ruling is deferred, so no service owns the check).
+
+**The staff dashboards surface is still on GCP, and it moves to DigitalOcean before any build
+work.** Operator ruling 2026-09-17, carded as OPS-25 **D-12**, which is now the critical path for
+every build row below. Verified the same day by edge header rather than by a status field:
+`smartcityos.io` returns `Server: cloudflare` (DigitalOcean), the dashboards `run.app` URL returns
+`server: Google Frontend` (still GCP). The live product link further down this page is the GCP one.
+
+**A merge ships nothing, and that is verified rather than assumed.** `smartcity-dashboards` has one
+GitHub workflow with zero deploy references, and `gcloud builds triggers list` returns zero across
+`smartcity-os-prod`, `hauska-prod-497015` and `legacy-design-tools-prod`. Two traps neither
+2026-09-17 handoff carried: the GCP dashboards original lives in its OWN project
+(`smartcity-dashboards`, us-east1, NOT `smartcity-os-prod`) with traffic PINNED BY REVISION NAME to
+`smartcity-dashboards-00074-sil`, so a plain redeploy is a silent no-op that reports success; and
+the DigitalOcean app builds from branch `d9-pin-96efa35`, diverged from main in both directions, so
+until D-12 repoints it a merge to main does not even reach the build source. `plan-review` has the
+identical traffic pin (`plan-review-00025-ley`). Both are inside D-12's scope.
+
+**Carded build rows:** G-149 (flood study, blocked on D-12) and G-150 (reasoner path, `plan-review`,
+not blocked). The other eight approved designs have no row yet and need a carding pass.
 
 ## The three links
 
@@ -42,14 +68,24 @@ changes, the folder changes first and the gallery is republished from it, never 
 
 Run `node scripts/govtech/design-completion-gate.mjs` from the repo root. It refuses rather than
 reports: it exits 1 while design is unfinished and 0 only when every shipped nav surface is either
-designed or excluded by a dated ruling. As of 2026-09-16 it reads:
+designed or excluded by a dated ruling. As of 2026-09-17T21:45Z it reads:
 
     nav surfaces:        15
     designed:            10
     excluded by ruling:   2
     uncovered:            3
-    design folders:      16, with an instrument: 8
-    verdict: UNFINISHED
+    design folders:      17, with an instrument: 9
+    R3 findings:          6
+    R4 findings:          3
+    verdict: UNFINISHED — 9 findings
+
+R3 rose from 4 to 6 on 2026-09-17 because blanket approval moved two designs past DRAFT that carry
+no `check.mjs`, `smartcity-finance-filings` and `plan-review-departments`. Nine of the eleven newly
+approved designs already carried one, so approval cost two findings rather than eleven.
+
+**The gate reads status from `_design/INDEX.md`, not from the folder READMEs.** Editing a README
+does not move it. Both were updated on 2026-09-17; nothing keeps them honest with each other, and a
+gate rule comparing the two is worth building and is not carded.
 
 **All nine lenses are designed.** The three uncovered surfaces are Citizen (G-142), Records search
 (G-147) and People and access (G-143). Assets and Connections are excluded by standing ruling and
@@ -142,7 +178,8 @@ a required field is silently absent on every live record.
 | Item | Blocks |
 |---|---|
 | **Operator-namespace ruling.** Fleet and Police declare byte-identical `OPERATOR_REF_FORMAT` and `OPERATOR_BASIS` in two modules with no import between them, and nothing says whether `OPR-01` is the same person. Recommendation in A-139: namespace by domain | any build on either lens |
-| **Ratify, amend or kill — eight drafts.** Finance lens, Smart Files, Development services, and the five department lenses | the Bastrop approval package, which gates build |
+| ~~**Ratify, amend or kill — eight drafts.**~~ **DONE 2026-09-17.** Operator approved every design (`_decisions/2026-09-17_design_ratification_all_approved.md`). Three are approved and still not buildable: finance-filings (G-138), plan-review-departments (G-144), applicant-precheck (blending ruling deferred) | nothing now |
+| **The blending ruling** (Smart Site / Smart Files / SmartCity plan review / Development services), DEFERRED by the operator 2026-09-17 | the applicant-precheck build, which cannot name a repo until it lands |
 | Naming the vendor on a lens panel; the Public works region switcher | build, not review |
 | The fund number for the Finance filings AMEND, from the city finance director | G-138 |
 | The Bastrop GIS question above | G-140 |

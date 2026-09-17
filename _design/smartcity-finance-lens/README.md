@@ -2,7 +2,7 @@
 
 **Artifact:** https://claude.ai/artifact/X3wFv3PfAh8aehLrjUbWL6
 **Decision:** none yet, operator review owed
-**Status:** draft, 2026-09-15. Not ratified, not dispatched.
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. Not dispatched; implementation row to allocate.
 **Relation to `_design/smartcity-finance-filings/`:** that folder is ONE tab of this lens, the
 Localgov filings reconciliation, and it is under an AMEND ruling. This is the lens itself.
 

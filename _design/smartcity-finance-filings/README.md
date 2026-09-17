@@ -4,7 +4,7 @@
 **Decision:** AMEND, ruled 2026-09-15, `_decisions/2026-09-15_design_ratification_pass.md`
 **Scope:** `_inbox/2026-09-15_localgov_filings_integration_scope.md`
 **Plan rows:** OPS-17, allocate at dispatch (scope card 4 is the Finance lens)
-**Status:** AMEND. NOT ratified and may not be until the two citations below are sourced or
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. **G-138 STILL BLOCKS THE BUILD:** approval does not make a citation true. The two citations below must be sourced or
 badged. Not dispatched.
 
 Five artboards: reconciled, exceptions, lodging economy, unlabelled, empty.

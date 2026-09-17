@@ -2,7 +2,7 @@
 
 **Artifact:** https://claude.ai/artifact/DcXLJ7uAJFdZ1eVMJVGas4
 **Decision:** none yet, operator review owed
-**Status:** draft, 2026-09-15. Not ratified, not dispatched.
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. Not dispatched; implementation row to allocate.
 **Source:** `smart-files` at `origin/main` `61c84f6`, read 2026-09-15: `README.md`,
 `src/identity.mjs`, `src/extract.mjs`, `web/index.html`.
 

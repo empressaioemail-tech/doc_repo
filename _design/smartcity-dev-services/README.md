@@ -3,7 +3,7 @@
 **Artifact:** https://claude.ai/artifact/4ohGzSBeNYkNZm1h1NfYeq
 (same canvas as the older `code/artifact/1ed0733e-e10c-4ec6-948e-66d2b24e562e` spelling; this is the canonical URL)
 **Decision:** pending operator ratification
-**Status:** IN REVIEW. Extended and corrected 2026-09-15; the lens is now complete at six artboards.
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. Complete at six artboards; extended and corrected 2026-09-15.
 **Source:** v1 capture `SmartCity OS Screenshots (1).pdf`, 18 pages, read frame by frame (2026-09-14).
 Extended 2026-09-15 from `smartcity-dashboards` at `origin/main` `f776b4bf` read directly:
 `web/index.html`, `src/adapters.mjs`, `src/fixture-seam.mjs`, and the three domain modules

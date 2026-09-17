@@ -3,7 +3,7 @@
 **Artifact:** not published. DRAFT of 2026-09-15, produced under OPS-17 G-145, lane
 `g145c-fleet-lens`. Publication is the planner's call, not this lane's.
 **Decision:** none yet. The ratifying decision belongs in `_decisions/` and should link back here.
-**Status:** DRAFT, not ratified. Bastrop approves the design before we build.
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. Not dispatched; implementation row to allocate.
 **Source:** `smartcity-dashboards` at `origin/main` `f776b4bf24114ed4061609d28c0429f84eb431b7`,
 read through a read-only `git archive` of that commit: `src/domains.mjs`,
 `src/domains/fleet-vehicles.mjs`, `src/domains/patrol-vehicles.mjs`, `src/fixture-seam.mjs`,

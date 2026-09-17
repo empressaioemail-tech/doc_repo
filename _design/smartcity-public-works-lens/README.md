@@ -4,7 +4,7 @@
 `g145a-department-lenses`. Publication is the planner's call, not this lane's.
 **Decision:** none yet. This folder holds the artefact and its source; the ratifying decision
 belongs in `_decisions/` and should link back here.
-**Status:** DRAFT, not ratified. Bastrop approves the design before we build.
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. Not dispatched; implementation row to allocate.
 **Source:** `smartcity-dashboards` at `origin/main` `f776b4bf24114ed4061609d28c0429f84eb431b7`,
 read directly: `src/domains.mjs`, `src/domains/cip-projects.mjs`, `src/domains/call-analytics.mjs`,
 `src/fixture-seam.mjs`, `src/adapters.mjs`, `src/city-pack.mjs`, `src/staff-review.mjs`,

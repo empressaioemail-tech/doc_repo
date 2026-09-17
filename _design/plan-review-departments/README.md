@@ -3,7 +3,7 @@
 **Artifact:** https://claude.ai/artifact/SMY4zWUK14XcgUGxAQgBFV
 **Continues:** `_design/plan-review-reasoner/` — same product, same finding numbering, same
 three real citations. That folder pinned parallel review; this is the argument.
-**Status:** draft, 2026-09-15. Not ratified, not built. **No longer blocked as a question:** the
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. **G-144 STILL BLOCKS THE BUILD:** the role-gate amendment is DEFERRED, so departments other than Development services cannot reach the surface. **No longer blocked as a question:** the
 role-gate amendment was DEFERRED 2026-09-15 with a trigger,
 `_decisions/2026-09-15_plan_review_role_gate_deferred.md`. This design may be shown. It cannot be
 built until the gate is amended, which is owed before launch.

@@ -1,7 +1,7 @@
 # SmartCity applicant precheck
 
 **Artifact:** on the combined design canvas, first row: https://claude.ai/artifact/FBWcVY3f1gRa3HswLoeQaY (version 11, 2026-09-17). No canvas of its own.
-**Status:** DRAFT 2026-09-17, not ratified. An initial design; the operator asked for it ahead of a wider discussion.
+**Status:** RATIFIED 2026-09-17, `_decisions/2026-09-17_design_ratification_all_approved.md`. **NOT BUILDABLE:** the operator deferred the blending ruling in the same session, so which service runs the check is unresolved and no build row can name a repo.
 **Plan rows:** OPS-17 G-147 (the applicant-facing plan review view) and G-142 (the Citizen lens). This folder does NOT cover the Citizen lens nav surface. The shipped Citizen page ("Near you", requests, payments, meetings) is still undesigned, and `design-completion-gate.mjs` still reports `lens:citizen` as uncovered, deliberately.
 **Decision record:** none yet. The operator's answers below were given in session on 2026-09-17 and are recorded here.
 
