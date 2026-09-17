@@ -1,0 +1,31 @@
+P-299 FALSIFIER 2 — "Austin SF-1 keeps its 35 ft and loses the flag"
+Literal before/after, read from BOTH repos' shipped tables (corpus = the source of
+truth; LDT = its vendored copy). Before = the lane base (corpus fc4a25e for the
+corpus, LDT HEAD~2 for this repo); after = the lane HEAD.
+
+=== hauska-setback-corpus src/setbacks/austin-tx.json ===
+BEFORE {"district":"SF-1 Single-Family Residence Large Lot","max_height_ft":35,"flag":true,"state":"asserted","confidence":0.6,"quote":"? 25-2-492 site-development table: SF-1 row provides the stated base-yard, height, building-coverage, and impervious-cov"}
+AFTER  {"district":"SF-1 Single-Family Residence Large Lot","max_height_ft":35,"flag":false,"state":"asserted","confidence":0.6,"quote":"? 25-2-492 site-development table: SF-1 row provides the stated base-yard, height, building-coverage, and impervious-cov"}
+
+=== legacy-design-tools lib/adapters/src/local/setbacks/austin-tx.json ===
+BEFORE {"max_height_ft":35,"flag":true,"state":"asserted","confidence":0.6}
+AFTER  {"max_height_ft":35,"flag":false,"state":"asserted","confidence":0.6}
+
+35 ft is KEPT (the value is not normalized to the canonical 999) and the
+`not_specified` flag is GONE. The quote and the `asserted` state are untouched,
+which is the point: this row's flag was the defect, not its number.
+
+THE EVIDENCE FOR "35 IS REAL" IS STATED HONESTLY. The row's own quote does NOT
+restate the number -- it names the tabulated height column ("the SF-1 row provides
+the stated base-yard, height, building-coverage, and impervious-cover values").
+The basis for clearing the flag is therefore the OPS-21-R1 / P-146 instrument's
+REAL_VALUE_FLAGGED classification (the flagged values in Austin's residential
+group are VARIED -- 35/35/35/40/40/40/60/60/90 -- i.e. transcribed numbers, not
+one uniform placeholder), and the file's P-299 OT-1 note block says exactly that.
+An earlier revision of the note, the README, CHANGELOG 1.4.0 and the PR
+description claimed all 40 flag-cleared rows' quotes state the figure; that was
+true of 6, and it was corrected in corpus 20275b0 / LDT fca30771.
+
+Test that pins this, run in the corpus (src/setbacks/__tests__/p299-height-flag-and-state.test.ts):
+  "Austin's SF-1 keeps its 35 ft and has LOST the not_specified flag (falsifier 2)"
+  -> 1 passed (see f2-austin-sf1-test.txt)

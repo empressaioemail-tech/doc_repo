@@ -1,0 +1,168 @@
+{
+  "lane": "p294-republish-on-change",
+  "seat": "claude-p294",
+  "checkpoint": "CP2-post-build-adversarial",
+  "planRows": ["P-294"],
+  "filedAt": "2026-09-17T01:20:00Z",
+  "cp1": "_inbox/2026-09-17_p294-republish-on-change_cp1.json",
+  "dispatch": "_dispatches/2026-09-17_p294-republish-on-change_dispatch.md",
+  "where": {
+    "repo": "hauska-factory",
+    "build": "P:/tmp/p294-republish-on-change (standalone clone; the directory IS the worktree, same shape as the hauska-factory-* clones under P:/tmp)",
+    "branch": "feat/p294-republish-on-change",
+    "head": "de74607e586801c34c0f79275121bda2573a7868",
+    "startCommit": "47c7dfc1580c507043763f982e23ef96a52ffe4a",
+    "startCommitIsAlive": "yes -- git merge-base HEAD origin/main = 47c7dfc, and origin/main is STILL 47c7dfc at CP2 (fetched, 2026-09-17T01:18Z). No rebase needed, no divergence from main.",
+    "workingTree": "clean (git status --porcelain empty)",
+    "artifacts": "P:/seat-worktrees/p294-republish-on-change/doc_repo (this seat's worktree). Doc_repo edits are LEFT UNCOMMITTED per contract section 6."
+  },
+
+  "whatThisCheckpointIs": "The post-build adversarial pass, filed after CP1's design was built and before the close. CP1's job was to pre-register the falsifier answers and the queries; this one reports the BUILT thing against that pre-registration, including every place the build deliberately or accidentally differs from CP1, and the probes that were run to try to make the signal lie.",
+
+  "divergencesFromCp1": [
+    {
+      "id": "D1 the schedule is a SCRIPT, not a checked-in JSON definition",
+      "cp1Said": "scripts/schedulers/republish-on-change.scheduler.json (checked in, not created and not enabled)",
+      "built": "scripts/create-republish-on-change-scheduler.mjs -- a script that DEFINES the spec (SCHEDULER_NAME, SCHEDULE, RUN_ARGS, schedulerSpec()), prints it, and refuses to create or enable anything unless asked. It exports ensureRepublishScheduler for the integration seat.",
+      "why": "a bare JSON file cannot carry the arithmetic that justifies the cadence, cannot be read back and diffed against the live scheduler, and cannot refuse. The dispatch's requirement is 'a schedule definition, checked in and not enabled', which this satisfies more strongly: the file's own header states it does not create the schedule, and the dry-run body is a constant in code that a test reads."
+    },
+    {
+      "id": "D2 the cadence is DAILY, not every 6 hours",
+      "cp1Said": "every 6 hours (0 */6 * * *) with --max-counties=1, with 12h/--max-counties=2 as the stated alternative; CP1's own arithmetic already admitted the capped worst case does not fit 6h",
+      "built": "0 7 * * * (Etc/UTC) with --max-counties=1, body = dry run",
+      "why": "one county's full cycle is a staging reset (600s) plus up to two publishes at the child's own 6h task timeout each, i.e. up to ~12.2h. A 12h cadence fits that only at the boundary; a 6h cadence does not fit it at all. Daily with one county per cycle is the cadence whose worst case fits inside the cadence, and 'one county at a time' is also law 3. The 12h/--max-counties=2 alternative is stated in the script header rather than picked quietly."
+    },
+    {
+      "id": "D3 the staging reset is ON by default (--no-staging-reset to opt out), not opt-in",
+      "cp1Said": "--reset-staging (opt-in; default OFF)",
+      "built": "stagingReset: !hasFlag(argv, \"--no-staging-reset\") -- ON by default; the reset runs once per loop, only for a CHANGED county, and only inside the --apply branch (src/jobs/republish-on-change.mjs:576-586)",
+      "why": "the sanctioned publish path is staging-then-production and the staging publish is preceded by the reset the publish pipeline already defines; the deploy template's own TIMEOUT arithmetic (86400s) is computed on 'staging-reset 600s + two publishes at 6h'. With the flag absent the reset cannot fire at all (no child is dispatched without --apply), so the default is inert until someone escalates with --apply -- and then it does what the pipeline expects.",
+      "callOutToIntegrationSeat": "the FIRST --apply run therefore RESETS STAGING once, before the first staging publish. That is intended and is the reason the loop's timeout is 24h; if the seat wants a first apply run WITHOUT a reset, it must pass --no-staging-reset explicitly."
+    },
+    {
+      "id": "D4 the target flag is --targets=both|staging|production, and --json does not exist",
+      "cp1Said": "--target=staging|production (default both, staging first) and --json in the flag list",
+      "built": "--targets=both (default) | staging | production | a comma list; no --json (the CLI always prints JSON)",
+      "why": "parseTargets refuses an unknown target rather than narrowing silently. The closed flag list (P-229 discipline) also means --json REFUSES: measured live at CP2, `node src/cli.mjs republish-on-change --signal-only --json` exits 1 with UNKNOWN_ARGUMENT. CP1 listed a flag the build does not have; the build refuses it loudly rather than ignoring it, which is the safe direction."
+    },
+    {
+      "id": "D5 the default --max-counties is 1, not 2",
+      "cp1Said": "flags list said '--max-counties=N (per-run cap, default 2)'; the schedule proposal already argued for 1",
+      "built": "DEFAULT_MAX_COUNTIES = 1, and the deploy template passes --max-counties=1 explicitly",
+      "why": "law 3 (one county at a time until the farm is proven) and the cadence arithmetic converge on 1. D2 is the same decision seen from the cadence side."
+    }
+  ],
+
+  "falsifiersBuilt": {
+    "countingRule": "one row per pre-registered falsifier; 'arms' counts node:test tests whose name begins with that falsifier's id, read from the test file (38 tests in total, all in test/republish-on-change.test.mjs). Verdicts are the assertions' own; the run below is the literal command and its TAP totals.",
+    "run": "node --test test/republish-on-change.test.mjs, 4 runs during the build and once more at CP2: tests 38, pass 38, fail 0, skipped 0, todo 0",
+    "F1": {
+      "dispatchText": "A county with no writer run and no verdict change since its last publish is skipped, with the reason.",
+      "verdict": "PASS",
+      "arms": ["F1: a county with no writer record and no verdict change since its last publish is skipped, with the reason", "F1b: the skip is only licit when both writer dimensions were actually readable"],
+      "evidence": "the summary's disposition is UNCHANGED_SINCE_LAST_PRODUCTION_PUBLISH carrying the boundary (publish_runs id + completed_at, and the publish run's started_at) plus the counts examined per dimension; the publish executor records ZERO calls. F1b is the paired control: when either writer dimension could not be read, the county is NOT skipped and the absence is named."
+    },
+    "F2": {
+      "dispatchText": "A county whose writer ran after its last publish is selected, with the run id as evidence.",
+      "verdict": "PASS",
+      "arms": ["F2", "F2b", "F2c", "F2d", "F2e", "F2f", "F2g"],
+      "evidence": "F2 asserts the fixture's literal run id appears in the summary's evidence and the county in `selected`; F2b covers the three scope shapes runs.scope can carry a county in (county / countyFips / counties[]); F2c a different county's run does not select this one; F2d a county-keyed stage_run_record selects the county even when the writer run named none (the P-284 grain); F2e a verdict whose VALUE changed selects and one that changed and reverted does not; F2f a county with no succeeded production publish is selected NEVER_PUBLISHED_PRODUCTION and never skipped; F2g a publish_runs row with no runs row is a named absence."
+    },
+    "F3": {
+      "dispatchText": "Without --apply, nothing is published (test with a fake publish).",
+      "verdict": "PASS",
+      "arms": ["F3: without --apply nothing is published, and the dry run says what it would have done", "F3b: the CLI defaults are a dry run against every program county, capped at one"],
+      "evidence": "with a changed county selected, the fake publish executor records zero dispatches; every county in scope still gets a P-284 stage record with run_mode='dry-run' and run_id NULL (stage-runs.mjs itself refuses a dry run that names a run id). F3b pins the CLI defaults: no --apply, all program counties, cap 1."
+    },
+    "F4": {
+      "dispatchText": "A publish that requirePreBakeReadiness refuses stops the job for that county and is recorded.",
+      "verdict": "PASS",
+      "arms": ["F4", "F4b", "F4c", "F4d"],
+      "evidence": "F4: the child fails and the county's refusal carries the child's own refuse_code read back from runs.refuse_code, with exactly ONE dispatch for that county (production is never attempted after a refused staging publish) and instrument_verdict naming the leg. F4b: the refusal stops the county, not the loop -- the next county is still dispatched. F4c: without OPERATOR_PUBLISH_GO on this job's own environment the production leg is refused BEFORE any child execution is created. F4d: a staging reset that fails refuses the county before any publish is dispatched."
+    },
+    "F5": {
+      "dispatchText": "(self-imposed, DEV_PROCESS 2.6 paired controls)",
+      "verdict": "PASS",
+      "arms": ["F5 (paired control): the boundary is exercised on both sides", "F5b (paired control): the publish boundary is the publish's START, not its completion"],
+      "evidence": "the same fixture one second BEFORE the boundary reads unchanged and one second AFTER reads changed -- the signal demonstrably can say both things. F5b is the divergence test between the two candidate boundaries: a writer that started after the publish's started_at but before its completed_at is selected, which is what makes the start the boundary."
+    }
+  },
+
+  "adversarialProbes": [
+    {
+      "probe": "the forbidden scan cannot creep back in",
+      "how": "test 'the signal and the job never read parcel_record_cell' reads BOTH source files and asserts the string parcel_record_cell appears only in comments that explain why it is not read; the change-signal SQL constants are exported and asserted one by one (LAST_PRODUCTION_PUBLISH_SQL, PUBLISH_RUN_START_SQL, WRITER_STAGE_RECORDS_SQL, WRITER_RUNS_SQL, COUNTY_VERDICTS_SQL, PREVIOUS_OBSERVATION_SQL).",
+      "result": "PASS -- and CP1's EXPLAIN of the forbidden form is recorded there as the reason (cost 2,794,686.95; 12,476,261 rows scanned)."
+    },
+    {
+      "probe": "the deployed default cannot reach production by accident",
+      "how": "independent of node: cloudbuild.publish.yaml parsed with PyYAML (parses OK) and the EFFECTIVE (comment-stripped) factory-republish-on-change stanza extracted at CP2",
+      "result": "PASS -- ARGS=\"republish-on-change,--max-counties=1\" (no --apply), TIMEOUT=86400, MEM=1Gi, SECRETS=FACTORY_DATABASE_URL + STAGING_HAUSKA_MCP_URL + PRODUCTION_HAUSKA_MCP_URL. The stanza's effective lines contain NEITHER OPERATOR_PUBLISH_GO NOR PRODUCTION_SITE_URL (they appear only inside its comments, which is why a naive text search reads a false positive -- the probe strips comments for exactly that reason)."
+    },
+    {
+      "probe": "the pinning loop and the case branches agree",
+      "how": "the same PyYAML read: the `for JOB in ...` list against the `factory-*)` case labels",
+      "result": "PASS -- 6 in the loop, 6 branches, zero in either direction. A job added to the loop with no branch (or a branch with no loop entry) would be a silent no-deploy; factory-republish-on-change is in both."
+    },
+    {
+      "probe": "the job is actually reachable from the CLI (not just imported by a test)",
+      "how": "two live invocations at CP2 with FACTORY_DATABASE_URL pointed at a REFUSED address (postgresql://nobody:nopass@127.0.0.1:1/none) so that no real store could be touched",
+      "result": "`republish-on-change --signal-only --json` -> exit 1, stderr UNKNOWN_ARGUMENT (the closed flag list refuses --json, which CP1 wrongly listed); `republish-on-change --signal-only` -> exit 1, stderr ECONNREFUSED, i.e. the command reaches the store and dies there rather than never arriving. Both refusals are named errors, neither is silent."
+    },
+    {
+      "probe": "the stage map's writesRecords claim is proved against the file it names",
+      "how": "the pre-existing P-284 test, whose pinned non-vacuity count moved 2 -> 3 and is now ALSO asserted as a literal set",
+      "result": "PASS -- the three phases claiming writesRecords are exactly parcel-envelope-cells, parcel-setback-cells, republish-on-change, and the loop proves each names a file that really imports ../control/stage-runs.mjs."
+    },
+    {
+      "probe": "the baseline survives a round trip through the store, not just through a variable",
+      "how": "two-arm test 'the baseline this job writes is the baseline it can read back: two cycles, one store'",
+      "result": "PASS -- cycle 2 reads back exactly the map cycle 1 wrote. This arm was ADDED after a real defect this lane found in itself: the baseline was being nested one level too deep, so cycle 2 could not read what cycle 1 wrote while every single-cycle test stayed green."
+    }
+  ],
+
+  "counts": {
+    "countingRules": "every figure names its counting rule. Test totals are node --test's TAP totals on the command printed. CI figures are the check-run `conclusion` string (contract section 5: the STRING, not `gh pr checks`'s 'pass'). Diff figures are git's own numstat.",
+    "newTests": "38 tests in test/republish-on-change.test.mjs (1,371 lines); 17 of them are the falsifier set F1..F5b",
+    "newTestsPassing": "38/38 local, 0 fail, 0 skipped, 0 todo",
+    "repoSuiteLocal": "node --test test/*.test.mjs on this laptop: tests 1602, pass 1567, fail 1, skipped 32, todo 2. The single failure is test/ctx-b3-store-census.test.mjs ('resolveLeafPaths against the real pinned LDT checkout agrees with the maintained mirror'): it compares against a pinned LDT checkout which the CI job checks out (legacy-design-tools@main) and this Windows clone does not have. Not this lane's file, not reachable from this lane's diff, green in CI.",
+    "repoSuiteCi": "green -- the `test` check-run is conclusion=success on this head (the job runs npm test after migrate + four drift/coverage scripts)",
+    "ciCheckRunsOnHead": ["test | status=completed | conclusion=success", "gate8 | status=completed | conclusion=success", "ldt-sha-comment-presence | status=completed | conclusion=success", "test | status=completed | conclusion=success", "gate8 | status=completed | conclusion=success", "ldt-sha-comment-presence | status=completed | conclusion=success"],
+    "diff": "9 files changed, 3077 insertions(+), 5 deletions(-)",
+    "liveStoreReads": "0 against any production store by this lane's own commands; the only live store contact was CP1's read-only EXPLAIN/SELECT survey under parcel_record_ro (2026-09-17T00:42-00:58Z) and the two refused-address CLI probes above",
+    "subAgents": "0 spawned, depth 0 (FAN-DEPTH 0)"
+  },
+
+  "constraintsHonored": [
+    "FAN-DEPTH 0: no sub-agent launched, none needed; subAgents will declare 0/0.",
+    "No deploy, no schedule created, no schedule enabled, no publish run of any kind (staging or production).",
+    "No sub-agent, no other lane's file: PR #160's src/jobs/parcel-setback-cells.mjs and the P-298 lane's src/lib/parcel-record-engine/load.js, its migration and src/jobs/publish-gate-sched.mjs are untouched. The only publish-gate-sched.mjs reference in this branch is a comment citing its UPSERT as evidence.",
+    "The forbidden scan (max(updated_at) over parcel_record_cell) is not implemented and is asserted absent.",
+    "No credential fetched to improve a checkpoint's evidence: CP1's Q1/Q2/Q3/Q5 plans are labelled NOT OBSERVED rather than obtained under the owner role.",
+    "No secret printed: no connection string, password or token appears in CP1, CP2 or any command output of this lane.",
+    "P-256's and P-298's files untouched; nothing in this lane writes a serving store.",
+    "Doc_repo edits left uncommitted (contract section 6)."
+  ],
+
+  "whatTheIntegrationSeatMustDo": [
+    "Rebuild the publish images so cloudbuild.publish.yaml's pinning loop creates factory-republish-on-change (this lane does not deploy). The job does not exist in Cloud Run until that build runs.",
+    "Create (do NOT enable) the schedule from scripts/create-republish-on-change-scheduler.mjs --print and read the body first; it is a daily dry run with --max-counties=1.",
+    "Run ONE dry cycle (no --apply) and read the summary: it reports per county changed/unchanged with its evidence, writes a dry-run stage record per county and names every absence. That is the cheapest way to see whether the signal's dimensions are populated on the real store.",
+    "EXPLAIN Q1/Q2/Q3/Q5 with the job's own credential and correct the plans: this lane could only read plans for parcel_gate_verdict (observed) and parcel_record_cell (the forbidden forms).",
+    "Only then, with the operator's go, escalate a first --apply run (staging leg) -- which resets staging once (D3) -- and grade the hook: served bakedAt newer than the latest cell write, within one cycle. The FIRST AUTOMATED PRODUCTION RUN IS THE OPERATOR'S GO, not the seat's."
+  ],
+
+  "openFindings": [
+    "stage_run_records held 4 rows live at CP1, so the county-keyed writer dimension is thin until P-285 wires the rail writers; runs (3,643 rows, runs_pkey only) is the dimension that works today and it MISSES a writer job that names no county in runs.scope (measured in parcel-r5-zoning.mjs:950-957). Both are named on the record's evidence rather than hidden.",
+    "the verdict baseline lives on this job's own runs row (counts->'gateVerdictBaseline'), which is a deliberate no-schema choice; it means a cycle that is never run is a cycle whose verdict changes are never observed, and a verdict that changes AND reverts between two cycles is invisible (declared exclusion, not a bug).",
+    "the instrument reads ONE named parcel per county (the walk gold parcel) because a county-wide max(snapshot_at) over place_layer_snapshots is an unindexed aggregate. A sample with its selection rule, and its limit is named: verify-before-promote can decline to re-stamp a row, so one parcel is not proof the whole county advanced.",
+    "dollar-fields-patch is a declared false positive: stage 6 by the stage map but it writes the SERVE store, so a run of it can select a county whose ledger did not change. Included on purpose -- one wasted publish costs less than stale served data.",
+    "the read-only grant on the factory store covers parcel_gate_verdict/parcel_record/parcel_record_cell/parcel_record_companion_row only, so a lane cannot check this signal end to end by hand. Named for the seat that owns grants."
+  ],
+
+  "artifactRepairs": [
+    "CP1 FAILED JSON.parse AS FILED: its flags array merged two elements through an unescaped pair of quotes ('--signal-only (report the signal and exit; no child), '--json'), so the artifact was not machine-readable. It was repaired in place at CP2/close time by splitting the two flags -- a syntax repair, no content added or removed (both flags are still listed, and D4 records that --json does not exist in the build). Reported because an artifact the enforcement gate reads must parse, and CP1 was filed without a parse check."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

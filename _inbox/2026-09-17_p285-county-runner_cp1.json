@@ -1,0 +1,318 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p285-county-runner",
+  "title": "design / pre-build adversarial checkpoint: what a county runner can actually execute for Burnet today, and the four things it must refuse without",
+  "planRows": ["P-285"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "program": "90_operations/OPS-24_county_to_serving_program.md (section 2, the thirteen stages; the seven laws)",
+  "dispatch": "_dispatches/2026-09-17_p285-county-runner_dispatch.md",
+  "at": "2026-09-17T00:20:00Z (filed BEFORE any product code was written; the lane was claimed 2026-09-17T00:12:00Z via scripts/lane-claim.mjs from P:/doc_repo, exit 0, 'CLAIMED p285-county-runner for p285-lane (P-285). Proceed.')",
+  "seat": "p285-lane",
+  "repo": "hauska-factory",
+  "worktree": {
+    "doc_repo": "P:/seat-worktrees/p285-county-runner/doc_repo (this seat's registered worktree, branch lane/p285-county-runner, created by git worktree add from P:/doc_repo HEAD 084b650a; NOT P:/doc_repo, the integration seat's checkout)",
+    "build": "P:/tmp/p285-county-runner (registered worktree of P:/hauska-factory, branch feat/p285-county-runner, created from origin/main BEFORE any edit; verified with git worktree list)"
+  },
+  "branch": "feat/p285-county-runner",
+  "startCommit": {
+    "declared": "47c7dfc1580c507043763f982e23ef96a52ffe4a (origin/main, 'fix(P-284r): a compute cost asks for its own execution's job, and every record can be filled (#162)')",
+    "vsDispatch": "the dispatch says 'Declare the start commit (factory main 47c7dfc at compile)'. The fresh worktree HEAD IS 47c7dfc, so this lane starts at exactly the declared commit. No rebase was needed and no newer main was taken.",
+    "branchCutBeforeAnyEdit": true,
+    "worktreeIsNew": "P:/tmp/p285-county-runner did not exist before this lane. P:/hauska-factory (3653f12, an unrelated stale shell) was NOT used and NOT touched; P:/seat-worktrees/property/hauska-factory was NOT used.",
+    "registeredUnderThePropertySeat": "added to _catalog/seat_register.json seats[property].repos as name hauska-factory-p285-county-runner, worktree P:/tmp/p285-county-runner, branch feat/p285-county-runner; the entry is REMOVED at close as the dispatch requires."
+  },
+
+  "whatP284AndP281AlreadyGiveThisRow": {
+    "P284": "src/control/stage-runs.mjs (openStageRun / closeStageRun / recordStageRun / missingStageRecords / backfillStageComputeCosts), src/lib/compute-cost.mjs, src/lib/operator-minutes.mjs, migrations/0012 + 0014, and the 'factory stage-runs audit|assert|speed|compare|backfill-compute' verbs (src/cli.mjs ~line 352). Verified live on origin/main 47c7dfc, not on report.",
+    "P281": "src/control/heavy-lease.mjs and the 'factory heavy-lease list|take|renew|release|sweep' verbs. See D6 for why the runner itself takes NO lease.",
+    "theThirteen": "src/lib/stage-map.mjs holds the frozen enum 0-12 and PHASE_STAGE, with stageForPhase() returning BOTH a stage and whether that phase's runner writes a record. This lane reads that map rather than re-deriving a second one."
+  },
+
+  "theStageToJobTable": {
+    "_rule": "One row per OPS-24 stage. 'deployed job' means the name is really deployed by this repo's own cloudbuild files, and 'verb' means the first --args token is a command src/cli.mjs really dispatches. Both are proved by a checked-in test (test/p285-county-runner.test.mjs) against the files themselves, so this table cannot silently go stale.",
+    "_howTheDeployedSetWasRead": "every `gcloud run jobs deploy <NAME>` in cloudbuild*.yaml, PLUS the loop form in cloudbuild.publish.yaml line 372 (`for JOB in factory-publish-migrate factory-staging-reset factory-bastrop-publish factory-verify-walk factory-dollar-fields-patch`). The loop form is why a naive extraction reports factory-bastrop-publish as NOT deployed; it is deployed, in that loop.",
+    "stages": [
+      {
+        "stage": 0,
+        "key": "source-recon-and-coverage-gate",
+        "row": "P-186",
+        "runner": "not-built",
+        "reason": "no job, verb or step in src/ performs the per-place coverage declaration. The only county coverage reader in the repo (src/jobs/county-rail-coverage-report.mjs) measures RAIL coverage, which is a different measure from the per-place DECLARED_COMPLETE / EXPLICITLY_HELD declaration the stage's predicate is about, and it is not deployed by any cloudbuild file.",
+        "instrument": { "name": "scripts/tx-source-truth.mjs; the P-156 declaration; the gate read", "repo": "doc_repo", "status": "not-built" },
+        "stopPoint": "ruling",
+        "whyThatStopPoint": "which of a county's roster places are DECLARED_COMPLETE and which are EXPLICITLY_HELD (with counts) is the operator's judgement and the stage's own predicate; the runner stops rather than declaring it."
+      },
+      {
+        "stage": 1,
+        "key": "farm-provision-and-the-four-line-manifest",
+        "row": "P-187",
+        "runner": "runner-step: manifest-read (built by THIS lane, see D2 for the format)",
+        "reason": null,
+        "instrument": { "name": "the manifest file itself, validated by src/lib/farm-manifest.mjs", "repo": "hauska-factory", "status": "built-by-this-lane-for-the-read-half; the merge gate that consumes it (P-198) is not built" },
+        "stopPoint": null,
+        "trap": "src/jobs/manifest-import.mjs is NOT this manifest. It imports CAD CELL manifests (ledgers/manifest-read.mjs). Two different things called 'manifest' already exist in this repo; the farm manifest is the third and it is the only one named farm-manifest."
+      },
+      {
+        "stage": 2,
+        "key": "pre-bake-audit",
+        "row": "P-188",
+        "runner": "not-built",
+        "reason": "OPS-24 section 2 gives this stage 'one normalised register and a checker'. Neither exists in hauska-factory.",
+        "instrument": { "name": "one normalised register + the checker, proven by violation", "repo": "not-built", "status": "not-built" },
+        "stopPoint": null
+      },
+      {
+        "stage": 3,
+        "key": "acquire",
+        "row": "P-189",
+        "runner": "not-built",
+        "reason": "the county acquire (TxGIO parcels and geometry, the CAD roll, StratMap address points) is NOT a factory job: every reference to txgio_parcel / txgio_address in src/ is a READ. The acquirers that ARE deployed write subsidiary layers (school district, utility CCN, overlay districts, ag valuation, WCAD owner, Austin watershed, Edwards recharge zone) and the CAD roll arrives as landing_cad_property through the cloud loader (P-298). Burnet's address points are the specific P-287 gap.",
+        "deployedAcquirersPresent": ["factory-acquire-school-district", "factory-acquire-utility-ccn", "factory-acquire-overlay-districts", "factory-acquire-ag-valuation", "factory-acquire-wcad-owner", "factory-acquire-austin-watershed", "factory-acquire-edwards-recharge-zone", "factory-landing-import"],
+        "instrument": { "name": "per-layer vintages and sha256s on the landed tables", "repo": "not-built", "status": "not-built" },
+        "stopPoint": "credential",
+        "whyThatStopPoint": "a new source's mount is one of the three stop points; NO PRIVILEGED DATA and the Cotality re-route (canon preamble) both bear on this stage rather than on any other."
+      },
+      {
+        "stage": 4,
+        "key": "identity-and-binding",
+        "row": "P-190",
+        "runner": "not-built",
+        "reason": "the verb exists (src/jobs/alias-persist.mjs, dispatched by src/cli.mjs) but NO Cloud Run job is deployed for it in any cloudbuild file. A runner executing stage jobs on Cloud Run cannot run a verb that has no job; executing it IN PROCESS would write a county's rows from the runner's own run row and lease, which is a different run identity than every other stage's. Named rather than improvised.",
+        "instrument": { "name": "account/parcel grain census after the write", "repo": "not-built", "status": "not-built" },
+        "stopPoint": null
+      },
+      {
+        "stage": 5,
+        "key": "record-instantiation",
+        "row": "P-191",
+        "runner": "job factory-parcel-record-fill, --args=parcel-record-fill,--county=<fips>,--apply",
+        "reason": null,
+        "instrument": { "name": "counts (rows created / records read) plus the coverage ledger rebuild", "repo": "hauska-factory (the job's own counts)", "status": "the runner's measurable proxy is the child execution's own exit; the ledger rebuild is not a runner step" },
+        "stopPoint": null
+      },
+      {
+        "stage": 6,
+        "key": "rail-fill",
+        "row": "P-192",
+        "runner": "a job SET, executed in the order below; the depth pair is a distinct sub-stage (stage_detail 'depth', which is what src/lib/stage-map.mjs already says for those two phases)",
+        "railFillJobsDeployedAndCountyKeyed": [
+          { "verb": "parcel-owner", "job": "factory-parcel-owner", "deployedArgs": "parcel-owner,--county=<fips>,--apply" },
+          { "verb": "parcel-r5-zoning", "job": "factory-parcel-r5-zoning", "deployedArgs": "parcel-r5-zoning,--county=48021 (the deploy file's example; the verb takes --county)" },
+          { "verb": "flood-ingest", "job": "factory-flood-ingest", "deployedArgs": "flood-ingest,--county=<fips>,--apply" },
+          { "verb": "parcel-r4-companions", "job": "factory-parcel-r4-companions", "deployedArgs": "parcel-r4-companions,--county=<fips>,--apply" },
+          { "verb": "parcel-max-impervious-cover", "job": "factory-parcel-max-impervious-cover", "deployedArgs": "parcel-max-impervious-cover,--county=48453,--apply" },
+          { "verb": "parcel-building-footprint-reconcile", "job": "factory-parcel-building-footprint-reconcile", "deployedArgs": "parcel-building-footprint-reconcile,--county=48021,--apply" },
+          { "verb": "parcel-overlay-districts", "job": "factory-parcel-overlay-districts", "deployedArgs": "parcel-overlay-districts,--county=<fips>,--apply" },
+          { "verb": "parcel-school-district", "job": "factory-parcel-school-district", "deployedArgs": "parcel-school-district,--county=<fips>,--apply" },
+          { "verb": "parcel-utility-service", "job": "factory-parcel-utility-service", "deployedArgs": "parcel-utility-service,--county=<fips>,--apply" },
+          { "verb": "parcel-ag-valuation", "job": "factory-parcel-ag-valuation", "deployedArgs": "parcel-ag-valuation,--county=48491,--apply" },
+          { "verb": "dollar-fields-patch", "job": "factory-dollar-fields-patch", "deployedArgs": "dollar-fields-patch,--target=staging,--county=48021" }
+        ],
+        "depthPair": {
+          "verbs": ["parcel-setback-cells", "parcel-envelope-cells"],
+          "jobs": ["factory-parcel-setback-cells", "factory-parcel-envelope-cells"],
+          "stageDetail": "depth",
+          "blockedForBurnet": "MEASURED 2026-09-17 at 47c7dfc: src/jobs/parcel-setback-cells.mjs:139 declares IN_SCOPE_COUNTIES = [48021,48055,48209,48309,48453,48491] and resolveCountyScope refuses COUNTY_NOT_IN_SCOPE for anything else. Burnet, 48053, is NOT in that list, so --county=48053 on either depth job refuses before any write. parcel-envelope-cells.mjs reuses the same list verbatim. This is the first thing Burnet's run will hit in stage 6 and it is owned by P-256 (the lane currently holding that file), not by this one.",
+          "runnerBehaviour": "the runner NAMES this precondition and does not re-derive a second copy of the list (a second hand-typed list is exactly the drift the job's own header says it refuses). It records the refusal code, the file and the row.",
+          "notBuiltReason": null
+        },
+        "heavy": true,
+        "lease": "held by the JOBS, not by the runner: parcel-setback-cells and parcel-envelope-cells take the P-281 lease themselves (src/control/heavy-lease.mjs). The runner takes NO lease -- see D6.",
+        "instrument": { "name": "the rail cell's own state, read per parcel", "repo": "hauska-factory", "status": "the runner's measurable proxy is each child execution's exit; OPS-24's 'one rail, one county at a time, with a violation reproduced first' is not built" },
+        "stopPoint": "ruling",
+        "whyThatStopPoint": "OPS-24 law 7 / A-193: until P-297 is live the serve path still switches on the county verdict, so ANY write that puts an unaccounted cell on a slated rail turns that whole county's ledger values back to the bake. Stage 6 is that writer. Applying stage 6 for a county before P-297 is a ruling, not a routine step, and the runner stops for it."
+      },
+      {
+        "stage": 7,
+        "key": "atoms",
+        "row": "P-193",
+        "runner": "not-built (with a named partial: factory-restamp-access, deployed, --args=restamp-access,--county=<fips>,--apply)",
+        "reason": "the county's atom MINT is the conformant driver (factory-conformant, phase stage-e-conformant), which src/lib/stage-map.mjs deliberately declines as an OPS-24 stage ('OPS-19 conformant driver, not an OPS-24 stage'). The one phase the map DOES put at stage 7 (restamp-access) re-stamps an existing access pair; it does not mint a county's atoms and does not satisfy the stage's predicate ('a county's atoms merge by identity with a run id and read back by county'). Returned as a candidate correction to P-284's map rather than changed here -- see leave_behind: reclassifying stage-e-conformant would make the audit demand a stage-7 record from a statewide OPS-19 driver, which is a ruling about the map, not an edit this row may take.",
+        "instrument": { "name": "atoms read back by county, merge by identity with a run id", "repo": "not-built", "status": "not-built" },
+        "stopPoint": null
+      },
+      {
+        "stage": 8,
+        "key": "completeness-check",
+        "row": "P-194",
+        "runner": "not-built",
+        "reason": "the predicate is 'the declared expectation is met, and the expectation is written down before the first check'. The written-down expectation is stage 0's declaration, which is not built, so there is nothing to check against yet. The 'corrected to expected plus declared' clause at the first check is a ruling.",
+        "instrument": { "name": "the check, proven by violation", "repo": "not-built", "status": "not-built" },
+        "stopPoint": null
+      },
+      {
+        "stage": 9,
+        "key": "the-gate-refuses-total-absence",
+        "row": "P-195",
+        "runner": "job factory-publish-gate-sched, --args=publish-gate-sched,--county=<fips>,--apply",
+        "reason": null,
+        "instrument": { "name": "the publish gate's refusal, with the empty-county test built first", "repo": "hauska-factory", "status": "the runner's measurable proxy is the child execution's exit; P-195 closed the ZERO-ROW case and P-252 closes the ZERO-EARNED case with a checked-in fixture that must REFUSE" },
+        "stopPoint": null
+      },
+      {
+        "stage": 10,
+        "key": "publish-and-serve",
+        "row": "P-196",
+        "runner": "job factory-bastrop-publish, TWO steps, each recorded under its own stage_detail: 'staging' then 'production'. The job name is historical; the job's own header says nothing inside assumes Bastrop and --county=<fips> is required and validated.",
+        "steps": [
+          { "id": "staging", "stageDetail": "staging", "args": ["bastrop-publish", "--target=staging", "--county=<fips>", "--skip-pmtiles"], "stopPoints": [] },
+          { "id": "production", "stageDetail": "production", "args": ["bastrop-publish", "--target=production", "--county=<fips>", "--skip-pmtiles"], "stopPoints": ["credential", "production-write"] }
+        ],
+        "instrument": { "name": "the customer predicate (stage 11's probe) and the walk", "repo": "doc_repo (scripts/surface-probe.mjs) + hauska-factory (factory-verify-walk)", "status": "not-built for the probe half (P-197/P-254); the walk job exists but is not deployed for a new county's target" },
+        "stopPoint": "credential then production-write (on the production step only)",
+        "whyThoseStopPoints": "the production publish is the one step whose cloudbuild mounts secrets the runner's own job does not carry (STAGING_/PRODUCTION_NEONDB_URL, STAGING_/PRODUCTION_HAUSKA_MCP_URL) and needs OPERATOR_PUBLISH_GO=1 (see the execute examples in src/jobs/bastrop-publish.mjs's header). A new secret mount is stop point one; writing a production serving store is stop point two. They are separate stops because they are separate facts and the operator may clear one and refuse the other."
+      },
+      {
+        "stage": 11,
+        "key": "customer-predicate-and-the-meter",
+        "row": "P-197",
+        "runner": "not-built (the instrument exists on the doc_repo side and is NOT in this repo)",
+        "reason": "the finish line is scripts/surface-probe.mjs with a real address in the county; OPS-24 law 1 says a store-reading instrument is never the customer predicate (A-183). The runner cannot run it, and refuses to treat its own store reads as a substitute.",
+        "instrument": { "name": "scripts/surface-probe.mjs over a real address in the county (the OPS-24 legs are P-254)", "repo": "doc_repo", "status": "not-built" },
+        "stopPoint": null
+      },
+      {
+        "stage": 12,
+        "key": "merge-back-gate-and-the-burnet-run",
+        "row": "P-198",
+        "runner": "not-built",
+        "reason": "the merge-back gate is P-198; nothing in hauska-factory consumes the four-line manifest as a gate yet.",
+        "instrument": { "name": "the merge gate, and Burnet's own records", "repo": "not-built", "status": "not-built" },
+        "stopPoint": "ruling",
+        "whyThatStopPoint": "the merge-back is the operator's decision that a county is customer-ready; the runner stops instead of deciding it."
+      }
+    ],
+    "tally": { "stages": 13, "withARealJobToday": 5, "jobSets": 1, "runnerSteps": 1, "notBuilt": 7, "note": "5 job-backed (5, 6, 9, 10 and stage 7's named partial), 1 runner-step (1), 7 not-built (0, 2, 3, 4, 7, 8, 11, 12 minus 7's partial: seven stages have no runner of their own). The count is stated so a successor can see the skeleton's real coverage instead of reading thirteen rows and assuming thirteen runners." }
+  },
+
+  "designDecisions": {
+    "D1_theRunnerWritesTheStageRecord_andTheJobKeepsItsOwnRunRow": {
+      "decision": "one stage_run_records row per (county, stage, stage_detail) for the stage the runner ran, run_id = the RUNNER's own run row, run_mode = apply, and the child execution's name/job stamped on the row so P-284r's backfill can cost the CHILD execution.",
+      "whyNotAChildRunRow": "the table's own grain is (county, stage, run) and runs is one row per process invocation. A child run row would be a second runs row for an execution the runner started, and the reaper'S name match would then reconcile two rows to one execution. One row is the grain the table was built for.",
+      "whatIsNotClaimed": "the runner does NOT claim the child job writes its own stage record. src/lib/stage-map.mjs's writesRecords for these phases is still false and is NOT flipped by this lane -- see D3."
+    },
+    "D2_theManifestIsAJsonFileWithFourLinesAndThisLaneDefinesItForP187": {
+      "fileName": "farm-manifest.json",
+      "locatedBy": "--manifest=<path>, else FACTORY_FARM_MANIFEST, else the repo root. No path and no env is a refusal (MANIFEST_NOT_NAMED), never a search.",
+      "theFourLines": {
+        "ldt": "40-hex commit",
+        "engine": "40-hex commit",
+        "factory": "40-hex commit",
+        "packages": "{ \"atomContract\": \"<semver>\", \"setbackCorpus\": \"<semver>\" }"
+      },
+      "whyPackagesIsTheTwoVersionsItIs": "package.json's dependencies are exactly two @empressaio packages (@empressaio/atom-contract ^1.30.0 and @empressaio/setback-corpus ^1.1.0); they are the two versions the farm depends on, and the cloudbuild files already pin both the three SHAs (ENGINE_SHA / LDT_SHA / IMAGE_DIGEST) and CONTRACT_VERSION in their own templates.",
+      "whyJSONAndNotFourBareTextLines": "the pin lands on stage_run_records.manifest_pin jsonb (P-284's column, already there and unused) and P-198's merge gate will read it as data. A text file would need a second parser and a second shape: DEV_PROCESS 2.4's paired implementation. The example file is checked in as farm-manifest.example.json so P-187 adopts THIS format rather than inventing a second.",
+      "refusals": ["MANIFEST_NOT_NAMED", "MANIFEST_UNREADABLE", "MANIFEST_NOT_JSON", "MANIFEST_INCOMPLETE (names the missing line)", "MANIFEST_SHA_NOT_A_SHA (names the line)", "MANIFEST_VERSION_NOT_A_VERSION (names the package)"],
+      "anOlderManifestIsNotRefused": "the runner does not invent a freshness rule the dispatch does not ask for. It records the pin on every record so a stale pin is visible as a difference between records, which is the measurement; refusing a pin by age would be this lane inventing a policy."
+    },
+    "D3_writesRecordsIsNOTFlippedByThisLane_andThatIsStatedRatherThanOmitted": {
+      "decision": "src/lib/stage-map.mjs is edited in exactly one way: the new phase 'county-runner' is added to PHASE_NOT_A_STAGE (the file's own completeness test requires every phase in src/ to be mapped or explicitly declined, so a new job file with a phase literal would otherwise fail it).",
+      "whyTheFlipIsNotTaken": "P-284's leave_behind tells P-285 to flip the remaining phases to writesRecords: true. That flip is NOT safe in this lane, for two measured reasons: (a) two tests in test/p284-stage-run-records.test.mjs prove a true entry against the FILE named in its writtenBy list must import ../control/stage-runs.mjs -- and it is the JOB files that would have to import it, i.e. eleven to fourteen files this lane is ordered away from (P-256 holds one of them); (b) flipping a phase makes missingStageRecords check every historical terminated run of that phase, and the audit's default --since is 1970, so the flip turns the audit red over history on the day it lands -- a permanently-red gate, which DEV_PROCESS refuses.",
+      "whatIsReturnedInstead": "the exact procedure, in leave_behind: flip one phase at a time, in the same PR as the change that makes that phase's runner write its record, with --since set to the first run of the new runner and p284-stage-run-records.test.mjs's count assertion (exactly 2) updated in the same commit.",
+      "consequenceStatedHonestly": "until that flip, a run of any of these stages still lands in the audit's buckets.pendingWriter. The records this runner writes exist and are readable (stage-runs speed/compare read them), but missingStageRecords does not yet require them. The runner's own phase is declined, so its own runs are counted in buckets.notAStage rather than pretending to be a fourteenth stage."
+    },
+    "D4_aStageIsASequenceOfStepsAndARecordPerStep": {
+      "decision": "a stage is a list of steps; each step produces its own stage_run_records row with its own stage_detail ('' when the stage has one step).",
+      "why": "stage 10 is genuinely two writes (staging, then production) with different stop points; stage 6 is a job set plus a depth pair that src/lib/stage-map.mjs already gives stage_detail 'depth'. One record per stage would have to pick one outcome for two different facts -- exactly the 'a number with no basis' failure in a different costume. stage_detail already exists for this, with the depth sub-stage as its precedent (migrations/0012 line 39).",
+      "resumeGrain": "the step. The runner resumes at the earliest step whose latest APPLIED record is not 'succeeded'."
+    },
+    "D5_dryRunRecordsAreCountedSeparatelyFromAppliedOnesAndCannotBeResumedPast": {
+      "decision": "a dry run writes one record per step it PLANNED, run_mode='dry-run', run_id NULL (the table's own rule), outcome 'succeeded' for a step the runner could execute and 'refused' for a step that is not built. Resume reads only run_mode='apply' rows, so a dry run can never make a later apply run skip a stage. This is asserted, not hoped for.",
+      "whyEveryStageIsStillPrinted": "the dry run is the plan, so it does not stop at the first not-built stage: it walks all thirteen and records each step's disposition. The stop rule governs EXECUTION, and falsifier 4 requires all thirteen on one screen.",
+      "whyOutcomeRefusedForNotBuilt": "'succeeded' for a stage that has no runner would be the runner claiming work it did not do. refused + instrument_verdict NOT_BUILT:<code> is the honest classification, and it is the same classification an apply run uses when it reaches that stage."
+    },
+    "D6_theRunnerTakesNoHeavyLease_becauseTheJobsAlreadyTakeIt": {
+      "decision": "the runner never calls takeHeavyScanLease. Heavy stages declare `heavy: true` and name the jobs that hold the lease.",
+      "why": "the mission says heavy stages take P-281's lease 'through the jobs that already take it'. Taking the lease in the runner and then executing a child job that takes the same lease against the same store is a self-deadlock: the child is refused LEASE_HELD by its own parent's window. The runner's job in this exchange is to RECORD that the stage is heavy and which job held the window.",
+      "whatWouldChangeThis": "a heavy stage whose work is in the runner's own process (none today) would need the runner to take the window itself, with a TTL it renews. Named so the next lane does not read 'the runner takes no lease' as 'leases do not apply to the runner'."
+    },
+    "D7_theStopPointsAreThreeFlagsEachNamingItsOwnStopPoint": {
+      "flags": {
+        "--clear-credential-stop": "clears the 'credential' stop",
+        "--clear-production-write-stop": "clears the 'production-write' stop",
+        "--clear-ruling-stop": "clears the 'ruling' stop"
+      },
+      "whyOneFlagPerStopPointAndNotOne'--clear':": "the mission requires 'an explicit flag naming the stop point that was cleared'. One flag that cleared all three would let a routine invocation clear a production write by accident, and the run scope could not say which fact had actually been cleared.",
+      "whereTheClearingIsRecorded": "runs.scope.stopsCleared (a list), so the record says which stops this invocation was cleared for, not merely that the run happened.",
+      "stoppingBehaviour": "before the step's job is executed, every stop point the step declares is checked. If any is not cleared, the step's record is written with outcome 'refused' and instrument_verdict 'STOPPED:<stopPoint>', and the run stops there. The next invocation without the flag stops again at the same step; the next invocation with the flag resumes AT that step."
+    },
+    "D8_instrumentsTwoMeasurableKindsAndEverythingElseNamed": {
+      "kindsImplemented": {
+        "job-exit": "the step runs a job and the child execution's own completion is the measurable outcome. On failure the stage's record is 'failed' and the run stops -- this is falsifier 2's mechanism and it is a real measurement, not a stub.",
+        "manifest": "stage 1 alone: the four-line manifest, validated. Its verdict is the validation's own result."
+      },
+      "kindsDeclaredButNotRunnable": {
+        "unmeasurable": "the seven not-built stages and the doc_repo instruments (tx-source-truth.mjs, surface-probe.mjs). The runner records UNMEASURED_INSTRUMENT with the instrument's name and the row that owns it, and in an APPLY run an unmeasurable instrument is not a pass: the runner refuses to continue past it. A stage whose instrument cannot be read is not a stage that passed."
+      },
+      "whyThisIsNotInstrumentTheatre": "the runner never reports a stage as succeeded on the strength of its own store reads, and it never reports an unread instrument as a pass. Those are the only two ways an instrument could lie here, and both are refused in code with a named verdict."
+    },
+    "D9_theRunnerStartsItsOwnRunRowAndTerminatesIt": {
+      "decision": "an apply run calls startRun (phase 'county-runner', target '<fips>', scope {command, county, apply, manifestPin, stopsCleared, resumedFrom}) and writes a termination record on the way out with exit_kind from the final outcome.",
+      "why": "an applied stage record must name a run (migrations/0012's CHECK), the reaper reconciles runs by execution name, and a run row left open is the phantom-running defect. A dry run opens NO run row (the table's own rule) and takes no lease.",
+      "executionIdentity": "computed by runs.mjs's single determination from the environment. On a laptop host neither CLOUD_RUN_JOB nor CLOUD_RUN_EXECUTION is set and the record carries the honest absence; on Cloud Run the identity is stamped. Nothing in this lane invents a second read of those env vars."
+    }
+  },
+
+  "designAlternativesConsideredAndRejected": {
+    "oneJobAndOneLibraryOnly": "The dispatch says 'you add a new job and a new library'. This lane adds THREE files: src/jobs/county-runner.mjs (the job), src/lib/county-runner-plan.mjs (the thirteen stages, the stop points, the plan) and src/lib/farm-manifest.mjs (the four-line manifest). The manifest is split out because P-187 must ADOPT it ('define the file format in CP1 so P-187 adopts it rather than inventing a second') and a format that lives inside a job file is not adoptable. Stated here rather than quietly done.",
+    "aGenericStageDriverReadingTheCloudbuildFilesAtRuntime": "REJECTED. Deriving each stage's job and args from the cloudbuild YAML at runtime would make the runner's behaviour a function of build config, and the YAML carries deploy-time concerns (SA names, memory, timeouts) that are not the runner's. The table is hand-written and PROVED against the files by a test that fails when a job stops being deployed.",
+    "oneRecordPerStageWithASubStepColumn": "REJECTED: stage_detail already exists and the map already uses it for the depth pair. A new column would be a second way to say the same thing.",
+    "executeTheStageJobsInProcessOnALaptop": "REJECTED: laptop ingest is FROZEN (decision 2026-08-26), every writer refuses without --apply, and an in-process write would carry the runner's run identity rather than the job's. The runner executes jobs, it does not become one.",
+    "haveTheRunnerTakeTheLeaseAndPassAHolderTokenToTheChild": "REJECTED: the child jobs' own lease call would then have to accept an inherited token, which is an edit to files P-256 holds and a second lease vocabulary. See D6.",
+    "inventAFreshnessRuleForOldManifests": "REJECTED as policy-making. See D2.",
+    "gradeTheCountyOnItsOwnStoreReadsSoTheSkeletonHasAGreenStage": "REJECTED, and this is the one to watch: OPS-24 law 1 states a store-reading instrument is never the customer predicate (A-183, written after the factory-store and atoms-store instruments were green through the whole 2026-09-15 map incident). A skeleton that reported 'stage 11 passed' from a factory query would be that defect with a new coat of paint."
+  },
+
+  "adversarialReviewOfMyOwnPlan": {
+    "howThisRunnerCouldBeWrongAndStillPassItsOwnTests": [
+      "The plan table could name jobs that are not deployed and the tests could still pass if the test only checked the table against itself. Closed by proving each entry's job name against the cloudbuild FILES and each verb against src/cli.mjs, in both directions, including the loop-deploy form that a naive extraction misses (factory-bastrop-publish).",
+      "A dry run could pass falsifier 4 while writing NOTHING to the store, and a later reader would see no telemetry for the first Burnet walk-through. Closed by asserting the record count and the run_mode/outcome of every record on a real scratch store, not on a fake.",
+      "The stop points could be declared and never able to fire. Closed by driving all three stop-point kinds through the real stage-10 step in a test with an injected executor, and asserting that no execution was started when the stop was not cleared.",
+      "Resume could silently re-run a completed stage, or silently SKIP an unfinished one. Closed with both directions: a county whose stage-5 record is 'failed' must resume AT 5 (not 6, not 0), and a county whose stages 0-4 are 'succeeded' must not re-run them.",
+      "A dry run could make a later apply run skip a stage. Closed by asserting that resume reads only run_mode='apply' rows, on a fixture that has dry-run 'succeeded' records for every stage AND an apply failure at stage 5.",
+      "The manifest refusal could pass on a manifest that merely exists. Closed by asserting the specific refusal code for: no path, unreadable file, non-JSON, a missing line (named), a non-40-hex sha (named), a non-semver package version (named) -- and by asserting that NO run row and NO stage record were written for the refusal (a refusal that half-runs is not a refusal).",
+      "The runner's own phase could silently become a fourteenth stage. Closed by a stage-map test that asserts 'county-runner' is declined WITH a reason, not mapped to a stage."
+    ],
+    "whatThisLaneDeliberatelyDoesNotDo": [
+      "It does not run any stage job, does not execute the runner with --apply, and does not deploy. The dispatch's do-not list, plus: a runner whose first act is a live county write is not a skeleton.",
+      "It does not touch src/jobs/parcel-setback-cells.mjs (P-256, open), the republish job (P-294, open), load.js or the scheduler (P-298, open), migrations/0012 or 0014.",
+      "It does not flip any writesRecords entry (D3) and does not reclassify stage-e-conformant (stage 7).",
+      "It launches no sub-agents (FAN-DEPTH 0).",
+      "It does not update the deployed factory-conformant image, which the scheduler runs: the runner is not on the schedule and this lane does not put it there. Registering a new job in cloudbuild is a deploy decision for the integration seat."
+    ]
+  },
+
+  "falsifierPreRegistration": {
+    "F1": {
+      "claim": "Without a manifest, the runner refuses.",
+      "predicted": "with --manifest pointing at nothing, and with FACTORY_FARM_MANIFEST unset, the runner exits non-zero with code MANIFEST_NOT_NAMED and prints the four lines it needs; with a file that is present but missing the 'engine' line it refuses MANIFEST_INCOMPLETE naming engine. In BOTH cases the store is opened zero times: no runs row, no stage_run_records row.",
+      "wouldFalsify": "any stage record or run row written before the refusal, or a refusal that continues to stage 0 anyway, or a code that names the file rather than the missing line."
+    },
+    "F2": {
+      "claim": "A stage whose instrument fails stops the run, and the next invocation resumes at that stage.",
+      "predicted": "with a county whose stage-5 execution returns a failed completion, the stage-5 record is outcome 'failed' with the child's exit named, stages 6+ have NO record for this run, and a second invocation announces and starts at stage 5 (resumedFrom: 5) rather than at 0 and rather than at 6.",
+      "wouldFalsify": "the run continuing to stage 6, or the second invocation starting at 0, or starting at 6, or the resumed run's own record claiming the earlier stages ran again."
+    },
+    "F3": {
+      "claim": "The runner stops before the production publish stage and does not continue without the flag.",
+      "predicted": "an apply run that reaches stage 10's production step with no clearing flag records 'refused' / 'STOPPED:credential' on the production step, starts no execution for it, and stops; the same run with --clear-credential-stop but not --clear-production-write-stop records 'STOPPED:production-write' and still starts no execution; with both cleared the step's execution is requested. The credential stop is checked before the production-write stop, and both are checked BEFORE any execution is requested.",
+      "wouldFalsify": "any execution requested for the production step while a stop is uncleared, or one flag clearing both stops, or the run reaching stage 11 or 12 in the same invocation."
+    },
+    "F4": {
+      "claim": "A dry run for 48053 (Burnet) prints all thirteen stages with their jobs and marks the not-built ones, with no execution and no store write beyond its own telemetry.",
+      "predicted": "on a scratch PostgreSQL carrying migrations 0012 and 0014: 13 stage lines printed in order with the job/verb or the not-built mark and the stop points; zero Cloud Run executions requested; and exactly the dry-run stage records for those thirteen stages in stage_run_records, each run_mode='dry-run', run_id NULL, with the Burnet county 48053, plus the audit (factory stage-runs audit) reporting zero violations.",
+      "wouldFalsify": "a stage missing from the output, a not-built stage printed as runnable, any execution requested, any row written to a table other than stage_run_records (and run_events, which the record writer does not use), or a run_id appearing on a dry-run record."
+    }
+  },
+
+  "theFindingThisLaneSurfacesBeforeAnyCode": {
+    "burnetIsNotInTheDepthJobsScopeList": "src/jobs/parcel-setback-cells.mjs:139 IN_SCOPE_COUNTIES = [48021, 48055, 48209, 48309, 48453, 48491]; --county=48053 refuses COUNTY_NOT_IN_SCOPE. Burnet's stage 6 depth sub-stage therefore cannot run by county at all until that list grows by one, in a file P-256 currently holds. Reported here because OPS-24 law 3 says the fleet's blockers surface serially and Burnet finds them; this one is findable today, before the run starts.",
+    "whyItIsNotFixedHere": "P-256 holds parcel-setback-cells.mjs (the dispatch names it as an open lane and orders this lane out of it), and widening another writer's scope list is that writer's decision, not the runner's."
+  },
+
+  "scopeBasis": "hauska-factory only, plus CP/CLOSE artifacts and a lane registration in this seat's doc_repo worktree. Inside hauska-factory: NEW src/jobs/county-runner.mjs, NEW src/lib/county-runner-plan.mjs, NEW src/lib/farm-manifest.mjs, NEW test/p285-county-runner.test.mjs, NEW farm-manifest.example.json; EDITED src/cli.mjs (the command registry, the one shared file the dispatch allows) and src/lib/stage-map.mjs (ONE new PHASE_NOT_A_STAGE entry for the runner's own phase, with a reason -- required by that file's own completeness test). Stated exclusions so a successor can tell a decision from an oversight: no writesRecords flip (D3); no edit to parcel-setback-cells.mjs / the republish job / load.js / the scheduler; no migration; no cloudbuild or Dockerfile change; no deploy; no stage job executed; no run with --apply; no sub-agents. The only store written is a scratch PostgreSQL this lane starts locally for the live dry-run assertion; the Cloud Run Admin API is never reached in tests (every transport is injected) and is reached ONLY by an --apply run, which this lane does not perform.",
+  "probe": {
+    "notApplicable": "build lane; the dispatch pre-declares the artifact shape and says a skeleton is graded by Burnet's run records. scripts/surface-probe.mjs reads a customer surface for a county, and no address in any county changes what this lane did."
+  },
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

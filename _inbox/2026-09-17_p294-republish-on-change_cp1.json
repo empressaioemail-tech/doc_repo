@@ -1,0 +1,174 @@
+{
+  "lane": "p294-republish-on-change",
+  "seat": "claude-p294",
+  "checkpoint": "CP1-design",
+  "planRows": ["P-294"],
+  "filedAt": "2026-09-17T01:05:00Z",
+  "where": {
+    "repo": "hauska-factory",
+    "clone": "P:/tmp/p294-republish-on-change",
+    "worktree": "P:/tmp/p294-republish-on-change",
+    "branch": "feat/p294-republish-on-change",
+    "startCommit": "47c7dfc1580c507043763f982e23ef96a52ffe4a",
+    "startCommitIsDispatchDeclared": true,
+    "dispatchDeclaredStartCommit": "factory main 47c7dfc at compile",
+    "note": "standalone CLONE (path equals worktree), same shape as the hauska-factory-* entries the property seat already registers under P:/tmp/. Never P:/hauska-factory, never a seat worktree of another lane."
+  },
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1",
+      "dispatchText": "A county with no writer run and no verdict change since its last publish is skipped, with the reason.",
+      "preRegisteredAnswer": "SKIP with reason UNCHANGED_SINCE_LAST_PRODUCTION_PUBLISH, carrying: the last production publish (publish_runs.id + completed_at + the publish run's started_at), the counts of writer run records/runs examined, and the verdict comparison (baseline observed-at + changed-rail count = 0). Nothing is published, no child execution is dispatched.",
+      "provedBy": "test/republish-on-change.test.mjs, test named 'F1 ...', against a fake factory client whose county has a publish and no writer evidence; asserts the summary's disposition and that the publish executor was never called."
+    },
+    {
+      "id": "F2",
+      "dispatchText": "A county whose writer ran after its last publish is selected, with the run id as evidence.",
+      "preRegisteredAnswer": "SELECT with reason WRITER_RUN_AFTER_PUBLISH (or WRITER_STAGE_RECORD_AFTER_PUBLISH), evidence naming the run_id(s) and their ended_at/started_at, compared against the publish run's started_at.",
+      "provedBy": "test/republish-on-change.test.mjs, test named 'F2 ...'; the summary's `evidence` array must contain the literal run id from the fixture, and the county must appear in `selected`."
+    },
+    {
+      "id": "F3",
+      "dispatchText": "Without --apply, nothing is published (test with a fake publish).",
+      "preRegisteredAnswer": "With no --apply, the job resolves the same selection, dispatches NO child execution (the fake publish records zero calls), writes a dry-run P-284 stage record per county (run_mode='dry-run', run_id NULL) and exits 0.",
+      "provedBy": "test/republish-on-change.test.mjs, test named 'F3 ...'; asserts publishCalls === 0 while a selected county exists, and that every county in scope got a stage record with run_mode 'dry-run'."
+    },
+    {
+      "id": "F4",
+      "dispatchText": "A publish that requirePreBakeReadiness refuses stops the job for that county and is recorded.",
+      "preRegisteredAnswer": "The child publish exits non-zero; the job reads back the child run's refuse_code (the gate's own code, written by bastrop-publish.mjs's catch as runs.refuse_code) and records the county as REFUSED_<CODE> with the code and the child execution name on the stage record (outcome 'refused', instrument_verdict 'publish-refused:<code>'). No further child execution is dispatched for that county (production is not attempted after a refused staging publish). Other counties in the same loop are unaffected.",
+      "provedBy": "test/republish-on-change.test.mjs, test named 'F4 ...'; a fake executor that fails the staging child plus a fake reads of runs.refuse_code = 'RAIL_UNACCOUNTED' must produce disposition refused with that code in the summary and on the stage record, and the executor must see exactly one call for that county."
+    },
+    {
+      "id": "F5-not-a-dispatch-falsifier",
+      "dispatchText": "(self-imposed, per DEV_PROCESS 2.6 paired controls)",
+      "preRegisteredAnswer": "The signal must be able to say CHANGED and must be able to say UNCHANGED; a fixture where the writer run is one second BEFORE the publish start must read unchanged, and the same fixture moved one second after must read changed. A signal that only ever answers one way is not an instrument.",
+      "provedBy": "test/republish-on-change.test.mjs, test named 'the boundary is the publish run's start, and it is exercised on both sides'."
+    }
+  ],
+  "changeSignal": {
+    "missionText": "decide whether the ledger changed since the county's last successful production publish; do not compute max(updated_at) over a county's cells",
+    "measuredAgainst": "the factory store (Neon project withered-surf-26870298 'hauska-factory', branch main br-noisy-bar-au9cwf7n), read-only role parcel_record_ro, 2026-09-17T00:42-00:58Z",
+    "tablesAndQueries": [
+      {
+        "name": "Q1 the published boundary (publish run records)",
+        "table": "publish_runs",
+        "sql": "SELECT id, county_fips, target, status, completed_at, created_at FROM publish_runs WHERE county_fips = $1 AND target = 'production' AND status = 'succeeded' ORDER BY completed_at DESC NULLS LAST, created_at DESC LIMIT 1",
+        "index": "publish_runs_county_target (county_fips, target, created_at DESC) -- read live from pg_indexes 2026-09-17",
+        "secondHalf": "the publish's START is not on publish_runs: bastrop-publish.mjs inserts the row with completed_at = now() AFTER the bakes, so the boundary is read from runs.started_at for the same id (publish_runs.id === runs.id for every publish, randomUUID minted once in runBastropPublish and passed to both startRun and the publish_runs INSERT)",
+        "sql2": "SELECT started_at, phase, status FROM runs WHERE id = $1",
+        "index2": "runs_pkey (id) -- and this is the ONLY index on runs (read live 2026-09-17), so every other runs predicate in this design is a sequential scan of 3,643 rows / 2.4 MB (reltuples, stored statistic)",
+        "plan": "index scan by (county_fips, target, created_at DESC) then LIMIT 1; NOT observed as EXPLAIN -- see measurementBoundary"
+      },
+      {
+        "name": "Q2 the county-keyed writer stage records (P-284 grain)",
+        "table": "stage_run_records",
+        "sql": "SELECT s.id, s.run_id, s.stage, s.stage_detail, s.started_at, s.ended_at, s.outcome, s.rows_written, s.rows_written_basis, r.phase, r.status, r.refuse_code FROM stage_run_records s LEFT JOIN runs r ON r.id = s.run_id WHERE s.county_fips = $1 AND s.stage = ANY($2::smallint[]) AND s.started_at > $3 ORDER BY s.started_at DESC LIMIT 20",
+        "index": "stage_run_records_county_stage_idx (county_fips, stage) -- live",
+        "plan": "bitmap/index scan on (county_fips, stage) with the ANY list, filter on started_at, then sort. Bounded by the county's own rows in 5 of 13 stages. NOT observed as EXPLAIN -- see measurementBoundary",
+        "liveState": "stage_run_records carries 4 rows in total (reltuples, live 2026-09-17). The county-keyed writer record this signal wants therefore barely exists today: the rail writers do not write stage records yet (stage-map.mjs own ownerRow for them is P-285). This is why the runs half below is not optional."
+      },
+      {
+        "name": "Q3 writer RUN records, county-matched (the half that exists today)",
+        "table": "runs",
+        "sql": "SELECT r.id, r.phase, r.status, r.started_at, r.target, r.scope, r.counts FROM runs r WHERE r.started_at > $1 AND r.phase = ANY($2::text[]) AND (r.scope->>'county' = $3 OR r.scope->>'countyFips' = $3 OR (jsonb_typeof(r.scope->'counties') = 'array' AND r.scope->'counties' ? $3)) ORDER BY r.started_at DESC LIMIT 20",
+        "index": "none usable: runs has runs_pkey only (live 2026-09-17). The plan is a sequential scan of 3,643 rows / 2.4 MB, measured as a stored statistic, not a count.",
+        "whyItIsStillCheap": "the 76M-row / 26 GB table the dispatch forbids scanning is parcel_record_cell (reltuples 76,055,440 / 26 GB, live). runs is 2.4 MB -- three orders of magnitude smaller. The query is bounded on started_at first and the phase list is short.",
+        "knownUnderCoverage": "writer jobs frequently do NOT name a county in runs.scope: measured in source, parcel-r5-zoning.mjs:950-957 sets scope = { job, cities, excludedStampGap, apply, method_version, nowIso } -- no county key. A county-keyed match therefore MISSES those runs. The stage-record half (Q2) is the county-keyed record and is the reason P-284 exists at all; until P-285 wires the rail writers, a run that names no county is invisible to this signal and that is declared, not hidden.",
+        "phaseSet": "the writer phases are DERIVED, not hardcoded: every phase in PHASE_STAGE whose stage is 3, 4, 5, 6 or 7 (acquire, identity, instantiate, rail fill, atoms) via stageForPhase() from src/lib/stage-map.mjs. A new writer phase added to the stage map is covered by the signal the day it is mapped."
+      },
+      {
+        "name": "Q4 the gate verdicts (the only existing record whose value is a function of the cells)",
+        "table": "parcel_gate_verdict",
+        "sql": "SELECT rail_key, verdict, unaccounted_count, evaluated_at, run_id FROM parcel_gate_verdict WHERE county_fips = $1 ORDER BY rail_key",
+        "index": "parcel_gate_verdict_pkey (county_fips, rail_key)",
+        "plan": "OBSERVED, live: 'Sort -> Seq Scan on parcel_gate_verdict (Filter: county_fips = 48453)', cost 16.84..17.01, 65 rows -- the planner prefers a seq scan because the whole table is 391 rows / 184 kB (reltuples + pg_total_relation_size, live). This is the one plan in this CP1 that is literal EXPLAIN output.",
+        "theHeartbeatFinding": "evaluated_at CANNOT be the signal. UPSERT_VERDICT_SQL (src/jobs/publish-gate-sched.mjs:325-330) has no WHERE on its DO UPDATE, so every scheduler run rewrites evaluated_at for every rail; measured live 2026-09-17T00:42Z: county 48021's 65 rails carry evaluated_at spread over 22:41:42..22:43:29 from ONE run_id, and the newest verdict anywhere is within minutes of the query. A predicate of the form `evaluated_at > lastPublish` therefore reads 'changed' for every county on every cycle -- a false-positive machine, not a signal. The signal is the VERDICT VALUE compared against a recorded baseline; the evaluated_at half of the dispatch's phrasing is refuted by measurement and by source, and that refutation is the deliverable here."
+      },
+      {
+        "name": "Q5 the verdict baseline (the gap this lane had to solve without new schema)",
+        "problem": "parcel_gate_verdict holds only the CURRENT verdict per (county, rail) -- there is no history table, no verdict-change column, and the publish's own pre-bake-readiness run_event records COUNTS ONLY (bastrop-publish.mjs:288-303 writes counts/bakeVsRoll/.../railsChecked, never the per-rail verdict map). So 'a verdict changed' is not answerable from existing rows without a stored baseline.",
+        "solution": "the job records its own observation of each county's verdict map (per-rail verdict + a sha256 digest of the sorted rail=verdict lines + observedAt) in ITS OWN runs row, `counts->'gateVerdictBaseline'`, and reads the previous observation back from the most recent prior run of its own phase: SELECT id, started_at, counts FROM runs WHERE phase = 'republish-on-change' AND id <> $1 ORDER BY started_at DESC LIMIT 1. No new table, no new column, no migration.",
+        "whyNotRunEvents": "run_events is 41,544 rows / 105 MB and has NO index on run_id (only run_events_pkey on id, live) -- reading a snapshot back from it is a 105 MB sequential scan per cycle. This was checked and rejected on measurement, not on preference.",
+        "whyNotCellsUpdatedAt": "REFUSED BY THE DISPATCH and confirmed by plan: see theForbiddenScan below.",
+        "firstCycleBehaviour": "with no prior observation the gate dimension is UNMEASURED with reason NO_BASELINE_OBSERVATION and does NOT by itself select the county. Declared, not silently read as 'unchanged'.",
+        "declaredBlindSpot": "a verdict that changes and reverts between two cycles is invisible to this comparison (an instrument's exclusion set is part of its contract, DEV_PROCESS 2.x)."
+      }
+    ],
+    "theForbiddenScan": {
+      "dispatchText": "Do not compute max(updated_at) over a county's cells (a heavy scan on a 76M-row table).",
+      "confirmedHow": "EXPLAIN only, nothing executed, live 2026-09-17. parcel_record_cell has NO county_fips column at all (columns read live: place_key, rail_key, cell_state, updated_at), so a county scope is only expressible as a place_key prefix, and no index on updated_at exists (indexes read live: PK (place_key, rail_key), (rail_key), partial (place_key) WHERE kind='unaccounted').",
+      "literalPlans": [
+        "max(updated_at) WHERE place_key LIKE '48453:%'  ->  Finalize Aggregate / Gather / Parallel Seq Scan on parcel_record_cell, Filter: place_key ~~ '48453:%', cost=2794686.95..2794686.96, rows 12,476,261 of ~31.7M scanned",
+        "max(updated_at) WHERE place_key >= '48453:' AND place_key < '48454:'  ->  Parallel Seq Scan, cost=2872813.02..2872813.03",
+        "GROUP BY left(place_key,5) over all counties  ->  Parallel Seq Scan, cost=2925547.31..2937849.72"
+      ],
+      "corroboration": "src/lib/parcel-record-engine/load.js:88-90 already records the same shape timing out: the place_key-range form 'timed out at 120s against Travis (48453, 380,917 ...)'. Two independent measurements, one query plan and one execution history, agree with the dispatch's premise.",
+      "tableSize": "parcel_record_cell: reltuples 76,055,440, 26 GB total (live). parcel_record: 981,267 rows / 160 MB, indexed on county_fips. Bastrop's record count measured live: 24,988."
+    },
+    "decision": {
+      "boundary": "the publish RUN's started_at (the moment the bake began reading the ledger), not completed_at (written after the bakes). A writer whose work STARTED after that moment is not provably inside the bake, so it counts as a change; this is the conservative side and it converges because the boundary moves forward after every publish.",
+      "changedIf": "(a) a writer-stage stage_run_record for the county started after the boundary; OR (b) a writer-phase runs row naming the county started after the boundary; OR (c) the county's stored verdict map differs from the job's own last recorded observation of it; OR (d) the county has NO succeeded production publish at all.",
+      "unchangedIf": "a succeeded production publish exists, and (a), (b), (c) are all empty and (d) false.",
+      "neverSilent": "the summary and the stage record carry, per county, the boundary's timestamp and source, the counts examined in each dimension, and every named absence (NO_BASELINE_OBSERVATION, NEVER_PUBLISHED_PRODUCTION, PHASE_UNASSIGNED phases the signal cannot see).",
+      "declaredFalsePositive": "dollar-fields-patch is mapped to stage 6 by stage-map.mjs and writes the SERVE store (place_layer_snapshots), not the ledger, so a run of it can select a county whose ledger did not change. It is INCLUDED rather than excluded (the cost of a false positive is one publish; the cost of a false negative is stale served data) and named here."
+    }
+  },
+  "jobDesign": {
+    "command": "republish-on-change",
+    "JOB_ID": "republish-on-change",
+    "cloudRunJobName": "factory-republish-on-change",
+    "flags": ["--apply (required to publish anything; absent = dry run)", "--county=<fips> (repeatable; default = the six onboarded counties from texasCtxProgramConfig().programCountyFips)", "--max-counties=N (per-run cap, default 2)", "--target=staging|production (default both, staging first, per the publish's own Rule 6)", "--reset-staging (opt-in; default OFF)", "--signal-only (report the signal and exit; no child)", "--json"],
+    "sequencePerCounty": [
+      "report changed/unchanged with evidence (dry run stops here and writes its stage record)",
+      "changed + --apply: dispatch factory-bastrop-publish --target=staging --county=<fips> --skip-pmtiles, waiting for the execution",
+      "read the child's own runs row back (scope->>'execution' = the execution name the Cloud Run API returned, or the newest publish_runs row for that county+target) for status and refuse_code",
+      "only on a staging success: dispatch --target=production with the execution-time env override OPERATOR_PUBLISH_GO=1 (and PRODUCTION_SITE_URL when the job has it), waiting for the execution",
+      "record the county's stage record (outcome, rows written from the publish's own tier1Summary, the trigger evidence, the cost) and the served bakedAt hook",
+      "release the loop lease"
+    ],
+    "oneAtATime": "the loop is strictly sequential, stalest-first (ordered by the last production publish ascending, never-published first), capped by --max-counties, exactly as the dispatch requires.",
+    "dryRunDefault": "runBastropPublish itself refuses --dry-run (DRY_RUN_REFUSED) and refuses a production publish without OPERATOR_PUBLISH_GO (OPERATOR_GO_REQUIRED); this job never passes --dry-run to the child and never injects OPERATOR_PUBLISH_GO for a staging publish or without --apply. Two independent refusals, not one.",
+    "refusalPropagation": "the child's refuse_code is read back from runs.refuse_code (bastrop-publish.mjs:652) and recorded; a refused staging publish ends the county's sequence (production is never attempted after it) and the county is recorded 'refused' -- falsifier 4.",
+    "stageRecords": "one stage_run_records row per (county, run) at stage 10 ('publish and serve'), via src/control/stage-runs.mjs openStageRun/closeStageRun. EVERY county handed to the loop gets a row, including an unchanged one (outcome succeeded, rows_written 0 with its basis) -- the P-284 audit reads run.scope.counties and demands a record for each, so skipping a county would fail that audit. run_mode='apply' with the run id when --apply, run_mode='dry-run' with run_id NULL otherwise (stage-runs.mjs refuses a dry run that names a run).",
+    "stageMapEntry": "a NEW phase key 'republish-on-change' -> {stage: 10, stage_detail: '', writesRecords: true, writtenBy: ['republish-on-change.mjs']} in src/lib/stage-map.mjs, with its evidence. It cannot reuse the existing 'publish' entry: that entry is writesRecords:false and stage-map.test.mjs proves the false claim by asserting that the file it names does NOT import ../control/stage-runs.mjs -- bastrop-publish.mjs does not and must not be edited by this lane. The non-vacuity pin in test/p284-stage-run-records.test.mjs ('exactly 2 phases write records') becomes 3 and is updated with that fact stated."
+  },
+  "leaseInteraction": {
+    "dispatchText": "takes P-281's lease (the publish already takes a job-execution lease on the target store; state how the two interact)",
+    "thisJob": "one lease for the whole loop, on the FACTORY store's own host fingerprint: grantHeavyScanLease(factoryClient, {windowKind: 'job-execution', phase: 'republish-on-change', holder: leaseHolder(env), countyFips: null, runId, ttlMs}), released in a finally, with the release outcome naming the loop's outcome. A second concurrent republish-on-change run is refused LEASE_HELD and the refusal is written to heavy_scan_lease_refusals by the same module.",
+    "thePublish": "each child publish takes its OWN job-execution lease, on the TARGET store's host (storeRefFromUrl(stores.HAUSKA_MCP_DATABASE_URL), alias '<var>:<target>'), phase 'publish', naming its own run id (bastrop-publish.mjs runChunkedConformantBakes:385-425).",
+    "howTheyInteract": "they are two DIFFERENT databases, so they never contend with each other: the contention key is the host (0013_heavy_scan_leases.sql:26-31), the factory store is Neon project withered-surf-26870298 and the publish targets are cortex-prod (fancy-fire-06136146) -- the CTX-F note in cloudbuild.publish.yaml:380-385 states that NEONDB and HAUSKA_MCP are the same Neon project, and it is not the factory's. The loop lease therefore protects 'one republish loop at a time' and cannot deadlock against the publish's own lease. What DOES contend is a cell writer holding a heavy-scan lease on the target store: the child publish's lease take then refuses LEASE_HELD, the child exits non-zero, and this job records that refusal for the county and moves on -- the second lease is enforced inside the child, not re-implemented here.",
+    "targetStoreSeqScan": "not applicable to this job: it reads no cell tables at all (see theForbiddenScan). The heavy read is inside the child publish, which takes its lease before its first bake."
+  },
+  "scheduleProposal": {
+    "definition": "scripts/schedulers/republish-on-change.scheduler.json (checked in, NOT created and NOT enabled -- a definition for the integration seat to create)",
+    "cadenceProposed": "every 6 hours (0 */6 * * *)",
+    "whyItFits": "the loop is bounded by two numbers the repo already fixes: the per-county publish task-timeout is 6h (cloudbuild.publish.yaml factory-bastrop-publish TIMEOUT=21600) and the per-run county cap is --max-counties (default 2). Worst case per cycle is therefore 2 x 6h = 12h before the served-bakedAt hook and stage records are written, which fits inside a 6h cadence only for the COMMON case (0 or 1 changed county) and not the capped worst case. The honest proposal the integration seat should enable is therefore: --max-counties=1 with a 6h cadence (worst case 6h == the cadence, uncomfortable), or --max-counties=2 with a 12h cadence. This lane proposes 6h with --max-counties=1 as the DEFAULT (one county at a time, oldest-served first, which is also law 3's 'one county at a time until the farm is proven') and states the 12h/2 alternative rather than picking quietly.",
+    "overlapSafety": "a cycle that overlaps the previous one is refused LEASE_HELD by the loop lease and recorded, never queued or interleaved.",
+    "notEnabled": true
+  },
+  "hook": {
+    "dispatchText": "Record, per county, the served bakedAt the publish produces, so the integration seat can grade 'served bakedAt is later than the latest cell write, within one cycle'.",
+    "servedSource": "the value the CUSTOMER surface reads, traced to source and not assumed: LDT artifacts/api-server/src/routes/propertyExplorer.ts:625-637 returns bakedAt from loadBakedNodeFacetSnapshot, which (brokerageNodeFacets.ts:179-207) selects payload_json + snapshot_at from place_layer_snapshots WHERE adapter_key = 'node-facets:tier1' AND place_key = 'node:<countyFips>:<propId>'. The doc_repo's own customer instrument reads the same field (scripts/surface-probe.mjs:215 bakedAt).",
+    "whatIsRecordedPerCounty": {
+      "servedBakedAt": "SELECT payload_json->>'bakedAt' AS baked_at, snapshot_at FROM place_layer_snapshots WHERE adapter_key = 'node-facets:tier1' AND place_key = $1 LIMIT 1 -- for ONE named parcel per county, selected by the DECLARED rule 'the county's walk gold parcel (verify-walk.mjs resolveGold), i.e. the parcel the publish's own verifying walk grades'. A single-row lookup on the serve table's (place_key, adapter_key) index, not a county aggregate.",
+      "whyOneNamedParcel": "a county-wide max(snapshot_at) over place_layer_snapshots is an unindexed aggregate over the county's snapshots; the named parcel is the parcel the publish already proved, so it is the reading with an owner. Stated as a SAMPLE with its selection rule (DEV_PROCESS 1.1: a sample travels with its rule), and its limit is named: verify-before-promote can legitimately decline to re-stamp a row whose new payload scores lower, so one parcel is not proof the whole county advanced.",
+      "factoryStamp": "freshness.stamped_at + body.publishRunId for scope_key 'production:<county>' -- the factory's own record of the bake that is now served, read back after the publish (the publish upserts it at bastrop-publish.mjs:576-581).",
+      "latestCellWrite": "the newest writer-stage stage_run_record's ended_at for the county (the 'latest cell write' the integration seat grades against), or the newest writer-phase run's started_at when no stage record exists.",
+      "gradeRule": "served bakedAt > latestCellWrite, within one cycle -- recorded as a string with its two inputs, never as a bare boolean that hides which side was absent."
+    },
+    "whereWritten": "one run_events row per county, kind 'served-baked-at', on THIS job's run (run_events has 41,544 rows / 105 MB and is written by the publish path already, so the grain is existing); plus instrument_verdict on the county's stage record and the full object in the job's stdout JSON.",
+    "unmeasuredPath": "when the serve store is not reachable or the named parcel has no tier1 row, the hook records an absence with a named reason (SERVE_STORE_UNREACHABLE / NO_TIER1_ROW_FOR_GOLD_PARCEL), never a zero or a copied factory stamp standing in for the served value."
+  },
+  "measurementBoundary": {
+    "readOnlyRole": "the granted read-only role on the factory store is parcel_record_ro and its SELECT grant covers only parcel_gate_verdict, parcel_record, parcel_record_cell, parcel_record_companion_row (read live from information_schema.tables under that role, 2026-09-17).",
+    "consequence": "literal EXPLAIN for Q1/Q2/Q3/Q5 (publish_runs, runs, stage_run_records, run_events, freshness) was REFUSED with 'permission denied for table <name>' under that role. Their plans above are therefore the index the planner must use, named from the live catalog (pg_indexes), and are labelled not-observed. The one observed plan in this CP1 is Q4's, plus the three forbidden-scan plans (parcel_record_cell IS in the grant).",
+    "notWorkedAround": "the owner credential (neondb_owner) was NOT fetched to obtain those plans. Reading a production owner credential to improve a checkpoint's evidence is not this lane's call; the integration seat holds the job credential that will run these queries and can EXPLAIN them there.",
+    "noSecretPrinted": "no connection string, password or role token appears in this artifact or in any command output this lane produced."
+  },
+  "openFindings": [
+    "the heartbeat: evaluated_at is rewritten for every rail on every scheduler run (source + live), so the dispatch's 'evaluated_at and verdict changed' can only be the verdict half; recorded above with both measurements.",
+    "stage_run_records is nearly empty live (4 rows), so the county-keyed writer signal is thin until P-285 wires the rail writers; runs is the half that works today and it under-covers county-unnamed writers (measured in parcel-r5-zoning.mjs).",
+    "the read-only grant on the factory store does not cover the six factory tables a lane would need to check this signal by hand; a lane can read the LEDGER cells with it but not the run records. Named for the seat that owns grants."
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "checkpoint": "CP2",
+  "kind": "adversarial review of my own load-bearing findings before the close was drafted -- each claim re-tested by a mechanism OTHER than the one that produced it, and the weakest link named rather than hidden. The first entry is the one that failed.",
+  "lane": "p299-height-flag-and-state",
+  "planRows": ["P-299"],
+  "cp1": "_inbox/2026-09-17_p299-height-flag-and-state_cp1.json",
+  "pinnedSHAs": {
+    "hauska-setback-corpus": "20275b036894bc7baa75fda5fad59e2a805de110",
+    "legacy-design-tools": "b30d430d55cb08b5d070f27ee135f4be68549b1f",
+    "hauska-engine": "b8ae82f458b1ca8436cf2b04f4dee41994bec6aa (origin/main, read only)",
+    "hauska-factory": "47c7dfc1580c507043763f982e23ef96a52ffe4a (origin/main, read only)",
+    "doc_repo": "084b650a (artifacts written uncommitted into P:/seat-worktrees/dispatch-planner/doc_repo/_inbox, planner-owned)"
+  },
+
+  "attackOnMyOwnLoadBearingFindings": [
+    {
+      "finding": "THE ONE THAT FAILED. The 12 tables' P-299 OT-1 note block said the 40 flag-cleared rows' 'own quote states the feet figure the instrument tabulates, so not_specified on it asserted a false absence'.",
+      "methodThatProducedIt": "The reconciliation script wrote that sentence once per table from the set of rows whose flag it cleared, without checking the quotes of the rows in that set.",
+      "secondAttack": "Counted, by regex over each cleared row's own `quote` string, how many of the 40 actually contain their own number: 6 (Pflugerville's SF-MU, 2-F, GB1, GB2, LI, A -- quotes that literally read 'height 35' / 'height 50' / 'matches SF class at 35'). The other 34 quotes are summaries that name the column and never restate the number -- Austin SF-1's is '? 25-2-492 site-development table: SF-1 row provides the stated base-yard, height, building-coverage, and impervious-cover values.'",
+      "whatChangedAsAResult": "The note now states the basis PER ROW (6 on the quote, 34 on the P-146 REAL_VALUE_FLAGGED classification), the same correction was applied to README, CHANGELOG 1.4.0 and both PR descriptions, a regression test re-derives the split from the shipped quotes and values and fails if the note names a row in the wrong list, and the reconciliation table grew a `basis` column. Corpus 20275b0, LDT fca30771.",
+      "negativeControl": "The old wording was restored by hand in austin-tx.json and the new test was run: 1 failed, 13 skipped -- it catches the exact sentence it exists for. The file was then restored and the suite re-run green (14 passed).",
+      "weakestLink": "'Contains the number' is a text test, not a reading of the instrument. A quote could contain the number as ANOTHER field's value and be promoted to quote-basis on that basis; I read all 6 promoted quotes by eye and each one genuinely states the height, but the test cannot enforce that distinction for quotes it has not seen. The 34 instrument-basis rows carry the residual risk in the other direction: their removed flags rest on the P-146 classification, which is itself a 2026-09-11 instrument built against corpus 1.1.0, not a re-read at source."
+    },
+    {
+      "finding": "The 40 rows whose flag was removed are exactly the rows the P-146 instrument classifies REAL_VALUE_FLAGGED, and no row was cleared on a missing or contradictory classification.",
+      "methodThatProducedIt": "The reconciliation script selected on the P-146 table's own (jurisdictionKey, districtName) keys.",
+      "secondAttack": "An independent script (`scripts/p299_consumers_factory_lookup.mjs`) re-derived the cleared set from the two commits' JSON alone -- no shared state with the reconciler -- and asked the P-146 table about each one: 'all classified REAL_VALUE_FLAGGED in the table? YES'. It also re-derived the normalised set (76) and the untouched-flagged set (39) independently, and those counts match the reconciler's and the CHANGELOG's.",
+      "weakestLink": "Both scripts read the same P-146 table, so this is agreement between two readers of one instrument, not two instruments. If P-146 is wrong about a row, both agree and both are wrong. Named, not hidden."
+    },
+    {
+      "finding": "Falsifier 3 -- a Round Rock SF-2 envelope carries no 999 after the change.",
+      "methodThatProducedIt": "The evidence script ran LDT's real deriveBuildableEnvelope over the real vendored SF-2 row and printed the derived props before and after.",
+      "secondAttack": "The FIRST run printed 'FALSIFIED: NO' -- because it dumped the 'pre-change' derive from HEAD, which after this lane's own commit IS the post-change file. That is a script bug producing a vacuous pass of the wrong kind (both sides post-change). Fixed with an explicit --before-rev (a SHA, never HEAD~N) and re-run against the lane's base commit 44029db9: pre-change props.maxHeightFt = 999 with the literal string \"999\" present in the envelope JSON; post-change null, not_specified.max_height = true, disclosure names the absence, \"999\" absent.",
+      "weakestLink": "The envelope is derived from a synthetic rectangular ring at Round Rock's coordinates, not a real parcel -- the dispatch's falsifier is about the READER, and the reader's branch does not depend on the ring, but the envelope's area numbers in that artifact are not a real parcel's. Said plainly in the artifact."
+    },
+    {
+      "finding": "The dispatch's LDT item reads 'treat a flagged height as absent (no number, with the reason)'. The shipped route satisfied the first clause and dropped the second.",
+      "methodThatProducedIt": "The route was changed to serve `max_height_ft: null`; the reason was written into the OpenAPI field's description and a code comment.",
+      "secondAttack": "Re-read the dispatch sentence against the diff at close, which is the only mechanism that could catch it -- a description is not visible to a caller at runtime, so over the wire `null` alone cannot be told from a field that failed to load, which is the same ambiguity this lane spent its effort removing from the number. Fixed in 2fba7924 with `max_height_ft_not_specified: boolean` (the corpus's own vocabulary; the same shape the envelope path already used, `setbacks.not_specified.max_height`), regenerated through the spec's own `orval` codegen rather than hand-edited, and asserted three ways: SF-2 null+true, MU-1 48+false, and null<=>flag across every district in the real Round Rock table.",
+      "weakestLink": "The flag says the code states no FEET height; it does not say what the code states instead (stories, a conditional, a special use). That detail still lives in the table's own note and is not on this wire. The field removes the ambiguity about whether the number is real, not the need to read the source."
+    },
+    {
+      "finding": "G8's premise -- an unflagged 999 leaks into a reader that trusts the number -- is real, not theoretical.",
+      "methodThatProducedIt": "The falsifier scripts take a real shipped district, strip its flag, and show the ORIGINAL gate passing the row and the amended gate blocking it on G8.",
+      "secondAttack": "Read a reader that would actually do the trusting, in a different repo: hauska-engine `packages/retrieval/src/serving-sweep/vendor/atom-chain-to-facets.ts:607` emits `{ maxHeightFt: rule.maxHeightFt }` for any `typeof === 'number' && > 0`, and the engine's own emit path (`property-reasoning/emit-setback-rule.ts:51,67`) carries `max_height_ft.value` through while reporting `notSpecified` for front/side/rear ONLY -- there is no height entry in that provenance block. Two independent readers that would surface a bare 999 as a height.",
+      "weakestLink": "I did not run either repo's suite (no engine or factory clone was cut for this lane), so this is a reading of the code, not an execution of it. The claim 'a 999 would be served' rests on those two source lines; the payload-level proof belongs to whoever bumps the engine."
+    },
+    {
+      "finding": "The corpus gate blocks nothing in any shipped table because of P-299, and blocked 116 rows before the change (all G7).",
+      "methodThatProducedIt": "`scripts/p299_corpus_gate_all_tables.mts` -- raw files through the gate, pre-change data from git, post-change data from disk.",
+      "secondAttack": "A completely different runner: the corpus package's own vitest suite (`src/setbacks/__tests__/p299-height-flag-and-state.test.ts`), which enumerates SETBACK_JURISDICTION_KEYS through the package's public API and runs the same gate -- 14 tests, all passing, zero P-299 blocks on the shipped data. The LDT half has the same pair (raw-file script + the vendored-table test in lib/adapters). Two mechanisms per repo, same answer.",
+      "weakestLink": "Both runners tolerate G2/G5 'atom supply' blocks by matching message text, and that tolerance list is mine. A real defect that produced a block with the exact shape of an atom-supply block would be swallowed by both. The tolerated classes are the only ones that must exist (the package ships no atom corpus) and the tolerance is keyed to the message prefix, but it is a tolerance."
+    },
+    {
+      "finding": "The engine's never-weaken check cannot see the new state.",
+      "methodThatProducedIt": "Read `packages/adapters/src/local/setbacks/__tests__/corpus-divergence.test.ts:90-107` (the rank map) and `:266-280` (the comparison).",
+      "secondAttack": "Reproduced the test's logic in a script that reads the engine's origin/main vendored tables and the proposed corpus 1.4.0 side by side: 98 relabels are 'unrankable' and 0 'weakened' findings are produced -- the same conclusion from an independent implementation. The same run also produced the number the engine WILL fail on: 23 max_height_ft numeric mismatches (san-antonio 17, bastrop-city 6).",
+      "weakestLink": "The simulation is a reimplementation of the test's comparison, not the test. If the real test has an additional guard I did not read (e.g. a hard-coded allowed-state list elsewhere), the bump behaves differently than reported. The two facts I claim -- the map lacks the state, and the comparison requires both ranks -- are read off the source, not inferred."
+    },
+    {
+      "finding": "LDT's vendored rows are semantically identical to the corpus's, so the two repos serve the same heights.",
+      "methodThatProducedIt": "A canonical-JSON comparison of all 43 pairs against the corpus working tree.",
+      "secondAttack": "The LDT divergence test asserts the shares CONTRACT (constants, state list, rule outcomes) and runs the gate over every vendored file, and the two gate-over-every-table runs (corpus half and LDT half) produce the same 116 pre-change offenders, row for row, from two separate checkouts of the data.",
+      "weakestLink": "The comparison is semantic, not byte-level, and one file (kyle-tx.json) has a note that legitimately differs in prose. So 'byte-identical' -- the word the dispatch uses -- is NOT what I achieved or claim; a byte diff would fail on formatting alone, and the PR says so rather than rounding it off."
+    },
+    {
+      "finding": "The OT-2 relabel population (12 tables, 1190 slots, 170 district rows) is the right population.",
+      "methodThatProducedIt": "Each table's own note text was searched for copy-channel language (mirror / render / transcription), and P-258's lane fragments were reconstructed to cross-check the population.",
+      "secondAttack": "The relabelled set is asserted by a test that re-derives it from the notes and fails if a table's note records a copy channel while its values still claim primary-source-verified, and the count is asserted (170) rather than described.",
+      "weakestLink": "The population is only as honest as the notes. A table that read through a browser render but did not say so in its note is still `primary-source-verified`, and no test in this lane can find that -- it is a fact about the notes, not about the code. Stated in the CHANGELOG rather than papered over."
+    },
+    {
+      "finding": "THE SECOND ONE THAT FAILED, found while executing the close step itself. The close draft asserted in `clonesRegistered` that both P:/tmp clones were 'registered under the property seat', because the dispatch's 'Where you work' block instructs 'Register both clones under the property seat and remove the entries at close.'",
+      "methodThatProducedIt": "The instruction was read at the top of the lane and its OUTCOME was written into the close from memory, without ever opening the register.",
+      "secondAttack": "Opened the file the instruction names, at close: `git grep -n 'p299' -- _catalog/seat_register.json` is EMPTY on the working tree AND on HEAD, and the file's only uncommitted hunk in this worktree is the P-297 lane's own entry. No p299 entry was ever created, so nothing was removed either. The claim was false in the direction of 'we followed the instruction'.",
+      "whatChangedAsAResult": "`clonesRegistered` now states the deviation and its (nil) consequence instead of the instruction; a knownIssues entry and a gate-worthy LESSON record it; and the P:/doc_repo cleanliness claim, which was written the same way, was ALSO re-derived by command (`Get-ChildItem P:/doc_repo/scripts -Filter p299*` -> empty) rather than restated. No entry was added retroactively: adding one at close and deleting it in the same breath would leave the register identical and the record false.",
+      "weakestLink": "I found this by luck -- by grepping the register for the lane id while checking something else, not by a checklist step. The same class of claim ('I registered it', 'I released it', 'I left no file there') appears in the close for steps I have NOT re-derived; the ones I did re-derive are the two named here, and I am not claiming the others are clean, only that they name the file or command that would settle them."
+    }
+  ],
+
+  "whatIDidNotIndependentlyVerify": [
+    "I did not run hauska-engine's or hauska-factory's own test suites. The consumers report is a read of origin/main source, plus one script that reproduces the engine divergence test's comparison logic. No engine or factory clone was cut, and no engine/factory file was changed.",
+    "I did not run the corpus's or LDT's full CI matrix locally beyond the suites listed in the close; CI is the authority on the rest and its literal conclusions are in the close. Two CI checks went RED on this lane and both are in the close with their diagnosis rather than one green line: LDT's Test job failed at 3m28s on its FIRST attempt (a 10s timeout in lib/submission-classifier/src/__tests__/upsert.test.ts, a package this lane never opened, with three other Test jobs in the same repo failing on three different tests), and the RE-RUN ran the whole suite and failed on a real defect of mine that the early death had hidden -- artifacts/api-server/src/__tests__/local-setbacks.test.ts asserts the exact key set of the projected district row, which is how max_height_ft_not_specified was caught. Fixed in b30d430d and verified against a throwaway Postgres before pushing. The lesson is in the close: a check that dies early can hide a real failure in the packages it never reached, so re-run and then diagnose the SECOND red.",
+    "I did not re-read a single instrument at source. Every OT-1 decision rests on the corpus's own P-146 classification (a 2026-09-11 instrument generated against corpus 1.1.0) or on a quote written by the P-258 campaign. That is the ruling's own instruction ('cites the table's own quote or the P-146 classification'), and it is also the boundary of what this lane can prove: nothing here is a fresh reading of Austin's or Round Rock's ordinance.",
+    "The 27 SENTINEL_SUSPECT_IN_MIXED_GROUP rows are an adjudication (999 carried, flag kept), not a re-read. If any of those instruments does state a feet height, this lane has made the corpus wrong in a way no test here would catch. They are named row by row in the file notes.",
+    "The LDT UI change was verified by unit test, not by looking at a rendered page. No deploy, so no live surface was probed -- which is why the close is closed-partial with a notApplicable probe."
+  ],
+
+  "verdictTally": {
+    "held": ["the 40/76 row split and both of its bases", "Falsifier 1 (both halves)", "Falsifier 2", "Falsifier 3 (after the script fix)", "Falsifier 4 (both halves)", "the G7/G8/G9 rule behaviour in both repos", "the semantic table parity"],
+    "held_with_named_condition": ["the OT-2 population (as honest as the notes)", "the engine bump consequence (reproduced logic, not the test)", "the factory non-regression (two readers of one instrument)"],
+    "failed_and_corrected": ["the OT-1 note's basis sentence -- true of 6 of 40 rows, corrected in both repos with a guard test", "the close's `clonesRegistered` claim -- the clones were never registered and the first draft said they were; corrected and the register re-derived at close"],
+    "note": "Two of my own load-bearing sentences failed under attack, and both corrections are in the shipped commits / the shipped close rather than in an erratum. The remaining items are conditional on instruments and repos this lane does not own."
+  },
+
+  "whereTheFailuresWere": "All three corrections this lane made to itself were the SAME KIND of failure -- a claim or a surface that was right about its data and wrong about what it communicated. The note block said 'the quotes state the figure' when 6 of 40 did; the route said 'absent' without saying why; and the close said 'registered under the property seat' about a step that was never performed, because the instruction was mistaken for the outcome. None was catchable by the gate, by CI, or by any test that reads values and flags. All three were caught by re-reading the artefact against the instruction that produced it. That is the finding worth carrying forward from this lane: the failure mode of a careful data change is not a wrong number, it is a true number -- or a true instruction -- with a false or missing sentence attached.",
+  "mostImportantThingInThisReview": "That the claim a change makes ABOUT ITSELF is data, and it drifts exactly like the values do -- and the same is true of a process step: an instruction read and not executed becomes a confident sentence in the close. The 40 row decisions were right and are the ruling's own pre-registered answer; the sentence describing why they were right was false for 34 of them, and nothing in the gate, the tests or CI could see it -- the gate reads values and flags, never prose. It was found only by pointing a second mechanism (a regex over the quotes) at a claim the first mechanism (the reconciler) had written; the close's own housekeeping claim was found the same way, by pointing `git grep` at the file the instruction named. The corpus now carries a test that re-derives the row claim from the shipped data, and the close now names the command that settles the housekeeping one, so the next reader gets the same protection without having to think of it."
+}

@@ -1,0 +1,173 @@
+{
+  "checkpoint": "CP2",
+  "kind": "build",
+  "lane": "p285-county-runner",
+  "planRows": ["P-285"],
+  "seat": "p285-lane",
+  "productRepo": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/p285-county-runner",
+    "branch": "feat/p285-county-runner",
+    "baseCommit": "47c7dfc1580c507043763f982e23ef96a52ffe4a",
+    "headSha": "a06e5dad6f1d5846c4ee30b0638b6c7bb03edfcd",
+    "pr": 165,
+    "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/165"
+  },
+
+  "filesTouched": {
+    "new": [
+      "src/jobs/county-runner.mjs (639 lines)",
+      "src/lib/county-runner-plan.mjs (629 lines)",
+      "src/lib/farm-manifest.mjs (208 lines)",
+      "test/p285-county-runner.test.mjs (816 lines, 27 tests)",
+      "test/p285-county-runner-live.test.mjs (213 lines, 3 tests, skipped without FACTORY_DATABASE_URL)"
+    ],
+    "sharedEdited": [
+      "src/cli.mjs (+13/-1): the `county-runner` command, its flag parse, and a non-zero exit for a run that stopped (exit 4). Declared in CP1 as the only shared file this lane would edit for the command registry.",
+      "src/lib/stage-map.mjs (+4): one PHASE_NOT_A_STAGE entry for the new phase `county-runner`, so the runner's own run row is declined rather than audited as unnumbered stage work. The file's own completeness test requires every phase literal in src/ to be mapped or explicitly declined, so a new job file without this entry fails that test."
+    ],
+    "notTouched": [
+      "src/jobs/parcel-setback-cells.mjs (P-256's file, read only -- its IN_SCOPE_COUNTIES is cited as stage 6's depth precondition)",
+      "src/jobs/load.js, the scheduler (P-298)",
+      "any republish job file (P-294)",
+      "migrations/0012 and 0014 (read to pin the table's grain and columns)",
+      "src/lib/publish-readiness-gate.mjs, src/jobs/bastrop-publish.mjs (read only, to name the stop points and the secret mounts)",
+      "anything in doc_repo (the CP artifacts are written, not committed; doc_repo is planner-owned)"
+    ]
+  },
+
+  "diffShape": {
+    "branchCommits": [
+      "cbb63c7 feat(P-285): one county, the thirteen stages, at most three stops",
+      "a06e5da test(P-285): the plan's lease claims are checked against the job files, both ways"
+    ],
+    "stat": "7 files changed, 2522 insertions(+), 1 deletion(-)",
+    "onTopOf": "47c7dfc (origin/main at lane start and still origin/main's tip at close)",
+    "forcePushed": false,
+    "whyTwoCommits": "the second commit is the correction the divergence test found (see contradicted[]): the plan's lease claim sat on the wrong node and the publish's own P-281 window was unnamed. Kept as its own commit so the review can see the test and the fix it produced together."
+  },
+
+  "falsifierResults": [
+    {
+      "id": "F1",
+      "text": "Without a manifest, the runner refuses.",
+      "predicted": "PASS -- non-zero with a named code, and the store opened zero times (no runs row, no stage_run_records row).",
+      "outcome": "PASS",
+      "evidence": "test/p285-county-runner.test.mjs, three tests: (a) 'FALSIFIER 1: with no manifest the runner refuses before it opens a store' -- no --manifest and no env var yields code MANIFEST_NOT_NAMED, err.path is the repo-root default, err.example is the four-line shape to fill in, and the injected fake store recorded ZERO queries; (b) 'FALSIFIER 1: the env var names a manifest the flag does not have to, and its absence is NOT_NAMED' -- an env-named file that does not exist is MANIFEST_UNREADABLE with from=FACTORY_FARM_MANIFEST, and no env and no flag is NOT_NAMED with the --manifest hint in the message; (c) 'FALSIFIER 1: a manifest that is there but wrong refuses with the LINE that is wrong, and still touches no store' -- five malformed manifests (not JSON, truncated JSON, a missing engine line, a 7-hex abbreviated sha, 'v1' as a version) each refuse with their own code AND store.queries is still the empty array. The refusal order is asserted by construction: readFarmManifest runs before connectFactory is called at all (src/jobs/county-runner.mjs runCountyRunner), and the fake store in the test would throw if it were constructed.",
+      "amendmentToPreRegistration": "CP1's F1 wording said '--manifest pointing at nothing ... MANIFEST_NOT_NAMED'. The implementation splits that into two facts: NOT_NAMED is 'nobody named a manifest and the repo-root default is not there' (the CALLER's input is missing); UNREADABLE is 'a path was named and it cannot be read'. Collapsing them would tell an operator to fix the wrong one, and the test file pins both. Same refusal, more precise code."
+    },
+    {
+      "id": "F2",
+      "text": "A stage whose instrument fails stops the run, and the next invocation resumes at that stage.",
+      "predicted": "PASS -- the failed stage's record is 'failed', later steps get no record from that run, and a second invocation announces and starts at that stage.",
+      "outcome": "PASS",
+      "evidence": "'FALSIFIER 2: a child execution that failed stops the run at that step and continues no further' -- the fake Cloud Run transport returns a failed completion for factory-parcel-record-fill at stage 5; the stage-5 record ends outcome 'failed' with verdict JOB_FAILED:<job>, NO record exists for stage 6 or later, the run's own termination carries exit_kind 'failed', and out.stoppedBecause names the job. 'FALSIFIER 2: a step whose instrument this runner cannot read stops the run AFTER the step, named and owned' -- stage 10's staging step runs (both jobs succeed) and the run then STOPs because stage 10's OPS-24 instrument is the surface probe: the record carries UNMEASURED_INSTRUMENT with the instrument's name and owning row, the run's exit_kind is 'refused' and not 'succeeded', and NOTHING after stage 10 is recorded. Resume: 'an APPLY run resumes where the county's own applied records stopped' (records through stage 4 succeeded -> the run announces stage 5 and requests no execution before it), 'resume starts at the earliest step whose latest APPLIED record is not succeeded', 'the resume token names a STEP, so a run stopped mid-stage can actually be resumed' (a run stopped at 10:staging prints --from=10:production, not --from=10 or --from=11), and 'a county whose every applied step succeeded is told there is nothing to do, not given an empty run' (alreadyComplete true, no new run row)."
+    },
+    {
+      "id": "F3",
+      "text": "The runner stops before the production publish stage and does not continue without the flag.",
+      "predicted": "PASS -- refused/STOPPED on the production step with no execution requested; one flag clears one stop; both are needed.",
+      "outcome": "PASS",
+      "evidence": "'FALSIFIER 3: the production publish refuses on the first uncleared stop point and requests no execution' -- the fake transport's execution list stays EMPTY while the production step records refused / STOPPED:credential, the stop is checked before anything is requested, and the run stops (stage 11 is not reached). 'FALSIFIER 3: clearing one of the two flags clears ONE stop point, and both are needed' -- with --clear-credential-stop only, the production step records STOPPED:production-write and still requests no execution; with BOTH flags its execution IS requested; the run scope on the run row carries stopsCleared so the record says which fact was cleared. 'the CLI carries exactly one clearing flag per stop point, and none of them clears another' -- the flags are asserted pairwise, so a single --clear-all cannot appear later without a red test. The production step's own two stops are stage-level (a new secret mount) and step-level (a production serving-store write) and both are checked before the step's first execution is requested."
+    },
+    {
+      "id": "F4",
+      "text": "A dry run for 48053 (Burnet) prints all thirteen stages with their jobs and marks the not-built ones, with no execution and no store write beyond its own telemetry.",
+      "predicted": "PASS on a scratch PostgreSQL carrying migrations 0012 and 0014.",
+      "outcome": "PASS",
+      "evidence": "Two independent observables. (1) THE OFFLINE TEST 'FALSIFIER 4: the dry run walks all thirteen stages, records every step, and executes nothing' asserts all thirteen stage numbers appear in the printed plan in order, the not-built steps carry NOT BUILT (<code>), and the fake transport requested zero executions. (2) THE LIVE RUN: `node src/cli.mjs county-runner --county=48053 --manifest=P:\\tmp\\p285-farm-manifest.json` against the scratch PostgreSQL (localhost:55491, migrations 0012 and 0014 applied) exited 0 and printed the plan (saved in full at P:/tmp/p285-live-dryrun.txt): 13 stage lines, 15 step blocks, each with its job+args or its NOT BUILT mark, its instrument and its resume token, plus the tally line 'landing: 5/13 stages have a runner; 8 steps are not built'. The psql audit of the same run: 15 rows in stage_run_records for 48053, every one run_mode='dry-run', run_id NULL, manifest_pin present, compute_cost_usd NULL with compute_cost_unmeasured_reason DRY_RUN_NO_EXECUTION, rows_written 0; `select count(*) from runs where phase='county-runner'` = 0; every other table untouched. 'a dry run's records do not make the next real run skip a stage' asserts the resume query filters run_mode='apply', and test/p285-county-runner-live.test.mjs proves it against the real table (the dry-run rows come back with run_mode='dry-run' so an apply run reads them as planning, not as work).",
+      "amendmentToPreRegistration": "CP1's F4 predicted 'exactly the dry-run stage records for those thirteen stages'. The DECLARED step grain (CP1 D4/D5) means one record per STEP, so the dry run writes FIFTEEN records covering thirteen stages: stage 6 carries the depth pair (stage_detail 'depth') and stage 10 carries staging and production. The falsifier's substance -- every stage printed, the not-built ones marked, nothing executed, nothing written but telemetry -- is unaffected; the count in the pre-registration was the loose word, not the design."
+    }
+  ],
+
+  "testEvidence": {
+    "offline": "node --test test/p285-county-runner.test.mjs -> tests 27, pass 27, fail 0 (no store, no credential: every transport is injected). The 27th test is the lease divergence test described in contradicted[]: it reads src/jobs/<verb>.mjs for every job the plan names, both directions, and asserts the runner itself never calls grantHeavyScanLease.",
+    "live": "FACTORY_DATABASE_URL=postgres://postgres:scratch@localhost:55491/factory node --test test/p285-county-runner-live.test.mjs -> tests 3, pass 3, fail 0; the file skips itself when the env var is absent, which is how it is in CI",
+    "scratchStore": "PostgreSQL on localhost:55491 carrying the factory migrations (0012 stage_run_records, 0014 runs/termination_records), created for this lane's live proof. No production or staging store was contacted, no credential was sought: the connection string is a local scratch database created for exactly this."
+  },
+
+  "regressionEvidence": {
+    "branch": "node --test test/*.test.mjs with FACTORY_DATABASE_URL set to the scratch store and the store EMPTY at the start: tests 1594, pass 1589, fail 1, skipped 2, todo 2 (saved: P:/tmp/branch-serial.txt)",
+    "baseline": "a pristine `git worktree` of 47c7dfc at P:/tmp/p285-baseline, npm install, same command, same empty store: tests 1564, pass 1559, fail 1, skipped 2, todo 2 (saved: P:/tmp/baseline-clean.txt)",
+    "failingSetIsIdentical": "test/ctx-b3-store-census.test.mjs:137 ('resolveLeafPaths against the real pinned LDT checkout agrees with the maintained mirror' -- needs a pinned LDT checkout this workstation does not have) and test/p3-absence.test.mjs:545 and :568 (both titled 'EXPECTED (non-vacuity) ... # OPS-21 S3 finding, not fixed by this lane (out of scope)'). The same three entries appear in the baseline report, so nothing here is this lane's.",
+    "delta": "+30 tests, +30 pass = exactly this lane's two new files (27 offline + 3 live). No regression.",
+    "aFourthEntryWhenTheLiveFilesRunInParallel": "test/p284-stage-run-records-live.test.mjs:314 fails (15 !== 1) when FACTORY_DATABASE_URL is set and node runs test FILES concurrently, because this lane's live file has 15 Burnet rows open while that test asserts the store-wide `stage_run_comparison` VIEW emits exactly one county pair. MEASURED BOTH WAYS: with `--test-concurrency=1` the failing set is the same three as the baseline's, and the same three as a parallel run with the live files skipped. It is not this lane's assertion that is wrong -- a store-wide view cannot be asserted one-pair-only on a store other writers use -- and it is not a product defect. Named, not engineered around: AF-2.",
+    "theEarlierMisleadingRun": "an earlier parallel baseline run reported the same p284 entry plus a different second failure because this lane's 15 rows were still in the store from the CLI dry run (the store's state, not the tree's). Re-run from an empty store as above."
+  },
+
+  "adversarialFindings": [
+    {
+      "id": "AF-1",
+      "severity": "MEDIUM -- the runner's own claim, and where it is thinnest",
+      "finding": "In a DRY RUN, a step an APPLY run would refuse at (a stop point not cleared, or a not-built stage) is still recorded with outcome 'succeeded' for the built case (stages 6, 6:depth and 10:production in the Burnet run above), with the verdict saying STOPPED:<point> (this dry run executed nothing; an APPLY run would stop here). A reader who scans the outcome column alone sees green on a step that cannot run today.",
+      "whyItIsStillThisWay": "stage_run_records' outcome vocabulary is closed (running/succeeded/failed/killed/orphaned/refused) and a dry run refuses nothing -- it plans. The alternative (recording 'refused') would claim a refusal that did not happen. The pre-registered CP1 D5 rule says a dry run records 'succeeded' for a step the runner could execute and 'refused' for a step that is not built, so this is the declared behaviour rather than a late rationalisation -- but the outcome column is genuinely the weaker of the two observables here.",
+      "whatWouldCloseIt": "a run_mode-aware reader (every resume/audit query already filters on run_mode), or a 'planned' outcome added to the table's vocabulary in a later migration. Named for the operator rather than decided here.",
+      "owner": "P-284's table / the next lane that touches the outcome CHECK",
+      "plan_row": "P-284 or an OPS-24 teardown row"
+    },
+    {
+      "id": "AF-2",
+      "severity": "MEDIUM -- a live test that only passes when it is the store's only writer",
+      "finding": "test/p284-stage-run-records-live.test.mjs:314 asserts store-wide `stage_run_comparison` emits exactly ONE county pair. That view is over EVERY county in the store, so any other county's stage-6/depth records break the assertion: measured twice, once with this lane's 15 Burnet dry-run rows left in the store (leftover state) and once with them open CONCURRENTLY, because node runs test files in parallel and this lane's live file is writing while that test reads. 15 !== 1 in both cases.",
+      "handling": "Reported, not patched over: it is P-284's file, this lane's dispatch orders it away from other lanes' files, and the assertion -- not this lane's rows -- is the thing that assumes it is the only writer in the store. This lane's own live file removes exactly its own rows, names the collision in its header, and was re-run with `--test-concurrency=1` to show the suite's failing set is unchanged (the same three entries as the baseline). CI never sets FACTORY_DATABASE_URL, so no check is affected today; whoever next runs the live suites locally will meet it.",
+      "owner": "property seat (or whoever next runs or edits P-284's live tests)",
+      "plan_row": "P-284 residual"
+    },
+    {
+      "id": "AF-3",
+      "severity": "MEDIUM -- it blocks Burnet's own run, and the file belongs to another open lane",
+      "finding": "Stage 6's depth step (parcel-setback-cells, parcel-envelope-cells) refuses COUNTY_NOT_IN_SCOPE outside its IN_SCOPE_COUNTIES list, which at 47c7dfc holds the six Phase-0 counties and NOT Burnet (48053). Measured by reading the file, not assumed. OPS-24 law 3 makes Burnet the first county through the farm, so the run this runner exists for cannot pass stage 6 until that list grows by one entry -- in src/jobs/parcel-setback-cells.mjs, which is P-256's open lane.",
+      "handling": "The runner does not keep a second copy of another job's scope list and does not widen it. The plan carries it as a step PRECONDITION ({code: COUNTY_NOT_IN_SCOPE, named: the file and its constant, ownerRow: P-256}), printed by the dry run and returned on the step's result, so the operator sees what is coming instead of reading a bare INSTRUMENT_FAILED. Named in the PR body and in leave_behind.",
+      "owner": "P-256 lane, or the integration seat if P-256 lands first",
+      "plan_row": "P-256 / P-285"
+    },
+    {
+      "id": "AF-4",
+      "severity": "LOW -- a wide plan arg list with no local check",
+      "finding": "A job whose args carry a 5-digit --county hardcoded into COUNTY_RUNNER_PLAN (rather than the <fips> token) would pass validatePlan and then run for the WRONG county under this operator's run row.",
+      "handling": "planForCounty refuses a leftover token after substitution, and validatePlan accepts either the token or the 5 digits -- so the guard is one-sided by design. The tokens are asserted per step against the operator's county ('the county the operator names is the county every child's args carry, and no other': a run for 48209 has no 48053 anywhere in its args and vice versa), which catches the realistic version of this defect. Residual: a hardcoded county in a step that no test invokes would not be caught by that assertion either; the plan is read by humans per stage, and the tally and the printed args are the measurement.",
+      "owner": "whoever next edits COUNTY_RUNNER_PLAN",
+      "plan_row": "P-285 residual"
+    },
+    {
+      "id": "AF-5",
+      "severity": "LOW -- named because the operator will meet it",
+      "finding": "A step that runs several jobs (stage 6's rail fill carries eleven) resumes as a SET: the record's identity is (county, stage, stage_detail, run) and cannot express 'job 7 of 11'. A failure in the middle re-requests the whole set on resume, and the rerun's own job results name which job stopped the first attempt.",
+      "handling": "Declared in the plan module's header as a named cost, not discovered by the operator at 03:00. Sub-job resume would need a second table and is a leave_behind, not something this skeleton invents. The record's instrument verdict names every job's own exit, so the wasted work is visible.",
+      "owner": "P-285's successor (the Burnet run will say whether it matters)",
+      "plan_row": "P-285 residual"
+    }
+  ],
+
+  "contradicted": [
+    "CP1's F1 wording: '--manifest pointing at nothing ... MANIFEST_NOT_NAMED' is one code in the pre-registration and two in the implementation (NOT_NAMED for the defaulted repo-root path, UNREADABLE for a named path that cannot be read). The tests pin both; the substance of the falsifier is unchanged.",
+    "CP1's F4 wording: 'exactly the dry-run stage records for those thirteen stages' -- fifteen records, because the declared step grain (CP1 D4/D5) gives stage 6 two steps and stage 10 two steps. A loose count in a pre-registration, not a design change.",
+    "The dispatch's mission text says stage 6's heavy stages take P-281's lease 'through the jobs that already take it'. Read at 47c7dfc, exactly THREE jobs in this repo take a P-281 window -- parcel-setback-cells and parcel-envelope-cells (windowKind 'heavy-scan', the depth pair's two jobs) and bastrop-publish (windowKind 'job-execution', a whole-county bake). The other nine rail-fill jobs in the same stage do NOT: their writers are single-county upserts. So 'the rail fill is a heavy stage' is true of two of its eleven jobs, which is why the plan marks the STEP and names the jobs rather than claiming the set.",
+    "AND THE FIRST VERSION OF THE PLAN GOT THIS WRONG, which is how the check found it: the lease note sat on STAGE 6, so the eleven-job rail-fill step inherited a claim none of its jobs take; and stage 10's publish -- the one job holding a store window for HOURS -- was not marked at all. Writing the divergence test (test/p285-county-runner.test.mjs, 'every job that takes a P-281 window is on a step the plan says is leased, and every lease the plan claims is taken') made both visible in one run: the first as a failing assertion in the reverse direction, the second by the test's own list of window-taking jobs containing bastrop-publish. Fixed in a06e5da: `heavy: true` on a step now means exactly 'a job of this step takes a P-281 window', the depth pair and both publish steps carry it, the rail-fill step does not, and the dry run prints the lease line so an operator sees which step serialises against every other heavy scan on the same store."
+  ],
+
+  "instrumentsUsed": {
+    "ran": [
+      "node --test test/p285-county-runner.test.mjs (26 tests, injected transports, no store)",
+      "node --test test/p285-county-runner-live.test.mjs against a local scratch PostgreSQL (3 tests)",
+      "node src/cli.mjs county-runner --county=48053 --manifest=... (the live dry run; nothing executed)",
+      "psql reads of the scratch store for the record audit",
+      "node --test test/*.test.mjs on this branch and on a pristine baseline worktree of 47c7dfc",
+      "gh pr checks / gh pr view / gh run list for the CI conclusions"
+    ],
+    "deliberatelyNotRun": [
+      "no stage job (the dispatch forbids it)",
+      "the runner with --apply (the dispatch forbids it)",
+      "no deploy, no migration, no scheduler, no write to any scheduled table",
+      "no Cloud Run API call at all: the only Cloud Run code paths exercised were the injected fakes"
+    ]
+  },
+
+  "scopeDiscipline": {
+    "sharedFiles": "src/cli.mjs (the command registry, declared in CP1) and src/lib/stage-map.mjs (one declined-phase entry, declared in CP1). Nothing else outside the five new files.",
+    "otherLanesFilesUntouched": "parcel-setback-cells.mjs (P-256), load.js and the scheduler (P-298), any republish job (P-294) -- all READ, none written.",
+    "noSecondSourceOfTruth": "the runner keeps no local 'where we got to' file: resume reads stage_run_records, and the four-line manifest is parsed once into both its printed rendering and the pin stored on each record.",
+    "subAgents": { "spawned": 0, "maxDepth": 0 },
+    "probe": { "notApplicable": "build lane; graded by Burnet's run records" }
+  }
+}

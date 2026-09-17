@@ -1,0 +1,67 @@
+{
+  "lane": "p298-scheduler-read-shape",
+  "planRows": ["P-298"],
+  "status": "closed-partial",
+  "probe": {
+    "notApplicable": "build lane; graded by a timed cold scheduler run after the index is built"
+  },
+  "falsifier": "Falsifier 1 (the per-rail query's plan uses the new index for Travis): PASS on the plan, with both counties' plans pasted in CP2 -- Travis now reads Index Scan using parcel_record_cell_rail_place_idx, cost 1,245,241 against the pkey's 1,851,467, and 507 pages touched per 500-row page of output against 692. Bastrop the same (99,248 against 133,894; 507 against 836). Falsifier 2 (a scheduler run refuses LEASE_HELD when another holder has the store): PASS by test. Falsifier 3 (removing the lease wiring fails a test): PASS two-sided -- source-level (the scheduler's own source must import the lease module and call take/attachRun/assertHeld/close) and census-level (with the wiring removed, p281-heavy-scan-census.mjs reports publish-gate-sched.mjs as heavy-not-wired in bypassList instead of losing it). NOT PASS: falsifier 1's timing half -- on a 128MB-shared_buffers laptop container the per-page wall clock measures cache warmth (~8us per cached page against ~42us per page read), not the plan, so the cold store's per-page read charge is not reproducible here. The arithmetic that the cold run waited on is stated instead: one Travis rail pass walks ~141,000 index pages on the pkey (the primary key is 160,554 pages / 1.25 GB) against ~2,245 pages / 17.5 MB on the new index, x65 rails per county sweep.",
+  "contradicted": "Two things contradicted what I expected, and both are in the artifacts rather than smoothed over. (1) The plan estimate is not conservative in the safe direction: the estimator printed 1,341.9 MB for the index and the built thing measures 1,216.5 MB, i.e. 10.3% HIGH; the cross-check against the primary key (1.22 GB) was the better figure. (2) Running the build verb against a real store for the first time failed with 42601 'syntax error at or near \"$1\"': the script sent `SET lock_timeout = $1`, and SET takes no parameters -- a statement PostgreSQL refuses. It had never executed because the earlier run returned alreadyBuilt before reaching that line, and the fake client in the test accepted the form. Fixed in 0f24273 (set_config with a parameter, plus a USAGE refusal for a non-numeric bound), the fake now raises 42601 like the server, and a non-vacuity test feeds it the exact statement this lane shipped. Also contradicted: my CP1 assumption that the lease would need to cover a child process's scan via the parent's window -- it does, and the census fix is what makes that visible.",
+  "leave_behind": [
+    "P:/tmp/p298-scheduler-read-shape -- factory clone, branch fix/p298-scheduler-read-shape, head 0f24273, PR #164 open. Left in place for the integration seat; the seat register entry naming it was added late and is removed at close per the dispatch.",
+    "P:/tmp/p298-evidence/ -- the raw evidence this close cites: plans-before.txt and plans-after.txt (the A/B EXPLAIN captures), index-plan.txt, index-verify.txt, index-build-real.txt (the real 29,317ms build), index-build-noapply.txt, index-build-apply.txt, full-suite.txt (1595 tests), pr-body.md, pr-comment.md. P:/tmp/p298-rig/rig.mjs and rig-report.json are the scratch rig that generated the 26.4M-row store.",
+    "Docker container p298-plan-pg (postgres:17, 127.0.0.1:55480, databases factory and factory_c) -- the scratch store, holding synthetic rows only: 405,905 parcels across Travis (380,917) and Bastrop (24,988) with 65 rails each, 26.4M cell rows, and parcel_record_cell_rail_place_idx built and verified. Left running so the seat can re-time a pass without regenerating it; drop it with `docker rm -f p298-plan-pg` when done.",
+    "The measurement that matters to the seat: the OLD plan's cost is proportional to the county's whole primary-key range, not to the rail. Any county sweep on the pkey pays 1.25 GB of index per Travis-sized rail; the new index pays 17.5 MB. That is why the cold run went to minutes per rail."
+  ],
+  "missionPremise": "P-298 / A-196 (90_operations/OPS-16_texas_market_plan_of_record.md, compiled 2026-09-17): 'THE GATE SCHEDULER READS A WHOLE COUNTY PER RAIL, SO A COLD CACHE TURNS AN HOURLY JOB INTO A HALF-DAY ONE; AND IT TAKES NO LEASE.' The measured finding under it: the per-rail page query in src/lib/parcel-record-engine/load.js is `SELECT place_key, cell_state FROM parcel_record_cell WHERE place_key > $1 AND place_key < $2 AND rail_key = $3 ORDER BY place_key LIMIT $4`; the planner uses parcel_record_cell_pkey (place_key, rail_key), so a rail pass walks every rail's entries in the county's range (about 24.7M for Travis). The dispatch's own constraints: no DDL on a live store, no scheduler run, no edits to parcel-setback-cells.mjs, no sub-agents, and a probe that is notApplicable because this lane's product is graded by a timed cold run after the index exists.",
+  "completionPredicate": "Done means: (a) parcel_record_cell_rail_place_idx exists on the factory store, indisvalid and indisready, built by the command in CP2 under the seat's lease; (b) EXPLAIN of the pinned per-rail page query on the LIVE store names that index for Travis and Bastrop; (c) a cold six-county scheduler run completes inside the job's timeout and is timed, with the before figure being the 33-minute warm baseline and the ~6-min-per-rail cold-Travis figure this lane's finding cites; (d) the scheduler's run appears in the heavy-scan lease list while it runs and is gone after it fails or finishes. Absent (c) the lane stays closed-partial no matter how green the tests are, because the dispatch's status clause says so explicitly.",
+  "scopeBasis": "The three files that were changed and the four that were not, by the dispatch's own boundary. In scope: the index plus a guarded non-transactional step (migrate.mjs cannot run CONCURRENTLY inside its transaction, read at source); the scheduler's lease wiring and its tests; a read-only timing harness; and the census fix, which is in scope because falsifier 3's third leg is 'the census can see this job as heavy', and the census could not -- that blindness is the same defect A-196 measured, seen from the instrument's side. Out of scope and untouched: load.js (vendored emit -- and no divergence was needed, since the planner takes the new index with no query change); parcel-setback-cells.mjs (factory PR #160 is open on it); migrate.mjs and migrations/**; and the other heavy-not-wired jobs the census now names -- this lane fixes the instrument, not every job it exposes. The seat's remaining scope (applying the index, timing the cold run) is excluded because the dispatch hands it to the integration seat, not because it is unimportant.",
+  "constraintsHonored": [
+    "no DDL against a live store: every build, plan and timed pass in this lane ran against the lane's own PostgreSQL 17 container on 127.0.0.1:55480, holding synthetic rows generated by the lane's rig",
+    "the scheduler was never run",
+    "parcel-setback-cells.mjs untouched",
+    "no sub-agents launched (FAN-DEPTH 0)"
+  ],
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-17_p298-scheduler-read-shape_cp1.json",
+    "cp2": "_inbox/2026-09-17_p298-scheduler-read-shape_cp2.json",
+    "close": "_inbox/2026-09-17_p298-scheduler-read-shape_close.json"
+  },
+  "productRepo": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "branch": "fix/p298-scheduler-read-shape",
+    "baseCommit": "47c7dfc",
+    "headCommit": "0f242738c6bfee353a93ecdb6b4fb046b84d3ec1",
+    "pr": 164,
+    "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/164",
+    "mergeSha": null,
+    "mergeShaNote": "not merged: the dispatch hands merging to the integration seat, so no merge SHA exists -- absent rather than blank",
+    "ciConclusionStrings": [
+      "test -> SUCCESS (runs/35170107560/job/105039751622)",
+      "test -> SUCCESS (runs/35170103525/job/105039739843)",
+      "gate8 -> SUCCESS (runs/35170107560/job/105039751731)",
+      "gate8 -> SUCCESS (runs/35170103525/job/105039739718)",
+      "ldt-sha-comment-presence -> SUCCESS (runs/35170107560/job/105039751863)",
+      "ldt-sha-comment-presence -> SUCCESS (runs/35170103525/job/105039739868)"
+    ],
+    "ciNote": "3 checks x 2 runs (branch push, PR synchronize), all SUCCESS at head 0f24273; the previous head 2a91ee9 was green the same way. Strings are the API's check-run conclusions."
+  },
+  "countsWithCountingRules": {
+    "laneTests": { "tests": 63, "pass": 63, "fail": 0, "rule": "node --test test/p298-index-step.test.mjs test/p298-scheduler-read-shape.test.mjs test/publish-gate-sched.test.mjs at 0f24273" },
+    "fullSuiteOnThisBox": { "tests": 1595, "pass": 1590, "fail": 1, "skipped": 2, "todo": 2, "rule": "node --test test/*.test.mjs at 0f24273", "theFailure": "test/ctx-b3-store-census.test.mjs (pin bae48d40) needs a real pinned LDT checkout in this environment and imports nothing this lane touched; the same job PASSES in CI, which checks the pin out" },
+    "ciChecks": { "runs": 6, "succeeded": 6, "rule": "3 checks x 2 runs, from the GitHub API's check-run conclusions at head 0f24273" },
+    "indexSize": { "estimateMb": 1341.9, "measuredMb": 1216.5, "estimateErrorPct": 10.3, "rule": "estimate from pg_stats average key widths and the printed btree formula; measured from pg_relation_size of the built index" },
+    "cellRowsOnTheRig": { "rows": 26383825, "rule": "rig report's count(*) on parcel_record_cell after loading Travis 380,917 and Bastrop 24,988 parcels x 65 rails" }
+  },
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "whatRemainsOpen": [
+    "The index is not built on the factory store and no cold six-county run has been timed. That is the seat's, under its lease, with the command in CP2.",
+    "Falsifier 1's latency half is unmeasured and stated as such. A container with a small shared_buffers and no OS page cache behind it (or the live store itself) is what can settle it.",
+    "The other heavy jobs the improved census now lists as heavy-not-wired still take no lease."
+  ],
+  "deviationsAndMistakes": [
+    "Worktree registration happened AFTER the build, not before working (mission: 'Register it under the property seat and remove the entry at close'). Declared, not back-dated.",
+    "The build verb had never executed against a store until this session; its first real run found the 42601 bug. Fixed, with the fake client made faithful and a non-vacuity test. LESSON: a mock that accepts statements the server rejects turns a broken verb into a green suite.",
+    "The doc_repo worktree carries uncommitted changes as section 6 requires: the lane claim (_catalog/lane_claims.json) and the seat register entry for this clone (_catalog/seat_register.json). The dispatch says to remove the register entry at close; both are left uncommitted and are listed here."
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design/pre-build adversarial checkpoint (AGENT_CONTRACT section 1: design, before any build)",
+  "lane": "p298-scheduler-read-shape",
+  "planRows": ["P-298"],
+  "filedAt": "2026-09-17T01:20:00Z",
+  "seat": "cente-vsc-p298",
+  "dispatch": "_dispatches/2026-09-17_p298-scheduler-read-shape_dispatch.md",
+  "docRepoWorktree": "C:/Users/cente/doc_repo -- the checkout this session is rooted in, FAST-FORWARDED to origin/main 20204af9 before any work (it was 20 commits behind; the dispatch file itself only existed on origin/main). The dispatch was compiled in P:/doc_repo, the integration seat's checkout, which this box does not carry; this is the only doc_repo worktree here. The lane's own claim was taken FIRST, from this worktree, exit 0: `node scripts/lane-claim.mjs claim --lane p298-scheduler-read-shape --seat cente-vsc-p298 --plan-row P-298 --dispatch _dispatches/2026-09-17_p298-scheduler-read-shape_dispatch.md` -> CLAIMED ... Proceed. Two other live claims were already in _catalog/lane_claims.json (p249-envelope-unlock, p262-edge-labeller); neither touches hauska-factory.",
+
+  "productRepo": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/p298-scheduler-read-shape (NEW directory, fresh clone of origin/main, as the dispatch requires)",
+    "branch": "fix/p298-scheduler-read-shape",
+    "baseCommit": "47c7dfc (fix(P-284r): a compute cost asks for its own execution's job, and every record can be filled (#162))",
+    "baseCommitIsTheDeclaredStartCommit": true,
+    "baseCommitNote": "checked at source before branching: `git log --oneline -1` in the fresh clone prints 47c7dfc, byte-equal to the dispatch's declared start commit, so there is no drift to declare on this axis.",
+    "dependencies": "npm install in the clone: 126 packages, 7s. The private-scope package @empressaio/atom-contract resolves from the public registry.",
+    "noNodeModulesReuse": "the clone is fresh and self-contained; no other lane's checkout was entered (AGENT_CONTRACT: never build in another lane's checkout). The one OTHER factory clone on this box (C:/Users/cente/hauska-factory, on branch p201-excluded-states) was READ ONCE, never written, and never for a measurement."
+  },
+
+  "premiseVerifiedAtSource": {
+    "planRow": "P-298 (90_operations/OPS-16_texas_market_plan_of_record.md, read at origin/main 20204af9): 'THE GATE SCHEDULER READS A WHOLE COUNTY PER RAIL, SO A COLD CACHE TURNS AN HOURLY JOB INTO A HALF-DAY ONE; AND IT TAKES NO LEASE.' Required: an index that serves the per-rail range read, a before-and-after EXPLAIN on Travis and Bastrop, the six-county run timed cold, and the scheduler taking P-281's lease on the factory store.",
+    "measuredFinding": "A-196 (same file, same commit): the per-rail page query in src/lib/parcel-record-engine/load.js runs on parcel_record_cell_pkey (place_key, rail_key), so every rail pass walks every rail's index entries in the county's range (about 24.7M for Travis, whose 380,917 parcels carry 65 rails each) to return one rail's. Warm, the six counties took 33 minutes; cold, Travis took about six minutes PER RAIL on Neon/PS_ReadIO.",
+    "readAndConfirmedInTheClone": [
+      "src/lib/parcel-record-engine/load.js loadCountyRailCellsPage: exactly the query P-298 quotes, `WHERE place_key > $1 AND place_key < $2 AND rail_key = $3 ORDER BY place_key LIMIT $4`, page size DEFAULT_RAIL_CELL_PAGE_SIZE = 500, and the page loop is `after = lastRow.place_key` until a short page -- so the county range is walked once per rail, not per parcel.",
+      "src/lib/parcel-record-engine/load.js loadCountyRailCells asserts cells.length === parcel_record row count for the county and THROWS on a mismatch, so 380,917 cells per rail are loaded for Travis: 762 pages per rail at page size 500. That is the multiplier A-196 measured.",
+      "migrations/0007_parcel_record.sql (verbatim engine schema): parcel_record_cell PRIMARY KEY (place_key, rail_key); existing indexes are parcel_record_cell_pkey, parcel_record_cell_rail_idx (rail_key) and parcel_record_cell_unaccounted_idx (place_key) WHERE cell_state->>'kind' = 'unaccounted'. An index on (rail_key) alone cannot serve the ORDER BY place_key LIMIT without a sort, and cannot avoid reading every matching row; hence the pair ordering (rail_key, place_key).",
+      "src/db/migrate.mjs: applyMigrations wraps every file in `BEGIN` ... `COMMIT`, so CREATE INDEX CONCURRENTLY cannot live in migrations/ -- it would abort the whole migrate job with 'CREATE INDEX CONCURRENTLY cannot run inside a transaction block' and the index would never exist. Confirmed by reading the file, not assumed.",
+      "src/jobs/publish-gate-sched.mjs: the apply path connects with connectFactory(env) and computes RAIL_LIVENESS_SQL ONCE per run (P-195, one full-table scan over parcel_record_cell); every (county, rail) pair then shells out to the vendored gate CLI, which runs the paged per-rail read in a SUBPROCESS. So the run's scans are this process's liveness scan PLUS its children's page loops -- the lease must cover both, which it does because the children inherit this process's window.",
+      "src/lib/parcel-record-engine/ENGINE_PIN.json: the vendored engine emit is DIVERGENT in exactly two files already, publish-gate.js and index.js, introduced by P-252, pinned by test/engine-pin-divergence.test.mjs with EXPECTED_DIVERGENCE = ['zero-earned-unaccounted-live']. load.js is NOT in that set. The smallest query change would therefore be a THIRD divergence to record; the index alone is preferable and is what item 1 asks for. This lane will not touch publish-gate.js or index.js.",
+      "scripts/p281-heavy-scan-census.mjs: reads each src/ module for ST_*() calls, `FROM txgio_parcel`, `CREATE TABLE p2_*` and the heavy-lease import; a file is heavy when it calls PostGIS or reads txgio_parcel."
+    ]
+  },
+
+  "thePlannerFigureThatIsWrong": {
+    "theFigure": "The dispatch's finding block, and P-298's own OPS-16 row: 'The scheduler (src/jobs/publish-gate-sched.mjs) is on P-281's list of heavy jobs that take no lease.'",
+    "atSource": "FALSE. P-281's list is the bypassList in _inbox/2026-09-16_p281-heavy-leases_close.json, produced by scripts/p281-heavy-scan-census.mjs, and it holds 11 rows: flood-ingest, p2-juris-store, parcel-ag-valuation, parcel-max-impervious-cover, parcel-overlay-districts, parcel-r4-companions, parcel-r5-zoning, parcel-record-fill, parcel-school-district, parcel-utility-service, lib/publish-cadroll-postcondition. publish-gate-sched is NOT among them.",
+    "reproducedInThisLane": "Ran the census against this clone: counts {bounded-not-heavy:3, control:4, heavy-not-wired:11, wired:4}, rows 22, and `allRows.filter(r => r.file.includes('publish-gate-sched'))` returns [] -- the scheduler is not in the census output AT ALL, not even as a non-heavy row.",
+    "whyItMatters": "DEV_PROCESS 2.1: an instrument's exclusion set is part of its contract and must be stated where its output is read. The census's heavy predicate is 'calls PostGIS or reads txgio_parcel', so a job whose entire heavy read is parcel_record_cell -- the factory's own 76M-row table, read through a VENDORED ENGINE module a regex over src/ can never see -- is invisible to the fleet's lease instrument. That is how P-298's 'and it takes no lease' survived unlisted while the scheduler ran hourly.",
+    "consequenceForThisLane": "The mission's item 3 cannot be GRADED by the instrument the mission cites: after this lane the census would still not show publish-gate-sched. So the fix includes teaching the census the evidence column it lacks (a cell-table scan and a spawn of the vendored gate CLI), with the reclassification delta reported rather than hidden. This is a correction, not a scope grab: DEV_PROCESS 3.2 rewards reporting a planner figure as wrong, and the dispatch's own premise depends on this list existing.",
+    "evidentiaryStandard": "DEV_PROCESS 3.2a met: the census output and the P-281 close's bypassList are both quoted from source, the census was re-run in this clone, and the exact command is in CP2/the close. The dispatch's own numbers (76M rows, 18GB heap, 7.6GB indexes, 24.7M Travis entries, 33 minutes warm, ~6 minutes per rail cold) are A-196's measurements and are NOT re-measured here -- no factory credential exists in this session (FACTORY_DATABASE_URL unset), so every number this lane produces is from the scratch rig named below, and every number it repeats is cited to A-196."
+  },
+
+  "environmentLimitsDeclaredBeforeAnyMeasurement": {
+    "noFactoryCredential": "FACTORY_DATABASE_URL and PRODUCTION_NEONDB_URL are UNSET in this session, and FACTORY_CONTROL_API_URL/FACTORY_CONTROL_API_KEY are unset too: `node scripts/heavy-scan-lease.mjs list` (doc_repo) answers exit 4 CALLER_NOT_REGISTERED naming both missing variables. So (a) the pre-flight lease check the dispatch's Do-not list asks for cannot be RUN here, and (b) no measurement in this lane touches a fleet store. Because this lane runs no heavy scan against a live store and no DDL anywhere but its own container, the un-runnable check costs nothing -- recorded so a later reader can tell a decision from an oversight.",
+    "neonApiKey": "NEON_API_KEY IS set in this session. Deliberately NOT used: building the index on a Neon branch of the factory project would copy tens of GB and spend real money to answer a question the scratch rig answers, and the dispatch makes the integration seat the one that builds the index on the real store. Stated because the capability existed and was declined.",
+    "theScratchRig": "Docker container p298-plan-pg (postgres:17, PostgreSQL 17.11), port 55480, database factory, migrations/0007 applied verbatim, then parcel_record and parcel_record_cell filled at the REAL row counts of the two counties the falsifier names -- Travis 380,917 parcels and Bastrop 24,988, 65 rails each = 26,406,325 cells -- from a lane-local script that is never committed. Every local number is reported with the extrapolation factor to 76M rows (DEV_PROCESS 1.5)."
+  },
+
+  "design": {
+    "item1_theIndex": {
+      "what": "CREATE INDEX CONCURRENTLY IF NOT EXISTS parcel_record_cell_rail_place_idx ON parcel_record_cell (rail_key, place_key).",
+      "whyNotInMigrations": "migrations/ is transactional (src/db/migrate.mjs). The step is therefore a separate, clearly named non-transactional artifact: sql/p298/0015_parcel_record_cell_rail_place_idx.sql, executed by scripts/p298-build-rail-place-index.mjs. A test asserts the file carries exactly one statement, that it is CONCURRENTLY, and that it is NOT under migrations/ -- so a later 'tidy-up' that moves it into the migrate job fails a test instead of aborting every migration behind it.",
+      "whyThisKeyOrder": "(rail_key, place_key): equality on the leading column, then a range scan in place_key order that satisfies ORDER BY place_key LIMIT 500 without a sort and without walking sibling rails. (place_key, rail_key) is what the primary key already is. A partial index per rail was rejected: 65 indexes to maintain under a writer that rewrites cells.",
+      "noIncludeClause": "INCLUDE (cell_state) was rejected: cell_state is a jsonb of roughly 100-300 bytes, so an index-only-scan index would be larger than the heap it duplicates (~18GB) and would double the writer's cost. The page read takes a heap fetch either way.",
+      "estimatesFromTheTablesOwnStatistics": "read-only, via pg_class/page-size and pg_stats: entry count = parcel_record_cell.reltuples; entry width = 16 (btree tuple header with page offset) + max(place_key avg_width, rail_key avg_width) pairs as their true types (text, 4-byte varlena header) + item pointers; the same-key-columns cross-check is parcel_record_cell_pkey's own size, since the new index carries the identical tuple set in a different order.",
+      "whatTheLaneWillNotDo": "no CREATE INDEX and no DDL of any kind against any fleet store; the index is BUILT on the scratch container only, to produce the plans and the build-rate measurement. The integration seat builds it on the real store with the command this lane hands over."
+    },
+    "item2_thePlanProof": {
+      "method": "The exact production query text, EXPLAINed on the scratch rig at the two counties' real row counts, before the index exists (baseline, expected to name parcel_record_cell_pkey) and after (expected to name parcel_record_cell_rail_place_idx), with EXPLAIN (ANALYZE, VERBOSE, BUFFERS) beside it so the difference is stated in shared hits/reads as well as in milliseconds. A full rail pass is timed by paging exactly as load.js pages.",
+      "ifThePlannerStillPrefersThePkey": "then the smallest query change is to add `rail_key`-equality-first index hints -- Postgres has no hints, so the real candidate is a query rewrite that the planner cannot mis-cost, and it would be a VENDORED DIVERGENCE recorded in ENGINE_PIN.json exactly as P-252 recorded its own (files list, what/why/howToRetire/engineSideStatus) plus a new EXPECTED_DIVERGENCE entry in test/engine-pin-divergence.test.mjs. That path is only taken if the measurement demands it; the falsifier is pre-registered below so the outcome cannot be chosen afterwards.",
+      "notClaimed": "no plan is claimed against the live store: this lane has no credential for it, and the dispatch reserves the live grading (and the cold six-county run) to the integration seat."
+    },
+    "item3_theLease": {
+      "hookPoints": "grantHeavyScanLease before any read of the factory store (before RAIL_LIVENESS_SQL and before the first subprocess), attachRun(runId) after startRun on the apply path, assertHeld() at each (county, rail) boundary inside the loop, close({outcome}) in the finally BEFORE the connection is ended -- the ordering parcel-envelope-cells.mjs already uses, because a release after the connection closes has nowhere to land.",
+      "storeKey": "storeRefFromEnv(env, 'FACTORY_DATABASE_URL'), i.e. the connection HOST, which is exactly what the job's own connectFactory(env) connects to and what the lease module keys on.",
+      "windowAndHolder": "windowKind 'heavy-scan'; holder from leaseHolder(env) so a Cloud Run execution names its execution and a local run says it is a seat; ttlMs from ttlMsFromEnv(env).",
+      "refusalSemantics": "LEASE_HELD propagates as a refusal with no run row (the lease is taken BEFORE startRun, so a refused scan never leaves a run row claiming work that never started -- P-281's own stated reason for that ordering). No wait/retry loop: the dispatch's falsifier 2 asks for a refusal, and for an hourly job the next tick is the retry.",
+      "amendmentToExistingBehaviour_thisIsTheOneDesignChange": "A DRY RUN NOW TAKES THE LEASE, and therefore now requires FACTORY_DATABASE_URL. Today a dry run opens no factory connection at all and lets each subprocess connect for itself -- and those subprocesses perform the SAME page loops, so a dry run is a heavy scan with no lease. AGENT_CONTRACT section 4 has no dry-run exemption. The property this changes is the one test/publish-gate-sched.test.mjs names 'no forced DB connection just to preview'; what P-195 actually needed is preserved and re-asserted: a dry run STILL omits --declared-ahead, so it still does not compute the program-wide liveness scan in this process. Net: a preview of the store is a scan of the store and says so.",
+      "knownCostLeftOpen": "on a dry run each subprocess computes the program-wide liveness scan for itself (the CLI's own fallback), so a 6-county x 65-rail dry run performs 390 full-table scans of parcel_record_cell. That is a bigger cost than the per-rail reads this row is about, it is inside the leased window after this lane, and it is REPORTED here as a finding rather than fixed: fixing it means computing declaredAhead on a dry run, which is a behaviour change P-195 chose deliberately and which this mission does not ask for."
+    },
+    "item4_theTimingHarness": {
+      "what": "scripts/p298-rail-pass-timing.mjs: read-only, requires --county and --rail, times one rail pass through the engine's own loadCountyRailCells (the production read shape, not a re-typed copy), and prints the EXPLAIN of the page query so the reader can see WHICH index served it, plus page count, total ms, median/min/max ms per page.",
+      "guards": "read-only session (default_transaction_read_only = on), refuses without FACTORY_DATABASE_URL by naming the variable, refuses a full pass without --confirm-heavy-scan (so a stray invocation cannot heavy-scan the store), prints the AGENT-CONTRACT section 4 announce line (target, expected duration) before the first page, and never writes.",
+      "whyItExists": "the dispatch's item 4: the integration seat grades the change cold and warm on the real store. What this lane can prove locally is the same instrument against the same query text; what it cannot prove is Neon's cold-cache behaviour, which stays the integration seat's measurement."
+    },
+    "item5_theCensusCorrection": {
+      "what": "scripts/p281-heavy-scan-census.mjs gains an evidence column for a cell-table scan (FROM parcel_record_cell) and for a spawn of the vendored engine reader (gate-rail-cli.mjs), and a named verdict for a vendored engine reader module ('engine-reader: leased by the caller that spawns it').",
+      "why": "see thePlannerFigureThatIsWrong: without it, publish-gate-sched remains invisible to the instrument that produced the list naming unleased heavy jobs, and this lane's fix would be ungradable by the very list the mission cites.",
+      "bounded": "additive; the PostGIS/txgio_parcel predicate is unchanged, and the reclassification delta is reported as a count in CP2 and the close. No other lane's file is edited beyond this one instrument and the scheduler itself."
+    }
+  },
+
+  "falsifierAnswersPreRegistered": [
+    {
+      "falsifier": "1. The per-rail query's plan uses the new index for Travis (paste the plan).",
+      "preRegisteredAnswer": "EXPECTED PASS on the scratch rig at Travis's real row count: after the index exists the plan is an Index Scan (or Index Only Scan) on parcel_record_cell_rail_place_idx with `Index Cond: ((rail_key = 'flood') AND (place_key > ...) AND (place_key < ...))`, no Sort node, and a shared-hit count per page an order of magnitude below the pkey plan's. If the analyzer returns a Seq Scan or the pkey instead, the finding is the query change + a recorded vendored divergence, and the answer becomes FAIL-with-a-proposal, not a smoothed PASS."
+    },
+    {
+      "falsifier": "2. A scheduler run refuses LEASE_HELD when another holder has the factory store (test).",
+      "preRegisteredAnswer": "EXPECTED PASS: a unit test drives runPublishGateSched with a factory double whose lease INSERT ... ON CONFLICT DO NOTHING RETURNING returns zero rows and whose blocking SELECT returns another holder, and asserts the run rejects with code LEASE_HELD naming that holder, with zero verdict rows written and no run row opened. A second test asserts the refusal is RECORDED (the refusal INSERT is issued with lost_to_holder set)."
+    },
+    {
+      "falsifier": "3. Removing the lease wiring fails a test.",
+      "preRegisteredAnswer": "EXPECTED PASS by two independent instruments: (a) the scheduler suite asserts a lease is taken for a run and that assertHeld is called once per (county, rail) boundary and that close() runs on both the success and the failure path -- deleting the wiring fails those assertions; (b) the census, run from the test over a scratch copy of src/ with the heavy-lease import stripped out of publish-gate-sched.mjs, flips its verdict from 'wired' to 'heavy-not-wired'. (b) is the stronger one: it fails on the artefact, not only on the unit."
+    },
+    {
+      "falsifier": "4 (this lane's own, added because item 1's fix is DDL on an 18GB table).",
+      "preRegisteredAnswer": "The index step refuses to run outside its named store, refuses without --apply, issues no BEGIN, and, if a previous CONCURRENTLY build died, detects an INVALID index and prints the drop-and-retry command instead of silently succeeding on `IF NOT EXISTS`. Expected PASS, tested with a doubled client; the 'invalid index' case is the one a naive IF NOT EXISTS implementation gets wrong."
+    }
+  ],
+
+  "adversarialReviewOfMyOwnPlan": [
+    "The premise I am NOT allowed to assume is that the index alone fixes the plan. An index only gets chosen when the planner's cost model prefers it; at 26M rows with realistic statistics it should (500-entry ordered scan vs ~32,500-entry filtered walk), but the rig is the test and a FAIL is a legitimate outcome with a proposal attached -- so the falsifier is pre-registered above rather than discovered afterwards.",
+    "A CONCURRENTLY build that fails leaves an INVALID index behind which `CREATE INDEX CONCURRENTLY IF NOT EXISTS` then SKIPS, so the second run reports success while the query still uses the pkey. My step therefore verifies pg_index.indisvalid/indisready after the build and names the DROP INDEX CONCURRENTLY remedy. Without this the lane could hand the integration seat a command that silently does nothing on the second attempt.",
+    "Refusing LEASE_HELD stops the hourly scheduler while another heavy scan holds the factory store -- the P-252 apply holds it right now (holder integration-p252-apply). That is the rule working (a second heavy scan waits, P-281 F2), but the consequence is stated: verdicts simply are not refreshed for that tick, and the allowlist fails CLOSED on a missing verdict, so no parcel is served anything new because of it.",
+    "The lease is taken before startRun, so a LEASE_HELD run leaves no run row and therefore no `runs` evidence -- only the heavy_scan_lease_refusals row. That is P-281's deliberate ordering; the lane must not 'helpfully' move the lease after startRun and thereby recreate the run-row-claims-work-that-never-ran defect.",
+    "Bastrop's plan is not Travis's problem: Bastrop has 24,988 parcels and its county range is 1/15th of Travis's, so its pkey plan is comparatively cheap. Both are measured anyway, because the falsifier names both and because a fix that only helps the biggest county is what the next cold run would find.",
+    "The census edit is the piece most likely to be judged out of scope. It is kept minimal and additive, the delta is reported as a number, and the justification is the mission's own premise being unverifiable without it."
+  ],
+
+  "notChanging": [
+    "src/lib/parcel-record-engine/*.js (the vendored engine emit) -- NOT edited, and specifically load.js is untouched, because the index alone is expected to serve the query. If the measurement forces a query change it becomes a recorded divergence through ENGINE_PIN.json, never a silent hand-edit.",
+    "publish-gate.js and index.js (P-252's recorded divergence) -- not touched.",
+    "src/jobs/parcel-setback-cells.mjs -- out of bounds by the dispatch; PR #160 (P-256) is open on it.",
+    "migrations/ -- no new file, because the step cannot be transactional; the new SQL lives outside the migrate job's directory by design and a test pins that.",
+    "the engine's 500-row page size and the scheduler's slate/rail constants -- a different question than this row's.",
+    "no deploy, no DDL or heavy scan against any fleet store, and no Cloud Run job run."
+  ],
+
+  "openRisks": [
+    "The integration seat must run the index step on the real 76M-row store, where the build is ~3x this rig's 26.4M rows (extrapolation factor stated with the measured rate in CP2). Its size estimate is a statistic-derived band, not a measurement, and is labelled as such.",
+    "Neon's cold-cache behaviour is the thing that actually hurt (PS_ReadIO waits). The rig shows the plan and the buffer counts; only the integration seat's cold six-county run can show the wall-clock.",
+    "If P-256's apply (factory PR #160) or the integration seat's P-252 apply is running when the index step is invoked, CREATE INDEX CONCURRENTLY will take its brief locks against an actively-written table; it is safe by design but slow, and it does not take the heavy-scan lease itself -- it is DDL, not a scan. Sequencing is the integration seat's call and is stated in the leave_behind."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0, "note": "FAN-DEPTH 0. No sub-agent was launched at any point in this lane, and none will be." }
+}
