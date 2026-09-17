@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (00:12Z)
+last_updated: 2026-09-17 (00:26Z)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -75,6 +75,11 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 |---|---|---|---|
 | P-252 (with P-292) | Empty counties refuse at the gate | **Applying** (`8x4jk`); graded by `scripts/p252-apply-compare.mjs` | Grade PASS, resume the hourly trigger, rerun the completeness check, then the six-county republish |
 | P-297 LDT half (with P-269) | Each slated parcel served from its own cell | Lane working; LDT PR #710 open | Review, merge; then fire the engine half |
+| P-299 | Height flag has one meaning; a transcribed-source state; no placeholder height served (corpus and LDT) | Compiled 2026-09-17 | Gates the LDT deploy of P-258's tables |
+| P-298 | The scheduler reads one rail and takes the lease | Compiled 2026-09-17 | Index built by the integration seat after the lane |
+| P-294 | Republish a county when its ledger changed | Compiled 2026-09-17 | Built dry-run first; first production run on the operator's go |
+| P-285 | County runner, thirteen stages | Compiled 2026-09-17 | Skeleton before Burnet |
+| P-259 | Austin zoning from the public layer with a base-code parser | Compiled 2026-09-17 | Stamp applied by the integration seat after the dry run |
 
 ## Ready, waiting on something
 
@@ -86,23 +91,19 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | P-249 | Unverified zero atoms stop hiding envelopes (LDT #701, map #409) | The integration seat's staging proof |
 | P-262 | One edge labeller (merged `e7cd0ae`) | Graded by P-264 |
 | Six-county republish | Operator go (A-190) | The gate apply's PASS |
-| LDT deploy | P-258 tables, P-297, P-249 | P-297 merge and P-249's proof, so one `cortex-api` deploy carries them |
+| LDT deploy | P-258 tables, P-299's height guard, P-297, P-249 | P-299 first (LDT's envelope serves a flagged 999 height as a number today: 10 district rows at the serving commit, 39 at main); then one `cortex-api` deploy |
+| P-300 | City-wide default setback lines (Gholson first) | P-256 (same factory writer) |
 
-## Rulings and decisions owed by the operator
+## Rulings and decisions
 
-| Item | Recommendation |
+**Ruled 2026-09-17 (A-199):** the four corpus rulings (`_decisions/2026-09-17_setback_corpus_flag_state_and_default_line_rulings.md`), the three P-295 rulings (`_decisions/2026-09-17_ledger_serving_transition_and_retirement_order.md`), P-256's apply authorised with a per-county ceiling (22.4 percent of the six counties' parcels in total; applies after P-297 is live), and P-284's cost basis.
+
+| Still owed by the operator | Note |
 |---|---|
-| P-295 rule 1: copied values allowed only while a cell has no pointer, counted as a defect | Yes |
-| P-295 rule 2: retirement order (writer with pointer and version, LDT reader, map adapter, bake per rail, legacy derive) | Yes |
-| P-295 rule 3: a content version in P-163's scope | Yes |
-| P-258 OT-1: run rule G7 over the shipped tables (120 rows would block; the not-specified flag means two things) | Needs a corpus-owner call |
-| P-258 OT-2: an honest state for transcribed sources (`asserted` is unreachable without an atom) | Needs a corpus-owner call |
-| P-258 OT-3 and OT-10: a located-not-extracted state; a city-wide default line with no district | Needs a corpus-owner call |
-| P-256 apply authorisation (about 1.1M cells) | Authorise after P-297 is live |
-| P-284 cost quantity (planner call: the execution window) | Override if you want a different basis |
 | P-278 production credential rotation | Before Burnet's first production publish |
 | Cotality contract and credentials (P-267, P-283) | Open |
 | Account check for P-243 and P-244a | Open |
+| First automated production run of P-294 | When P-294 is built |
 
 ## Owed by the integration seat (in order)
 
@@ -114,19 +115,19 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | 4 | P-249 staging proof, then one `cortex-api` deploy (P-258 tables, P-297, P-249) and the map deploy |
 | 6 | P-256 integration (rebase on `47c7dfc`, corpus pin to 1.3.0) and its apply, after P-297 and the authorisation |
 | 7 | Build P-254 (customer-surface legs reading the cell, per A-193) and P-286 |
-| 8 | Dispatch as lanes free: P-298 (scheduler read shape), P-294, P-296, P-259, P-260, P-263 and P-264, P-266, P-268, P-270 to P-276, P-279, P-282, P-285, P-287, the P-291 note |
+| 8 | Dispatch as lanes free: P-296 (after P-297), P-300 (after P-256), P-260, P-263 and P-264, P-266, P-268, P-270 to P-276, P-279, P-282, P-287, the P-291 note |
 
 ## Left for Phase 0 (the six counties)
 
 | Group | Rows | Blocked on |
 |---|---|---|
 | Finish-line checks | P-254, P-286 | Nothing |
-| Setbacks | P-257 (decline wording, PUD message), P-259 (Austin source), P-260 (one registry), P-156 | P-257 needs P-256 and P-249; P-260 needs P-258 |
+| Setbacks | P-257 (decline wording, PUD message), P-260 (one registry), P-156, P-300 (default lines); P-259 and P-299 compiled | P-257 needs P-256 and P-249; P-260 needs P-258 |
 | Envelopes | P-263 (clean bad data), P-264 (re-derive; measures road blocking) | P-264 needs P-260 |
 | Hays and the ledger | P-211, P-265, P-266, P-268, P-204 | P-265 needs P-211 |
 | Ag valuation | P-267 | The Cotality contract |
 | What customers see | P-297, P-269, P-270, P-271, P-272, P-217, P-209 | P-297 in flight |
-| Controls and cleanup | P-273, P-274, P-275, P-276, P-279, P-282, P-298, R-11 | Nothing |
+| Controls and cleanup | P-273, P-274, P-275, P-276, P-279, P-282, R-11 (P-298 compiled) | Nothing |
 | Earlier rows | P-175, P-183, P-184 (identity), P-176 (Cotality accuracy), site-plan compose timeouts | Nothing |
 | Serving path | P-294 (republish on change), P-295 build, the six-county republish | P-295 rulings; the gate PASS |
 | From the reports session | P-296 (ETJ rollout), P-243 and P-244a checks | Nothing |
@@ -137,7 +138,7 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | Row | What | State |
 |---|---|---|
 | P-284 | Stage cost and timing records | Live and graded |
-| P-285 | County runner, all thirteen stages | Not started (P-284 and P-281 are now live) |
+| P-285 | County runner, all thirteen stages | Compiled 2026-09-17 |
 | P-286 | Blocker list as the pre-bake checklist | Not started |
 | P-287 | Burnet's unreconciled parcels; address points | Not started |
 | P-187, P-196, P-198, P-197 | Manifest, retract, merge gate, per-stage checks | Not started |
@@ -175,3 +176,4 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | 2026-09-16 23:47 | P-205 customer-done (retrieval `00096-div`, `find_parcel` names Burnet). P-295 phase 1 and P-284 remainder closed; #162 merged with a planner call on the cost quantity. A-197. |
 | 2026-09-17 00:04 | Regrouped. P-284 remainder deployed (migration `0014`, publish, writers and reaper on `47c7dfc`; first reaper tick clean). P-297's LDT lane opened PR #710. This page rewritten to current state and now carries the live queue (A-198). |
 | 2026-09-17 00:12 | P-284 graded: the reaper backfilled a real dry run's record with a measured $0.000484. P-258 corpus rulings explained to the operator; decision pending. |
+| 2026-09-17 00:26 | Operator rulings recorded (A-199): corpus OT-1/2/3/10, P-295's three, P-256's apply with a per-county ceiling, P-284's basis. P-299 and P-300 carded; OPS-24 range to 320. Five lanes compiled: P-299, P-298, P-294, P-285, P-259. LDT deploy now waits on P-299's height guard. |
