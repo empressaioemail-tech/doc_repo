@@ -1,0 +1,81 @@
+{
+  "lane": "p305-key-drift",
+  "planRow": "P-305",
+  "checkpoint": "CP1 (design / pre-build adversarial checkpoint, AGENT_CONTRACT section 1)",
+  "seat": "p305-lane",
+  "filedAt": "2026-09-17T14:52:20Z",
+  "snapshot": {
+    "docRepo": "P:/seat-worktrees/p305-key-drift/doc_repo on lane/p305-key-drift, branched from main 5ac6628e",
+    "integrationCheckout": "P:/doc_repo at 5ac6628e (read-only; not rooted in, per dispatch and A-195)",
+    "hauskaMap": "P:/hauska-map main 93f832b6 will be re-read before any PR",
+    "laneClaim": "CLAIMED p305-key-drift for p305-lane (exit 0). Integration registry P:/doc_repo/_catalog/lane_claims.json was read FIRST and held no p305 claim (only p249-envelope-unlock, stale)."
+  },
+
+  "missionPremise": "A-205 (measured 2026-09-17): P-251 rotated HAUSKA_ENGINE_API_KEY across five Cloud Run services, and its SIXTH consumer -- Vercel project property-explorer -- was fixed in Production only; the Preview environment's HAUSKA_RETRIEVAL_API_KEY stayed stale, so every Property Explorer preview answered its panel read with retrieval_auth_failed (a 401 upstream wrapped by the panel), and nothing noticed until a staging proof needed a preview. Sources: _dispatches/2026-09-17_p305-key-drift_dispatch.md; _decisions/2026-09-16_engine_api_key_rotation_and_tag_cleanup.md (Correction section); 90_operations/OPS-16_texas_market_plan_of_record.md row P-305.",
+
+  "completionPredicate": "One instrument exists that, given a preview URL, reads the panel's atom-chain route for a known parcel and FAILS on retrieval_auth_failed or any 401-shaped error, with a self-test proven to fire on a recorded 401 body and pass on a recorded 200 body; one rotation runbook exists that names EVERY environment (Production, Preview, Development) of EVERY consumer of the three keys and names the instrument as its closing check; and one inventory names every Vercel project in the team and every Cloud Run service holding HAUSKA_ENGINE_API_KEY, SERVICE_API_KEY or CORTEX_SERVICE_API_KEY by environment, read by variable NAME only, or states which listings could not be read.",
+
+  "scopeBasis": "The three deliverables are exactly the three items in the dispatch's 'What to build'. The dispatch's own paths are honoured (doc_repo scripts/check-preview-key-drift.mjs; a runbook; an inventory). A hauska-map PR is permitted ('if a code check belongs there') and is included only as the PREVENTIVE half -- the sync workflow covers one environment of one consumer today, which is the same defect shape one rotation away -- with the check single-sourced in doc_repo so no second implementation of one rule exists (DEV_PROCESS 2.4). Excluded deliberately: rotating/adding/removing any secret or Vercel variable, any deploy, any merge (dispatch 'Do not'); any write to LDT/engine/retrieval code; and the DigitalOcean fleet tooling, which is irrelevant to these three keys.",
+
+  "theFindingInOneLine": "The check that would have caught A-205 is not the same shape as the check that would have prevented it: the instrument DETECTS a stale environment, and the sync workflow's single-environment write is what CAUSES it. Both are in scope; only the first is named in the dispatch's 'What to build'.",
+
+  "design": {
+    "instrument": {
+      "path": "scripts/check-preview-key-drift.mjs (doc_repo, left uncommitted for the integration seat)",
+      "modes": {
+        "selftest": "node scripts/check-preview-key-drift.mjs --selftest -- pure predicate over RECORDED bodies, no network, no secret.",
+        "live": "node scripts/check-preview-key-drift.mjs --url <base> [--parcel <placeKey>] -- GET <base>/api/spine/property-atoms/<parcel>/facets, classify, exit."
+      },
+      "predicate": {
+        "authFailure": "classifyRead({status, body}) returns AUTH_FAILURE when (a) the JSON error field is 'retrieval_auth_failed', or (b) atomPathReason matches /HTTP 401/, or (c) message matches /HTTP 401/, or (d) status is 401. (a)-(c) are the recorded panel/upstream shapes; (d) catches a bare upstream 401 with no JSON body.",
+        "ok": "status 200 AND body parses as JSON AND no auth-failure marker.",
+        "refusalNeverPass": "anything else (non-200 without an auth marker, unparseable body, transport error) is REFUSAL, reported loudly and exited non-zero with its own code -- an empty result is not an absence (AGENT_CONTRACT 5)."
+      },
+      "exitCodes": "0 OK/pass; 1 selftest failure; 3 auth drift (the P-305 failure); 4 refusal/unreachable (not-auth, never a silent pass)",
+      "neverPrintsAKey": "the instrument reads no secret and takes no token; its only input is a URL and a parcel id. It prints status, the JSON error/atomPathReason fields, readPath, and the sha256 PREFIX of the body when the body is unexpected -- never a header, never an env var, never a key.",
+      "recordedFixtures": {
+        "401-shaped": "recorded real body, provenance _inbox/2026-09-16_p230-bake-trigger_cp2.json falsifier3.theCustomerLegIsRefusingToday (https://smartsite.cloud/api/spine/property-atoms/{id}/facets, 2026-09-16T18:1xZ, HTTP 503 wrapping upstream 401): {\"error\":\"retrieval_auth_failed\",\"retryable\":false,\"message\":\"Property atom chain retrieval returned HTTP 401 - HAUSKA_RETRIEVAL_API_KEY must match retrieval-api RETRIEVAL_API_KEY.\",\"atomPathReason\":\"atom-chain HTTP 401\",\"parcelNodeId\":\"48209:97658\"}",
+        "200": "recorded live from the deploy named in the dispatch, captured at build time and stored verbatim beside the script; provenance and capture timestamp recorded in the file header."
+      },
+      "homeRuledOut": "hauska-map CI is NOT the home for the canonical check: the predicate is one rule and must not gain a second implementation (DEV_PROCESS 2.4), and hauska-map CI cannot reach the doc_repo script. The check is run from an authorised lane/workstation; the runbook says so and says what each runner can and cannot reach, the way P-276's drift check does."
+    },
+    "runbook": {
+      "searchFirst": "_inbox, 90_runbooks and P-251's close were searched before writing: _inbox/2026-09-16_add084_production_credential_rotation_plan.md is a DB-credential PLAN for P-278 (not a runbook, not this key); _decisions/2026-09-16_engine_api_key_rotation_and_tag_cleanup.md is a decision record of ONE rotation. No key-rotation RUNBOOK exists in 90_runbooks.",
+      "ifAbsent": "write the smallest one, say so in its own header and in the close, and make it name every environment of every consumer with the instrument as the closing check."
+    },
+    "inventory": {
+      "vercelHalf": "Every project in the team (vercel project ls --scope <team>) and, per project, the NAMES of env vars in every environment (production/preview/development) via the Vercel API/CLI. Values are never read or printed; this answers 'does this project hold a copy of any of the three names, and in which environments', which is exactly the question A-205 turned on.",
+      "cloudRunHalf": "Every Cloud Run service (and job) in both GCP projects (hauska-prod-497015, legacy-design-tools-prod), reading each resource's own env/secretKeyRef by field -- the same method as P-276, never a list from memory.",
+      "unreadableIsStated": "any project or resource whose listing cannot be read is named with its error; a refusal is never rendered as 'clean'."
+    },
+    "hauskaMapPr": {
+      "branch": "feat/p305-key-drift-check (dispatch-named), fresh clone under P:/tmp/, registered under the property seat and removed at close",
+      "content": "the PREVENTIVE half, in .github/workflows/property-explorer-sync-retrieval-key.yml: the workflow presently authoritative-replaces the key in the production environment only, so any future rotation re-creates A-205 by construction. The change names every environment the project can serve from, writes the same value to each, and leaves the check as the runbook's closing step rather than a second implementation.",
+      "notDone": "the workflow is not run, no secret is written, nothing is deployed or merged."
+    }
+  },
+
+  "falsifiersPreRegisteredForMyOwnRole": {
+    "readingRule": "These answers are held BEFORE any falsifier runs and are stated as expected outcomes so a miss is a finding rather than a fitted result (DEV_PROCESS 4.5). If a falsifier comes out against an expectation, the expectation is what gets reported, not the run.",
+    "falsifier1_selftest": "EXPECTED: PASS -- the self-test must fire (authFailure) on the recorded 401 body and pass (ok) on the recorded 200 body, and must do both on the REAL recorded shapes rather than on synthesized ones. Expected residual risk: the recorded 401 body came from smartsite.cloud (panel-equivalent path) with a 503 wrapper; the recorded 200 body comes from the deploy the dispatch names. If the recorded 200 body turns out to carry a marker my predicate reads as auth failure, the predicate is wrong and I report it as a miss rather than loosening the marker.",
+    "falsifier2_livePreview": "EXPECTED: PASS against https://property-explorer-jmvakhksg-empressaioemail-techs-projects.vercel.app -- the dispatch states the integration seat replaced the Preview value at 13:37Z and a plain preview's panel read then returned 200. EXPECTED ORDER OF LIKELIHOOD if it does not pass: (1) deployment-specific preview URLs are ephemeral and this one may be gone -- that would be UNREACHABLE (exit 4), not auth drift; (2) the panel may return 200 with a non-auth readPath value (P-230's known six-day bake staleness) -- my predicate deliberately does NOT assert readPath, so that still PASSES, and I say so rather than claiming more than I measured.",
+    "falsifier3_inventoryCoverage": "EXPECTED: I will be able to read the Vercel team's project list and each project's env-var NAMES (vercel CLI is authenticated as empressaioemail-tech, measured this session), and both GCP projects' Cloud Run services and jobs (gcloud authenticated as empressaioemail@gmail.com; P-276's check names both projects as reachable from an operator identity). EXPECTED GAPS, named in advance rather than discovered: local workstation .env files, GitHub Actions secrets, Replit, and any Vercel project outside this team are out of the three listings' reach and will be named as gaps, not omitted. If a project's env listing is refused, that project is reported as UNREADABLE with the error."
+  },
+
+  "knownHolesStatedNotDiscovered": [
+    "A preview whose key is stale but whose read happens to fail a DIFFERENT way (500 with no auth marker) reads as REFUSAL, not as drift. That is deliberate: the predicate is key drift, and reporting every 5xx as credential drift is the permanently-red gate DEV_PROCESS 2.0 forbids. The refusal is loud and non-zero.",
+    "A consumer that holds one of the three keys under a DIFFERENT name is out of the inventory's predicate by construction; the three names are the predicate, stated here.",
+    "The instrument measures a URL someone gives it. It does not enumerate previews; the inventory is what says how many environments exist to check.",
+    "Editing the sync workflow does not retroactively fix any currently-stale environment. It stops the NEXT rotation from missing one."
+  ],
+
+  "outOfScope": [
+    "Rotating, adding or removing any secret or Vercel variable; any deploy; any merge (dispatch 'Do not').",
+    "Comparing Preview and Production VALUES by hash: the dispatch states vercel env pull returns sensitive values empty, so the value path is not available; the instrument measures the SURFACE instead, which is the dispatch's first-named option.",
+    "The DigitalOcean fleet tooling (irrelevant to these three keys).",
+    "Any merge to doc_repo: repo edits are planner-owned and are left uncommitted (AGENT_CONTRACT section 6)."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "noteOnFanDepth": "FAN-DEPTH 0. No sub-agent will be launched by this lane; a commit gate refuses a close that declares any (A-181)."
+}

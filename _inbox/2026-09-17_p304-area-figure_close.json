@@ -1,0 +1,281 @@
+{
+  "lane": "p304-area-figure",
+  "planRows": ["P-304"],
+  "status": "closed-partial",
+  "statusWhy": "The change is implemented, tested in both directions and green on every CI check of PR legacy-design-tools#713, but it is NOT DEPLOYED: the customer predicate is an anonymous POST to the deployed surface and cannot pass from a branch. The dispatch itself sets this status ('closed-partial until the integration seat deploys and the live probe passes') and this close does not upgrade it. Dispatch requirement, verbatim: 'Do not: Deploy, merge, or change the verification predicate itself.'",
+  "probe": {
+    "notApplicable": "build lane; graded by the integration seat's anonymous POST after deploy"
+  },
+  "missionPremise": "A-180 and the 2026-09-11 ruling ENVELOPE DRAWN, FIGURE REFUSED (canon preamble; `_decisions/2026-09-11_ruling_b_reversed_polygon_only.md`, restated in this dispatch at 'Traps the final teardown found (A-183)': 'A buildable-area figure appears only when a VERIFIED envelope atom backs it'): the modelled buildable envelope may DRAW wherever a district and a setback table exist, but the buildable AREA and PERCENT stay REFUSED until a ground-truth VERIFIED (depth-warm promoted) envelope atom backs them, and the MCP payload and PDF do not enforce that today (P-249, P-261). The dispatch's finding (A-205, measured 2026-09-17) is that the route `artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts` returned `payload.geojson.features[].properties.buildableAreaSqFt` / `buildableAreaPct` on EVERY drawn envelope, and `apps/property-explorer/api/spine.ts` allowlists that POST path for anonymous callers, so the refused figure reached anyone through smartsite.cloud while the panel (`figureWithheld`) and the MCP draw block (`derivedFigures.denies`) withheld it on their own. REPRODUCED LIVE the day of the change: anonymous POST, 629 Sturgeon Dr, San Marcos TX 78666 (parcel 48209:97658), HTTP 200, `derivePath` = 'labelEdges+derive' with NO '+atom-reconciled' segment, `buildableAreaSqFt` 5022, `buildableAreaPct` 58.3. The route was the one surface that did not withhold.",
+  "completionPredicate": "An anonymous POST to the deployed surface for an UNVERIFIED parcel returns a drawn envelope whose `payload.geojson.features[0].properties` contains NEITHER `buildableAreaSqFt` NOR `buildableAreaPct` (key absent, not 0 and not null), and the paired ENTITLED parcel on the same request still carries both numbers (19052 / 63.5 at the pre-deploy read, `derivePath` ending '+atom-reconciled'). Both legs must be run and must DIVERGE: a blanket strip that withholds from both FAILS, because it takes the figure away from a verified parcel. Exact requests and a one-line verdict are in `_inbox/2026-09-17_p304-area-figure_live-probe.md`; the integration seat grades it after deploying PR #713. A stranger can evaluate this with curl and two addresses, without reading any of this lane's code.",
+  "scopeBasis": "Narrow by design in four places. (1) The withholding is implemented as ABSENCE of the two named properties, not as a zero and not as a substitute figure: a zero would be a DIFFERENT false claim ('setbacks consume the lot'), and re-deriving a number on the way out would mint a new unfounded figure. (2) The verification predicate itself is NOT touched: `isEnvelopeAtomVerified` is imported and called exactly as P-249 left it, because the dispatch forbids changing it and because four readers of the depth-warm field exist in three repos (the A-183 trap) - this lane pins its own agreement with that rule by test rather than re-implementing it. (3) `maxFootprintSqFt` is the SAME withheld number under a third name and is deliberately NOT closed: it is not one of the two fields the dispatch names, and which regime a parcel is in (modelled envelope binds vs codified lot-coverage cap binds) is an entitlement RULING, i.e. an operator stop point - so it is reported with its numbers and a one-line remedy instead of being widened unilaterally (see leave_behind). (4) hauska-engine's own PDF/site-plan figure is an independent computation (P-261, different repo and seat) and is out of scope; a read-only grep of P:/hauska-engine for the two field names found 40+ hits, ALL inside engine-core's own model/scripts/tests, so this route's properties are not an input to it.",
+  "falsifier": "PROVEN for all three dispatch falsifiers, and the third by REVERTING THE FIX rather than by assertion. (1) After the change the route response for an unverified fixture contains NEITHER property - asserted at the WIRE in `artifacts/api-server/src/__tests__/brokeragePlaceBuildableEnvelope.test.ts`, block 'P-304 area figure withholding' case (a): `'buildableAreaSqFt' in props === false` and `'buildableAreaPct' in props === false`, PLUS a `not.toContain('7777')` guard that the unverified atom's own number is not quoted in their place, PLUS the positive halves (status 'ok', geometry present, disclosure names the withholding, `parcelAreaSqFt` survives) so the case cannot pass by returning nothing - and asserted again at the composition in `composeBuildableEnvelopeDerivation.test.ts` as KEY ABSENCE (the withheld shape, explicitly not 0). (2) A verified fixture still carries them - case (b) at the wire (depth-warm promotion marker + atom outcome area 7777 -> served 7777, `derivePath` 'labelEdges+derive+atom-reconciled', no withholding disclosure) and the composition-level verified case (99_999). (3) Reverting the change fails a test - `git stash push` of the three SOURCE files only, tests left in the tree, `npx vitest run -t \"P-304\" src/__tests__/brokeragePlaceBuildableEnvelope.test.ts` -> literal 'Tests 1 failed | 1 passed | 22 skipped (24)', with '(a) anonymous POST to an UNVERIFIED parcel' FAILING at its first assertion (expected true to be false: the production-shaped behaviour still serves the figure) while '(b) verified-atom fixture' PASSES - the pair discriminates on the fix, not on the fixture. Restored with `git stash pop`; working tree clean afterwards. Full log: `_inbox/2026-09-17_p304-area-figure_falsifier3-stash.log`. BEYOND the dispatch's three, the predicate's NEAR-MISSES are pinned as a non-vacuous scoping test: a version-shifted marker ('depth-warm-promoted-v2') and a near-miss citation ('depth-warm-verify') must stay WITHHELD, while the documented 'depth-warm-verified' citation fallback must PRINT. What is NOT proven is named rather than implied: NOTHING here observes a DEPLOYED surface, which is why the status is closed-partial.",
+  "contradicted": "NOTHING contradicts the ruling, the fix or the dispatch's diagnosis. The leak was exactly where the dispatch said, and the live reproduction matched the dispatch's own numbers for the same parcel (Hays 48209:97658: 5022 and 58.3, from an unverified atom). Three things are CORRECTED or NARROWED in this record rather than silently absorbed, and one is reported as a finding. (1) The dispatch's shelf statement that the withheld figure is the two named properties is incomplete: `maxFootprintSqFt` carries the same number on an unverified parcel (5022 alongside the withheld 5022), and `derive.ts:286-292` shows why - `maxFootprintSqFt = round(min(buildableAreaSqFt, coverageCap))`, i.e. it IS the modelled buildable area whenever the modelled envelope is the binding constraint, a third name for the same withheld figure. It is NOT closed here (not dispatched, and not purely modelled: when the coverage cap binds it falls out of two authoritative numbers alone and is legitimately printable), so it is reported. (2) The dispatch's 'What to build 2' asks for the consumer list including the PDF and site plan in hauska-engine; read at source, the engine computes and carries its OWN figure and never consumes this route's properties, so the PDF is unaffected by this change and its entitlement gap is a sibling (P-261), not a consumer. (3) The research-brief LLM context in `artifacts/api-server/src/lib/brokerageResearchAreaContext.ts` reads a `subject.envelope` built by the MAP CLIENT from the brief's setbacks-envelope section, a different producer, so it is unchanged by this change and was not counted as a consumer of this route. Environment note, not a contradiction: the CI `Test` job installs pgvector AND postgis into its service container, and the pre-existing route test hooks cannot run without a DATABASE_URL with both extensions - reproduced locally with a dedicated P-304 container on port 55452 before any conclusion was drawn from a local run.",
+  "checkpointArtifacts": [
+    "_inbox/2026-09-17_p304-area-figure_cp1.json (design/pre-build: withhold location decision, consumer list, falsifiers pre-registered, live evidence before)",
+    "_inbox/2026-09-17_p304-area-figure_cp2.json (pilot/mid-work: commits, code change per file, test work, local literals, falsifier 3 run, consumer verification)"
+  ],
+  "snapshotPerRepo": {
+    "legacy-design-tools": {
+      "path": "P:/tmp/p304-legacy-design-tools",
+      "kind": "STANDALONE CLONE from origin/main under P:/tmp (not a worktree of another checkout), path equals the registered worktree",
+      "baseCommit": "c40423a5d95556e951f5a427d5da86277a4aff40 (the SHA the dispatch names at compile)",
+      "branch": "fix/p304-area-figure",
+      "headCommit": "868b32c719580a2dcd47125408dff0418bfb5064",
+      "commits": [
+        "526b5d5e fix(p304): an unverified envelope draws without its area figure  (3 files, +110/-13, all source)",
+        "868b32c7 test(p304): the withheld figure is pinned at the wire and at the composition  (4 files, +280/-6, all tests)"
+      ],
+      "workingTreeAtClose": "clean (git status --porcelain empty) on 868b32c7",
+      "pr": 713
+    },
+    "hauska-map": {
+      "path": "P:/tmp/p304-hauska-map",
+      "kind": "STANDALONE CLONE from origin/main under P:/tmp, registered under the property seat",
+      "baseCommit": "93f832b6a2944692479bbb3162b3a0a1dee32e4f (the SHA the dispatch names at compile)",
+      "branch": "fix/p304-area-figure",
+      "headCommit": "93f832b6a2944692479bbb3162b3a0a1dee32e4f == base; NO COMMIT",
+      "workingTreeAtClose": "clean (git status --porcelain empty); the branch exists but carries nothing, so NO PR was opened",
+      "verdict": "no change required - the dispatch's 'and, only if your design needs it, hauska-map' did not fire, because the design withholds at the source and the map's own layers already carry the entitlement (per-consumer detail in consumerListFinal and CP1.consumers)"
+    },
+    "docRepo": {
+      "path": "P:/seat-worktrees/property/doc_repo (the property seat worktree this session is rooted in; NOT P:/doc_repo, which is the integration seat's checkout)",
+      "edits": "UNCOMMITTED by design (contract section 6: doc_repo commits are planner-owned), and only the ARTIFACTS remain as edits: the 2 seat_register entries added at CP1 were REMOVED at close (per 'Register each clone under the property seat and remove the entries at close') and the lane claim RELEASED at close, so both _catalog files are back to their HEAD content and `git status --porcelain` shows NO modified catalog file - verified at close, not assumed. The artifacts listed in artifactHomeDetermination are the untracked additions a planner commits."
+    }
+  },
+  "filesTouched": {
+    "legacyDesignTools": {
+      "artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.ts": "SOURCE. Adds exported `withholdUnverifiedAreaFigure(derived, atomPromotion)` and `AREA_FIGURE_WITHHELD_DISCLOSURE`. Deletes the two area properties from the feature's properties when `isEnvelopeAtomVerified(atomPromotion)` is false; replaces a drawn envelope's disclosure with the withholding sentence; keeps an empty result's own decline words (a different fact); returns the SAME reference when the figure is already absent or the atom is verified (idempotent). Also makes the pre-existing `alreadyAgrees` comparison read the now-optional property safely with `typeof props.buildableAreaSqFt === 'number'` (behaviour identical: `Math.round(x)` being finite already implied a number, so no case changes branch).",
+      "artifacts/api-server/src/lib/buildableEnvelope/composeBuildableEnvelopeDerivation.ts": "SOURCE. Hoists the atom's promotion fields into one `atomPromotion` const (was an inline literal passed to reconcile, so there is one object read twice, not two reads that can drift) and applies the new step LAST: `const derived = withholdUnverifiedAreaFigure(reconciled, atomPromotion)`. `atomReconciled` still compares the RECONCILE result against `rawDerived`, so `derivePath` is unchanged for every pre-existing case. Being last, it covers every path that can produce a figure, including the reconcile branch and the free-standing second caller of this composition (`parcelDrawEnvelopeModel.ts`, the MCP draw-block orchestration).",
+      "artifacts/api-server/src/lib/buildableEnvelope/derive.ts": "SOURCE, types+docs only. `buildableAreaSqFt` and `buildableAreaPct` become OPTIONAL on `BuildableEnvelopeProps`, with the P-304 doc comment stating that the key's ABSENCE is the withheld state (never 0, never 'nothing here'), that `withholdUnverifiedAreaFigure` is its only writer, and that `isEnvelopeAtomVerified` is the one predicate that decides it. No producer inside derive.ts changes: a raw `deriveBuildableEnvelope` result still always carries both.",
+      "artifacts/api-server/src/__tests__/brokeragePlaceBuildableEnvelope.test.ts": "TEST. New 'P-304 area figure withholding' describe block, cases (a) and (b) - the wire-level pair the dispatch asks for in 'What to build 3'.",
+      "artifacts/api-server/src/lib/buildableEnvelope/composeBuildableEnvelopeDerivation.test.ts": "TEST. The withheld shape (key absence, not 0), the unverified case, the verified case, a scoping case, the predicate near-miss guard (version-shifted marker and near-miss citation withheld; documented citation fallback prints) as the divergence guard the canon preamble requires for the four readers of the depth-warm field, and the pre-extraction equivalence test now re-runs the added step in its independently-computed expectation so it still proves the composition equals the inline sequence.",
+      "artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.test.ts": "TEST, 2 lines. Two `!` assertions where a test reads the figure off a RAW derive result (raw derive still always produces it; the type is now optional). No assertion changed.",
+      "artifacts/api-server/src/lib/__tests__/parcelDrawStub.test.ts": "TEST, 1 line. Same reason as above, same shape.",
+      "NOT_TOUCHED": [
+        "artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts - no edit needed (it spreads the derived props verbatim through `wrapEngineEnvelope`, so withholding at the source withholds at the wire) AND it is the open P-259b zoning-stamp lane's file. The dispatch's 'where' question is answered at the composition; see decision below.",
+        "artifacts/smartsite-mcp - out of scope by the dispatch; its `DERIVED_FIGURES_POLICY` (tool-honesty.ts) already denies both figures unconditionally.",
+        "hauska-map - no commit at all (see snapshotPerRepo.hauska-map).",
+        "The open lanes' files: P-259b's route file, P-303's apps/property-explorer/api/_lib/atom-chain-to-facets.ts. Neither was opened for edit; atom-chain-to-facets.ts was READ only, to establish that the facets producer already gates the figure on `depthWarm` and already emits `figureWithheld: true`."
+      ]
+    },
+    "docRepo": {
+      "uncommittedEdits": [
+        "_catalog/seat_register.json - the two P-304 clone entries (legacy-design-tools-p304-area-figure, hauska-map-p304-area-figure) were added at CP1 and REMOVED at close, as both entries' own note required ('REMOVE THIS ENTRY at close'). After the removal the file is byte-identical to HEAD: `git diff --numstat` does not list it. Verified, not assumed.",
+        "_catalog/lane_claims.json - the p304-area-figure claim (added at lane start, 7 lines vs HEAD) RELEASED at close with `node scripts/lane-claim.mjs release --lane p304-area-figure --seat property-p304` -> 'RELEASED p304-area-figure.' (exit 0). The file is back to HEAD content; `git status --porcelain` lists no modified catalog file. Re-read, not assumed: 0 p304 occurrences in both _catalog files.",
+        "Nothing else in doc_repo was edited by this lane: the remaining untracked paths in `git status --porcelain` (observations_p153_2026-09-12.json, scripts/_auth_gate_probe_driver.mjs, _inbox/2026-09-11_p153-draw_close.json) belong to other lanes and were left alone."
+      ]
+    }
+  },
+  "whereWithheld": {
+    "decision": "AT THE SOURCE, in legacy-design-tools, inside the pure composition `artifacts/api-server/src/lib/buildableEnvelope/composeBuildableEnvelopeDerivation.ts` - a new LAST step `withholdUnverifiedAreaFigure(reconciled, atomPromotion)`, implemented next to the predicate it uses in `reconcileAtomEnvelope.ts`. The two properties are DELETED from the feature's properties whenever `isEnvelopeAtomVerified` is false; geometry, setbacks, parcel area and every other property are untouched.",
+    "whyNotTheAnonymousProxy": "The dispatch asks for the choice and its reason, and prefers 'the one that also protects authenticated callers that are not supposed to print the figure'. A strip in `apps/property-explorer/api/spine.ts` governs ONLY the anonymous browse path: an authenticated service-token or cortex-proxy POST to the same route would still be served the refused figure. Second, the composition is the single choke point that BOTH the route and the MCP draw-block orchestration call, so one edit cannot drift between two surfaces, whereas striping the proxy would fix exactly one consumer. Third, the refusal stays next to the only thing that can evaluate the predicate - the atom's own promotion fields are already fetched and passed into the composition, so no second fetch and no second copy of the rule appear. Fourth, code-done honesty: the map's proxy is a passthrough allowlist, not a data-shaping layer; teaching it to editorialize on a cortex payload would add a second, divergent copy of an entitlement rule in another repo - exactly the duplication class P-249 avoided by sharing the predicate. Consequence, stated plainly: the fix protects anonymous AND authenticated callers of this route, and it needs no hauska-map PR."
+  },
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "number": 713,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/713",
+      "title": "fix(p304): an unverified envelope draws without its area figure",
+      "base": "main",
+      "head": "fix/p304-area-figure",
+      "headSha": "868b32c719580a2dcd47125408dff0418bfb5064",
+      "state": "OPEN, mergeable=MERGEABLE, mergeStateStatus=BEHIND (main has moved ahead of c40423a5 since the branch was cut), +390/-19 across 7 files",
+      "mergeableNote": "BEHIND is recorded rather than silently fixed: this lane does not merge, and updating the branch would change the head SHA and INVALIDATE the CI conclusions recorded below, which are tied to 868b32c7. Whoever merges decides between an update-branch merge and a rebase, and must re-read the checks at the new SHA if the SHA moves.",
+      "merged": false,
+      "mergeSha": "not applicable: this lane does not merge (dispatch 'Do not: Deploy, merge')",
+      "ciRun": "https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/35239813794",
+      "ciRunStatus": "completed",
+      "ciRunConclusion": "success",
+      "ciConclusionsLiteral": [
+        "cortex daily limit bake: status=completed conclusion=success",
+        "L17 ci-vintage-predicate: status=completed conclusion=success",
+        "L5 SF-24/SF-25 score greps: status=completed conclusion=success",
+        "L5 SF-26 hand hasWriter grep: status=completed conclusion=success",
+        "L5 SF-30 Cotality warm grep: status=completed conclusion=success",
+        "L5 silent-fallback greps: status=completed conclusion=success",
+        "PR base is main: status=completed conclusion=success",
+        "SS-W16 tier2 flood not served: status=completed conclusion=success",
+        "SS-W18 api-server boots: status=completed conclusion=success",
+        "Test: status=completed conclusion=success (13m34s)",
+        "Typecheck: status=completed conclusion=success (2m13s)"
+      ],
+      "ciCountingRule": "11 check runs at SHA 868b32c7 read from the commits/<sha>/check-runs endpoint; all 11 listed, none sampled, filtered or re-run, none skipped/neutral/pending at the read. The `Test` job is the repo-wide workspace suite (pgvector + postgis installed into the service container, schema pushed first) - it is the authority for the suites NOT run locally. Re-grade: none; this is the PR's CI, not the customer predicate.",
+      "ciEvidence": "_inbox/2026-09-17_p304-area-figure_ci-checks.txt (readable, with the reading time) and _inbox/2026-09-17_p304-area-figure_checkruns.json (raw API payload)"
+    },
+    {
+      "repo": "empressaioemail-tech/hauska-map",
+      "number": null,
+      "url": null,
+      "state": "no PR opened - no commit exists on the branch (base == head, working tree clean). The dispatch's 'one PR per repo' is conditioned on the repo being needed; it was not. Honest accounting rather than an empty PR.",
+      "ciConclusionsLiteral": "not applicable: no PR, therefore no CI"
+    }
+  ],
+  "consumerListFinal": [
+    {
+      "consumer": "the route itself - POST /api/brokerage/v1/place/buildable-envelope (legacy-design-tools artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts)",
+      "reads": "payload.geojson.features[0].properties.{buildableAreaSqFt,buildableAreaPct}, which are the derived props verbatim via `wrapEngineEnvelope`",
+      "before": "served both figures on every drawn envelope, verified or not",
+      "after": "an UNVERIFIED parcel: both keys ABSENT, HTTP 200, status 'ok', geometry present, disclosure names the withholding; a VERIFIED atom: both keys present, reconciled numbers unchanged, disclosure unchanged. `derivePath` values are unchanged in both cases (the withholding is deliberately not a derive step)."
+    },
+    {
+      "consumer": "anonymous proxy apps/property-explorer/api/spine.ts (hauska-map)",
+      "reads": "nothing - it allowlists the POST path for anonymous callers and passes the body through",
+      "after": "CODE UNCHANGED. The leak it exposed is closed by the source change, and it is closed for authenticated callers too - which is the reason the withhold went to the source."
+    },
+    {
+      "consumer": "MCP draw-block orchestration (legacy-design-tools artifacts/api-server/src/lib/buildableEnvelope/parcelDrawEnvelopeModel.ts - the SECOND caller of the same composition)",
+      "reads": "geometry and `feature.properties.disclosure` only; it never re-serializes the figure, and the Smart Site MCP denies both figures unconditionally (`DERIVED_FIGURES_POLICY`, artifacts/smartsite-mcp/src/tool-honesty.ts)",
+      "after": "behaviour unchanged (still no figure on the draw wire). The disclosure it carries now says the figure is withheld rather than only 'approximate' - strictly more honest, and `parcelDrawEnvelopeModel.test.ts` asserts only that the string is non-empty, so no test moves."
+    },
+    {
+      "consumer": "Property Explorer panel live-derive merge (hauska-map apps/property-explorer/src/lib/live-envelope-augment.ts, applyLiveDeriveToFacets, :297-298)",
+      "reads": "live.summary.buildableAreaSqFt / .buildableAreaPct (built from THIS route's props by src/lib/buildable-envelope.js:166-178 as `props.buildableAreaSqFt ?? null`) and the baked facets' own env.buildableAreaSqFt",
+      "before": "for a parcel whose facets carried no atom area and no figureWithheld flag, it stamped the live derive's own number onto the facets envelope",
+      "after": "`liveAreaSqFt` is null, so it falls back to `env.buildableAreaSqFt`, itself absent for an unverified parcel - NO figure is stamped (the key is absent, not null-with-a-number). The pre-existing `figureWithheld` guard is untouched. This module therefore does not re-stamp its own independently-recomputed area onto a payload that declared the figure withheld, which is what the dispatch's consumer note required; it needed no edit."
+    },
+    {
+      "consumer": "PE wire mapper (hauska-map apps/property-explorer/src/lib/buildable-envelope.js:166-178 envelopeSummaryFromProps)",
+      "reads": "props.buildableAreaSqFt ?? null",
+      "after": "null instead of a number for an unverified parcel. No schema change: the field is already nullable and every renderer treats null as 'no figure'."
+    },
+    {
+      "consumer": "PE fact sheet / card / brief view models (fact-sheet-resolver.ts, browse/brief-view-model.ts, workbench/tools/chat-research.ts)",
+      "reads": "the BAKED FACETS envelope (/property-atoms/{id}/facets), NOT this route - atom-chain-to-facets.ts:2178-2180 emits buildableAreaSqFt only when the atom is `depthWarm`, and :2117-2129 emits the unverified no-buildable-area branch with `figureWithheld: true` and no figure at all",
+      "after": "unchanged - these surfaces were already gated on the same entitlement. This change removes a route-level BYPASS of that gate; it does not add a new gate to them."
+    },
+    {
+      "consumer": "cortex-tiles map card (legacy-design-tools packages/cortex-tiles/src/map/liveGis.ts buildableEnvelopeCard)",
+      "reads": "`num(props.buildableAreaSqFt)` from an envelope object it is handed",
+      "after": "the two fields are already optional in its input type and `num()` maps undefined -> null, so the area row DROPS rather than printing a withheld figure. No edit."
+    },
+    {
+      "consumer": "research-brief LLM context (legacy-design-tools artifacts/api-server/src/lib/brokerageResearchAreaContext.ts:222-226, subject-envelope prose)",
+      "reads": "`subject.envelope.buildableAreaSqFt/Pct`, built by the MAP CLIENT from the research brief's setbacks-envelope section (hauska-map src/workbench/tools/chat-research.ts:345-380, :470-480)",
+      "after": "unchanged by this change - a DIFFERENT producer, not this route's response. Listed because the dispatch asks for 'anything else' and a reader could mistake it for a consumer; it is governed by the brief/ledger serving path."
+    },
+    {
+      "consumer": "hauska-engine PDF and site plan",
+      "reads": "its OWN engine-side envelope (packages/engine-core/src/site-plan/buildable-display-vocab.ts, boundary-primitive/consume.ts:129, depth-warm/warm-compute.ts:160) - an independent computation",
+      "after": "unchanged by this change, and NOT a consumer of this route: a read-only grep of P:/hauska-engine for both field names returned 40+ hits, ALL inside engine-core's own model/scripts/tests, none reading this route's properties. Its own figure is not gated by this predicate - the sibling entitlement gap the dispatch names as P-261, out of this lane's scope."
+    }
+  ],
+  "countsWithCountingRules": {
+    "prsOpened": "1 of a possible 2 (legacy-design-tools yes; hauska-map deliberately not, no commit exists). Counting rule: `git log` on each clone against its base commit.",
+    "filesTouched": "7 in legacy-design-tools (3 source, 4 test), +390/-19; 0 in hauska-map. Counting rule: `git diff --stat c40423a5..868b32c7`, the same range the header CI ran on.",
+    "ciChecks": "11 of 11 read, 11 success, 0 skipped/neutral/pending. Counting rule in prs[0].ciCountingRule.",
+    "localTests": "Test Files 4 passed (4) | Tests 95 passed (95), from the four files named on the vitest command line; nothing filtered, skipped or excluded. The repo-wide workspace suite was NOT run locally; CI's `Test` job passed it (13m34s). Literal log: _inbox/2026-09-17_p304-area-figure_local-tests.log.",
+    "newTests": "2 wire-level cases plus 4 composition-level cases plus 1 near-miss guard loop - 185 added lines in composeBuildableEnvelopeDerivation.test.ts and 95 in brokeragePlaceBuildableEnvelope.test.ts. Counting rule: the added-line counts in `git diff --stat c40423a5..868b32c7` for the two test files; the guard loop is one `it` over several inputs, so it is counted as ONE case, not as its inputs.",
+    "liveProbes": "2 anonymous POSTs at the pre-deploy read (1 unverified, 1 entitled control), each with its raw response kept. Counting rule: _inbox/2026-09-17_p304-probe-unverified-predeploy.json and ...verified-predeploy.json, 1 request each, HTTP 200 each.",
+    "subAgents": "0 spawned, maxDepth 0. Counting rule: no Task/sub-agent call was made in this lane; every read, edit, test and probe was executed by this session.",
+    "storesWritten": "0. Counting rule: the only network calls in this lane were read-only POSTs to the public buildable-envelope endpoint (an address query that derives geometry server-side); no DB, no store, no production write, no deploy."
+  },
+  "liveProbe": {
+    "artifact": "_inbox/2026-09-17_p304-area-figure_live-probe.md",
+    "endpoint": "POST https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/buildable-envelope (anonymous: no auth header, through the PE allowlist the dispatch names)",
+    "legA_unverified": "{\"address\":\"629 Sturgeon Dr, San Marcos, TX 78666\"} - parcel 48209:97658, derivePath 'labelEdges+derive' (no '+atom-reconciled')",
+    "legB_entitledControl": "{\"address\":\"1109 Pecan St, Bastrop, TX 78602\"} - parcel 48021:34049, derivePath 'labelEdges+derive+atom-reconciled'",
+    "fieldThatMustNotAppear": "payload.geojson.features[0].properties.buildableAreaSqFt and .buildableAreaPct must be ABSENT (key missing) on leg A. Absent means missing: a present key holding 0 or null is a FAIL, because 0 is a different false claim ('setbacks consume the lot') and null is not what the withholding writes. Leg A must still be status 'ok' with geometry present and a disclosure that names the withholding. Leg B must STILL carry both keys (19052 / 63.5 at the pre-deploy read).",
+    "verdictRule": "PASS only if the two legs DIVERGE in the stated direction. If BOTH withhold, FAIL: that is a blanket strip and it has withheld a figure from a verified parcel (falsifier 2).",
+    "preDeployBaseline": {
+      "readAt": "2026-09-17 ~15:50Z, before any deploy (this lane deploys nothing)",
+      "legA": "HTTP 200, status 'ok', derivePath 'labelEdges+derive', hasSqFtKey=true, buildableAreaSqFt=5022, buildableAreaPct=58.3, geometry present, parcelAreaSqFt=8615, maxFootprintSqFt=5022",
+      "legB": "HTTP 200, status 'ok', derivePath 'labelEdges+derive+atom-reconciled', hasSqFtKey=true, buildableAreaSqFt=19052, buildableAreaPct=63.5, geometry present, parcelAreaSqFt=29989, maxFootprintSqFt=0",
+      "rawResponses": [
+        "_inbox/2026-09-17_p304-probe-unverified-predeploy.json",
+        "_inbox/2026-09-17_p304-probe-verified-predeploy.json"
+      ]
+    },
+    "residualNOTCovered": "maxFootprintSqFt is the same number under a third name (leg A: 5022). It is NOT one of the two fields the dispatch names, and it is not purely modelled (when the codified lot-coverage cap binds it falls out of two authoritative numbers alone). The live-probe artifact says so explicitly so the integration seat cannot read a PASS as 'no buildable-area number remains'. Reporting it, not widening the change to it: the regime question is a ruling, i.e. an operator stop point."
+  },
+  "constraintsHonoured": [
+    "FAN-DEPTH 0: NO sub-agents launched (subAgents.spawned 0, maxDepth 0). Every read, edit, test run and probe was executed by this session.",
+    "DID NOT deploy, merge, or change the verification predicate. `isEnvelopeAtomVerified` is imported and called unchanged; not one line of it was edited. PR #713 is OPEN and unmerged; nothing was pushed to a serving branch.",
+    "ISOLATED WORKTREES: two standalone clones under P:/tmp, registered under the property seat in _catalog/seat_register.json at CP1 and REMOVED at close. Nothing was edited in another lane's checkout; the two open lanes' files (P-259b's route file, P-303's atom-chain-to-facets.ts) were not edited, and atom-chain-to-facets.ts was read only.",
+    "NO PRIVILEGED DATA / no third-party credentials: the only external calls were anonymous read-only POSTs to the public buildable-envelope endpoint with two street addresses. No store was written, no production write of any kind, no credential touched.",
+    "MOST-CURRENT SOURCE WINS is untouched: no setback or dimensional value or its source selection was changed - this lane only decides whether a derived FIGURE is serialized.",
+    "Numbers travel with their counting rules (countsWithCountingRules, prs[0].ciCountingRule).",
+    "An honest partial close: `closed-partial`, because the customer predicate (an anonymous POST to the DEPLOYED surface) cannot be run from a branch. No claim of code-done being customer-done.",
+    "Do NOT re-read this lane's local test run as coverage of the whole repo: the workspace-wide `pnpm test` was not run locally and CI's `Test` job is the authority for it. One local test run's repeated transient was a Postgres hook timeout that resolved with postgis installed and a raised hook timeout; the CI run needed neither."
+  ],
+  "localEvidence": {
+    "environment": "DATABASE_URL=postgres://postgres:postgres@localhost:55452/test_db - a P-304-dedicated pgvector/pgvector:pg14 container with postgis installed the same way .github/workflows/pr-checks.yml does it.",
+    "tests": "npx vitest run --hookTimeout=300000 --testTimeout=120000 <the 4 files> -> 'Test Files 4 passed (4) | Tests 95 passed (95)' (_inbox/2026-09-17_p304-area-figure_local-tests.log)",
+    "typechecks": "npx tsc -p artifacts/api-server/tsconfig.json --noEmit -> exit 0, zero output lines (after `pnpm run typecheck:libs`, also exit 0); npx tsc -p artifacts/smartsite-mcp/tsconfig.json --noEmit -> exit 0. The initial run reported 5 errors in TEST files (three read the now-optional figure; two in the new guard loop); all five were fixed in the test commit and the rerun is clean - recorded rather than quietly absorbed.",
+    "falsifier3": "_inbox/2026-09-17_p304-area-figure_falsifier3-stash.log (source-only stash, tests in tree: (a) FAILS, (b) PASSES; restored, tree clean)",
+    "routeTests": "_inbox/2026-09-17_p304-area-figure_route-tests.log"
+  },
+  "closeOutActions": [
+    "Lane claim released: `node scripts/lane-claim.mjs release --lane p304-area-figure --seat property-p304` -> 'RELEASED p304-area-figure.' (exit 0); _catalog/lane_claims.json is back to HEAD content (see enforcementGateCheck.laneClaim).",
+    "The two _catalog/seat_register.json entries registered at CP1 are REMOVED, as their own notes required ('REMOVE THIS ENTRY at close'); the file is byte-identical to HEAD again.",
+    "doc_repo edits are left UNCOMMITTED for the planner (contract section 6), and after the two removals above the ONLY edits left are this lane's untracked artifacts in _inbox/. Nothing was committed to doc_repo by this lane, and no `git add` was run against it, so the probe-close-gate's same-command staging rule was never in play.",
+    "The clones at P:/tmp/p304-legacy-design-tools and P:/tmp/p304-hauska-map REMAIN ON DISK with their pushed branch and clean trees (the hauska-map one holds no commit). Whoever prunes P:/tmp should delete both directories rather than trusting the registry to list them - the registry entries are gone by design."
+  ],
+  "artifactHomeDetermination": {
+    "sessionRoot": "P:/seat-worktrees/property/doc_repo - the property seat worktree, confirmed by reading _catalog/lane_claims.json there (lane p304-area-figure, seat 'property-p304').",
+    "notWrittenTo": "P:/doc_repo (the integration seat's checkout) - the dispatch warns that two lanes in each of waves 1 and 2 wrote into the property seat's worktree instead of their own and their artifacts had to be found by hand; this lane verified the home before filing rather than assuming it. Nothing was written into P:/doc_repo by this lane.",
+    "artifactsFiled": [
+      "_inbox/2026-09-17_p304-area-figure_cp1.json",
+      "_inbox/2026-09-17_p304-area-figure_cp2.json",
+      "_inbox/2026-09-17_p304-area-figure_close.json (this file)",
+      "_inbox/2026-09-17_p304-area-figure_live-probe.md",
+      "_inbox/2026-09-17_p304-area-figure_ci-checks.txt",
+      "_inbox/2026-09-17_p304-area-figure_checkruns.json",
+      "_inbox/2026-09-17_p304-area-figure_local-tests.log",
+      "_inbox/2026-09-17_p304-area-figure_route-tests.log",
+      "_inbox/2026-09-17_p304-area-figure_falsifier3-stash.log",
+      "_inbox/2026-09-17_p304-probe-unverified-predeploy.json",
+      "_inbox/2026-09-17_p304-probe-verified-predeploy.json"
+    ]
+  },
+  "enforcementGateCheck": {
+    "probeCloseGate": "Read at source (P:/doc_repo/scripts/enforcement/probe-close-gate.mjs) before filing, because the dispatch's own close skeleton shows `probe.artifact` while its prose prescribes `probe.notApplicable`. This lane is an OPS-24 row (GATED_RANGES includes [200,250]), and P-304 is in PREDICATE_DEBT, so `notApplicable` with a non-empty reason is PERMITTED and the debt is printed on commit: `if (notApplicable && gated.every((r) => PREDICATE_DEBT.has(r))) { debtNotes.push(...); continue; }`. Citing a probe artifact instead would also have passed (ROWS_WITHOUT_PREDICATE contains P-304) but would have been a false claim about what was measured - the honest scope is the exception, not a fabricated artifact. `planRows` is an array (the gate reads `planRows ?? planRow` and refuses a close whose lane names a gated row but carries no row field). `probe.notApplicable` also has its reason NOT starting with 'not applicable'.",
+    "laneClaim": "Claimed at the start with `node scripts/lane-claim.mjs claim --lane p304-area-figure --seat property-p304 --plan-row P-304 --dispatch _dispatches/2026-09-17_p304-area-figure_dispatch.md` (exit 0 = proceed) and released at close. Record verified by reading _catalog/lane_claims.json, not a summary of it.",
+    "commitGate": "Not exercised by this lane: doc_repo is edited but uncommitted (planner-owned), so no `git commit` was run against doc_repo and the PreToolUse hook had nothing to gate. Declared honestly for the planner who commits these artifacts."
+  },
+  "leave_behind": [
+    "THE BRANCH IS BEHIND main AND THE CI STRINGS ARE TIED TO ITS SHA: PR #713 is OPEN, MERGEABLE, and `mergeStateStatus=BEHIND` (main moved ahead of c40423a5 after the branch was cut). This lane did not merge and did NOT update the branch, deliberately: updating would change the head SHA and invalidate the 11 CI conclusions recorded here, which were read at 868b32c7. Whoever merges chooses an update-branch merge or a rebase, and if the SHA moves, RE-READ the checks at the new SHA rather than reusing these strings.",
+    "FOR THE INTEGRATION SEAT - the customer predicate, in the order that catches a wrong implementation: (1) FIRST run the ENTITLED leg (1109 Pecan St, Bastrop TX 78602, parcel 48021:34049): it must STILL carry buildableAreaSqFt 19052 and buildableAreaPct 63.5 with derivePath ending '+atom-reconciled'. A change that fails this leg has withheld a figure from a verified parcel and is WRONG even though the other leg looks right. (2) THEN run the UNVERIFIED leg (629 Sturgeon Dr, San Marcos TX 78666, parcel 48209:97658): both keys must be ABSENT, geometry present, status 'ok', disclosure naming the withholding. Exact requests, the one-line verdict and the pre-deploy baseline are in _inbox/2026-09-17_p304-area-figure_live-probe.md. (3) Deploy requires PR #713's merge, which is PLANNER-OWNED and was deliberately not done by this lane.",
+    "THE RESIDUAL CHANNEL, AND WHY IT NEEDS A RULING RATHER THAN A PATCH: maxFootprintSqFt carries the SAME withheld number under a third name (leg A: 5022 alongside the withheld 5022), because maxFootprintSqFt = round(min(buildableAreaSqFt, coverageCap)) at derive.ts:286-292 - whenever the MODELLED ENVELOPE is the binding constraint it IS the modelled buildable area. It is not purely modelled: when the codified lot-coverage cap binds, the value falls out of two authoritative numbers alone (codified coverage cap x measured lot area) and is legitimately printable. So the fix is a decision about which regime a parcel is in, i.e. an entitlement RULING (an operator stop point), not a widened predicate. One-line remedy once ruled: gate maxFootprintSqFt on the same isEnvelopeAtomVerified branch, or split it into its two regimes with the coverage-cap case keeping the value and naming its basis. If the integration seat's grade of P-304 is the literal 'no buildable-area number reaches an anonymous caller', this field is the remaining leak and must be ruled on before the grade can pass.",
+    "A SIBLING GAP THIS LANE DID NOT TOUCH: hauska-engine's own buildable-area figure and the site-plan PDF entitlement (P-261). The engine computes and carries its OWN figure and does not consume this route's properties, so PR #713 changes nothing there. What P-261 inherits from this lane is the SHAPE that works: absence of the property (not 0, not a substitute), one predicate (`isEnvelopeAtomVerified`, with the citation fallback and its near-misses pinned by test), a disclosure sentence that says WHY the figure is missing, and a paired entitled control in the probe so a blanket strip cannot pass.",
+    "THE PREDICATE HAS FOUR READERS IN THREE REPOS (the A-183 trap). This lane pinned its own agreement with hauska-map's isDepthWarmPromoted by a near-miss test rather than re-deriving the rule: 'depth-warm-promoted-v2' (version-shifted marker) and 'depth-warm-verify' (near-miss citation) must stay WITHHELD while 'depth-warm-verified' (the documented citation fallback) must PRINT. Any future change to one reader carries a divergence test against the others - the test is the control, not this paragraph.",
+    "NO CUSTOMER PREDICATE EXISTS YET FOR THIS ROW: scripts/surface-probe.mjs has no leg that reads a buildable-envelope area field, so the OPS-24 law 1 predicate debt prints on this close and will keep printing for P-304 until P-254's legs carry it. The close therefore cites `probe.notApplicable` with a reason, which the gate permits for an OPS-24 row, rather than a fabricated artifact - a close that cited an artifact claiming a measurement nobody made would be the defect this gate exists to catch.",
+    "WHAT A SUCCESSOR SHOULD NOT RE-DERIVE (the design is settled and paid for): the withhold belongs in the composition, NOT in the route and NOT in the anonymous proxy. The route is a props spread and is also P-259b's file; the proxy governs only anonymous callers, so a strip there leaves authenticated callers served the refused figure - the dispatch's own stated preference settles it. The decision, the reason per consumer, and the rejected alternative are in whereWithheld and consumerListFinal; re-litigating it costs a session and produces the duplication class P-249 avoided.",
+    "PROCESS NOTE, FOR THIS LANE'S OWN RECORD: CP1 was filed at 15:20Z after the live pre-change probes and before the source edit, and CP2 at 15:40Z before the CI conclusion was known. The dispatch asks for the falsifier answers FIRST, pre-registered; they were pre-registered in CP1 before the build, and the falsifier-3 run came after the code existed (it cannot exist before). No artifact in this lane is back-dated.",
+    "THE CLONES REMAIN ON DISK: P:/tmp/p304-legacy-design-tools (pushed branch, clean tree, PR #713) and P:/tmp/p304-hauska-map (branch with no commit, clean tree). The seat_register entries are removed at close BY DESIGN, so the registry will NOT list them - delete the directories explicitly when pruning P:/tmp. The lane's dedicated TEST DATABASE CONTAINER (`p304-testdb`, pgvector/pgvector:pg14 + postgis, host port 55452) was REMOVED after the close was validated, so nothing of this lane is still running; to re-run the local suite, recreate it exactly as CP2 testWork.localResults.environment describes (the two extensions and `apt-get install postgresql-14-postgis-3` are needed, and hookTimeout must be raised to 300000ms), or simply let CI's `Test` job run it, which needs none of this.",
+    "FLEET-MEMORY (M0) SCRATCH BLOCK - returned here for the planner to gate; this lane promotes nothing itself. See the `scratch` field."
+  ],
+  "scratch": {
+    "LESSON": [
+      "A 'withheld' figure must be withheld as KEY ABSENCE, and the type must be made optional in the same commit: a truthiness or default check (`?? 0`, `|| 0`) converts a withheld figure into a measured zero, which is a DIFFERENT false claim ('setbacks consume the lot'), and TypeScript will not catch it because a required `number` keeps every consumer compiling. Making the property optional forces every reader to state which state it is handling (three test files needed a `!` where they read a RAW derive result, which is exactly the audit this buys).",
+      "On this fleet, an API-shape change in `artifacts/api-server` costs a Postgres with BOTH pgvector AND postgis to test locally: the route test hooks cannot run without a DATABASE_URL, and the schema push fails with 'type \"public.vector\" does not exist' and then 'type \"public.geometry\" does not exist'. Installing postgis needs apt inside the container (`apt-get install postgresql-14-postgis-3`), and the hooks then need hookTimeout raised to 300000ms. CI's pr-checks.yml already does all of this - read it and copy it rather than rediscovering it.",
+      "PowerShell footgun that cost this lane a round trip: `Get-Content <f> | Out-File <f>` on the SAME path truncates the file before it is read, so a probe response saved that way is 0 bytes while the command reports success. Curl with `-o <file>` and never re-encode in place.",
+      "PowerShell footgun, second instance: `gh pr checks --json name,state,conclusion` fails with 'Unknown JSON field: conclusion' - `gh pr checks` exposes `bucket`/`state`, and the LITERAL conclusion string only exists on the check-runs API (`gh api repos/<owner>/<repo>/commits/<sha>/check-runs`). If a close must carry conclusion strings, go to the API, not to `gh pr checks`.",
+      "The dispatch's close skeleton and its prose can disagree (here: skeleton shows probe.artifact, prose prescribes probe.notApplicable). READ THE GATE (P:/doc_repo/scripts/enforcement/probe-close-gate.mjs) before filing rather than guessing which the enforcement will accept: for an OPS-24 row in PREDICATE_DEBT, `notApplicable` with a reason is permitted and the debt is printed; citing a fake artifact would have been the actual defect."
+    ],
+    "DEAD_END": [
+      "Stripping the two properties in the anonymous proxy (apps/property-explorer/api/spine.ts) - rejected on the dispatch's own stated preference, because it governs only anonymous callers and would leave an authenticated service-token or cortex-proxy POST served the refused figure, and because it would put a second copy of an entitlement rule in another repo. Do not reopen without a ruling.",
+      "Editing artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts directly - unnecessary (it spreads the derived props verbatim) AND it is the open P-259b zoning-stamp lane's file. The composition is the choke point for both of its callers (the route and parcelDrawEnvelopeModel.ts).",
+      "`git stash push` of the WHOLE working tree to run falsifier 3 - it would stash the new tests too, leaving nothing to fail. Stash the SOURCE files by path only, leaving the tests in the tree.",
+      "`git commit -F -` with a `<<'EOF'` heredoc in PowerShell - the shell does not parse it. Write the message to a file and use `git commit -F <file>`.",
+      "Treating the hauska-map clone as a required second PR because the dispatch says 'one PR per repo' - the condition ('only if your design needs it') did not fire, and an empty PR is worse than an honest 'no PR, no commit exists'."
+    ],
+    "GROUND_TRUTH": [
+      "2026-09-17 ~15:50Z, live, through the anonymous proxy, BEFORE any deploy: POST https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/buildable-envelope {\"address\":\"629 Sturgeon Dr, San Marcos, TX 78666\"} -> HTTP 200, status 'ok', parcel 48209:97658, derivePath 'labelEdges+derive' (no verified atom), buildableAreaSqFt 5022, buildableAreaPct 58.3, maxFootprintSqFt 5022, parcelAreaSqFt 8615, geometry present. The leak, reproduced.",
+      "2026-09-17 ~15:50Z, live, same endpoint: {\"address\":\"1109 Pecan St, Bastrop, TX 78602\"} -> HTTP 200, status 'ok', parcel 48021:34049, derivePath 'labelEdges+derive+atom-reconciled' (VERIFIED), buildableAreaSqFt 19052, buildableAreaPct 63.5, maxFootprintSqFt 0, parcelAreaSqFt 29989. The entitled paired control, and the reason maxFootprintSqFt cannot be gated blindly.",
+      "2026-09-17: the route's response nests the envelope under `payload`, i.e. the properties are at `payload.geojson.features[0].properties` (not `geojson.features[0].properties` at the top level). Any probe that reads the top level reads nothing and looks like a PASS for the wrong reason.",
+      "2026-09-17, head 868b32c7, run 35239813794: all 11 checks conclusion=success, including `Test` (the repo-wide workspace suite, 13m34s) and `Typecheck`. PR #713 OPEN, MERGEABLE, +390/-19."
+    ],
+    "OPEN": [
+      "PR #713 is unmerged and undeployed; the integration seat runs the paired probe in _inbox/2026-09-17_p304-area-figure_live-probe.md after deploying, and the status stays closed-partial until it passes.",
+      "maxFootprintSqFt is the same withheld number under a third name on an unverified parcel (5022 live) and needs an entitlement RULING before it can be closed; the one-line remedy is in leave_behind.",
+      "hauska-engine's own buildable-area figure / site-plan PDF entitlement (P-261) is a sibling gap, unchanged by this lane.",
+      "_catalog/seat_register.json's two P-304 entries are REMOVED and the lane claim RELEASED; both doc_repo edits are UNCOMMITTED for the planner.",
+      "P:/tmp/p304-legacy-design-tools and P:/tmp/p304-hauska-map remain on disk and are no longer in the registry - prune them explicitly. The test-database container p304-testdb (port 55452) was REMOVED at close; nothing of this lane is still running."
+    ]
+  },
+  "subAgents": {
+    "spawned": 0,
+    "maxDepth": 0
+  }
+}

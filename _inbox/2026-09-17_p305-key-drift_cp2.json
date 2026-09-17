@@ -1,0 +1,128 @@
+{
+  "lane": "p305-key-drift",
+  "planRow": "P-305",
+  "checkpoint": "CP2 (pilot / mid-work adversarial checkpoint, AGENT_CONTRACT section 1)",
+  "seat": "p305-lane",
+  "filedAt": "2026-09-17T15:22:00Z",
+  "fanDepth": 0,
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "snapshot": {
+    "docWorktree": "P:/seat-worktrees/p305-key-drift/doc_repo on lane/p305-key-drift, branched from main 5ac6628e; the integration checkout P:/doc_repo was read, never written (A-195).",
+    "hauskaMapClone": "P:/tmp/p305-key-drift-hauska-map, standalone clone, branch feat/p305-key-drift-check from main 93f832b6, ONE commit c013ff12a1103cb9044d6b4e485d20cccfeadc02. Registered under the property seat in _catalog/seat_register.json at 15:21Z; the entry is removed at close as its own note requires.",
+    "hauskaMapPr": "https://github.com/empressaioemail-tech/hauska-map/pull/410 — OPEN, DRAFT (isDraft true, state OPEN, mergeable MERGEABLE, mergeStateStatus BLOCKED, headRefOid c013ff12a1103cb9044d6b4e485d20cccfeadc02). NOT merged by this lane and the workflow was NOT run.",
+    "ciOnC013ff1": "one check-run, literal conclusion string: `No double-encoded source :: completed :: success` (workflow `Source encoding`, pull_request run 35239424836, 15:18:58Z, success). The sync-retrieval-key workflow itself produced NO run: its events are workflow_dispatch, and this lane does not dispatch it.",
+    "laneClaim": "p305-key-drift held for p305-lane (scripts/lane-claim.mjs claim, exit 0).",
+    "groundTruths": {
+      "previewGraded": "https://property-explorer-jmvakhksg-empressaioemail-techs-projects.vercel.app answered the panel read for 48021:34137 with HTTP 200, no auth marker, 15431 bytes, readPath=record, body sha256 prefix f29b45562907, at 2026-09-17T15:23:57Z. Captured twice (15:20:44Z and 15:23:57Z) with an IDENTICAL body length and sha prefix; the artifact on disk is the second capture.",
+      "inventoryRun": "2026-09-17T15:15:58Z: 29 Vercel projects listed, 50 Cloud Run resources (7 services + 43 jobs) across hauska-prod-497015 and legacy-design-tools-prod, 0 unreachable, ok true."
+    }
+  },
+
+  "preRegisteredAgainstMeasured": {
+    "falsifier1_selftest": {
+      "preRegistered": "EXPECTED PASS: the self-test must fire AUTH_FAILURE on the recorded 401 body and OK on the recorded 200 body, on the real recorded shapes; a marker in the recorded 200 body would be reported as a miss rather than loosened away.",
+      "measured": "PASS, exit 0. 10 of 10 cases: RECORDED 401 (503 wrapper) → auth-failure via marker error=retrieval_auth_failed; RECORDED 200 → ok; the recorded 401 under HTTP 401 unwrapped → auth-failure; the recorded 401 with its marker stripped → REFUSAL (the indicator is not vacuous); bare 401 → auth-failure by status; bare 403 → REFUSAL; 500 non-auth → REFUSAL; 200 non-JSON → REFUSAL; 200 carrying an auth marker → auth-failure (marker beats status); fixture integrity (401 fixture carries the marker, 200 fixture does not).",
+      "evidence": "_inbox/2026-09-17_p305-key-drift_selftest.txt"
+    },
+    "falsifier2_livePreview": {
+      "preRegistered": "EXPECTED PASS against the dispatch's preview URL. If not: (1) the deploy-specific URL may be gone → UNREACHABLE (exit 4), not drift; (2) a 200 with a non-auth readPath (P-230's bake staleness) still PASSES because readPath is deliberately not asserted, and that limit is to be stated rather than exceeded.",
+      "measured": "PASS, exit 0, verdict ok, HTTP 200, no auth marker, readPath=record. Branch (2) is the branch that actually occurred: the preview the dispatch names is serving from the bake, not atom-chain-warm. A check that asserted readPath would have FAILED the dispatch's own falsifier 2 — measured, not argued (see adversarialReview.exclusionsWereLoadBearing).",
+      "evidence": "_inbox/2026-09-17_p305-key-drift_f2-preview-live.json + _f2-preview-live.exit.txt"
+    },
+    "falsifier3_inventoryCoverage": {
+      "preRegistered": "EXPECTED: the Vercel team project list and each project's env-var NAMES readable; both GCP projects' Cloud Run services and jobs readable. EXPECTED GAPS named in advance, not discovered: local .env files, GitHub Actions secrets, Replit, Cloud Build substitutions, projects outside the team, and a key held under a name the predicate does not carry. A refused project is reported UNREADABLE with its error.",
+      "measured": "PASS. ok true, 0 unreadable projects and 0 unreadable resources; 5 Vercel env entries on the three names and 7 on the two known aliases reported separately; 11 Cloud Run entries on the three names plus 3 aliases; the six pre-registered gaps are carried in the report's statedGaps array rather than omitted.",
+      "evidence": "_inbox/2026-09-17_p305-key-inventory.json + _inbox/2026-09-17_p305-key-inventory.md"
+    },
+    "additionalLiveControlNotPreRegistered": {
+      "what": "A live REFUSAL control, added after CP1 because every live run in the pre-registration was expected to be a PASS and an indicator that can only be observed passing is not observed firing.",
+      "measured": "GET against a deliberately bogus path → HTTP 404, verdict refusal, exit 4. The refusal path fires live and does not read as ok.",
+      "evidence": "_inbox/2026-09-17_p305-key-drift_f1-negative-live.json + .exit.txt"
+    }
+  },
+
+  "designChangesAfterCp1": [
+    {
+      "change": "check-preview-key-drift.mjs: `process.exit(...)` → `process.exitCode = ...` on the live path.",
+      "why": "Measured on this workstation 2026-09-17: `process.exit()` immediately after an undici (fetch) response crashes libuv on Windows with `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` and exit 0xC0000409, which destroys the verdict's exit code. That is DEV_PROCESS 2.3's exact failure mode — the proof is on the real exit code, and here the real exit code was the thing being destroyed. The loop now drains and exits cleanly in ~1.4s."
+    },
+    {
+      "change": "inventory-key-consumers.mjs: the per-project Vercel reads were restructured to async + bounded concurrency (mapLimit, 4), each call given its own throwaway directory with a hand-written .vercel/project.json.",
+      "why": "The first version spawned a blocking CLI per project and shared one scaffolding directory. Two defects, both found by reading my own code rather than by a failure: the blocking spawn made the declared concurrency a fiction, and shared scaffolding is exactly how the 2026-08-10 trap (`.vercel/project.json` naming the wrong project) gets repeated. Also removed a `STATED_GAPS_OUT` reference left behind by the refactor, which threw at runtime."
+    },
+    {
+      "change": "The runbook's pairing table was rewritten AFTER the inventory ran, not from the dispatch's prose.",
+      "why": "The first draft repeated the dispatch's sentence. Reading the inventory JSON at source produced two corrections to it: (a) `property-explorer` production carries a variable literally NAMED `HAUSKA_ENGINE_API_KEY` (last written 2026-07-24, untouched by the rotation) — a third name for the same secret on the same project, and not mentioned in the dispatch; (b) the environment sets are per entry (e.g. `property-explorer-staging` holds CORTEX_SERVICE_API_KEY in production only; `icc-demo` holds RETRIEVAL_API_KEY in production only). The rule 'verify at source, including your own context block' is what produced both."
+    },
+    {
+      "change": "The hauska-map PR's first draft contained an inline predicate (grep for `retrieval_auth_failed` / `HTTP 401` plus the 401 status) while its own comment claimed no second implementation existed.",
+      "why": "Self-contradiction, caught in adversarial review of my own diff. A YAML re-implementation of the classifier cannot carry a divergence test against the doc_repo script (DEV_PROCESS 2.4), so the honest move was to delete it rather than to claim parity. The step now prints the fresh preview's URL and the exact command that grades it; the PR writes every environment (the cause) and leaves the predicate single-sourced (the check)."
+    }
+  ],
+
+  "adversarialReview": {
+    "attacked": [
+      {
+        "attack": "Does `ok` mean the key is right, or merely that something answered 200?",
+        "outcome": "It means the credential leg answered for ONE parcel on ONE URL. It cannot prove every environment of every consumer, and the runbook's Step 3 says so in the same breath as it says what the check can reach. Enumeration is Step 0's job; the two are separate gates on purpose."
+      },
+      {
+        "attack": "exclusionsWereLoadBearing: is bypass (3) (readPath not asserted) a convenience that hides the failure being hunted?",
+        "outcome": "Measured the opposite way round: the dispatch's own falsifier-2 target returns readPath=record today. Asserting readPath would have made this lane's own prescribed falsifier FAIL while the credential leg was demonstrably fine, i.e. folding P-230's finding in would have produced exactly the permanently-red gate DEV_PROCESS 2.0 forbids. The exclusion is load-bearing and is now evidenced rather than asserted."
+      },
+      {
+        "attack": "Is the self-test vacuous (does it pass because it never fires)?",
+        "outcome": "Not vacuous: the recorded 401 body with its auth marker stripped must classify as REFUSAL, and a 200 carrying a marker must classify as auth-failure; both are asserted. The 200 fixture is also checked for NOT carrying a marker, so the PASS case cannot be passing for the wrong reason."
+      },
+      {
+        "attack": "Can the indicator be observed FIRING live, or only passing live?",
+        "outcome": "Refusal fires live (exit 4 on a bogus path). AUTH_FAILURE cannot be made to fire live by this lane at all: it would require an environment whose key is stale, and the dispatch forbids creating one. Residual stated below rather than papered over."
+      },
+      {
+        "attack": "Does the runbook claim a cadence or a trigger that does not exist?",
+        "outcome": "No. It states that neither Step 0 nor Step 3 is scheduled, names why (two authenticated CLIs; a live preview URL), and refuses to claim a cadence — a check that cannot reach its subject is a dead gate."
+      },
+      {
+        "attack": "Does the hauska-map change, if merged and run, actually close the hole?",
+        "outcome": "It closes the WRITE half for project property-explorer only. `hauska-map`'s workflow covers one consumer; the inventory names six Vercel projects holding a copy of one of the aliases or predicate names. The runbook requires the other five to be walked by hand, and says the workflow's scope is one project."
+      },
+      {
+        "attack": "Would a reader mistake the inventory for a statement that these environments hold the SAME value?",
+        "outcome": "The report states in its own header and the runbook repeats it: the predicate is variable NAMES, no value is read, so the listing cannot say two names hold one value. The command-center / cmdcenter / icc-demo copies last written in July and August are reported as 'untouched by the 2026-09-16 rotation', with the observation that whether that is drift or a different value is a decision a rotation must take — not as a finding of drift."
+      }
+    ],
+    "residualWeaknesses": [
+      "The AUTH_FAILURE branch has never fired against a live host in this lane's run — only against the recorded 401 body. A live stale preview was not created because creating one is forbidden here. The first real firing will be the first real rotation or the first environment that genuinely drifts; until then the auth branch's live evidence is the recorded body plus the classifier's unit cases.",
+      "The check measures one URL that a human hands it. Nothing schedules it and nothing enumerates previews for it; a rotation that forgets to run it is still uncaught by machinery. P-279's class of preventive post-deploy checks is the shape that would catch the forgetting, and it is a different row.",
+      "The inventory's version of 'every consumer' is bounded by two CLIs' visibility: the six stated gaps are real holes, and any of them could hold a copy.",
+      "The hauska-map workflow change is unmerged and unrun. Until it is both, a rotation performed by running that workflow still misses Preview by construction, and only the closing check will say so."
+    ]
+  },
+
+  "filesTouched": {
+    "docRepoUncommitted": [
+      "scripts/check-preview-key-drift.mjs (new)",
+      "scripts/fixtures/check-preview-key-drift/preview-panel-401-recorded.json (new, recorded verbatim)",
+      "scripts/fixtures/check-preview-key-drift/preview-panel-200-recorded.json (new, recorded verbatim)",
+      "scripts/fixtures/check-preview-key-drift/README.md (new, provenance)",
+      "scripts/inventory-key-consumers.mjs (new)",
+      "90_runbooks/key_rotation_all_environments.md (new; the smallest runbook that carries the rule, because none existed)",
+      "_inbox/2026-09-17_p305-key-drift_cp1.json, _cp2.json, _close.json",
+      "_inbox/2026-09-17_p305-key-inventory.json, _inbox/2026-09-17_p305-key-inventory.md",
+      "_inbox/2026-09-17_p305-key-drift_selftest.txt, _f2-preview-live.json, _f2-preview-live.exit.txt, _f1-negative-live.json, _f1-negative-live.exit.txt",
+      "_catalog/lane_claims.json (the lane claim; planner-owned like every other doc_repo edit)",
+      "_catalog/seat_register.json (the property-seat registration of the P:/tmp clone; entry removed at close, file left modified by that removal only in the sense that it is byte-identical to its pre-lane state)"
+    ],
+    "notTouched": [
+      "No secret, no Vercel variable, no revision, no traffic shift, no deploy, no merge. P:/doc_repo was never written."
+    ]
+  },
+
+  "leaveBehind": [
+    "The instrument and the runbook are uncommitted in this worktree; the integration seat commits them (AGENT_CONTRACT section 6, doc_repo commits are planner-owned).",
+    "hauska-map PR #410 is a DRAFT for the operator/integration seat; merging it is not this lane's call. The runbook names it as an open hole until merged AND run.",
+    "The lane's own claim in _catalog/lane_claims.json is released at close.",
+    "The P:/tmp clone stays on disk; the seat_register entry is removed. Delete the directory whenever it is wanted; nothing references it."
+  ]
+}

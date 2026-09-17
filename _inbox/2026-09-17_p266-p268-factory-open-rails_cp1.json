@@ -1,0 +1,154 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p266-p268-factory-open-rails",
+  "title": "design / pre-build adversarial checkpoint: what actually refuses in the six counties' open rails, which of the four writers really writes, and what I refuse to fabricate",
+  "planRows": ["P-266", "P-268"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "program": "90_operations/OPS-24_county_to_serving_program.md (Phase 0: the six onboarded counties complete and verified)",
+  "dispatch": "_dispatches/2026-09-17_p266-p268-factory-open-rails_dispatch.md",
+  "at": "2026-09-17T13:20:00Z (filed after recon and after the first commit; this is a FAN-DEPTH 0 lane, so the checkpoint is an in-process adversarial review of my own plan and its evidence, not a review of sub-agent deliverables)",
+  "seat": "p266p268-lane",
+  "repo": "hauska-factory",
+  "worktree": {
+    "doc_repo": "P:/seat-worktrees/p266-p268-factory-open-rails/doc_repo (this seat's registered worktree)",
+    "build": "P:/tmp/p266-p268-hauska-factory (fresh clone as the dispatch requires: 'fresh clone from origin/main under P:/tmp/ into a NEW directory'); registered in _catalog/seat_register.json under the property seat, entry removed at close"
+  },
+  "branch": "fix/p266-p268-open-rails",
+  "startCommit": {
+    "declaredByDispatch": "3f3e8be ('feat(P-285): one county, the thirteen stages, at most three stops (#165)') -- the dispatch says 'Declare the start commit (factory main 3f3e8be at compile)'.",
+    "actual": "b65f61b35f53cbf689c288e2c2f75bcb765e39c6 ('fix(P-301): the walk admits the serve's declared declined-retirement body (#166)')",
+    "whyTheyDiffer": "the dispatch was compiled at 3f3e8be; the fresh clone from origin/main taken for this lane landed on b65f61b, one commit newer. The intervening commit touches src/jobs/verify-walk.mjs only (P-301's file, which this lane is ordered out of), so the difference cannot bear on this mission. Stated rather than silently rebased: rebasing onto 3f3e8be would have required the lane to discard a commit from main for no benefit."
+  },
+  "commit": "b54155c120ee6bab9096932b48f47cdeabb626d5 (branch fix/p266-p268-open-rails, parent b65f61b35f53cbf689c288e2c2f75bcb765e39c6). ONE commit, 4 files: src/jobs/parcel-record-fill.mjs, src/jobs/parcel-r5-zoning.mjs, test/parcel-record-fill.test.mjs, test/parcel-r5-zoning.test.mjs. PR https://github.com/empressaioemail-tech/hauska-factory/pull/168",
+
+  "theGradeThisLaneStartsFrom": {
+    "source": "_inbox/2026-09-17_six_county_completeness_post_apply.json, measured 2026-09-17 07:29Z (the dispatch's own table)",
+    "trivialRails": "acreageSqft / landUseVintage / situsState: refuse in Bastrop 62,256, Caldwell 24,988, McLennan 114,254, Travis 380,917, Williamson 282,570; pass in Hays. Those unaccounted counts equal each county's parcel_record population, i.e. no cell on those three rails was ever written outside Hays -- which is also the dispatch's own reading of the table.",
+    "citationUrl": "excluded-no-acquisition-path in all six.",
+    "mustPass": "acreageMethod refuse Caldwell 2,274 / Hays 433 / McLennan 114,254; exemptionCodes refuse Caldwell 8,958 / Williamson 187,186; landUseSource refuse Bastrop 21,398 / Caldwell 196 / Hays 636 / McLennan 23,182 / Williamson 25,775; buildingFootprint refuse Williamson 1."
+  },
+
+  "reconMeasuredInTheStoreBeforeAnyEdit": {
+    "how": "read-only SQL against the factory store through FACTORY_DATABASE_URL_RO, under a heavy-scan lease taken and released through doc_repo's scripts/heavy-scan-lease.mjs; and read-only SQL against cortex through PRODUCTION_NEONDB_URL. Every read carried `set default_transaction_read_only = on`. No writer, no --apply, no write.",
+    "when": "2026-09-17 12:55Z - 13:40Z (factory store: q5-census, q6-zoning-ts, q7-joinmiss, q8-cells, q9-p268-groups; cortex: qc1..qc5 schema/census probes)",
+    "findings": {
+      "F1_the_three_trivial_rails_are_a_stale_store": "the cells carry their rail-instantiate write timestamp, not a later run's, and the unaccounted count is the county's whole parcel_record population: the derivation pass that writes them had run for Hays only. This is the dispatch's 'why it never ran or never wrote for the other five'. The writer itself was never missing -- parcel-record-fill's own derived pass (deriveSitusStateOntoRecords / deriveAcreageSqftOntoRecords / deriveLandUseVintageOntoRecords, all OPS-21 D1) writes all three, and it runs inside the same county-wide path as the CAD ingest.",
+      "F2_situsState_had_a_real_defect_behind_the_staleness": "the D1 implementation is `rec.countyFips.startsWith('48') ? 'TX' : nothing` with source 'derived-county-fips' -- a constant, not a derivation. Hays carries 62k values written that way, so Hays 'passes' the rail on values no parcel's own situs ever backed. The dispatch forbids exactly this: 'situsState is only TX when the parcel's own situs or geometry says so'.",
+      "F3_citationUrl_is_empty_because_its_writer_has_not_run_since_the_rail_was_added": "measured on the same rows: citationUrl's cells were last written at rail instantiate while zoningDistrict / zoningProvenance on those rows were rewritten 2026-09-08/09 by the last parcel-r5-zoning run; OPS-21 D1 added citationUrl as a fourth rail on 2026-09-10. So the rail's emptiness is a stale store awaiting the integration seat's re-run, not an acquisition gap -- which is why the 'excluded-no-acquisition-path' label is wrong in substance: classifyExclusion defaults any declared-ahead rail with zero earned cells program-wide to that class, and the class names a finding the evidence does not support.",
+      "F3b_the_writer_would_have_fabricated_a_value": "buildZoningCells called cellStateFor('value', sourceUrl, vintage) for citationUrl and zoningProvenance; cellStateFor ignores its kind argument, so a matched staging row with a null source_url yields {kind:'value', value:null}. Measured at the same time: tx_zoning_district_staging holds zero null/blank source_urls (339,183 rows), so in the live data the branch would not fire today -- the fix is that it cannot fire into a fabricated citation when a future staged layer arrives without one.",
+      "F4_the_companion_gap_is_real_but_much_narrower_than_the_refusal_counts_suggest": "grouping the unaccounted acreageMethod / landUseSource cells by their PRIMARY's own basis in the store: the join-miss signature (basis.source='cad_property' with no taxYear, which only the engine's applyCadJoinMiss path can emit) accounts for Hays's cohort, measured at acreageMethod 433 and landUseSource 636 cells. Every unaccounted companion in the other five counties carries a taxYear-bearing matched-row basis -- a write from BEFORE the dfdf6fd engine re-vendor (2026-09-05) that stamped a companion absent-verified only on the matched-row path, and which a replay of the current code resolves. That is why McLennan's acreageMethod refusal is whole-county (114,254 cells, basis taxYear=2025): row-by-row it is stale store, not a live code gap.",
+      "F4b_an_honest_oddity_NamedRatherThanSmoothed": "Hays's two cohorts differ (433 vs 636). A join-miss node stamps both companions, so the two should be equal; the residue means some landUseSource cells are unaccounted for a reason the basis grouping did not classify as join-miss. My completion step keys on the primary's basis, so it can only ever complete the join-miss intersection; the dry run's own counts are the measurement that will settle whether the residue is 203 cells or something else. Filed as an OPEN thread in the close rather than explained away here.",
+      "F5_McLennan_acreageMethod_whole_county": "answered above and stated in the code comment on reportNullAtSourceMapping: basis taxYear=2025 on every one of the 114,254 cells, i.e. the pre-re-vendor matched-row path, so the replay this lane's PR makes safe fixes the whole county without a second code change. The dispatch asks 'say why' -- this is the why, with the basis value that says it.",
+      "F6_Williamson_buildingFootprint_1": "read the single unaccounted cell (unincorporated parcel, one cell out of 282,570 rows on that rail). It is one parcel, and the rail's writer (parcel-building-footprint-reconcile) is a deployed job this lane does not touch. Basis: reported with its place_key in the close so the operator can rule it; not fixed by this lane because a one-parcel residue is a data fact (no footprint observed for that parcel), not a writer defect that a code change can honestly resolve."
+    }
+  },
+
+  "designDecisions": {
+    "D1_situsState_becomes_an_evidence_ladder_with_no_write_as_a_legitimate_outcome": {
+      "rungs": ["parcel's own situs ADDRESS state token", "parcel's own Texas ZIP", "parcel's own txgio_parcel geometry, gated on the county's own tx_county_boundary.state_fips = '48'", "no write"],
+      "whyNotDeriveFromTheCountyAlone": "that is the defect. A county is not a parcel: the rail asserts the state of THIS parcel's situs, and the only honest sources are the parcel's own situs fields and its own geometry record.",
+      "whyNoWriteIsAllowed": "the dispatch says 'never a value where the source is silent'. The alternative to a value is not a fabricated one -- it is an absence, reported. The run record carries moved / out-of-state / silent counts plus bounded samples.",
+      "whyTheGeometryRungIsNotAFabrication": "the dispatch's own words are 'the parcel's own situs or geometry says so'. The geometry is the parcel's own polygon record, and the rung additionally requires the parcel's county boundary record to name Texas, so a boundary row that ever changed would move the rail with the data instead of a constant in this file.",
+      "whyTheZIPRungIsNotOutOfStateEvidenceInReverse": "a non-Texas 5-digit zip is NOT treated as evidence of out-of-state (CAD zips are one dialed field; the earlier census measured stray Michigan/Virginia values and typos). Only an address state token is decisive against Texas. Failing closed on the Texas assertion while failing open on silence is the direction that cannot fabricate."
+    },
+    "D2_theOutOfStatePopulationIsCountedNotWritten": {
+      "decision": "an address token naming another state leaves the cell untouched (no value, no not-applicable, no refused).",
+      "why": "the honest cell state for 'this parcel's own situs says it is not Texas' on a Texas-assertion rail is a decision the operator may want to make (refused-with-basis vs not-applicable vs an out-of-state program), and inventing one here would be a policy this lane was not given. The count and samples make it rulable.",
+      "consequenceForTheGrade": "the rail stays short of a full pass in counties where such parcels exist. Predicted counts come from the dry runs; the residual is named, not hidden."
+    },
+    "D3_companionCompletionReadsTheEnginesOwnSignalRatherThanCopyingIt": {
+      "decision": "completeJoinMissCompanionsOntoRecords fires only when the primary cell is absent-verified AND its basis is source='cad_property' with taxYear === undefined AND it carries a vintage and a propId.",
+      "why": "a matched row's basis always carries taxYear (cadNullVerified refuses to emit without one), so the predicate is the engine's own distinction between 'the roll says nothing' and 'this node is not in the roll'. Re-deriving that from a count, a second query, or a property of my own invention would be a second implementation of the engine's decision (the CTRL-1 shape).",
+      "whatItDeliberatelyDoesNotDo": "it does not touch a rail whose primary is unaccounted, does not overwrite an earned companion, does not write a value, and never writes the companion for a matched-row null (which already carries it)."
+    },
+    "D4_theEngineSideGapIsNamedNotAbsorbed": {
+      "decision": "the job-level completion is the fix for the six counties; the vendored engine is NOT edited (ENGINE_PIN.json forbids it and test/engine-pin-divergence.test.mjs pins the divergence to the P-252 fixture only).",
+      "why": "the engine's join-miss branch stamping 13 scalars and not their two companions is the upstream defect; a repair that lives only in this job leaves the next consumer of the engine with the same gap. Filed as an OPEN thread with the exact file and function in the close."
+    },
+    "D5_theCitationRailsSayAbsentVerifiedInsteadOfNullValued": {
+      "decision": "citationCellState returns value only for a non-blank source_url; otherwise absent-verified with a basis naming the matched staging row, city, district and vintage.",
+      "why": "{kind:'value', value:null} is the shape that claims a citation that does not exist -- the dispatch's 'where no citation exists the cell says so, it is not left unaccounted'. The basis has to name the matched row, or a reader cannot tell 'the row has no url' from 'the polygon never matched' (the second is a gap this job must not paper over).",
+      "scopeLimit": "this changes exactly two rails, on the matched-parcel path, with a test that asserts this module constructs exactly one absent-verified kind in exactly one place."
+    },
+    "D6_acreageSqft_and_landUseVintage_get_no_code_change": {
+      "decision": "the other two trivial rails are left alone; their fix is the integration seat's re-run, which this lane predicts.",
+      "why": "their writers exist, are correct, are exercised by tests, and the store evidence says they never wrote for five counties. Adding code for a rail whose writer is not broken would be movement without a measurement."
+    },
+    "D7_theNotAStateBlocklistHoldsOnlyFireableEntries": {
+      "decision": "the blocklist is {CT, FL} and a test asserts every member is a USPS code.",
+      "why": "addressStateToken consults the blocklist only after checking the token IS a state code, so an entry that is not a code (ST, LN, RD) can never fire -- it is decoration, and DEV_PROCESS refuses guardrails that cannot fire. The test asserts the invariant directly, so dead entries cannot accumulate again."
+    }
+  },
+
+  "servePathConsequence_A193_statedBecauseTheDispatchRequiresIt": {
+    "theRule": "OPS-24 law 7 / A-193: until P-297 is live the serve path switches on the county verdict, so ANY write that puts an unaccounted cell on a slated rail turns that whole county's ledger values back to the bake.",
+    "doesThisLaneIntroduceThatShape": "no. Every cell this lane leaves unaccounted is a cell that is unaccounted in the store TODAY (the three trivial rails are full-county unaccounted in five counties; the companions are unaccounted in the counts tabled above). What changes is that the population shrinks and the reason becomes visible. Specifically: (a) the completion step only ever turns unaccounted -> absent-verified; (b) the citation rails only ever turn unaccounted/unwritten -> value or absent-verified on the MATCHED-population path; (c) the situsState ladder turns unaccounted -> value where evidence exists and leaves unaccounted alone where it does not; (d) UPSERT_CELLS_BATCH_SQL's existing guard means an incoming unaccounted can never downgrade a stored non-unaccounted cell, so a re-run cannot take an earned Hays cell backwards.",
+    "whatTheIntegrationSeatShouldKnow": "for five counties the three rails will still be short of a pass after the apply (the silent/out-of-state residue), so those counties remain in the pre-P-297 state for those rails -- the same state they are in now, at a much smaller count. This is stated so the applies are not read as 'the county now passes'."
+  },
+
+  "theWriterCommandsTheIntegrationSeatWillRun": {
+    "parcel-record-fill": "gcloud run jobs execute factory-parcel-record-fill --project=hauska-prod-497015 --region=us-east4 --wait --args=parcel-record-fill,--county=<fips>,--apply,--twice   (one per county: 48021, 48055, 48209, 48309, 48453, 48491; form read from cloudbuild.parcel-record-fill.yaml's own execute example, and FACTORY_CLOUD=1 is set by that deploy so parcel-record-fill's own laptop guard does not refuse)",
+    "parcel-r5-zoning": "gcloud run jobs execute factory-parcel-record-fill --project=hauska-prod-497015 --region=us-east4 --wait --args=parcel-r5-zoning,--apply   (one invocation covers every in-scope city; there is no --county flag on this verb, it sweeps loadInScopeCities plus the no-staged-layer and completeness sweeps every run)",
+    "whyTheseAreTheOnlyTwo": "the four rails this lane touches are written by exactly these two jobs; both are on src/control/writer-allowlist.mjs, and both are deployed by cloudbuild.parcel-record-fill.yaml (verified by reading the deploy block, not by report)."
+  },
+
+  "adversarialReviewOfMyOwnPlan": {
+    "howThisChangeCouldBeWrongAndStillPassItsOwnTests": [
+      "The ladder could be tested only through resolveSitusStateEvidence's pure function while the wiring in fillCountyWide passes the wrong propIds (or an empty set for every page) -- the rails would then silently stay unaccounted and every unit test would still pass. Closed by an end-to-end instantiateAndIngest test that asserts the geometry facts are threaded from the page into the ladder, and by the dry run's own moved/silent counts, which are non-zero only if the wiring is live.",
+      "The out-of-state branch could be unreachable (a token that never parses) and the tests would still pass on the silent branch's counts. Closed by a test that asserts addressStateToken('100 OAK ST, MEMPHIS, TN 38103') is 'TN' and that a parcel with that address resolves outcome out-of-state with NO write, and by the census being reported per outcome.",
+      "The completion step could fire on matched-row nulls (writing a companion that a different basis already owns) if the predicate were loosened. Closed by a test asserting a matched-row basis (taxYear present) does NOT complete, and by isCadJoinMissBasis refusing a basis with no propId/vintage.",
+      "The citation change could be silenced by only ever seeing non-null source_urls in fixtures, leaving the absent-verified branch unpinned. Closed by a test that drives buildZoningCells with source_url null, with a blank string, and with a real URL, asserting value/absent-verified/absent-verified respectively.",
+      "The whole change could be a no-op against the live store (e.g. the derived pass requires a cohort that never appears in the six counties) and the dry runs are the only thing that would reveal it. That is exactly why falsifier 1 is registered below as a per-county dry run, and why no 'closed' status will be claimed without it."
+    ],
+    "whatThisLaneDeliberatelyDoesNotDo": [
+      "No writer with --apply, no store write, no deploy, no merge.",
+      "No edit to src/jobs/verify-walk.mjs (P-301), src/lib/secret-rotation.mjs or src/jobs/staging-reset.mjs (P-276), src/jobs/parcel-setback-cells.mjs (PR #160).",
+      "No edit under src/lib/parcel-record-engine (ENGINE_PIN.json).",
+      "No scanner read of any store without a heavy-scan lease; no sub-agents (FAN-DEPTH 0).",
+      "No new rail, no new writer, no migration: the four rails and their two writers already exist."
+    ],
+    "whatCouldBlockTheDryRuns": "cortex (PRODUCTION_NEONDB_URL, ep-lucky-truth...) is under a job-execution lease held by factory-bastrop-publish-g68rt (a Travis publish) that has been renewing since 12:52Z, so the heavy-scan take refuses LEASE_HELD. The dry runs are deferred honestly rather than run without a lease; if the lease does not free before close, falsifier 1's evidence is UNMEASURED and the close says so instead of claiming it."
+  },
+
+  "falsifierPreRegistration": {
+    "F1_dispatch": {
+      "claim": "After the change, a dry run of each fixed writer for Bastrop reports writes for every parcel_record parcel on the three trivial rails (or names the ones it cannot write, with the reason).",
+      "predicted": "Bastrop (48021, 62,256 parcels): acreageSqft and landUseVintage resolve for every parcel whose acreageAcres / landUseVintage source resolves (parcel-record-fill's derived pass writes on the same page as the CAD ingest, so the count tracks the CAD join), and situsState resolves to a value for every parcel with an address state token, a Texas ZIP, or geometry, with a residual counted as silent and reported with samples.",
+      "wouldFalsify": "a dry run that reports zero writes on all three rails for Bastrop (the wiring is dead), or writes on a rail whose source the run itself reports as absent."
+    },
+    "F2_dispatch": {
+      "claim": "A test fails if situsState is written for a parcel whose situs is empty or out of state.",
+      "predicted": "two tests, one per reading: a parcel with a non-Texas address token gets NO write at any rung (asserted, not inferred), and a parcel with an empty situs but its own geometry record resolving at rung 3 IS written -- the dispatch licenses geometry as evidence in the same sentence that forbids an empty-situs value.",
+      "wouldFalsify": "either direction: an out-of-state parcel receiving 'TX', or an empty-situs parcel with no evidence receiving 'TX'."
+    },
+    "F3_dispatch": {
+      "claim": "Each must-pass refusal group is either fixed or carries a count and a basis that sum to the measured refusal count.",
+      "predicted": "acreageMethod and landUseSource: the join-miss group is fixed in code (Hays, 433 / 636 cells as grouped by basis), and the stale-store group is named with its per-county counts and the reason a replay resolves it (Caldwell 2,274; McLennan 114,254; Bastrop 21,398; Caldwell 196; McLennan 23,182; Williamson 25,775 -- the dispatch's own 07:29Z table, which my store grouping reproduced). exemptionCodes: no writer in this lane; the refusal groups are reported with their counts (Caldwell 8,958, Williamson 187,186) and their basis from the store. buildingFootprint: Williamson's single cell reported by place_key.",
+      "wouldFalsify": "a refusal group with no count, no basis, or a count that does not sum with the others to the measured total."
+    },
+    "F4_mine": {
+      "claim": "The change cannot make any county's rail grade worse.",
+      "predicted": "no cell this lane writes is 'unaccounted' (the completion step and both ladder outcomes write value or absent-verified; the out-of-state and silent outcomes write nothing), and UPSERT_CELLS_BATCH_SQL's guard already refuses an incoming unaccounted over a stored non-unaccounted cell -- so Hays's passing rails cannot regress and the five counties' counts can only fall.",
+      "wouldFalsify": "the dry run reporting unaccounted cells beyond what the store already holds, or a moved count of zero where the store holds unaccounted."
+    },
+    "F5_mine": {
+      "claim": "No test in the repository outside the four files this lane touched changes its result.",
+      "predicted": "the full suite at this commit: 1703 tests, 1664 pass, 2 fail, 35 skipped, 2 todo. The two failures are in files this lane does not touch (test/check-walk-decline-body-drift.test.mjs, test/ctx-b3-store-census.test.mjs) and both import only src/jobs/verify-walk.mjs and their own scripts/ modules -- so they cannot be caused by this change; both need a real legacy-design-tools checkout on disk.",
+      "wouldFalsify": "a third failure, or a failure in a file that imports either changed module."
+    }
+  },
+
+  "watchRegistered": {
+    "id": "p266p268-dryruns",
+    "why": "the dry runs are the only long-running step of this lane and the contract requires a registered watch with a quiet budget before a runner starts, polled rather than awaited.",
+    "path": "P:/tmp/p266p268-tools/out/dryrun-progress.log",
+    "maxQuietMin": 25,
+    "registeredAt": "2026-09-17T14:05:00Z"
+  },
+
+  "scopeBasis": "hauska-factory only, plus CP/CLOSE artifacts and the lane registration in this seat's doc_repo worktree. Inside the repo: EDITED src/jobs/parcel-record-fill.mjs and src/jobs/parcel-r5-zoning.mjs, EDITED their two test files. Stated exclusions so a successor can tell a decision from an oversight: no engine edit (ENGINE_PIN.json), no new writer or migration, no deploy/cloudbuild change, no --apply anywhere, no touch of P-301/P-276/PR-160 files, no sub-agents. The only stores touched are read-only reads under a heavy-scan lease (factory) and read-only SQL (cortex).",
+  "probe": {
+    "notApplicable": "build lane; the dispatch pre-declares this ('build lane; graded by the gate scheduler's verdicts after the integration seat applies the writers'). No address in any county changes what this lane did."
+  },
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

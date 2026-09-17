@@ -1,0 +1,111 @@
+{
+  "lane": "p304-area-figure",
+  "planRows": ["P-304"],
+  "checkpoint": "CP1",
+  "stage": "design/pre-build",
+  "timestamp": "2026-09-17T15:20:00Z",
+  "seat": "property (named 'property-p304' in the lane claim)",
+  "seatSessionId": "property-p304",
+  "worktree": "P:/tmp/p304-legacy-design-tools",
+  "branch": "fix/p304-area-figure",
+  "baseCommit": "c40423a5d95556e951f5a427d5da86277a4aff40",
+  "secondClone": {
+    "repo": "hauska-map",
+    "worktree": "P:/tmp/p304-hauska-map",
+    "baseCommit": "93f832b6",
+    "branch": "fix/p304-area-figure",
+    "status": "no change needed — see decision.whyNotTheProxy and consumers rows 7-11"
+  },
+  "docRepoSeatWorktree": "P:/seat-worktrees/property/doc_repo",
+  "missionPremise": "A-180 / the 2026-09-11 ruling ENVELOPE DRAWN, FIGURE REFUSED (canon preamble; `_decisions/2026-09-11_ruling_b_reversed_polygon_only.md`): the modelled buildable envelope may DRAW wherever a district and a setback table exist, but the buildable AREA and PERCENT stay refused until a ground-truth VERIFIED (depth-warm promoted) envelope atom backs them. The dispatch's finding (A-205, measured 2026-09-17) is that the route `artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts` returns `payload.geojson.features[].properties.buildableAreaSqFt` / `buildableAreaPct` on every drawn envelope, and that `apps/property-explorer/api/spine.ts` allowlists that route for anonymous callers — so the refused figure reaches anyone through smartsite.cloud, while the panel (`figureWithheld`) and the MCP draw block (`derivedFigures.denies`) withhold it on their own. The route was the one surface that did not.",
+  "decision": {
+    "whereWithheld": "AT THE SOURCE, in legacy-design-tools, in the pure composition `artifacts/api-server/src/lib/buildableEnvelope/composeBuildableEnvelopeDerivation.ts` — a new last step `withholdUnverifiedAreaFigure(reconciled, atomPromotion)` (implemented in `reconcileAtomEnvelope.ts`, which already owns the verification predicate). The two properties are DELETED from the feature properties whenever `isEnvelopeAtomVerified` is false; geometry, disclosure and everything else are untouched.",
+    "predicate": "The SAME predicate P-249 uses, one definition, imported not copied: `isEnvelopeAtomVerified` (reconcileAtomEnvelope.ts:67) — `depthWarmPromotion === \"depth-warm-promoted-v1\"` (DEPTH_WARM_PROMOTION_MARKER), else the documented `sourceCitation` fallback containing `depth-warm-verified`, absent fields read as unverified. The verification predicate itself is NOT changed (dispatch 'Do not').",
+    "withholdingIs": "ABSENCE, not zero and not a substitute. (a) The keys are deleted, so a consumer reads `undefined` — the state the PE wire mapper (`?? null`), the map card's `num()` and live-envelope-augment's atom-area read already treat as 'no figure available'. (b) A zero would be a DIFFERENT false claim (a measured 'setbacks consume the lot'), so a withheld figure never becomes 0. (c) The atom's own unverified number is still not quoted (P-249's stance) and is not re-derived on the way out — no substitute figure, so no new unfounded number. (d) The `disclosure` string is replaced with an explicit withholding sentence (AREA_FIGURE_WITHHELD_DISCLOSURE) so a reader is told WHY the figure is missing instead of being left to guess; on an empty result the decline's own words are kept (different fact). (e) Idempotent — re-running on an already-withheld payload is a no-op.",
+    "whyNotTheProxy": "1) The dispatch prefers the option that 'also protects authenticated callers that are not supposed to print the figure', and a strip in `apps/property-explorer/api/spine.ts` governs ONLY the anonymous browse path — an authenticated service-token / cortex-proxy POST would still be served the refused figure. 2) The composition is the single choke point the route AND the MCP draw-block orchestration (`parcelDrawEnvelopeModel.ts`, P-153 Step A) both call, so one edit cannot drift between the two surfaces; striping the proxy would fix exactly one of the consumers in the list below. 3) It keeps the refusal next to the only thing that can evaluate the predicate (the atom's own promotion fields, already fetched and passed into the composition). 4) Code-done honesty: hauska-map's proxy is a passthrough allowlist, not a data-shaping layer; teaching it to editorialize on a cortex payload would add a second, divergent copy of an entitlement rule in another repo (the exact duplication class P-249 avoided by sharing the predicate).",
+    "noChangeIn": "hauska-map. Its facets producer already gates the figure on `depthWarm` (apps/property-explorer/api/_lib/atom-chain-to-facets.ts:2178-2180) and already withholds it on the unverified no-buildable-area branch (`figureWithheld: true`, :2117-2129); its live-envelope augment is already P-249-guarded (`if (...) && !figureWithheld`), and it reads the live figure out of THIS route's response, so the source change removes the figure from under it automatically rather than needing a second edit. Detail per row in `consumers`."
+  },
+  "liveEvidenceBefore": {
+    "unverified": {
+      "request": "POST https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/buildable-envelope  body {\"address\":\"629 Sturgeon Dr, San Marcos, TX 78666\"}",
+      "readAt": "2026-09-17T15:19:02Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "parcel_node_id": "48209:97658",
+      "derivePath": "labelEdges+derive",
+      "buildableAreaSqFt": 5022,
+      "buildableAreaPct": 58.3,
+      "geometryPresent": true,
+      "reading": "derivePath has NO '+atom-reconciled' segment, i.e. no verified atom backed this envelope — yet both figures were served. This is the leak, reproduced through the anonymous proxy on the day of the change."
+    },
+    "entitledControl": {
+      "request": "same endpoint, body {\"address\":\"1109 Pecan St, Bastrop, TX 78602\"} (parcel 48021:34049)",
+      "readAt": "2026-09-17 (earlier this session)",
+      "derivePath": "labelEdges+derive+atom-reconciled",
+      "buildableAreaSqFt": 19052,
+      "buildableAreaPct": 63.5,
+      "reading": "atom-reconciled (verified) parcel — the figure is ENTITLED here and MUST survive the change. This is the paired control; the post-deploy probe must show this pair DIVERGE (one withholds, one prints), not both change together."
+    }
+  },
+  "consumers": [
+    {
+      "surface": "legacy-design-tools route POST /api/brokerage/v1/place/buildable-envelope (artifacts/api-server/src/routes/brokeragePlaceBuildableEnvelope.ts, serve path at :997-1040)",
+      "reads": "payload.geojson.features[0].properties.{buildableAreaSqFt,buildableAreaPct} (the props are the derived props verbatim, via wrapEngineEnvelope)",
+      "before": "served the figures on every drawn envelope, verified or not",
+      "after": "figures absent for an unverified parcel (HTTP 200, status ok, geometry present, disclosure says withheld); figures still present for a verified atom, reconciled number unchanged"
+    },
+    {
+      "surface": "anonymous proxy apps/property-explorer/api/spine.ts (hauska-map)",
+      "reads": "nothing — it allowlists the route path for anonymous callers and passes the body through",
+      "after": "unchanged code; the leak it exposed is closed by the source change, for anonymous AND authenticated callers"
+    },
+    {
+      "surface": "MCP draw block orchestration (legacy-design-tools artifacts/api-server/src/lib/buildableEnvelope/parcelDrawEnvelopeModel.ts, the second caller of the same composition)",
+      "reads": "geometry + `feature.properties.disclosure` only; it never re-serializes the figure, and the Smart Site MCP already denies it unconditionally (`DERIVED_FIGURES_POLICY` in artifacts/smartsite-mcp/src/tool-honesty.ts)",
+      "after": "unchanged behaviour (still no figure on the draw wire); the disclosure it carries now says the figure is withheld instead of only 'approximate' — strictly more honest, and `parcelDrawEnvelopeModel.test.ts` asserts only that the string is non-empty"
+    },
+    {
+      "surface": "Property Explorer panel live-derive merge (hauska-map apps/property-explorer/src/lib/live-envelope-augment.ts, applyLiveDeriveToFacets)",
+      "reads": "live.summary.buildableAreaSqFt / .buildableAreaPct (built from THIS route's props by src/lib/buildable-envelope.js:166-178) and the baked facets' own env.buildableAreaSqFt",
+      "before": "for a parcel whose facets carried no atom area and no figureWithheld flag, it stamped the live derive's own number onto the facets envelope (line 297-298)",
+      "after": "liveAreaSqFt is now `null` -> falls back to env.buildableAreaSqFt, which is itself absent for an unverified parcel, so NO figure is stamped (the key is absent, not null-with-a-number). The pre-existing `figureWithheld` guard is untouched. Its disclosure passes through this route's new withholding sentence, so the panel now SAYS the figure is withheld rather than going quiet"
+    },
+    {
+      "surface": "PE wire mapper (hauska-map apps/property-explorer/src/lib/buildable-envelope.js:166-178 envelopeSummaryFromProps)",
+      "reads": "props.buildableAreaSqFt ?? null",
+      "after": "null instead of a number for an unverified parcel; no schema change (the field is already nullable and every renderer treats null as 'no figure')"
+    },
+    {
+      "surface": "PE fact sheet / card / brief view models (fact-sheet-resolver.ts, browse/brief-view-model.ts, workbench/tools/chat-research.ts)",
+      "reads": "the BAKED FACETS envelope (`/property-atoms/{id}/facets`), not this route: atom-chain-to-facets.ts:2178-2180 emits buildableAreaSqFt only when `depthWarm`, and :2117-2129 emits the unverified no-buildable-area branch with `figureWithheld: true` and no figure at all",
+      "after": "unchanged — these surfaces were already gated on the same entitlement; this change removes a route-level bypass of that gate, it does not add a new gate to them"
+    },
+    {
+      "surface": "cortex-tiles map card (legacy-design-tools packages/cortex-tiles/src/map/liveGis.ts buildableEnvelopeCard)",
+      "reads": "`num(props.buildableAreaSqFt)` from a route/payload envelope object",
+      "after": "the two fields are optional in its input type today and `num()` maps undefined -> null, so the area row drops; the card can never print a withheld figure"
+    },
+    {
+      "surface": "research-brief LLM context (legacy-design-tools artifacts/api-server/src/lib/brokerageResearchAreaContext.ts:222-226, subject envelope prose)",
+      "reads": "`subject.envelope.buildableAreaSqFt/Pct`, which is built by the MAP CLIENT from the research brief's `setbacks-envelope` section data (hauska-map src/workbench/tools/chat-research.ts:345-380, :470-480) — a different producer, not this route's response",
+      "after": "unchanged by this change; its figure is governed by the brief/ledger serving path, which is out of this lane's scope"
+    },
+    {
+      "surface": "hauska-engine PDF / site plan",
+      "reads": "its OWN engine-side envelope (`packages/engine-core/src/site-plan/buildable-display-vocab.ts`, `boundary-primitive/consume.ts:129`, `depth-warm/*`) — an independent computation that never consumes this route's properties (read-only grep of P:/hauska-engine for the two field names: 40+ hits, all inside engine-core's own model/scripts/tests)",
+      "after": "unchanged by this change. Flagged as a live sibling defect class for the integration seat: the engine's own figure is not gated on this route's predicate (dispatch notes P-261 for the PDF)."
+    }
+  ],
+  "falsifiersPreRegistered": {
+    "1": "After the change, the route response for an unverified fixture contains NEITHER property — asserted at the WIRE in artifacts/api-server/src/__tests__/brokeragePlaceBuildableEnvelope.test.ts (P-304 (a)) via `\"buildableAreaSqFt\" in props === false` plus a `not.toContain(\"7777\")` guard that the unverified atom's number is not quoted in its place, and at the composition in composeBuildableEnvelopeDerivation.test.ts.",
+    "2": "A verified fixture still carries them — P-304 (b) at the wire (depthWarmPromotion marker + outcome.areaSqFt 7777 -> served 7777, derivePath atom-reconciled) and the composition-level verified test (99_999).",
+    "3": "Reverting the change fails a test — method: `git stash push` of the three source files ONLY (tests kept in tree), run the new tests, `git stash pop`. Expected: P-304 (a) fails at its first assertion, P-304 (b) passes (proving the test pair discriminates on the fix, not on the fixture).",
+    "additional": "The predicate near-misses are pinned as a non-vacuous scoping test: a version-shifted marker (`depth-warm-promoted-v2`) and a near-miss citation (`depth-warm-verify`) must stay withheld, while the documented `depth-warm-verified` citation fallback must print. This is the divergence guard the canon preamble requires for the four readers of the depth-warm field: it asserts agreement with hauska-map's `isDepthWarmPromoted` rule rather than let this route drift from it."
+  },
+  "outOfScopeNamed": [
+    "hauska-engine's own buildable-area figure / site-plan PDF entitlement (P-261) — different repo, different seat.",
+    "The 2026-09-15 PE facets `figureWithheld` behaviour itself (P-249) — consumed here, not changed.",
+    "The `maxFootprintSqFt` field — the SAME withheld number under a third name, and the one residual channel this lane did NOT close. Live: the unverified Hays probe returns maxFootprintSqFt 5022 alongside the withheld 5022, and derive.ts:286-292 shows why (`maxFootprintSqFt = round(min(buildableAreaSqFt, coverageCap))`, i.e. it is the modelled buildable area whenever the modelled envelope, not lot coverage, is the binding constraint). It is NOT one of the two fields the dispatch names, and it is NOT purely a modelled figure: when `maxLotCoveragePct` binds, the value falls out of two authoritative numbers alone (codified coverage cap x measured lot area) and is legitimately printable. Which of the two regimes a given parcel is in is an entitlement RULING (an operator stop point), so this lane implements the dispatched two-field predicate exactly, pins it with tests, and reports this as a finding with the numbers and a one-line remedy for the integration seat/planner rather than widening the change unilaterally.",
+    "Road-node pass / edgeSignal rails (A-177)."
+  ]
+}

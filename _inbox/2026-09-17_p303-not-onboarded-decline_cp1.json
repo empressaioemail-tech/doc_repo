@@ -1,0 +1,149 @@
+{
+  "artifact": "CP1",
+  "kind": "design/pre-build checkpoint (AGENT_CONTRACT section 1: CP1 design, CP2 pilot; FAN-DEPTH 0, so no sub-agent deliverable is being reviewed and both checkpoints are filed by the lane itself)",
+  "lane": "p303-not-onboarded-decline",
+  "planRows": ["P-303"],
+  "seat": "p303-lane",
+  "filedAt": "2026-09-17T15:20:00Z",
+  "repos": {
+    "hauska-map": {
+      "clone": "P:/tmp/p303-not-onboarded-decline",
+      "branch": "fix/p303-not-onboarded-decline",
+      "startCommit": "93f832b6 (map main at compile, carries P-249 #409)",
+      "headCommitAtCp1": "9f37d365c9e4dd8c4259b60d037634f0e3fe38e1"
+    }
+  },
+  "question": "Which branch turns an atom reason of \"no district\" / \"not onboarded\" into `no-zoning-stamp`, and what must it do instead where the payload's own zoning facet holds a district and a setback table exists?",
+  "answer": "The branch is the FIRST branch of the envelope decision tree in apps/property-explorer/api/_lib/atom-chain-to-facets.ts (`if (absenceKind === \"no-zoning-stamp\")` before this lane; `if (noDistrictBasis && !hasDistrict)` after it). It reads ONE input — the zoning fact's `absence.kind` — and it fires before `hasDistrict`, before the chain setback rule, before the codified table lookup, and before anything the payload's record-composed zoning facet could contribute. A chain in this class therefore can never reach the P-249 `envelope-unverified` branch, no matter what district and table the same payload carries: the envelope status is decided one branch too early, and `facetsNeedLiveEnvelopeDerive` (live-envelope-augment.ts, which requires `envelope.status === \"ok\"` plus real setback scalars) is never allowed to fire, so no polygon is fetched and the panel draws nothing. Measured live on the XD-2 parcel at this checkpoint's close snapshot: the deployed panel still returns `facets.envelope = {\"status\":\"declined\",\"declineReason\":\"no-zoning-stamp\"}` while the SAME response carries `facets.zoning = {\"district\":\"R-1B\",\"jurisdictionKey\":\"waco-tx\"}` served by the parcel record (`readPath: record`) — the panel declines a district it is itself printing.\n\nThe class is a STAMP GAP, not a zoning absence, and the engine says so in its own words (evidence below). So the branch must instead ask the payload-level question the class never asked: is there a district anywhere in this payload and a complete setback table to model an inset from? Where yes, the envelope takes the P-249 branch unchanged (status \"ok\" so the live derive draws, `figureWithheld: true`, disclosure naming the unverified atom) with the record as the declared source of the scalars. Where no, the decline stands at `no-zoning-stamp` and the atom's own sentence is served unchanged. No district is ever derived, inferred or invented by the adapter: the only district this lane may use is the one the payload already serves in its zoning facet.",
+  "evidence": [
+    {
+      "claim": "The class predicate is a stamp gap by the engine's own account, not evidence that the parcel has no zoning.",
+      "file": "hauska-engine:packages/engine-core/src/property-reasoning/cascade-unzoned-envelope-decline.ts",
+      "lines": "25-31",
+      "quote": "\"the cascade targets every absence-zoning parcel county-wide, including parcels inside an incorporated city that IS zoned but simply has not been stamped yet (e.g. Smithville, pre-eCode360-adapter). For those parcels the original single-variant wording (\\\"unzoned jurisdiction - no district basis\\\") is FALSE - the jurisdiction is zoned, only unonboarded.\""
+    },
+    {
+      "claim": "Both cascade codes this lane adds to the class are real, exported engine constants with those exact spellings.",
+      "file": "hauska-engine:packages/engine-core/src/property-reasoning/cascade-unzoned-envelope-decline.ts",
+      "lines": "76, 91",
+      "quote": "export const UNZONED_NO_DISTRICT_BASIS_CODE = \"unzoned-no-district-basis\"; / export const NO_DISTRICT_ON_RECORD_CODE = \"no-district-on-record\";"
+    },
+    {
+      "claim": "`no-zoning-stamp` is the contract's ONLY zoning-absence kind, so the class's wire vocabulary is closed and enumerated rather than guessed.",
+      "file": "hauska-atom-contract:src/property/common.ts",
+      "lines": "58-62",
+      "quote": "\"/** Honest absence when no zoning polygon stamps the parcel. */ export const ZONING_ABSENCE_KIND = \"no-zoning-stamp\" as const;\""
+    },
+    {
+      "claim": "The live XD-2 chain: a breadth-bake honest absence on the zoning axis, a cascade decline on the envelope atom, no setback rule, no district on the chain.",
+      "file": "live read, `GET /api/spine/retrieval/property-nodes/48309:103015/atom-chain` (encoded as the `xd2WacoChain` fixture in the test file, atom keys verbatim)",
+      "lines": "atom-chain-to-facets.test.ts:2137-2162",
+      "quote": "zoningFact.absence = {kind: \"no-zoning-stamp\", reason: \"No zoning district observed for parcel - honest absence, no fallback district invented.\"}, fetchedAt 2026-07-24T19:33:06.683Z; buildableEnvelope.outcome = {kind: \"no-buildable-area\", reason: \"no district on record - jurisdiction not yet onboarded\"}, warmVerifyDeclineCode \"no-district-on-record\", fetchedAt 2026-08-04T22:48:56.070Z"
+    },
+    {
+      "claim": "The drawn polygon is only ever the live derive's, and the live derive is gated on the BAKED FACET envelope status (P-249 CP1 finding) — so a branch that declines the facet deletes the drawing.",
+      "file": "hauska-map:apps/property-explorer/src/lib/live-envelope-augment.ts",
+      "lines": "69-81",
+      "quote": "facetsNeedLiveEnvelopeDerive(): \"if (!env || env.status !== \\\"ok\\\") return false;\" then requires at least one real setback scalar."
+    },
+    {
+      "claim": "`setback-rule-pending` and its disclosure sentence are the file's EXISTING vocabulary for \"district, no served table\", so the partial-table case reuses a token the panel already renders rather than coining one.",
+      "file": "hauska-map:apps/property-explorer/api/_lib/atom-chain-to-facets.ts",
+      "lines": "2393-2404 (pre-existing fallback: `if (!envelope && !effectiveSetbacks)` -> declineReason \"setback-rule-pending\")",
+      "quote": "\"Setbacks pending re-warm from city per-parcel record - verify with city. Repealed or pre-layer-23 sources are not served.\""
+    },
+    {
+      "claim": "Downstream, the two class tokens already render as one honest state: the fact sheet collapses them into a single branch (the card's zoning row differs only in its absence LABEL, both ABSENT).",
+      "file": "hauska-map:apps/property-explorer/src/lib/fact-sheet-resolver.ts:1874 and src/lib/baked-facets.ts:867-871",
+      "lines": "1874; 867-871",
+      "quote": "`if (declineReason === \"no-zoning-stamp\" || declineReason === \"zoning-absent\")` -> the unincorporated/city-limits finding; `if (zoningDecline === \"no-zoning-stamp\") return absent(\"no zoning stamp here\")` else `if (zoningDecline === \"zoning-absent\" || ...) return absent(\"no zoning here\")`"
+    }
+  ],
+  "reasonList": {
+    "note": "Dispatch step 4: every reason string that reaches the `no-zoning-stamp` decline today, and whether it is a genuine absence. Each member is machine-readable in the code as NO_DISTRICT_DECLINE_SOURCES (atom-chain-to-facets.ts:1944), and the test asserts that every member routes the predicate AND that every member declares `genuineAbsence: false` (atom-chain-to-facets.test.ts, \"requirement 5\").",
+    "token": "no-zoning-stamp",
+    "verdict": "No input in this class proves the parcel has no zoning, so none is a genuine absence, and a district the payload already holds contradicts every one of them. The genuine-absence question is answered by the PAYLOAD (no district anywhere in it), never by any of these strings — which is exactly the test the rebuilt branch applies.",
+    "entries": [
+      {
+        "from": "zoning-absence-kind",
+        "value": "no-zoning-stamp",
+        "genuineAbsence": false,
+        "why": "The contract's only zoning-absence kind (ZONING_ABSENCE_KIND, hauska-atom-contract src/property/common.ts:59). It records that no zoning POLYGON stamped the parcel at bake time — the live XD-2 atom was extracted 2026-07-24 — not that the jurisdiction is unzoned.",
+        "liveExample": "48309:103015, whose record-composed zoning facet serves R-1B/waco-tx."
+      },
+      {
+        "from": "envelope-decline-code",
+        "value": "no-district-on-record",
+        "genuineAbsence": false,
+        "why": "Engine cascade code for the in-city-but-unonboarded cohort; its reason text is literally \"jurisdiction not yet onboarded\".",
+        "liveExample": "the XD-2 envelope atom itself."
+      },
+      {
+        "from": "envelope-decline-code",
+        "value": "unzoned-no-district-basis",
+        "genuineAbsence": false,
+        "why": "Engine cascade code for the unincorporated/no-situs-signal cohort. The only member that asserts \"unzoned\", and the engine's own doc comment says that wording was FALSE for cities and was split into two codes for that reason; it is a county-wide cascade inference from a postal-city proxy.",
+        "liveExample": "not read by this lane on a live parcel; the fixture and the engine source are the basis."
+      },
+      {
+        "from": "envelope-decline-reason",
+        "value": "unzoned",
+        "genuineAbsence": false,
+        "why": "Breadth-bake reason TEXT (the shared envelope-verification fixture's `unzoned` case, stated there as 208,868 of the 490,185 six-county atoms). The fixture's own note: it means \"unzoned\", not \"no buildable area\".",
+        "liveExample": "n/a (breadth-bake population, re-measured by P-255)."
+      },
+      {
+        "from": "envelope-decline-reason",
+        "value": "not onboarded",
+        "genuineAbsence": false,
+        "why": "Breadth-bake reason TEXT (the shared fixture's `not-onboarded` case, 153,775 of 490,185). An explicit onboarding gap; LDT's cortex route already draws this cohort.",
+        "liveExample": "n/a (breadth-bake population)."
+      },
+      {
+        "from": "zoning-absence-kind",
+        "value": "zoning-absent",
+        "genuineAbsence": false,
+        "why": "The adapter's OWN fallback token for a zoning absence whose kind was not recorded (produced at the `!hasDistrict` branch), not a wire value from any authority — absence of information.",
+        "liveExample": "the pre-P-303 routing of the fixture's `unzoned` case, measured in falsifier 3's reverted run: \"expected 'zoning-absent' to be 'no-zoning-stamp'\"."
+      }
+    ],
+    "boundary": {
+      "notInClass": [
+        "\"Setbacks consume the lot per engine calculation.\" — a verified/zero outcome, not a stamp gap (the fixture's verified cases).",
+        "the R32 mechanical-verify diagnostic (\"edge 1: R32 ... != expected ... for role side\") — a named validation-failed decline; a district stamp must never paper over it, and the test asserts the predicate rejects it.",
+        "\"superseded-prop-id\" and the pre-existing `setback-rule-pending` — separate declines with their own reasons."
+      ],
+      "whyItMatters": "These reach the same DECLINED envelope but not the `no-zoning-stamp` token; the class predicate is deliberately narrow (exact kinds + exact cascade codes + a text regex that does not match a validation-failed sentence), so a geometry complaint cannot be re-routed by a district."
+    }
+  },
+  "preRegisteredFalsifierAnswers": [
+    {
+      "falsifier": "1. A fixture payload with a zoning facet holding `R-1B` and a not-onboarded atom yields `status: ok`, `declineReason: envelope-unverified`, `figureWithheld: true` (test).",
+      "preRegisteredAnswer": "PASS, and by the meanest reading available: the atom's own DID is named in the disclosure and its own decline code appears with it, so the disclosure names the unverified atom rather than a generic sentence.",
+      "where": "atom-chain-to-facets.test.ts F1 + F1b (the drawn envelope is exactly what fires the live derive); envelope-verification-divergence.test.ts (the fixture's `not-onboarded` and `unzoned` cases through the adapter)."
+    },
+    {
+      "falsifier": "2. The same payload with the zoning facet absent yields `no-zoning-stamp` (test).",
+      "preRegisteredAnswer": "PASS, and it must hold for BOTH shapes of absence: no stamp passed at all, an empty stamp, and a district stamped with an incomplete axis table (which moves to `setback-rule-pending` rather than a `no-zoning-stamp` that is no longer true).",
+      "where": "atom-chain-to-facets.test.ts F2/F2b and the partial-table case; envelope-verification-divergence.test.ts (every declared case, no stamp -> nothing drawn)."
+    },
+    {
+      "falsifier": "3. Reverting the fix fails a test.",
+      "preRegisteredAnswer": "PASS expected by construction (the new suites name the new exports, so a revert cannot compile the tests), and to be MEASURED by reverting the three source files to the parent commit with the tests kept, not asserted.",
+      "where": "evidence file `_inbox/2026-09-17_p303-not-onboarded-decline_falsifier3-revert.txt`."
+    }
+  ],
+  "design": {
+    "oneBranch": "The decline branch keeps its position in the tree and changes only its guard: `noDistrictBasis && !hasDistrict` instead of `absenceKind === \"no-zoning-stamp\"`. A new sibling branch handles the stamped gap: `noDistrictBasis && recordDistrict` -> the P-249 branch shape (complete primary-axis table) or `setback-rule-pending` (district, no served table).",
+    "oneBranchShape": "`envelopeUnverifiedBranch()` is the single definition of the drawn-with-figure-withheld shape, used by both the P-249 branch and the stamped-gap branch so the two cannot drift on status/declineReason/figureWithheld; the P-249 disclosure string is byte-identical to the one that branch has served since P-249 (the panel's card and the share brief print it verbatim).",
+    "neverInvent": "`recordDistrict` is read from the payload's own record-composed zoning facet, only for a class member whose chain has no district of its own; a chain with its own district is untouched (test), and a chain outside the class is untouched (test).",
+    "sourceDeclaration": "`setbackSource: \"parcel-record\"` on the envelope marks the one branch whose scalars came from the record, so the record overlay does not claim the un-overridden axes are atom-chain-sourced on an envelope with no atom-chain axis left.",
+    "oneRecordRead": "pe-property-atoms.ts makes the one record read BEFORE the adaptation, passes it to the adapter and reuses the same result in applyRecordPatch; the read is charged only when the chain passes the adapter's usability gate, so the adapt-failed path pays no read it cannot use.",
+    "testPlan": "Encode the live XD-2 chain and the record stamp; pin falsifier 1 (drawn + withheld + atom named + the live derive fires), falsifier 2 (no district anywhere -> no draw, no invented district, the atom's own sentence served), the partial table, the second cascade code, the untouched own-district chain, and the inventory predicate. Then extend the SHARED fixture's divergence test to run every declared case through the decline branch, without editing the fixture or its casesSha256.",
+    "fixtureQuestion": {
+      "newCaseNeeded": false,
+      "why": "The fixture's `not-onboarded` case already declares this atom UNVERIFIED; what was missing was the test's REACH, not the fixture's coverage. The divergence test only ever asked the verification predicate, so no case ran through the decline branch at all. The new cases therefore assert routing over the existing set: only the two stamp-gap cases may be re-routed by a record stamp, and with no district in the payload every case still declines with nothing drawn. Adding a case would also mean editing LDT's byte-identical copy and its casesSha256, which this lane does not do."
+    }
+  },
+  "status": "complete"
+}
