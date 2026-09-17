@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (12:20Z, P-297 engine merged, four lanes compiled, A-203)
+last_updated: 2026-09-17 (12:40Z, P-297/P-299/P-258 deployed and verified)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -33,9 +33,9 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | Area | State |
 |---|---|
 | **Gate (P-252, P-292, P-293, P-298)** | **Live.** The apply graded PASS (06:55Z). P-298's index and scheduler image are deployed, a full six-county apply now takes 33 minutes (was 8h13m), and the scheduler takes its own lease. The hourly trigger was **resumed 11:54Z**; the 12:00Z run is watched and must end before 13:00Z. |
-| **Serving semantics (P-297)** | **Both halves merged** (LDT `dca5ec2e`, engine `3e6bbe95`), neither deployed. They deploy together in one `cortex-api` and retrieval-api release. Until then, law 7 holds: a slated rail reading `refuse` sends its county back to the bake. |
+| **Serving semantics (P-297)** | **LIVE (12:33Z)**, both halves: each slated parcel is served from its own cell. All 152 slated pairs read `pass` today, so no answer changed except empty or refused slated cells, which now refuse with a reason (graded on 7 parcels, 455 rails). Law 7's bake fallback is retired for slated rails. |
 | **Six-county republish** | **4 of 6 done.** Bastrop, Caldwell, McLennan: green walks, graded on the served row. Hays: written and store-accepted; its walk is red for a known reason (P-301). Travis: staging running. Williamson: queued, walk red expected, accepted store-side (operator call). |
-| **Setbacks (P-256, P-258, P-299, P-300)** | P-258 tables and P-299's height guard are **merged in LDT, not deployed**. Corpus **1.4.0** published. P-256 is **held** until P-297 is live (apply authorised with per-county ceilings, A-199). P-300 waits on P-256. |
+| **Setbacks (P-256, P-258, P-299, P-300)** | P-258 tables and P-299's height guard are **LIVE** (Round Rock: 24 districts served, no 999 height, 21 flagged not-specified; was 10 districts all serving 999). Corpus **1.4.0** published. P-256 is **held** until P-297 is live (apply authorised with per-county ceilings, A-199). P-300 waits on P-256. |
 | **Walk (P-301)** | Defect found today: the walk does not recognise P-206's `record_retired` 404, so Hays and Williamson walks cannot be green. **Fired** by the operator. |
 | **Austin zoning (P-259)** | Built and dry-run; **two rulings made** (A-202): interim `I-<X>` reads as `<X>` with a note; no-account features skipped. **Follow-up cleared to fire.** |
 | **Serving path (P-294, P-295)** | P-294 **merged, not deployed** (waits for the republish to finish). P-295's three rulings are made (A-199); its build is not started. |
@@ -47,11 +47,11 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 
 | Service | Revision | Built from | Carries |
 |---|---|---|---|
-| hauska-retrieval-api (us-central1) | `00096-div` | engine `b8ae82f` | P-293 vocabulary, P-205 coverage narrowing, P-210 |
+| hauska-retrieval-api (us-central1) | `00098-cat` (digest `b1489722`, 12:32Z) | engine `3e6bbe95` | P-297 engine half, P-293 vocabulary, P-205, P-210. Rollback: `00096-div` |
 | hauska-engine-api (us-central1) | `00247-san` | engine `d88cf65` | P-248, P-261 |
-| cortex-api, LDT (us-central1) | `00815-fiw` | LDT `9ce30b8` | P-293 reader. **Merged but not deployed:** P-258 tables, P-299, P-297 (LDT main `dca5ec2e`) |
+| cortex-api, LDT (us-central1) | `00817-niq` (digest `191c5c7a`, 12:33Z) | LDT `dca5ec2e` | P-297 LDT half, P-299 height guard, P-258 tables, P-293 reader. Rollback: `00815-fiw`. smartsite-mcp (`00134-wad`) reads cortex over HTTP, so it carries these without a deploy |
 | factory-control | `00008-vid` | factory `35007fb` | P-281 lease routes |
-| Factory jobs | gate scheduler, parcel-record-fill, flood-ingest, r4-companions: `34cf39e` (digest `83ab81e7`); publish, migrate, setback and envelope writers, conformant: `47c7dfc` | | P-252, P-292, P-281, P-284, P-298. Factory main is `3f3e8be` (P-294 and P-285 merged, not built) |
+| Factory jobs | gate scheduler, parcel-record-fill, flood-ingest, r4-companions: `34cf39e` (digest `83ab81e7`); publish, migrate, staging-reset, verify-walk, dollar-fields-patch, republish-on-change (new, dry-run args, no schedule): `b65f61b` (digest `f476f438`, 12:55Z); setback and envelope writers, conformant: `47c7dfc` | | P-252, P-292, P-281, P-284, P-298. Factory main is `3f3e8be` (P-294 and P-285 merged, not built) |
 | Factory store | index `parcel_record_cell_rail_place_idx`, 2.83 GB, valid | | P-298 |
 | npm | `@empressaio/setback-corpus@1.4.0` (latest) | corpus `f43cf4b7` | P-299 |
 | Cloud Scheduler | `factory-publish-gate-sched-hourly` **ENABLED** (resumed 11:54:05Z) | | |
@@ -74,6 +74,9 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | P-281 | Job and heavy-scan leases | **Live and proven** (A-195); the gate scheduler now takes one too |
 | P-284 | Stage cost and timing records | **Live and graded** |
 | P-293 (both halves) | Both verdict readers read all six verdict strings | Live |
+| P-297 (both halves, with P-269) | Each slated parcel served from its own cell | **Live** (retrieval `00098-cat`, cortex `00817-niq`, 12:33Z); graded on 7 parcels. Customer grade owed to P-254's legs |
+| P-299 | Height flag has one meaning; no placeholder height served | **Live** (cortex `00817-niq`; corpus 1.4.0). Engine bump to 1.4.0 still open |
+| P-258 (tables) | Setback campaign tables | **Live** (cortex `00817-niq`); writer re-run and census re-grade wait on P-256 |
 | P-298 | The scheduler reads one rail's slice and takes the lease | **Live and graded** (A-202): index built, image deployed, live plan uses the index, six counties in 33 minutes |
 | P-246, P-247, P-238, P-213, P-242b, P-242c, P-206 | Reports rows | Closed by the retired reports session (A-190) |
 
@@ -81,9 +84,6 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 
 | Row | What | Runs when |
 |---|---|---|
-| P-297 LDT half (with P-269) | Each slated parcel served from its own cell (LDT `dca5ec2e`) | With the engine half, one deploy |
-| P-299 | Height flag has one meaning; no placeholder height served (LDT `710d5bb7`; corpus 1.4.0 published) | The next `cortex-api` deploy. Engine bump to 1.4.0 still open |
-| P-258 | Setback campaign tables (LDT `44029db`) | The next `cortex-api` deploy |
 | P-294 | Republish a county when its ledger changed (factory `92c468e`) | After the republish: publish-image rebuild, schedule created (not enabled), one dry cycle; first automated production run on the operator's go |
 | P-285 | County runner (factory `3f3e8be`); Burnet dry run recorded | Burnet run, after the Phase 0 exit |
 
@@ -91,7 +91,6 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 
 | Row | What | State | Next |
 |---|---|---|---|
-| P-297 engine half | retrieval-api `/record` serves from the cell | **Merged** (engine `3e6bbe95`, #465) | One deploy of both halves (integration seat, next) |
 | P-259 follow-up | Interim districts read as base; no-account features skipped | **Cleared to fire** (`_dispatches/2026-09-17_p259b-interim-and-accounts_dispatch.md`); operator fires | Review, merge; the integration seat applies the Austin stamp and reruns the census |
 | P-266 with P-268 | Open trivial rails and must-pass refusals (factory) | **Compiled** (`_dispatches/2026-09-17_p266-p268-factory-open-rails_dispatch.md`); operator fires | Review, merge; the integration seat runs the writers per county |
 | P-275 | Live-currency checks for the other five counties (engine) | **Compiled** (`_dispatches/2026-09-17_p275-live-currency-five-counties_dispatch.md`); operator fires | Review; any reactivation needs the operator's authorisation of its count |
@@ -105,12 +104,12 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 
 | Row | What | Waiting on |
 |---|---|---|
-| LDT and engine deploy | P-258, P-299, P-297 (both halves) now; P-249 in its own deploy after its proof | **Ready**: both P-297 halves are merged. Integration seat, next |
+| P-249 deploy | Envelopes no longer hidden by unverified zeros (cortex, map) | Its staging proof (integration seat) |
 | P-249 | Unverified zero atoms stop hiding envelopes (LDT #701, map #409) | The integration seat's staging proof |
-| P-256 | Stop false "no setbacks required" (factory #160) | P-297 live; rebase on factory main; corpus pin to 1.3.0; apply within the per-county ceilings |
+| P-256 | Stop false "no setbacks required" (factory #160) | **Unblocked** (P-297 live). Integration seat: rebase on factory main, corpus pin to 1.3.0, apply within the per-county ceilings |
 | P-258 re-grade | Writer re-run and census re-grade | P-256's apply |
 | P-300 | City-wide default setback lines (Gholson first) | P-256 |
-| P-296 | ETJ rollout | P-297 live |
+| P-296 | ETJ rollout | **Unblocked** (P-297 live); dispatch owed. Its migration `0102` is still unapplied on production (deliberately skipped in the 12:33Z deploy) |
 | P-262 | One edge labeller (merged) | Graded by P-264 |
 | Engine corpus bump | Engine to corpus 1.4.0 with its 14 vendored tables corrected | Unassigned; from P-299's close |
 
@@ -130,9 +129,9 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 |---|---|
 | 1 | Confirm the 12:00Z gate run ends inside the hour; pause the trigger if not |
 | 2 | Finish the republish (Travis, Williamson), then rebuild the publish images (P-294), create its schedule without enabling it, run one dry cycle |
-| 3 | Review and merge the P-297 engine half and P-301 as they close; re-walk Hays and Williamson after P-301 |
-| 4 | P-249 staging proof, then one deploy: `cortex-api` (P-258, P-299, P-297, P-249), retrieval-api (P-297), and the map (P-249) |
-| 5 | P-256 integration and apply within the ceilings, then P-258's writer re-run and census re-grade; then dispatch P-300 and P-296 |
+| 3 | Review and merge P-301, P-259b, P-266/P-268, P-275, P-276 and P-302 as they close; re-walk Hays and Williamson after P-301; engine-api deploy after P-302 |
+| 4 | P-249 staging proof, then its cortex and map deploy (P-297, P-299 and P-258 deployed 12:33Z) |
+| 5 | **Now unblocked:** P-256 integration and apply within the ceilings, then P-258's writer re-run and census re-grade; then dispatch P-300 and P-296 |
 | 6 | Apply the Austin stamp after the P-259 follow-up; rerun the P-255 census |
 | 7 | Build P-254 (customer-surface legs, graded on `get_smart_site` and the served row, not the panel `bakedAt`) and P-286 |
 | 8 | Dispatch as lanes free: P-260, P-263 and P-264, P-266, P-268, P-270 to P-276, P-279, P-282, P-287, the P-291 note, the engine corpus bump |
@@ -142,12 +141,12 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | Group | Rows | Blocked on |
 |---|---|---|
 | Finish-line checks | P-254, P-286 | Nothing |
-| Setbacks | P-256, P-257, P-260, P-156, P-300 | P-256 needs P-297 live; P-257 needs P-256 and P-249; P-260 needs P-258 |
+| Setbacks | P-256, P-257, P-260, P-156, P-300 | P-257 needs P-256 and P-249; P-260 needs P-258 |
 | Zoning | P-259 follow-up and the Austin stamp | The follow-up lane |
 | Envelopes | P-249, P-263, P-264 | P-264 needs P-260 |
 | Hays and the ledger | P-211, P-265, P-266, P-268, P-204 | P-265 needs P-211 |
 | Ag valuation | P-267 | The Cotality contract |
-| What customers see | P-297 (deploy), P-270, P-271, P-272, P-217, P-209 | P-297 engine half |
+| What customers see | P-270, P-271, P-272, P-217, P-209 (P-297 live) | Nothing |
 | Walk and republish | P-301, the six-county republish | In flight |
 | Controls and cleanup | P-273, P-274, P-275, P-276, P-279, P-282, R-11 | Nothing |
 | Earlier rows | P-175, P-183, P-184, P-176, site-plan compose timeouts | Nothing |
@@ -214,3 +213,5 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | 2026-09-17 11:59 | Operator fired the P-297 engine half and P-301, and stopped the closed session 9d27b9bd. Commit `191825d7` records A-202 and the six lane closes (with P-299's 18 cited evidence files). All sections above the log rewritten to current state; a "Merged, not yet running" table added. The P-259 follow-up is ready to fire. |
 | 2026-09-17 12:01 | **The 12:00Z hourly gate run (`wspq2`) refused `LEASE_HELD` in 15 s**: the P-301 lane held a heavy-scan lease on the factory store for its read-only sweep measurement (refusal recorded 12:00:15.648Z). This is the first production contention since P-298, and the control behaved as designed: no scan and a recorded refusal. The cost is one skipped hourly verdict refresh; lane scans will keep causing that while they run. The lane's lease is released. The 13:00Z run is watched. |
 | 2026-09-17 12:19 | **P-297 engine half merged** (engine `3e6bbe95`); both halves on main, the deploy is next. P-259b cleared to fire (an earlier line here said fired; it was not). Operator chose four more lanes; P-266 with P-268, P-275, P-276 and the new P-302 are compiled (A-203). P-276's premise measured: six staging resets today left LDT's staging atoms secret byte-identical and connecting. The canon preamble's "unslated rails refuse" line is settled by the 2026-09-16 decision record ("until it is cut over"). |
+| 2026-09-17 12:35 | **Deployed and verified: P-297 (both halves), P-299, P-258 tables.** retrieval-api `00098-cat` (engine `3e6bbe95`) and cortex-api `00817-niq` (LDT `dca5ec2e`), each canary first under a traffic lease, with identical env and a new digest, then shifted. Serving revisions read by field; leases removed. Grades: `scripts`-style file instrument `record-compare.mjs` (self-test 7 of 7) PASS on 7 parcels canary and 5 live, with only the intended transitions (empty or refused slated cells record->refused); Round Rock local-setbacks live 24 districts, 0 at 999; facets identical on 7 parcels (every slated pair passes today); `get_smart_site` all sections present on 5. `run-migrations` skipped deliberately: no new migration since the serving commit, and it would have applied P-296's unapplied `0102_tx_etj_boundary` ahead of its staging step. **Findings:** the engine's vendored slate (152 pairs, vendored 2026-09-13) lacks LDT's six Hays record-overlay rails (P-177 hold lifted in LDT only), a paired-copy drift for P-282. Williamson probe `R352566` is a retired node (roll-membership retirement 2026-09-10). **Unblocked:** P-256 (needs P-297 live) and P-296. |
+| 2026-09-17 12:55 | **P-301 merged** (factory `b65f61b`) and the **publish images rebuilt** (build `0f4d9baf`, digest `f476f438`) on six jobs, read back by field; this creates `factory-republish-on-change` (P-294) with dry-run args and no schedule. Travis staging passed (2h14m, walk green, 873,766 rows); Travis production running. **Operator ruling (A-204):** P-256's pin moves to 1.4.0 and its integration is a seventh lane (`_dispatches/2026-09-17_p256b-pin-and-classification_dispatch.md`). LDT #701 (P-249) updated to main, CI running; map #409 current. |
