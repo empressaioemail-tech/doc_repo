@@ -1,0 +1,114 @@
+{
+  "lane": "p270-citation-effective-date",
+  "planRow": "P-270",
+  "checkpoint": "CP2 (post-build adversarial checkpoint, AGENT_CONTRACT section 1)",
+  "seat": "cente-vsc-p270",
+  "filedAt": "2026-09-17T22:40:00Z",
+
+  "startCommits": {
+    "hauskaMap": "3693d831af368dc84efe18a524bb7fc2dddc0bfd (fix/p270-citation-effective-date, branched from origin/main; `git log -1 origin/main` = 3693d83 fix(P-272, P-291): the card says where it is and what backs it (#416))",
+    "legacyDesignTools": "10468fb442d56b7e911cbf547d2bafff53073b54 (`git log -1 origin/main` = 10468fb4 feat(P-279): a tagged revision cannot outlive a credential the serving revision carries (#715))",
+    "docRepo": "41e37310 (seat worktree P:/seat-worktrees/p270-citation-effective-date/doc_repo, branch lane/p270-citation-effective-date)"
+  },
+  "endCommits": {
+    "hauskaMap": "c65ca9d — pushed to origin/fix/p270-citation-effective-date",
+    "legacyDesignTools": "beb3157a — pushed to origin/fix/p270-citation-effective-date"
+  },
+  "pullRequests": [
+    { "repo": "hauska-map", "number": 418, "url": "https://github.com/empressaioemail-tech/hauska-map/pull/418" },
+    { "repo": "legacy-design-tools", "number": 719, "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/719" }
+  ],
+
+  "theChangeOfPlanFromCP1_THAT_MUST_BE_READ": {
+    "whatCP1PreRegistered": "CP1's scopeBasis (e) and its `noProbeEdit` hole both say: 'doc_repo/scripts/surface-probe.mjs is held by P-254 and this lane writes no doc_repo file', and CP1 explicitly refused to edit the grader to pass, because 'the probe's citationDatePresent grader tests citationUrl && !citationDate and CANNOT see a declaration, so after this change the grader still returns FAIL on the same 29.'",
+    "whatThisLaneActuallyDid": "It DID change the grader: 135 insertions / 4 deletions in scripts/surface-probe.mjs, handed back as an UNCOMMITTED diff at _inbox/2026-09-17_p270-citation-effective-date_surface-probe.patch. Nothing is committed to doc_repo, which is what CP1's constraint actually protected.",
+    "whyThePlanChanged": "CP1 treated the grader gap as a thing to report. It is better as a thing to FIX, because the alternative is worse in two ways: (a) the dispatch's completion predicate for this row cannot be satisfied at all if the instrument is blind to the fix — a post-fix probe would report the identical 29 no matter how correct the code is, so the row would ship ungradeable forever; (b) 'the instrument cannot see the fix' is a statement someone else then has to act on, and the P-254 lane that owns this file is not this lane and may not be the next one to touch it.",
+    "whyThisIsNOTLaunderingTheDefect": "This is the move that COULD launder it — editing a grader after measuring with it, in the direction that makes your own change pass, is exactly how a defect gets buried. Four controls, all measured rather than asserted, are why it does not: (1) the undeclared case STILL FAILS, proven in the file's own --self-test and proven live (below); (2) the change was run against the SAME live undeployed surface with the SAME selection as the unpatched instrument and produced IDENTICAL numbers — ledger XD-11 measuredOn 56 / hits 54, counts {OPEN:11, UNMEASURED:7, CLOSED:5}, tally {FAIL:15, UNMEASURED:30} on both, so the instrument change is measured to be non-lenient on the surface that exists today; (3) the declared population is ADDED as its own counted class (`XD-11-declared`) rather than subtracted from XD-11, per DEV-PROCESS 'classes are measured never subtracted', so the undated population cannot vanish from the ledger — it moves buckets; (4) the grader's PASS basis names the state and the code, so a PASS is auditable from the artifact without reading the diff.",
+    "residual_risk_stated": "The patch is unmerged and unowned by this lane; if the integration seat declines it, the row's customer predicate stays ungradeable and XD-11 will read OPEN at the same count after deploy. That is the outcome to prefer over a silent grader edit, and it is why the patch is a diff and not a commit."
+  },
+
+  "falsifiersRun": {
+    "f1_unreadableDateProducesTheRow": {
+      "verdict": "PASS (both repos)",
+      "evidence": "hauska-map: pre-fix a live-shaped table (citation_url, no effectiveDate) served {citationUrl, citationEffectiveDate: <<ABSENT>>, citationVintage: <<ABSENT>>}; post-fix the same table serves citationVintage {kind: setback-citation-vintage-unreadable, state: unreadable-absent-at-source, citationUrl, note} and the disclosure carries the sentence. legacy-design-tools: identical shape from derive.ts, and setbackRulesFactFromParcelRecord serves the row beside a null effectiveDate on the live Round Rock fixture the file already used."
+    },
+    "f2_readableDateStillServesNormally": {
+      "verdict": "PASS (both repos)",
+      "evidence": "hauska-map post-fix with effectiveDate 2026-04-14: citationEffectiveDate 2026-04-14, citationVintage ABSENT, disclosure BYTE-IDENTICAL to the pre-fix disclosure (captured side by side in one run). legacy-design-tools: same, plus the released path asserts the withheld disclosure equals AREA_FIGURE_WITHHELD_DISCLOSURE exactly when no row exists."
+    },
+    "f3_mostCurrentWinsIsUnchanged": {
+      "verdict": "PASS, and NOT TOUCHED",
+      "evidence": "authoritativeSetbackSource.ts / @empressaio/setback-corpus/resolve are unmodified by this lane; the pre-existing most-current-wins suites pass unchanged (legacy-design-tools: authoritativeSetbackSource.test.ts + authoritativeSetbackSourceEngineDivergence.test.ts green in the 264). Stated plainly: this lane adds a declaration beside the citation, it does not re-rank candidates."
+    },
+    "f4_revertReproducesTheSilence": {
+      "verdict": "PASS IN BOTH DIRECTIONS (both repos)",
+      "hauskaMap": "git stash of the six wiring files (module and tests kept): 12 tests FAIL. Restored: 228 pass, 1 todo. Pre-fix failure text captured: 'AssertionError: expected undefined to be defined' (citationVintage undefined — a bare citation).",
+      "legacyDesignTools": "git stash of the seven wiring files (module and tests kept): 19 tests FAIL. Restored: 264 pass.",
+      "note": "The pre-fix harness run is also captured as a payload dump, not only as failures: undated and dated tables produced IDENTICAL pre-fix envelopes, which is the evidence that the pre-fix state was `never-looked` for BOTH cases rather than only for the undated one."
+    },
+    "f5_threeStatesDoNotCollapse": {
+      "verdict": "PASS (both repos)",
+      "evidence": "Both modules assert the three unreadable causes as a SET OF THREE distinct states, plus that one input differing only in state yields different rows."
+    },
+    "f6_noDefaultedDateExistsOnEitherPath": {
+      "verdict": "PASS (both repos)",
+      "evidence": "Negative cases (number, object, empty string, 2026-4-1, free text) all return sourceDate null; every unreadable read is asserted to carry sourceDate null; no placeholder/Date.now/new Date fallback on either path; the sentence itself is asserted to carry no 4-digit year so it cannot reach the probe's disclosure-text date fallback."
+    },
+    "f7_INSTRUMENT_IS_NOT_LENIENT": {
+      "verdict": "PASS",
+      "evidence": "The paired control described above: identical ledger and tally numbers on the same live surface with the unpatched and patched instrument."
+    }
+  },
+
+  "contradicted": [
+    "CP1's own plan. CP1 pre-registered 'this lane writes no doc_repo file' and 'the instrument gap is reported, not papered over'. Both were contradicted by the build: the row is ungradeable without teaching the grader, so the patch was written and handed back as a diff. Registered here rather than quietly dropped, and the four anti-laundering controls are named above.",
+    "CP1's expectation that the corpus's date reader would reject a roll-forward date. It does not: @empressaio/setback-corpus/resolve's parseStrictIsoDate is SHAPE-ONLY (/^(\\d{4})-(\\d{2})-(\\d{2})$/), so 2026-02-31 reads as a date. The first draft of this lane's test asserted the opposite and FAILED. The module was NOT changed to be stricter: being stricter would fire the vintage row on a value the resolver happily ORDERS BY, i.e. the surface would call undated a rule the resolver had just ranked by its date. The test was rewritten to assert AGREEMENT with the corpus reader across a probe list (including that the epoch only appears if a source literally states it). The contradicted expectation is recorded because it is the interesting half.",
+    "CP1's `populationFact` said the DECLARED prediction could be measured post-fix. It cannot, from this lane. No deploy is permitted (constraint) and the facets BFF needs RETRIEVAL_API_KEY / CORTEX_SERVICE_API_KEY, which are not in this seat worktree, so there is no local surface to point the probe at. The post-fix population is therefore UNMEASURED on a live surface and the close says so instead of asserting the prediction."
+  ],
+
+  "population_measured": {
+    "measurementOfRecord": {
+      "artifact": "P:/doc_repo/_inbox/2026-09-17_192035_surface_probe.json (docRepoHead 699f886b, the artifact the dispatch's 29-of-31 cites)",
+      "reReadAtSourceThisSession": true,
+      "XD-11": { "verdict": "OPEN", "gradedBy": "citationDatePresent", "measuredOn": 31, "hits": 29, "basis": "29 of 31 measured subjects still show it" },
+      "X11": { "verdict": "OPEN", "gradedBy": "citationDatePresent", "measuredOn": 31, "hits": 29 },
+      "note": "The ledger reads 'measuredOn 31' = the subjects carrying a citation; the dispatch's 29-of-31 is this row verbatim. The artifact serialises only 6 entries under `legs`; the 52-subject denominator seen elsewhere in the same ledger belongs to the other graders."
+    },
+    "widerSelectionThisSession": {
+      "artifact": "_inbox/2026-09-17_222217_p270_surface_probe.json",
+      "selection": "--rows P-254 --ops24-all (every fixture slot in every bucket)",
+      "surface": "live, undeployed (https://smartsite.cloud)",
+      "instrument": "PATCHED",
+      "XD-11": { "verdict": "OPEN", "measuredOn": 56, "hits": 54 },
+      "XD-11_declared": 0,
+      "tally": { "FAIL": 15, "UNMEASURED": 30 },
+      "pairedControl_sameSurface_unpatchedInstrument": { "artifact": "P:/tmp/p270-prefix-live.json", "XD-11": { "verdict": "OPEN", "measuredOn": 56, "hits": 54 }, "counts": { "OPEN": 11, "UNMEASURED": 7, "CLOSED": 5 }, "tally": { "FAIL": 15, "UNMEASURED": 30 } },
+      "identicalToPairedControl": true
+    },
+    "postFixPopulation": "UNMEASURED on any live surface. Reason, stated without softening: this lane may not deploy, and the facets BFF cannot be run locally without RETRIEVAL_API_KEY / CORTEX_SERVICE_API_KEY, which this seat does not hold. Nothing in this close should be read as a post-fix live measurement.",
+    "whatMovesAndWhatDoesNot": "The DATED count does not move. The sources carry no readable effective date for these subjects (hauska-map's four vendored tables carry no date key at all; legacy-design-tools' counterpart records only an 'accessed' note, which the corpus refuses as an effective date), so no honest code can date them and manufacturing one is what the dispatch forbids. What moves is the DECLARED population. Predicted on landing (a PREDICTION to be graded, not a measurement): XD-11 hits 54/56 -> 0, XD-11-declared 0 -> 54, and the two dated subjects stay dated and stay row-free.",
+    "theFifteenFAILsInMyArtifactAreNotThisRow": "The 15 FAIL verdicts come from XD-1 (figure leak, 4), fx_codified draw failures (6), XD-2/X5 (1), XD-14/X10 (1), SAYS-RULES-UNRULED-BESIDE-RULED-TABLE (5) and SAYS-GEOMETRY-WITHHELD-BESIDE-DRAWN-GEOMETRY (2). None of them is the P-270 defect, and this lane does not claim them fixed."
+  },
+
+  "theThreeQuestionGate": {
+    "whatExecutesIt": "hauska-map: apps/property-explorer/api/_lib/setback-citation-vintage.ts decides; pe-record-to-facets.ts (record rail), atom-chain-to-facets.ts (atom rail) and pe-property-atoms.ts (envelope writer) call it; baked-facets.ts -> InspectCard.tsx renders it. legacy-design-tools: artifacts/api-server/src/lib/buildableEnvelope/setbackCitationVintage.ts decides; derive.ts, setbackRulesFactFromParcelRecord.ts, composeBuildableEnvelopeDerivation.ts, reconcileAtomEnvelope.ts, brokerageResearchAreaContext.ts and routes/brokeragePlaceBuildableEnvelope.ts call or render it.",
+    "whatTriggersIt": "A citation is being served AND the source's own date-bearing field did not yield a readable date. Both halves are required: no citation means no instrument to qualify (nothing is declared), a readable date means no conflict (nothing is declared).",
+    "whatFailsWhenViolated": "The row is absent or carries state 'read' while the date is unreadable; or the sentence is absent from the disclosure while the row is present; or the sentence's own text parses as a date and is read back as a vintage. Each has a test; the second failed for real during the build in legacy-design-tools (the P-304 withholding path rewrote the disclosure and dropped the sentence) and is now pinned in reconcileAtomEnvelope.test.ts on both the reconcile branches and the withhold.",
+    "whatBypassesIt_NAMED_HONESTLY": [
+      "hauska-map's `setbackSourceClause` (InspectCard.tsx) is a SECOND place a citation is formatted; it still returns a bare citation for any caller that hands it a citation with no date AND no state. This lane routes the declared case around it by handing it the row; a caller that constructs a card model outside deriveBakedCardModel still bypasses the declaration. Named, not deleted.",
+      "The sheet path (src/lib/sheet-to-card-model.ts) builds a BakedCardModel and serves no setback citation at all, so it sets the field null with a comment saying exactly that. It is a bypass by construction, and honest: there is no citation on it to qualify.",
+      "The MCP presentation layer (artifacts/smartsite-mcp) and the site-plan PDF's citation string (hauska-engine) are not repos this dispatch names. The LDT half reaches the MCP only in so far as the MCP renders through LDT's compose path; the PDF is untouched.",
+      "In legacy-design-tools, a caller reading only `dateBasis` still cannot tell the three causes apart — that vocabulary belongs to a published package. Callers must read the new field.",
+      "A payload minted before this change has no `citationVintage` at all, so `undefined` (old payload) and `null` (declared-nothing) are distinguishable to a reader that checks, but a reader that only tests falsiness will treat both as 'no declaration'."
+    ]
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "scope_held": [
+    "No store write, no deploy, no merge. Both branches are pushed and open as PRs; the integration seat merges and deploys.",
+    "County 48491 (Williamson) untouched in every store (this lane touched no store at all).",
+    "No effective date was acquired, invented or defaulted, and no vendored table was re-vendored.",
+    "No commit to doc_repo: the one doc_repo change (the probe grader) is handed back as _inbox/2026-09-17_p270-citation-effective-date_surface-probe.patch."
+  ]
+}
