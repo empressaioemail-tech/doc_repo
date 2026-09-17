@@ -1,0 +1,134 @@
+{
+  "lane": "card-truth-p270-p272-p291",
+  "planRows": ["P-270", "P-272", "P-291"],
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-17T20:30:00Z",
+  "dispatch": "_dispatches/2026-09-17_card-truth-p270-p272-p291_dispatch.md",
+  "seat": "card-truth-lane",
+  "fanDepth": 0,
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "laneClaim": {
+    "command": "node scripts/lane-claim.mjs claim --lane card-truth-p270-p272-p291 --seat card-truth-lane --plan-row P-270 --dispatch _dispatches/2026-09-17_card-truth-p270-p272-p291_dispatch.md",
+    "exitCode": 0,
+    "registryBefore": "the only open claim in this worktree's _catalog/lane_claims.json was p249-envelope-unlock (seat p249-lane, 2026-09-16T17:44:37Z)",
+    "secondSearchNet": "rg -l 'card-truth' over P:/doc_repo, P:/seat-worktrees and P:/agent-worktrees returned exactly TWO files before this lane started: the dispatch itself and _catalog/dispatch_missions/mission_card_truth_p270_p272_p291.md. No other seat had claimed or written this lane.",
+    "note": "The seat worktree P:/seat-worktrees/card-truth-p270-p272-p291/doc_repo and branch lane/card-truth-p270-p272-p291 are on the FAN-DEPTH 0 wave's naming convention (compare lane/p271-williamson-identity). At the moment this lane created them the branch already existed at 7e8572c4 with a clean tree and no _inbox artefact of this lane: no prior session had done any work under it."
+  },
+
+  "artifactRoot": {
+    "seatWorktree": "P:/seat-worktrees/card-truth-p270-p272-p291/doc_repo",
+    "branch": "lane/card-truth-p270-p272-p291",
+    "why": "This session was handed the dispatch by the operator with no doc_repo worktree rooted in it (the shell cwd is C:/Users/cente). The dispatch's own rule is that artefacts land in the worktree the running session is rooted in, and that P:/doc_repo is the integration seat's checkout and never the target. A dedicated lane worktree is therefore created and used; nothing is written to P:/doc_repo."
+  },
+
+  "clones": [
+    {
+      "repo": "empressaioemail-tech/hauska-map",
+      "path": "P:/tmp/card-truth-hauska-map",
+      "branch": "fix/card-truth-p270-p272-p291",
+      "startCommit": "ab77be9adabb53b61ce944b01e72b086b4128383",
+      "compileShaInDispatch": "3ee35d5e",
+      "registration": "to be added to _catalog/seat_register.json under the property seat and removed at close, per dispatch"
+    },
+    {
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "path": "P:/tmp/card-truth-ldt",
+      "branch": "fix/card-truth-p270-p272-p291",
+      "startCommit": "7219b707ed88744053bad24f16f63761426fc356",
+      "compileShaInDispatch": "7219b707",
+      "registration": "to be added to _catalog/seat_register.json under the property seat and removed at close, per dispatch"
+    }
+  ],
+
+  "briefCorrections": [
+    {
+      "field": "Where you work / hauska-map main",
+      "dispatchSays": "main `3ee35d5e` at compile",
+      "atSource": "origin/main is ab77be9a (git ls-remote, 2026-09-17 ~20:05Z). The two commits between are 86fe8e7 and merge ab77be9a, PR #412 `ci/p318-required-check-can-run`, touching exactly ONE file: .github/workflows/property-explorer-ci.yml (+10/-1).",
+      "disposition": "Benign. P-318's lane landed its workflow change (the dispatch names P-318 as holding hauska-map/.github/workflows/**). The lane is branched from ab77be9a, NOT 3ee35d5e, because branching from a stale main would revert P-318's fix on merge. No card-truth work had already landed.",
+      "evidence": "git -C P:/tmp/card-truth-hauska-map log --oneline 3ee35d5e..HEAD; git diff --stat 3ee35d5e..ab77be9a"
+    },
+    {
+      "field": "legacy-design-tools main",
+      "dispatchSays": "main `7219b707` at compile",
+      "atSource": "origin/main IS 7219b707. No correction.",
+      "disposition": "n/a"
+    },
+    {
+      "field": "P-291 plan row repo field",
+      "dispatchSays": "PLAN-ROW P-291 (OPS-16) names hauska-engine and legacy-design-tools as its repos",
+      "atSource": "This dispatch's own mission section overrides to `hauska-map and legacy-design-tools`, and the stated done-condition is a card statement + an MCP payload statement.",
+      "disposition": "Following the dispatch. hauska-engine is NOT touched, which is narrowest and consistent with 'you are NOT moving Bell off the bake'."
+    }
+  ],
+
+  "P272_gateIdentified": {
+    "theGate": "apps/property-explorer/src/lib/fact-sheet-resolver.ts, PeFactSheetResolver.resolveGeometry (steps 2 and 2b) plus the seed chain above them.",
+    "whyItIsCoupled": "Placement is seed-first: (0) caller hint rings, (1) baked envelope geojson, (1.5) the record's OWN cityLimitsFact.queryPoint, (1.6) PE's situs-search keyed on the composed situs address, (2) the backend address->point resolution, (2b) geocode. Steps (2) and (2b) are literally gated `identity.situsAddress.state === \"present\" && isUsableSitusAddress(...)`, and steps (1.6)/(2) are addressed through composedSitusAddress(facets). So when a parcel carries neither a baked ring nor a record coordinate, the situs IS the seed. A situs reading `, ,` is rejected by isUsableSitusAddress (street part is empty), so identityFacts() writes it as an absence, steps (1.6), (2) and (2b) are all skipped, `rings` stays empty, buildParcelGeometry({rings: [], centroidFallback: null}) returns null, and the resolver returns UnplaceableParcel. The card renders 'cannot be placed on the map' and the envelope is never drawn, even though the zoning and the setback table both resolved.",
+    "couplingIsNotIncidental": "The situs is the ONLY address-keyed handle the surface holds for a parcel the bake never mapped. There is no parcel-node-id -> coordinate route in this repo (the live parcel layer is called with a bbox built around a seed: resolveGeometry step 3). So the address is load-bearing for geometry, not merely for display.",
+    "whyItWasCoupled_evidence": "The P-151 comment block at fact-sheet-resolver.ts:449-458 states that composition exists 'ONLY for an outbound network call (geocode / situs-search / buildable-envelope-by-address) - never for what identity.situsAddress displays elsewhere'. The display side and the placement side were deliberately split, and the placement side is the one that carries the address dependency.",
+    "lineNumbersAtStartCommit": {
+      "isUsableSitusAddress": "fact-sheet-resolver.ts:438-446",
+      "composedSitusAddress": "fact-sheet-resolver.ts:459-470",
+      "identityFacts_situsAddress": "fact-sheet-resolver.ts:489-495",
+      "resolveGeometry_step2_gate": "fact-sheet-resolver.ts:2963-3011",
+      "resolveGeometry_step2b_gate": "fact-sheet-resolver.ts:3021-3041",
+      "unplaceable_return": "fact-sheet-resolver.ts:2713-2727",
+      "duplicate_gate_and_composer": "live-envelope-augment.ts:37-46, 55-66, 113-129"
+    }
+  },
+
+  "P270_rootCauses": [
+    {
+      "defect": "XD-8 card does not name the governing city",
+      "where": "apps/property-explorer/src/lib/fact-sheet-resolver.ts#identityFacts (line ~489) puts the RAW baseFacts.situsAddress on the sheet's identity, and apps/property-explorer/src/lib/sheet-to-card-model.ts:787 copies it straight to the card. Travis stores the city on a separate field, so the card shows '203 E OXFORD DR' and the county, and never 'PFLUGERVILLE' or '78660'. The ledger fields situsCity/situsZip exist on baseFacts (baked-facets.ts:73-74 declares situsCity/situsState; situsZip is not declared at all).",
+      "fix": "Declare situsZip on BakedFacetPayload.baseFacts; plumb it through every facets producer; compose the DISPLAY address line from situsAddress + situsCity + situsState + situsZip at the one place identity is built. The existing deliberate rule 'cityLimits is never populated from situsCity' is a statement about the cityLimits/ETJ FACET (legal jurisdiction) and is preserved untouched - the mailing address line is a different field and P-270 explicitly orders it taken from the ledger."
+    },
+    {
+      "defect": "XD-8b zoning/setback rows do not name the jurisdiction",
+      "where": "The card's zoning facet is `facetFrom(sheet.zoning, (v) => v.code)` (sheet-to-card-model.ts:795) - the district code with no jurisdiction. The ledger holds zoningJurisdictionKey.",
+      "fix": "Render the district with its governing jurisdiction name resolved from the ledger's jurisdiction key, from one shared formatter, on the card. Fall back to the existing district-only string when the key is absent rather than inventing a jurisdiction."
+    },
+    {
+      "defect": "XD-11 setback citation carries no effective date",
+      "where": "apps/property-explorer/api/_lib/setback-tables/pflugerville-tx.json carries `section_number`, `quote`, `confidence`, `verification_state` and `citation_url` per axis, and NO effective/amended date anywhere. Its `note` records the RETRIEVAL date ('accessed 2026-07-21/23'), which is not an effective date. The renderer (api/_lib/setback-not-specified.ts#formatGovernedByFragment) prints 'value / X governs (§4.2.4)' with no date.",
+      "fix": "Add an `effective_date` carrying field to the table schema and render 'as of <date>' when present. Where a table carries no readable date, emit the declared 'effective date unreadable' row rather than a blank - and do NOT invent a date. The 2026-09-11 most-current-source ruling is explicit that an unreadable date produces a declared conflict row, never a silent pick, and DEV_PROCESS 3.2a forbids manufacturing a citation."
+    }
+  ],
+
+  "P291_design": {
+    "shape": "One exported constant in one module per repo, read by every surface that renders it, plus a county predicate. hauska-map: the card. LDT: the MCP payload (get_smart_site).",
+    "gradedSix": "the six counties this program grades; a bake-only county is any county in Tier-1 bake rows that is NOT one of the six. Bell (48027) is the named fixture; Bastrop (48021) is the negative control.",
+    "whatIsNotChanged": "Nothing about what is served. No value, disposition or geometry changes. The statement is additive on the surface.",
+    "openQuestion_namedNotGuessed": "The card model carries countyFips/countyName but no bake-vs-ledger provenance flag today. The predicate therefore keys on the county, which is what A-184's wording ('thirteen counties outside the six') actually scopes. A county that has since been migrated to the ledger without leaving the set would over-print; P-230/D1 owns the bake-vs-ledger label. Named here so the limitation is not discovered later."
+  },
+
+  "preregisteredFalsifiers": [
+    "A Pflugerville fixture renders its own city and ZIP from the ledger, and a parcel in another city renders that city (the string is not hardcoded anywhere).",
+    "A setback citation with no readable effective date renders the declared conflict row, and one with a date renders the date (both by test).",
+    "A `\", ,\"` situs fixture draws its envelope and prints \"address unreadable\"; reverting the change fails that test.",
+    "A Bell (48027) fixture carries the \"not yet verified\" statement; a Bastrop (48021) fixture does not; the statement exists in exactly one place in each repo."
+  ],
+
+  "filesPlanned_hauska-map": [
+    "apps/property-explorer/src/lib/card-truth.ts (new: the one wording module)",
+    "apps/property-explorer/src/lib/card-truth.test.ts (new)",
+    "apps/property-explorer/src/lib/baked-facets.ts (baseFacts.situsZip; card model fields)",
+    "apps/property-explorer/src/lib/fact-sheet-resolver.ts (identity address line; zoning jurisdiction; seed chain)",
+    "apps/property-explorer/src/lib/live-envelope-augment.ts (malformed situs must not block derive)",
+    "apps/property-explorer/src/lib/sheet-to-card-model.ts (project new fields)",
+    "apps/property-explorer/api/_lib/setback-not-specified.ts (effective date / date-unreadable row)",
+    "apps/property-explorer/api/_lib/setback-tables/schema.json + a table carrying a date (positive control)"
+  ],
+
+  "conflictsAndNonOverlap": {
+    "P318_workflows": "No workflow file is touched by this lane.",
+    "P254_surface_probe": "No doc_repo file is written by this lane except its own CP1/CP2/close under _inbox/.",
+    "P271_williamson_identity": "No parcel identity and no bake change here; this lane owns the card text and the placement seed only.",
+    "P297_serve_switch": "This lane writes no store and no cell, so the 'unaccounted cell turns a county back to the bake' hazard does not arise.",
+    "P304_P303": "Neither the buildable-area figure nor the not-onboarded class is re-opened; the withheld-figure branch (figureWithheld) is read, never re-decided."
+  },
+
+  "planForCP2": "Implement hauska-map first (the card), then the LDT MCP payload and its own setback citation path. Each falsifier is written as a test that FAILS before the change and PASSES after, and the revert direction is exercised for falsifier 3. Land one PR per repo, no merge, no deploy, and report each CI check's literal conclusion string in the close."
+}
