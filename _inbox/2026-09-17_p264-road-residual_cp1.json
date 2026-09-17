@@ -64,13 +64,19 @@
       "measurement": "packages/engine-core/src/depth-warm/warm-then-verify.ts already orchestrates computeWarmCandidate -> verifyWarmCandidateMechanically, consume.ts already exposes computeWarmCandidateFromBoundary, and scripts/depth-warm-city-batch.mjs already assembles per-parcel inputs from live sources and emits per-parcel decline buckets. P-262's labeller is a separate pass that runs AFTER the derive (re-labelling on stored geometry, no re-derive), and geometry/envelope-ground-truth.ts already owns the P1/P2/P3 predicates.",
       "status": "MEASURED (read)",
       "consequence": "P-264 must AGGREGATE the existing derive's refusal taxonomy into the per-city residual, not write a third derive. A parallel derive would also make the residual unfalsifiable against production."
+    },
+    {
+      "claim": "BLOCKING FINDING: road-CLASS already has its own refusal bucket, but road-NAME does not exist as a bucket at all, so the split the dispatch requires cannot be read off the shipped artifact as-is.",
+      "measurement": "bucketVerifyFailReasons (src/depth-warm/honest-decline-promote.ts:271-298) returns 'road-classification-mismatch' when reason text contains both 'classification' and 'osm'. There is no road-name bucket. Road-name matching exists but its failures collapse into other buckets: streetNamesMatchForFacesAnswer (cert-equivalent-gates.ts:47) and nearestRoadNameForEdge (edgeLabeling.ts:520) feed the ordered cascade at honest-decline-promote.ts:282, which returns 'front-orientation' on any reason text containing 'orientation' OR 'front', and :285 'faces-answer' on 'facesanswer' OR 'situs'. Road availability is separately bucketed as 'no-roads-available' (edgeLabeling.ts:676) and 'no-road-adjacency'.",
+      "status": "MEASURED (read)",
+      "consequence": "Two consequences. (1) 'road-name vs road-class residual split' is not a reporting exercise over existing output; P-264 must introduce the road-name distinction at the single source that maps reason text to bucket, otherwise it will have to string-split downstream, which is exactly the duplication the one-implementation rule forbids. (2) The 'front' substring test at :282 is broad and is evaluated before the r32/geometry/setback branches, so the existing 'front-orientation' bucket is over-broad and plausibly absorbs setback and geometry reasons that merely mention a front. Any road-name figure derived by reusing 'front-orientation' would be inflated. This is the same class of defect as an absent classification, and it is the specific hazard the dispatch's by-violation check exists to catch."
     }
   ],
 
   "designDecision": {
     "decision": "Build P-264 as an aggregation instrument over the existing depth-warm derive refusal taxonomy, not as a new derive.",
     "rationale": "DEV-PROCESS measuring-classes-directly and one-implementation rules; a second derive would both duplicate and diverge from the shipped path, and its residual would not be attributable to production behaviour.",
-    "openQuestion": "Whether the existing batch runner's decline buckets separate road-NAME from road-CLASS, or collapse them. If they collapse, P-264 must extend the bucket spelling at the single source rather than post-split on strings."
+    "openQuestion": "RESOLVED by recon: the existing buckets do NOT separate road-name from road-class. Road-class has a bucket; road-name has none and its failures collapse into the over-broad 'front-orientation'/'faces-answer' buckets. The road-name distinction must therefore be added at honest-decline-promote.ts (the single source mapping reason text to bucket), before any per-city residual is computable."
   },
 
   "preRegisteredFalsifiers": [
