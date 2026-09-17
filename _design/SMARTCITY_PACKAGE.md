@@ -51,7 +51,7 @@ blocks them rather than one row per folder:
 | G-150 | Reasoner path (`plan-review`) | **nothing, runs in parallel** |
 | G-151 | Parks | D-12 only |
 | G-152 | Public works, Fire and EMS | D-12 only |
-| G-153 | Fleet, Police | D-12 **and the operator-namespace ruling, which does not exist** |
+| G-153 | Fleet, Police | D-12 only — **namespace ruling landed 2026-09-17** |
 | G-154 | Development services delta | D-12 only |
 | G-155 | Smart Files (`smart-files`) | **nothing, runs in parallel** |
 | G-156 | Finance lens | D-12 **and an operator scope call** |
@@ -64,9 +64,18 @@ answer was wrong: every lens design draws its own blocked state as design conten
 Public works, Police and Parks all ship without GoTo, FirstDue, Verkada or a Parks vendor. The
 vendor work is separate and is G-139's row, not theirs.
 
-**Two operator items gate real work:** the operator-namespace ruling (is `OPR-01` the same person in
-Fleet and in Police) and the Finance scope call (does Finance ship in the Bastrop phase-1 package,
-when the first cohort is Development Services staff). Both are cheap and both block a carded row.
+**One operator item still gates real work:** the Finance scope call (does Finance ship in the Bastrop
+phase-1 package, when the first cohort is Development Services staff). G-156.
+
+**The operator-namespace ruling landed 2026-09-17**
+(`_decisions/2026-09-17_operator_reference_namespaced_by_domain.md`): operator references are
+namespaced by domain, Fleet mints `FL-OPR-nn` and Police `PV-OPR-nn`, and a bare `OPR-01` is no
+longer valid anywhere. It is a privacy decision, not a schema one: `operatorRef` is a pseudonym for a
+real person, both feeds answer live, and a shared pseudonym would link one employee's fleet activity
+to their patrol activity. It was ruled now because `operatorRef` occurs zero times in
+`vendor-live.mjs` today, so nothing is minting references yet and the scheme is still a constant
+rather than a migration. The change lands inside G-153; the design regeneration that follows is
+planner-owned and the extraction trap in `smartcity-fleet-lens/check.mjs:154` is named on that row.
 
 ## The three links
 
