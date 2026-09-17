@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (00:26Z)
+last_updated: 2026-09-17 (00:44Z, session close)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -28,11 +28,11 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 *In flight* means a lane or a job is working it. *Held* means ready and deliberately not applied.
 *Not started* means carded and not dispatched.
 
-## Where things stand (2026-09-17 00:04Z)
+## Where things stand (2026-09-17 00:42Z, at session close)
 
 | Area | State |
 |---|---|
-| **Gate (P-252, P-292, P-293)** | All three merged and every reader is live. Migration `0011a` applied. The new gate scheduler is **applying now** (`factory-publish-gate-sched-8x4jk`): four of six counties grade clean against the prediction, Travis is two-thirds done, Williamson is next. The hourly trigger is **paused** until the grade passes. |
+| **Gate (P-252, P-292, P-293)** | All three merged and every reader is live. Migration `0011a` applied. The new gate scheduler is **applying now** (`factory-publish-gate-sched-8x4jk`): four of six counties grade clean against the prediction, Travis 55 of 65, Williamson next. The hourly trigger is **paused** until the grade passes; the integration seat's factory-store lease expires 02:40Z (handle in `P:/tmp/integration-handoff/p252-apply-lease.json`). |
 | **Serving semantics (P-297)** | **Ruled** (A-193): the county verdict is a grade, not the serve switch. The LDT half is in flight (PR #710 open); the engine half waits for its fixture. |
 | **Setbacks (P-256, P-258)** | P-258's 258 new rows are merged everywhere and published as corpus **1.3.0**. P-256 is **held** until P-297 is live, and its apply needs an explicit authorisation (about 1.1M cells). |
 | **Coverage (P-205, P-210)** | **Customer-done.** An un-onboarded county names itself on `find_parcel`; Marble Falls names Burnet. |
@@ -74,12 +74,12 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | Row | What | State | Next |
 |---|---|---|---|
 | P-252 (with P-292) | Empty counties refuse at the gate | **Applying** (`8x4jk`); graded by `scripts/p252-apply-compare.mjs` | Grade PASS, resume the hourly trigger, rerun the completeness check, then the six-county republish |
-| P-297 LDT half (with P-269) | Each slated parcel served from its own cell | Lane working; LDT PR #710 open | Review, merge; then fire the engine half |
-| P-299 | Height flag has one meaning; a transcribed-source state; no placeholder height served (corpus and LDT) | Compiled 2026-09-17 | Gates the LDT deploy of P-258's tables |
-| P-298 | The scheduler reads one rail and takes the lease | Compiled 2026-09-17 | Index built by the integration seat after the lane |
-| P-294 | Republish a county when its ledger changed | Compiled 2026-09-17 | Built dry-run first; first production run on the operator's go |
-| P-285 | County runner, thirteen stages | Compiled 2026-09-17 | Skeleton before Burnet |
-| P-259 | Austin zoning from the public layer with a base-code parser | Compiled 2026-09-17 | Stamp applied by the integration seat after the dry run |
+| P-297 LDT half (with P-269) | Each slated parcel served from its own cell | Lane working; LDT PR #710 open (behind main at close) | Review, merge; then fire the engine half |
+| P-299 | Height flag has one meaning; a transcribed-source state; no placeholder height served (corpus and LDT) | Fired 2026-09-17; lane working | Gates the LDT deploy of P-258's tables |
+| P-298 | The scheduler reads one rail and takes the lease | Fired 2026-09-17; lane working | Index built by the integration seat after the lane |
+| P-294 | Republish a county when its ledger changed | Fired 2026-09-17; lane working | Built dry-run first; first production run on the operator's go |
+| P-285 | County runner, thirteen stages | Fired 2026-09-17; lane working | Skeleton before Burnet |
+| P-259 | Austin zoning from the public layer with a base-code parser | Fired 2026-09-17; lane working | Stamp applied by the integration seat after the dry run |
 
 ## Ready, waiting on something
 
@@ -138,7 +138,7 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | Row | What | State |
 |---|---|---|
 | P-284 | Stage cost and timing records | Live and graded |
-| P-285 | County runner, all thirteen stages | Compiled 2026-09-17 |
+| P-285 | County runner, all thirteen stages | Fired 2026-09-17 |
 | P-286 | Blocker list as the pre-bake checklist | Not started |
 | P-287 | Burnet's unreconciled parcels; address points | Not started |
 | P-187, P-196, P-198, P-197 | Manifest, retract, merge gate, per-stage checks | Not started |
@@ -177,3 +177,4 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | 2026-09-17 00:04 | Regrouped. P-284 remainder deployed (migration `0014`, publish, writers and reaper on `47c7dfc`; first reaper tick clean). P-297's LDT lane opened PR #710. This page rewritten to current state and now carries the live queue (A-198). |
 | 2026-09-17 00:12 | P-284 graded: the reaper backfilled a real dry run's record with a measured $0.000484. P-258 corpus rulings explained to the operator; decision pending. |
 | 2026-09-17 00:26 | Operator rulings recorded (A-199): corpus OT-1/2/3/10, P-295's three, P-256's apply with a per-county ceiling, P-284's basis. P-299 and P-300 carded; OPS-24 range to 320. Five lanes compiled: P-299, P-298, P-294, P-285, P-259. LDT deploy now waits on P-299's height guard. |
+| 2026-09-17 00:44 | Session closed at the context limit (A-200). Six lanes running (P-297 LDT, P-299, P-298, P-294, P-285, P-259). Gate apply still running with the trigger paused. Handoff: `_inbox/2026-09-17_HANDOFF_integration_seat.md`. |
