@@ -2,8 +2,8 @@
 id: 2026-09-16_HANDOFF_integration_seat
 title: Handoff to a fresh integration-seat planner, 2026-09-16 evening
 date: 2026-09-16
-last_updated: 2026-09-16
-status: active handoff
+last_updated: 2026-09-17
+status: consumed. Picked up by the next integration session on 2026-09-16; its queue is superseded by the live queue in _inbox/2026-09-16_texas_scaleup_ROADMAP.md (see A-191 to A-198). The working rules below still apply.
 kind: handoff
 owner: nick
 from: integration seat, session c4c0203f (closed at context limit)
