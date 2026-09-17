@@ -4,6 +4,18 @@ You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-factory` and open O
 merge, deploy, or run any job against the production store, and you write to no store. The
 integration seat merges, deploys and runs.
 
+### PRECONDITION — do not start until the P-319 lane has opened its PR
+
+The P-319/P-320/P-321 lane (`_dispatches/2026-09-17_p319-retirement-safety_dispatch.md`) is
+building a SHARED blast-radius threshold in this same repo. If you start before its PR exists you
+will find nothing to read and you will build a second threshold, which is precisely the defect this
+mission tells you to avoid: a threshold copied into a second place survives the removal of the
+first.
+
+Its PR being OPEN is enough — you do not need it merged. `git fetch origin` and read its branch.
+**Your first action is to confirm that PR exists and to name its number and head SHA in your CP1.**
+If it does not exist yet, stop and report that rather than proceeding.
+
 ### Why these two together
 
 Both are Burnet preconditions and both are blockers on the same event: **the first production
