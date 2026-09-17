@@ -1,0 +1,85 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p266-p268-factory-open-rails",
+  "title": "mid-work adversarial checkpoint: the defects I caught in my own first commit, the grade-able state of the work, and the one falsifier that is unmeasured and why",
+  "planRows": ["P-266", "P-268"],
+  "at": "2026-09-17T13:50:00Z",
+  "seat": "p266p268-lane",
+  "branch": "fix/p266-p268-open-rails",
+  "commit": "b54155c120ee6bab9096932b48f47cdeabb626d5",
+  "pr": {
+    "number": 168,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/168",
+    "checks": "ALL PASS, literal states read from gh pr checks --json on 2026-09-17T13:47Z: gate8 SUCCESS (run 35228818483 job 105227215646, 8s; run 35228852875 job 105227334746, 11s), ldt-sha-comment-presence SUCCESS (run 35228818483 job 105227215517, 13s; run 35228852875 job 105227335299, 20s), test SUCCESS (run 35228818483 job 105227215125, 59s; run 35228852875 job 105227334968, 1m3s). Six check instances over two workflow runs (push + pull_request); every one bucket=pass, state=SUCCESS.",
+    "reviewState": "no review comments at the time of this checkpoint (opened 13:43Z)."
+  },
+
+  "theDefectsCaughtInMyOwnFirstDraft_beforeTheCommit": [
+    {
+      "defect": "I committed a parenthetical citing a measurement I could not re-read: 'the measured Caldwell ST x3/TE x1/TN x1 and McLennan TN x1 situs_state values'.",
+      "whyItWasWrong": "those values came from a probe of the txgio_parcel.situs_state COLUMN, but the sentence they sat in describes the situs ADDRESS-token rung. Two different fields, one sentence -- and the store read that produced the numbers was not re-runnable at the time of the commit (cortex held by a publish lease), so I could not re-verify it before shipping it.",
+      "disposition": "REMOVED before commit. The ladder's comment now states the rung and the blocklist's rule without asserting a measurement, and names the blocklist behaviour instead of a count. If the census is re-measured (see leave_behind), the numbers belong in the close, not in a permanent code comment that no test can falsify."
+    },
+    {
+      "defect": "The not-a-state blocklist held fifteen entries of which exactly ONE (CT) could ever fire.",
+      "whyItWasWrong": "addressStateToken checks `US_STATE_CODE_SET.has(code)` BEFORE consulting the blocklist, so an entry that is not a USPS code (ST, LN, RD, PL, CV, PT, SQ, TER, TRL, WAY, LOOP, BLDG) can never be reached. A guardrail that cannot fire is decoration, and the accompanying tests' own reason strings ('ST is a street suffix, not Connecticut') explained a behaviour that the code was not producing for that reason -- the test passed, the explanation was wrong, which is the shape that makes a later reader trust the wrong mechanism.",
+      "disposition": "FIXED before commit: the set is {CT, FL} with a comment stating the rule that membership must be a USPS code; a NEW test asserts that invariant directly against the source, so dead entries cannot accumulate again; the two misleading reason strings are rewritten; and a positive test now drives the blocklist in both directions (CT/FL drop to null while TN/OK in the same shapes stay decisive), so the guard is proven able to fire."
+    },
+    {
+      "defect": "A typo in a code comment ('siteusState').",
+      "disposition": "fixed before commit."
+    },
+    {
+      "defect": "The first test I wrote for addressStateToken's ambiguity case asserted null and got 'TX' (the pre-fix regex matched the first state token before a ZIP when two were present).",
+      "disposition": "fixed before commit by requiring a word boundary in the beforeZip regex; the test now pins the ambiguous shape as null in both directions (never a silent pick)."
+    }
+  ],
+
+  "midWorkMeasurementsThatChangedThePlan": [
+    {
+      "measurement": "the two companion rails' unaccounted cells grouped by their PRIMARY's own basis",
+      "whatItChanged": "the work shrank from 'fix acreageMethod/landUseSource in five counties' (which the refusal counts suggest: 2,274 / 21,398 / 23,182 / 25,775 / 114,254) to 'fix the join-miss cohort job-side (Hays, 433 / 636) and NAME the stale-store cohort, because a replay of the CURRENT code resolves it'. Without this grouping, the honest-looking move would have been to widen the completion step to any unaccounted companion -- which would have stamped absent-verified on cells whose primary was never verified absent at all, i.e. a fabrication with a plausible basis. The grouping is what makes the narrow predicate defensible rather than merely convenient."
+    },
+    {
+      "measurement": "tx_zoning_district_staging holds ZERO null/blank source_urls across 339,183 rows",
+      "whatItChanged": "it re-scoped the citationUrl defect honestly: the absent-verified branch CANNOT fire against today's data, so the rail's emptiness cannot be explained by it. The real cause is that the writer has not run since OPS-21 D1 added the rail (the cells' own timestamps say so: rail instantiate for citationUrl, 2026-09-08/09 for zoningDistrict/zoningProvenance on the same rows). The fix is still worth shipping -- a null-valued 'value' cell is a claim this job must not be able to make -- but the PR and the close say plainly that the value cells will come from the re-run, not from this change."
+    },
+    {
+      "measurement": "the full test suite at the commit: 1703 tests, 1664 pass, 2 fail, 35 skipped, 2 todo",
+      "whatItChanged": "the 2 failures needed attribution before an honest close: both are in files this lane does not touch (test/check-walk-decline-body-drift.test.mjs, test/ctx-b3-store-census.test.mjs), and both import ONLY src/jobs/verify-walk.mjs (P-301's file) and their own scripts/ modules -- so no changed module is reachable from them. CI then ran the same suite and reported SUCCESS on both workflow runs, which is the independent half of the same attribution (the laptop failures need a real legacy-design-tools checkout on disk; CI has one)."
+    }
+  ],
+
+  "theUnmeasuredFalsifier_statedRatherThanSkipped": {
+    "falsifier": "1 (dispatch): after the change, a dry run of each fixed writer for Bastrop reports writes for every parcel_record parcel on the three trivial rails, or names the ones it cannot write with the reason.",
+    "state": "UNMEASURED at this checkpoint.",
+    "why": "the dry runs need read access to cortex (PRODUCTION_NEONDB_URL, ep-lucky-truth...). That endpoint has been under a job-execution lease held by factory-bastrop-publish-g68rt (a Travis publish) since 12:52Z, renewing continuously; every heavy-scan take returns 409 LEASE_HELD. The dispatch's own do-not list forbids scanning a store without a heavy-scan lease, so the runs are deferred instead of taken.",
+    "whatWasDoneInstead": "the whole dry-run campaign is prepared and armed (P:/tmp/p266p268-tools/dryrun-all.mjs: takes the lease with a 90-minute TTL, runs the six counties through fillrun.mjs, then parcel-r5-zoning, renewing between counties, releasing in a finally block, appending one progress line per step to the registered watch artifact). A probe invocation against the still-held lease exited 3 and logged 'LEASE NOT TAKEN ... nothing was read', which is the refusal working.",
+    "whatTheCloseWillSay": "if the lease frees before the close is filed, the dry runs' own JSON is the Falsifier-1 evidence and the prediction tables are read off it. If it does not, the close files Falsifier 1 as UNMEASURED with this reason, and the predictions are labelled as derived from the store census plus the code path rather than from a dry run. Either way the close's status is closed-partial: the dispatch's own definition of done is the integration seat's applies graded by the gate."
+  },
+
+  "adversarialReviewOfTheWorkAsItStands": {
+    "whatThisChangeDoesNotProve": [
+      "That the integration seat's apply will write what the prediction says: only the dry run can, and it is deferred.",
+      "That the silent/out-of-state situsState populations are correct in the sense of 'those parcels really have no evidence' -- the ladder's rungs are only as good as cad_property.situs_address / situs_zip and txgio_parcel.geom. A parcel with no address, no zip and no geometry is left unaccounted, and the count of those is the honest residual, not a defect claim about the data.",
+      "That Hays's two companion cohorts (433 vs 636) are exhausted by the join-miss predicate. The residue is named as an OPEN thread rather than explained."
+    ],
+    "whatWouldMakeMeWithdrawTheChange": [
+      "A dry run showing situsState still unaccounted at a whole-county scale (the wiring is dead), or showing a parcel with a TN/OK address token receiving 'TX' (falsifier 2 in the live data).",
+      "A dry run showing the completion step writing companion cells on parcels whose primary is absent-verified through a taxYear-bearing basis (i.e. the predicate is not the engine's signal after all).",
+      "A gate grade after the applies that counts MORE unaccounted cells on any of the four rails than the 07:29Z grade."
+    ],
+    "interruptionRecovery": "no message interrupted this lane mid-flight, so no worker state needed capturing (FAN-DEPTH 0: no workers exist). The lane's own state is one commit, one PR, two checkpoints and one armed runner."
+  },
+
+  "leave_behind_to_theNextContext": [
+    "OPEN: re-measure the situs-string census (qc6-situs.sql) when cortex is free, and put the numbers in the close rather than in a code comment: the address-token and out-of-state populations per county are the basis for ruling on the silent/out-of-state residue.",
+    "OPEN: reconcile Hays's acreageMethod 433 vs landUseSource 636 -- a join-miss node stamps both, so the 203-cell difference is unexplained; the completion step keys on the basis so it cannot overreach, but the difference should be understood.",
+    "OPEN: the engine-side gap (src/lib/parcel-record-engine/ingest-existing.js, applyCadJoinMiss stamps 13 scalars and neither companion) is filed here, not absorbed: the job-level completion fixes these six counties only.",
+    "OPEN: vendor-level -- the situsState ladder reads two cells of the record's own shape; if the engine ever grows a real situsState derivation, this job-level one is the copy to retire (it says so in its own header).",
+    "DEAD-END: taking a cortex heavy-scan lease while a publish job-execution lease is live returns 409 LEASE_HELD regardless of the window kind; there is no shared/partial mode. Plan dry runs around a publish's window, not inside it."
+  ],
+
+  "probe": { "notApplicable": "build lane; graded by the gate scheduler's verdicts after the integration seat applies the writers" },
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}
