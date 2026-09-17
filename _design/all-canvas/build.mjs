@@ -24,6 +24,12 @@ const ROW_GAP = 300; // below the tallest artboard in a row, leaving room for th
    whole canvas; `Main` is the entry artboard and is the product's own entry screen. */
 const ROWS = [
   {
+    surface: 'Applicant precheck',
+    note: 'APPLICANT PRECHECK. NEW 2026-09-17, DRAFT, not ratified. Placed first so it is found first.\nThe first public function for applicants: a pre-submittal self-check on a SmartCity page carrying the city\'s logo. Operator direction: SmartCity is the product, not Smart Site; the AI reads the plan set and there is no form; it never blocks, so the applicant can download or email the findings, revise, and still apply with suggestions open. How Smart Site, Smart Files, plan review and Development services blend is to be discussed before build.\nTWO MOVES. The checklist is shown BEFORE upload (9 checks: 6 read from the plans against the lot, 3 left to the city), so "no issues" never reads as "complies". Findings are sorted by who acts next, and the applicant never sees Pass or Fail.\nLeft to right: the flow with every step badged EXISTS, PARTIAL or NEW; six applicant screens; the public verify page; the city review and the city settings. Continues the 908 PINE ST story from the reasoner row. `node check.mjs` (13 rules) and `node violate.mjs` (21 plants) in its folder.',
+    from: 'smartcity-applicant-precheck',
+    boards: [['Flow.dc.html', 'PrecheckFlow', 'The flow, and what exists today'], ['Main.dc.html', 'PrecheckStart', '1 Start: lot, project, what is checked'], ['Reading.dc.html', 'PrecheckReading', '2 Reading the plans'], ['Findings.dc.html', 'PrecheckFindings', '3 Findings, version 1'], ['Revised.dc.html', 'PrecheckRevised', '4 Version 2 compared'], ['Submit.dc.html', 'PrecheckApply', '5 Apply, with a suggestion open'], ['Summary.dc.html', 'PrecheckDocument', '6 The findings document and email'], ['Verify.dc.html', 'PrecheckVerify', '7 Public verify page'], ['Review.dc.html', 'PrecheckReview', '8 City: review with the precheck'], ['Setup.dc.html', 'PrecheckSetup', '9 City: precheck settings']],
+  },
+  {
     surface: 'Overview',
     note: 'OVERVIEW LENS — RATIFIED, shipped G-120. Map pinned as G-121.\nThe city’s first screen at three data states. Tiles are filtered entry points, not statistics. Connections PROMOTES to the top on a pack that reads nothing and demotes when it reads, so zero renders as "here is what to connect next" rather than as a broken page.',
     from: 'smartcity-overview-lens',
@@ -43,19 +49,19 @@ const ROWS = [
   },
   {
     surface: 'Plan review',
-    note: 'PLAN REVIEW — IN REVIEW, never dispatched.\nThe furthest along on paper and the furthest behind in code. Seven peer tabs become one workflow spine: intake, applicability, findings, letter. Every finding carries the code section it came from and an uncertain finding is marked, never quietly passed.\nCARRIES A KNOWN DEFECT: the console renders engine identifiers where a reader expects a code citation, and the queue shows an internal QA note. Fix belongs in plan-review/gen.mjs.',
+    note: 'PLAN REVIEW, the earlier console pass. SUPERSEDED 2026-09-15 by the reasoner path (_decisions/2026-09-15_plan_review_reasoner_is_the_shown_design.md), kept as the record of the option not taken. Never dispatched.\nThe furthest along on paper and the furthest behind in code. Seven peer tabs become one workflow spine: intake, applicability, findings, letter. Every finding carries the code section it came from and an uncertain finding is marked, never quietly passed.\nCARRIES A KNOWN DEFECT: the console renders engine identifiers where a reader expects a code citation, and the queue shows an internal QA note. Fix belongs in plan-review/gen.mjs.',
     from: 'plan-review',
     boards: [['Main.dc.html', 'PlanReviewQueue', 'Queue'], ['Review.dc.html', 'PlanReviewConsole', 'Review console — Applicability'], ['Embedded.dc.html', 'PlanReviewEmbedded', 'Embedded in Dashboards']],
   },
   {
     surface: 'Flood study',
-    note: 'FLOOD STUDY — DRAFT 2026-09-15, not ratified.\nThe live tab is a paragraph and a dead button. Four moves: the tab becomes a SCREENING LIST over permits in flight; the regulatory FEMA zone and the modeled study are kept structurally apart and the model is badged NOT A DETERMINATION; rainfall depth becomes a control that governs the whole lens; and a running model is a real state where a timed-out parcel stays retryable instead of being recorded as no ponding.\nG-130 is enforced in the UI: the study downloads, citing it in a review letter is refused.',
+    note: 'FLOOD STUDY. RATIFIED 2026-09-15 (_decisions/2026-09-15_design_ratification_pass.md). Not dispatched.\nThe live tab is a paragraph and a dead button. Four moves: the tab becomes a SCREENING LIST over permits in flight; the regulatory FEMA zone and the modeled study are kept structurally apart and the model is badged NOT A DETERMINATION; rainfall depth becomes a control that governs the whole lens; and a running model is a real state where a timed-out parcel stays retryable instead of being recorded as no ponding.\nG-130 is enforced in the UI: the study downloads, citing it in a review letter is refused.',
     from: 'smartcity-flood-study',
     boards: [['Main.dc.html', 'FloodScreening', 'Screening — the list'], ['Parcel.dc.html', 'FloodParcel', 'One parcel — the study'], ['Depth.dc.html', 'FloodDepth', 'Depth — the four-inch question'], ['Running.dc.html', 'FloodRunning', 'Running — the model takes time'], ['Empty.dc.html', 'FloodEmpty', 'Unavailable, and its near neighbour']],
   },
   {
     surface: 'Plan review — the reasoner path',
-    note: 'PLAN REVIEW, REASONER PATH — DRAFT 2026-09-15, not ratified.\nOperator ruling: a COMPANION product, not a plan review system. No markup, no stamping, no document workflow. We do applicability from the adopted edition, findings cited to real code, and honest absence.\nPROVENANCE OVER REACHABILITY: Pass and Fail are reachable today, from a number typed on an intake form. The viewer does not unlock the determination, it upgrades the input from an assertion to a reading. An earlier draft claimed the opposite and the code said so plainly.\nOne rule has an adjudicator and the screen badges every other one NO ADJUDICATOR. A finding with no section shows NO CITATION and cannot be issued.\nAbsence runs on TWO AXES that are never added: our corpus could not supply the rule, versus the section is fine and no adjudicator exists.',
+    note: 'PLAN REVIEW, REASONER PATH. RATIFIED 2026-09-15, and ruled the plan review design a city is shown.\nOperator ruling: a COMPANION product, not a plan review system. No markup, no stamping, no document workflow. We do applicability from the adopted edition, findings cited to real code, and honest absence.\nPROVENANCE OVER REACHABILITY: Pass and Fail are reachable today, from a number typed on an intake form. The viewer does not unlock the determination, it upgrades the input from an assertion to a reading. An earlier draft claimed the opposite and the code said so plainly.\nOne rule has an adjudicator and the screen badges every other one NO ADJUDICATOR. A finding with no section shows NO CITATION and cannot be issued.\nAbsence runs on TWO AXES that are never added: our corpus could not supply the rule, versus the section is fine and no adjudicator exists.',
     from: 'plan-review-reasoner',
     boards: [['Main.dc.html', 'ReasonerConsole', 'Console — sheet, pins, findings'], ['Reasoning.dc.html', 'ReasonerDerivation', 'Finding 1 — how it was reached'], ['Coverage.dc.html', 'ReasonerCoverage', 'Coverage — two axes'], ['Letter.dc.html', 'ReasonerLetter', 'The correction notice'], ['Cycle.dc.html', 'ReasonerCycle', 'Cycle 2']],
   },
@@ -82,6 +88,36 @@ const ROWS = [
     note: "SMART FILES — DRAFT 2026-09-15, not ratified. Drawn against the smart-files repo at origin/main 61c84f6: its own repo, its own database, its own serving process.\nTHE DASHBOARDS \"FILES\" NAV ITEM IS A MOUNT POINT and says so on itself, so designing it there would be designing a frame.\nSmart Files is NOT a file browser, and its best properties are exactly the ones a browser has nowhere to put: whether a document text is searchable and WHY NOT (three named reasons), that a second upload under the same slug is a REVISION of one document rather than a sibling, who captured it in what declared role (five keys, and the write REFUSES without them), and what it is placed against rather than only which folder it sits in.\nCOVERAGE BEFORE RESULTS is the strongest move: a search box over a corpus where some documents were never indexed lies by omission. Here 12 searched, 19 not — and six of the seven with no text layer are plan sets, which is exactly where a drainage easement would be drawn.",
     from: 'smart-files',
     boards: [["Main.dc.html","SmartFilesRoom","The room — the row carries what the product knows"], ["Search.dc.html","SmartFilesSearch","Search — coverage before results"], ["Document.dc.html","SmartFilesDocument","One document — a revision, not a sibling"], ["Refusals.dc.html","SmartFilesRefusals","Two refusals, drawn as first class"], ["Gaps.dc.html","SmartFilesGaps","Built in the service, no surface"]],
+  },
+  {
+    surface: 'Public works lens',
+    note: 'PUBLIC WORKS LENS. DRAFT 2026-09-15, not ratified (G-145).\nTwo regions of different units, so they switch rather than stack. Capital projects carries a phase-against-status matrix in which eight of twenty cells CANNOT OCCUR by the product\'s own rule and render hatched, beside four measured zeros. Call analytics is drawn once as the grid its two shipped tables are the two margins of. No money figure appears anywhere.',
+    from: 'smartcity-public-works-lens',
+    boards: [['Main.dc.html', 'PublicWorks', 'Capital projects: a matrix with forbidden cells'], ['Calls.dc.html', 'PublicWorksCalls', 'Call analytics: one grid, two margins'], ['Blocked.dc.html', 'PublicWorksBlocked', 'The live pack: one vendor answers, one declines'], ['Empty.dc.html', 'PublicWorksEmpty', 'An unconnected city: built, and no source']],
+  },
+  {
+    surface: 'Parks lens',
+    note: 'PARKS LENS. DRAFT 2026-09-15, not ratified (G-145).\nThe one lens that does not exist, drawn as not existing: no metric tiles, no empty table, none of the built-surface vocabulary. It has no vendor and no registered domain, and absence from the domain registry is the only surviving meaning of "not built".',
+    from: 'smartcity-parks-lens',
+    boards: [['Main.dc.html', 'Parks', 'Parks: a surface that does not exist'], ['Difference.dc.html', 'ParksDifference', 'The two sentences, side by side']],
+  },
+  {
+    surface: 'Police lens',
+    note: 'POLICE LENS. DRAFT 2026-09-16, not ratified (G-145).\nThe only lens whose two regions disagree about their source, in OPPOSITE directions on the two packs: on the demo Verkada is granted and Spireon withheld; on Bastrop Spireon is granted live and Verkada not at all. The demo\'s emptiest region is the city\'s most connected one. A grant deliberately withheld, a vendor nobody has onboarded, and plate reads and persons of interest declared not required WITH a basis.',
+    from: 'smartcity-police-lens',
+    boards: [['Main.dc.html', 'Police', 'Camera inventory: every device, and its sites'], ['Declined.dc.html', 'PoliceDeclined', 'Declined, not missing: a band and three refused classes'], ['Patrol.dc.html', 'PolicePatrol', 'Patrol roster: built, and no source here'], ['Bastrop.dc.html', 'PoliceBastrop', 'The staging pack: one status, two sentences']],
+  },
+  {
+    surface: 'Fire and EMS lens',
+    note: 'FIRE AND EMS LENS. DRAFT 2026-09-15, not ratified (G-145).\nOne region, and its second axis is a partition: the same four readiness bands repeated per station as small multiples, because the domain\'s own brief says a rollup cannot say which station carries the shortfall. The blocked board names the obstacle as a vendor ENTITLEMENT, not a bug.',
+    from: 'smartcity-fire-ems-lens',
+    boards: [['Main.dc.html', 'FireEms', 'Apparatus: readiness counted per station'], ['Blocked.dc.html', 'FireEmsBlocked', 'The live pack: an entitlement, not a bug']],
+  },
+  {
+    surface: 'Fleet lens',
+    note: 'FLEET LENS. DRAFT 2026-09-16, not ratified (G-145).\nThe first lens whose vendor actually answers, so the question becomes what the page still says once it has filled. The roster draws the operator dimension as coverage, not a per-person breakdown. The cutover board shows three things that change when the live feed lands, and two of them are defects. A vehicle is not an asset, and the board says so.',
+    from: 'smartcity-fleet-lens',
+    boards: [['Main.dc.html', 'Fleet', 'The roster: a flat register, one grouping'], ['Connected.dc.html', 'FleetConnected', 'The live pack: the vendor answers']],
   },
   {
     surface: 'Place tab',
@@ -136,7 +172,7 @@ annotations.unshift({
   w: 1200,
   text:
     'SMARTCITY — EVERY DESIGN ON ONE CANVAS. ' + artboards.length + ' artboards across ' + ROWS.length + ' surfaces, one row per surface.\n' +
-    'Read top to bottom: shipped, then designed-and-never-built, then the two drafted this week, then the one kept as a record of an option not taken.\n\n' +
+    'Read top to bottom: the applicant precheck (new 2026-09-17, placed first), then shipped, then designed-and-never-built, then the drafts, including the five department lenses, then the one kept as a record of an option not taken.\n\n' +
     'Palette and type ramp are the frozen sc-kit, byte-identical across every folder. Tokens are copied from the product, never invented.\n' +
     'EVERY FIGURE ON EVERY ARTBOARD IS FIXTURE. Nothing here is measured, and two surfaces (Finance, Flood study) describe systems that are not connected yet.\n\n' +
     'This canvas authors nothing. Each artboard is a copy of its surface folder’s own file; edit the design there, re-run its gen.mjs, then re-run _design/all-canvas/build.mjs.',
