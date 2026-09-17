@@ -15,7 +15,7 @@ related:
   - _sessions/2026-09-17b_phase0_applies_and_serving_claude_code.md (the session this continues)
   - _inbox/2026-09-17_williamson_mass_retirement_INCIDENT.md
   - _decisions/2026-09-17_ship_without_cotality.md
-  - 90_operations/OPS-16_texas_market_plan_of_record.md (A-212; rows P-319 to P-324)
+  - 90_operations/OPS-16_texas_market_plan_of_record.md (A-212; rows P-319 to P-326)
   - _inbox/2026-09-16_texas_scaleup_ROADMAP.md (updated through close)
 snapshot: doc_repo main e24cd21e; map 3693d831, LDT 388ccc5c, engine 72d72c02, factory 087927bc; PE 3cpnl30o0; read 2026-09-17 22:10Z
 ---
@@ -105,8 +105,14 @@ had already been applied when the store went quiet and the script correctly refu
 applies (`_inbox/2026-09-17_six_county_completeness_post_apply.txt`, 22:03:12Z). VERDICT INCOMPLETE.
 Of 65 rails: Travis 40, Bastrop 38, Caldwell 38, Hays 38, McLennan 37, **Williamson 33 with 16
 open**. `false-earned: none` in all six. Williamson's gap is the D1 hold showing through — three
-rails refuse on all 282,570 parcels because its parcel-record fill is held (P-310). **The biggest
-single lever on the Phase 0 exit is that held decision, not more lanes.**
+rails refuse on all 282,570 parcels because its parcel-record fill is held (P-310).
+
+**I then said D1 was "the biggest single lever on the Phase 0 exit" and that was wrong.** Counted
+properly, the 67 open cells are four blocks: 30 mid-cutover (P-204), 30 setback (58,339 parcels
+refusing, Travis 33,883 of them), 12 roads and edgeSignal (P-264, unmeasured), and 6 D1. D1 is the
+biggest lever on Williamson's own number and the SMALLEST block across the exit. Generalising from
+one county's headline is exactly what the ledger-headline rule exists to prevent, and it is the
+fourth wrong load-bearing statement this seat made today.
 
 **P-263's census**, from the engine lane: population 490,185 = bucket sum, 208,868 to
 `not-applicable`, 250,883 to `provisional-front-edge`, 30,434 unclassifiable and unmoved, proven
@@ -116,8 +122,8 @@ declared.
 
 ## Mistakes, stated
 
-Three of my own records were wrong, and each was found by reading the authoritative source rather
-than by re-reading my conclusion.
+Four of my own load-bearing statements were wrong, and each was found by reading the authoritative
+source rather than by re-reading my conclusion. The fourth is the lever claim above.
 
 - **I blamed the Williamson publish for blocking migration 0103.** The publish had ended and 0103
   still blocked. `pg_locks` named the real holder: a psql session that had held `AccessShareLock` on
@@ -139,3 +145,33 @@ Four lanes running (P-319 with PR #173 open, P-257 with PRs #417 and #717 open, 
 none yet) plus the engine deploy in a fresh session. Three dispatches compiled and ready: P-286/P-317
 (now unblocked), P-323, P-324. The Austin stamp, P-294's schedule and dry cycle, and P-258's writer
 re-run are all writes and were deliberately not started.
+
+## The four blocks, and what was dispatched for them
+
+Working D1 through produced the count above and the correction with it. Checking each block's
+dependency then found that **none of the four was actually blocked** — every dependency was
+satisfied and all four were simply undispatched.
+
+**P-204, 30 cells, the largest block, needs a RULING rather than a build.** Its five rails
+(`parcelGeometry`, `pipelines`, `railCorridor`, `etjStatus`, `landUseDescription`) all serve a
+customer today from a path that is not the ledger, measured on gold parcel `48209:97658`. They read
+open only because `RAIL_POLICY` gives the `mid-cutover` class no `accept` list, deliberately,
+pending a CUT OVER / STAYS ELSEWHERE / RETIRE decision per rail. P-201 shipped, so the dependency is
+met. `etjStatus` is worth singling out: P-296 put ETJ on the customer surface hours earlier, so that
+verdict may simply be stale.
+
+**P-264 became available tonight** when P-260 and P-263 merged in engine #471. Its road residual is
+a scope decision for the whole program: A-177's deferral of `roads` and `edgeSignal` is accepted
+only while that residual shows no unruled road-blocked render, and nobody knows which way it falls.
+
+**P-326** classifies the 58,339 parcels refusing setbacks, the only customer-visible block, and
+counts separately the share P-300's jurisdiction-default row could serve. Travis is 33,883 of it.
+
+**P-325 was carded new and ships ahead of P-310.** `parcel-record-fill.mjs` turns a join miss into
+`absent-verified`, which is a claim that something looked. That is general rather than Williamson's,
+and Burnet is next through the farm with an unchecked keyspace. After P-325 the Williamson dry run
+reports 282,569 unaccounted instead of threatening 282,569 false absences, which turns D1 from a
+held apply into an unhurried decision. Both are gated behind P-319's PR #173 so the keyspace work is
+reused rather than rebuilt.
+
+All four were compiled and fired (`220f2803`).
