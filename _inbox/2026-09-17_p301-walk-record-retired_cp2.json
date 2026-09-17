@@ -1,0 +1,76 @@
+{
+  "checkpoint": "CP2",
+  "kind": "Adversarial review of this lane's own load-bearing findings, before the close was drafted. Every claim below was re-run through a mechanism OTHER than the one that produced it. The weakest link is named rather than hidden, and the one claim that FAILED its own check is first.",
+  "lane": "p301-walk-record-retired",
+  "planRows": ["P-301"],
+  "cp1": "_inbox/2026-09-17_p301-walk-record-retired_cp1.json",
+  "pinnedSHAs": {
+    "hauska-factory": "9d3a535df8ecc050e7c220ed50895cf0882cb19b (branch fix/p301-walk-record-retired; base origin/main 3f3e8be10c6f2db70c06eeac5b067fa30ee95c52)",
+    "legacy-design-tools": "dca5ec2e184e4a4d9f6585914e70c087db528318 (main, as read by CI's drift check at 2026-09-17T12:02Z) and 9ce30b81cde576bb942af8616fcdeb4d80dba543 (the commit the serving production revision was built from)",
+    "doc_repo": "artifacts written uncommitted into P:/seat-worktrees/dispatch-planner/doc_repo/_inbox (planner-owned; P:/doc_repo holds no p301 file)"
+  },
+  "attackOnMyOwnLoadBearingFindings": [
+    {
+      "finding": "THE ONE THAT FAILED, AND IT IS MINE, NOT THE DISPATCH'S: my first housekeeping attempt registered the clone under `otherWorktrees`. That is where the P-180 joint lane's entry sits, so it looked like the convention.",
+      "attack": "Ran the enforcement gate itself over the registered path instead of trusting the register: import evaluate() from scripts/enforcement/seat-worktree-gate.mjs and ask it about P:/tmp/p301-hauska-factory.",
+      "result": "REFUSED -- {\"allow\":false,\"code\":\"extra_worktree_no_writes\",\"message\":\"SEAT-01: worktree ... is named in otherWorktrees and is not a writer seat. Writes refused.\"}. Every `otherWorktrees` entry is read as kind \"extra\" whatever its own `kind` field says. Corrected in round 2: the register's own convention for a /tmp factory lane (hauska-factory-alias-regen, hauska-factory-gold-probe, ... 20+ siblings) is the PROPERTY seat's `repos`, with path AND worktree both the clone path. Re-ran the gate: {allow:true, code:'ok', seat:'property', kind:'seat-product'}. The lesson is gateWorthy and is in leave_behind."
+    },
+    {
+      "finding": "The production serve declines an earned retirement with `record_retired` / `no_coverage` (the P-301 defect's premise).",
+      "produced_by": "a live curl of the facets route for the gold node 48209:135570.",
+      "re_tested_by": "two independent mechanisms: (a) the same live probe repeated for a second retired node (48209:135540) and the bytes compared to the dispatch's quotation; (b) attribution of the SERVING REVISION to an LDT commit -- `gcloud run services describe` shows 100% of traffic on cortex-api-00815-fiw, `gcloud run revisions describe` dates it 2026-09-16T20:28:20Z, and `gh run list --workflow 'Cloud Run Deploy (cortex-api)'` shows the workflow_dispatch runs bracketing that timestamp (20:27:46Z and 20:31:53Z) both on head 9ce30b81cde576bb942af8616fcdeb4d80dba543; the file exported at that commit contains the gtmErrorBody(\"no_coverage\", \"record_retired\") call site.",
+      "result": "HOLDS. Two retired nodes answer the same body byte-for-byte (912 bytes each, differing only in the id inside `basis`/`scopeSearched`), and the deployed source declares the token.",
+      "residual": "The image carries NO build provenance (`--format=yaml(buildDetails.provenance)` -> null), so the revision->commit mapping is inference from timestamps + deploy-run head SHAs, not a signature. It is corroborated by behaviour, and no conclusion in this lane depends on the exact commit: the walk grades on the BODY it receives plus the STORE row, and both were measured directly."
+    },
+    {
+      "finding": "`not_baked` is not dead, so keeping it is evidence-based and not sentiment.",
+      "produced_by": "reading the LDT source at the serving commit.",
+      "re_tested_by": "probing the live surface for a body that could only come from that branch: a fabricated node id (48209:999999) that was never baked.",
+      "result": "HOLDS, twice over. Production: 404 {\"error\":\"not_baked\",\"errorClass\":\"no_coverage\",\"message\":\"No baked facets for this parcel node\"}. The staging tag (cortex-api-00765-gip, built 2026-09-10T16:14:10Z, i.e. BEFORE P-206) answers the same body. Two serving revisions emit it today; deleting the token would have made the walk blind to both.",
+      "secondFindingFromTheSameProbe": "The staging revision answers 200 with a baked card for the RETIRED nodes 48209:135540 and 48209:135570 -- it neither declines nor excludes them. So the staging tag is a third distinct behaviour, not a copy of production, and a walk pointed at it would fail those nodes for a reason P-301 does not address. Recorded as fleet memory, not fixed here."
+    },
+    {
+      "finding": "Half (ii) -- the store read -- is still necessary, and the 16 rows this walk failed on will flip to RECORD_RETIRED once half (i) is fixed.",
+      "produced_by": "the unit tests (a store resolver handed to walkParcel) and the dispatch's statement that the store holds the gold's row at run eb1d2676.",
+      "re_tested_by": "reading the serving store directly, read-only, under a heavy-scan lease, for ALL 16 failing node keys at once; then reading the walk's own timestamp and each failing row's grade from the factory store.",
+      "result": "HOLDS, and stronger than the dispatch claims. 16/16 nodes hold recordRetirement {status: retired, verdict: absent-verified}, updated 2026-09-17T09:57:38Z-09:58:02Z. The walk ran at 2026-09-17T10:28:02Z -- about 30 minutes LATER. So at the walk's own timestamp half (ii) was already satisfiable for the whole cohort, and every one of the 16 rows recorded {\"grade\":\"BP-MEANING-01\",\"reason\":\"HTTP 404\"} with no declinedAtServe field: the only thing that failed them was half (i).",
+      "whatThisDoesNotProve": "It does not prove the re-walk turns green, because that requires running a walk, which this lane may not do. It removes the other explanations for those 16 rows; the re-walk is the integration seat's grade."
+    },
+    {
+      "finding": "The drift control is real -- it can fail.",
+      "produced_by": "my own self-test fixtures.",
+      "re_tested_by": "the checked-in test file (5 tests, incl. the comparator in BOTH directions and a pre-P-206 route fixture), the CI run's literal output, and the selftest's exit code.",
+      "result": "HOLDS. CI printed the real check's JSON: {\"ok\":true,\"accepted\":[\"not_baked\",\"record_retired\"],\"declared\":[\"not_baked\",\"record_retired\"],\"source\":\"ldt-vintage-main/artifacts/api-server/src/routes/brokerageNodeFacets.ts\",\"revision\":\"dca5ec2\"}. The self-test fixtures include a pre-P-206 source (declares not_baked only) and assert it is a DIVERGENCE, so a guard that always passed would fail its own suite.",
+      "knownLimit": "It compares against LDT main, not the deployed revision (stated in the script header and in CP1). The walk's `declinedRetirement.byRefusalError` is the compensating channel."
+    },
+    {
+      "finding": "The lane's change is what makes the tests pass -- i.e. the tests are not vacuous.",
+      "produced_by": "the branch's own test run.",
+      "re_tested_by": "the negative control: origin/main's `src/jobs/verify-walk.mjs` written into the same tree (git show origin/main:... > file), the P-301 test run against it, then the file restored and the restore verified by comparing against a saved copy (0 differing lines) with `git status` clean.",
+      "result": "HOLDS: 9 tests, 3 pass / 6 fail against origin/main's walk -- the failures read exactly the dispatch's defect (actual 'BP-MEANING-01' vs expected 'RETIRED'; actual 'not_baked' vs expected 'record_retired'). On the branch: 27/27 for the two walk test files, 5/5 for the drift control's test, and the drift control itself ok twice (self-test + real).",
+      "whyTheOtherThreePassOnMain": "They are the falsifier-direction tests (a non-refusal body keeps its historical grade; the store is not reached for a non-refusal; the body's own retirement object is not evidence). They pass on main BECAUSE main has no decline path at all -- which is the defect, and is why they are not evidence of correctness on their own."
+    }
+  ],
+  "whatIDidNotIndependentlyVerify": [
+    "48491 (Williamson): the dispatch says every declined retirement there grades BP-MEANING-01 too. I did not measure it. Measuring it means either running a walk (forbidden) or enumerating that county's retired nodes and probing the serve route for each; I probed the Hays route only. The code path is county-blind, so the claim is plausible, but it is UNMEASURED here and the integration seat's Williamson re-walk is its grade.",
+    "The merge/CI state of the branch's own PR #166 beyond the checks I read: `mergeStateStatus` CLEAN at head 9d3a535, 6 check instances (2 runs x 3 jobs) all pass -- but nothing has been merged, and this lane cannot merge.",
+    "LDT's own tests for the P-206 route change: I read the source and probed the surface; I did not run LDT's suite.",
+    "Whether the sweep's 52 ids are the RIGHT ids for a walk of Hays (the sweep namespace measurement answers what they are, not whether they should be the sweep), and whether P-178's identity ruling should change the walk's sweep basis. Reported, not adjudicated."
+  ],
+  "verdictTally": {
+    "local_negative_control_p301_test_vs_origin_main_walk": { "tests": 9, "pass": 3, "fail": 6, "expected": "the six failures are the defect" },
+    "local_branch_walk_tests": { "files": ["test/p301-walk-record-retired.test.mjs", "test/p180-walk-declined-retirement.test.mjs"], "tests": 27, "pass": 27, "fail": 0 },
+    "local_branch_drift_control_test": { "tests": 5, "pass": 5, "fail": 0 },
+    "local_branch_full_suite_windows": { "tests": 1679, "pass": 1641, "fail": 1, "skipped": 35 },
+    "local_base_full_suite_windows": { "tests": 1664, "pass": 1626, "fail": 1, "skipped": 35 },
+    "delta": "+15 tests, +15 pass, the same single failure -- see whereTheFailuresWere",
+    "ci_test_job_linux": { "tests": 1679, "pass": 1673, "fail": 0, "skipped": 4, "pin_check": "2/2 pass" },
+    "ci_checks": "6 of 6 pass (runs 35218778307 and 35218803657; jobs test, gate8, ldt-sha-comment-presence in each)"
+  },
+  "whereTheFailuresWere": {
+    "theOneLocalFailure": "test/ctx-b3-store-census.test.mjs:137 'resolveLeafPaths against the real pinned LDT checkout agrees with the maintained mirror' -- the local LDT checkout yields six leaf paths while the maintained mirror lists five (an extra baseFacts.situsAddress). It fails IDENTICALLY on origin/main (base run: same test, same count), so it is a local-harness artifact, not this lane's. It is also the reason the lane does not claim a green local suite on this host.",
+    "theSecondLocalFailureIExpected": "p3-absence.test.mjs:582 (the documented OPS-21 S3 non-vacuity finding) fails on this host in both the base and branch runs. It is out of scope for P-301 and predates it.",
+    "theLesson": "Report the delta, not a green. A lane that had reported 'suite green' from this host would have been wrong twice over."
+  },
+  "mostImportantThingInThisReview": "The four tests that DID flip (A-201 for both measured bodies, the both-sources grade, and the refusal-token record) are the only ones that distinguish the branch from main, and the store measurement is what makes them mean something: half (ii) was already true for all 16 nodes half an hour before the walk ran, so P-301's half (i) is not a hopeful hypothesis about what the store might contain -- it is the last missing piece for a cohort whose rows are already on the shelf. The weakest link is the inference that the deployed production revision corresponds to LDT 9ce30b81 (no image provenance exists); nothing in the change depends on it, because the walk grades on the body it actually receives and the store row it actually reads."
+}
