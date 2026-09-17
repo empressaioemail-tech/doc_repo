@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-17 (15:27Z, integration session after 06a91261)
+last_updated: 2026-09-17 (17:25Z, integration session after 06a91261)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -11,9 +11,9 @@ programs: [OPS-24]
 related:
   - _inbox/2026-09-16_texas_scaleup_program_scope.md (the plan, rev 4; this file tracks its rows)
   - 90_operations/OPS-24_county_to_serving_program.md
-  - 90_operations/OPS-16_texas_market_plan_of_record.md (row text is the authority; A-191 to A-206 cover 2026-09-16 and 2026-09-17)
+  - 90_operations/OPS-16_texas_market_plan_of_record.md (row text is the authority; A-191 to A-209 cover 2026-09-16 and 2026-09-17)
   - _decisions/2026-09-16_county_verdict_is_not_the_serve_switch.md
-snapshot: Cloud Run and Vercel state read by field, GitHub mains, and doc_repo main 6c74f946, 2026-09-17 14:31Z
+snapshot: Cloud Run and Vercel state read by field, GitHub mains, and doc_repo main 9584d503, 2026-09-17 17:25Z
 ---
 
 # Texas scale-up roadmap
@@ -28,23 +28,23 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 *In flight* means a lane or a job is working it. *Held* means ready and deliberately not applied.
 *Not started* means carded and not dispatched.
 
-## Where things stand (2026-09-17 14:31Z, at session close)
+## Where things stand (2026-09-17 17:25Z)
 
 | Area | State |
 |---|---|
 | **Gate (P-252, P-292, P-293, P-298)** | **Live and graded.** A six-county apply takes 26 to 33 minutes on the P-298 index (was 8h13m). The hourly trigger is enabled; the 14:00Z run succeeded in 26m. Runs refuse `LEASE_HELD` while a lane holds the factory store, which skipped 12:00Z and 13:00Z; that is the design. |
 | **Cell serving (P-297)** | **Live**, both halves (retrieval `00098-cat`, cortex `00820-jex`). All 152 slated pairs read `pass` today, so answers changed only for empty or refused slated cells, which now refuse with a reason. |
 | **Engine-api surfaces (P-302)** | **Live and graded** (engine-api `00249-kiw`). A slated refusal is printed as a refusal in the feasibility report and PDF, never the baked value. |
-| **Envelopes (P-249)** | **Live** (cortex `00820-jex`, Property Explorer `k8hha93vj`). Reasonless and shape-only zeros (Hays `48209:97658`) draw on the panel with the figure withheld. **The "not onboarded" class (Waco `48309:103015`) still declines on the panel**, although cortex draws it (P-303, compiled). |
+| **Envelopes (P-249)** | **Live** (cortex `00820-jex`, Property Explorer `k8hha93vj`). Reasonless and shape-only zeros (Hays `48209:97658`) draw on the panel with the figure withheld. The "not onboarded" class (Waco `48309:103015`) now draws on the panel too (**P-303 live and graded**, Property Explorer `mfesp954e`). P-304 (the anonymous area figure) is in CI as LDT #713; P-314 carries the same figure's third name. |
 | **Setbacks (P-256, P-258, P-299, P-300)** | P-258's tables and P-299's height guard are **live**; corpus 1.4.0 published. **P-256b merged** (factory `c5622d0b`); the setback writer (`208fb315`, generation 8) and envelope writer (`e6bc2808`, generation 9) are rebuilt from that commit, env unchanged, no trigger. Next: dry-run and apply per county within A-199's ceilings once P-266 releases the stores, then re-run P-258's writer and fire P-300. |
-| **Walk (P-301)** | **Merged and built** (publish image `f476f438`). A Hays production re-grade is queued behind Williamson; the separate `factory-verify-walk` job cannot run production walks (template gap). |
-| **Six-county republish** | **5 of 6 in production** (Bastrop, Caldwell, McLennan, Travis green; Hays written, walk red before P-301). **Travis graded MOVED** (15:24Z, tier1 row and `get_smart_site`). **Williamson HELD** for an operator ruling: its staging publish refused `COUNTY_COVERAGE_COLLAPSE` with nothing written. **Hays re-grade waiting** on P-266's production lease. |
+| **Walk (P-301)** | **Graded on production.** Hays walk `20f5e98e` reads `pass` (96 parcels, 79 served, 16 retired, 16 of 16 declined retirements accepted), 17:00Z. The separate `factory-verify-walk` job still cannot run production walks (template gap). |
+| **Six-county republish** | **5 of 6 done and graded** (Bastrop, Caldwell, McLennan, Travis, and Hays: retry `m22ql`, run `086fa515`, 17:01Z, after `gf8rv` crashed mid-county). **Williamson held:** P-306 found the floor compares two id keyspaces; the fix is factory #170. |
 | **Serving path (P-294, P-295)** | P-294 **merged and deployed as a job** (`factory-republish-on-change`, dry-run arguments, no schedule). Its schedule and first dry cycle wait for the republish. P-295's build is not started. |
 | **Farm (P-284, P-285)** | Stage records live; the county runner is merged; Burnet dry run recorded (5 of 13 stages have a runner). |
-| **Controls** | P-276's drift check is merged but has no scheduled home (IAM needed). P-305 (key drift) is compiled. The Preview retrieval key is fixed. |
-| **Austin zoning (P-259)** | Rulings made (A-202); the follow-up lane (P-259b) is **running**. The stamp applies after it. |
+| **Controls** | P-276's drift check is merged; its scheduled home is P-316 (the operator's IAM grant first). P-305's check, inventory and runbook are on main; hauska-map #410 is green and BLOCKED. P-307 (lease keys) is factory #169. |
+| **Austin zoning (P-259)** | P-259b **merged** (LDT `8e7218f7`). Next, on the production store: count and apply `0103` by hand, dry-run and apply the Austin stamp, deploy cortex with P-304, rerun the P-255 census. |
 
-## Live services (read by field at 14:31Z)
+## Live services (read by field; 14:31Z, updated 17:25Z)
 
 | Service | Revision | Built from | Carries | Rollback |
 |---|---|---|---|---|
@@ -52,14 +52,14 @@ deployed and verified at its own instrument. *Merged* means on main and not yet 
 | hauska-engine-api (us-central1) | `00249-kiw` (digest `29c46cc2`) | engine `1d9e4752` | P-302, P-248, P-261. Tag `envelope-canary` follows the latest revision | `00247-san` |
 | cortex-api, LDT (us-central1) | `00820-jex` (digest `950e4eb0`) | LDT `c40423a5` | P-249 cortex half, P-297 LDT half, P-299, P-258 tables, P-293. The P-249 proof revision `00819-wug` (tag `p249-f816c21`) sits at 0 percent | `00817-niq` |
 | smartsite-mcp (us-central1) | `00134-wad` | LDT `ba6a5a69` | Reads cortex over HTTP, so it carries the cortex changes without a deploy | |
-| Property Explorer (smartsite.cloud, Vercel) | deployment `k8hha93vj` (asset `index-P6PwqVA_.js`) | map `93f832b6` | P-249 map half | deployment `fyn3qud4j` |
+| Property Explorer (smartsite.cloud, Vercel) | deployment `mfesp954e` (asset `index-ARwxD9wN.js`) | map `3ee35d5e` | P-249 map half, P-303 | deployment `k8hha93vj` |
 | factory-control (us-east4) | `00008-vid` | factory `35007fb` | P-281 lease routes | |
-| Factory jobs | gate scheduler, parcel-record-fill, flood-ingest, r4-companions: `34cf39e` (digest `83ab81e7`). publish, migrate, staging-reset, verify-walk, dollar-fields-patch, republish-on-change: `b65f61b` (digest `f476f438`). Setback and envelope writers, conformant: `47c7dfc` | | P-252, P-292, P-281, P-284, P-294, P-298, P-301 | |
+| Factory jobs | gate scheduler (generation 15), parcel-record-fill, flood-ingest, r4-companions: `1fa850e7` (digest `28066cef`); r5-zoning `1fa850e7` (`dfc2d440`). publish, migrate, staging-reset, verify-walk, dollar-fields-patch, republish-on-change: `b65f61b` (digest `f476f438`). Setback writer `c5622d0b` (`208fb315`), envelope writer `c5622d0b` (`e6bc2808`). Conformant: `47c7dfc` | | P-252, P-292, P-281, P-284, P-294, P-298, P-301, P-256b, P-266/P-268 | previous digests |
 | Factory store | index `parcel_record_cell_rail_place_idx`, 2.83 GB | | P-298 | |
 | npm | `@empressaio/setback-corpus@1.4.0` (latest) | corpus `f43cf4b7` | P-299 | |
 | Cloud Scheduler | `factory-publish-gate-sched-hourly` ENABLED | | | |
 
-Mains at close: engine `1d9e4752`, LDT `c40423a5`, map `93f832b6`, factory `c7bd819b`, corpus `f43cf4b7`.
+Mains at 17:25Z: engine `7b3dda0b`, LDT `8e7218f7`, map `3ee35d5e`, factory `1fa850e7`, corpus `f43cf4b7`. Merged and not deployed: LDT `8e7218f7` (P-259b; cortex serves `c40423a5`).
 
 ## Done
 
@@ -76,6 +76,9 @@ Mains at close: engine `1d9e4752`, LDT `c40423a5`, map `93f832b6`, factory `c7bd
 | P-258 (tables) | Setback campaign tables | **Live**; writer re-run waits on P-256 |
 | P-249 | Unverified zero atoms stop hiding envelopes | **Live** (canary proof `_inbox/2026-09-17_p249_canary_proof.md`); the not-onboarded class is P-303 |
 | P-302 | Engine-core shows a declared refusal, never the baked value | **Live and graded** (`_inbox/2026-09-17_p302_live_grade_48453-941709_export.txt`) |
+| P-303 | The panel draws Waco-type parcels | **Live and graded** (A-208) |
+| P-301 | The walk reads `record_retired` | **Graded on production** (Hays walk `20f5e98e`, A-209) |
+| A-190 republish | Bastrop, Caldwell, McLennan, Travis, Hays | **Done and graded**; Williamson held |
 | P-281, P-284 | Leases; stage cost records | Live and proven |
 | P-253, P-255, P-277, P-251 | Ledger leg, setback census, amendment ids, key rotation | Done |
 | P-246, P-247, P-238, P-213, P-242b, P-242c, P-206 | Reports rows | Closed (A-190) |
@@ -86,21 +89,19 @@ Mains at close: engine `1d9e4752`, LDT `c40423a5`, map `93f832b6`, factory `c7bd
 |---|---|---|
 | P-294 | Republish a county when its ledger changed (job deployed with dry-run arguments) | After the republish: create the schedule (not enabled), one dry cycle; the first automated production run needs the operator's go |
 | P-285 | County runner | Burnet run, after the Phase 0 exit |
-| P-301 | The walk reads `record_retired` (publish image rebuilt) | Graded by the queued Hays production-only publish |
 | P-276 | Staging secret drift check | Needs a scheduled venue (proposal: a Cloud Run job under a dedicated service account with Run Viewer and Secret Accessor in both projects; the IAM grant is the operator's) |
 
 ## In flight
 
 | Row | What | State | Next |
 |---|---|---|---|
-| Williamson republish | A-190 | **HELD for an operator ruling.** Staging `99pbp` refused `COUNTY_COVERAGE_COLLAPSE` at 15:03:50Z, nothing written (run `59808bfc`): 167,064 zoned source parcels against 290,329 served zoned rows (57.5%). Served rows hold two id sets, numeric 319,480 (147,145 zoned) and retired R-prefixed 282,569 (143,184 zoned); the zoning source is R-keyed with no crosswalk (readiness `layerVsRoll KEYSPACE_MISMATCH`, 0 of 281,435 numeric nodes found). Open: the guard double-counts the two id sets, or the bake would strip zoning from the live numeric nodes | Card a lane to answer that; never pass the override token without a ruling |
-| Hays production-only re-grade | Grades P-301 | `mxkft` refused `LEASE_HELD` at 15:14:27Z. **`gf8rv` (started 15:24:41Z) CRASHED at 15:49:16Z** before its walk: an unhandled `pg` Client `'error'` event ("Connection terminated unexpectedly"), exit 1. It had already rewritten part of the county under run `c35f6e03` (`node:48209:100226` at 15:26Z, `135570` at 15:33Z; `97658` and `88885` still on this morning's `eb1d2676`), so Hays is mixed between two same-day bakes and its freshness is not stamped. Its orphaned lease on the production host holds until 16:18:30Z. The 06a91261 waiter (`hays-when-lease-free.sh`) re-waits on that lease and will retry; it gives up at 17:45Z | Let the retry run. If it crashes the same way, card the publish job's unlistened client (the memory's 57P01 mechanism fits the class, but this error text is a socket drop and the job had renewed its lease 46 s earlier, so the cause is unconfirmed). Pass: walk `verdict: pass`, `declinedRetirement.accepted` 16, `byRefusalError.record_retired` 16 |
+| Williamson republish | A-190 | **Held (A-209).** Staging `99pbp` refused `COUNTY_COVERAGE_COLLAPSE`, nothing written. P-306: the floor counts every id namespace on the served side and only the source's R-prefixed one on the source side; scoped, retention is 1.1666; the bake reaches the numeric nodes by situs-address recovery, so it strips nothing | Review and merge factory #170, rebuild the publish image, then Williamson staging and production (`--gold=48491:76149`, a non-retired probe) |
 | P-259b | Interim districts read as base; no-account features skipped (LDT #712) | **Merged** (LDT `8e7218f7`, 15:37:50Z; 12 of 12 checks SUCCESS on head `b89b26f6`; write path reviewed). Cortex's store is the production neondb host (`ep-lucky-truth-apodo8hr`), the one the Hays publish holds | After Hays: count 0103's backfill rows, apply 0103 **by hand** with its tracker row under a production lease (A-207 ruling 3), dry-run the Austin stamp on production against the staging figures, apply it, deploy cortex (canary, smoke, shift; **never** `run-migrations`), then the P-255 census |
-| P-306 | Williamson floor: two keyspaces, or a zoning strip | **Compiled** (`_dispatches/2026-09-17_p306-williamson-coverage-keyspace_dispatch.md`, FAN-DEPTH 0, OPS-24) | Operator fires |
-| P-307 | A lease keyed on a non-host name (or a pooler host) contends with nothing | **Compiled** (`_dispatches/2026-09-17_p307-lease-key-is-a-host_dispatch.md`, FAN-DEPTH 0, OPS-24) | Operator fires |
+| P-306 | Williamson floor: two keyspaces, or a zoning strip | **Closed partial.** Reading (a) holds, (b) false; A-207's attribution corrected in A-209. factory #170 green (`7b8dbe70`) | Review, merge, publish image rebuild, Williamson publish |
+| P-307 | A lease keyed on a non-host name (or a pooler host) contends with nothing | **Closed partial.** factory #169 green (`9a3df5f6`): non-host keys refuse `LEASE_STORE_INVALID`, pooler keys to direct. Only `factory-store` was ever taken (2 leases, 6 refusals). Client patch filed (`_inbox/2026-09-17_p307-lease-key-is-a-host_client.patch`) | Review, merge, deploy factory-control, grade a live refused take, apply the client patch |
 | P-266 with P-268 | Open trivial rails; must-pass refusals (factory #168) | **Merged** (factory `1fa850e7`, 15:51:06Z; updated to main, 6 of 6 checks green; source reviewed). The lane's dry runs (14:55Z to 15:24Z) are the measured apply effect. parcel-record-fill (4 jobs, including the gate scheduler; its 21-file import graph is unchanged since `34cf39e`) and r5-zoning images building | Per county, after the production lease frees: `parcel-record-fill --apply` for Bastrop, Caldwell, Hays, McLennan and Travis, and `parcel-r5-zoning --apply` once; then the gate scheduler by hand and `six-county-completeness.mjs`. **Williamson is HELD**: the apply writes CAD absent-verified on all 282,569 parcels (a mass join miss, the same keyspace as P-306) and replaces store values. Two situsState refusals (`48209:88885`, `48309:417476`) need a ruling |
 | P-275 | Live-currency checks for five counties (engine #467) | **Closed partial; #467 green** on its updated head (`3c1035ac`), source reviewed. The reactivation count is 0 in every county, so nothing needs authorising | Merge (a hand-run review CLI; nothing deploys) |
-| P-254 | The customer leg's instrument (doc_repo) | **Compiled** (`_dispatches/2026-09-17_p254-customer-leg-probe_dispatch.md`, FAN-DEPTH 0); carries the Travis cross-surface envelope reason and the impervious 45/30 pair as required cases | Operator fires; the integration seat commits the instrument |
+| P-254 | The customer leg's instrument (doc_repo) | **Compiled, ready to fire** (`_dispatches/2026-09-17_p254-customer-leg-probe_dispatch.md`) | Operator fires; the integration seat commits the instrument |
 | P-305 | Key rotation reaches every environment | **Closed partial.** map #410 is a DRAFT (sync workflow writes every environment); doc_repo edits (`scripts/check-preview-key-drift.mjs`, `scripts/inventory-key-consumers.mjs`, fixtures, `90_runbooks/key_rotation_all_environments.md`) uncommitted in `P:/seat-worktrees/p305-key-drift/doc_repo` | Review, commit the doc_repo files, mark #410 ready and merge, run the check once |
 | P-304 | The envelope route withholds the area figure from anonymous callers | **Closed partial.** LDT #713 updated with main at 15:45Z (head `d1308ef2`), CI running. Lane notes `maxFootprintSqFt` carries the same number on an unverified parcel (a third name for the figure, not closed) | Merge on green, deploy cortex with P-259b, then the live probe (entitled leg first: `48021:34049` keeps 19052 and 63.5; then `48209:97658` carries neither) |
 | P-256b | #160 on main, corpus pin 1.4.0, P-146 table regenerated (factory) | **Merged** (factory `c5622d0b`, 15:22:57Z). Setback and envelope writer images building from a clean clone at that commit | Dry-run each county, apply within A-199's ceilings once the stores are free (the lane measured 99,718 parcels moving to a value, inside every ceiling) |
@@ -113,11 +114,19 @@ Mains at close: engine `1d9e4752`, LDT `c40423a5`, map `93f832b6`, factory `c7bd
 | P-303 | The panel declines the not-onboarded zero with `no-zoning-stamp` | **Compiled**; its dispatch and mission are uncommitted at close. Commit, then the operator fires |
 | P-304 | The envelope route exposes the withheld area figure to anonymous callers | **Compiled**, uncommitted at close |
 | P-305 | A rotated key reaches Production but not Preview, unnoticed | **Compiled**, uncommitted at close (the Preview key itself was fixed 13:37Z) |
-| P-296 | ETJ rollout | Unblocked (P-297 live); dispatch owed. Migration `0102` is unapplied on production, deliberately skipped in the cortex deploys |
+| P-296 | ETJ rollout | **Compiled, ready to fire** (`_dispatches/2026-09-17_p296-etj-rollout_dispatch.md`). Staging `0102` and ingest in the lane; production `0102` (the only unrecorded file there) and ingest are the integration seat's |
 | P-300 | City-wide default setback lines | P-256 applied |
 | P-258 re-grade | Setback writer re-run and census re-grade | P-256 applied |
-| Engine corpus bump | Engine to corpus 1.4.0 with its 14 vendored tables corrected | Dispatch owed |
-| Engine slate re-vendor | The engine's slate copy (152 pairs) lacks LDT's six Hays record-overlay rails | P-282 scope; dispatch owed |
+| P-299 engine half + P-282 slate | Engine to corpus 1.4.0 (23 heights, 98 state changes) and the slate re-vendored from LDT with a drift test that can fail | **Compiled, ready to fire** (`_dispatches/2026-09-17_p299-engine-corpus-and-slate_dispatch.md`) |
+| P-308 | The engine's CAD join-miss path stamps its two companions | **Compiled, ready to fire** (`_dispatches/2026-09-17_p308-join-miss-companions_dispatch.md`) |
+| P-309 | Review the served retirements against the counties' own sources (read-only) | **Compiled, ready to fire** (`_dispatches/2026-09-17_p309-served-retirement-review_dispatch.md`) |
+| P-310 | Williamson's parcel-record-fill join (D1) | Carded; depends on P-306 |
+| P-311 | situsState conflicting-evidence outcome (D2) | Carded |
+| P-312 | A dropped connection crashes a publish mid-county (D3) | Carded |
+| P-313 | The reaper releases a dead run's heavy-scan lease (D3) | Carded |
+| P-314 | `maxFootprintSqFt` carries the withheld area (D4) | Carded; depends on P-304 |
+| P-315 | The read-only factory role reads the lease tables (D5) | Carded, low priority |
+| P-316 | The staging secret drift check gets a scheduled home | Carded; waits on the operator's IAM grant |
 | verify-walk production template | `factory-verify-walk` lacks the production store secrets | A small factory change (`cloudbuild.publish.yaml`) |
 | Empty `utilityService` value cells | `48453:941709` has a `value` cell with no payload; population unmeasured | A read-only measurement once no lane holds the factory store |
 | P-262 | One edge labeller (merged) | Graded by P-264 |
@@ -236,3 +245,5 @@ Mains at close: engine `1d9e4752`, LDT `c40423a5`, map `93f832b6`, factory `c7bd
 | 2026-09-17 15:27 | **New integration session; session 06a91261 was reopened only to restart the republish.** **Travis graded MOVED** by this session: `g68rt` succeeded at 14:54:42Z (2h6m, walk pass, 873,766 written, run `f9e98352`); probe rows `node:48453:367134` and `node:48453:493738` rewritten at 13:46Z and 13:55Z under that run; `get_smart_site` serves `bakedAt` 13:46:17.616Z. **Williamson held** (staging `99pbp`, `COUNTY_COVERAGE_COLLAPSE`, nothing written; operator ruling owed). **Hays re-grade waiting** (`mxkft` refused `LEASE_HELD`; the 06a91261 waiter runs it when the store frees). **P-256b merged** (factory `c5622d0b`) and both writer images rebuilt and read back. **P-259b's #712** updated with main. The P-256b and P-259b closes were copied from the dispatch-planner worktree. **Lease finding:** P-266's census lease is keyed `factory-store` (alias `FACTORY_DATABASE_URL_RO`), while the 15:00Z gate run `jcljc` holds its lease on the host `ep-round-base-au0jofwp`. Both aliases resolve to that one host, and both leases are live at once, so a lease taken under a non-host name contends with nothing and still reports as taken. **P-259b migration:** LDT's runner applies every file missing from `_schema_migrations`, so 0103 goes in by hand with its tracker row, and 0102 stays pending for P-296. P-303, P-304 and P-305 were fired by the operator. |
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
+| 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-17 17:25 | **Hays done; P-301 graded on production** (retry `m22ql`, run `086fa515`, walk `20f5e98e` pass, 16 of 16; read independently). A-190's republish is at five of six. The 16:00Z gate run `mkjp4`, the first on the new scheduler image, succeeded in 34m; `c5p8r` (17:00Z) is running. **P-306 and P-307 closed partial** with factory #170 and #169 green; A-207's Williamson attribution corrected. **Operator rulings D1 to D5 (A-209)**; rows P-308 to P-316 added. **Compiled, ready to fire:** P-254, P-296, P-299 engine half with P-282 slate, P-308, P-309. P-316 waits on the operator's IAM grant. |

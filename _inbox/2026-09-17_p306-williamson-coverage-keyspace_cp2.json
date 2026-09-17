@@ -1,0 +1,148 @@
+{
+  "lane": "p306-williamson-coverage-keyspace",
+  "planRow": "P-306",
+  "kind": "CP2 — pilot/mid-work adversarial checkpoint (contract §1): what the measurements did to the design",
+  "filedAt": "2026-09-17T16:21:58Z",
+  "filedAtBasis": "Same single clock reading as CP1 (see CP1.filedAtBasis).",
+  "filedLate": "Same disclosure as CP1: filed at close. The measurements below are read-backs from the staging store and the factory replica between 2026-09-17T16:00:28Z and 16:10:33Z; the reversal in 'theReversal' was made when q14 landed (16:09:15Z), before any code was written.",
+
+  "theReversal": {
+    "whatTheDispatchExpected": "Reading (a) as written in A-207: 'the served count includes the retired R-prefixed rows, which this bake will not rewrite, so the denominator is inflated by a population the source side never sees.'",
+    "whatTheRowsShow": "The R-prefixed served rows are NOT a population the source side never sees — they are the source's OWN id keyspace, and 282,569 of them are literally the same ids (q18: served R ids 282,569, source R ids 282,569, shared 282,569). The population the source table never keys is the NUMERIC one: txgio_parcel holds 0 numeric prop_ids for 48491, and the metric served set holds 319,480 numeric rows of which 147,145 are zoned (q5, q6b).",
+    "consequence": "Reading (a)'s MECHANISM is confirmed (one keyspace on the source side, two on the served side) but its ATTRIBUTION is inverted. The retired R rows DEFLATE the served count inside the source's keyspace (143,184 zoned against the source's 167,032), they do not inflate it. Reported as a correction to A-207's wording rather than quietly adopted."
+  },
+
+  "answers": {
+    "a": {
+      "verdict": "HOLDS, with the attribution corrected",
+      "oneLine": "The floor compares one id keyspace with two: txgio_parcel for 48491 is R-keyed (304,162 R parcels + 136 other, 0 numeric), while the served tier-1 set is both R-keyed (282,569 rows, 143,184 zoned) and numeric-keyed (319,480 rows, 147,145 zoned). scoped to the source's own keyspace the same guard computes 167,032/143,184 = 1.1666 and PROMOTES; unscoped it computes 167,064/290,329 = 0.5754 and refuses.",
+      "counts": {
+        "sourceZoned_unscoped": 167064,
+        "sourceParcels_unscoped": 304298,
+        "source_R_parcels": 304162,
+        "source_R_zoned": 167032,
+        "source_other_parcels": 136,
+        "source_other_zoned": 32,
+        "source_numeric_parcels": 0,
+        "servedZoned_unscoped": 290329,
+        "servedTier1Rows_unscoped": 602050,
+        "served_R_rows": 282569,
+        "served_R_zoned": 143184,
+        "served_numeric_rows": 319480,
+        "served_numeric_zoned": 147145,
+        "served_other_rows": 1,
+        "served_other_zoned": 0,
+        "scopedRetention_R": 1.1665549223376914,
+        "unscopedRetention": 0.5754299432712543
+      },
+      "countingRules": "zoning = jsonb_typeof(payload_json->'zoning') = 'object'; keyspace = ^[Rr][0-9]+$ / ^[0-9]+$ / other, one expression used on both sides. served zoned per keyspace sums exactly to the refusal's 290,329 (143,184 + 147,145). served rows per keyspace sum to 602,049 of the refusal's 602,050; the missing row is the single 'other' row (q14), which is accounted for explicitly rather than left as a rounding remark."
+    },
+    "b": {
+      "verdict": "FALSIFIED",
+      "oneLine": "The bake does not need a bare-number join to zone a numeric node: it recovers the R-keyed source parcel by SITUS ADDRESS and reads that parcel's zoning. All five named live numeric parcels reach a district by that path, and the district it reaches is the district they serve today.",
+      "codePath": "The served payload names the path in its own provenance: payload_json->'provenance'->'parcelJoin' = {state: 'joined-situs', table: 'txgio_parcel', basis: 'txgio_parcel row feature_index 137504 matched on normalizeSitusAddress (situs-address recovery for county 48491)', sourceVintage: 'stratmap25-landparcels_48491_williamson_202507'}, with 'landUseAddressRecovered': true and landUse.source 'cad-roll-address-join'. That is the LDT conformant bake's situs-address recovery, measured for this county by the facet ledger: county_facet_coverage 48491 'land-use' source 'cad-roll-address-join', integrity_verdict 'pass', owner_match_rate 0.8890 at sampled 2000 (checked_at 2026-07-21T11:03:01.723Z).",
+      "ldtRevisionRead": "This citation is the one part of answer (b) that rests on READING LDT code rather than on rows, so the revision is named: the code was read at LDT pin bae48d406f7595af3d47111b558d0ebc3efd9c56 (2026-09-14, merge of PR #687), where artifacts/api-server/src/lib/ holds nodeFacetBakeTier1.ts, nodeFacetBakeTier1Conformant.ts, nodeFacetTier1ParcelJoin.ts, joinNormalize.ts and joinIntegrityGate.ts. At that revision joinNormalize.ts documents the recovery verbatim: 'normalizeSitusAddress is the join key on BOTH sides: uppercase, then strip every non-alphanumeric character ... A blank/whitespace/null address' produces no key, the situs join 'is gate-scored — a parcel whose address matches but whose TxGIO and CAD owners DISAGREE gets honest null, never the mismatched code', and the recovery 'fires only where the prop_id join is blocked' (blockedFips / LANDUSE_JOIN_DISABLED_FIPS_SEED). That last clause is why Williamson — a gate-blocked county — is on this path at all, and the owner gate is why the payload's landUse.source carries the join's owner_match_rate 0.8890 rather than a bare match. Note the asymmetry with the evidence above: the STORE rows (the payload's own provenance) and the ledger are what carry the conclusion; the code read only confirms the mechanism the rows already assert.",
+      "ldtRevisionWarning": "P:/legacy-design-tools is NOT at the pin: its checkout HEAD is 10069854 dated 2026-08-12, a month older than the pin and on a divergent line (the pin is NOT an ancestor of HEAD; diff pin..HEAD is 865 files with 159,649 deletions). At that Aug-12 revision nodeFacetBakeTier1Conformant.ts and nodeFacetTier1ParcelJoin.ts do not exist, and the two files that do carry the recovery are hundreds of lines smaller. Any successor grepping that working tree for the conformant bake will conclude it is not there. Read LDT with git show <pin>:<path>.",
+      "evidenceForThe147145": "The 147,145 numeric nodes zoned today were written by the 2026-09-10 production publish 848afd72-dbbb-41e0-a48d-b0518e421238 (target production:48491, status success, walkVerdict pass, tier1Written 602050, sourceVintage conformant-v1, stampedAt 2026-09-10T19:55:10.815Z). served provenance agrees: numeric rows' snapshot max_updated 2026-09-10T19:20:48Z, R rows' 2026-09-10T19:55:10Z. Every one of those numeric nodes carries a zoning object with a district and a provenance (e.g. node:48491:352566, district PUD-SF, jurisdictionKey leander_tx, stampedAt 2026-09-10T19:01:38.548Z)."
+    }
+  },
+
+  "fiveParcels": {
+    "selectionRule": "numeric key ('^[0-9]+$'), 48491, carries a zoning object, recordRetirement null/absent (the dispatch's 'live, non-retired'), one per distinct jurisdictionKey, spread across five cities.",
+    "whatTheBakeWouldWrite": "For each: the primary key join MISSES (0 txgio_parcel rows keyed on the bare numeric prop_id, 0 non-blank geo_id), and the bake reaches zoning through the declared-roll situs address, which lands on the R-keyed source parcel with the SAME situs address (addr_key_equal true) whose zoning equals the node's current district. Established from the code path plus the rows; no bake was run (dispatch line 236).",
+    "rows": [
+      { "place_key": "node:48491:107190", "situs": "12006 ANDERSON MILL RD, CEDAR PARK, TX 78613", "reaches": "R048816", "district": "LI", "jurisdictionKey": "cedar_park_tx", "stratmapFeatureIndex": "238669", "todayZoning": "LI", "agrees": true },
+      { "place_key": "node:48491:100001", "situs": "1906 HOLLY ST, GEORGETOWN, TX 78626", "reaches": "R041604", "district": "RS", "jurisdictionKey": "georgetown_tx", "stratmapFeatureIndex": "132755", "todayZoning": "RS", "agrees": true },
+      { "place_key": "node:48491:107749", "situs": "404A WEST ST, HUTTO, TX 78634", "reaches": "R049387", "district": "OT-4T", "jurisdictionKey": "hutto_tx", "stratmapFeatureIndex": "51692", "todayZoning": "OT-4T", "agrees": true },
+      { "place_key": "node:48491:107115", "situs": "3714 N BAGDAD RD, LEANDER, TX 78641", "reaches": "R048722", "district": "SFR", "jurisdictionKey": "leander_tx", "stratmapFeatureIndex": "3770", "todayZoning": "SFR", "agrees": true },
+      { "place_key": "node:48491:100542", "situs": "200 BARRINGTON DR, LIBERTY HILL, TX 78642", "reaches": "R042145", "district": "SF2", "jurisdictionKey": "liberty_hill_tx", "stratmapFeatureIndex": "132931", "todayZoning": "SF2", "agrees": true }
+    ],
+    "countingRuleCaveat": "The q17b result's own 'live' column reads false for all five, which looks like a contradiction of 'live, non-retired'. It is an idiom artifact, not a finding: the column was computed as (payload_json->'recordRetirement') IS NULL, and PostgreSQL's -> on a JSON null returns a JSON null, not SQL NULL. The operative filter was the retirement STATUS predicate, which is absent/null for all five; q12 shows node:48491:352566 carrying \"recordRetirement\": null verbatim. Recorded as a LESSON because a successor reading only the q17b output would see 'live: false' and mis-triage it."
+  },
+
+  "falsifierOutcomes": [
+    {
+      "id": "P1 (dispatch falsifier 1)",
+      "quoted": "If (a) holds, the served zoned count with retired rows excluded is within five percent of the source count or above it.",
+      "outcome": "CONTRADICTED as worded — and the contradiction is informative, not embarrassing. Served zoned with the retired (R) rows excluded = 147,145; source zoned = 167,064; ratio 0.8805, i.e. 11.95 percent below, outside the band. Reading (a) survives because the floor's operative predicate is not count equality but retention = sourceZoned/servedZoned crossing MIN_COVERAGE_RETENTION (code line 551 + 554): inside the source's keyspace it is 1.1666 and clears 0.95. The prediction was pre-registered in the wrong currency, which CP1's A3 flagged as the design's sharpest risk before any number was read."
+    },
+    {
+      "id": "P2 (dispatch falsifier 2)",
+      "quoted": "If (b) holds, at least one of the five named numeric parcels has no zoning row the bake can reach by its own key.",
+      "outcome": "NOT OBSERVED — all five reach a zoning row by the bake's own path (declared-roll situs -> R-keyed source parcel, addr_key_equal true, district equal to today's). (b) is falsified for these five."
+    },
+    {
+      "id": "P3 (dispatch falsifier 3a)",
+      "quoted": "the new test fails on today's numbers without the fix",
+      "outcome": "DEMONSTRATED BY PROBE, NOT BY THE TEST FILE, and this is stated rather than glossed. The new test file imports KEYSPACE_NUMERIC / pickCoverageKeyspace / resolveKeyspaceScope, so against the un-patched module at c5622d0b it fails at import (SyntaxError: does not provide an export named 'KEYSPACE_NUMERIC') — a module-level failure, which is weak evidence of a value-level delta. The value-level demonstration was therefore made with the real reader: _p306_scratch/fix-delta-probe.mjs runs evaluateCoverageFloor on Williamson's actual numbers with the module at c5622d0b (REFUSES, COUNTY_COVERAGE_COLLAPSE, retention 0.5754299432712543) and with the working tree (PROMOTES, retention 1.1665549223376914, keyspaceScope r-prefixed, excludedZoned 147145). Inside the suite the load-bearing pair is K1 vs K1(violation): the same fixture REFUSES when the served rows carry no keyspace breakdown and PROMOTES when they do."
+    },
+    {
+      "id": "P3 (dispatch falsifier 3b)",
+      "quoted": "a control fixture with a genuine collapse on one keyspace still refuses COUNTY_COVERAGE_COLLAPSE",
+      "outcome": "HOLDS. K2 (violation): a real collapse on the source's own keyspace still REFUSES with the scoped counts; K2 (violation): an empty zoning stamp on the source's keyspace refuses rather than passing on the other side's coverage; K3 (violation): the Travis collapse refuses EXACTLY as it did (the scoping does not rescue it); K4 (violation): a served prior with no nodes in the source's keyspace falls back and still REFUSES. Fresh run in this session, before the 2026-09-17T16:21:58Z clock reading: 49 tests, 49 pass, 0 fail (test/publish-coverage-floor.test.mjs + test/publish-coverage-floor-keyspace.test.mjs)."
+    },
+    {
+      "id": "P4 (owned)",
+      "outcome": "HOLDS — the source is measurably single-keyspace: 304,162 R + 136 other + 0 numeric (q5). The 136 'other' rows do not constitute a second keyspace and are excluded from the scope by the same expression used on the served side."
+    },
+    {
+      "id": "P5 (owned)",
+      "outcome": "HOLDS (the floor was wrong here, not right) — inside the source's keyspace the served R side (143,184 zoned) sits BELOW the source R side (167,032 zoned), retention 1.1666, so there is no collapse to protect."
+    },
+    {
+      "id": "P6 (owned)",
+      "outcome": "HONOURED — MIN_COVERAGE_RETENTION is unchanged at 0.95; no county fips appears in the diff; scoping engages only on a measured single-keyspace source AND a served per-keyspace breakdown, else the whole-count comparison runs as before; the verdict carries keyspaceScope.record with unscoped totals, the excluded row/zoned counts and the keyspace names, and the refusal message names the keyspace it compared and what it could not compare."
+    }
+  ],
+
+  "residualForTheIntegrationSeat": {
+    "statement": "With the fix, the served population in the numeric keyspace (147,145 zoned, live) is outside the coverage floor's comparison, because the floor's source arm (txgio_parcel) cannot key it. It is RECORDED in the verdict and named in the refusal message — an exclusion, declared, not a silent drop — but the guard that actually covers that population is the readiness gate's bakeVsRoll arm (602,049 of 602,049, code OK), not this floor.",
+    "whyNotClosedHere": "Closing it would mean giving the floor a second source arm, which is a design change beyond this dispatch's scope (a read-only investigation that opens at most one PR for the counting defect it was sent to find)."
+  },
+
+  "openThreads": [
+    {
+      "kind": "OPEN",
+      "text": "All 282,569 R-prefixed served nodes carry a roll-membership retirement dated 2026-09-10, and the retirement's own basis (quoted verbatim from node:48491:R352566) is 'prop_id R352566 carries no row in the Williamson County CAD roll's declared tax_year 2026; this record's own claim last carried tax_year 2025'. cad_property holds 282,569 R-prefixed accounts with at_2026 = 0 and 319,480 numeric accounts with at_2026 = 319,480 (q7). That is the same keyspace-mismatch shape as P-212's Bastrop false retirement, one predicate further on. This lane did NOT establish whether the R-set retirement is correct or a false retirement — it is not this row's question and the dispatch forbids widening scope. The next context should read it before anyone acts on the retired R rows."
+    },
+    {
+      "kind": "OPEN",
+      "text": "node:48491:R352566 and node:48491:352566 are NOT the same parcel: the numeric node serves 1440 BROOKS WAY, LEANDER (live, zip 78641) and the R node serves 2512 PLANTATION DR, ROUND ROCK (retired, and its payload says the declared roll holds no row for that prop_id at all). Same digits, different accounts. Any future comparison that aligns the two namespaces by stripping the R prefix is wrong for this county, which is what the OPS-21 identity paragraph (join through the published crosswalk, never by bare number) already required."
+    },
+    {
+      "kind": "OPEN",
+      "text": "The source side undercounts itself: txgio_parcel holds 304,298 rows for 282,571 distinct prop_ids (21,727 duplicate rows), and its zoned count falls from 167,064 by rows to 158,868 by distinct prop_id (q19). The floor counts ROWS. This is not the cause of the refusal and does not change any verdict here (R-side distinct zoned ~158,836 against 143,184 = 1.109, still above 0.95), but the floor's denominator carries the same duplicate-row exposure on the other side and nobody has ruled whether that is intended."
+    },
+    {
+      "kind": "OPEN",
+      "text": "The county's own zoning facet says honest_coverage_pct 33.98 with rail_state 'satisfied-present', threshold_pct 95.00 and classification 'real-at-ceiling' (county_facet_coverage 48491, source 'zoning-stamp', checked_at 2026-07-21T11:03:01.773Z). The floor's header asserts a healthy county measures 1.0000 for this comparison. Two instruments, two coverage figures for one county, neither reconciled to the other. Ruled out of scope here; it is the reason the header sentence should not be quoted as a fact by the next reader."
+    }
+  ],
+
+  "deadEnds": [
+    {
+      "kind": "DEAD-END",
+      "text": "Searching for the LDT conformant bake by filename in the working tree at P:/legacy-design-tools. A repo-wide `dir /s /b nodeFacetTier1ParcelJoin.ts nodeFacetTier1Assemble.ts nodeFacetBakeTier1Conformant.ts` returned NOTHING and exited 1, which reads as 'these files do not exist'. They do exist — at the pin. The checkout's HEAD is 10069854 (2026-08-12), a stale divergent line a month older than LDT pin bae48d406f7595af3d47111b558d0ebc3efd9c56 (2026-09-14); at HEAD those filenames are absent and joinNormalize.ts/joinIntegrityGate.ts are substantially smaller. LESSON: read LDT with `git show <pin>:<path>`, never off the working tree. Cost this lane one stalled background task that looked like a missing-dependency failure."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Seat registration by hand-editing _catalog/seat_register.json. Two attempts to insert the clone's entry after the LAST element of seats[0].repos both landed somewhere else. DIAGNOSED after the fact: in the property register the entry containing the p212 worktree is the last element of seats[0].repos, but the next `\\n    }` after its worktree string is the close of the property SEAT OBJECT (the object carries its own role/description text after its repos array), so the inserted block became a NEW ELEMENT OF THE seats ARRAY — a probe run confirms it: the injected object parses as seats[1], and JSON.parse never complains. Both writes were reverted with git checkout -- and the numstat confirmed empty, so the register is byte-identical to its committed state (property register SHA256 6D320BC3D43ECF7AAA766C9E703876CC0441DE064E95FBD08DE77AC00E18B5E0). The correct insertion point is BEFORE the seat object's closing brace (after the repos array's `]`), and a lane should not attempt it by hand: there is no script in scripts/ that owns this file. The clone is therefore NOT registered and must be pruned by path (P:/tmp/p306-williamson-coverage-keyspace-hauska-factory)."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Releasing the heavy-scan lease without the take-time holder token. node scripts/heavy-scan-lease.mjs release --token <lease id> returns HTTP 409 LEASE_LOST: the lease `id` visible in `list` is not the holderToken, the token is returned once by `take`, is not persisted anywhere (no sidecar, not in `list`), and the script's own usage only accepts --token. The lease self-releases at its expiry 2026-09-17T16:40:14Z. LESSON: capture the holderToken into the lane scratch at take time, or the lane cannot close its own write window."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "FACTORY_DATABASE_URL_RO cannot read `runs` or `run_events` (permission denied for table runs). FACTORY_DATABASE_URL_REPLICA can. A lane that needs the run record should go straight to the replica rather than concluding the record is unavailable."
+    }
+  ],
+
+  "lessons": [
+    { "kind": "LESSON", "text": "In PostgreSQL, payload_json->'recordRetirement' IS NULL is FALSE for a JSON null; the correct liveness test is the status predicate (coalesce(payload_json->'recordRetirement'->>'status','<null>') = '<null>'), or payload_json->'recordRetirement' = 'null'::jsonb. This lane's first five-parcel query returned 0 rows on the wrong idiom and its second printed a misleading 'live: false' column on the right one." },
+    { "kind": "LESSON", "text": "A coverage floor whose numerator and denominator are keyed in different id namespaces cannot be repaired by a threshold: the fix has to make both sides one keyspace AND declare the population it stops measuring. The declared exclusion is what keeps the fix from being a weakening." },
+    { "kind": "LESSON", "text": "The dispatch's own A-207 attribution ('the denominator is inflated by the retired R-prefixed rows') was wrong in direction and the rows were cheap to check. Pre-registering the falsifier in the floor's real currency (a ratio crossing 0.95, not a count equality) would have caught it in the dispatch rather than in the lane." }
+  ],
+
+  "constraintsHonored": "As CP1: no sub-agents, no writes to any store, no publish/bake/walk/writer/reset/deploy/merge, no override token, LDT and hauska-engine untouched, threshold untouched."
+}

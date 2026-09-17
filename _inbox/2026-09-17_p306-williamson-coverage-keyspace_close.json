@@ -1,0 +1,144 @@
+{
+  "lane": "p306-williamson-coverage-keyspace",
+  "planRows": ["P-306"],
+  "status": "closed-partial",
+  "statusReason": "The investigation is complete and answers both readings with counts, but a factory PR awaits the integration seat: merge, image rebuild, and a Williamson staging publish are what would grade it. This lane never merges (dispatch line 256).",
+
+  "probe": {
+    "notApplicable": "read-only investigation; graded by the Williamson staging publish after any merge"
+  },
+
+  "missionPremise": "Williamson 48491's publishing refusal at 2026-09-17T15:03:50Z (run 59808bfc, staging, factory-bastrop-publish-99pbp, image f476f438) came from P-236's coverage floor in hauska-factory src/lib/publish-coverage-floor.mjs (MIN_COVERAGE_RETENTION 0.95), which compared 167,064 zoned source parcels with 290,329 served zoned tier-1 rows. The dispatch's premise under test is that file's header sentence: 'the two sides are the same predicate on the same column'. Two readings could produce the same refusal: (a) the floor compares one id keyspace with two, (b) the bake would strip zoning from the live numeric nodes. Source: _dispatches/2026-09-17_p306-williamson-coverage-keyspace_dispatch.md and finding A-207.",
+
+  "completionPredicate": "A stranger can evaluate this lane without me: (1) read the quoted run_events payloads and confirm the refusal's numbers; (2) run the two queries behind q5 and q14 and confirm the source is R-keyed (304,162 R + 136 other + 0 numeric) and the served set is two-keyspace (282,569 R rows all retired, 319,480 numeric rows live, 143,184 + 147,145 zoned); (3) run the floor's own evaluateCoverageFloor on those numbers and see it REFUSE unscoped at 0.5754 and PROMOTE scoped at 1.1666; (4) run node --test test/publish-coverage-floor.test.mjs test/publish-coverage-floor-keyspace.test.mjs in the factory repo and see 49 pass / 0 fail including the K2/K3 violation fixtures; (5) confirm PR 170 is open, unmerged, and that its three checks say pass/SUCCESS. Residual condition, stated so it is not mistaken for completeness: the numeric population (147,145 zoned) is outside the floor's comparison after the fix and is covered by the readiness gate's bakeVsRoll arm instead.",
+
+  "scopeBasis": "Read-only and single-row: the dispatch sends an investigation, not a build. It names hauska-factory and one PR conditional on reading (a) holding (dispatch lines 180-187), forbids sub-agents (FAN-DEPTH 0), forbids any publish/bake/walk/writer/override, and forbids weakening the floor. Deliberate exclusions, so a successor can tell them from oversights: other counties (the floor's census shows the other five pass, so there is no evidence of a second instance to fix); the numeric population's own guard (needs a second source arm — a design change, not this PR); the R-set retirement question and the 352566 namespace collision (recorded as OPEN threads, not measured out); LDT and hauska-engine code (forbidden by the dispatch even to touch).",
+
+  "falsifier": "Dispatch falsifier 1 (the currency of reading (a)): 'the served zoned count with retired rows excluded is within five percent of the source count or above it'. Own falsifiers added before measuring: the source must be measurably single-keyspace or no PR is opened; and a collapse INSIDE the source's keyspace would make the floor right and the fix wrong. Dispatch falsifier 2: at least one of the five named numeric parcels has no zoning row the bake can reach by its own key, else reading (b) falls. Dispatch falsifier 3: the new test must fail on today's numbers without the fix, and a control fixture with a genuine collapse on one keyspace must still refuse COUNTY_COVERAGE_COLLAPSE.",
+
+  "contradicted": "Three things were contradicted, one of them this lane's own premise and one of them the dispatch's. (1) Dispatch falsifier 1 is CONTRADICTED as worded: served zoned with retired rows excluded is 147,145 against a source of 167,064 — 88.05 percent, outside the +/-5 percent band — because the floor's operative predicate is a ratio (sourceZoned/servedZoned crossing 0.95, code line 551+554), not a count equality. Reading (a) survives on the ratio; the prediction was pre-registered in the wrong currency. (2) A-207's attribution is INVERTED: the retired R-prefixed rows are the source's own id keyspace (282,569 of 282,569 served R ids are source R ids, q18) and they DEFLATE the served count; the population the source never keys is the NUMERIC one (147,145 zoned, source holds 0 numeric prop_ids). (3) Reading (b) is FALSE: the bake reaches zoning for numeric nodes through the situs-address recovery join, and all five named parcels reach a district equal to the one they serve today, so nothing would be stripped. One thing NOT contradicted and stated so it is not buried: with the fix, the numeric population leaves the floor's comparison — recorded in the verdict, guarded elsewhere, and named in the residual above.",
+
+  "answerA": {
+    "verdict": "HOLDS (mechanism confirmed, attribution corrected)",
+    "codePath": "src/lib/publish-coverage-floor.mjs: SOURCE_ZONED_SQL counts txgio_parcel rows whose zoning column is non-blank (sourceZoned, sourceParcels) for the county; SERVED_ZONED_SQL counts place_layer_snapshots rows for adapter_key 'node-facets:tier1' whose payload_json->'zoning' is an object (servedZoned, servedTier1Rows). Neither side filters retired rows and neither side classifies ids, so the served side counts every id namespace the bake wrote while the source side counts only the namespace its table is keyed in. evaluateCoverageFloor then computes retention = sourceZoned / servedZoned (line 551) and refuses below MIN_COVERAGE_RETENTION 0.95 (line 554).",
+    "counts": "source txgio_parcel 48491: 304,298 rows / 167,064 zoned, of which R-prefixed 304,162 / 167,032 and 'other' 136 / 32, numeric 0. served tier1 48491: 602,050 rows / 290,329 zoned, of which R-prefixed 282,569 / 143,184 (all 282,569 carrying recordRetirement.status 'retired') and numeric 319,480 / 147,145 (all live), plus 1 'other' row / 0 zoned. Same-id overlap: 282,569 served R ids are source R ids. Retention scoped to the source's keyspace: 167,032 / 143,184 = 1.1665549223376914 (clears 0.95). Unscoped: 167,064 / 290,329 = 0.5754299432712543 (refuses)."
+  },
+
+  "answerB": {
+    "verdict": "FALSIFIED",
+    "codePath": "The bake writes a node per cad-parcel-roll account; a numeric node's source row does not exist in txgio_parcel, so the bake reaches the R-keyed source parcel by normalizeSitusAddress (situs-address recovery for 48491) and reads that parcel's zoning. The served payload states it: provenance.parcelJoin = {state 'joined-situs', table 'txgio_parcel', basis 'txgio_parcel row feature_index 137504 matched on normalizeSitusAddress (situs-address recovery for county 48491)'}, landUseAddressRecovered true. County-level integrity of that join is measured: county_facet_coverage 48491 'land-use', source 'cad-roll-address-join', integrity_verdict 'pass', owner_match_rate 0.8890, sampled 2000.",
+    "codePathRevisionRead": "The code behind that path was read at LDT pin bae48d406f7595af3d47111b558d0ebc3efd9c56 (2026-09-14), not off the P:/legacy-design-tools working tree — that checkout's HEAD is 10069854 (2026-08-12), a stale divergent line where the conformant bake's filenames do not exist at all (see CP2 deadEnds). At the pin, joinNormalize.ts states the recovery 'fires only where the prop_id join is blocked' and that the situs join is owner-gate-scored, 'null, never the mismatched code' — which is why Williamson is on this path and why its land-use figure travels with an owner_match_rate. The conclusion itself rests on the store rows and the ledger; the code read confirms the mechanism they assert.",
+    "the147145": "Written by the last Williamson production publish 848afd72-dbbb-41e0-a48d-b0518e421238 on 2026-09-10 (status success, phase publish, refuse_code null, walkVerdict pass, tier1Written 602050, sourceVintage conformant-v1, stampedAt 2026-09-10T19:55:10.815Z) — five days BEFORE the floor's first recorded event (2026-09-17T07:37:48Z), so no floor has ever checked that bake. This answers task 4: the numeric nodes' zoning predates P-236's arming."
+  },
+
+  "fiveParcelsAndWhatTheBakeWouldWrite": [
+    { "place_key": "node:48491:107190", "situs": "12006 ANDERSON MILL RD, CEDAR PARK, TX 78613", "bakeReaches": "R048816 (feature_index 238669)", "districtTheBakeWouldWrite": "LI", "servesToday": "LI" },
+    { "place_key": "node:48491:100001", "situs": "1906 HOLLY ST, GEORGETOWN, TX 78626", "bakeReaches": "R041604 (feature_index 132755)", "districtTheBakeWouldWrite": "RS", "servesToday": "RS" },
+    { "place_key": "node:48491:107749", "situs": "404A WEST ST, HUTTO, TX 78634", "bakeReaches": "R049387 (feature_index 51692)", "districtTheBakeWouldWrite": "OT-4T", "servesToday": "OT-4T" },
+    { "place_key": "node:48491:107115", "situs": "3714 N BAGDAD RD, LEANDER, TX 78641", "bakeReaches": "R048722 (feature_index 3770)", "districtTheBakeWouldWrite": "SFR", "servesToday": "SFR" },
+    { "place_key": "node:48491:100542", "situs": "200 BARRINGTON DR, LIBERTY HILL, TX 78642", "bakeReaches": "R042145 (feature_index 132931)", "districtTheBakeWouldWrite": "SF2", "servesToday": "SF2" }
+  ],
+  "fiveParcelsMethod": "Established from the code path plus the source rows (q17b, q20, q21, q12). No bake was run (dispatch line 236). For each parcel the primary key join misses (0 txgio_parcel rows on the bare numeric prop_id, 0 non-blank geo_id) and the declared-roll situs address lands on the R-keyed source parcel with an identical address key, whose zoning equals the district the node serves today.",
+
+  "quotedRunEvents": [
+    {
+      "run": "59808bfc",
+      "eventId": "46030",
+      "kind": "pre-bake-readiness",
+      "at": "2026-09-17T15:01:51.877Z",
+      "body": "{\"counts\":{\"bakeN\":602050,\"realN\":281435,\"rollN\":602049,\"recordN\":282570,\"landingN\":282569},\"bakeVsReal\":{\"code\":\"OK\",\"hits\":281435,\"denom\":281435,\"ratio\":1,\"haveKeyspace\":\"numeric\",\"wantKeyspace\":\"numeric\"},\"bakeVsRoll\":{\"code\":\"OK\",\"hits\":602049,\"denom\":602049,\"ratio\":1,\"haveKeyspace\":\"numeric\",\"wantKeyspace\":\"numeric\"},\"layerVsRoll\":{\"code\":\"KEYSPACE_MISMATCH\",\"hits\":0,\"denom\":281435,\"ratio\":null,\"haveKeyspace\":\"R-prefixed\",\"wantKeyspace\":\"numeric\"},\"recordVsLanding\":{\"code\":\"OK\",\"hits\":282569,\"denom\":282569,\"ratio\":1,\"haveKeyspace\":\"R-prefixed\",\"wantKeyspace\":\"R-prefixed\"},\"railsSkippedByScope\":[{\"rail\":\"maxImperviousCoverPct\",\"verdict\":\"refuse\",\"counties\":[\"48453\"],\"unaccountedCount\":282570}]}"
+    },
+    {
+      "run": "59808bfc",
+      "eventId": "46032",
+      "kind": "coverage-floor",
+      "at": "2026-09-17T15:03:50.720Z",
+      "body": "{\"ok\":false,\"target\":\"staging\",\"message\":\"county 48491 would promote 167064 zoned nodes over a prior bake of 290329 (57.54% retained, floor 95.00%). NOTHING WAS WRITTEN. What it would have done: overwrite 290329 zoned nodes with 167064. Source table txgio_parcel; the source holds 304298 parcels for this county and the prior bake left 602050 tier1 rows. To authorise THIS collapse and no other, re-execute with COUNTY_COVERAGE_FLOOR_OVERRIDE=48491:167064/290329\",\"retention\":0.5754299432712543,\"countyFips\":\"48491\",\"priorBasis\":\"served-bake\",\"refuseCode\":\"COUNTY_COVERAGE_COLLAPSE\",\"servedZoned\":290329,\"sourceTable\":\"txgio_parcel\",\"sourceZoned\":167064,\"minRetention\":0.95,\"sourceParcels\":304298,\"wouldHaveDone\":\"overwrite 290329 zoned nodes with 167064\",\"servedTier1Rows\":602050,\"sourceHasZoningColumn\":true}"
+    },
+    {
+      "run": "59808bfc",
+      "eventId": "46033",
+      "kind": "termination",
+      "at": "2026-09-17T15:03:50.760Z",
+      "body": "{\"reason\":\"COUNTY_COVERAGE_COLLAPSE\",\"recorder\":\"bastrop-publish\",\"execution\":null,\"exit_kind\":\"failure\",\"matched_by\":null,\"lease_released\":true,\"max_duration_s\":3600}"
+    },
+    {
+      "run": "848afd72-dbbb-41e0-a48d-b0518e421238",
+      "kind": "the last Williamson production publish (source of today's served state)",
+      "started_at": "2026-09-10T18:40:49.090Z",
+      "row": "{\"target\":\"production:48491\",\"status\":\"success\",\"phase\":\"publish\",\"refuse_code\":null,\"scope\":{\"job\":\"factory-bastrop-publish\",\"county\":\"48491\",\"target\":\"production\",\"execution\":\"factory-bastrop-publish-qvb9l\"},\"counts\":{\"stamp\":{\"target\":\"production\",\"stampedAt\":\"2026-09-10T19:55:10.815Z\",\"countyFips\":\"48491\",\"publishRunId\":\"848afd72-dbbb-41e0-a48d-b0518e421238\",\"sourceVintage\":\"conformant-v1\",\"stagingSiblingId\":\"b9fb9469-d6b4-4bf0-9b59-3a55d26cb53e\"},\"walkId\":\"c706abfb-235e-4526-9a81-dee4a0f4c925\",\"walkVerdict\":\"pass\",\"tier1Written\":602050}}"
+    },
+    {
+      "kind": "the floor's whole recorded history (run_events, kind 'coverage-floor')",
+      "summary": "13 events since 2026-09-17T07:37:48.617572Z, of which 12 pass and 1 refuses: 48021 x2 pass, 48055 x2 pass, 48209 x4 pass, 48309 x2 pass, 48453 x2 pass, 48491 x1 COUNTY_COVERAGE_COLLAPSE (event 46032). Williamson is the only county of the six the floor has refused, and the only one whose readiness event carries layerVsRoll KEYSPACE_MISMATCH."
+    }
+  ],
+
+  "falsifiersWithOutcomes": [
+    { "falsifier": "If (a) holds, the served zoned count with retired rows excluded is within five percent of the source count or above it.", "outcome": "CONTRADICTED as worded (147,145 vs 167,064 = 88.05 percent, outside and below the band). Reading (a) survives on the floor's actual predicate: retention scoped to the source's keyspace is 1.1666, above 0.95. Both numbers reported rather than the convenient one." },
+    { "falsifier": "If (b) holds, at least one of the five named numeric parcels has no zoning row the bake can reach by its own key.", "outcome": "NOT OBSERVED. All five reach a zoning row through the situs-address recovery path, with the district equal to what they serve today. (b) falsified." },
+    { "falsifier": "If you open a PR: the new test fails on today's numbers without the fix.", "outcome": "DEMONSTRATED, with the method named. The test file fails to IMPORT against the c5622d0b module (SyntaxError: does not provide an export named 'KEYSPACE_NUMERIC'), so the value-level delta was shown by _p306_scratch/fix-delta-probe.mjs through the real reader: REFUSES 0.5754299432712543 without the fix, PROMOTES 1.1665549223376914 with it. Inside the suite, K1 vs K1(violation) is the load-bearing pair." },
+    { "falsifier": "If you open a PR: a control fixture with a genuine collapse on one keyspace still refuses COUNTY_COVERAGE_COLLAPSE.", "outcome": "HOLDS. K2, K2-empty-stamp, K3 (Travis, refuses exactly as before) and K4 violations all refuse with the scoped counts. Suite run 2026-09-17: 49 tests, 49 pass, 0 fail." }
+  ],
+
+  "pr": {
+    "number": 170,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/170",
+    "title": "fix(P-306): the coverage floor compares ONE id keyspace with ONE id keyspace",
+    "repo": "empressaioemail-tech/hauska-factory",
+    "baseRefName": "main",
+    "headRefName": "fix/p306-williamson-coverage-keyspace",
+    "headRefOid": "7b8dbe70b914bc329c15083bf53d9ebdc8485f14",
+    "headCommit": "7b8dbe7 fix(P-306): the coverage floor compares ONE id keyspace with ONE id keyspace",
+    "commits": 1,
+    "diffstat": "2 files, +746 -20 (src/lib/publish-coverage-floor.mjs +261 -20; test/publish-coverage-floor-keyspace.test.mjs +485 -0)",
+    "state": "OPEN",
+    "mergeable": "MERGEABLE",
+    "mergeSha": "not applicable: never merged, and this lane may not merge it",
+    "ciConclusionStrings": [
+      "test: pass (SUCCESS) — https://github.com/empressaioemail-tech/hauska-factory/actions/runs/35245427981/job/105284278322",
+      "gate8: pass (SUCCESS) — https://github.com/empressaioemail-tech/hauska-factory/actions/runs/35245427981/job/105284278065",
+      "ldt-sha-comment-presence: pass (SUCCESS) — https://github.com/empressaioemail-tech/hauska-factory/actions/runs/35245427981/job/105284278507",
+      "second run (same head): test pass, gate8 pass, ldt-sha-comment-presence pass — https://github.com/empressaioemail-tech/hauska-factory/actions/runs/35245400202"
+    ]
+  },
+
+  "snapshots": {
+    "readTimestamps": "stores read between 2026-09-17T16:00:28Z and 2026-09-17T16:10:33Z (each read-back file in _p306_scratch carries its own startedAt/finishedAt); repos read after the last store read and before the 2026-09-17T16:21:58Z clock reading that closed this lane.",
+    "repos": [
+      { "repo": "doc_repo (this lane's seat worktree, P:/seat-worktrees/p306-williamson-coverage-keyspace/doc_repo)", "branch": "lane/p306-williamson-coverage-keyspace", "head": "6735837d08511e3583c288acc5681e8f9e37bc17", "worktreeState": "M _catalog/lane_claims.json (written by scripts/lane-claim.mjs at claim); the three _inbox artifacts are new and uncommitted per contract section 6 (doc_repo commits are planner-owned)" },
+      { "repo": "hauska-factory clone (P:/tmp/p306-williamson-coverage-keyspace-hauska-factory)", "branch": "fix/p306-williamson-coverage-keyspace", "head": "7b8dbe70b914bc329c15083bf53d9ebdc8485f14", "originMain": "c5622d0b9aa9470dbfff131885fe950ca221c70d", "worktreeState": "clean apart from the untracked _p306_scratch/ read-back directory (61 files)" },
+      { "repo": "P:/seat-worktrees/property/doc_repo", "note": "read only to learn the seat register's shape; byte-identical to its committed state afterwards (SHA256 6D320BC3D43ECF7AAA766C9E703876CC0441DE064E95FBD08DE77AC00E18B5E0)" }
+    ],
+    "stores": [
+      { "store": "staging Neon, host ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech (STAGING_NEONDB_URL)", "reads": "txgio_parcel, place_layer_snapshots, cad_property, 16:00:28Z-16:10:33Z, all under default_transaction_read_only = on", "lease": "heavy-scan lease c24ceb91-2129-4525-95cb-3327848e8021, alias 'P306:staging-neondb', took 16:00:14.946Z, self-releases 16:40:14.946Z" },
+      { "store": "factory replica (FACTORY_DATABASE_URL_REPLICA)", "reads": "runs, run_events, 16:07:17Z-16:08:02Z" },
+      { "store": "factory RO (FACTORY_DATABASE_URL_RO)", "reads": "county_facet_coverage, 16:00:28Z" }
+    ]
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-17_p306-williamson-coverage-keyspace_cp1.json",
+    "_inbox/2026-09-17_p306-williamson-coverage-keyspace_cp2.json"
+  ],
+
+  "constraintsHonored": [
+    "No COUNTY_COVERAGE_FLOOR_OVERRIDE passed, no publish, no bake, no walk, no writer, no staging reset, no deploy.",
+    "No write to any store; every session read-only with a statement timeout.",
+    "The floor's threshold is unchanged (MIN_COVERAGE_RETENTION 0.95) and no county fips appears in the diff — the fix makes both sides one keyspace and declares the population it stops measuring.",
+    "LDT and hauska-engine code untouched.",
+    "No sub-agent launched. No merge."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "leaveBehind": [
+    "PR 170 open on empressaioemail-tech/hauska-factory, head 7b8dbe70b914bc329c15083bf53d9ebdc8485f14, three checks pass, never merged here. The integration seat owns merge, image rebuild and the Williamson staging publish that grades it.",
+    "hauska-factory clone at P:/tmp/p306-williamson-coverage-keyspace-hauska-factory (branch fix/p306-williamson-coverage-keyspace) with _p306_scratch/ holding every read-back as JSON (q2..q21 plus fix-delta-probe.mjs, pre-fix.txt, post-fix.txt) — the evidence behind every count above; safe to prune once the PR is merged or abandoned.",
+    "_inbox/2026-09-17_p306-williamson-coverage-keyspace_cp1.json, _cp2.json, _close.json left uncommitted in the lane's seat worktree (contract section 6: doc_repo commits are planner-owned).",
+    "The clone is NOT in _catalog/seat_register.json: two hand-edit attempts landed the entry in the wrong array and both were reverted, so the register is byte-identical to its committed state. Prune the clone by path.",
+    "Heavy-scan lease c24ceb91-2129-4525-95cb-3327848e8021 self-releases at 2026-09-17T16:40:14Z; the explicit release returned HTTP 409 LEASE_LOST because the take-time holderToken is not recoverable from `list`.",
+    "OPEN for the next context: the 282,569 R-prefixed served nodes' 2026-09-10 retirement (cad_property holds 282,569 R accounts with at_2026 = 0 against 319,480 numeric accounts with at_2026 = 319,480) — the same keyspace-mismatch shape as P-212, NOT established as false or correct by this lane. And: node:48491:R352566 and node:48491:352566 are different parcels serving different addresses.",
+    "READ LDT AT THE PIN, NOT OFF THE WORKING TREE: P:/legacy-design-tools HEAD is 10069854 (2026-08-12), a month behind LDT pin bae48d406f7595af3d47111b558d0ebc3efd9c56 (2026-09-14) and on a divergent line. filename searches there for the conformant bake return nothing and read as 'it does not exist'. Use git show <pin>:<path>. This lane re-read the situs-address recovery at the pin to substantiate answer (b) and corrected CP2 and this close with the SHA it read."
+  ]
+}

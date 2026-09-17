@@ -1,0 +1,110 @@
+{
+  "lane": "p306-williamson-coverage-keyspace",
+  "planRow": "P-306",
+  "kind": "CP1 — design/pre-build adversarial checkpoint (contract §1)",
+  "filedAt": "2026-09-17T16:21:58Z",
+  "filedAtBasis": "A single UTC clock reading taken immediately after the three artifacts were written, not a per-file stamp; CP1 was written first, then CP2, then the close, all within the same few minutes.",
+  "filedLate": {
+    "disclosure": "Filed at close, not at design time. The design below, the pre-registered predictions and the falsifiers were fixed BEFORE any store read in this session (the dispatch pre-registered its own three falsifiers at line 243, and this lane added two of its own before measuring); the artifact was written at close because the lane did not file CP1 when the contract asks for it. An honest late artifact beats a reconstructed one: everything below is what the design actually committed to before the numbers arrived.",
+    "whatItCosts": "Nothing measured changed as a result of the delay — but a successor reading only the artifacts would not have been able to catch this lane's design errors mid-flight, which is the whole point of CP1."
+  },
+
+  "missionPremise": "Reading (a) or reading (b) of _dispatches/2026-09-17_p306-williamson-coverage-keyspace_dispatch.md is what produced Williamson 48491's COUNTY_COVERAGE_COLLAPSE refusal at 2026-09-17T15:03:50Z (run 59808bfc, staging publish factory-bastrop-publish-99pbp, publish image f476f438, factory b65f61b plus P-276). The floor is P-236 `MIN_COVERAGE_RETENTION` 0.95 in hauska-factory src/lib/publish-coverage-floor.mjs; its header's premise — 'the two sides are the same predicate on the same column' — is the sentence under test (dispatch line 208).",
+
+  "theTwoReadings": {
+    "a": "The floor compares ONE id keyspace with TWO. The served tier-1 set holds a numeric id set and an R-prefixed id set; the source table txgio_parcel is R-keyed. The comparison therefore divides a one-namespace numerator by a two-namespace denominator.",
+    "b": "The bake would strip zoning. It reads zoning keyed on R-prefixed accounts, finds nothing for the live numeric nodes, and would write them zoning-absent — the 147,145 numeric nodes zoned today would lose their district.",
+    "notExclusive": "The dispatch says they are not exclusive. The design measured both independently rather than treating one as the other's explanation."
+  },
+
+  "preRegisteredPredictions": [
+    {
+      "id": "P1-dispatch-1",
+      "quoted": "If (a) holds, the served zoned count with retired rows excluded is within five percent of the source count or above it.",
+      "whatWouldProveItWrong": "A served-zoned-with-retired-excluded count that sits outside +/-5% of the source count and below it would leave reading (a) unsupported in the currency the dispatch chose."
+    },
+    {
+      "id": "P2-dispatch-2",
+      "quoted": "If (b) holds, at least one of the five named numeric parcels has no zoning row the bake can reach by its own key.",
+      "whatWouldProveItWrong": "All five reaching a zoning row by the bake's own key path falsifies (b) for those parcels."
+    },
+    {
+      "id": "P3-dispatch-3",
+      "quoted": "If you open a PR: the new test fails on today's numbers without the fix, and a control fixture with a genuine collapse on one keyspace still refuses COUNTY_COVERAGE_COLLAPSE.",
+      "whatWouldProveItWrong": "A test that passes with and without the fix (decorative), or a control that the scoping rescues (a weakened floor)."
+    },
+    {
+      "id": "P4-owned",
+      "statement": "The source side must be MEASURABLY single-keyspace. If txgio_parcel for 48491 holds a material numeric set, keyspace scoping is not a valid fix and this lane opens NO PR."
+    },
+    {
+      "id": "P5-owned",
+      "statement": "If the refusal is a genuine collapse inside the source's own keyspace (served R-prefixed zoned materially above source R-prefixed zoned), then the floor is right and the fix is wrong — no PR."
+    },
+    {
+      "id": "P6-owned",
+      "statement": "The fix must not change the threshold, must not name 48491, must fall back to the whole-count comparison whenever the shape does not match, and must RECORD the rows and keyspaces it excludes rather than dropping them quietly (the instrument's exclusion set is part of its contract, DEV_PROCESS)."
+    }
+  ],
+
+  "design": {
+    "repo": "hauska-factory, fresh clone of origin/main c5622d0b9aa9470dbfff131885fe950ca221c70d into P:/tmp/p306-williamson-coverage-keyspace-hauska-factory (dispatch line 187 asks for a NEW P:/tmp directory, not a seat worktree). Branch fix/p306-williamson-coverage-keyspace created only when the PR decision was made.",
+    "readOnlyPosture": "Every store session opened with default_transaction_read_only = on and a statement_timeout (helper _p306_scratch/q.mjs, which also refuses to run without an explicit URL env var). No publish, no bake, no walk, no writer, no COUNTY_COVERAGE_FLOOR_OVERRIDE, no staging reset, no deploy, no merge.",
+    "stores": [
+      "STAGING_NEONDB_URL (the store the serving snapshot lives in) — reads 2026-09-17T16:00:28Z to 16:10:33Z.",
+      "FACTORY_DATABASE_URL_REPLICA — the `runs` and `run_events` tables are not readable through FACTORY_DATABASE_URL_RO with this credential (q1 permission denied), so the run record was read from the replica instead.",
+      "FACTORY_DATABASE_URL_RO — used for the facet ledger (county_facet_coverage), which it does serve."
+    ],
+    "lease": "One heavy-scan lease, taken keyed on the RESOLVED HOST (dispatch line 190 / P-307): store ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech, alias 'P306:staging-neondb', phase p306-coverage-keyspace, county 48491, id c24ceb91-2129-4525-95cb-3327848e8021.",
+    "instruments": [
+      "src/lib/publish-coverage-floor.mjs — sourceZoned/SOURCE_ZONED_SQL, servedZoned/SERVED_ZONED_SQL, evaluateCoverageFloor, requireCountyCoverageFloor, MIN_COVERAGE_RETENTION (the refusal under test).",
+      "src/lib/publish-readiness-gate.mjs — the pre-bake event and its layerVsRoll KEYSPACE_MISMATCH arm.",
+      "src/jobs/bastrop-publish.mjs — the publish job's bakesFn, to fix which bake the code path runs.",
+      "the LDT conformant bake it calls (nodeFacetBakeTier1Conformant / joinNormalize / the situs-address recovery path) — read only, never edited (dispatch line 255).",
+      "run_events for run 59808bfc (the refusal's own payload), runs 848afd72 (the last Williamson production publish) and the floor's 13-event census.",
+      "the served rows themselves: place_layer_snapshots, adapter_key 'node-facets:tier1', county 48491, split by id keyspace and by recordRetirement."
+    ],
+    "countingRule": "Every id was classified by ONE expression, used on both sides of the floor: R-prefixed if it matches ^[Rr][0-9]+$, numeric if ^[0-9]+, everything else 'other'. Zoned means the payload carries a zoning object (jsonb_typeof(payload_json->'zoning') = 'object'), the same predicate the floor's SQL uses.",
+    "guardrail": "The deliverable is a checked-in test file in hauska-factory, not a narrative: a guardrail that does not survive a clone is not a guardrail (DEV_PROCESS)."
+  },
+
+  "adversarialQuestionsAskedOfMyOwnDesign": [
+    {
+      "q": "A1 — is the source keyspace actually single, or am I about to assert a scope that does not exist?",
+      "disposition": "Decided BEFORE measuring: P4 above. If the source had held a material numeric set, no PR. Answer in CP2 (source: 304,162 R + 136 other + 0 numeric)."
+    },
+    {
+      "q": "A2 — could the refusal be a genuine collapse that a keyspace story would explain away?",
+      "disposition": "P5. The discriminator is the SAME ratio computed inside one keyspace: if the served R side exceeded the source R side by more than 5%, the floor would be right and the fix wrong."
+    },
+    {
+      "q": "A3 — is the dispatch's falsifier 1 even expressed in the floor's currency?",
+      "disposition": "Flagged at design time as the design's sharpest risk: retention in this floor is sourceZoned/servedZoned (code line 551), so 'the served count is within five percent of the source count' is a COUNT equality test, while the floor's operative test is a RATIO crossing 0.95. A reading can hold while falsifier 1 is contradicted. The design therefore committed to reporting both, separately, rather than choosing whichever passed."
+    },
+    {
+      "q": "A4 — does scoping weaken the floor?",
+      "disposition": "P6. Three enforceable commitments: no threshold change; no county named in code; scoping only engages when the source is measurably single-keyspace AND the served side carries a per-keyspace breakdown, else fall back to the existing whole-count comparison; the excluded rows and keyspaces are recorded in the verdict."
+    },
+    {
+      "q": "A5 — is the 2026-09-10 retirement of the R-prefixed nodes the cause, or a second symptom of the same keyspace mismatch?",
+      "disposition": "Held open at design time rather than assumed. The dispatch's reading (a) attributes the inflated denominator to the retired R rows; if the R rows are in the SOURCE's own keyspace they cannot be 'a population the source side never sees'. Measured in CP2 — the attribution is the one thing this lane reversed."
+    },
+    {
+      "q": "A6 — what would make this lane's PR unsafe to merge?",
+      "disposition": "The residual named in CP2: with scoping, the served population in the keyspace the source table cannot key (numeric, 147,145 zoned) is outside the floor's comparison. It is recorded, not dropped, but the guard for that population is the readiness gate's bakeVsRoll arm, not this floor. Stated for the integration seat to weigh."
+    }
+  ],
+
+  "constraintsHonored": [
+    "No sub-agent launched (FAN-DEPTH 0).",
+    "No publish, bake, walk, writer, staging reset, deploy or merge; no COUNTY_COVERAGE_FLOOR_OVERRIDE.",
+    "No write to any store. The only writes in this lane are files: the PR's two factory files, and the _p306_scratch read-backs.",
+    "LDT and hauska-engine code untouched.",
+    "The floor's threshold untouched; no county exemption added."
+  ],
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-17_p306-williamson-coverage-keyspace_cp1.json (this file)",
+    "_inbox/2026-09-17_p306-williamson-coverage-keyspace_cp2.json"
+  ]
+}

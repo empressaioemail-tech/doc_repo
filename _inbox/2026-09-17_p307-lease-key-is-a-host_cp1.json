@@ -1,0 +1,97 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design/pre-build adversarial checkpoint (AGENT_CONTRACT section 1: design, before any build)",
+  "lane": "p307-lease-key-is-a-host",
+  "planRows": ["P-307"],
+  "filedAt": "2026-09-17T15:58:00Z",
+  "seat": "cente-vsc-p307",
+  "dispatch": "_dispatches/2026-09-17_p307-lease-key-is-a-host_dispatch.md",
+  "docRepoWorktree": "C:/Users/cente/doc_repo -- the checkout this session is rooted in. It was 20+ commits behind origin/main (the dispatch file 2026-09-17_p307-lease-key-is-a-host_dispatch.md exists only on origin/main); fast-forwarded to origin/main 6735837d ('record(A-207): ... P-306 and P-307 carded and compiled') before any work, after moving six untracked _inbox/*.json close files the merge would have overwritten into C:/Users/cente/_tmp_p307_conflict_backup (byte-identical copies are now in the merge; nothing was lost). The dispatch was compiled in P:/doc_repo, the integration seat's checkout, which this box has but which this lane must not write to. The lane claim was taken FIRST, from this worktree, exit 0: `node scripts/lane-claim.mjs claim --lane p307-lease-key-is-a-host --seat cente-vsc-p307 --plan-row P-307 --dispatch _dispatches/2026-09-17_p307-lease-key-is-a-host_dispatch.md` -> CLAIMED ... Proceed. Two other live claims were already in _catalog/lane_claims.json (p249-envelope-unlock, p262-edge-labeller, p285-county-runner); none touches hauska-factory.",
+
+  "productRepo": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/p307-lease-key-is-a-host (NEW directory, fresh clone of origin/main, as the dispatch requires)",
+    "branch": "fix/p307-lease-key-is-a-host",
+    "baseCommit": "c5622d0b9aa9470dbfff131885fe950ca221c70d ('fix(P-256): checked, none required is not writable where nothing was checked (#160)')",
+    "baseCommitIsTheDeclaredStartCommit": true,
+    "baseCommitNote": "checked at source before branching: `git rev-parse HEAD` in the fresh clone prints c5622d0b9aa9470dbfff131885fe950ca221c70d, matching the dispatch's declared start commit c5622d0b. No drift on this axis.",
+    "dependencies": "npm install in the clone: clean.",
+    "noNodeModulesReuse": "the clone is fresh and self-contained; no other lane's checkout was entered for a write or a measurement. OTHER factory worktrees under P: (P:/hauska-factory, P:/seat-worktrees/*/hauska-factory*, P:/tmp/p285-county-runner, P:/tmp/p298-*) were only LISTED (git worktree list) to confirm this lane is not sharing one."
+  },
+
+  "theFindingVerifiedAtSource": {
+    "claimInTheMission": "canonicalStoreKey in src/control/heavy-lease.mjs treats any string without a scheme as a bare host, so `factory-store` passes as a host and becomes its own contention key.",
+    "readInTheClone": "src/control/heavy-lease.mjs:104-129. The bare-form branch drops userinfo, then a path, then a trailing :port, then rejects only the empty string -- it never checks that what is left LOOKS like a host. So `factory-store` (one label, no dot) is returned as the key verbatim. The function's own header (lines 94-101) names exactly this failure: 'a session and a job would NEVER see each other's lease: both would take \"successfully\", both would scan, and every test in this file would still pass.'",
+    "confirmedLiveReadOnlyAtCpT1": "the mission's 15:20Z observation was re-read live, read-only, at 15:49Z via the control API (`curl -H \"Authorization: Bearer <FACTORY_CONTROL_API_KEY>\" https://factory-control-h7gvu7rgcq-uk.a.run.app/heavy-scan-leases?limit=200`, no mutation): heavy_scan_lease_live still held store `factory-store` for holder p266p268-lane (session-seat, phase p266p268-final-census, alias FACTORY_DATABASE_URL_RO, expires 15:52:05Z) while the same endpoint ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech had carried factory-publish-gate-sched-jcljc from 15:00:13Z to 15:32:11Z. One physical store, two concurrent heavy windows. The defect is live at the time of this CP1, not just historical.",
+    "theSecondCaseReadAtSource": "hauska-factory's own .env.example line 1 and README line 5 say 'Direct Neon host only. A -pooler host is refused', and src/db/connect.mjs's refusePoolerHost implements it for FACTORY_DATABASE_URL. That guard is a CONNECT-time guard inside the factory: it does nothing for a session in another repo (LDT's DEPLOYMENT_DATABASE_URL, a Cloud Run env var, a pasted URL) that NAMES the store through the lease API, and storeRefFromEnv/canonicalStoreKey never call it. So ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech and ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech are two keys for one endpoint on the lease path, exactly as the mission says."
+  },
+
+  "theDecision_item1_refuse_not_alias": {
+    "chosen": "REFUSE: a take whose store cannot be a real store host throws LEASE_STORE_INVALID with a reason that names the offending spelling. No alias table is introduced.",
+    "whyNotAResolutionTable": "the module's own header and migrations/0013 both already REJECT a resolution table as the contention key, for a reason this lane would be reversing: cloudbuild.publish.yaml states at source that NEONDB and HAUSKA_MCP are one Neon project and one branch, so an alias-keyed lease would let one Postgres instance carry two live heavy scans -- the only thing this control exists to prevent. A table that maps env-var labels to hosts would reintroduce exactly that failure mode, and it would need a human to keep it current; the mission's own second sentence about such a table ('a test that fails when a known alias is missing') is an admission that the table is the weaker design. Refusal is also what the code already does for every other unusable spelling (empty, unparseable URL, no hostname), so this is one rule, not two.",
+    "whyRefusalIsSafeHere": "the refused spellings are not stores. `factory-store` is a LABEL a human typed; the row it produced carries the real env-var name in store_alias (FACTORY_DATABASE_URL_RO), which is what the alias column is for. Nothing in the fleet connects to a host called `factory-store`.",
+    "operatorVisibleConsequence": "a caller that passes `factory-store` now gets HTTP 400 LEASE_STORE_INVALID naming the spelling (src/control/api.mjs already maps that code to 400, added by P-281) instead of a silent lease on a private namespace. That is the point: the silent take is what caused the overlap."
+  },
+
+  "theDecision_item2_pooler_and_direct_are_one_key": {
+    "chosen": "UNIFY: for hostnames under .neon.tech, a first label of the form `ep-...-pooler` is keyed as its direct form (the `-pooler` suffix removed from the first label). Every other host is keyed as-is.",
+    "whyUnifyRatherThanRefuse": "the mission's item 2 is explicit that the two hostnames must produce ONE key, and this is the property the control needs: one Neon endpoint is one compute, so a caller naming it through the pooler hostname must contend with a job naming it through the direct hostname. The factory's separate `refusePoolerHost` is untouched and still applies to CONNECTING: a job whose FACTORY_DATABASE_URL is a pooler URL is still refused before it can scan. The two rules are about different questions -- 'may I open this connection' (refused) and 'which physical store is this' (one key) -- and the code comment says so explicitly so a later reader does not read the strip as a weakening.",
+    "scopeOfTheStrip": "only the FIRST label, only when it ends in `-pooler` and begins with `ep-`, and only when the host ends in `.neon.tech`. The rest of the host (the `c-7`/`c-10` cell label and region) is kept, so two different endpoints stay two keys.",
+    "whyNotBroader": "a generic `-pooler` strip on any host would merge hosts on other providers where `-pooler` may be a genuinely different machine. Scoping to the documented Neon shape keeps the rule falsifiable: a different endpoint still gets its own key (falsifier 2)."
+  },
+
+  "whatCannotBeARealStoreHost_item3": {
+    "definition": "the contention key must be a syntactically real host: a bracketed IPv6 literal, an IPv4 literal (each octet <= 255), the single name `localhost`, or a DNS name of at least two labels, each label 1-63 chars of [a-z0-9_-] that starts and ends alphanumeric, total <= 253 chars. A single trailing dot (the DNS root) is stripped. Everything else -- empty, a single label like `factory-store`, a bare `:5432`, `@@`, a label with an illegal character -- is refused LEASE_STORE_INVALID.",
+    "whatItMustNotRefuse_groundTruth": "measured, not assumed. Every distinct host the fleet has actually leased is enumerated in CP2's census, read from heavy_scan_leases with the read-only credential. The live sample read at 15:49Z shows the shapes in use: ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech (factory), ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech (cortex/production), ep-floral-grass-ap8jeuo4.c-7.us-east-1.aws.neon.tech (staging), ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech (zoning). All are >= 2 labels and pass. The live suite's own fixtures `<tag>-<uuid8>.p281.test` pass. The API suite's `p281-api-test.invalid:5432` / `p281-api-test-other.invalid:5432` pass (>= 2 labels) -- which is why this rule is SYNTACTIC and does NOT refuse reserved TLDs: refusing `.invalid` would refuse a host two shipped tests lease today, which item 3 forbids.",
+    "theOneInUseKeyItRefuses": "`factory-store` -- the key the defect is about, plus, if the census finds any others, they are named individually in CP2 rather than summarised.",
+    "knownNonHostShapedNameThatStaysAccepted": "`p281-probe.invalid` (one historical row, holder integration, a deliberate two-process contention probe from P-281). It is syntactically a host, so this rule accepts it; it is reported in CP2 as a non-resolving probe fixture rather than silently counted as a real store. Tightening to reserved TLDs was rejected above for the API-suite reason."
+  },
+
+  "falsifierAnswersPreRegistered": [
+    {
+      "falsifier": "1. A test takes a lease on `factory-store` and then a host-keyed lease on `ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech` (or the reverse) and fails unless one of the two is refused.",
+      "preRegisteredAnswer": "EXPECTED PASS, and the refusal is the FIRST take: canonicalStoreKey raises LEASE_STORE_INVALID before any SQL is issued, so the take on `factory-store` never reaches the INSERT and the host-keyed take then succeeds. Tested in BOTH orders with a doubled client that ASSERTS no INSERT was attempted for the refused spelling (a refusal that still wrote a row would be a fail). NOT expected: the host take being refused -- there is nothing holding it."
+    },
+    {
+      "falsifier": "2. A take on a real, different host still succeeds while the factory host is held.",
+      "preRegisteredAnswer": "EXPECTED PASS: the doubling is per-store in the partial unique index, and the unit-level test asserts two different real hosts each reach an INSERT. The live two-store proof already exists in P-281's F3 and is not re-run here (this lane runs no scan)."
+    },
+    {
+      "falsifier": "3. Reverting the fix makes test 1 fail.",
+      "preRegisteredAnswer": "EXPECTED PASS by two instruments: (a) the new unit tests call canonicalStoreKey('factory-store') and expect LEASE_STORE_INVALID -- on the reverted module it returns the string, so they fail; (b) a source-level assertion in the same file pins the existence of the host predicate call inside canonicalStoreKey, so deleting the check fails even if someone rewrites the tests' expectations. The revert is performed on a scratch copy, not on the branch, and the output is kept."
+    },
+    {
+      "falsifier": "4. The URL form and the `host:5432` form of the same host still contend with each other (the existing guarantee is not weakened).",
+      "preRegisteredAnswer": "EXPECTED PASS: the existing heavy-lease.test.mjs doors test (postgres URL, DB.Prod.Example, host:5432, user:pw@host:5432, host/db, whitespace) is unchanged and must still land on one key; the pooler form is added as another door onto the SAME key. A separate assertion proves the pooler strip is the ONLY new merge: two different endpoint ids remain two keys."
+    }
+  ],
+
+  "docRepoClientDiff_item5": {
+    "what": "scripts/heavy-scan-lease.mjs (doc_repo, NOT committed by this lane): teach the client the refusal it will now receive. Add LEASE_STORE_INVALID to the outcome mapping (HTTP 400 with body.error LEASE_STORE_INVALID -> code LEASE_STORE_INVALID), give it an exit code of its own (7, next free), extend the header note that documents what a --store spelling may be (a host or a whole URL; a label like `factory-store` is refused by name; the Neon pooler and direct hostnames of one endpoint are ONE key), and add selftest cases in both directions (a 400/LEASE_STORE_INVALID maps to the code; a 400 with an unknown error keeps its own name).",
+    "why": "the mission's item 5, and the honest reason: today a 400 would surface as code LEASE_STORE_INVALID with exit 1, which is indistinguishable from a network/HTTP failure. A refusal the operator cannot tell from a crash is a refusal that gets retried."
+  },
+
+  "notChanging": [
+    "the lease schema (migrations/0013_heavy_scan_leases.sql) and the one-live-row partial unique index",
+    "takeHeavyScanLease's race handling (INSERT ... ON CONFLICT DO NOTHING + read-back + recorded refusal)",
+    "src/db/connect.mjs refusePoolerHost and every other pooler guard (connect-time behaviour is out of scope; this lane changes the KEY, not the connection)",
+    "store_alias semantics: the raw spelling a caller used is still carried on the row for a reader",
+    "the store_database / store_alias columns and the view",
+    "scripts/p298-build-rail-place-index.mjs (it imports canonicalStoreKey; its call sites pass real URLs and are re-checked by the suite, not edited)",
+    "no merge, no deploy, no restart of factory-control, no DDL, no heavy scan, and no write of any kind to a live lease"
+  ],
+
+  "environmentLimitsDeclaredBeforeAnyMeasurement": {
+    "factoryCredential": "FACTORY_DATABASE_URL / ATOMS_DATABASE_URL etc. are UNSET in this session. This lane obtained a READ-ONLY credential deliberately: `gcloud secrets versions access latest --secret=FACTORY_DATABASE_URL_RO --project hauska-prod-497015` (host ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech) plus the FACTORY_CONTROL_API_KEY secret, and uses them for SELECT-only reads and the control API's GET routes. Every mutation in this lane (take/renew/release) happens against a disposable Docker PostgreSQL, never the fleet store; no secret VALUE is written to any file in this lane, and the census script reads it from the environment.",
+    "gcloud": "authenticated on this box (empressaioemail@gmail.com among the credentialed accounts); used read-only for the two secrets above. Nothing was deployed, mounted or rotated.",
+    "scannerNetworkNote": "the doc_repo client's node fetch() failed with a bare 'fetch failed' to the same URL that curl(1) answers 200, so the client's live list path could not be exercised from this box; the refusal mapping is therefore tested against the client's own pure functions (outcomeFor / resolveEndpoint), which is what the selftest does by design. Declared here so a later reader does not read 'not live-run' as 'not tested'."
+  },
+
+  "adversarialReviewOfMyOwnPlan": [
+    "The rule I am most likely to be wrong about is the single-label refusal. It is the one that refuses `factory-store`, and it also refuses a hypothetical one-label docker service name. I checked every consumer: nothing in the fleet reaches a one-label host over Cloud Run, the live suite uses two-label `.p281.test` names, and item 3's ground truth (the census) is the test. `localhost` is carved out because it IS a real host.",
+    "Unifying the Neon pooler host could conceivably be judged as contradicting the fleet's 'a -pooler host is refused, never stripped' doctrine. The doctrine is about connecting; this is about keying. If the integrator disagrees, the fallback that still satisfies item 1 and falsifier 1 is to refuse the pooler host instead of unifying it -- one line, and the census already shows no fleet row has ever been keyed on a pooler host, so either choice is compatible with today's data.",
+    "Refusing a spelling is a behaviour change for any session that has been typing `factory-store` (p266p268-lane is doing so RIGHT NOW). The consequence is stated: their next take gets 400 LEASE_STORE_INVALID naming the string, which is the message the fix exists to print."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0, "note": "FAN-DEPTH 0. No sub-agent launched at any point in this lane, and none will be." }
+}
