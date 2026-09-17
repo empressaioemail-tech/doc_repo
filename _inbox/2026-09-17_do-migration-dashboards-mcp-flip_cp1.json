@@ -1,0 +1,78 @@
+{
+  "checkpoint": "CP1",
+  "kind": "start-of-work",
+  "lane": "do-migration-dashboards-mcp-flip",
+  "planRows": ["D-11"],
+  "seat": "d11-mcp-flip-lane",
+
+  "disclosure": "CP1 was WRITTEN AT CLOSE, not at execution start, and says so rather than implying a contemporaneity it does not have. What IS contemporaneous: the lane claim (registry startedAt 2026-09-17T20:44:05.320Z, taken before any mutation), the gate re-verification readings below (taken read-only at 2026-09-17T20:43Z before the claim), and the pre-flip baseline captured at 20:44:45Z and 20:45:12Z. The design record is written after the fact from those readings.",
+
+  "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo (the planner seat's worktree; this dispatch was compiled in P:/doc_repo, and D-9 and D-10 both filed into this same _inbox, so the artifacts land where a successor will look).",
+
+  "laneClaim": {
+    "command": "node scripts/lane-claim.mjs claim --lane do-migration-dashboards-mcp-flip --seat d11-mcp-flip-lane --plan-row D-11 --dispatch _dispatches/2026-09-17_do-migration-dashboards-mcp-flip_dispatch.md",
+    "exitCode": 0,
+    "startedAt": "2026-09-17T20:44:05.320Z",
+    "meaning": "proceed; no other seat held the lane"
+  },
+
+  "gatesReVerifiedFresh": {
+    "why": "The dispatch requires both gates re-read fresh, not taken from OPS-25's 2026-09-16/17 readings, and repeats that an OPEN lane claim is not evidence a dependency landed.",
+    "gateA_d9Landed": {
+      "reading": "READ, not assumed. P:/seat-worktrees/dispatch-planner/doc_repo/_inbox/2026-09-17_do-migration-app-platform-configure_close.json, 29887 bytes, mtime 2026-09-17T20:38:59Z.",
+      "status": "closed (amended from closed-partial at 19:20Z after the operator changed the GoDaddy records by hand)",
+      "whatItProduced": "dolphin-app (dashboards) live at https://dolphin-app-y4ixf.ondigitalocean.app, 17/17 paths byte-identical to the GCP original (14 MATCH, 3 MATCH-ERR, 0 DIVERGED), no custom domain, no customer traffic.",
+      "d9ClaimState": "RELEASED. The planner worktree's lane_claims.json was empty of both DO lanes at my first read, so D-9 was not merely finished but checked in."
+    },
+    "gateB_repoIdleAndUnclaimed": {
+      "repoIdle": "origin/main f7a2f5e58188637e0c0c456aa73719df9c0ba9fc, committed 2026-09-16T06:57:29-05:00 -- unchanged since the previous session's reading, so 'idle' is a fresh confirmation and not a stale one.",
+      "servingRevisionAtStart": "hauska-mcp-server-00102-naj, created 2026-09-16T16:54:31Z, 100% traffic, tag keyrot",
+      "noClaimTouchesIt": "checked across P:/doc_repo, C:/Users/cente/doc_repo and the planner worktree: the six live claims were p249-envelope-unlock, p262-edge-labeller, p285-county-runner, p260-p263-setbacks-and-envelopes, p279-tagged-revision-security, p273-p274-controls. None touches hauska-mcp-server.",
+      "worktreesRead": "21 registered worktrees of P:/hauska-mcp-server were listed; the newest unrelated lane activity predated this session."
+    },
+    "verdict": "Both gates pass on fresh measurement."
+  },
+
+  "dispatchPremiseChecks": {
+    "oldValueMeasuredNotTaken": {
+      "instruction": "The dispatch says: measure the old value yourself from the serving revision, do not take it from this dispatch.",
+      "measured": "DASHBOARDS_BACKEND_URL = https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app on serving revision hauska-mcp-server-00102-naj",
+      "agreesWithDispatch": true
+    },
+    "templatePremiseConfirmed": {
+      "instruction": "A-3 asserts cloudbuild-mcp.yaml on origin/main carries _DASHBOARDS_BACKEND_URL and sets it on every build via --set-env-vars.",
+      "measured": "line 31 carries the substitution; line 91 sets DASHBOARDS_BACKEND_URL=${_DASHBOARDS_BACKEND_URL} in --set-env-vars. Confirmed on origin/main f7a2f5e before editing anything."
+    },
+    "premiseThatDidNotHold": {
+      "dispatchSaid": "'Redeploy hauska-mcp-server -- a config-only change, no code touched', implying the redeploy completes the flip.",
+      "reality": "The service's traffic is PINNED to a revision BY NAME (spec.traffic[0] = {percent: 100, revisionName: hauska-mcp-server-00102-naj}, with no latestRevision route anywhere). A config-only redeploy therefore creates a new revision that receives 0% and is RETIRED by Cloud Run. The flip is CONFIGURED but NOT LIVE until traffic is explicitly shifted. See CP2 for the measurement.",
+      "whyItMatters": "This is the same shape as the A-3 scope defect: the dispatch's stated mechanism cannot by itself reach the dispatch's own goal. It was caught by reading the traffic spec before deploying, not after."
+    },
+    "instrumentAvailability": {
+      "surfaceProbeCoversThisRow": false,
+      "evidence": "scripts/surface-probe.mjs is OPS-23's completion predicate (P-151..P-175, P-241) plus an OPS-24 customer leg (P-254); it has no D-row predicate. The close gate's GATED_ROW tests /^P-(\\d+)$/ against GATED_RANGES [[151,174],[186,198],[200,250],[252,320]], so D-11 is out of its scope by construction. The close therefore cites this lane's own named instrument, as D-9 did for the same reason."
+    },
+    "doToolingClaimDoesNotHoldHere": {
+      "preambleSays": "'doctl and the DigitalOcean MCP servers are configured in the global Cursor config on the fleet machine, authenticated with an agent token scoped to Droplets and Apps only.'",
+      "measured": "doctl is NOT authenticated in this session: `doctl account get` fails with 'Unable to initialize DigitalOcean API client: access token is required.'",
+      "consequenceForThisLane": "None fatal. No DigitalOcean mutation was in scope. It did remove the option of reading DO-side request logs, so the GCP original's logs were used as the independent origin witness instead."
+    }
+  },
+
+  "designDecisions": {
+    "verificationUnit": "One MCP tools/call per dashboards tool that traverses DASHBOARDS_BACKEND_URL and is callable anonymously: dashboards_list_lenses, dashboards_list_adapter_kinds, dashboards_compose_city_manager. dashboards_get_city_pack is identified-caller only, so an anonymous call measures the gate, not the backend; it is carried as a gate CONTROL so a flip that accidentally moved a gate would show.",
+    "whyNotRawByteComparison": "Fixed arguments pre-registered (notably compose's parcel_node_id 48021:34137, which without it fails Zod validation BEFORE reaching the backend and would have measured nothing). Raw byte equality was rejected as the verdict after two pre-flip runs showed identical byte counts and different hashes.",
+    "whySemanticWithDeclaredExclusions": "The backend stamps assertedAt and assembledAt into every response. Those two keys are declared volatile, and the artifact proves the set complete by locating every ISO instant in the payload and requiring each to sit under a declared key.",
+    "whyCanary": "Because traffic is pinned, the deploy alone cannot serve the change. The repo has its own designed path for this in cloudbuild-mcp.yaml (_CANARY: '1' -> --no-traffic --tag=${_TAG}, 'New revision is not serving until traffic is shifted after live verify'). That mechanism was used rather than inventing one, so the flip was proven live on a tag URL with 0% of customer traffic moved.",
+    "whyTheGcpLogIsTheRealProof": "A semantic MATCH cannot distinguish the backends: the DigitalOcean app serves the same content, so identical output is expected on either. The proof that the flip TOOK EFFECT is that the GCP original's request log stops recording the MCP server's calls.",
+    "deployReplicatedNotInvented": "The deploy command was copied from the repo's own cloudbuild-mcp.yaml deploy step, including --set-env-vars and --set-secrets, but with the image pinned to the digest that was already serving. That makes 'no code touched' verifiable by image identity rather than by assertion."
+  },
+
+  "falsifiersPreRegistered": [
+    "1. A live call through hauska-mcp-server to the dashboards backend returns the same result before and after the flip.",
+    "2. Error rate on hauska-mcp-server in the post-deploy window matches its pre-deploy baseline.",
+    "3. The GCP smartcity-dashboards original is untouched by this mission."
+  ],
+
+  "planOfRecordDiscrepancy": "The dispatch cites 90_operations/OPS-25_cloud_infrastructure_and_cost_program.md as this row's source. That file exists in P:/doc_repo and, since the DO batch was committed at 7a0c96fa, is now on origin/main. Reading it is where governing rule 9 and amendment A-3 live."
+}

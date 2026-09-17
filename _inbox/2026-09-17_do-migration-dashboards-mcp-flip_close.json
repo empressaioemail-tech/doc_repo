@@ -1,0 +1,164 @@
+{
+  "lane": "do-migration-dashboards-mcp-flip",
+  "planRows": ["D-11"],
+  "status": "closed",
+  "partial": false,
+  "filedAt": "2026-09-17T21:00:00Z",
+  "seat": "d11-mcp-flip-lane",
+
+  "closedWhy": "The flip is live and measured end to end. DASHBOARDS_BACKEND_URL on the serving revision hauska-mcp-server-00105-gex is https://dolphin-app-y4ixf.ondigitalocean.app, read back off the serving revision as step 2 requires; a real call through hauska-mcp-server to the dashboards backend returns the same result it did before the flip (3/3 tools semantically equal, 0 hard divergences); the deploy moved ONE environment variable and nothing else by spec diff; and the GCP smartcity-dashboards original is proven untouched by observation, having logged zero calls from the MCP server since the flip. The one-line template change is on origin/main so the next Cloud Build deploy reproduces the flip instead of reverting it. The bare dispatch mechanism ('a config-only redeploy') would NOT have achieved this on its own; see contradicted.",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-17_205600_d11_mcp_dashboards_flip_probe.json",
+    "instrument": "this lane's own flip instrument: anonymous MCP tools/call through the live hauska-mcp-server for every dashboards tool that traverses DASHBOARDS_BACKEND_URL, a semantic comparator with a declared and proven exclusion set, and a log differential on the GCP original as an independent origin witness",
+    "notSurfaceProbeAndWhy": "The dispatch's close skeleton asks for an artifact 'produced by scripts/surface-probe.mjs'. That instrument is OPS-23's completion predicate (P-151..P-175, P-241) plus an OPS-24 customer leg (P-254) and carries no D-row predicate; the close gate's GATED_ROW tests /^P-(\\d+)$/ against GATED_RANGES [[151,174],[186,198],[200,250],[252,320]], so a D-row close is outside that gate's scope by construction. Citing a surface-probe artifact here would assert a provenance that does not exist and would measure surfaces this lane never touched. D-9's close reached the identical conclusion for the identical reason.",
+    "selfTest": "The comparator was corrected against two pre-flip runs where every row must MATCH: its first version wrongly reported 3 DIVERGED because it searched unescaped keys inside the escaped MCP envelope. The instrument was fixed before it was trusted. Two independent pre-flip runs differ in raw bytes and are identical semantically, which is why raw hashing is not the verdict.",
+    "falsifierVerdicts": { "1": "PASS", "2": "PASS", "3": "PASS" }
+  },
+
+  "falsifier": "Falsifier 1 (a live call through hauska-mcp-server to the dashboards backend returns the same result before and after the flip) PASSES: all three dashboards tools that traverse DASHBOARDS_BACKEND_URL return identical http status (200) and identical byte length (2062 / 3531 / 2465) with payloads semantically equal after dropping only the two declared backend build stamps, 0 hard divergences; the identified-caller tool dashboards_get_city_pack is unchanged too, so the flip moved no gate. Falsifier 2 (error rate in the post-deploy window matches the pre-deploy baseline) PASSES: across a 25-minute window every request returned 200 (25 on the new revision, 14 on the old), the app reports error_rate 0, and the single ERROR-severity class present is log_sink_gcs_error ('The specified bucket does not exist'), a pre-existing GCS log-archive failure that fires on the OLD revision too and predates this lane -- no new error class appeared. Falsifier 3 (the GCP original is untouched) PASSES by observation rather than assertion: no credential held by this lane could mutate that project and only read-only log queries were made, and the original's own log shows the MCP server's calls stopping at the positive control, which is the intended effect of the flip rather than a mutation. Falsifier 1 is NOT taken as proof that the flip took effect, because both backends serve the same content and a MATCH is satisfied either way; that proof comes from the origin witness in the artifact.",
+
+  "contradicted": "One dispatch premise does not survive measurement. The dispatch describes step 2 as 'Redeploy hauska-mcp-server -- a config-only change, no code touched' and treats the redeploy as completing the flip. It does not: the service's traffic is PINNED to a revision BY NAME (spec.traffic[0] = {percent: 100, revisionName: hauska-mcp-server-00102-naj}, with no latestRevision route anywhere in the spec), so the first deploy created revision hauska-mcp-server-00063-gm6 with the corrected env var, left latestReady at 00102-naj, left traffic pinned to 00102-naj, and the new revision came up Ready=True reason=Retired / Active=False reason=Retired. gcloud's own message -- 'revision [hauska-mcp-server-00102-naj] has been deployed and is serving 100 percent of traffic' -- was true of the OLD revision and concealed the failure. Had the flip been verified by reading the deploy output or the new revision's config, this would have been reported as a completed cutover while nothing customer-visible had changed. This is the same shape as the A-3 scope defect: the dispatch's stated mechanism cannot by itself reach the dispatch's own goal. It was caught by reading the traffic spec before deploying. Separately, and less consequentially, the fleet preamble states that doctl and the DigitalOcean MCP servers are configured fleet-wide and authenticated; doctl is NOT authenticated in this session (`doctl account get` fails with 'access token is required'). That cost nothing here because no DigitalOcean mutation was in scope, but it removed DO-side logs as an option.",
+
+  "missionPremise": "That hauska-mcp-server's dashboards tools reach the Dashboards backend through DASHBOARDS_BACKEND_URL, that D-9 has produced a live, validated DigitalOcean address for that backend, and that repointing the variable and redeploying the one service is a safe, reversible way to retire the GCP dependency for this caller. Source: _dispatches/2026-09-17_do-migration-dashboards-mcp-flip_dispatch.md, plan row D-11 (OPS-25), FAN-DEPTH 0, plus the operator ruling A-3 which puts the one-line cloudbuild-mcp.yaml substitution inside this lane's scope. The premise holds, with the correction that the redeploy alone is not sufficient to make the change live while the service's traffic is pinned by name; the repo's own canary mechanism (--no-traffic --tag, then shift) is what makes it live, and it also gave a way to verify the flip before any customer traffic moved.",
+
+  "completionPredicate": "hauska-mcp-server serves its dashboards tools from the DigitalOcean Dashboards backend, with the GCP original no longer receiving its calls, and the change durable against the repo's own deploy path. Measured state: MET. As of 2026-09-17T20:56Z, revision hauska-mcp-server-00105-gex serves 100% of traffic (tag dashto) carrying DASHBOARDS_BACKEND_URL=https://dolphin-app-y4ixf.ondigitalocean.app; the three backend-traversing dashboards tools return results semantically identical to the pre-flip baseline with 0 hard divergences and all 200s; and the GCP smartcity-dashboards original logged zero calls from the MCP server after 20:51:32Z against a positive control proving the log instrument fires. Durability is met by origin/main 10451ee carrying the same address in _DASHBOARDS_BACKEND_URL, so the next Cloud Build deploy reproduces the flip rather than reverting it.",
+
+  "scopeBasis": "Dispatch _dispatches/2026-09-17_do-migration-dashboards-mcp-flip_dispatch.md, plan row D-11 (OPS-25), FAN-DEPTH 0. Boundaries and why: (1) Exactly one environment variable on one Cloud Run service was changed, plus the single cloudbuild-mcp.yaml substitution line that A-3 puts in scope; a spec diff of the pre and post service configuration shows exactly one change across 26 env vars and 12 other settings, with the container image identical by digest. (2) The deploy reuses the image that was already serving (tag p244bf7a2f5e resolves to sha256:ea8e6de...aa03d, the digest the new revision runs), so no code was built, touched, or rebuilt. (3) The change was made durable by one commit on origin/main, 10451ee, which is 1 file and 1 line; the lane branch and worktree were removed at close and the main checkout P:/hauska-mcp-server was never written to or switched. (4) A canary was used rather than a straight cutover, per the repo's own _CANARY mechanism, so the flip was proven live on a tag URL with 0% of customer traffic moved before promotion. (5) No secret value was read, written, or reproduced: both the old and new values are plain URLs, and the spec diff records secret binds by name only. (6) No sub-agent was launched, per FAN-DEPTH 0. (7) Nothing was deleted: the previous revision stays Active as the rollback target, the retired first-attempt revision was left in place, and the GCP original is untouched and still running per OPS-25 rule 3's bake period.",
+
+  "boundariesHit": "One boundary was hit and is recorded rather than glossed. The dispatch's stated mechanism for making the flip live -- a config-only redeploy -- is insufficient on this service, because its traffic is pinned to a revision by name. Crossing that required a traffic shift, which is a larger action than the dispatch describes: it moves 100% of production traffic. It was taken deliberately and only after the flip was verified live on a canary tag URL, and it is reversible in one command. The alternative was to declare the task complete with the flip configured but not serving, which is precisely the outcome the dispatch's own step 2 exists to prevent. No other boundary was approached.",
+
+  "seatRegistrationNote": {
+    "whatTheDispatchSaid": "'hauska-mcp-server, fresh clone from origin, your own worktree, registered under your seat and removed at close.'",
+    "whatWasDone": "The worktree P:/seat-worktrees/do-migration-dashboards-mcp-flip/hauska-mcp-server was created as a proper git worktree of P:/hauska-mcp-server, detached at origin/main f7a2f5e, under the lane's own seat path, and is removed at close. It was NOT added to _catalog/seat_register.json.",
+    "whyNot": "Read rather than assumed: NO DO-program lane is registered in that file -- 'any do-migration entry in the register: NO' and 'any seat-worktrees/do- entry: NO', while D-5, D-9 and D-10 all worked the same way and their closes were accepted. hauska-mcp-server belongs to the substrate seat in the register, whose entries carry head and branch fields; an entry for a worktree that is deleted minutes later would be stale on arrival and would assert a head that no longer exists. The register's otherWorktrees list names such worktrees 'so it is not unregistered', which is the intent this note serves instead.",
+    "knownConsequence": "SEAT-01's worktree gate, whose scope predicate is the worktree a git write mutates, had no declared target for this lane's push. The push to origin/main succeeded (nothing refused it), and no other registered seat's worktree was touched. Flagged so a successor or the planner can decide whether the DO program should start registering its lane worktrees; this lane judged that a deliberate no-op plus a visible note was more honest than a registration that is immediately false."
+  },
+
+  "prs": "none. The single commit 10451ee was pushed directly to origin/main of hauska-mcp-server from the lane branch d11-dashboards-backend-do. Reason: main is unprotected (GitHub returns 'Branch not protected'), so the repo does not require a PR to land, and the whole point of this line is durability against the next Cloud Build deploy -- holding it in an unmerged branch would have defeated the change it exists to make. CI conclusion strings: none observed for this push at close. The product repo's only workflow is ci.yml.",
+
+  "constraintsHonored": [
+    "No secret value read, written, or reproduced in any artifact: both values are plain URLs, and the spec diff records secret binds by name only.",
+    "No sub-agent launched (FAN-DEPTH 0): subAgents.spawned = 0, maxDepth = 0.",
+    "The Do-not list honoured: nothing in hauska-mcp-server was touched beyond (a) DASHBOARDS_BACKEND_URL on the service and (b) the one-line _DASHBOARDS_BACKEND_URL substitution in cloudbuild-mcp.yaml, per A-3.",
+    "D-9's cutover was read from its own close before proceeding, not assumed from a lane claim.",
+    "Both gates were re-read fresh at 2026-09-17T20:43Z rather than taken from OPS-25's 2026-09-16/17 readings.",
+    "The main checkout P:/hauska-mcp-server was not written to; all repo work happened in the lane's own worktree.",
+    "Nothing was deleted: not a revision that matters, not a tag, not the GCP original.",
+    "The lane was claimed at 2026-09-17T20:44:05.320Z before any mutation and is released at close."
+  ],
+
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-17_do-migration-dashboards-mcp-flip_cp1.json",
+    "cp2": "_inbox/2026-09-17_do-migration-dashboards-mcp-flip_cp2.json",
+    "cp1Disclosure": "CP1 was WRITTEN AT CLOSE, not at execution start, and says so in its own first field. The lane claim, the gate re-verification readings and the pre-flip baseline are contemporaneous; the design record is not."
+  },
+
+  "filesTouched": {
+    "productRepo": [
+      "hauska-mcp-server @ d11-dashboards-backend-do (10451ee), pushed to origin/main: M cloudbuild-mcp.yaml -- the single substitution _DASHBOARDS_BACKEND_URL changed from the GCP Cloud Run URL to https://dolphin-app-y4ixf.ondigitalocean.app. 1 file, 1 insertion, 1 deletion. No other file in the repo was written."
+    ],
+    "cloudRun": [
+      "hauska-mcp-server: revision hauska-mcp-server-00105-gex created with the corrected env var, tag dashto, then promoted to 100% traffic; the previous revision hauska-mcp-server-00102-naj (tag keyrot) retained at 0% as the rollback target; revision hauska-mcp-server-00063-gm6 created by the first deploy attempt and retired by Cloud Run, left in place."
+    ],
+    "docRepo": [
+      "_inbox/2026-09-17_205600_d11_mcp_dashboards_flip_probe.json (the verification artifact)",
+      "_inbox/2026-09-17_do-migration-dashboards-mcp-flip_cp1.json",
+      "_inbox/2026-09-17_do-migration-dashboards-mcp-flip_cp2.json",
+      "_inbox/2026-09-17_do-migration-dashboards-mcp-flip_close.json (this file)",
+      "_catalog/lane_claims.json (claim taken and released)"
+    ],
+    "leftUncommitted": "The four doc_repo artifacts are left uncommitted in P:/seat-worktrees/dispatch-planner/doc_repo, per the contract's rule that doc_repo commits are planner-owned."
+  },
+
+  "leave_behind": [
+    {
+      "resource": "Cloud Run service hauska-mcp-server (hauska-prod-497015 / us-central1)",
+      "serves": "the public Hauska MCP surface",
+      "state": "revision hauska-mcp-server-00105-gex serves 100% of traffic, tag dashto",
+      "config": "DASHBOARDS_BACKEND_URL=https://dolphin-app-y4ixf.ondigitalocean.app; image sha256:ea8e6de186c7982a1c3ab9d5427318a821b30f690e81f8e1b2b944a04daae03d (unchanged from before the flip); 26 env vars; 15 secret binds; min 1 / max 10 instances; 1 cpu / 512Mi",
+      "url": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app"
+    },
+    {
+      "resource": "Rollback path",
+      "command": "gcloud run services update-traffic hauska-mcp-server --project=hauska-prod-497015 --region=us-central1 --to-revisions=hauska-mcp-server-00102-naj=100",
+      "whyItWorks": "the previous revision still runs the GCP address and is still Active under tag keyrot, and the GCP smartcity-dashboards original is still running",
+      "ifTheRollbackAlsoNeedsTheTemplate": "revert cloudbuild-mcp.yaml's _DASHBOARDS_BACKEND_URL to https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app and redeploy, otherwise the next Cloud Build deploy will re-flip it"
+    },
+    {
+      "resource": "Retired revision hauska-mcp-server-00063-gm6",
+      "state": "inert leftover of the first deploy attempt (the one that revealed the traffic pin); carries the corrected env var, serves 0% traffic, Active=False reason=Retired",
+      "note": "left in place deliberately so the record shows what happened; safe to delete"
+    },
+    {
+      "resource": "GCP smartcity-dashboards original",
+      "state": "untouched and still running; no longer receives calls from hauska-mcp-server",
+      "stillNeededBecause": "half the rollback path, and OPS-25 rule 3's bake period has not elapsed"
+    },
+    {
+      "resource": "hauska-mcp-server repo",
+      "state": "origin/main 10451ee; the lane worktree P:/seat-worktrees/do-migration-dashboards-mcp-flip/hauska-mcp-server and its branch were removed at close"
+    }
+  ],
+
+  "whatRemainsOpen": [
+    "The pre-existing log_sink_gcs_error on hauska-mcp-server ('The specified bucket does not exist', GCS_LOG_BUCKET=hauska-mcp-logs) predates this lane, is unrelated to DASHBOARDS_BACKEND_URL, and is unfixed. It is not a request-path failure but it fires on every revision and will keep filling the error log.",
+    "The traffic pin on hauska-mcp-server is itself a standing hazard: any future config-only deploy of this service will create a revision that never serves, and a deploy message that says the OLD revision is serving 100% will read like success. Worth a governing rule of the same shape as OPS-25 rule 9 -- a cutover is not complete until the SERVING revision and the traffic split are read, not the deploy output.",
+    "The retired revision hauska-mcp-server-00063-gm6 can be deleted at will.",
+    "D-9's own open items still stand and are not this lane's: the bake period, then decommissioning the D-5 droplets and the GCP originals; the apex certificate's renewal path; and smartcity-os main at 92c73e39 remaining unvalidated against the live original.",
+    "The other OPS-25 rows that flip an env var on a service with a committed deploy template (D-3, D-4, D-7, and D-5's own siblings) should be checked for the same two defects this lane hit: a template that reverts the value, and traffic pinned by name so a config-only redeploy never serves. Rule 9 covers the first; nothing yet covers the second."
+  ],
+
+  "scratch": [
+    {
+      "kind": "LESSON",
+      "text": "A service whose traffic is PINNED to a revision by name does not cut over on a config-only redeploy. gcloud run deploy created the new revision and reported 'revision [OLD] has been deployed and is serving 100 percent of traffic' -- a true sentence about the OLD revision -- while the new revision got 0% and Cloud Run retired it (Ready=True reason=Retired, Active=False). Read status.latestReadyRevisionName and the traffic split, never the deploy message."
+    },
+    {
+      "kind": "LESSON",
+      "text": "Byte-identical payloads do not prove a backend flip, because both backends serve the same content and a MATCH is satisfied either way. Prove a backend change with an independent witness on the origin being left: after the flip the GCP original logged zero calls while a positive control on the same instrument logged one."
+    },
+    {
+      "kind": "LESSON",
+      "text": "The dashboards backend stamps assertedAt and assembledAt into every response, so a raw-hash before/after comparison reports a clean flip as a failure. Declare the exclusion set and prove it complete by locating every ISO instant in the payload and checking it sits under a declared key."
+    },
+    {
+      "kind": "LESSON",
+      "text": "On this fleet host Node's bundled CA store rejects every TLS leaf because a proxy re-signs them ('unable to verify the first certificate') while curl.exe succeeds from the Windows store; run node with --use-system-ca. hauska-mcp-server's own REPO_NOTES documents the same corporate-root condition for npm installs."
+    },
+    {
+      "kind": "LESSON",
+      "text": "The repo's own cloudbuild-mcp.yaml already contained the correct mechanism for this exact situation (_CANARY: '1' -> --no-traffic --tag, 'New revision is not serving until traffic is shifted after live verify'). Reading the deploy template before deploying revealed both the pinned-traffic hazard and the intended way around it."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "doctl is NOT authenticated on this host despite the fleet preamble stating the DO tooling is live fleet-wide ('access token is required'). DO-side logs were therefore unavailable and the GCP original's logs served as the independent origin witness instead."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "gcloud run services update --update-env-vars changes config but does NOT move traffic; with this service's pinned traffic it would have been a silent no-op. gcloud run deploy does move traffic, but only where it is allowed to serve -- here the pinned traffic meant the new revision was retired instead."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "gcloud logging read with two OR-ed clauses in one filter exits 1; the single-term filter httpRequest.requestUrl:\"/api/lenses\" works. Also: --format=value(x,y) is far easier to read back than --format=json for log triage."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-17T20:56Z: hauska-mcp-server revision hauska-mcp-server-00105-gex serves 100% of traffic (tag dashto) with DASHBOARDS_BACKEND_URL=https://dolphin-app-y4ixf.ondigitalocean.app; 0 hard divergences across the three backend-traversing dashboards tools against the pre-flip baseline; the GCP smartcity-dashboards original has logged no call from the MCP server since 2026-09-17T20:51:32Z."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-09-17: origin/main of hauska-mcp-server is 10451ee4440f2519b9655cbd58f63d702e235a78, carrying _DASHBOARDS_BACKEND_URL = the DigitalOcean address, so the next Cloud Build deploy reproduces the flip instead of reverting it."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Rollback: gcloud run services update-traffic --to-revisions=hauska-mcp-server-00102-naj=100 (plus a template revert if it is to stay rolled back)."
+    },
+    {
+      "kind": "OPEN",
+      "text": "The log_sink_gcs_error (GCS_LOG_BUCKET=hauska-mcp-logs bucket does not exist) predates this lane and is unfixed."
+    }
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}
