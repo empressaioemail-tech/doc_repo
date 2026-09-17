@@ -29,6 +29,20 @@
  * took the lease through its own connection URL. If your spelling is not the key, it is kept as the
  * row's alias so `list` still shows the lease you took.
  *
+ * P-307: THE STORE MUST BE A HOST, AND THE FACTORY DECIDES THAT -- NOT THIS SCRIPT. A name with a
+ * single label and no dot (`factory-store`, an env-var name, a container service name) is not a
+ * store host and is refused by name with LEASE_STORE_INVALID; so is a URL that carries no host. The
+ * refusal quotes the spelling, because the spelling is the defect: on 2026-09-17 a session held
+ * `factory-store` while the hourly gate job held `ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech`,
+ * one physical store carrying two concurrent heavy windows, both callers told they held it. And the
+ * pooler and direct hostnames of ONE Neon endpoint are now ONE key, so a caller holding
+ * `ep-x-pooler...` contends with a job holding `ep-x...`.
+ *
+ * This script deliberately does NOT re-implement the rule: a second copy of a key rule in another
+ * repo drifts from the first, and the factory is the only side that can see every caller. What this
+ * script owes you is the opposite: print the code AND the reason, with an exit code of its own, so a
+ * refused spelling cannot be mistaken for a network failure and retried.
+ *
  * Usage:
  *   node scripts/heavy-scan-lease.mjs list [--store HOST]
  *   node scripts/heavy-scan-lease.mjs take --store HOST_OR_URL --holder SEAT [--window-kind heavy-scan]
@@ -41,7 +55,8 @@
  *
  * Exit codes: 0 ok; 2 usage; 3 ENDPOINT_NOT_DEPLOYED; 4 CALLER_NOT_REGISTERED (bad/missing
  * credential); 5 LEASE_HELD (the store is held; the blocking holder is named in the output);
- * 6 LEASE_LOST / LEASE_NOT_FOUND.
+ * 6 LEASE_LOST / LEASE_NOT_FOUND; 7 LEASE_STORE_INVALID (the store you named is not a store host --
+ * the `reason` names the spelling; fix it and take again).
  */
 import { fileURLToPath } from "node:url";
 
@@ -50,6 +65,13 @@ export const CALLER_NOT_REGISTERED = "CALLER_NOT_REGISTERED";
 export const LEASE_HELD = "LEASE_HELD";
 export const LEASE_LOST = "LEASE_LOST";
 export const LEASE_NOT_FOUND = "LEASE_NOT_FOUND";
+/**
+ * P-307. The factory refuses a store that cannot be a store host (a single label such as
+ * `factory-store`, or a URL with no host) with this code and a reason naming the spelling. It is
+ * not a LEASE_LOST and not a crash: the caller's spelling is wrong and the store is untouched, so
+ * it gets its own exit code and its own line in the output.
+ */
+export const LEASE_STORE_INVALID = "LEASE_STORE_INVALID";
 export const USAGE = "USAGE";
 
 /** Minimum the server accepts; kept here too so a bad --ttl-seconds refuses before a round trip. */
@@ -145,14 +167,23 @@ export function resolveEndpoint(env = process.env) {
   return { url: url.replace(/\/$/, ""), key };
 }
 
-/** Maps an HTTP outcome onto this script's codes. Split out so the mapping is testable. */
+/** Maps an HTTP outcome onto this script's codes. Split out so the mapping is testable.
+ *
+ * Every refusal carries the server's own `reason` alongside the local code, because the two answer
+ * different questions: the code is this script's (how do I branch, what do I exit with), the reason
+ * is the factory's (what exactly is wrong with what I sent -- for P-307, the offending spelling).
+ * Flattening them to a bare code is how a refused spelling becomes a retry.
+ */
 export function outcomeFor(status, body) {
-  if (status === 404) return { code: ENDPOINT_NOT_DEPLOYED, ok: false };
-  if (status === 401 || status === 403) return { code: CALLER_NOT_REGISTERED, ok: false };
-  if (status === 409 && body?.error === LEASE_HELD) return { code: LEASE_HELD, ok: false };
-  if (status === 409) return { code: LEASE_LOST, ok: false };
-  if (status === 200 || status === 201) return { code: null, ok: true };
-  return { code: body?.error ?? `HTTP_${status}`, ok: false };
+  const reason = typeof body?.message === "string" && body.message.trim() !== "" ? body.message : null;
+  const refused = (code) => ({ code, ok: false, reason });
+  if (status === 404) return refused(ENDPOINT_NOT_DEPLOYED);
+  if (status === 401 || status === 403) return refused(CALLER_NOT_REGISTERED);
+  if (status === 409 && body?.error === LEASE_HELD) return refused(LEASE_HELD);
+  if (status === 409) return refused(LEASE_LOST);
+  if (status === 400 && body?.error === LEASE_STORE_INVALID) return refused(LEASE_STORE_INVALID);
+  if (status === 200 || status === 201) return { code: null, ok: true, reason: null };
+  return refused(body?.error ?? `HTTP_${status}`);
 }
 
 async function call(verb, flags, env = process.env) {
@@ -227,6 +258,10 @@ export const EXIT = Object.freeze({
   [LEASE_HELD]: 5,
   [LEASE_LOST]: 6,
   [LEASE_NOT_FOUND]: 6,
+  // NOT 1. Exit 1 is this script's crash/transport bucket, and the 2026-09-17 finding included a
+  // bare `fetch failed` on exit 1 -- a refused spelling that shares an exit code with a dead network
+  // is a refusal the operator retries.
+  [LEASE_STORE_INVALID]: 7,
 });
 
 /**
@@ -237,7 +272,12 @@ export const EXIT = Object.freeze({
  */
 export function selftest() {
   const fails = [];
+  // COUNTED, not asserted as a literal: a hardcoded checks count is a claim about this file that
+  // this file cannot keep (it drifts the moment a check is added), and the number is only useful if
+  // it is the number that ran.
+  let checks = 0;
   const ok = (name, cond, detail = "") => {
+    checks += 1;
     if (!cond) fails.push(`${name}${detail ? `: ${detail}` : ""}`);
   };
 
@@ -293,7 +333,22 @@ export function selftest() {
   ok("201 is ok", outcomeFor(201, { ok: true }).ok === true);
   ok("an unknown code keeps its name", outcomeFor(500, { error: "HEAVY_LEASE_FAILED" }).code === "HEAVY_LEASE_FAILED");
 
-  console.log(JSON.stringify({ selftest: fails.length === 0 ? "PASS" : "FAIL", checks: 24, failures: fails }, null, 2));
+  // P-307: the refusal a mis-spelled --store now gets. Both directions, because a mapping that only
+  // widens is a mapping that swallows: LEASE_STORE_INVALID must be THAT code with the factory's
+  // reason kept, and a 400 for any other error must keep its own name rather than being absorbed.
+  const badStore = outcomeFor(400, {
+    error: LEASE_STORE_INVALID,
+    message: 'the store "factory-store" is not a store host: name the host or the whole connection URL',
+  });
+  ok("400 LEASE_STORE_INVALID is LEASE_STORE_INVALID", badStore.code === LEASE_STORE_INVALID, badStore.code);
+  ok("the refusal keeps the factory's reason", /factory-store/.test(badStore.reason ?? ""), String(badStore.reason));
+  ok("a refused store is not ok, so it cannot be mistaken for a take", badStore.ok === false);
+  ok("LEASE_STORE_INVALID has an exit code of its own", EXIT[LEASE_STORE_INVALID] === 7, String(EXIT[LEASE_STORE_INVALID]));
+  ok("...and it is NOT the crash bucket (exit 1)", EXIT[LEASE_STORE_INVALID] !== 1);
+  ok("a 400 with another error keeps that error", outcomeFor(400, { error: "LEASE_SPEC_INVALID" }).code === "LEASE_SPEC_INVALID");
+  ok("a success carries no reason", outcomeFor(201, { ok: true }).reason === null);
+
+  console.log(JSON.stringify({ selftest: fails.length === 0 ? "PASS" : "FAIL", checks, failures: fails }, null, 2));
   return fails.length === 0;
 }
 
