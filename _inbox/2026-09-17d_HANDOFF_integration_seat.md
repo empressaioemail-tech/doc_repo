@@ -2,11 +2,11 @@
 id: 2026-09-17d_HANDOFF_integration_seat
 title: Handoff to a fresh integration-seat planner, 2026-09-17 late evening
 date: 2026-09-17
-last_updated: 2026-09-17 (revised 22:45Z after the four-block analysis)
+last_updated: 2026-09-17 (revised 23:20Z: the engine deploy landed and seven of eight lanes closed with PRs open and unmerged)
 status: active handoff
 kind: handoff
 owner: nick
-from: integration seat, 2026-09-17 22:45Z
+from: integration seat, 2026-09-17 23:20Z
 programs: [OPS-24, OPS-16]
 related:
   - _inbox/2026-09-16_texas_scaleup_ROADMAP.md (the live state and the queue; read it second)
@@ -15,7 +15,7 @@ related:
   - _decisions/2026-09-17_ship_without_cotality.md
   - _inbox/2026-09-17_six_county_completeness_post_apply.txt (where the four blocks are counted)
   - _inbox/2026-09-17c_HANDOFF_integration_seat.md (CONSUMED; its traps still apply)
-snapshot: doc_repo main 220f2803 or later; hauska-map 3693d831, legacy-design-tools 388ccc5c, hauska-engine 72d72c02, hauska-factory 087927bc; Property Explorer 3cpnl30o0; read 2026-09-17 22:45Z
+snapshot: doc_repo main 87d8b6ce or later; hauska-map 3693d831, legacy-design-tools 388ccc5c, hauska-engine 72d72c02, hauska-factory 087927bc (NINE PRs open, none merged); retrieval-api 00102-ciz, engine-api 00253-qan, Property Explorer 3cpnl30o0; read 2026-09-17 23:20Z
 ---
 
 # Handoff: the integration seat, 2026-09-17 late evening
@@ -34,6 +34,76 @@ dispatch before it is handed to a lane** — a lane reads `origin/main`, not you
 3. `_inbox/2026-09-17_williamson_mass_retirement_INCIDENT.md`. Do not skip it: it is why 48491 may
    not be republished yet.
 4. OPS-16 amendment **A-212** and rows **P-319 to P-326**.
+
+## 0. YOUR FIRST JOB: nine open PRs, none merged
+
+Seven of the eight lanes closed. **Every one opened a PR and not one is merged.** The previous seat
+stopped rather than reviewing nine PRs at the end of a very long session, which is the ENFORCEMENT
+rule about context depth applied deliberately. They are yours, and they want reading, not rubber
+stamping: the last two merge batches each found a control that could not fail.
+
+| Repo | PR | Rows | State |
+|---|---|---|---|
+| hauska-factory | **#173** | P-319, P-320, P-321 | **UNSTABLE** — see below |
+| hauska-factory | #174 | P-322 (ag-valuation sweep refuses) | CLEAN |
+| hauska-factory | #175 | P-325 (join miss is not an absence) | CLEAN |
+| hauska-factory | #176 | P-326 (setback classifier) | CLEAN |
+| hauska-map | #417 | P-257 | CLEAN |
+| hauska-map | #418 | P-270 | CLEAN |
+| legacy-design-tools | #717 | P-257 | refreshed, re-running |
+| legacy-design-tools | #718 | P-322 | refreshed, re-running |
+| legacy-design-tools | #719 | P-270 | refreshed, re-running |
+
+**#173 is UNSTABLE for an infrastructure reason, not a finding.** `ldt-sha-comment-presence` failed
+with `fatal: bad object <sha>` on its base ref — the check could not run. A branch update was
+refused ("no new commits on the base branch") and a re-run was triggered. **Do not merge it by
+assuming the check is noise; establish why it cannot see its base.** A check that cannot run is the
+P-318 class and it deserves the same treatment.
+
+**Suggested order:** #173 first (it gates P-286 and blocks 48491's republish), then the factory
+three, then map, then LDT. P-257 and P-270 each span map and LDT, so merge the map half and the LDT
+half of the same row together or the pair diverges.
+
+## 0a. Two lanes returned DECISIONS, and they are the operator's
+
+**P-326 answered the setback question, and the answer is much better than feared.** Of the 58,339
+parcels refusing setbacks, **48,829 (83.7 percent) are servable by P-300's jurisdiction-default row**
+and only **9,510 need a real district table**. Travis is 32,140 servable against 1,743. The caveat
+that matters: for 48,825 of the servable ones **no zoning layer exists for their city either**, so
+the default line is the only input that can ever set them.
+
+**This redirects the setback plan.** Fire P-300 broadly rather than scoping district tables. P-300
+is already unblocked by P-256, and its first table (Gholson, 840 parcels) was designed before this
+number existed. Artifact:
+`P:/seat-worktrees/p326-setback-residual-composition/doc_repo/_inbox/2026-09-17_p326-setback-residual-composition_close.json`,
+uncommitted — copy it into `P:/doc_repo/_inbox` when you use it.
+
+**P-204 returned its ruling table and found a live customer defect.** All five rails recommend CUT
+OVER, but the lane is explicit that they are **not one decision**:
+
+- **Group A — `parcelGeometry`, `pipelines`. Rule together.** Pure accounting: atom-backed today,
+  proven load-bearing by ablation, no writer to build, no vocabulary change, no change to what a
+  customer reads.
+- **Group B — `etjStatus`. Rule alone, and it carries a live bug.** Its cutover already runs on the
+  authoritative path and **hauska-map's BFF replaces `cityLimitsFact` wholesale, so a customer reads
+  a false negative in both directions today.** That is a defect to fix now, independent of any
+  ruling, and bundling it into a bookkeeping decision would hide it.
+- **Group C — `landUseDescription`. Rule alone.** The only cutover that **SUBTRACTS** a
+  customer-visible value, gated on the Hays/TxGIO-CAD join-hold. Serving a declared absence in place
+  of a description is a product decision and needs its own record.
+- **Group D — `railCorridor`. Rule alone or with C.** It has no serve path at all, so the choice is
+  build-the-first-serve or retire a rail ruled in on 2026-08-09 with ~139k atoms written since.
+  **Here the dispatch's own premise is false: cutting over ADDS a customer outcome.**
+
+Artifact: `P:/seat-worktrees/p204-mid-cutover-serve-paths/doc_repo/_inbox/2026-09-17_p204-mid-cutover-serve-paths_close.json`
+plus its `_cp2.json`, both uncommitted.
+
+## 0b. The engine deploy landed
+
+Verified by field: retrieval-api **`00102-ciz`** (tag `p260-72d72c0`, explicit revision at 100
+percent, correct for the pinned service) and engine-api **`00253-qan`** (`latestRevision: true` at
+100 percent), both from engine `72d72c02`. P-260's registry fix is on the customer path. **P-263's
+apply is still the operator's and has not run.**
 
 ## 0. Standing facts that override older records
 
@@ -105,7 +175,7 @@ exists to prevent.
 
 ## 3. In flight
 
-Eight lanes plus a deploy. The operator reports closes.
+**P-264 is the only lane still working.** Everything else closed; see section 0 for the PRs.
 
 | Lane | Rows | State |
 |---|---|---|
