@@ -1,0 +1,111 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review — the instrument turned on itself",
+  "lane": "g142-citizen-lens",
+  "planRows": ["G-142"],
+  "seat": "cente-vsc-g142",
+  "filedAt": "2026-09-18T17:28:00Z",
+  "filedBeforeOrAfter": "AFTER the build, in the same pass, and said plainly rather than back-dated. See CP1's field of the same name; the reason is the same and it is not repeated here.",
+
+  "whatThisCheckpointIs": "CP1 is the design argument. CP2 is the record of what the INSTRUMENT got wrong before it agreed with the artboards, because a check whose only evidence is 'it passed' has told you nothing about whether it could have failed. Every entry below is a defect in check.mjs, caught by check.mjs's own self-tests or by violate.mjs, and fixed. They are listed with the symptom that exposed them, because the next lane authoring an adversarial read on this product will meet the same shapes.",
+
+  "instrumentDefectsFoundAndFixed": [
+    {
+      "id": "D1",
+      "symptom": "The nav's own shipped badges satisfied body-scoped rules. A badge on the chrome was being read as a badge on the Citizen page.",
+      "cause": "Every read must be scoped to `<main data-lens-body=\"citizen\">`, but the nav renders OUTSIDE main. The first self-test asserted the nav was excluded from the body, while a later rule was reading it document-wide — two rules disagreeing about scope, which is how a rule silently reads the wrong object.",
+      "fix": "Scope is structural and total: every read except two is taken inside the scoped body. The two document-wide reads are named in the file and justified: the Citizen nav badge tie (chrome, a shipped value) and the DEMO FIXTURE marker (a badge, which belongs in chrome). A board with no scope marker ABORTS; it never falls back to the whole document.",
+      "whyItMattersBeyondThisFolder": "This is the same shape as the fleet's own CTRL-1 class — one rule, two implementations, disagreeing. Here the disagreement was inside a single file and the self-test was the thing that exposed it."
+    },
+    {
+      "id": "D2",
+      "symptom": "R6 fired on the DESIGN'S OWN artwork. `data-tile-sized` matched a rule that exists to catch `data-tile`.",
+      "cause": "The twelve-tile-grid refusal was written as a substring match. Any attribute containing `data-tile` satisfied it, so the rule that exists to stop the grid coming back was also refusing the marker this design uses for its own large figures.",
+      "fix": "The rule is `/\\sdata-tile=\"/` — the attribute with a value, exact. And the design stopped overloading the word at all: the large-figure marker is `data-figure-lead=\"1\"`.",
+      "lesson": "A refusal rule written as a substring match will eventually refuse the thing that was right. Same class as the 'Compose matches composes' defect below."
+    },
+    {
+      "id": "D3",
+      "symptom": "R8 refused the word `Compose` because the design's own prose contained `composes`.",
+      "cause": "The forbidden-name set was checked as substrings throughout. Product-forbidden tokens are substrings by intent (a retired vendor name inside a URL is still a leak); forbidden WORDS are not.",
+      "fix": "R8 splits the two: forbidden words are matched on exact word boundaries, forbidden tokens stay substring. Both sets are carried in source-state.json with their kind, so the distinction is data rather than a regex a later editor can flatten."
+    },
+    {
+      "id": "D4",
+      "symptom": "R7 demanded every pinned shipped sentence on all three boards, so the map board and the fixture board failed for not carrying copy that is not theirs to carry.",
+      "cause": "The rule treated three different kinds of board as one. Distances.dc.html is a MAP of the four distances, not a rendering of the surface; Filled.dc.html deliberately REPLACES two regions' content with fixture rows.",
+      "fix": "R7 is conditional and says so per board: every pinned sentence is required on Main.dc.html; on Filled.dc.html only the shipped sentences belonging to panels the fixture did NOT touch are required. Stating which board owes which sentence is part of the rule now rather than an implicit 'all'."
+    },
+    {
+      "id": "D5",
+      "symptom": "R9 reported 'a fixture board with no DEMO FIXTURE marker in the top bar' while the marker was in the top bar.",
+      "cause": "The fixture badge is chrome, and the read was body-scoped. The check was looking for a badge rendered outside the scope it was searching.",
+      "fix": "R9 reads the marker document-wide and holds the two halves apart: the BADGE is document-wide (three of them), the CONTENT line 'not a city record' stays body-scoped, and each is named."
+    },
+    {
+      "id": "D6",
+      "symptom": "'None on file' aborted the whole check (exit 2, moved premise) because it sits outside the product's five-word badge vocabulary — which is the FINDING, not a broken premise.",
+      "cause": "The vocabulary guard was written as a biconditional: the word must be inside the set AND the fact must be recorded. The fact being FALSE at source is exactly what makes the rule worth having, and a biconditional turns a finding into a refusal.",
+      "fix": "The premise is now one-directional: `!words.includes('None on file')`. If the product ever ADDS the word to its vocabulary, the premise aborts, because then the design's exhibit has moved and nobody should read the old verdict. Until then the defect is reported as R2, exit 1, against the SHIPPED side of the comparison.",
+      "thisWasTheImportantOne": "Until D6 was fixed, the instrument could only ever tell me the design agreed with itself. A guard that refuses whenever it finds the defect it was written to find is a guard that can never report anything."
+    },
+    {
+      "id": "D7",
+      "symptom": "Broken scope marker + a violation produced exit 2, and via the exit code alone it was impossible to tell a correct refusal from a missed catch.",
+      "cause": "The instrument refuses when a predicate has no inputs, which is right — and every real board is the ONLY source of some count, so breaking a board to plant a defect removes the inputs the other rules need.",
+      "fix": "Two changes. In check.mjs: a vacuous predicate is reported as its own rule, R13, so 'this board gave that rule no input' and 'this board broke that rule' are different statements that read differently. In violate.mjs: the R1 plant mutates a COPY (`Broken.dc.html`) rather than breaking Main, so the R1 FINDING is what gets tested. Both the finding path and the refusal path are now separately planted and separately asserted."
+    },
+    {
+      "id": "D8",
+      "symptom": "`canvas.json` and `source-state.json` could have named different product commits and nothing would have noticed.",
+      "cause": "Two files, written by two passes, both asserting which commit the boards were drawn against, with no read joining them.",
+      "fix": "`checkCommitTie` reads both and refuses (R13-class abort) on a mismatch. Planted in violate.mjs as the `snapshot` case, because an untested tie is a claim."
+    }
+  ],
+
+  "twoSidedProof": {
+    "selfTests": { "count": 54, "direction": "every predicate proved able to ACCEPT on a well-formed fixture and to REFUSE on a malformed one, before any artboard is read. A failure aborts with exit 2 rather than reporting a verdict it cannot support." },
+    "matchedInputCounts": {
+      "reported": 14,
+      "countingRule": "one increment per matched element or attribute of that kind, read from the artboards inside the scoped body (document-wide for the two named exceptions). Reported on every run; any count reaching zero refuses the verdict with exit 2 rather than passing a rule that read nothing.",
+      "values": { "bodies": 3, "regions": 8, "distances": 5, "bases": 13, "badges": 14, "mechanismChips": 8, "cells": 19, "figures": 21, "measuredFigures": 13, "unmeasuredFigures": 8, "measuredZeros": 7, "fixtureRows": 2, "controls": 2, "verbatimSentences": 12 }
+    },
+    "cleanRun": "`node check.mjs` exit 0 — 3 artboards, 13 rules, 54 self-tests, all 14 counts non-zero.",
+    "plantedRun": "`node violate.mjs` exit 0 — 16 of 16 planted violations caught, one at a time, into throwaway copies, each by the rule that exists for it, including both refusal paths (a moved product premise, exit 2) and (a predicate with no inputs, exit 2).",
+    "theBoardsAreNeverMutated": "violate.mjs plants into temp copies of the folder, so no artboard is ever edited and no restore step exists to be got wrong. Stronger than plant-then-restore.",
+    "reproducibleFromASnapshot": "`node gen.mjs` re-run with the md5 of the three boards and canvas.json captured before and after: byte-identical, all four. Nothing on these boards is typed by hand — a clone that runs dump-source-state.mjs then gen.mjs produces the same four files. A guardrail that does not survive a clone is not a guardrail.",
+    "whatWouldMakeThisWorthless": "A clean run alone. The Smart Files precedent the dispatch names is a predicate that self-tested perfectly and matched nothing on any real board. That failure mode is addressed twice here: counts must be non-zero, and every rule must have been shown to fire on a real defect."
+  },
+
+  "theDesignWasAlsoAttacked": {
+    "regions": "8 across 3 boards. Main carries 4 with 4 DISTINCT distances (no-region / no-identity / no-capability / no-source) and 4 bases; Filled carries 4, of which 2 are filled and 2 cannot be filled by any fixture.",
+    "theThingThatWasRefusedOnTheDesign": "Any region-scoped measurement on Main.dc.html. Main carries zero — every figure there is a product-scoped fact with its counting rule, because a region figure on a lens with no registered domain would be invented. This is R11, and it is planted.",
+    "theThingThatWasRequiredOnTheDesign": "At least one region-scoped measurement on the fixture board, at least one measured ZERO, and at least one region still unread. A design that only ever drew the un-fed state could never demonstrate that zero and 'Not read' are drawn differently, which is the clause the row's acceptance turns on.",
+    "theShippedExemplarWasNotSoftened": "The disabled lookup's four-sentence basis is carried VERBATIM (R7, planted as a paraphrase). The product's own test asserts that copy; a design that softens it breaks a test, which the dispatch called out in advance.",
+    "nobodyIsNamed": "No personal name appears on any board. The fixture board is badged in three places: the top bar, the footer, and every fixture row."
+  },
+
+  "criteriaCheck": {
+    "adversarialReadRunAsAFile": "PASS — `_design/smartcity-citizen-lens/check.mjs`, exit 0 clean / exit 1 on a finding / exit 2 when it cannot support a verdict.",
+    "selfTestingInBothDirections": "PASS — 54 self-tests, 14 non-zero matched-input counts, 13 rules each planted against.",
+    "nonZeroMatchedInputCount": "PASS — 14 counts, and the floor is enforced: any count reaching zero refuses the verdict.",
+    "againstANamedRef": "PASS — smartcity-dashboards origin/main 7487d7c0a55deeefc286c4a1047545757b802c5b, extracted with `git archive`; the ref is inside source-state.json and tied to canvas.json by checkCommitTie.",
+    "nobodyNamedOnTheCanvas": "PASS",
+    "fixtureBadgedAsFixture": "PASS — three markers",
+    "absentZeroAndUnmeasuredNeverCollapsed": "PASS — the clause the row's acceptance turns on. A region that has not been read carries NO count attribute at all. A measured zero carries data-measured=\"1\" WITH a count of 0 and a counting rule. An unmeasured figure carries data-measured=\"0\" and NO count. Three states, three distinct attribute shapes, each planted as a violation in its own right."
+  },
+
+  "constraintsHonored": [
+    "no sub-agents (FAN-DEPTH 0); the commit gate refuses a close that declares any (A-181)",
+    "product repositories read-only: `git -C P:/smartcity-dashboards status --porcelain` = 0 lines",
+    "no commit, branch, push or worktree in doc_repo",
+    "no product claim carried across the ref drift: each pinned fact read at BOTH 96fdafbb and 7487d7c0",
+    "no write outside _design/smartcity-citizen-lens/, _inbox/, one appended INDEX.md line, and surface_coverage.json"
+  ],
+
+  "openForTheClose": [
+    "cite the surface-probe artifact and say plainly whether it carries a G-142 predicate (it does not — G-142 is a design row and sits outside probe-close-gate.mjs's gated ranges)",
+    "the close cannot claim PASS-per-parcel off the probe for G-142; the acceptance instrument for this row is check.mjs and that must be stated in the close rather than implied",
+    "leave the doc_repo edits uncommitted and list every path"
+  ]
+}

@@ -44,21 +44,9 @@ Police (Spireon), Public works (Power BI, GoTo) and Fire and EMS (FirstDue). Fin
 path now exists. G-159 proved Bastrop's budget is live and readable, and built the v1 routes that serve
 it. Two DigitalOcean rows, D-14 and D-13, make those routes reachable.
 
-**Two DigitalOcean rows moved today, one all the way and one only to UAT.** D-14 and D-13 were
-read at source by the planner at 2026-09-18T16:26Z. **D-14 LANDED:** `walrus-app` now builds from
-`main` and serves `1f0262f`, so the three G-159 routes that used to fall through to the SPA shell now
-answer `401 platform_internal_required` while a fake path still answers the shell. **D-13's code landed
-and its production step did not** (OPS-25 A-9): the dashboards' `main` `7487d7c0` carries
-`src/platform-base.mjs`, which decides the v1 base from ONE variable and refuses when it is unset, with
-the old GCP host gone from `src/` and `web/`, and `d12-main-uat` builds from `main` and serves exactly
-that commit, but `dolphin-app` carries neither the code nor the variable, so the production dashboards
-still read the GCP copy of v1. The dashboards' `main` moved from `96fdafb` to `7487d7c0`, which is
-G-161's fix.
+**Three rows moved today, and the production ship ran.** D-14 and D-13's code were read at source by the planner at 2026-09-18T16:26Z, and the ship was performed at 17:29Z (OPS-25 A-10). **D-14 LANDED:** `walrus-app` builds from `main` and serves `1f0262f`, so the three G-159 routes that used to fall through to the SPA shell now answer `401 platform_internal_required` while a fake path still answers the shell. **D-13 LANDED:** `dolphin-app` deployment `e98f127c` is ACTIVE serving `7487d7c0`, read back byte for byte against the dashboards' `origin/main`, with `SMARTCITY_V1_PLATFORM_BASE` set to `walrus-app` in the same deploy. The dashboards no longer read the GCP copy of v1. The ship is a two-part change because an unset base is now a refusal rather than a default, so the code and the variable had to move together in one deploy.
 
-**Production has not moved, and the ship is now a two-part change rather than one.** `app.smartcityos.io`
-still serves `3d3ec62`, from before the Finance lens, the Development services corrections and the
-city-default fix; the finance route answers `unknown lens` there where `d12-main-uat` answers
-`city_key_required`. These apps deploy only when someone deploys them, and a merge deploys nothing.
+**Production moved at 17:29Z, and the surface is graded rather than assumed.** `app.smartcityos.io` served `3d3ec62` from before the Finance lens, the Development services corrections and the city-default fix until that deploy; the finance route answered `unknown lens` there. On the deployed surface now: the finance route serves, eight of eleven registered domains on `bastrop_tx` carry records with every record-less domain stating a basis, eight platform routes return payloads byte-identical to the host production read before the ship, and the work-order Subject column carries no resident free text. **Two of D-13's clauses are worth naming because they were the reason it existed:** the finance route's `unknown lens`, and the work-order Subject cell, which rendered the vendor's free-text title where residents write names and phone numbers. **D-13 is LANDED and not CLOSED:** scope 5, a bake window in which GCP `smartcity-api` logs zero platform requests, is ungraded, and nothing was decommissioned. A merge still deploys nothing.
 **`dolphin-app`'s configured env carries no `SMARTCITY_V1_PLATFORM_BASE`, and at `7487d7c0` an unset base
 is a refusal with a named basis rather than a silent default**, so shipping `main` without setting that
 variable in the same deploy would take every v1 platform feed from serving to refusing.
@@ -156,49 +144,36 @@ closes when that lane reports it, and it is the only thing left unmeasured in th
 Every SmartCity service on DigitalOcean, and the GCP originals decommissioned after a clean bake.
 
 **The order.** D-5, D-9, D-10 and D-11 are closed. D-12 is closed-partial: `app.smartcityos.io` now
-resolves to `dolphin-app`, and the bake starts when staff move. **D-14 LANDED on 2026-09-18 and D-13's
-code landed without its production step, both read at source by the planner at 16:26Z** (OPS-25 A-9):
-`walrus-app` `e243db0a` now builds from `main` and serves `1f0262f`, with the three G-159 routes
-answering `401 platform_internal_required` where a fake path answers the SPA shell, so D-14's repoint is
-live; `smartcity-dashboards` `main` `7487d7c0` carries `src/platform-base.mjs`, which decides the v1
-base from one variable and REFUSES when it is unset, and the old GCP host is gone from `src/` and `web/`,
-but `dolphin-app` carries neither, so D-13's production step waits on the same deploy that D-12's
-cutover does. After them comes the SmartCity decommission bundle
+resolves to `dolphin-app`, and the bake starts when staff move. **D-14 and D-13 both LANDED on 2026-09-18** (OPS-25 A-9 and A-10): `walrus-app` `e243db0a` builds from `main` and serves `1f0262f`, with the three G-159 routes
+answering `401 platform_internal_required` where a fake path answers the SPA shell; and the ship ran at 17:29Z, so `dolphin-app` deployment `e98f127c` is ACTIVE serving `7487d7c0` with `SMARTCITY_V1_PLATFORM_BASE` set to `walrus-app`. After them comes the SmartCity decommission bundle
 (D-20), then the bakes, then decommissioning. A full GCP exit is being planned by another seat, and this
 milestone is its first phase.
 
-**What blocks it now:** the bake, which needs staff on `app.smartcityos.io`, and the ship. **The ship has
-not happened and it is a two-part change.** Production serves `3d3ec62` from a deployment ACTIVE since
-2026-09-18T00:27Z (the finance route answers `404 unknown lens` there where `d12-main-uat` answers
-`400 city_key_required`), and **`dolphin-app`'s configured env carries no `SMARTCITY_V1_PLATFORM_BASE`**.
-Because an unset base is now a refusal rather than a default, shipping `main` without setting that
-variable in the same deploy would take every v1 platform feed from serving to refusing. The GCP
+**What blocks it now:** the bake, which needs staff on `app.smartcityos.io`. **The ship HAS happened, and it was a two-part change for the reason it was predicted to be.** Production served `3d3ec62` from a deployment ACTIVE since 2026-09-18T00:27Z, where the finance route answered `404 unknown lens`; it now serves `7487d7c0` from deployment `e98f127c` ACTIVE at 17:29Z, where the finance route serves. The two parts moved together because an unset base is a refusal rather than a default, so shipping `main` without the variable would have taken every v1 platform feed from serving to refusing. **D-13 is LANDED and not CLOSED**, because its scope 5 bake is ungraded: a window in which a lens is actually opened and GCP `smartcity-api` logs zero platform requests. The GCP
 `smartcity-api` is no longer what the dashboards read, so it is D-20's bundle rather than this row's
 blocker; what still reads GCP is whichever surface has not been repointed, and that is what D-20
-enumerates.
+enumerates. **One new row came out of the ship's acceptance, G-163:** `firstdue/apparatus` and `goto/call-summary` answer an opaque Cloudflare `504` on `walrus-app` where GCP answered a structured `503` naming the vendor permission to request. Both feeds were already `unavailable`, so nothing broke; the stated reason is what degraded.
 
 ### M5. Design complete, and the controls that keep it honest
 
 The design completion gate exits 0: every shipped nav surface is designed or excluded by a dated ruling.
 
-**What remains.** The Citizen lens (G-142) and Records search (G-147) are undrawn and both are now
-dispatched. **G-148's hold is RELEASED (2026-09-18, `_decisions/2026-09-18_g148_hold_released.md`) and
-the lane is compiled:** the gate's R3 names four designs past DRAFT with no adversarial read
+**What remains.** **The Citizen lens (G-142) and Records search (G-147) are DRAWN AND CLOSED as of 2026-09-18**, so both of the gate's R4 findings are gone. **G-148's hold is RELEASED (2026-09-18, `_decisions/2026-09-18_g148_hold_released.md`) and the lane is compiled but not yet handed over:** the gate's R3 names four designs past DRAFT with no adversarial read
 (`plan-review-departments`, `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`),
 and all four now HAVE build rows, so the hold's stated exemption ("designs with no build row") covered
 none of them. G-148 writes all four instruments and G-149 and G-157 inherit theirs rather than
-rebuilding them. G-160 is a control that fails a deploy when a product's console and its API serve
+rebuilding them; G-142's and G-147's finished instruments are the shape to match, and both are proven
+able to fire (16 of 16 and 24 of 24 planted violations caught, respectively). G-160 is a control that fails a deploy when a product's console and its API serve
 different commits. G-150's close-out found the plan-review console fifteen days behind its API.
 
-**So the gate has three lanes standing between it and exit 0:** G-142 and G-147 for its two R4 findings,
-and G-148 for its four R3 ones.
+**So the gate has one lane standing between it and exit 0:** G-148, for its four R3 findings. **Both of its R4 findings are gone**, and that is measured rather than recalled: the gate now reads `uncovered: 0` and reports zero R4 lines, where it reported `lens:citizen` and `work:records` this morning.
 
 ## In flight
 
 Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried
-`g135-mint`, `g154-dev-services-live`, `d14-d13-v1-reach` and `g161-never-default-a-city`. **The four at
-the bottom are compiled and NOT yet handed over**: `g142-citizen-lens`, `g147-record-search`,
-`g160-served-commit-parity` and `g148-design-instruments`.
+`g135-mint`, `g154-dev-services-live`, `d14-d13-v1-reach`, `g161-never-default-a-city`,
+`g142-citizen-lens` and `g147-record-search`. **Two are compiled and NOT yet handed over**:
+`g160-served-commit-parity` and `g148-design-instruments`. Neither has a claim, so neither is running.
 Every status below was read at source by the planner, not taken from a lane's report or from the fact
 that a dispatch was sent.
 
@@ -206,13 +181,12 @@ that a dispatch was sent.
 |---|---|---|---|
 | `g135-mint` | G-135 | **LANDED 2026-09-18T14:44Z.** Its close is collected to `main` and its artifacts are no longer untracked. The row stays CLOSED-PARTIAL because parcel 2 is unmeasured | Secret Manager `hauska-tenant-key-bastrop-tx-lane-verification` version 1 ENABLED; the planner's own probe returns 8 of 8 declared cells on `d12-main-uat` at `53ade8a9`; the index reads `ACTIVE` with a `key_id` |
 | `g154-dev-services-live` | G-154 | **LANDED.** Its branch is merged to `main` and the row is regraded CLOSED-PARTIAL: three of four acceptance items PASS, item 2 named unmeasured | live export at 14:49Z, 250 rendered rows across five queues on `d12-main-uat`, `manifest.auth` recording that a key was used and never its value; close, CP1, CP2 and probe on `main` |
-| `d14-d13-v1-reach` | D-14, D-13 | **D-14 LANDED AND D-13'S CODE LANDED WITHOUT ITS PRODUCTION STEP, read at source at 2026-09-18T16:26Z (OPS-25 A-9).** No close, CP1 or CP2 is filed; the planner moved the rows on the deployed record, and D-13 stays OPEN because `dolphin-app` carries neither the new base nor the variable | D-14: `walrus-app` `e243db0a` ACTIVE 15:41:52Z, `cause: manual`, now building from branch `main`, `source_commit_hash` `1f0262f` = `smartcity-os` `origin/main` HEAD; live, `/api/opengov/budgets`, `/api/opengov/chart-of-accounts` and `/api/finance/permit-revenue/summary` all answer `401 platform_internal_required` on `smartcityos.io` while `xyz-nonexistent` answers the 200 SPA shell. D-13: `smartcity-dashboards` `origin/main` `7487d7c0` carries `src/platform-base.mjs` (one configured base, per-feed defaults removed, an unset base REFUSES), the GCP host `52ecsl5mvq` is absent from `src/` and `web/`, and `d12-main-uat`'s env sets the base to `walrus-app`; its scope 4 and 5 proofs are ungraded |
-| `g161-never-default-a-city` | G-161 | **LANDED, read at source at 2026-09-18T16:26Z.** CP1 was filed; no close is in this worktree, and the row may own cells beyond the dashboards | `src/server.mjs` at `7487d7c0` carries six `G-161. Was \|\| "template-city"` sites plus the module-level and searchParam defaults; live on `d12-main-uat` at `7487d7c0`, `/api/city-domains`, `/api/city-identity`, `/api/shell` and `/api/lenses/finance/sources` all answer `400 city_key_required` keyless where the 15:09Z read answered 200 with the demo city, while `template-city` named explicitly still answers 200 |
-
-| `g142-citizen-lens` | G-142 | **COMPILED, NOT YET HANDED OVER.** Unblocked (its own blocker column reads `Nothing`) and first in G-146's declared order | the completion gate reports `lens:citizen` at R4; `_design/smartcity-citizen-lens/` does not exist; the shipped surface and the copy that must not regress are read at `smartcity-dashboards` `96fdafbb` |
-| `g147-record-search` | G-147 | **COMPILED, NOT YET HANDED OVER.** Scoped to Records search, the surface the gate is failing on, plus an adjudication of the applicant view. Compass is deferred in the dispatch | the gate reports `work:records` at R4; G-145's lens designs are shipped and G-142 is in flight, which is what Compass was waiting on |
+| `d14-d13-v1-reach` | D-14, D-13 | **D-14 LANDED AND D-13 LANDED; D-13's production step was run by the planner at 17:29Z (OPS-25 A-10) because that lane holds no claim and filed no close.** D-13 stays LANDED and not CLOSED: scope 5's bake is ungraded | D-14: `walrus-app` `e243db0a` ACTIVE, building from `main`, `source_commit_hash` `1f0262f` = `smartcity-os` `origin/main` HEAD; the three G-159 routes answer `401 platform_internal_required` while `xyz-nonexistent` answers the 200 SPA shell. D-13: `dolphin-app` `e98f127c` ACTIVE at `7487d7c0` read back byte for byte, `SMARTCITY_V1_PLATFORM_BASE` set to `walrus-app`; the planner's acceptance instrument passes every clause on the deployed surface |
+| `g161-never-default-a-city` | G-161 | **LANDED, read at source at 2026-09-18T16:26Z.** CP1 was filed; no close is in this worktree, and the row may own cells beyond the dashboards | `src/server.mjs` at `7487d7c0` carries six `G-161. Was \|\| "template-city"` sites plus the module-level and searchParam defaults; live on `d12-main-uat` at `7487d7c0`, `/api/city-domains`, `/api/city-identity`, `/api/shell` and `/api/lenses/finance/sources` all answer `400 city_key_required` keyless while `template-city` named explicitly still answers 200 |
+| `g142-citizen-lens` | G-142 | **CLOSED 2026-09-18.** Claim released. The planner re-ran all three instruments rather than taking the close's word: `check.mjs` exits 0 with every matched-input count non-zero, `violate.mjs` catches 16 of 16, and the gate's `lens:citizen` R4 line is gone | `_design/smartcity-citizen-lens/` drawn against `7487d7c0`; premise read from the product's own source (0 of 11 domains, 0 of 3 route literals); its sharpest finding came off the SHIPPED page (`None on file` is outside the declared badge vocabulary); falsifier filed and unresolved |
+| `g147-record-search` | G-147 | **CLOSED-PARTIAL 2026-09-18.** Claim released. The planner re-ran its instruments: `check.mjs` exits 0 with all 18 predicate counts non-zero, `violate.mjs` catches 24 of 24 with boards restored, and the `records` block in `surface_coverage.json` flipped. Records search PASSES; Compass is DEFERRED, not dropped | `_design/smartcity-records-search/` drawn against `7487d7c0`; the applicant view adjudicated COVERED by the RATIFIED `smartcity-applicant-precheck` and not redrawn; the close records that no seat worktree was created, against the dispatch's preference |
 | `g160-served-commit-parity` | G-160 | **COMPILED, NOT YET HANDED OVER.** Unblocked, and it writes only in `plan-review` and `smart-files`, so it collides with nothing above | neither product reports its served commit today (both `GET /` only); both carry `web/vercel.json`; read at `plan-review` `99c156b` and `smart-files` `6d71bf3` |
-| `g148-design-instruments` | G-148 | **COMPILED, NOT YET HANDED OVER. Hold released 2026-09-18 at the operator's ruling.** Writes the four missing `check.mjs` files, and writes nothing in `_design/INDEX.md` because G-142 and G-147 are appending to it | the gate's R3 list of four; all four designs have build rows today; `plan-review-reasoner` is DONE (G-150) and is the model the mission names |
+| `g148-design-instruments` | G-148 | **COMPILED, NOT YET HANDED OVER. Hold released 2026-09-18 at the operator's ruling.** Writes the four missing `check.mjs` files, and writes nothing in `_design/INDEX.md`. It is now the ONLY lane between the gate and exit 0 | the gate's R3 list of four, re-measured 2026-09-18T18:22Z; all four designs have build rows today; G-142's and G-147's instruments are the shape to match |
 
 **A control that did not fire on the two lanes that are actually running.** `node scripts/lane-claim.mjs
 status` reports seven open claims, and **neither `d14-d13-v1-reach` nor `g161-never-default-a-city` is
@@ -222,8 +196,12 @@ operator believes are running, the guard that exists to prevent the 2026-09-14 d
 failure reports nothing. This is the shape `ENFORCEMENT.md` names directly: a control that fails to
 fire produces no complaint, and nobody finds the miss from the outside. It is recorded, not fixed here:
 whether those lanes claimed and released, or never ran the claim step, is not knowable from this seat.
-Also stale: `d12-dashboards-do-cutover` holds a claim on D-12 started 2026-09-17T22:46Z, 17 hours old,
-against a row that is already closed-partial.
+**The two lanes that did close DID hold claims and DID release them**, read in their closes and
+confirmed by the absence of both lane ids from the claim status, so the practice works when it is run.
+Also stale: `d12-dashboards-do-cutover` holds a claim on D-12 started 2026-09-17T22:46Z, now **19.6
+hours old**, against a row that is already closed-partial. That claim is left in place rather than
+released at this seat, because `lane-claim.mjs release` takes `--seat` and releasing it from here would
+record a release by a seat that did not make it.
 
 Both live lanes prove on `d12-main-uat` and re-read its `source_commit_hash` before each probe. Worth
 knowing for the next read: the raw `*.ondigitalocean.app` hostnames for `walrus-app` and `dolphin-app`
@@ -247,7 +225,7 @@ rather than through `walrus-app` directly.
 
 | Item | Blocks |
 |---|---|
-| ~~**Ship `main` to `dolphin-app`?**~~ **RULED YES 2026-09-18 (OPS-17 A-149).** The `d14-d13-v1-reach` lane ships `main` as its last step, adding the configured platform base in the same deploy | staff moving to v2 on the better surface |
+| ~~**Ship `main` to `dolphin-app`?**~~ **RULED YES 2026-09-18 (OPS-17 A-149).** **RULED YES 2026-09-18 (OPS-17 A-149) AND SHIPPED 2026-09-18T17:29Z (OPS-25 A-10).** The `d14-d13-v1-reach` lane holds no claim and filed no close, so the planner performed the ship as A-149's own named fallback: `dolphin-app` deployment `e98f127c` ACTIVE serving `7487d7c0` read back byte for byte, with the configured platform base in the same deploy. **Governed by nothing further.** D-13 stays LANDED and not CLOSED on its scope 5 bake | staff moving to v2 on the better surface: the work-order Subject cell no longer renders resident free text, and the finance route serves |
 | ~~Hand-carry the three dispatches~~ **DONE 2026-09-18.** Operator: *"i have already sent all three"* | nothing; M2 and M3 now wait on the lanes |
 | ~~G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`~~ **DONE 2026-09-18T14:49Z, your key never read.** The G-154 lane minted its OWN credential (`key_id 2510a3ff`) under A-118's precedent rather than using yours, so the pilot key stayed untouched | nothing; G-154 is regraded |
 | ~~**Housekeeping the G-154 proof leaves:** delete `P:\tmp\g154-hauska-key.txt` and revoke `key_id 2510a3ff`~~ **BOTH DONE 2026-09-18, verified at source.** `P:\tmp\g154-hauska-key.txt` is ABSENT and no other `g154` key material remains in `P:\tmp`. `2510a3ff` already read `revoked` when the planner read the census, so that lane filed its own key. | nothing; the plaintext credential is gone |

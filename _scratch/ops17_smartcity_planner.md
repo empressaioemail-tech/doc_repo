@@ -152,3 +152,68 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **A-150 lives in OPS-17's amendment table and describes two OPS-25 rows without moving them.** When
   an OPS-17 amendment moves an OPS-25 row, the OPS-25 row and an OPS-25 amendment must land in the same
   pass, or the plan of record disagrees with itself and nothing notices.
+
+## 2026-09-18 17:29Z-18:35Z — the D-13 ship performed and accepted
+
+- **GROUND-TRUTH [2026-09-18T17:31Z] `dolphin-app` serves the dashboards.** Deployment
+  `e98f127c-aa0b-4550-9908-1044c616641d`, ACTIVE, `cause: "app spec updated"`,
+  `services[0].source_commit_hash = 7487d7c0a55deeefc286c4a1047545757b802c5b` = `smartcity-dashboards`
+  `origin/main`, and `SMARTCITY_V1_PLATFORM_BASE = https://walrus-app-kzog6.ondigitalocean.app`.
+  `app.smartcityos.io` is still the PRIMARY domain. The previous deployment `ded9afcb` served `3d3ec62`.
+- **GROUND-TRUTH [2026-09-18T17:29Z] the write is one env entry and nothing else.** Gated by an enumerated
+  walk of both spec trees; ten `EV[1:...]` secrets echoed back as returned. Instruments:
+  `scripts/govtech/dolphin-ship.mjs` (`--apply`) and `scripts/govtech/dolphin-ship-acceptance.mjs`.
+- **GROUND-TRUTH [2026-09-18T18:11Z] the acceptance passes every clause.** 8/11 domains on `bastrop_tx`
+  carry records; finance route no longer `unknown lens`; 8 platform routes byte-identical to the GCP host
+  production read before the ship; the served `(recordId, subject)` multiset is IDENTICAL to the vendor's
+  `(workOrderNumber, type)`.
+- **GROUND-TRUTH [2026-09-18T18:22Z] the design gate now reads R4 = 0.** `design-completion-gate.mjs`
+  exits 1 on four R3 findings only: `plan-review-departments`, `smartcity-flood-study`,
+  `smartcity-map-dock`, `smartcity-overview-lens`. `uncovered: 0`.
+- **GROUND-TRUTH [2026-09-18] M5 moved 0/5 to 2/5.** G-142 CLOSED, G-147 CLOSED-PARTIAL, both verified by
+  re-running their instruments (G-142 `check.mjs` exit 0 / `violate.mjs` 16 of 16; G-147 `check.mjs` exit 0
+  with 18 non-zero predicates / `violate.mjs` 24 of 24). Both released their claims.
+- **LESSON `PUT /v2/apps/{id}` names the PREVIOUS deployment, not the new one.** The response's
+  `app.active_deployment` is the deployment that is still active; the new one appears only in
+  `GET /v2/apps/{id}/deployments`. Reading the running commit from the PUT response polled the superseded
+  deployment, saw its old commit, and reported a FALSE failed ship while the real one was building. Find
+  the new deployment by SET DIFFERENCE against the pre-write list. Applies to every DigitalOcean app
+  script in this fleet, not only this one.
+- **LESSON a per-row join on a key whose uniqueness was never measured is not a check.** `recordId` looks
+  like a primary key and is not: 181 work-order rows over 52 distinct `workOrderNumber`s, because one work
+  order carries several line items. A `Map` keyed on it collapses duplicates and compares each row against
+  whichever it kept, which produced 88 phantom "unexplained subject" mismatches that read as a PII defect.
+  Measure key cardinality BEFORE joining, or compare MULTISETS.
+- **LESSON the loose form of a check nearly got reported.** The first version asked whether each served
+  subject appeared anywhere in the vendor's global type SET, and scored 181 of 181. Set membership is
+  weaker than multiset agreement and would have passed a column shuffled between rows. Two derivations is
+  the requirement; two derivations that AGREE is the check.
+- **LESSON `release` takes `--seat`.** Releasing another seat's stale claim from this seat would record a
+  release by a seat that did not make it, which is the unattributed mutation the doctrine names. Leave it
+  and report it. `d12-dashboards-do-cutover` is stale at 19.6h against a closed-partial row.
+- **FINDING `firstdue/apparatus` and `goto/call-summary` 504 on `walrus-app`** where GCP answered a
+  structured `503` naming the vendor permission (`contact dashboards@firstarriving.com to request
+  apparatus/assets API scope`; `goto_not_authorized, needsAuth: true`). Carded as **G-163**. Placed inside
+  the handler by violation: a mutated bearer still returns `401 platform_internal_required` while the
+  canonical one returns `504`. Both feeds were already `unavailable`, so nothing broke; the REASON degraded.
+- **OPEN the `d14-d13-v1-reach` lane filed no close, CP1 or CP2.** The ship and its acceptance are planner
+  acts. That lane's narrow-probe legs and its leave-behind are owed, and a close for it would be graded
+  against A-149's items rather than invented.
+- **OPEN D-13 scope 5 is ungraded:** a bake window in which a lens is actually opened and GCP
+  `smartcity-api` logs zero platform requests. Nothing was decommissioned.
+- **OPEN `g160-served-commit-parity` and `g148-design-instruments` are compiled and NOT hand-carried.**
+  G-148 is now the only lane between the design gate and exit 0.
+- **OPEN `P:\tmp` holds throwaway probe scripts** (`dash` clone, several `.mjs` probes). Not repo
+  artifacts, not tracked, and none of them carries a credential value.
+
+- **DEAD-END the surface probe's one FAIL is already an open row; do not card it.** `_inbox/2026-09-18_171246_surface_probe.json`
+  (39 leg results, tally 6 PASS / 1 FAIL / 32 UNMEASURED, ran at `d6ab5e46`) fails on **P-154** only:
+  `panel 20/5/20/-; endpoint 25/7/15/7; MCP none; PDF none; panel and endpoint DISAGREE`. P-154's own predicate
+  is "four surfaces print identical setbacks and date for `48021:34049`, or all four show the conflict row", and
+  the row is still `ADDED`. The FAIL is that unlanded row reporting truthfully, not a new defect; the same
+  disease was carded as P-152 in A-137. No new row.
+- **DEAD-END do not commit the `*_surface_probe.log.txt`.** It is not written by any repo script:
+  `scripts/surface-probe.mjs:3034` writes the JSON with default UTF-8, and the `.log.txt` is a PowerShell
+  redirect, which is UTF-16LE (`FF FE` BOM), so git stores it as a BINARY blob no `rg` can read. 121
+  `*surface_probe.json` are tracked and ZERO `*.log.txt` ever was: the JSON is the artifact of record and the
+  log is shell scratch. Unstaged and deleted rather than introducing the repo's first binary log.
