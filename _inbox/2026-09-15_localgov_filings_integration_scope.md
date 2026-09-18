@@ -2,6 +2,7 @@
 id: 2026-09-15_localgov_filings_integration_scope
 title: SCOPE — Localgov Filings integration, Bastrop. One client in v1, served to both surfaces.
 date: 2026-09-15
+last_updated: 2026-09-17
 status: scope — operator approval owed
 kind: scope
 owner: nick
@@ -50,6 +51,20 @@ so the absence is real rather than a failed instrument. If the four values were 
 | Q2 | Which of the ten numeric fields does the Bastrop form actually capture? | Whether a `0` is a measured zero or an absent field |
 | Q3 | How is an amendment represented: same `FilingId` with mutated amounts, or a new `FilingId` superseding an older one? | Whether history is stable under re-fetch |
 | Q4 | Is a taxpayer or account identifier available on the row, or through a companion endpoint? | Whether delinquency and per-taxpayer work is possible at all |
+
+**Status of the four questions, 2026-09-17: ANSWERED, and the answers are NOT FILED.** Per
+`_inbox/2026-09-17_HANDOFF_design_implementation.md`, Khalid AlAli at Azavar answered all four on
+2026-09-15. That handoff summarises them; it does not carry them, and no file in this repository does.
+The reply requesting the four credentials was drafted 2026-09-17 and not sent.
+
+**Every constraint below that waits on Q1, Q2 or Q4 STILL BINDS.** The handoff reports that Q1 and Q2
+unfreeze the word "hotel" on a label and computing rates over the monetary fields. That is a
+paraphrase of an answer nobody filed, and a fail-closed constraint is not relaxed on a paraphrase.
+The sibling filings design's `Ordinance rate 7.00%` is plausible because Texas caps municipal hotel
+occupancy tax at seven percent, and plausibility is the same property that let a section that does
+not exist, `14-02-005`, survive six citations on the reasoner design. **File Khalid's answers verbatim, with his date, then lift each constraint by name.**
+The one correction made without them, the two-axis store test under Card 1, stands on this card's own
+reading of the Azavar spec and does not depend on any answer.
 
 ## Four findings that shape the build
 
@@ -132,6 +147,25 @@ Upsert on `filing_id`. If Q3 says amendments mutate a row, add a supersession co
 historical total is published, because silently mutating history under a reconciliation is worse than
 not having one.
 
+**Corrected 2026-09-17: history moves on TWO independent axes, and the original acceptance test
+conflated them.** It declared the store done when "a re-run changes no historical total". That test
+would fail on the first refund and send someone to investigate a correct payment as data corruption.
+The card's own finding above already says why, from the Azavar spec: `TotalAmountDue` is what the
+taxpayer **reported**, and `AmountPaid` is what was **received**. A received amount legitimately
+moves as payments settle, reverse or refund. A reported amount moves only if the filing itself is
+amended.
+
+So the two axes get two rules. **Reported figures** are stable under re-fetch, and a change is legal
+only with a supersession row saying why; that is the Q3 amendment question and the paragraph above
+still governs it. **Payment figures** may change under re-fetch, and each change is retained as a
+dated observation next to the prior value rather than overwriting it, which the raw-payload retention
+already makes possible. A reconciliation that cannot show a refund happened is as broken as one that
+calls it corruption.
+
+**The other eight numeric fields are unclassified**, because the card names only these two. Each must
+be classified reported or payment before any historical total over it is published. Refuse the total
+rather than guess the class.
+
 `server/routes/localgov.ts` exposes a tenant route for the v1 UI and
 `GET /api/platform/localgov/filings` behind `requirePlatformInternalKey`.
 
@@ -212,7 +246,9 @@ A convenient pass is a reason to distrust the harness. Each case is observed fai
 |---|---|---|---|
 | Credentials | four values in `smartcity-dashboards` and `smartcity-os-prod` Secret Manager, byte-length echoed | secret version listing | a value pasted in a chat |
 | Client | all seven violation cases observed failing on Demo | the table above | a green happy path |
-| Store | a re-run changes no historical total | re-fetch a closed period, diff | an upsert nobody re-ran |
+| Store, reported figures | a re-run changes no TAXPAYER-REPORTED figure (`TotalAmountDue`) on a closed period unless a supersession row records why | re-fetch a closed period, diff the reported fields only | a reported figure that moved with no supersession row |
+| Store, payment figures | a re-run MAY change `AmountPaid`, and every change is kept as a dated observation beside the prior value, never overwriting it | re-fetch across a known settlement or refund, diff, confirm the prior value is retained | a refund investigated as corruption, OR a payment figure silently overwritten |
+| Store, unclassified fields | no historical total is published for any of the other eight numeric fields until each is classified reported or payment | the classification table, filed from the Azavar answers | a field summed before anyone knew which kind it was |
 | Route 13 | 503 unconfigured, 401 wrong key, 200 with key | violation test both directions | a 200 with the right key only |
 | v1 tab | filed, received and outstanding separately labelled | live read on a real range | one revenue number |
 | v2 domain | records reach the lens through route 13 | live read against `bastrop_tx` | a fixture that looks live |
