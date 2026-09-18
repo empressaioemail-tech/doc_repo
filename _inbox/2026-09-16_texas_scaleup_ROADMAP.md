@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-18 (11:50Z, A-215: eighteen Phase 0 rulings recorded, P-335 to P-351 carded, the close-out register created, Wave 1 compiled)
+last_updated: 2026-09-18 (12:15Z, session checkpoint; handoff _inbox/2026-09-18_HANDOFF_integration_seat.md)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -221,6 +221,8 @@ Two factory lanes (P-335, P-327) and two engine lanes (P-342, P-328) run on disj
 
 ## Owed by the integration seat (in order)
 
+**Current list: `_inbox/2026-09-18_phase0_closeout_REGISTER.md` section 3b, in the order `_inbox/2026-09-18_HANDOFF_integration_seat.md` section 1 gives.** The table below is the 2026-09-17 record.
+
 | # | Item |
 |---|---|
 | 1 | Grade Williamson's production publish when `sxv8r` ends; then A-190's republish is complete for all six |
@@ -306,6 +308,7 @@ Two factory lanes (P-335, P-327) and two engine lanes (P-342, P-328) run on disj
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
 | 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-18 12:15 | **Session checkpoint (integration seat).** Handoff `_inbox/2026-09-18_HANDOFF_integration_seat.md`; session `_sessions/2026-09-18_nine_prs_and_phase0_closeout_rulings_claude_code.md`. The operator is firing Wave 1; the next seat starts its own Wave 1 fresh, production writes one at a time. Open PRs outside this program's queue: hauska-engine #473 is P-264's (new today); 18 others date from August and early September. |
 | 2026-09-18 12:10 | **A-216: the probe signs in per run (the operator, Solo test account, nothing stored); San Marcos is served from corpus 1.4.0 after its coverage re-check, Georgetown stays withheld until 2026-11-01.** P-349 carries both, then the Hays bake. Eighteen cited lane artifacts that were untracked or only in other checkouts (P-263 census and lane close, P-310/P-325, P-319, P-204) are now tracked so every Wave 1 dispatch points at files on `origin/main`. |
 | 2026-09-18 11:50 | **The operator ruled all eighteen Phase 0 decisions as recommended (A-215): everything gets done, properly, in waves.** Recorded in `_decisions/2026-09-18_phase0_closeout_rulings.md`; P-335 to P-351 carded; the durable list is `_inbox/2026-09-18_phase0_closeout_REGISTER.md`, which supersedes this file's stale Phase 0 table. Wave 1 compiled: P-323 (recompiled with ruling 10), P-332, P-335, P-327, P-342, P-328. **Correction, read by field at 11:45Z:** hauska-engine-api still FOLLOWS LATEST (`latestRevision: true` at 100 percent on `00253-qan`); the 2026-09-17 deploy lane's close said it was pinned, and a draft of the register repeated that before the service was read. retrieval-api is the pinned one (`00102-ciz`). |
 | 2026-09-18 11:00 | **Operator rulings (A-214): #173 ships partial, #175 ships blanket, each with a carded proper fix. All nine lane PRs are now merged.** #173 re-greened on `610b0431` (its `ldt-sha` push run now passes, confirming the force-push diagnosis), merged `a3b2c91b`, publish lane deployed on `afbd0bbc`, 0015 applied alone. Tried the P-321 watch in dry run: it refuses `TARGET_ENV_MISSING` because it resolves an mcp URL its template does not mount, so it has never been able to run (P-334). #175 re-greened, merged `85d63e8d`, deploy deferred to the gate-scheduler procedure. The 2026-09-05 join-miss ruling is suspended by `_decisions/2026-09-18_join_miss_unaccounted_until_scoped_guard.md`; P-333 restores it per population. |
