@@ -9,9 +9,9 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `948afda1`: 116 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `81c208b3`: 116 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 961 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 963 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
@@ -19,7 +19,7 @@ programs: [OPS-17, OPS-25]
 |---|---|---|---|
 | M1 Staff on v2: the soft launch | 6 | 2 | 4 |
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 3 | 3 |
-| M3 Lens builds on Bastrop live data | 9 | 3 | 6 |
+| M3 Lens builds on Bastrop live data | 9 | 4 | 5 |
 | M4 DigitalOcean migration complete | 6 | 4 | 2 |
 | M5 Design complete, and the controls that keep it honest | 5 | 0 | 5 |
 
@@ -49,9 +49,9 @@ programs: [OPS-17, OPS-25]
 
 | Row | What | Status | Close on file |
 |---|---|---|---|
-| G-135 | distribute the bastrop_tx tenant key — it exists, it works, and no lane can reach it. | closed, partly | closed-partial |
+| G-135 | distribute the bastrop_tx tenant key — it exists, it works, and no lane can reach it. | closed, partly | closed-partial, closed-partial |
 | G-161 | NEVER DEFAULT A CITY, EVERYWHERE, NOT ONLY ON THE FINANCE ROUTE. | open | — |
-| G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | open | — |
+| G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | closed, partly | The four corrections are implemented, merged and proven on the live bastrop_tx surface on d12-main-uat - three of the four by direct measurement, and the fourth NAMED AS UNMEASURED because the live feed draws no workload ranking for it to be measured on. Getting there exposed four defects, three of them in the proving tools rather than the product; all three are fixed and each fix is proven in both directions. |
 | G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | open | — |
 | G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | open | — |
 | G-152 | BUILD THE PUBLIC WORKS AND FIRE AND EMS LENSES. | open | — |

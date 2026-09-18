@@ -14,7 +14,11 @@ related:
   - _decisions/2026-09-15_plan_review_role_gate_deferred.md
   - _decisions/2026-09-14_staff_identity_and_department_rbac.md
 sources:
-  - smartcity-dashboards origin/main 7267c3f and smartcity-os origin/main a400f7be, read 2026-09-18
+  - smartcity-dashboards origin/main 96fdafb and smartcity-os origin/main 1f0262f1, read 2026-09-18T15:09Z
+  - smartcity-dashboards origin/main 7267c3f and smartcity-os origin/main a400f7be, read 2026-09-18 earlier the same day
+  - _inbox/2026-09-18_planner_three_lane_verify.json (the planner's twice-run probe of all three lanes and the four deployed apps, 14:42Z and 15:09Z)
+  - _inbox/2026-09-18_planner_g135_credential_probe.json (the planner's own verification of the minted credential, 8 cells)
+  - _inbox/2026-09-18_g135-mint_close.json and _inbox/2026-09-18_g154-dev-services-live_close.json (the two closes collected 2026-09-18)
   - Nick and Jaime call, 2026-09-15, transcript and summary supplied by the operator
   - smartcity-dashboards origin/main f776b4bf, web/index.html
   - smart-files origin/main 61c84f6
@@ -28,7 +32,7 @@ Bastrop. It does not copy row statuses, because copied status is how this progra
 itself: four OPS-17 rows read OPEN while their own closes said closed. The tracker reads the plan of
 record and every lane close, and it refuses when they disagree.
 
-## Where we are, 2026-09-18, afternoon
+## Where we are, 2026-09-18
 
 Every SmartCity design is approved except People and access (G-143), which is DRAFT awaiting
 ratification. The staff dashboards run on DigitalOcean behind `app.smartcityos.io`. The operator ruled
@@ -42,7 +46,11 @@ it. Two DigitalOcean rows, D-14 and D-13, make those routes reachable.
 
 **Nothing merged today is live for customers.** `app.smartcityos.io` serves `3d3ec62`, from before the
 Finance lens, the Development services corrections and the city-default fix. These apps deploy only when
-someone deploys them, and a merge deploys nothing.
+someone deploys them, and a merge deploys nothing. Read again from outside at 2026-09-18T15:09Z and the
+ship has still not happened: `app.smartcityos.io` answers `unknown lens` on `/api/lenses/finance/sources`
+where `d12-main-uat` answers `city_key_required`, so production still predates even G-159's dashboards
+change. The dashboards' `main` did move, from `7267c3f` to `96fdafb` (PR #72, the G-154 live proof below);
+that is a merge and it deployed nothing.
 
 **Production is worse than `main` on one point that matters.** At `3d3ec62` the Development services
 work-order table shows the vendor's free-text title, which is where residents write their names and
@@ -50,11 +58,9 @@ phone numbers. `main` no longer does (G-154). The operator RULED on 2026-09-18 t
 `dolphin-app` (OPS-17 A-149); it is the `d14-d13-v1-reach` lane's last step, one deploy that also adds
 the configured platform base the repointed dashboards then require.
 
-**One missing credential blocks every Bastrop proof on a deployed app.** A tenant-private pack answers
-401 to an anonymous read, and the only active `bastrop_tx` key is the operator's own, which G-135 ruled
-must not be handed out. G-135 asked the substrate seat for a separate verification key on 2026-09-15. It
-was never minted, and G-135's artifacts sat untracked for three days, so nothing surfaced it. The mint is
-now dispatched.
+**The credential that blocked every Bastrop proof is CLEARED, and it cost the program three days.** A tenant-private pack answers 401 to an anonymous read, so no lane could prove anything on `bastrop_tx` on a deployed app. G-135 asked the substrate seat for a verification-scoped key on 2026-09-15; it was never minted, and G-135's own artifacts sat untracked for three days, so nothing surfaced it. **The `g135-mint` lane minted it on 2026-09-18 at 14:44Z.** `key_id 96e40316`, tenant `bastrop_tx`, active, stored at Secret Manager `hauska-prod-497015/hauska-tenant-key-bastrop-tx-lane-verification` version 1 and recorded in `_catalog/credential_access_index.json` with a one-command `howToUse`. The planner verified it at source with its own instrument rather than on report (`_inbox/2026-09-18_planner_g135_credential_probe.mjs`, 8 of 8 declared cells: 200 on `bastrop_tx` with the key, 401 keyless, 401 on a garbage key, 403 on `fixture-city`, 200 keyless on `template-city`, 404 on an unknown city). Any lane can now obtain it from a documented location without asking a human, which is G-135's first parcel and the reason six rows were sitting blocked.
+
+**Two things that key did not fix, and one it exposed.** G-135's second parcel, a full-shell authenticated probe on `bastrop_tx` that mounts the map iframe, has still been run by no lane, so G-135 stays CLOSED-PARTIAL and not closed. The lane's CP1 also corrected the census the dispatch was written on: THREE active `bastrop_tx` keys existed, not one, including a dormant G-134 lane key and a G-154 lane key minted minutes earlier. Deciding whether to revoke the two non-pilot keys is the planner's and the operator's call, and neither was touched; revoking the G-154 one would break a lane that is mid-flight.
 
 ## The milestones
 
@@ -106,10 +112,14 @@ a capture of the v1 combined dashboard, which no lane can take because v1 sits b
 
 Every lens design built into `smartcity-dashboards` and proven on `bastrop_tx`.
 
-**The order.** First the credential: `g135-mint` asks the substrate seat to mint G-135's verification
-key. Without it, no lane can prove anything on `bastrop_tx` on a deployed app. G-154 (Development
-services) is merged and waits only on that key for its live proof. G-161 removes the remaining places
-where the product silently serves the demo city to a caller who named none.
+**The order.** The credential is no longer the gate: `g135-mint` minted it 2026-09-18 and any lane reads
+it from Secret Manager in one command. **G-154 (Development services) is CLOSED-PARTIAL**, proven on the
+live `bastrop_tx` surface on `d12-main-uat` at 14:49Z: three of its four acceptance items PASS and the
+fourth is named unmeasured because the live surface draws no workload ranking to measure it on. G-161 is
+the next in this milestone and has NOT landed -- it removes the remaining places where the product
+silently serves the demo city to a caller who named none, and it is still live: `/api/city-domains`,
+`/api/city-identity` and `/api/shell` all answer 200 keyless on `d12-main-uat`, which is the demo city
+answering a caller who named no city at all.
 
 The next lens starts after G-161 and D-13's dashboards change merge. Lens rows run one at a time, because
 every lens renders in two shared files (`web/app.js`, `web/index.html`), and G-153 and G-152 also change
@@ -118,8 +128,8 @@ the vendor mappers that D-13 is repointing. After that the queue is G-153 (Fleet
 GCP mount and needs re-scoping for DigitalOcean before it is dispatched. G-155 (Smart Files) and G-150
 (plan review) build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
 
-**What blocks it:** the verification key. Shipping to production waits on the operator's ship decision
-(M1).
+**What blocks it:** G-161, and D-13's dashboards change. The credential is no longer a blocker for any row
+here; the one thing it did not buy is G-135's second parcel (below), which no lane has run.
 
 ### M4. The DigitalOcean migration complete
 
@@ -145,14 +155,22 @@ days behind its API.
 
 ## In flight
 
-Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carries each one.
+Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried all four.
+Every status below was read at source by the planner, twice (14:40Z and 15:09Z), and not taken from a
+lane's report or from the fact that a dispatch was sent.
 
-| Lane | Rows | Repo | Owns while it runs |
+| Lane | Rows | Status, verified at source | The evidence |
 |---|---|---|---|
-| `g135-mint` | G-135 | `hauska-mcp-server` (substrate seat) | nothing in a SmartCity repo |
-| `d14-d13-v1-reach` | D-14, D-13 | `smartcity-os`, then `smartcity-dashboards` | the five data-source files in the dashboards |
-| `g161-never-default-a-city` | G-161 | `smartcity-dashboards` | `src/server.mjs`, the module-level defaults, `web/app.js`, `web/index.html` |
-| `g154-dev-services-live` | G-154 | `smartcity-dashboards` (merged) | nothing; waits on the G-135 key |
+| `g135-mint` | G-135 | **LANDED 2026-09-18T14:44Z.** Its close is collected to `main` and its artifacts are no longer untracked. The row stays CLOSED-PARTIAL because parcel 2 is unmeasured | Secret Manager `hauska-tenant-key-bastrop-tx-lane-verification` version 1 ENABLED; the planner's own probe returns 8 of 8 declared cells on `d12-main-uat` at `53ade8a9`; the index reads `ACTIVE` with a `key_id` |
+| `g154-dev-services-live` | G-154 | **LANDED.** Its branch is merged to `main` and the row is regraded CLOSED-PARTIAL: three of four acceptance items PASS, item 2 named unmeasured | live export at 14:49Z, 250 rendered rows across five queues on `d12-main-uat`, `manifest.auth` recording that a key was used and never its value; close, CP1, CP2 and probe on `main` |
+| `d14-d13-v1-reach` | D-14, D-13 | **NOT LANDED.** In flight in its worktree, nothing pushed | G-159's `/api/platform/opengov/budgets` still returns the SPA shell on `smartcityos.io` while the existing-route control returns 401 JSON, byte-identical to the fake-path control; dashboards `main` still carries the GCP host in six places and mentions `walrus-app` nowhere |
+| `g161-never-default-a-city` | G-161 | **NOT LANDED.** In flight in its worktree, CP1 filed, no close | `/api/city-domains`, `/api/city-identity` and `/api/shell` all answer 200 keyless on `d12-main-uat`; six `cityKey` fallbacks to the literal `template-city` are still in `src/server.mjs`, plus the module-level default |
+
+Both live lanes prove on `d12-main-uat` and re-read its `source_commit_hash` before each probe. Worth
+knowing for the next read: the raw `*.ondigitalocean.app` hostnames for `walrus-app` and `dolphin-app`
+reset the connection from this network (ECONNRESET, three of three retries, identical at both reads),
+while `app.smartcityos.io` and `d12-main-uat` answer normally. That is why D-14 is read through the apex
+rather than through `walrus-app` directly.
 
 ## Critical paths, stated as dependencies
 
@@ -160,7 +178,7 @@ Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator
 |---|---|
 | Staff on v2 | ship `main` to `dolphin-app` → operator tells staff the URL → D-12 bake → WorkOS credentials → G-134 live test → G-143 ratified → G-127 |
 | Finance live on Bastrop | D-14 → D-13 → G-159 grant, proven with the G-135 key → G-156 shows measured |
-| Any Bastrop proof on a deployed app | the G-135 verification key minted |
+| Any Bastrop proof on a deployed app | ~~the G-135 verification key minted~~ **CLEARED 2026-09-18T14:44Z.** One `gcloud secrets versions access` command against `hauska-prod-497015/hauska-tenant-key-bastrop-tx-lane-verification`, recorded in `_catalog/credential_access_index.json` |
 | The next lens build | G-161 and D-13's dashboards change merged |
 | Hotel occupancy tax | Azavar reply sent and answers filed → G-137 |
 | City management board | v1 combined-dashboard capture → G-157 |
@@ -172,7 +190,10 @@ Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator
 |---|---|
 | ~~**Ship `main` to `dolphin-app`?**~~ **RULED YES 2026-09-18 (OPS-17 A-149).** The `d14-d13-v1-reach` lane ships `main` as its last step, adding the configured platform base in the same deploy | staff moving to v2 on the better surface |
 | ~~Hand-carry the three dispatches~~ **DONE 2026-09-18.** Operator: *"i have already sent all three"* | nothing; M2 and M3 now wait on the lanes |
-| G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`. G-135 ruled against handing that key out | G-154's close |
+| ~~G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`~~ **DONE 2026-09-18T14:49Z, your key never read.** The G-154 lane minted its OWN credential (`key_id 2510a3ff`) under A-118's precedent rather than using yours, so the pilot key stayed untouched | nothing; G-154 is regraded |
+| **Housekeeping the G-154 proof leaves:** delete `P:\tmp\g154-hauska-key.txt` (51 bytes, created 2026-09-18T14:36:21Z), which holds that lane's key in plaintext, and revoke `key_id 2510a3ff` now the proof is filed. The handoff says the file is never committed and gets deleted after use | nothing yet; a plaintext lane credential is sitting in a temp directory |
+| **Decide the fate of two non-pilot `bastrop_tx` keys the mint's census found:** `acf2cf9f` (a dormant G-134 lane key, 2026-09-15, exercised once 14 seconds after creation) and `2510a3ff` (above). Both are listed in `_catalog/credential_access_index.json` with no Secret Manager location, so where their values live is not recorded. Revoking `2510a3ff` while its lane is mid-flight would break that lane | the credential census being true rather than approximately true |
+| **Two secrets named `*_MCP_URL` in `hauska-prod-497015` hold Postgres DSNs with passwords, and a lane printed them to a terminal** while looking for an HTTP URL by name. The values reached no artifact, commit or message. Separable calls: whether to rotate that DSN, and whether to rename or split the secrets so the next lane following the name does not print a production database credential. No lane should rotate a production store credential on its own initiative | a production database DSN has been written into one lane's harness output file |
 | Tell Bastrop staff to use `app.smartcityos.io` | the D-12 bake, and everything after it in M1 and M4 |
 | WorkOS org, client id, API key, MFA | G-134's live test, then all of RBAC |
 | Ratify G-143, People and access | G-127, G-144, G-158 |
