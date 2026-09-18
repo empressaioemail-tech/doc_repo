@@ -148,6 +148,7 @@ if (!files.length) { console.error(`no artboards in ${sourceDir}. Run \`node gen
 
 let bad = 0;
 let matched = 0;
+const empty = [];
 for (const reader of files) {
   const file = reader.split(/[\\/]/).pop();
   const html = fs.readFileSync(reader, 'utf8');
@@ -174,6 +175,15 @@ for (const reader of files) {
     bad += 1;
     console.error(`FAIL ${file}`);
     for (const p of problems) console.error(`     ${p}`);
+  } else if (money(html).length === 0 && !ILLUSTRATIVE.has(file)) {
+    /**
+     * NOT AN OK LINE. A surface that carries no money token has been read but
+     * not checked, and the vacuity refusal below exits 2 on it. Printing
+     * "ok ... all traceable" first put a quotable pass on screen immediately
+     * before the refusal - and a line that says ok is what gets screenshotted.
+     * The refusal is the verdict, so it is the only thing that gets printed.
+     */
+    empty.push(file);
   } else {
     const n = money(html).length;
     console.log(`ok   ${file}${ILLUSTRATIVE.has(file) ? `  (${n} figures, declared illustrative)` : `  (${n} figures, all traceable)`}`);
@@ -187,7 +197,7 @@ for (const reader of files) {
  * at exit 2 rather than reporting a clean bill of health it did not earn.
  */
 if (!bad && matched === 0) {
-  console.error('\nREFUSING A VERDICT: 0 money tokens matched across the surface that was read.');
+  console.error(`\nREFUSING A VERDICT: 0 money tokens matched across the surface that was read${empty.length ? ` (${empty.join(', ')})` : ''}.`);
   console.error('A money traceability check that matched nothing has not checked anything.');
   process.exit(2);
 }
