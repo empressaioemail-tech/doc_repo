@@ -88,7 +88,7 @@ merge conflict in two files. One govtech lane, one PR per row, planner-verified 
 | P1 | `smart-files` | G-155 Smart Files | nothing, parallel |
 | P2 | `plan-review` | G-150 close-out: file the close, GATE 2, a live console probe | nothing, parallel |
 | M1 | planner | ~~G-138 filings design fix~~ **DONE 2026-09-18**: both citations badged at every use, the rate check held, count derived; `check.mjs` + `violate.mjs` 13/13 | — |
-| M2 | planner | G-143 People and access design, the first leg of RBAC | nothing |
+| M2 | planner | ~~G-143 People and access design~~ **DESIGNED 2026-09-18, DRAFT awaiting your ratification**: five findings from source (A-145); `check.mjs` + `violate.mjs` 20/20 | your ratification |
 | M3 | planner | ~~HOT scope card test~~ **DONE 2026-09-17**: reported and payment figures split into two rules; Q1/Q2 freezes deliberately left in place | — |
 | M4 | planner | Fleet and Police design regeneration | G-153 merged |
 | W1 | waits on operator | G-157 city management board | a v1 capture |
