@@ -394,6 +394,14 @@ The reason the ruling changed the order is a number nobody had: counted against 
 **5 of 15 surfaces are designed** and 2 more are excluded by ruling, leaving 8 uncovered. Eleven
 folders and 48 boards read as much more than that.
 
+**REGRADED 2026-09-18 (`A-152`).** Those counts were the 2026-09-15 snapshot and this file was still
+quoting them three paragraphs below its own line reading `uncovered: 0`, so it contradicted itself.
+Re-measured against nav `7487d7c0`: **13 of 15 surfaces designed**, 2 excluded by ruling, **0
+uncovered**, across **20 design folders and 72 boards** (26 subdirs less 6 non-design dirs). What
+remains at the front of the queue is not design coverage but the four instruments `G-148` writes. See
+OPS-17 `A-152` for the measurement, the instrument and the ruling that `G-146` does not close on
+`G-148` alone.
+
 The customer conversation has reordered things. The honest order now:
 
 1. **Hotel occupancy tax.** Prioritised by the customer and separately billable. Blocked on the
