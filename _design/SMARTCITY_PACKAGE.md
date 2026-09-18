@@ -64,6 +64,27 @@ answer was wrong: every lens design draws its own blocked state as design conten
 Public works, Police and Parks all ship without GoTo, FirstDue, Verkada or a Parks vendor. The
 vendor work is separate and is G-139's row, not theirs.
 
+## Bastrop is the proving pack, ruled 2026-09-18 (A-146)
+
+The first-wave builds proved on `template-city`, and they were following program law when they did: the
+OPS-17 program preamble still carried August rulings that said build on `template-city` and treat live
+Bastrop as no-touch. Those are retired, and the preamble now LEADS with the new rule, so every dispatch
+carries it (`_decisions/2026-09-18_bastrop_is_the_proving_pack.md`).
+
+**What Bastrop data each design can reach today:**
+
+| Design | Bastrop data | Reachable now |
+|---|---|---|
+| G-153 Fleet, Police | Samsara, Spireon | **yes, granted** |
+| G-152 Public works, Fire | Power BI, GoTo, FirstDue | **yes, granted** |
+| G-154 Dev services delta | MyGov inspections, code violations, licenses, work orders | **routes served; four grants now in G-154's scope** |
+| G-156 Finance | OpenGov, budgeting and planning, permit revenue | **no: wired in v1 with keys in production, no route to v2. G-159 is the bridge** |
+| G-157 City management board | v1 executive overview | no: needs a bridge and your v1 capture |
+
+The Finance lens is not wasted: it derives every state from grants, so once G-159 lands the budget
+moves from unaccounted to measured with no lens change. Your "build the honest full shape" ruling stands
+until then.
+
 ## The queue, lined up 2026-09-18 (A-144)
 
 **D-12's cutover is live and verified**: `app.smartcityos.io` serves the DigitalOcean app running
@@ -79,14 +100,16 @@ merge conflict in two files. One govtech lane, one PR per row, planner-verified 
 | # | Where | Row | Blocked on |
 |---|---|---|---|
 | **0** | **Operator** | **Tell Bastrop staff to use `app.smartcityos.io`**, which is what actually starts the bake | nothing |
-| 1 | dashboards lane | G-156 Finance lens | nothing |
+| 1 | dashboards lane | ~~G-156 Finance lens~~ **CLOSED-PARTIAL**: merged, never reached the test app; defaults to `template-city` (fixed in G-159) | — |
+| 1b | dashboards + v1 | **G-159 the finance bridge**: prove the OpenGov keys, add v1 platform routes, declare and grant the adapter | nothing; runs beside the lens queue |
 | 2 | dashboards lane | G-149 Flood study | G-156 merged |
 | 3 | dashboards lane | G-153 Fleet + Police | G-149 merged |
 | 4 | dashboards lane | G-154 Development services delta | G-153 merged |
 | 5 | dashboards lane | G-152 Public works + Fire and EMS | G-154 merged |
 | 6 | dashboards lane | G-151 Parks | G-152 merged |
-| P1 | `smart-files` | G-155 Smart Files | nothing, parallel |
-| P2 | `plan-review` | G-150 close-out: file the close, GATE 2, a live console probe | nothing, parallel |
+| P1 | `smart-files` | ~~G-155 Smart Files~~ **CLOSED**, but its QA ran on `template-city`; owes a Bastrop check and a console check | — |
+| P2 | `plan-review` | ~~G-150 close-out~~ **CLOSED, verified on `bastrop_tx`**; found the console 15 days behind the API | — |
+| P3 | `plan-review`, `smart-files` | **G-160** a deploy is not done until the console and the API serve the same commit | nothing |
 | M1 | planner | ~~G-138 filings design fix~~ **DONE 2026-09-18**: both citations badged at every use, the rate check held, count derived; `check.mjs` + `violate.mjs` 13/13 | — |
 | M2 | planner | ~~G-143 People and access design~~ **DESIGNED 2026-09-18, DRAFT awaiting your ratification**: five findings from source (A-145); `check.mjs` + `violate.mjs` 20/20 | your ratification |
 | M3 | planner | ~~HOT scope card test~~ **DONE 2026-09-17**: reported and payment figures split into two rules; Q1/Q2 freezes deliberately left in place | — |
