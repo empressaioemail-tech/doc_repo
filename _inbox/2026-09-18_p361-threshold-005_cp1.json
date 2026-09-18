@@ -1,0 +1,108 @@
+{
+  "lane": "p361-threshold-005",
+  "planRows": ["P-361"],
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-18T18:20:00Z",
+  "seat": "cente-vsc-p361",
+  "dispatch": "_dispatches/2026-09-18_p361-threshold-005_dispatch.md",
+  "docRepoWorktree": {
+    "path": "C:/Users/cente/doc_repo",
+    "head": "41e37310a6570aba47a1e64424331835e3885c4f",
+    "why": "The dispatch says the CP1/CP2/CLOSE paths are relative to the doc_repo worktree the session RUNNING the lane is rooted in. This session's root is C:/Users/cente/doc_repo; _catalog/lane_claims.json there carries this lane's claim (p361-threshold-005, seat cente-vsc-p361, startedAt 2026-09-18T17:41:13.836Z), which is how the root was identified rather than assumed. Artifacts are untracked: doc_repo commits are planner-owned (AGENT-CONTRACT section 6)."
+  },
+  "startCommits": {
+    "hauskaFactory": {
+      "path": "C:/Users/cente/_p361_scratch/wf-factory",
+      "branch": "lane/p361-threshold-005",
+      "startCommit": "0f4558a4a4c89c72275744f580d7ba5765d95674",
+      "verified": "`git merge-base HEAD origin/main` at close returned 0f4558a4, and the commit before the lane's first commit is 0f4558a P-335 (#178) -- i.e. the SHA the dispatch declared at compile (factory 0f4558a4) is the SHA the lane was cut from, checked rather than trusted."
+    },
+    "hauskaEngine": {
+      "path": "C:/Users/cente/_p361_scratch/hauska-engine",
+      "branch": "lane/p328-engine-reconcile-blast-radius",
+      "startCommit": "c41a1482284eb8624c3ef2b9c2ba96ccb8ac1bc2",
+      "verified": "`git merge-base HEAD origin/main` returned c41a1482 -- the SHA the dispatch declared at compile (engine c41a1482), and the commit that merged P-342 (the apply writer) and P-263's registry. The branch also carries P-328's own two commits, rebased onto this base by this lane."
+    }
+  },
+  "missionPremise": "A-220 (operator, 2026-09-18, `_decisions/2026-09-18_phase0_closeout_rulings.md`): the program's destructive-write threshold is 0.05, program-wide -- the ENGINE's live number, not the factory's 0.5. P-328's #474, green and HELD at 6b4c3557, made the engine read the factory's 0.5, which would have LOOSENED the engine's live 0.05 tenfold on the writer that retired 92.5 percent of Bastrop (57,704 of 62,394) on 2026-09-15. The row's job is to make the factory carry 0.05 so #474 can land without loosening anything. Read at source: the dispatch's ruling section, and the factory guard's own header (which stated the 0.5 basis it had).",
+  "whatExistedAtStart": {
+    "factoryGuard": {
+      "file": "src/lib/destructive-write-guard.mjs",
+      "declared": "MAX_DESTRUCTIVE_SHARE = 0.5",
+      "basis": "Williamson's 282,569-of-602,050 legitimate retirement (0.4694, 2026-09-10) sat below it and the two incidents (0.925 Bastrop, 1.000) above it.",
+      "register": "DESTRUCTIVE_WRITERS -- wired: publish-retirement (via requireRetirementGate); not wired, with reasons: purge-bastrop-orphans, s6-collision-remediate, vh-collision-remediate, parcel-rail-imports, parcel-cell-rail-resets, dollar-fields-patch.",
+      "scan": "test/destructive-write-guard.test.mjs scans src/ so a new destructive statement cannot be missed by omission."
+    },
+    "theBasisHadChangedSince": "Since P-327 (#177) `destructive` counts NEW retirements only; rows already retired are re-retirements, reported and never added to the share. P-327's census (`_inbox/2026-09-18_p327-retirement-gate-roll_census.json`, staging, read 2026-09-18T12:56:20Z) reads ZERO new retirements in all six counties, and Williamson's 282,569 R-keyspace rows now read as re-retirements (282,570 total re-retirements, destructive 0, share 0). So the 0.4694 that set 0.5 no longer enters the share at all.",
+    "engineSide": {
+      "declarationFile": "packages/engine-core/scripts/destructive-write-declaration.mjs",
+      "asItStoodOnTheBranch": "carried the factory's 0.5 pinned by a commit SHA and stated plainly what that cost; the engine's own guards were already 0.05 (MAX_ORPHAN_SHARE, MAX_REACTIVATION_SHARE, live since P-213/P-275).",
+      "divergenceCheck": "packages/engine-core/scripts/check-destructive-write-share-divergence.mjs compares the two offline, and with a local clone re-derives the factory's literals."
+    },
+    "whyOnlyOneDirectionIsEnforceable": "hauska-factory is PRIVATE (GitHub API and raw.githubusercontent.com answer 404 for it; `npm view hauska-factory` is E404) and hauska-engine is public. So only the factory's CI can read the other side. P-328's check on the engine side stays as a local/seat re-derivation; the enforceable cross-repo direction is the factory-side job this row builds."
+  },
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1-share",
+      "statement": "The factory check FAILS when the engine copy reads 0.5, and PASSES on a copy reading 0.05.",
+      "howProved": "`node scripts/check-engine-destructive-write-declaration.mjs --engine <checkout>` against the real engine worktree (PASS, share 0.05) and against a temp checkout whose copy was edited to 0.5 (REFUSE, ENGINE_CONSTANT_DIVERGED). Also a --selftest fixture."
+    },
+    {
+      "id": "F2-absent",
+      "statement": "A missing engine declaration is a FAILURE with its own message, never a pass, and an empty engine main with an empty fallback refuses too.",
+      "howProved": "--selftest fixtures 'an absent engine declaration is refused, not skipped' and 'an empty engine main AND an empty fallback still REFUSE (absence is never a pass)'; plus a live run against a path with no declaration (REFUSE ENGINE_DECLARATION_UNREADABLE)."
+    },
+    {
+      "id": "F3-code-renamed",
+      "statement": "A refusal code renamed on one side is refused.",
+      "howProved": "--selftest fixture 'a renamed refusal code is refused'."
+    },
+    {
+      "id": "F4-stale-pin",
+      "statement": "A pin whose content identity (blob sha / bytes / sha256) no longer matches the factory's file is refused.",
+      "howProved": "--selftest fixture 'an engine pin whose factory content hash is stale is refused', and the engine-side check's own --factory re-derivation."
+    },
+    {
+      "id": "F5-blast-radius-still-refuses",
+      "statement": "The engine still refuses Bastrop's measured 57,704 of 62,394 (0.925) and still lets Kenedy's 1 of 528 through, at the new number.",
+      "howProved": "engine-core suite: destructive-write-declaration.test.mjs F1 (the fixture measures the same 57,704 of 62,394 the guard refuses) and the Kenedy passthrough case; re-run at the final head."
+    },
+    {
+      "id": "F6-boundary",
+      "statement": "A 6 percent share REFUSES and a 4 percent share PASSES in every wired factory writer and in the engine's write-parcel-node-county and reactivation guard.",
+      "howProved": "factory test/destructive-write-guard.test.mjs G6 (6% refuses through requireRetirementGate -- the real publish call path -- and 4% promotes); engine writer-blast-radius-guard.test.mjs (5/100 passes, 6/100 refuses) and __tests__/retired-reactivation-guard.test.mjs (40/1000 = 0.04 passes, 6% refuses)."
+    },
+    {
+      "id": "F7-inversion",
+      "statement": "The share the OLD basis named as legitimate now refuses, and that is safe because P-327's census reads zero new retirements in all six counties.",
+      "howProved": "factory G2 'the inversion' test: the old basis's own number (0.4694-shaped share) is above 0.05 and refuses; the census is the evidence that no healthy run is refused."
+    },
+    {
+      "id": "F8-merge-window",
+      "statement": "The factory CI job cannot be red-by-design in the window where the engine row is still HELD: engine main empty of the file reads the declared fallback ref, and the note NAMES the ref it read; both empty refuses.",
+      "howProved": "--selftest fixtures 'a declaration on engine main WINS and the fallback is not consulted', 'an empty engine main reads the declared fallback, and the note NAMES the ref it read', 'an empty engine main AND an empty fallback still REFUSE'."
+    }
+  ],
+  "predictedVerdictsAt005": {
+    "source": "_inbox/2026-09-18_p327-retirement-gate-roll_census.json (staging, read 2026-09-18T12:56:20Z; instrument scripts/p327-retirement-census.mjs; six counties; destructiveRule new-retirements-only).",
+    "countingRule": "destructive = NEW retirements (rows already retired are re-retirements and never enter the share; P-327 #177); share = destructive / population; verdict = the gate's own promoted/refused outcome.",
+    "counties": [
+      { "countyFips": "48021", "county": "Bastrop", "population": 77799, "destructive": 0, "reRetirements": 0, "share": 0 },
+      { "countyFips": "48055", "county": "Caldwell", "population": 48649, "destructive": 0, "reRetirements": 267, "share": 0 },
+      { "countyFips": "48209", "county": "Hays", "population": 173050, "destructive": 0, "reRetirements": 673, "share": 0 },
+      { "countyFips": "48309", "county": "Kenedy", "population": 114255, "destructive": 0, "reRetirements": 0, "share": 0 },
+      { "countyFips": "48453", "county": "Travis", "population": 500307, "destructive": 0, "reRetirements": 7456, "share": 0 },
+      { "countyFips": "48491", "county": "Williamson", "population": 602050, "destructive": 0, "reRetirements": 282570, "share": 0 }
+    ],
+    "predictedGateSchedulerVerdictAt005": "PASS for all six: destructive 0 on every county, so the share is 0 and no authorisation is required. Williamson's 282,570 re-retirements are REPORTED and never enter the share (P-327), which is exactly why 0.05 refuses nothing healthy.",
+    "predictedPublishVerdictAt005": "No publish step refuses for blast radius: every county's retirement step is either zero-retirement or all-re-retirement. The refusal band 0.05 < share <= 0.5 -- which 0.5 left open -- now REFUSES unauthorised, and that band is where a mass FALSE retirement would land. The Bastrop shape (0.925) refused under 0.5 and refuses under 0.05.",
+    "whatChangedVersusAPredictionAt05": "No county's verdict changes: at 0.5 the six census verdicts were already pass and they are still pass. What changed is the WIDTH of the refusal: the 5-to-50 percent band is no longer an unauthorised pass on the writer that emptied Bastrop. A legitimately large retirement (the old 0.4694 shape, or a real one larger than 5 percent) must now go through the existing population-bound authorisation (DESTRUCTIVE_WRITE_AUTHORISATION / the guard's token), which is stated in both headers."
+  },
+  "planOfRecord": "Plan-row P-361 exists in the OPS-16 plan of record (90_operations/OPS-16_texas_market_plan_of_record.md per the dispatch's PLAN-ROW line), and the dispatch itself is _dispatches/2026-09-18_p361-threshold-005_dispatch.md at origin/main. FAN-DEPTH 0: this lane launches no sub-agents, and none was launched (see close.subAgents).",
+  "constraintsAcknowledged": [
+    "NO STORE WRITES, no deploys, no merges: the integration seat merges and deploys. Every store interaction in this lane was a read of an artifact under _inbox/ that another lane produced (P-327's census).",
+    "BUILD IN AN ISOLATED WORKTREE: hauska-factory C:/Users/cente/_p361_scratch/wf-factory and hauska-engine C:/Users/cente/_p361_scratch/hauska-engine, each cut from the declared start commit; never in another lane's checkout and never in P:/doc_repo (the integration seat's).",
+    "FACTORY MERGE ORDER IS THE SEAT'S: P-333, then P-334/P-329/P-330, then P-352 and this row, then P-300 and P-338's writer half, then P-336's. This lane states the order and does not merge.",
+    "DOC_REPO COMMITS ARE PLANNER-OWNED: the CP1/CP2/CLOSE artifacts and this lane's claim edit are left uncommitted in the root doc_repo worktree."
+  ]
+}

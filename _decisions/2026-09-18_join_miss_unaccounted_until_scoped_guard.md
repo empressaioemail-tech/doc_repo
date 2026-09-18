@@ -2,7 +2,7 @@
 decision_id: 2026-09-18_join_miss_unaccounted_until_scoped_guard
 date: 2026-09-18
 owner: operator
-status: active
+status: superseded in scope 2026-09-18 by P-333 (hauska-factory #186, merged 07a1215b; overlap threshold 0.95 ruled by the operator, OPS-16 A-226)
 supersedes_in_part: _decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md
 related_canonical:
   - 90_operations/OPS-16_texas_market_plan_of_record (A-214, P-325, P-333)
@@ -62,3 +62,15 @@ decision for Williamson stays open and separate.
 
 Internal: operator (ruling), integration seat (merge, deploy, record), the factory lane that takes
 P-333.
+
+## Superseded in scope, 2026-09-18 22:28Z
+
+P-333 shipped (hauska-factory #186, merge `07a1215b`), and the operator ruled its overlap threshold at
+**0.95** (OPS-16 A-226). A join miss now returns to `absent-verified` only in a keyspace whose
+shared-classifier basis is own-keyspace-index, whose served-id overlap with the roll is at or above
+0.95, and whose county is not a crosswalk county (Hays and Williamson stay excluded by their join).
+Every other population stays `unaccounted`, counted by reason. The 2026-09-05 ruling is therefore
+restored IN SCOPE, not wholesale. Measured at merge: the restore population is empty in all six
+counties (every served keyspace measures 1.0), so the merge moves no stored cell until the record-fill
+image is deployed and a county is run; re-run the lane's movement read after any acquisition whose
+ids may diverge from the roll.

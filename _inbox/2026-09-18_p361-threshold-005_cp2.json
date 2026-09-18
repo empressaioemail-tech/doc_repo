@@ -1,0 +1,173 @@
+{
+  "lane": "p361-threshold-005",
+  "planRows": ["P-361"],
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-18T18:56:00Z",
+  "seat": "cente-vsc-p361",
+  "dispatch": "_dispatches/2026-09-18_p361-threshold-005_dispatch.md",
+  "headStateAtCP2": {
+    "hauskaFactory": {
+      "path": "C:/Users/cente/_p361_scratch/wf-factory",
+      "branch": "lane/p361-threshold-005",
+      "base": "0f4558a4a4c89c72275744f580d7ba5765d95674",
+      "head": "ee83948456a7a05083a83ba2e8f1dac0263302c5",
+      "commits": [
+        "bb2db19 P-361 (A-220): the program's destructive-write threshold is 0.05, and every unwired reason re-read at the new number",
+        "ee83948 P-361: the cross-repo check reads engine main, with a declared fallback while the engine row is HELD"
+      ],
+      "diffStat": "5 files changed, 755 insertions(+), 48 deletions(-) (.github/workflows/ci.yml +58, scripts/check-engine-destructive-write-declaration.mjs +441 new, src/lib/destructive-write-guard.mjs 91 changed, test/destructive-write-guard.test.mjs +168, test/p327-retirement-gate-roll.test.mjs +45)",
+      "pr": {
+        "number": 182,
+        "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/182",
+        "base": "main",
+        "headSha": "ee83948456a7a05083a83ba2e8f1dac0263302c5",
+        "mergeStateStatus": "CLEAN",
+        "mergeable": "MERGEABLE",
+        "mergeSha": "null - NOT MERGED: the integration seat merges; this lane is under a no-merges constraint"
+      }
+    },
+    "hauskaEngine": {
+      "path": "C:/Users/cente/_p361_scratch/hauska-engine",
+      "branch": "lane/p328-engine-reconcile-blast-radius",
+      "base": "c41a1482284eb8624c3ef2b9c2ba96ccb8ac1bc2",
+      "head": "411094bf50ab420ebc30699a8c307edf5731ab2d",
+      "commits": [
+        "60951bc fix(P-328): the writer that retired Bastrop reads one declared number and refuses on blast radius (P-328's, rebased onto c41a1482)",
+        "c89428d fix(P-328): check the pin's own bytes, not only a normalized digest (P-328's, rebased; identical content to the held 6b4c3557)",
+        "30d9402 P-361 (A-220): the program's one destructive-write threshold is 0.05, and the pin is content-addressed (P-361's)",
+        "411094b P-361 (A-220): the P-342 writer's token test reads the declared name, not the pre-A-220 literal (P-361's, the rebase-collision fix)"
+      ],
+      "diffStatVsOriginMain": "11 files changed, 1570 insertions(+), 83 deletions(-) - includes P-328's two commits, which were already on the branch",
+      "pr": {
+        "number": 474,
+        "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/474",
+        "base": "main",
+        "headSha": "411094bf50ab420ebc30699a8c307edf5731ab2d",
+        "mergeStateStatus": "CLEAN",
+        "mergeable": "MERGEABLE",
+        "mergeSha": "null - NOT MERGED (HELD by the row's own merge order; the integration seat merges)",
+        "updatedInPlace": "true - a new commit on the same branch, rebased onto current engine main. No second PR was opened for the same change (dispatch item 3)."
+      }
+    }
+  },
+  "whatChanged": {
+    "factoryDeclaration": {
+      "constant": "MAX_DESTRUCTIVE_SHARE = 0.5 -> 0.05",
+      "headerRewritten": "The basis is now A-220's ruling and P-327's new-retirements-only rule: the 0.4694 that set 0.5 no longer enters the share at all (Williamson's 282,569 rows are re-retirements now, and the census reads zero NEW retirements in all six counties), so 0.05 refuses nothing measured as healthy. The header states plainly what 0.05 now refuses that 0.5 let through (the 5-to-50-percent band, i.e. a mass false retirement such as a 40-percent county loss, on the writer that emptied Bastrop) and what a legitimately large retirement must do (go through the existing population-bound authorisation, DESTRUCTIVE_WRITE_AUTHORISATION)."
+    },
+    "factoryWriters": {
+      "wiredCount": 1,
+      "wired": ["publish-retirement -- via requireRetirementGate"],
+      "sixFourThroughTheRealCallPath": "test/destructive-write-guard.test.mjs G6 (violation): a 6 percent share REFUSES through requireRetirementGate -- the real publish call path, not a unit of assertBlastRadius alone; G6: a 4 percent share PROMOTES through the same call path and reports the share it took; G6: the same call path still refuses the Bastrop share (0.925) and names the token it would need.",
+      "unwiredCount": 6,
+      "unwiredReReadAt005": [
+        { "id": "purge-bastrop-orphans", "verdict": "HOLDS", "why": "two hand-named place_keys re-verified live before the delete, already gated by an explicit AUTHORIZATION constant: a share is the wrong instrument, not a small one. 2 rows is 2 rows at 0.5, at 0.05 and at any number; a future set-valued mode is narrower in practice now (6 percent would refuse where 0.5 let it through)." },
+        { "id": "s6-collision-remediate", "verdict": "HOLDS", "why": "one colliding pair at a time; no population to take a share of, so the number never enters the decision." },
+        { "id": "vh-collision-remediate", "verdict": "HOLDS", "why": "one colliding key at a time, deletes companion rows only -- neither half of the reason is size-dependent." },
+        { "id": "parcel-rail-imports", "verdict": "HOLDS", "why": "delete-and-reinsert is one rail's refresh bound by that source's own row count and its job's coverage check; a companion-rail refresh is not a destructive status and no threshold makes it refuse." },
+        { "id": "parcel-cell-rail-resets", "verdict": "HOLDS", "why": "the closest group to the hazard: they reset a rail's own cells on the rows the rail no longer covers, a share near 1.0 on the normal path for a first full acquisition. Wiring them at 0.05 would refuse the ordinary run -- a permanently-red gate -- so they stay unwired and carry the escalation clause." },
+        { "id": "dollar-fields-patch", "verdict": "HOLDS", "why": "writes VALUES onto rows that stay live, never a status; the write happens in a bake subprocess, so a threshold here would refuse the wrong thing. Escalation clause stands: the day the bake writes a status, the invocation is gated on the rows it will touch." }
+      ],
+      "reReadIsMechanical": "G4 test: every unwired reason carries its literal 'RE-READ AT 0.05 (A-220, 2026-09-18)' line, so the re-read cannot be remembered-and-forgotten -- a new unwired entry without one fails the suite."
+    },
+    "factoryCrossRepoCheck": {
+      "script": "scripts/check-engine-destructive-write-declaration.mjs (new, 441 lines)",
+      "ciJob": "engine-declaration-pin in .github/workflows/ci.yml (new, +58 lines)",
+      "whatItCompares": "the share, the authorisation variable name, the refusal codes, the token grammar and the factory content identity (git blob sha + bytes + sha256) -- the factory's own declaration against the engine's copy",
+      "selftestFirst": "`node scripts/check-engine-destructive-write-declaration.mjs --selftest` -> all 8 selftest fixtures pass: a copy still reading 0.5 is refused; an absent declaration is refused, not skipped; a renamed refusal code is refused; a pin whose factory content hash is stale is refused; a correct copy passes (not vacuous); a declaration on engine main WINS and the fallback is not consulted; an empty engine main reads the declared fallback and the note NAMES the ref it read; an empty engine main AND an empty fallback still REFUSE (absence is never a pass).",
+      "mergeWindowFallback": "The job checks out engine `main` and, only when main carries no declaration file, reads the engine's lane ref -- printing which ref it read ('read at <path> (engine main)' vs the declared fallback). It is a declared read of a named ref with every leg still compared, NOT a skip: absence at both refs refuses with its own code (ENGINE_DECLARATION_UNREADABLE)."
+    },
+    "engineDeclaration": {
+      "constant": "MAX_DESTRUCTIVE_SHARE = 0.05 (was carrying the factory's 0.5)",
+      "headerRewritten": "states that the direction of the change is the OPPOSITE of P-328's: the engine is unchanged (its writers have refused above 0.05 since P-213/P-275) and the factory tightened to meet it; the 5-to-50-percent loosening is gone.",
+      "pin": {
+        "repo": "empressaioemail-tech/hauska-factory",
+        "path": "src/lib/destructive-write-guard.mjs",
+        "ref": "bb2db193e698e8e4ff1e1ff82ecbcdbd856702d5",
+        "refKind": "branch-head",
+        "refBranch": "lane/p361-threshold-005",
+        "contentAddressed": true,
+        "gitBlobSha": "5038e24a9a8404da70f168ce8d303630230895ef",
+        "bytes": 23524,
+        "sha256": "e76bd834008ddb0950b20e7015fe21d984fa84c3ac6fe3bdf4d1c5de69ca7fa1",
+        "whyContentAddressed": "This program squash-merges; a squash REPLACES the commit sha and leaves the blob untouched, so a commit-addressed pin would break the day the factory PR lands for a change that did not touch a byte of the pinned file -- a gate that fails for a reason unrelated to its subject (DEV_PROCESS's dead gate). Identity = blob sha + bytes + sha256, all three compared; `ref` is provenance only, and the check falls back to the clone's origin/main/main/HEAD, refusing only on a content mismatch or an unreadable factory. So it survives the branch being squashed and deleted."
+      }
+    },
+    "engineTests": {
+      "sixFourEnginePaths": "writer-blast-radius-guard.test.mjs: the boundary is the declared number (5/100 = 0.05 passes, 6/100 refuses) and a new explicit case (6 percent refuses, 4 percent passes); __tests__/retired-reactivation-guard.test.mjs: 40/1000 = 0.04 passes and 6 percent refuses on this call path, exactly-at 5/100 = 0.05 promoted; the Bastrop 57,704-of-62,394 refusal and the Kenedy 1-of-528 passthrough still hold."
+    }
+  },
+  "rebaseCollisionFoundAndFixed": {
+    "what": "#474 was green at 6b4c3557 because the P-342 apply writer and its suite did not exist on that base; the guard's alias commit (OVERRIDE_ENV_VAR = AUTHORISATION_ENV_VAR, the program's declared DESTRUCTIVE_WRITE_AUTHORISATION per A-220) landed when p263-envelope-outcome-apply.test.mts was not in the tree. Rebased onto current engine main (c41a148, which merged P-342 #475), the two met and CI's `typecheck + test` failed on `p263-envelope-outcome-apply.test.mts > a run above the county's share REFUSES and names the exact authorization`: the test hardcoded `BLAST_RADIUS_OVERRIDE=`, the guard's pre-A-220 name.",
+    "evidenceItWasNotThisLane": "the file did not exist at 6b4c3557 (`git show 6b4c3557:packages/engine-core/scripts/p263-envelope-outcome-apply.test.mts` -> 'exists on disk, but not in 6b4c3557'), and the alias came from P-328's own commit, not from P-361's.",
+    "fix": "commit 411094b: the test derives the name from the guard's exported OVERRIDE_ENV_VAR -- the pattern writer-blast-radius-guard.test.mts already uses -- and additionally pins it to the literal DESTRUCTIVE_WRITE_AUTHORISATION, so the next rename fails here for the right reason instead of leaving a stale literal behind. The two stale prose lines in p263-envelope-outcome-apply.mts no longer tell the integration seat to paste a name the guard does not read. The assertion itself is unchanged.",
+    "verified": "locally 105/105 across the four touched suites; on CI, attempt 1 of run 35381004115 shows the p263 file passing (its only engine-core failure was the unrelated flaky control below)."
+  },
+  "flakeFoundInTheEngineSuite": {
+    "test": "src/site-plan/__tests__/manifest-is-load-bearing.test.ts > FEASIBILITY_MANIFEST is load bearing > CONTROL (not vacuous): two renders of the SAME manifest are byte-identical",
+    "evidence": "local: 3 consecutive runs of that file alone -> 1 failed (605423 vs 605439 bytes) / 18 passed, then 18/18, then 18/18. CI: run 35381004115 attempt 1 (head 411094b) failed on it; attempt 2 of the SAME job at the SAME head concluded SUCCESS with every step green. The file is untouched by this lane's diff (site-plan is not in the diff at all), and the previous run at head 30d9402 passed it.",
+    "verdict": "a REAL nondeterminism in the engine's site-plan manifest render (a control whose whole job is byte-determinism, firing intermittently), unrelated to P-361. NOT fixed here (different subsystem, outside the row's scope, and the tripwire is another lane's to own); reported in leave_behind so the seat knows #474's CI can be red for a reason that is not #474.",
+    "consequenceForTheMergeOrder": "The merge order below holds in both directions, but the seat should re-run the `typecheck + test` job rather than re-pushing if it goes red on this file -- a re-run is the correct response to a nondeterministic control, and re-running is exactly what produced the green at head 411094b."
+  },
+  "crossRepoCheckBothDirections": {
+    "directionOneFactoryReadsEngine": {
+      "command": "node scripts/check-engine-destructive-write-declaration.mjs --engine <engine checkout>",
+      "resultAgainstTheRealEngineTree": "PASS, exit 0. readNote 'read at C:/Users/cente/_p361_scratch/hauska-engine (engine main)'; share 0.05; factoryContent sha256 e76bd834... / 23524 bytes / blob 5038e24a.",
+      "resultAgainstAbsence": "REFUSE, exit 2, ENGINE_DECLARATION_UNREADABLE, exit 2. The message's last sentence said 'merge order: the engine row lands first', written under the lane's FIRST merge-order design; it was stale. Corrected in code at commit c6e14e3 (see amendmentsAfterCP2), not left as a note: the refusal now says 'Merge order: THIS row (the factory's number) lands first, engine #474 second -- #474 is the row that waits on this one (A-220)'.",
+      "byViolation": "the same command against a temp checkout whose copy reads MAX_DESTRUCTIVE_SHARE = 0.5 -> REFUSE, ENGINE_CONSTANT_DIVERGED: 'engine MAX_DESTRUCTIVE_SHARE is 0.5; hauska-factory declares 0.05 (src/lib/destructive-write-guard.mjs). One number, one place: change the factory's declaration and re-pin the engine, or revert the engine edit -- do not hold two numbers.'",
+      "selftest": "8/8 fixtures pass (see whatChanged.factoryCrossRepoCheck)."
+    },
+    "directionTwoEngineReadsFactory": {
+      "command": "node packages/engine-core/scripts/check-destructive-write-share-divergence.mjs --factory <factory clone>",
+      "result": "PASS, exit 0. Legs: share/declaration PASS, secondThresholds PASS (offenders []), refusalCodes PASS (all four BLAST_RADIUS_* codes thrown somewhere and every throw site one of them), factory PASS -- ref bb2db193 read at bb2db193 (NO fallback), content sha256 e76bd834... / 23524 bytes / blob 5038e24a, facts {MAX_DESTRUCTIVE_SHARE: 0.05, AUTHORISATION_ENV_VAR: 'DESTRUCTIVE_WRITE_AUTHORISATION'}.",
+      "whyThisSideIsNotEnforceableInCI": "hauska-factory is private and unpublished (GitHub API and raw.githubusercontent.com both 404 for it; `npm view hauska-factory` is E404 because package.json is private:true), so the engine's CI cannot read the other side. This leg is a seat/local re-derivation with `--factory <clone>`, and the enforceable direction is direction one."
+    }
+  },
+  "countsWithCountingRules": {
+    "factoryGuardSuite": { "value": "22 tests, 22 pass, 0 fail", "countingRule": "`node --test test/destructive-write-guard.test.mjs` in the factory worktree; node's own summary line (tests 22 / pass 22 / fail 0)" },
+    "factoryP327Suite": { "value": "included in the two-file run: 35/35 pass across test/destructive-write-guard.test.mjs + test/p327-retirement-gate-roll.test.mjs", "countingRule": "node --test over both files (the row's two touched test files), reported in the PR body" },
+    "engineTargetedSuites": { "value": "4 files, 105 tests, 105 pass, 0 fail", "countingRule": "`npx vitest run scripts/p263-envelope-outcome-apply.test.mts scripts/writer-blast-radius-guard.test.mjs scripts/destructive-write-declaration.test.mjs scripts/__tests__/retired-reactivation-guard.test.mjs` in packages/engine-core; vitest's own summary (Test Files 4 passed (4), Tests 105 passed (105))" },
+    "engineFullSuiteOnCI": { "value": "229 test files: 1 failed | 227 passed | 1 skipped at head 411094b attempt 1 (the failure was the flaky site-plan control), and every step green on attempt 2 of the same job at the same head", "countingRule": "the CI job's own vitest summary line, read from `gh run view --log-failed` for attempt 1 and `gh run view --json jobs` for attempt 2" },
+    "factoryLocalFullSuitePreExisting": { "value": "1949 tests, 1884 pass, 26 fail; the same suite at the branch base (0f4558a) is 1945 tests / 1879 pass / 27 fail, so the 26 are pre-existing in this (Windows) environment and no guard, P-327 or P-361 test is among them", "countingRule": "the factory suite run at HEAD and at the base commit, compared file-by-file rather than by count alone; CI's own `test` job is green at head ee83948" },
+    "unwiredReReads": { "value": "6 of 6, all HOLDS", "countingRule": "one literal 'RE-READ AT 0.05 (A-220, 2026-09-18)' line per unwired register entry, enforced mechanically by the G4 test" },
+    "selftestFixtures": { "value": "8 of 8 pass (four content failures fire, the fallback window behaves, two controls pass)", "countingRule": "the script's own summary line from --selftest" }
+  },
+  "probeArtifacts": {
+    "rowScoped": {
+      "path": "_inbox/2026-09-18_182831_surface_probe.json",
+      "command": "node scripts/surface-probe.mjs --rows P-361 --allow-unmeasured",
+      "content": "instrument scripts/surface-probe.mjs, rows [\"P-361\"], results [] (zero predicates), legs {}",
+      "whyEmpty": "surface-probe.mjs's ROWS registry carries no P-361 entry and no leg of any kind for it: the probe's rows are P-151..P-304, all served/customer surfaces. P-361 changes an in-process refusal threshold and deploys nothing, so there is no surface for a parcel predicate to measure. This is the OPS-24 Law 1 predicate debt, declared rather than papered over; the gate treats every OPS-24 row as ROWS_WITHOUT_PREDICATE for exactly this reason, and an existing parseable artifact suffices (verified against the gate at origin/main -- see gateCheck)."
+    },
+    "fullRun": {
+      "path": "_inbox/2026-09-18_182843_surface_probe.json",
+      "command": "node scripts/surface-probe.mjs --allow-unmeasured (all rows, live)",
+      "content": "12 parcels across 48021 / 48453 / 48209 / 48055 / 48309; PASS 0, FAIL 0, UNMEASURED 44",
+      "why": "recorded as the live state of the serving surface from THIS seat at this time, not as evidence for P-361: the PE surface could not be fetched from this machine ('fetch failed' on every facets leg) and the cortex legs refuse because CORTEX_API_BASE / CORTEX_SERVICE_API_KEY / CORTEX_API_KEY_HEADER are not set. Every verdict is UNMEASURED, which is why the artifact is cited as evidence of the surface's state and not as a PASS for any row."
+    }
+  },
+  "amendmentsAfterCP2": {
+    "filedAt": "2026-09-18T18:49:05Z",
+    "commit": "c6e14e3 P-361: the merge order in the check's own prose is the row's order -- this PR first, #474 second (hauska-factory lane/p361-threshold-005, pushed; CI re-run green)",
+    "what": "The check, its ci.yml job comment and its ENGINE_DECLARATION_UNREADABLE message were written while the lane's merge order was still engine-first; the order was then corrected to factory-first (A-220's own sequence) in the PR bodies but not in the prose an operator actually reads when refused. Three files' prose now state the factory-first order, and the PR bodies are updated to the final head (factory c6e14e3 / head run 35381952472; engine 411094b).",
+    "noVerdictMoved": "the same legs run, the same declared fallback is read, absence at both refs still refuses, and the selftest is 8/8 before and after -- the correction moved prose, not verdicts. Factory `test` and `engine-declaration-pin` jobs re-ran green on the corrected head.",
+    "whyItMatters": "the refusal is the one place a person mid-window is told what to do next; a refusal naming the opposite order is worse than a vague one because it is followed."
+  },
+  "headStateAtClose": {
+    "hauskaFactory": { "branch": "lane/p361-threshold-005", "head": "c6e14e3efbe5993dcf7cb197c44983faae673057", "commits": 3, "pr": 182, "ci": "engine-declaration-pin PASS, gate8 PASS, ldt-sha-comment-presence PASS, test PASS (run 35381952472, head c6e14e3)" },
+    "hauskaEngine": { "branch": "lane/p328-engine-reconcile-blast-radius", "head": "411094bf50ab420ebc30699a8c307edf5731ab2d", "p361Commits": 2, "pr": 474, "ci": "typecheck + test PASS (run 35381004115, head 411094b, attempt 2 -- attempt 1 hit the pre-existing flaky site-plan control recorded in flakeFoundInTheEngineSuite)" },
+    "crossRepoChecksReRunAtTheseHeads": "direction one (factory reads engine) PASS exit 0, readNote 'engine main'; direction two (engine reads factory, --factory <clone>) PASS exit 0, ref bb2db193 read at bb2db193 with NO fallback, content sha256 e76bd834... / 23524 bytes / blob 5038e24a"
+  },
+  "localEvidence": {
+    "targetedRuns": "the four countsWithCountingRules suites above, all re-run at the final heads",
+    "crossRepoChecks": "both directions of crossRepoCheckBothDirections, run at the final heads, with the by-violation copies under C:/Users/cente/_p361_scratch/_violation_engine",
+    "squashSurvival": "C:/Users/cente/_p361_scratch/squash-sim holds the clone used to prove the content-addressed pin (and the engine-side check's ref fallback) survive a squash merge of the factory branch"
+  },
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "constraintsHonored": [
+    "no store writes, no deploys, no merges",
+    "FAN-DEPTH 0: no sub-agents launched",
+    "built in isolated worktrees cut from the declared start commits (factory 0f4558a4, engine c41a1482)",
+    "doc_repo edits left uncommitted for the planner (CP1/CP2/CLOSE and this lane's claim)"
+  ]
+}

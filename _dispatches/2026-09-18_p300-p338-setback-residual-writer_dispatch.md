@@ -195,7 +195,7 @@ Each absorbed row keeps its number and its close history; OPS-24 rows name what 
 
 You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-setback-corpus` (default rows) and
 `hauska-factory` (the setback writer and router), one PR per repo, each from current `origin/main` with
-the SHA declared (factory `0f4558a4` at compile). You hand back the doc_repo ledger-policy diff in your
+the SHA declared (factory `07a1215b` at recompile, 2026-09-18 22:40Z; first compiled at `0f4558a4`). You hand back the doc_repo ledger-policy diff in your
 close; the seat commits it. You do not merge, publish the corpus, deploy, apply or write any store; the
 integration seat does all of them. The surfaces (map, MCP, PDF) are a separate lane
 (`_dispatches/2026-09-18_p338-refusal-surfaces_dispatch.md`) that reads the cells you write.
@@ -296,9 +296,13 @@ a zoning layer acquired later for a class (a) city).
 ### Constraints
 
 - No store writes, no corpus publish, no deploys, no merges.
-- Factory merge order this wave (the seat serializes): P-333, then P-334/P-329/P-330, then P-352 and
-  P-361, then P-363, then yours, then P-336's writer half. P-363 changes the same write gate (it
-  releases older-corpus values). Rebase onto it and keep the two releases distinct.
+- Factory merge order this wave (the seat serializes): P-333 and P-334/P-329/P-330 are MERGED (main
+  `07a1215b`); then P-352 (#181) and P-361 (#182), then P-363 (#187), then yours, then P-336's writer
+  half. **Two open PRs touch the same writer as you:** P-363 (#187) changes the write gate (it
+  releases older-corpus values), and P-354's factory half (#179) serves a future-dated rule row by
+  ruling and writes adopted/effective dates into cells. Read both at their PR heads before you build,
+  rebase onto whichever merges first, keep each release and each cell shape distinct, and say in your
+  close how your refusals and defaults coexist with both.
 - Williamson 48491 republishes only under P-350; dry-run it, never write it.
 
 ### Close
@@ -314,7 +318,7 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
   These paths are relative to the doc_repo worktree the session RUNNING YOU is rooted in: for a
   lane spawned by the dispatch planner that is the planner's worktree; for the dispatch planner
   itself it is its own seat worktree (never P:/doc_repo, the integration seat's checkout). This
-  dispatch was compiled in P:/doc_repo. Two lanes in each of waves 1 and 2 wrote
+  dispatch was compiled in p:/doc_repo. Two lanes in each of waves 1 and 2 wrote
   into the property seat's worktree instead and their artifacts had to be found by hand.
   No notification arrives when a background command finishes: poll with a bounded loop and a
   timeout; a lane that ends its turn waiting for a wake-up stalls (two lanes did, wave 2).
