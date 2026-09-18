@@ -29,9 +29,28 @@
     },
     "smartcity-dashboards": {
       "repository": "empressaioemail-tech/smartcity-dashboards",
-      "originMain": "fd8562c2fdabf9a1839ba0bb473fc4d5835ac8e8",
-      "modifiedByThisLane": false,
-      "whyReadOnly": "STEP 2 is gated on G-154 merging. Every dashboards read in this lane was done with git grep / git show against origin/main, which writes nothing and cannot collide with G-154's working tree."
+      "worktree": "P:\\smartcity-dashboards-worktrees\\g159-finance-bridge",
+      "laneBranch": "g159-finance-bridge",
+      "laneCommit": "6d2b113",
+      "baseWasMain": "7dda6db (the G-154 squash, PR #68 — the merge that cleared this step's gate)",
+      "mergeCommitOnMain": "53ade8a9dbdb649acbe04c721a54fa518779d0b1 (squash, PR #69)",
+      "pullRequest": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/69",
+      "checks": "ci: test PASS (17s), a11y PASS (8m42s). mergeStateStatus CLEAN at merge.",
+      "originMainBeforeThisLane": "7dda6db G-154: make the live Development services lens match its ratified design (#68)",
+      "blockClearedAt": "2026-09-18T12:12:26Z — G-154 merged, which is the dispatch's own precondition for STEP 2",
+      "whyThisWasBlockedBefore": "The dispatch: 'Wait for G-154 to merge before starting this step.' The prior close (12:25Z) recorded smartcity-dashboards origin/main as fd8562c2 (the G-156 merge) and STEP 2 as UNMEASURED. G-154 landed after that, moving main to 7dda6db."
+    },
+    "smartcity-dashboards-uat": {
+      "app": "d12-main-uat (7cd6f652-9e7e-4abc-abb4-e2a94623866c)",
+      "liveUrl": "https://d12-main-uat-gqnjx.ondigitalocean.app",
+      "deployedSourceCommitHash": "53ade8a9dbdb649acbe04c721a54fa518779d0b1",
+      "deploymentId": "cc07754f-c5c7-4332-9d67-d51359111e41",
+      "phase": "ACTIVE",
+      "health": "HEALTHY",
+      "phaseLastUpdatedAt": "2026-09-18T12:56:15Z",
+      "readBackVia": "do-apps MCP apps-get-deployment-status (OPS-25 rule 13)",
+      "whatWasDeployedBefore": "deployment 049a7de7 at 7dda6db — the pre-fix commit, which served the defect during the pre-fix probe leg",
+      "nonProduction": "Non-production proof target only. Nothing was deployed to v1, to walrus-app, or to the GCP smartcity-api rollback copy."
     },
     "doc_repo": {
       "worktreeThisSessionIsRootedIn": "P:\\seat-worktrees\\g159-finance-bridge\\doc_repo",
@@ -165,14 +184,54 @@
   },
 
   "step2": {
-    "verdict": "NOT STARTED - BLOCKED BY THE DISPATCH'S OWN GATE, and the block is stated rather than worked around.",
+    "verdict": "PASS — run after G-154 cleared the gate, merged to main as 53ade8a, and proven on the deployed non-production app in both directions.",
     "gate": "The dispatch: 'Wait for G-154 to merge before starting this step. G-154 is working in smartcity-dashboards now, and two lanes in one product repo is how two changes to city-pack.mjs collide.'",
-    "gateState": "G-154 is open as PR #68 (g154-dev-services-live, opened 2026-09-18T12:04:00Z). Not merged at close time. smartcity-dashboards origin/main is fd8562c2, still the G-156 merge.",
-    "siblingStepDeliberatelyNotSkipped": "STEP 2's (b) already says 'Do not add the bastrop_tx grant yet... The grant is the last step, after D-13 and D-14, and it goes in your leave_behind.' So the grant is owed regardless of G-154.",
-    "whatWasDoneReadOnly": "The STEP 2 (c) enumeration, done entirely with git grep / git show against origin/main. It writes nothing to smartcity-dashboards and so cannot collide with G-154's working tree.",
-    "step2aAdapterShape": "UNMEASURED. src/adapters.mjs on origin/main still reads `opengov: { declared: false, basis: 'budget record shape is not declared on G-91' }`. The shape to declare is fully characterised by CP1's live reads, so this is a small, well-specified piece of work, not an unknown.",
-    "step2cCityDefaultFix": "UNMEASURED. The exact fix site is identified: src/server.mjs:744 in the route declared at :742, GET /api/lenses/finance/sources.",
-    "theUatProof": "UNMEASURED, because there is no v2 change to prove. The DigitalOcean Apps credential IS available in this session (apps-get-info and apps-get-deployment-status both answered, unlike the G-156 lane which had none), so d12-main-uat can be read back the moment STEP 2 runs."
+    "gateState": "CLEARED. G-154 (PR #68) merged 2026-09-18T12:12:26Z, moving origin/main from fd8562c2 to 7dda6db. This work branched from 7dda6db, so it never shared a working tree with G-154.",
+    "step2aAdapterShape": {
+      "verdict": "PASS",
+      "what": "src/adapters.mjs: `opengov:budget` moves from `declared: false` to `declared: true, feedOnly: true`, with every field carrying a basis drawn from CP1's real records.",
+      "whyFeedOnly": "The shape is read from a live feed and never generates a fixture. A domain that invented appropriations for template-city would put money on the demo pack — the failure class the feed/grant split exists to prevent.",
+      "fieldsDeclared": "name (text), entityId (text), coaId (text), and six required integers: expensesBaseAmount, expensesAdjustmentAmount, expensesProposedAmount, revenuesBaseAmount, revenuesAdjustmentAmount, revenuesProposedAmount.",
+      "fieldsRefusedAndWhy": [
+        "fiscalYear — refused rather than parsed out of the budget NAME ('FY2027 Operating Budget (WORKING)'). The live budget record publishes no numeric year; parsing one from a display name and presenting a guess as a field is the defect the lens design names.",
+        "netPosition — derivable as revenuesProposedAmount minus expensesProposedAmount, and deliberately not carried as a field. The bridge publishes it under `derived` with its own 'never consumed as measured' note, so it does not get promoted into a column that reads like a reading.",
+        "fractional amounts — the shape declares integer, and the decoder refuses rather than rounds."
+      ],
+      "decoder": "src/opengov-budget.mjs — mapRealBudgetRecord() maps a v1 budget + amounts-summary pair and asserts the result against the declared shape via assertRecordShape(). It refuses on a missing, null, non-numeric or fractional amount rather than coercing one, so an upstream vendor change surfaces as a refusal at the boundary instead of a plausible number in the lens.",
+      "validatedAgainst": "The verbatim live Bastrop record captured in CP1 (FY2027 Operating Budget (WORKING), id 130231, expenses 74349204 / -4769353 / 69579851, revenues 73425092 / +1143298 / 74568390) — not against a template-city fixture, as the dispatch requires."
+    },
+    "step2bGrantWithheld": "PASS AS A DELIBERATE NON-ACTION — no bastrop_tx grant was added. The dispatch: 'Do not add the bastrop_tx grant yet... The grant is the last step, after D-13 and D-14, and it goes in your leave_behind.' Confirmed absent from src/city-pack.mjs and src/adapters.mjs.",
+    "step2cCityDefaultFix": {
+      "verdict": "PASS — proven by violation, twice and independently.",
+      "site": "src/server.mjs, GET /api/lenses/finance/sources. It read `url.searchParams.get('cityKey') || 'template-city'` (line 744 on 7dda6db), so a caller who named no pack was answered 200 with the DEMO pack's finance states under whatever city they meant.",
+      "fix": "A missing, empty or whitespace-only cityKey is refused with 400 city_key_required, checked BEFORE the caller is resolved (a request naming no pack is malformed whatever identity presents it, and refusing it leaks nothing a 401 would withhold). A named-but-unknown pack still takes the pack path and still answers 404 'unknown city pack', so the two findings stay distinguishable.",
+      "provenByViolationInTheTestRunner": "src/finance-route.test.mjs — 6 assertions. Against the pre-fix line, 3 fail (the two city-key-absence tests and THE VIOLATION test); against the fix, 6 of 6 pass. The violation test is a NEGATION: the keyless response must carry no finance block, none of the four source ids, and no money token, because the old behaviour was a complete, well-formed 200 payload that nothing else could distinguish from a real pack's states.",
+      "provenByViolationOnTheDeployedSurface": "The paired control in _inbox/2026-09-18_125700_g159_step2_uat_proof.json: the same unauthenticated request to the same URL answered 200 with cityKeyEchoed 'template-city' and a full finance block at 7dda6db, and 400 city_key_required with no finance block at 53ade8a. See theUatProof below.",
+      "controlThatKeepsItFromBeingAnOutage": "?cityKey=template-city answers 200 with all four source ids in BOTH legs, and ?cityKey=no-such-city stays 404 in both. The fix refuses an ABSENCE; it does not refuse the route."
+    },
+    "theUatProof": {
+      "verdict": "PASS for the change under test",
+      "artifact": "_inbox/2026-09-18_125700_g159_step2_uat_proof.json",
+      "changedBehaviour": "The deployed surface now refuses a keyless finance request: 400 city_key_required, no payload, on all three absence shapes (absent, empty, whitespace).",
+      "unchangedBehaviour": "A named pack still answers 200 with its four source states; an unknown pack still answers 404; a tenant-private pack still answers 401 to an anonymous caller.",
+      "credentialsAreNeededToMoveTheLensState": "No. The budget moves to MEASURED only when bastrop_tx carries an opengov GRANT, which STEP 2 (b) deliberately withholds until D-13 and D-14 land. A credentialed read of bastrop_tx today would show four UNACCOUNTED states, because the grant — not the route — is what feeds them."
+    },
+    "filesChangedInSmartcityDashboards": [
+      "src/adapters.mjs (declare opengov:budget, feedOnly)",
+      "src/opengov-budget.mjs (new — mapRealBudgetRecord + refusal helpers)",
+      "src/opengov-budget.test.mjs (new — shape, mapping, refusals by violation)",
+      "src/fixtures.test.mjs (divergence test extended to understand feedOnly shapes)",
+      "src/finance-lens.mjs (basis string updated: the adopted-budget source's UNACCOUNTED now rests on 'no grant, and nothing read' rather than 'no shape to map')",
+      "src/finance-lens.test.mjs (pins RECORD_SHAPES.opengov.declared true; basis assertions updated)",
+      "src/server.mjs (the city-default refusal)",
+      "src/finance-route.test.mjs (new — 6 HTTP-level assertions)",
+      "web/app.js (unread-source label now says 'an unnamed pack')",
+      "web/index.html (rebaked via scripts/bake-finance-lens.mjs to match the lens change)"
+    ],
+    "verification": {
+      "suite": "792 tests, 791 pass. The single failure is the pre-existing src/server.test.mjs:1086 ECONNRESET flake, which was reproduced on a pristine origin/main worktree before this branch existed, so it is not a regression from this work.",
+      "webBytesUnchangedByNormalization": "D-9 pins the byte shape of web/**. Verified after committing: all 7 files under web/ hash identically with and without git filters (app.js e7e7eb67, index.html 5ce2d8b3, property-map.css e047d103, property-map.html aa55b276, property-map.js 9813d32d, sc-kit.css c0c0ffc1, shell.css a06651d0), and CR count equals LF count in each. The commit was made with core.autocrlf=false."
+    }
   },
 
   "everyOtherTemplateCityDefaultFound": {
@@ -184,9 +243,14 @@
       { "route": "GET /api/domains/* (declared :497)", "fallbackLine": 499, "note": "Unguarded. Covers every domain endpoint." },
       { "route": "GET /api/city-identity (declared :550)", "fallbackLine": 552, "note": "Unguarded." },
       { "route": "GET /api/shell (declared :578)", "fallbackLine": 580, "note": "Unguarded." },
-      { "route": "GET /api/lenses/city-manager/compose (declared :288)", "fallbackLine": 290, "note": "Unguarded, and it defaults via the imported DEFAULT_CITY_KEY rather than a literal, so a grep for the literal alone would miss it." },
-      { "route": "GET /api/lenses/finance/sources (declared :742)", "fallbackLine": 744, "note": "THE STEP 2 TARGET. Unguarded." }
+      { "route": "GET /api/lenses/city-manager/compose (declared :288)", "fallbackLine": 290, "note": "Unguarded, and it defaults via the imported DEFAULT_CITY_KEY rather than a literal, so a grep for the literal alone would miss it." }
     ],
+    "theOneThatWasFixed": {
+      "route": "GET /api/lenses/finance/sources (declared :742)",
+      "wasFallbackLine": 744,
+      "note": "This was the eighth entry in this list and the STEP 2 (c) target. It no longer defaults: a missing, empty or whitespace-only cityKey is refused with 400 city_key_required. Verified against the fixed tree rather than against the enumeration, because an enumeration gathered before a fix is exactly the kind of claim that goes stale silently — the remaining seven above were re-grepped on the fixed branch (commit 6d2b113) and are unchanged.",
+      "whatTheFixLeftUntouched": "The seven remaining request-scoped fallbacks and the four module-level ones below are a finding, not scope, per the dispatch ('Fix only the finance route. The others are a finding, not scope.')."
+    },
     "moduleLevelDefaults": [
       { "file": "src/compose.mjs", "line": 7, "detail": "export const DEFAULT_CITY_KEY = 'template-city'; applied at :306 and at :312, where `String(cityKey || DEFAULT_CITY_KEY).trim() || DEFAULT_CITY_KEY` defaults TWICE - an empty string also becomes template-city." },
       { "file": "src/staff-map.mjs", "line": 2, "detail": "Its own DEFAULT_CITY_KEY = 'template-city', applied at :13." },
@@ -197,12 +261,12 @@
       { "file": "src/city-pack.mjs", "line": 35, "detail": "cityKey: 'template-city' is the TEMPLATE_CITY pack's own identity, not a fallback." },
       { "file": "web/index.html", "detail": "16 literals naming template-city on every pack, per city-identity.test.mjs:316. Worth a look when the city default is fixed, but the test asserts they are the demo's own identity rather than a fallback." }
     ],
-    "whyThisListMatters": "The dispatch requires this enumeration in the close, and the count is the point: the finance route is not one leak, it is one of EIGHT request-scoped fallbacks in a single file, plus four module-level defaults. Fixing only the finance route leaves seven."
+    "whyThisListMatters": "The dispatch requires this enumeration in the close, and the count is the point: the finance route was not one leak, it was one of EIGHT request-scoped fallbacks in a single file, plus four module-level defaults. Fixing the finance route — which is all the dispatch scopes to this lane — leaves SEVEN request-scoped fallbacks in that same file. Six of the seven are unguarded outright; the municode one is the only one that cannot leak, because lines 249-250 immediately refuse anything that is not template-city."
   },
 
   "leaveBehind": [
     "THE bastrop_tx GRANT, which the dispatch names as the required leave-behind and which STEP 2 (b) deliberately withholds until D-13 and D-14 land. It is the last step, not an oversight.",
-    "STEP 2 ITSELF, gated on G-154 (PR #68). Unblocking: when #68 merges, do (a) declare the opengov adapter record shape in src/adapters.mjs (validating against CP1's real records, refusing on a failing field), (c) make the missing cityKey a refusal at src/server.mjs:744 proven by violation, and then prove it on d12-main-uat against bastrop_tx with services[0].source_commit_hash read back. The DO credential is present in this session.",
+    "STEP 2 IS DONE, NOT OWED (corrected at 13:00Z): this entry previously read 'STEP 2 ITSELF, gated on G-154'. G-154 merged at 12:12:26Z, STEP 2 ran, and it is merged to smartcity-dashboards main as 53ade8a (PR #69) and proven on d12-main-uat. The dispatch's STEP 2 (c) is complete. What STEP 2 does NOT do — and was never meant to do — is move Bastrop's budget to MEASURED: that needs the grant below.",
     "THE DNU HOLE IN THE PRODUCTION BUDGET FILTER (see theBudgetFilterHole). It needs an owner because the rule is shared with the session route's cache warm-up.",
     "THE mygov_fees REPORT-WINDOW DEDUPE QUESTION (see thePermitRevenueDataFinding). Now reproducible, with a rate, a row count and a schema-level mechanism, instead of a screenshot. Finance-owner decision.",
     "CONVERGENCE: server/routes/finance.ts still carries the clamped Math.max(0, ...) difference and the bare `(req as any).tenantId || 1` default on its session routes. This lane built the honest form on the new platform route and deliberately did not change the production session routes. A v1-scoped follow-up should converge them onto one builder.",
