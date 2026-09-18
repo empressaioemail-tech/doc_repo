@@ -1,0 +1,169 @@
+{
+  "lane": "d12-dashboards-do-cutover",
+  "planRows": ["D-12"],
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work verification",
+  "seat": "cente-vsc-d12",
+  "filedAt": "2026-09-17T22:55:00Z",
+
+  "snapshot": {
+    "dashboardRepo": { "branch": "d12-crlf-on-main", "head": "a8a23bcc9c14bcd3afeba85e193b52a5bf9b0122" },
+    "originMain": "3d3ec62abb1f74b01fef561ece11139825be3baa",
+    "dolphinApp": { "activeDeployment": "fd7b2825-f35d-447d-a095-23924eac1544", "phase": "ACTIVE", "branch": "main", "sourceCommitHash": "3d3ec62abb1f74b01fef561ece11139825be3baa", "commitHowRead": "services[0].source_commit_hash, read by field name from the deployment JSON", "instances": 2, "envs": 10, "deployOnPush": "absent, i.e. disabled" },
+    "uatApp": { "activeDeployment": "9db868a8-4bd1-47d5-ab3b-c4ee161c7450", "phase": "ACTIVE", "branch": "main", "sourceCommitHash": "3d3ec62abb1f74b01fef561ece11139825be3baa", "instances": 1, "envs": 10 }
+  },
+
+  "step3Repoint": {
+    "what": "dolphin-app repointed from branch d9-pin-96efa35 to branch main.",
+    "how": "PUT /v2/apps/{id} with the spec read from the app itself, one field changed. The script diffed the outgoing spec against the read spec and printed the changed path set: spec.services.0.github.branch — nothing else. Env values round-tripped as their app-scoped ciphertext, so no secret was re-derived or re-entered.",
+    "result": "Accepted, 10 envs preserved, deployment 2f796a9a-5064-466e-81f1-72312129bf3e, then ACTIVE.",
+    "firstDeploymentFalseSuccess": {
+      "observed": "Deploy reported build=SUCCESS deploy=SUCCESS and the app went ACTIVE on branch main, but the served bytes were wrong: / returned 144003 bytes (sha 99ee005013cb8f70...) and /app.js returned 127885 bytes (sha d054de9b35f58aee...), against the correct 145758 (sha 018f27bdcf185bbb...) and 131149 (sha a8e28c499a4f0766...).",
+      "deltasAreTheTell": "145758 - 144003 = 1755 = exactly the CR count of web/index.html. 131149 - 127885 = 3264 = exactly the CR count of web/app.js. The carriage returns had been stripped, i.e. the app was serving the pre-fix byte-shape the whole row exists to eliminate.",
+      "mechanism": "source_commit_hash on that deployment was f776b4bf24114ed4061609d28c0429f84eb431b7 — main's tip BEFORE the CRLF fix merged — and the build log reads: '=> Checking out commit \"f776b4bf24114ed4061609d28c0429f84eb431b7\"'. DigitalOcean resolved branch main to a stale commit when the spec was updated.",
+      "howItWasCaught": "Only by comparing served body sha256 across two independent surfaces on the same branch, from outside this host. The UAT app served the correct bytes; the freshly repointed production app did not. Both deploys said SUCCESS. This is the dispatch's own named failure mode — a green app and the change absent — arriving through the platform rather than through a merge.",
+      "fix": "POST /v2/apps/{id}/deployments with force_build to force re-resolution. Deployment fd7b2825 checked out 3d3ec62a and served the correct bytes."
+    }
+  },
+
+  "gateResults": {
+    "instrument": "scripts/surface-probe.mjs companion harness: probe.sh run inside GCP Cloud Build, outside this host's TLS-interception middleware. PROBE_HOST is the build's own public egress address, printed in every run.",
+    "runs": [
+      { "runAt": "2026-09-17T22:36:57Z", "probeHost": "136.67.47.197", "purpose": "pre-repoint baseline / GATE A + B + C" },
+      { "runAt": "2026-09-17T22:42:48Z", "probeHost": "136.67.188.70", "purpose": "post-fix re-verification" },
+      { "runAt": "2026-09-17T22:45:45Z", "probeHost": "136.69.161.78", "purpose": "GATE D egress, plus /health and /app.js re-verification" }
+    ],
+
+    "gateA": {
+      "verdict": "PASS",
+      "verbatimEdgeHeaders": {
+        "gcpOriginal": "RESULT https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app/ -> edge server=Google Frontend cfRay= contentLength= transferEncoding=chunked",
+        "dolphinApp": "RESULT https://dolphin-app-y4ixf.ondigitalocean.app/ -> edge server=cloudflare cfRay=a3cba4b19fc2c3ca-SEA contentLength= transferEncoding=chunked",
+        "uatApp": "RESULT https://d12-main-uat-gqnjx.ondigitalocean.app/ -> edge server=cloudflare cfRay=a3cba280af125907-SEA",
+        "walrusApex": "RESULT https://smartcityos.io/ -> edge server=cloudflare cfRay=a3cb9c1dbb717592-SEA"
+      },
+      "reading": "Origin is distinguishable by an unfakeable edge header from outside this network: Google Frontend with no CF-RAY on the GCP original, cloudflare plus a CF-RAY on every DigitalOcean-served surface. The GCP original and the DO app returned DIFFERENT server headers for the SAME body bytes in the same run, which is the discrimination this gate asks for.",
+      "whatIsNotYetProven": "The post-DNS form of this gate. app.smartcityos.io does not resolve yet (see step 5), so the origin switch behind the ruled hostname has not been observed. Stated, not assumed."
+    },
+
+    "gateB": {
+      "verdict": "PASS",
+      "marker": "signin_not_configured",
+      "whatTheCommitContains": "f776b4bf24114ed4061609d28c0429f84eb431b7 changes 9 files, all src/*.mjs plus tests, and introduces GET /auth/sign-in whose catch branch returns json(res, 500, {error:\"signin_not_configured\", ...}). `git grep -c signin_not_configured f776b4bf -- src/` returns 1 occurrence in src/server.mjs; the same grep against 96efa35 -- src/ returns NOTHING. Absent in the base, present in the commit.",
+      "whyABehaviouralMarkerWasTheOnlyOption": "f776b4bf touched ZERO files under web/, verified by `git show --name-only --format= f776b4bf | grep ^web/` returning empty. No static asset changed, so no served byte differs between the branches except through server behaviour. Saying so rather than substituting a weaker presence check.",
+      "whatTheLiveAppServes": {
+        "dolphinAppOnMain": "RESULT https://dolphin-app-y4ixf.ondigitalocean.app/auth/sign-in -> code=500 bytes=103 sha256first32=2a4a162b189cff4822e5b716f2a0b28c gateB signin_not_configured=1, head={error:signin_not_configured,message:WORKOS_CLIENT_ID is not configured; sign-in cannot start.}",
+        "gcpOriginal": "RESULT https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app/auth/sign-in -> code=404 bytes=21 sha256first32=51d0a9e3bd9ffc25483790aaffe7a359 gateB signin_not_configured=0, head={error:not found}",
+        "dolphinAppBeforeRepoint": "identical to the GCP original: code=404 bytes=21 sha256first32=51d0a9e3bd9ffc25483790aaffe7a359 gateB signin_not_configured=0",
+        "uatAppOnMain": "code=500 bytes=103 sha256first32=2a4a162b189cff4822e5b716f2a0b28c gateB signin_not_configured=1 — the same body sha as dolphin, an independent surface on the same branch"
+      },
+      "whereObserved": "FETCHED FROM OUTSIDE THIS HOST, in the same Cloud Build runs as GATE A, from PROBE_HOST 136.67.47.197 (pre-repoint) and 136.69.161.78 (post-repoint).",
+      "bothDirections": "F2 FIRED IN BOTH DIRECTIONS. The marker is present on the running DO app (500, sha 2a4a162b) and absent on the GCP original AND on the same DO app before the repoint (404, sha 51d0a9e3). A deploy message is not used as evidence anywhere in this gate.",
+      "theMarkerAlsoServedAnUnexpectedPurpose": "Because it is served only by main and not by the GCP original, it doubles as an origin discriminator that does not depend on an edge header — useful if the operator leaves the ruled hostname proxied through Cloudflare, where server/cf-ray would be identical on both sides."
+    },
+
+    "gateC": {
+      "verdict": "PASS",
+      "payloadIdentical": [
+        { "path": "/", "gcp": "145758 bytes sha256 018f27bdcf185bbb296584e21bde3d5b", "dolphin": "145758 bytes sha256 018f27bdcf185bbb296584e21bde3d5b", "uat": "145758 bytes sha256 018f27bdcf185bbb296584e21bde3d5b" },
+        { "path": "/app.js", "gcp": "131149 bytes sha256 a8e28c499a4f076610098207bbe1b7a8", "dolphin": "131149 bytes sha256 a8e28c499a4f076610098207bbe1b7a8", "uat": "131149 bytes sha256 a8e28c499a4f076610098207bbe1b7a8" },
+        { "path": "/health", "gcp": "134 bytes sha256 5cbc72925ad1113618074a78f6422736", "dolphin": "134 bytes sha256 5cbc72925ad1113618074a78f6422736" },
+        { "path": "/api/lenses/city-manager/compose?cityKey=template-city&parcelNodeId=48021:000000", "gcp": "993 bytes sha256 8150650dad96a214d3dc13ff06530411", "dolphin": "993 bytes sha256 8150650dad96a214d3dc13ff06530411" }
+      ],
+      "framingDiffers": {
+        "gcpSmallBody": "server=Google Frontend contentLength=21 transferEncoding= (empty) — Cloud Run set an explicit Content-Length on the 21-byte 404",
+        "dolphinSameBody": "server=cloudflare contentLength= (empty) transferEncoding=chunked — the IDENTICAL 21 bytes over chunked framing, no Content-Length"
+      },
+      "reading": "The same bytes travel over different transport framing and read as a divergence to a naive comparison. Classified separately, as rule 11 requires: payload sha256 equal across origins, framing not equal, and the framing difference is NOT a content difference.",
+      "crlfPropertySurvives": "This is also the proof that step 1's fix reached the customer surface: the served / and /app.js sha256 on the DO app equal the GCP original's byte-for-byte, and equal the sha256 of the web/ blobs I verified on origin/main. Note that this test FAILED on the first repoint (144003 / 127885) and only passed after the stale-commit fix — the gate was able to fire, which is the property DEV-PROCESS requires of a gating indicator."
+    },
+
+    "gateD": {
+      "verdict": "PASS",
+      "outboundDependencyExercised": "GET /api/lenses/city-manager/compose?cityKey=template-city&parcelNodeId=48021:000000 makes a server-side call to ${HAUSKA_RETRIEVAL_URL}/property-nodes/<id>/atom-chain with a bearer key (src/compose.mjs readAtoms), and the app reports the upstream's answer in each atom group's basis field.",
+      "gcpBasis": "\"basis\":\"retrieval auth refused\";\"basis\":\"files auth refused\";",
+      "dolphinBasis": "\"basis\":\"retrieval auth refused\";\"basis\":\"files auth refused\";",
+      "reading": "IDENTICAL basis on both origins. 'retrieval auth refused' is returned by the app only when the upstream answered with 401 or 403 — so hauska-retrieval-api ANSWERED a DigitalOcean-originated request, and so did the smart-files backend. A third-party WAF blocking DigitalOcean IP ranges would have produced a different class here (a timeout or an HTTP 5xx, or a connection failure) rather than an auth refusal.",
+      "noSecondHostControlNeeded": "Rule 7's per-IP WAF concern requires a second-host control only IF an outbound call fails. Nothing outbound failed, so no control was run and none is claimed. Stated as a reason rather than omitted.",
+      "honestLimit": "The app's bearer key is evidently not accepted by that upstream for this endpoint on EITHER origin, which is a pre-existing condition of the key/endpoint pair, not something this cutover introduces. The gate is about reachability and answer, and both are proven identical."
+    },
+
+    "databaseConnectivity": {
+      "verdict": "PASS, and it is the strongest form of step 2",
+      "evidence": "GET /health on the GCP original and on dolphin-app return the SAME 134 bytes: {ok:true,product:smartcity-dashboards,cityPacks:tenant-packs-not-repos,packsStore:neon,db:connected,name:neondb}",
+      "reading": "dolphin-app running main on DigitalOcean is connected to its Neon store — packsStore is neon, not the in-memory fallback, and db:connected. Step 2 is therefore satisfied with production-shaped configuration, not merely with env stripped."
+    }
+  },
+
+  "gcpOriginalUnmodified": {
+    "readAt": "2026-09-17T22:42:48Z",
+    "latestCreatedRevisionName": "smartcity-dashboards-00074-sil",
+    "latestReadyRevisionName": "smartcity-dashboards-00074-sil",
+    "percent100TrafficEntry": "smartcity-dashboards-00074-sil",
+    "generation": 75,
+    "readyCondition": "True, lastTransitionTime 2026-09-15T01:09:01.272958Z",
+    "reading": "Identical to the readings taken at the start of this lane. No deploy, no traffic change, no scale-to-zero, no tag touched. The rollback path is intact.",
+    "pinnedByRevisionNameTrap": "Respected: every read of this service was by field name from --format=json. No positional formatter was used for any decision on this service."
+  },
+
+  "step4DeployOnPushDecision": {
+    "decision": "KEEP DISABLED",
+    "currentState": "deploy_on_push is ABSENT from services[0].github on BOTH dolphin-app and d12-main-uat, so no branch push deploys anything.",
+    "reasons": [
+      "The dispatch's default is 'keep it DISABLED unless you find a reason to change it', and I found no such reason.",
+      "Shipping stays a deliberate act: with it enabled every merge to main becomes a production deploy of the customer dashboards surface, which is a much larger change than it looks.",
+      "This lane produced direct evidence against automating it: when DigitalOcean resolved branch main for an ordinary manual spec update it picked a STALE commit (f776b4bf, pre-CRLF) and reported SUCCESS. A human-triggered deploy at least has a moment where the resolved commit can be read back. Automating the trigger removes that moment without removing the staleness.",
+      "GitHub workflows in this repo carry zero deploy references (one workflow, ci.yml, jobs test and a11y), and there are zero Cloud Build triggers in the org's projects, so nothing else in the fleet would deploy on merge either. Enabling it here would be the only auto-deploy path in the fleet."
+    ]
+  },
+
+  "step5DnsRecordsHandedOver": {
+    "status": "PREPARED, NOT EXECUTED, and the app-side domain was deliberately NOT attached — see why below.",
+    "hostname": "app.smartcityos.io",
+    "currentDnsState": "NO A RECORD. Resolve-DnsName app.smartcityos.io returns nothing. The zone smartcityos.io resolves to Cloudflare (162.159.140.98, 172.66.0.96) for the apex and www.",
+    "recordsToHandOver": [
+      { "type": "CNAME", "name": "app", "target": "dolphin-app-y4ixf.ondigitalocean.app", "ttl": "Auto", "proxy": "DNS only (grey cloud) until the certificate is issued" }
+    ],
+    "whyThatTarget": "dolphin-app's default_ingress is https://dolphin-app-y4ixf.ondigitalocean.app, read from the DigitalOcean API. See the caveat below: this is the DO-idiomatic target and it is NOT yet confirmed against DigitalOcean's own per-domain expectation, because confirming it requires adding the domain to the app.",
+    "whyTheDomainWasNotAttached": "Handing over an EXACT record and attaching the domain are in tension. Adding app.smartcityos.io to the app is what makes DigitalOcean state the target it wants, and it is also what starts certificate retries against a name that does not resolve — which would fire this app's own configured DOMAIN_FAILED alert at the operator for a hostname they have not yet created. The dispatch says supply the records and WAIT, and that DNS is the operator's act, so the app-side half of the flip was held rather than taken. Flagged as the one uncertainty in the handover.",
+    "theTwoPartFlip": "Step 6 is two actions, not one: (1) add app.smartcityos.io to dolphin-app's domains and read back the target DigitalOcean names, then (2) create the DNS record above. Doing (2) without (1) points the name at DigitalOcean with nothing registered to answer for it."
+  },
+
+  "step6Bake": {
+    "status": "NOT STARTED",
+    "why": "The bake starts when customer traffic moves to the DO app, and that move is the operator's DNS act in step 5. app.smartcityos.io does not resolve, so there is no bake window to observe yet. Stated rather than filled with a placeholder.",
+    "gcpRequestCountBaseline": {
+      "value": 286,
+      "howRead": "Monitoring API v3 timeSeries, metric.type=run.googleapis.com/request_count, resource.labels.service_name=smartcity-dashboards, summed across all returned series and points.",
+      "series": 4,
+      "points": 583,
+      "window": "2026-09-16T10:32:00.001Z .. 2026-09-17T22:46:00Z",
+      "attribution": "Every series carries revision_name=smartcity-dashboards-00074-sil, i.e. the count belongs to the serving revision and to no other."
+    },
+    "whyTheCountIsNotARecordByItself": "It is a pre-cutover baseline, not a bake measurement. The bake reading must be taken over the window AFTER the operator's DNS act, and this baseline is what it will be compared against. Recording a count without that framing would be exactly the substitution the dispatch forbids."
+  },
+
+  "probeArtifactForThisLane": {
+    "artifact": "_inbox/2026-09-17_224735_surface_probe.json",
+    "producedBy": "node --use-system-ca scripts/surface-probe.mjs --allow-unmeasured, run from P:/seat-worktrees/d12-dashboards-do-cutover/doc_repo",
+    "ranAt": "2026-09-17T22:47:35.918Z",
+    "docRepoHead": "e24cd21e",
+    "source": "live",
+    "tally": "PASS 4 / FAIL 1 / UNMEASURED 34",
+    "pathNote": "Written by the instrument's own ROOT to this lane's SEAT worktree _inbox, because the script was invoked from the seat worktree's own scripts/ directory. The instrument's convention and the dispatch's path rule therefore agree here and no deviation is needed — unlike the engine-deploy lane, whose instrument was run from P:/doc_repo.",
+    "theFail": "P-154, plus findings FIGURE-IN-PAYLOAD on 48021:34049 and 48021:33223 and WRONG-PARCEL on 48021:33223. All pre-existing and none caused by this cutover.",
+    "predicateDebt": "STATED PLAINLY: scripts/surface-probe.mjs carries no D-12 row. Its legs cover P-151 through P-241 and P-304; D-12 is an operations row in OPS-25 and is not in the instrument's ROWS map. The tally above decides NEITHER D-12 nor any part of it. The artifact is cited because the close skeleton requires one and because its legs measured the live customer surface this cutover moves — not because it grades this row."
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "leaveBehind": [
+    "GATE B's marker is a 500 body on GET /auth/sign-in, not a deploy message.",
+    "Any future repoint of dolphin-app must have its services[0].source_commit_hash read back; a SUCCESS deploy can check out a stale commit.",
+    "The probe artifact does not decide D-12 and says so."
+  ],
+  "leave_behind": [
+    "GATE B's marker is a 500 body on GET /auth/sign-in, not a deploy message.",
+    "Any future repoint of dolphin-app must have its services[0].source_commit_hash read back; a SUCCESS deploy can check out a stale commit.",
+    "The probe artifact does not decide D-12 and says so."
+  ]
+}

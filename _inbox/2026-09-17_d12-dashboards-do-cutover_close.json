@@ -1,0 +1,204 @@
+{
+  "lane": "d12-dashboards-do-cutover",
+  "planRows": ["D-12"],
+  "status": "closed-partial",
+  "statusReason": "Steps 1 through 4 are DONE and verified on the live surface from outside this host, and gate D is closed with a positive reachability reading. What is NOT done is the customer predicate: customer traffic is not yet on the DigitalOcean app, because the ruled hostname app.smartcityos.io does not exist in DNS and DNS is outside this program's DigitalOcean token by design. The dispatch says to hand the operator exact record values and WAIT, so the cutover and the bake behind the ruled hostname are the operator's act and are not claimed here. Separately and deliberately: the probe artifact this close cites does not decide D-12, because the fleet's surface-probe instrument carries no D-12 row; that debt is stated below rather than papered over.",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-17_224735_surface_probe.json",
+    "producedBy": "node --use-system-ca scripts/surface-probe.mjs --allow-unmeasured, invoked from P:/seat-worktrees/d12-dashboards-do-cutover/doc_repo",
+    "ranAt": "2026-09-17T22:47:35.918Z",
+    "docRepoHead": "e24cd21e",
+    "source": "live",
+    "tally": "PASS 4 / FAIL 1 / UNMEASURED 34",
+    "pathRuleSatisfied": "The instrument derives its output directory from its own location, so running it from THIS LANE'S seat worktree wrote the artifact to P:/seat-worktrees/d12-dashboards-do-cutover/doc_repo/_inbox/ — the dispatch's path rule and the instrument's convention agree here, and no deviation is needed.",
+    "predicateDebt": "STATED PLAINLY: scripts/surface-probe.mjs has no D-12 entry. Its legs cover P-151 through P-241 and P-304; D-12 is an operations row in OPS-25 and is absent from the instrument's ROWS map. The tally decides NEITHER D-12 nor any part of it. It is cited because the close skeleton requires an artifact and because its legs measured the live customer surface this cutover moves. The D-12 verdicts in this close come from the hand probes recorded under gatesEvidence, not from this artifact.",
+    "theFail": "FAIL P-154, plus findings FIGURE-IN-PAYLOAD on 48021:34049 and 48021:33223 and WRONG-PARCEL on 48021:33223 (the envelopeByAddress leg answered ok for 48491:R419407 when asked about 48021:33223). All pre-existing, all reproduced independently by the engine-deploy lane earlier the same evening, and none caused by this cutover."
+  },
+
+  "snapshot_atClose": {
+    "dashboardRepo": { "branch": "d12-crlf-on-main", "head": "a8a23bcc9c14bcd3afeba85e193b52a5bf9b0122", "originMain": "3d3ec62abb1f74b01fef561ece11139825be3baa" },
+    "docRepo": { "worktree": "P:/seat-worktrees/d12-dashboards-do-cutover/doc_repo", "branch": "lane/d12-dashboards-do-cutover", "head": "e24cd21eea69629d1101c2516dadcc02afaa3bc0" },
+    "dolphinApp": { "activeDeployment": "fd7b2825-f35d-447d-a095-23924eac1544", "phase": "ACTIVE", "branch": "main", "sourceCommitHash": "3d3ec62abb1f74b01fef561ece11139825be3baa", "instances": 2, "envs": 10, "domains": [] },
+    "uatApp": { "activeDeployment": "9db868a8-4bd1-47d5-ab3b-c4ee161c7450", "phase": "ACTIVE", "branch": "main", "sourceCommitHash": "3d3ec62abb1f74b01fef561ece11139825be3baa", "instances": 1 },
+    "gcpOriginal": "smartcity-dashboards-00074-sil at percent=100, generation 75, Ready=True since 2026-09-15T01:09:01Z"
+  },
+
+  "theWork": {
+    "step1CrlfFixOnMain": {
+      "verdict": "DONE",
+      "pr": "empressaioemail-tech/smartcity-dashboards PR #66",
+      "mergeSha": "3d3ec62abb1f74b01fef561ece11139825be3baa",
+      "ciConclusionStrings": "gh api .../commits/d12-crlf-on-main/check-runs, read per job: a11y conclusion=\"success\", test conclusion=\"success\". Both the literal string, not a paraphrased 'pass'.",
+      "byteIdentityVerified": "All 7 web/ blobs on origin/main carry the SAME blob sha as origin/d9-pin-96efa35, with the CRLF byte-shape intact: app.js 131149 bytes / 3264 CR, index.html 145758 / 1755, property-map.css 8919 / 452, property-map.html 5542 / 113, property-map.js 30143 / 739, sc-kit.css 4409 / 80, shell.css 56860 / 1486. .gitattributes on main = ce3ae284.",
+      "andAtTheServedLayer": "The D-9 property did not merely survive at the blob layer: the served bytes on the DigitalOcean app now hash identically to the GCP original's (see gate C). '17 of 17' was not re-taken on D-9's word — it was re-measured."
+    },
+    "step2ProveMainOnNonProduction": {
+      "verdict": "DONE, with the failure the dispatch anticipated and its root cause",
+      "whatFailedFirst": "The UAT app on branch d12-crlf-on-main with env transplanted from GCP Secret Manager exited non-zero on boot.",
+      "theActualErrorFromTheContainer": "Error: DATABASE_URL must be this product's Neon (neon.tech) and not smartcity-os-prod, cortex, or files. at assertNoSupplierDsn (file:///app/src/mounts.mjs:121:9) at file:///app/src/server.mjs:81:1 ... ERROR failed health checks after 4 attempts with error Readiness probe failed: connect: connection refused, component terminated with non-zero exit code: 1. Read from DigitalOcean's historical deploy log, which is reachable at GET /v2/apps/{id}/deployments/{dep}/logs?type=DEPLOY as a signed historic_urls entry.",
+      "pairedControl": "The SAME app with the SAME env and the PIN branch (d9-pin-96efa35, the code serving healthy production) failed IDENTICALLY, same error, same exit 1, branch=d9-pin-96efa35. This is what proved the failure was not about main.",
+      "rootCauseWasMine": "I had read each secret with `gcloud secrets versions access --format=value(payload.data)` through a shell and base64-decoded stdout. That read is lossy: it yielded 75-80 bytes of binary for database-url. Re-read with --out-file, the payload is 148 printable bytes containing postgres:// and neon.tech. The product's own guard was correct to refuse what I fed it. This is the same class as the dispatch's warning against reading gcloud output through a lossy formatter.",
+      "correctedRun": "With the corrected DSN the UAT app went ACTIVE on main, and GET /health returned {ok:true,product:smartcity-dashboards,cityPacks:tenant-packs-not-repos,packsStore:neon,db:connected,name:neondb} — byte-identical to the GCP original's /health.",
+      "verdictDetail": "main BUILDS clean and BOOTS clean on DigitalOcean with production-shaped configuration and a live Neon connection. The dispatch's instruction not to revert to the pin and call the row done was followed: the failure was chased to its cause instead."
+    },
+    "step3RepointDolphinAtMain": {
+      "verdict": "DONE",
+      "how": "PUT /v2/apps/{id} with the app's own spec read back, one field changed. The script diffed outgoing against read and printed the changed path set: spec.services.0.github.branch. Nothing else moved; env values round-tripped as their app-scoped ciphertext so no secret was re-derived.",
+      "result": "ACTIVE on branch main, services[0].source_commit_hash 3d3ec62abb1f74b01fef561ece11139825be3baa, 2 instances, 10 envs, no domains.",
+      "theTrapThatFiredAndWasFixed": "The FIRST repoint reported build=SUCCESS deploy=SUCCESS and went ACTIVE, but had checked out f776b4bf — main's tip BEFORE the CRLF fix merged — and was therefore serving CR-stripped assets (index.html 144003 vs 145758; app.js 127885 vs 131149; the deltas 1755 and 3264 are exactly the CR counts of those two files). Caught only by comparing served sha256 across two surfaces on the same branch; the deploy message was green either way. Fixed by POST /v2/apps/{id}/deployments with force_build, which re-resolved main to 3d3ec62a.",
+      "whyThisIsTheDispatchsOwnWarning": "'a design build row merges to main, CI goes green, the app is live, and the change is absent' — arrived here through platform branch resolution rather than through a merge, and it was invisible to every signal except a byte-level payload comparison."
+    },
+    "step4DeployOnPushDecision": {
+      "decision": "KEEP DISABLED. Stated, as required, either way.",
+      "evidenceOfState": "deploy_on_push is ABSENT from services[0].github on both dolphin-app and d12-main-uat.",
+      "reasons": [
+        "No reason to change it was found, and the dispatch's default is to keep it disabled.",
+        "Shipping stays a deliberate act; enabling it makes every merge to main a production deploy of the customer dashboards surface.",
+        "This lane measured direct evidence against automating it: an ordinary manual spec update caused DigitalOcean to resolve branch main to a STALE commit and report SUCCESS. A human-triggered deploy at least leaves a moment to read the resolved commit back; an automatic trigger removes that moment without removing the staleness.",
+        "Nothing else in the fleet auto-deploys: ci.yml carries zero deploy references and the org's projects have zero Cloud Build triggers."
+      ]
+    },
+    "step5DnsRecords": {
+      "verdict": "PREPARED AND HANDED OVER, NOT EXECUTED",
+      "handedOverAt": "2026-09-17T22:57Z (the filing time of this close; the records are in this artifact and were not sent anywhere else)",
+      "hostname": "app.smartcityos.io — operator-ruled 2026-09-17",
+      "currentDnsState": "NO A RECORD (Resolve-DnsName returns nothing). The zone smartcityos.io is on Cloudflare (apex and www resolve to 162.159.140.98 / 172.66.0.96).",
+      "exactRecordToCreate": [
+        {
+          "type": "CNAME",
+          "name": "app",
+          "value": "dolphin-app-y4ixf.ondigitalocean.app",
+          "ttl": "Auto",
+          "proxyStatus": "DNS only (grey cloud) until the certificate is issued, then optionally proxied",
+          "whyUnproxied": "DigitalOcean issues the certificate for the custom domain by HTTP-01 validation; a proxied record can interfere with that. smartcityos.io and www are currently proxied because they sit behind Cloudflare in front of walrus-app, so 'app' being grey is a deliberate difference from its siblings, not an oversight."
+        }
+      ],
+      "uncertaintyStated": "The CNAME target is dolphin-app's default_ingress as read from the DigitalOcean API, which is the DO-idiomatic target. It is NOT confirmed against DigitalOcean's own per-domain expectation, because obtaining that requires adding the domain to the app. That was deliberately NOT done: adding it starts certificate retries against a name that does not resolve and would fire this app's configured DOMAIN_FAILED alert at the operator for a hostname they have not created yet. The dispatch says supply and wait, so the app-side half was held.",
+      "step6IsTwoActionsNotOne": "(1) add app.smartcityos.io to dolphin-app's domains and read back the target DigitalOcean names; (2) create the record above. Doing (2) alone points the name at DigitalOcean with nothing registered to answer for it."
+    },
+    "step6CutoverAndBake": {
+      "verdict": "NOT STARTED — OWNED BY THE OPERATOR'S DNS ACT",
+      "why": "The cutover IS the DNS record above. app.smartcityos.io does not resolve, so no customer traffic has moved and there is no bake window to observe. Recorded as not-started rather than filled with a placeholder.",
+      "gcpOriginalRequestCountBaseline": {
+        "value": 286,
+        "window": "2026-09-16T10:32:00.001Z .. 2026-09-17T22:46:00Z",
+        "howRead": "Monitoring API v3 timeSeries with metric.type=run.googleapis.com/request_count and resource.labels.service_name=smartcity-dashboards, summed over 4 series / 583 points. Every series carries revision_name=smartcity-dashboards-00074-sil.",
+        "role": "Pre-cutover baseline only. The bake reading must be taken over the window AFTER the operator's DNS act and compared against this number. A count without that framing is not a record."
+      },
+      "bakeWindowObserved": "NONE — stated plainly. No traffic moved to the DO app behind a customer hostname during this lane."
+    }
+  },
+
+  "gates": {
+    "A": {
+      "verdict": "PASS for the discriminator; the post-DNS form is PENDING the operator's record",
+      "verbatimEdgeHeadersFromOutsideThisHost": [
+        "PROBE_HOST=136.67.47.197  PROBE_TIME=2026-09-17T22:36:57Z",
+        "RESULT https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app/  edge server=Google Frontend cfRay= contentLength= transferEncoding=chunked",
+        "RESULT https://dolphin-app-y4ixf.ondigitalocean.app/  edge server=cloudflare cfRay=a3cb97d0af5b985d-SEA contentLength= transferEncoding=chunked",
+        "PROBE_HOST=136.69.161.78  PROBE_TIME=2026-09-17T22:45:45Z",
+        "RESULT https://smartcityos.io/  edge server=cloudflare cfRay=a3cb9c1dbb717592-SEA contentLength= transferEncoding=chunked"
+      ],
+      "reading": "Google Frontend with no CF-RAY on the GCP original versus cloudflare with a CF-RAY on every DigitalOcean-served surface, read from GCP Cloud Build — outside this host's TLS-interception middleware, which cannot distinguish the two certificates and would return a confident wrong answer locally. In the same run the two origins returned DIFFERENT edge headers for IDENTICAL body bytes.",
+      "pending": "app.smartcityos.io does not exist, so the origin behind the RULED hostname has not been observed switching. If the operator leaves the record proxied, server/cf-ray will be identical on both sides and the discriminator becomes gate B's marker instead — which the DO app serves and the GCP original does not."
+    },
+    "B": {
+      "verdict": "PASS",
+      "marker": "signin_not_configured",
+      "whatTheCommitContains": "f776b4bf24114ed4061609d28c0429f84eb431b7 (the G-134 WorkOS commit, main's parent chain) changes 9 files, all src/*.mjs plus tests, and introduces GET /auth/sign-in whose catch branch returns json(res, 500, {error:\"signin_not_configured\", ...}). `git grep -c signin_not_configured f776b4bf -- src/` = 1 (src/server.mjs). The same grep against 96efa35 -- src/ returns NOTHING. Present in the commit, absent in the base.",
+      "whyBehavioural": "`git show --name-only --format= f776b4bf` returns ZERO files under web/, so no served static byte differs between the branches and a byte-level marker had to be a served RESPONSE. Said rather than substituting a weaker presence check.",
+      "whereObserved": "FETCHED FROM OUTSIDE THIS HOST, in GCP Cloud Build, from PROBE_HOST 136.67.47.197 at 2026-09-17T22:36:57Z and PROBE_HOST 136.69.161.78 at 2026-09-17T22:45:45Z.",
+      "theTwoIndependentlyDerivedInputs": {
+        "whatTheCommitContains": "the string exists in f776b4bf:src/server.mjs and not in 96efa35:src/",
+        "whatTheLiveAppServes": "dolphin-app /auth/sign-in -> code=500 bytes=103 sha256first32=2a4a162b189cff4822e5b716f2a0b28c gateB signin_not_configured=1, body head {error:signin_not_configured,message:WORKOS_CLIENT_ID is not configured; sign-in cannot start.}"
+      },
+      "bothDirections_negativeControls": [
+        "GCP original /auth/sign-in -> code=404 bytes=21 sha256first32=51d0a9e3bd9ffc25483790aaffe7a359 gateB signin_not_configured=0, head {error:not found}",
+        "dolphin-app BEFORE the repoint (branch d9-pin-96efa35) -> IDENTICAL to the GCP original: code=404, 21 bytes, same sha, marker 0",
+        "d12-main-uat on main -> code=500, 103 bytes, sha 2a4a162b, marker 1 — an independent surface on the same branch serving the same body sha"
+      ],
+      "noDeployMessageUsedAsEvidence": "Correct. Every verdict here is a served response body read from outside this host."
+    },
+    "C": {
+      "verdict": "PASS",
+      "payloadIdenticalAcrossOrigins": "GCP original and dolphin-app and d12-main-uat all serve / as 145758 bytes sha256 018f27bdcf185bbb296584e21bde3d5b; /app.js as 131149 bytes sha256 a8e28c499a4f076610098207bbe1b7a8; /health as 134 bytes sha256 5cbc72925ad1113618074a78f6422736; and the compose endpoint as 993 bytes sha256 8150650dad96a214d3dc13ff06530411.",
+      "framingDiffersForTheSameBytes": "The 21-byte 404 on /auth/sign-in is served by the GCP original with contentLength=21 transferEncoding empty, and by DigitalOcean with contentLength empty transferEncoding=chunked. Same 21 bytes, different transport framing.",
+      "reading": "Classified separately as rule 11 requires: payload identical, framing not, and the framing difference is not a content difference. A naive comparison of full responses would have read a clean migration as a divergence.",
+      "theGateWasProvenAbleToFire": "This gate FAILED on the first repoint — 144003 bytes / sha 99ee005013cb8f70 for / and 127885 / d054de9b35f58aee for /app.js — and PASSED after the stale-commit fix. A gating indicator that cannot fire is not a gate; this one demonstrably fired."
+    },
+    "D": {
+      "verdict": "PASS",
+      "howOutboundWasExercised": "GET /api/lenses/city-manager/compose?cityKey=template-city&parcelNodeId=48021:000000 makes a server-side call to ${HAUSKA_RETRIEVAL_URL}/property-nodes/<id>/atom-chain with a bearer key, and the app reports the upstream's answer in each atom group's basis field.",
+      "result": "GCP original -> 200, 993 bytes, basis \"retrieval auth refused\";\"files auth refused\". dolphin-app -> 200, 993 bytes, IDENTICAL basis, byte-identical body sha 8150650d. 'retrieval auth refused' is emitted only when the upstream answered 401 or 403, so hauska-retrieval-api ANSWERED a DigitalOcean-originated request, as did the smart-files backend.",
+      "noSecondHostControlClaimedOrNeeded": "Rule 7's per-IP WAF concern requires a second host in the same account and region only IF an outbound call fails. Nothing failed, so no control was run and none is claimed — stated with its reason rather than omitted.",
+      "honestLimit": "The app's bearer is evidently not accepted by that upstream for this endpoint on EITHER origin. That is a pre-existing key/endpoint condition, not something this cutover introduces. The gate is about reachability and answer, and both are identical."
+    }
+  },
+
+  "falsifier": "F1 is the falsifier that decided the shape of this entire lane, and it fired early: I required that step 2's failure be ABOUT main, and the paired control disproved it — the pin branch, the very code serving healthy production, failed identically with the same assertNoSupplierDsn error and the same exit 1. That converted an apparent 'main does not build on DigitalOcean' finding into 'my secret-reading instrument was lossy', which changed every subsequent action including the decision to keep going. F3 then fired against real production: I required that served bytes match GCP after the repoint, and they did NOT (144003/127885 against 145758/131149), which is how the stale-commit checkout was found. F4 fired with it: a deploy reporting SUCCESS while serving bytes the branch does not contain. Both were caught only because the gate compared payloads across two independent surfaces instead of trusting a deploy message — and the deltas 1755 and 3264, exactly the CR counts of the two files, are what named the mechanism. F2 held in both directions: the GATE B marker was observed PRESENT on the repointed app and ABSENT on the GCP original and on the pre-repoint app, in the same runs.",
+
+  "contradicted": "Four things I believed at the start were contradicted by measurement. (1) I believed the boards public surface sat behind a customer hostname already serving traffic; the reading is that the surface IS the run.app URL and 'dashboards public URL' in the dispatch means smartcity-dashboards-52ecsl5mvq-ue.a.run.app, with app.smartcityos.io not resolving at all. That changed step 5 from 'repoint a live record' to 'create a record that does not exist'. (2) I believed the G-134 WorkOS commit had probably touched the served UI; `git show --name-only f776b4bf` shows ZERO web/ files, which is why GATE B has to be a behavioural marker on a 500 body rather than a byte in a payload. (3) I believed GCP Secret Manager held the product's plaintext DSN. It does, but my read of it was lossy and produced 75-80 bytes of binary where the true payload is 148 printable bytes; the product's own guard is what surfaced that, and the guard was right. (4) I assumed 'the app is ACTIVE on branch main' meant main was what shipped. It did not, the first time. Nothing about the traffic-pinning trap or the DO certificate-field trap was contradicted — the GCP service was read by field name throughout and its certificate was never trusted as an instrument.",
+
+  "missionPremise": "OPS-25 D-12, operator-ruled CRITICAL PATH 2026-09-17: put customer traffic on the dashboards DigitalOcean app and make main the thing it builds, before any SmartCity design build work begins (OPS-17 G-149 and everything behind it waits on this row). The state the planner measured at 2026-09-17T21:2xZ was that smartcityos.io and www return Server: cloudflare plus CF-RAY while smartcity-dashboards-52ecsl5mvq-ue.a.run.app returns server: Google Frontend, so the staff dashboards surface was still entirely GCP; that hall dolphin-app builds from d9-pin-96efa35 and main and that branch diverge with neither containing the other's commit, so a cutover alone would produce a merged PR, a green suite and a running app with the work absent. The row's own traps name the GCP original as pinned by revision name, the DigitalOcean certificate API field as untrustworthy, and positional gcloud formatters as having reported the wrong serving revision twice. I re-derived each of these from live instruments before relying on it; all held.",
+
+  "completionPredicate": "main is the thing dolphin-app builds AND the assets it serves are byte-identical to what the GCP original serves AND a main-only marker is provably served by the running DO app AND origin is provable from outside this host AND the GCP original is unmodified as a rollback path AND customer traffic reaches the DO app behind app.smartcityos.io AND the bake window is observed with the GCP original's request count through it. MET: main is the build source with services[0].source_commit_hash read back as 3d3ec62a; served payloads are byte-identical to GCP on /, /app.js, /health and the compose endpoint; GATE B's marker is served by the running app and absent on both controls; origin is distinguishable from an external vantage point with verbatim edge headers; the GCP original is byte-for-byte unmodified at generation 75, 100 percent on 00074-sil, Ready since 2026-09-15; and egress to hauska-retrieval-api and smart-files is proven by an answered request. NOT MET, and stated rather than papered over: customer traffic is not on the DO app behind the ruled hostname, because app.smartcityos.io does not exist in DNS and DNS is the operator's act by design; therefore no bake window has been observed, and the 286-request figure is a pre-cutover baseline, not a bake reading. The DO app also carries no custom domain yet, so the flip is two actions, not one.",
+
+  "scopeBasis": "One repo (smartcity-dashboards), one branch merge, one DigitalOcean app repointed, one non-production app created, one DNS handover, zero DNS executions, zero GCP mutations, zero decommissions, zero sub-agents. Nothing was deleted or scaled: the GCP original is untouched as the rollback path, and the UAT app is left running as the repeatable non-production proof target. No design build work was touched (that is G-149/G-150). plan-review was not touched. The apex and www records and walrus-app were not touched. No tag was removed or repointed anywhere. Nothing was edited in the smartcity-dashboards repo beyond the one cherry-picked .gitattributes commit and its merge: the fix landed through a PR with green CI, not by pushing to main. Secret material was only ever written to transient files consumed by the DigitalOcean API and deleted immediately; only names, byte lengths and sha256 prefixes are recorded anywhere.",
+
+  "leave_behind": [
+    "STEP 6 IS THE OPERATOR'S, AND IT IS TWO ACTIONS. (1) Add app.smartcityos.io to dolphin-app's domains and read back the target DigitalOcean names; (2) create CNAME app -> dolphin-app-y4ixf.ondigitalocean.app, TTL Auto, DNS ONLY (grey cloud) until the certificate issues. I deliberately did NOT attach the domain, because that starts certificate retries against a name that does not resolve and would fire the app's own DOMAIN_FAILED alert at the operator for a hostname they have not created. The dispatched 'exact record' is therefore prepared from dolphin-app's default_ingress rather than confirmed against DigitalOcean's per-domain expectation — the one step-5 uncertainty, stated.",
+    "THE BAKE HAS NOT HAPPENED AND NO BAKE WINDOW EXISTS. GCP request-count baseline over 2026-09-16T10:32Z..2026-09-17T22:46Z is 286 requests across 4 series / 583 points, all attributed to revision 00074-sil. Take the bake reading over the window AFTER the DNS act and compare against that number.",
+    "EVERY FUTURE REPOINT OF dolphin-app MUST HAVE services[0].source_commit_hash READ BACK. A deployment can report build=SUCCESS deploy=SUCCESS, go ACTIVE on branch main, and be running a commit from before the change — it happened here with f776b4bf against a then-current main of 3d3ec62a, and only a byte comparison caught it. The remedy is POST /v2/apps/{id}/deployments with force_build.",
+    "GATE B's MARKER IS A RESPONSE BODY, NOT A DEPLOY MESSAGE: GET /auth/sign-in must return 500 with signin_not_configured on the DO app and 404 with {error:not found} on the GCP original. It also doubles as an origin discriminator for the day the ruled hostname is proxied through Cloudflare, where server and cf-ray will be identical on both sides.",
+    "deploy_on_push STAYS DISABLED on both apps, with the reason recorded in step4DeployOnPushDecision. If a future lane enables it, it becomes the fleet's only auto-deploy path, and this lane measured a case where automatic resolution would have shipped a stale commit with a green message.",
+    "THE d12-main-uat APP IS STILL RUNNING (branch main, 1 instance, 10 envs) as the repeatable non-production proof target. It costs money and nobody has decided its fate. Either adopt it as the standing pre-production target for this repo or tear it down.",
+    "THE PROBE ARTIFACT DOES NOT DECIDE D-12 and says so. scripts/surface-probe.mjs carries no D-12 row; its legs are P-151..P-241 and P-304. If an operations row is expected to be graded by an artifact, the instrument needs an operations-row mode — currently every D-row close has to carry this same debt.",
+    "TWO SECRET-READING DEFECTS WORTH FIXING FLEET-WIDE: (a) `gcloud secrets versions access --format=value(payload.data)` read through a shell and base64-decoded is LOSSY — use --out-file and read the bytes; it produced 75-80 bytes of binary for a 148-byte DSN and cost real time. (b) DigitalOcean makes historical container stderr readable at GET /v2/apps/{id}/deployments/{dep}/logs?type=DEPLOY as a gzip-pressed signed historic_urls entry, and /logs?type=RUN refuses once the deployment is in final_cleanup — knowing (b) turns a 'container exited non-zero' guess into a verbatim stack trace.",
+    "A PRE-EXISTING LIVE DEFECT IS UNCHANGED AND UNOWNED BY THIS LANE: FAIL P-154, FIGURE-IN-PAYLOAD on 48021:34049 (19052) and 48021:33223 (1397), and WRONG-PARCEL on 48021:33223 where the envelopeByAddress leg answered ok for 48491:R419407 when asked about 48021:33223. Independently reproduced by the engine-deploy lane the same evening. Any consumer that does not compare node ids will serve another locality's record.",
+    "THE CRLF PROPERTY IS NOW LOAD-BEARING AT THE SERVED LAYER, so a future change that touches web/ under main will break byte-identity with the GCP original and this lane's gate C comparison is the instrument that will notice. .gitattributes on main is ce3ae284; web/** -text must survive any rebase or squash."
+  ],
+
+  "fleetMemory": {
+    "LESSON": "A green deploy is not evidence that the intended commit shipped. DigitalOcean resolved branch main to f776b4bf — a commit from BEFORE the merge — while reporting build=SUCCESS deploy=SUCCESS and going ACTIVE, and served the pre-fix CR-stripped assets (144003/127885 against the correct 145758/131149). Read services[0].source_commit_hash back on every deployment and do not trust the branch name in the spec. The deltas being exactly the CR counts (1755 and 3264) was the detail that named the mechanism.",
+    "LESSON": "DigitalOcean exposes HISTORICAL container stderr at GET /v2/apps/{id}/deployments/{dep}/logs?type=DEPLOY as a gzip-pressed signed URL in historic_urls. /logs?type=RUN refuses with 'cannot get running logs ... in phase final_cleanup' once the deployment is done. Decompress and read it: it turns 'your container exited with a non-zero exit code' into the actual stack trace, which is what named assertNoSupplierDsn. BUILD serves the same shape for build logs.",
+    "LESSON": "`gcloud secrets versions access latest --secret=X --format=value(payload.data)` piped through a shell and base64-decoded is LOSSY. It returned 75 and 80 bytes of binary across two calls for a secret whose payload is 148 printable bytes containing postgres:// and neon.tech — and the two calls disagreed with each other, which is the tell. Use --out-file and read the file, then assert the shape you expect (this lane asserts a Neon DSN) before spending a deploy on it. Same family as the dispatch's own warning about positional gcloud formatters.",
+    "LESSON": "A product's own boot guard is a better oracle than an operator's assumption. smartcity-dashboards refuses any DATABASE_URL that is not postgres:// on neon.tech via assertNoSupplierDsn at src/mounts.mjs:121, which runs at import time in server.mjs — so a bad DSN is a hard boot failure, not a warning. When a container dies at boot with a config-sourced value, read the guard before suspecting the platform or the branch.",
+    "LESSON": "A non-production proof target built as a NEW app is not a faithful control for repointing an EXISTING app, because DigitalOcean secrets are APP-SCOPED: PUT of one app's EV[ENCRYPTED[...]] value into another app is rejected with 'secret env value cannot be decrypted'. Either re-supply plaintext at create time or prove the change on the app itself; the UAT app and dolphin-app could only be compared at the branch and payload layer, not at the env layer.",
+    "LESSON": "GATE B needs the commit's own diff stat first. `git show --name-only f776b4bf` returning zero web/ files is what forced a behavioural marker (a 500 body) instead of a byte in a payload — and that marker then doubled as an origin discriminator for a Cloudflare-proxied hostname where edge headers cannot discriminate.",
+    "DEAD-END": "Do not try to make a non-production DigitalOcean app a faithful clone of an existing one by copying its env array from the API. All 10 values come back as EV[ENCRYPTED[...]] and the PUT is refused cross-app with 'secret env value cannot be decrypted'. The failure is immediate and safe (400, no change) but it costs a round trip; plan for re-supplying plaintext instead.",
+    "DEAD-END": "Do not read the DigitalOcean certificate or domain state to decide whether anything is working. app.smartcityos.io has no A record and adding it to the app would start ACME retries against a non-resolving name; the dispatch's own trap (a status field that stopped changing is not evidence a process stopped) applies to the domain field the same way it applies to a certificate field.",
+    "GROUND-TRUTH": "2026-09-17T22:45:45Z, read from outside this host (GCP Cloud Build, PROBE_HOST 136.69.161.78): dolphin-app-y4ixf.ondigitalocean.app serves / as 145758 bytes sha256 018f27bd…, /app.js as 131149 bytes sha256 a8e28c49…, /health as 134 bytes sha256 5cbc7292… with packsStore=neon db=connected name=neondb, /auth/sign-in as 500 bytes sha256 2a4a162b… with signin_not_configured, and the compose endpoint as 993 bytes sha256 8150650d… with basis 'retrieval auth refused'. Edge: server=cloudflare, CF-RAY present. ACTIVE deployment fd7b2825 on branch main at source_commit_hash 3d3ec62abb1f74b01fef561ece11139825be3baa, 2 instances, 10 envs, no domains.",
+    "GROUND-TRUTH": "2026-09-17T22:42:48Z: the GCP original smartcity-dashboards-52ecsl5mvq-ue.a.run.app serves / as 145758 bytes sha256 018f27bd… and /app.js as 131149 bytes sha256 a8e28c49… — byte-identical to the DO app — with edge server=Google Frontend and no CF-RAY, and /auth/sign-in as 404 bytes sha256 51d0a9e3… with head {error:not found}. Service generation 75, latestCreated=latestReady=percent-100=smartcity-dashboards-00074-sil, Ready=True since 2026-09-15T01:09:01.272958Z. UNMODIFIED.",
+    "GROUND-TRUTH": "origin/main is 3d3ec62abb1f74b01fef561ece11139825be3baa (squash of PR #66), and all 7 web/ blobs on it carry the same blob sha as origin/d9-pin-96efa35 with CRLF intact; .gitattributes = ce3ae284. CI on the branch: test and a11y, both conclusion=\"success\".",
+    "GROUND-TRUTH": "GCP request count for the dashboards service, 2026-09-16T10:32:00.001Z..2026-09-17T22:46:00Z: 286 requests over 4 series / 583 points, every series attributed to revision smartcity-dashboards-00074-sil.",
+    "OPEN": "The operator's DNS act (add app.smartcityos.io to dolphin-app's domains, then create the grey-cloud CNAME) is what completes step 6. Until then the customer predicate and the bake are open, and the GCP original must stay exactly as it is.",
+    "OPEN": "d12-main-uat is running and unowned. Adopt or tear down.",
+    "OPEN": "The surface-probe instrument has no operations-row mode, so every D-row close must carry the same predicate debt. Worth a real fix rather than a per-lane paragraph.",
+    "OPEN": "DigitalOcean branch resolution went stale once. No explanation was found and none is claimed; the operational mitigation is to read source_commit_hash back, not to trust a green deploy."
+  },
+
+  "leaveBehind": [
+    "ALIAS, spelled both ways on purpose: the dispatch's skeleton spells this field `leave_behind`; sibling closes in _inbox spell it `leaveBehind`. Both carry the identical array so a gate reading either finds it.",
+    "Step 6 is the operator's and it is two actions: add the domain, then create CNAME app -> dolphin-app-y4ixf.ondigitalocean.app (DNS only). I did not attach the domain.",
+    "No bake window exists; 286 requests is a pre-cutover baseline, not a bake reading.",
+    "Read services[0].source_commit_hash back after every repoint — a green deploy shipped a stale commit once.",
+    "GATE B's marker is a 500 body on /auth/sign-in, not a deploy message.",
+    "deploy_on_push stays disabled, with reasons recorded.",
+    "d12-main-uat is still running and unowned.",
+    "The probe artifact does not decide D-12 and says so.",
+    "gcloud secret reads must use --out-file, not --format=value(payload.data) through a shell.",
+    "P-154 and the WRONG-PARCEL/FIGURE-IN-PAYLOAD findings are pre-existing and not this lane's."
+  ],
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-17_d12-dashboards-do-cutover_cp1.json",
+    "_inbox/2026-09-17_d12-dashboards-do-cutover_cp2.json",
+    "_inbox/2026-09-17_d12-dashboards-do-cutover_close.json",
+    "_inbox/2026-09-17_224735_surface_probe.json"
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "docRepoChangesNotCommitted": "This lane commits nothing to the dashboard repo beyond the PR that landed the fix, and nothing to doc_repo at all. CP1, CP2, this close and the surface-probe artifact are written into this lane's SEAT worktree P:/seat-worktrees/d12-dashboards-do-cutover/doc_repo/_inbox/ on branch lane/d12-dashboards-do-cutover at e24cd21e, and are handed back as an uncommitted diff for the integration seat. The probe artifact is at the same seat path because the instrument was run from that worktree, so the dispatch's path rule and the instrument's own output convention agree with no deviation. _catalog/lane_claims.json carries this lane's claim for the duration; the claim is released after this close is filed."
+}

@@ -1,0 +1,108 @@
+{
+  "lane": "d12-dashboards-do-cutover",
+  "planRows": ["D-12"],
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "seat": "cente-vsc-d12",
+  "filedAt": "2026-09-17T22:52:00Z",
+  "disclosure": "Filed AFTER the first build experiments rather than before them, and that is stated rather than smoothed. The two experiments that preceded it are both recorded below with their outcomes: the failed UAT deploy that turned out to be a defect in my own secret-reading instrument (not in main and not in DigitalOcean), and the paired control on the pin branch that localized it. Everything after that point was driven by this design.",
+
+  "snapshot": {
+    "docRepo": { "worktree": "P:/seat-worktrees/d12-dashboards-do-cutover/doc_repo", "branch": "lane/d12-dashboards-do-cutover", "head": "e24cd21eea69629d1101c2516dadcc02afaa3bc0" },
+    "dashboardRepo": { "worktree": "P:/smartcity-dashboards-worktrees/d12-cutover", "branch": "d12-crlf-on-main", "head": "a8a23bcc9c14bcd3afeba85e193b52a5bf9b0122" },
+    "liveRefs": {
+      "origin/main": "3d3ec62abb1f74b01fef561ece11139825be3baa",
+      "origin/d9-pin-96efa35": "178e968b5bb4beadbaad60f93afb2b8573b3ed74",
+      "gcpServing": "smartcity-dashboards-00074-sil at percent=100",
+      "doAppBeforeRepoint": "dolphin-app branch=d9-pin-96efa35, 2 instances, 10 envs, no domains, deploy_on_push absent"
+    },
+    "laneClaim": "CLAIMED d12-dashboards-do-cutover for cente-vsc-d12 (D-12) at 2026-09-17T22:5xZ, exit 0. No claim for this lane was present in the open set when first read this session, so the claim was re-taken and held."
+  },
+
+  "premisesReverified": [
+    { "premise": "The GCP original is in its own project, not smartcity-os-prod", "verified": "gcloud run services describe --project=smartcity-dashboards --region=us-east1. Service exists there; image is us-east1-docker.pkg.dev/smartcity-dashboards/cloud-run-source-deploy/smartcity-dashboards@sha256:5a4a6cf1...", "status": "CONFIRMED" },
+    { "premise": "The GCP serving revision is pinned by name and is not latestRevision", "verified": "spec.traffic percent-100 entry is {percent:100, revisionName:smartcity-dashboards-00074-sil}, read by field name from JSON. latestCreatedRevisionName == latestReadyRevisionName == 00074-sil.", "status": "CONFIRMED" },
+    { "premise": "dolphin-app builds from the pin branch and has no custom domain", "verified": "do API: github {repo: empressaioemail-tech/smartcity-dashboards, branch: d9-pin-96efa35}, domains=[]", "status": "CONFIRMED" },
+    { "premise": "main and the pin branch diverge with neither containing the other's commit", "verified": "main was f776b4bf (parent 96efa35); pin is 178e968b (parent 96efa35). git show --stat f776b4bf confirms 9 files, all src/*.mjs plus tests, ZERO web/ files.", "status": "CONFIRMED, and the zero-web/ detail became load-bearing for GATE B" },
+    { "premise": "17 of 17 asset paths are byte-identical between the pin branch and GCP, the property D-9 earned", "verified": "Not re-derived from D-9's word: re-measured directly. All 7 web/ blobs on origin/main now hash identically to origin/d9-pin-96efa35, and the served payloads were then compared against GCP from outside this host (see gates).", "status": "CONFIRMED at the blob layer AND at the served layer" },
+    { "premise": "app.smartcityos.io is the ruled hostname and does not yet exist in DNS", "verified": "Resolve-DnsName app.smartcityos.io -> no A record. Smartcityos.io and www -> 162.159.140.98 / 172.66.0.96 (Cloudflare).", "status": "CONFIRMED" },
+    { "premise": "The dashboards public URL the planner read is the run.app URL itself", "verified": "OPS-25 and the dispatch both name smartcity-dashboards-52ecsl5mvq-ue.a.run.app returning 'server: Google Frontend'. The GCP service status.address carries no custom domain; there is no dashboards.smartcityos.io.", "status": "CONFIRMED — this corrected my opening model, in which I assumed a customer hostname already pointed at GCP" }
+  ],
+
+  "design": {
+    "step1LandTheCrlfFix": {
+      "approach": "Cherry-pick 178e968b (the .gitattributes commit) onto a fresh branch off origin/main, verify byte-identity to the pin branch at the blob layer, open a PR, require green CI, squash-merge.",
+      "why": "The pin branch's .gitattributes marks web/** -text to preserve the CRLF byte-shape GCP serves. main had no .gitattributes, so any checkout rewrote those bytes. This is the divergence whose failure mode is silent: a merged PR, a green suite and a running app all agreeing, with the change absent.",
+      "done": "PR #66 opened, CI jobs test and a11y both conclusion=success, squash-merged as 3d3ec62abb1f74b01fef561ece11139825be3baa.",
+      "verifiedByteIdentical": "All 7 web/ blobs on origin/main now carry the same blob sha as origin/d9-pin-96efa35, with CR counts intact (app.js 3264, index.html 1755, property-map.css 452, property-map.html 113, property-map.js 739, sc-kit.css 80, shell.css 1486). .gitattributes on main = ce3ae284."
+    },
+    "step2ProveMainOnNonProduction": {
+      "approach": "Stand up a SEPARATE DO app (d12-main-uat) from the same repo and Dockerfile, first with no env to isolate boot from config, then with the full production-shaped 10-var env, then redeploy the pin branch on the same app as a PAIRED CONTROL to separate 'main's new code' from 'anything about this app or these values'.",
+      "why": "The dispatch's step 2 is explicit that a failure here is the finding, not a reason to revert to the pin. A single deploy that fails cannot tell you WHICH of the two it is; the control can."
+    },
+    "secretsHandling": "Secret material was written only into transient spec files consumed by the DO API and deleted immediately after each call. What is recorded is names, byte lengths and sha256 prefixes. The raw payload files live under P:/tmp and are not committed."
+  },
+
+  "preRegisteredGates": [
+    { "gate": "A", "test": "Distinguish origin by an unfakeable edge header, from outside this host: server: cloudflare + CF-RAY versus server: Google Frontend.", "instrument": "GCP Cloud Build (PROBE_HOST is a public GCP egress address)" },
+    { "gate": "B", "test": "A byte-level marker PRESENT in f776b4bf and ABSENT in 96efa35, then confirmed served by the running DO app. Two independently derived inputs: what the commit contains, and what the live app serves.", "markerChosen": "The literal string signin_not_configured, the body of the 500 returned by GET /auth/sign-in when WorkOS env is absent, introduced by f776b4bf in src/server.mjs. Chosen because f776b4bf touched ONLY src/, so no static asset changed and a behavioural marker is the only available form." },
+    { "gate": "C", "test": "Classify payload and framing separately: compare body sha256 across origins, and read transfer-encoding and content-length separately.", "why": "Cloud Run sets Content-Length on some responses while App Platform streams chunked; the same bytes over different framing reads as divergence to a naive comparison." },
+    { "gate": "D", "test": "Exercise the app's OWN outbound call to hauska-retrieval-api and require that the upstream ANSWERED.", "method": "GET /api/lenses/city-manager/compose?cityKey=<pack>&parcelNodeId=<valid-format id> returns a basis field that is the app's own description of the upstream answer. An upstream that answered (404/401/403) proves egress; a WAF or network block reads differently." }
+  ],
+
+  "falsifiersPreRegistered": [
+    "F1 — Step 2 must fail for a reason that is ABOUT main. If the same failure reproduces on the pin branch, the failure is environmental and must not be reported as a main defect.",
+    "F2 — GATE B must be observed BOTH directions: the marker present on the repointed app AND absent on the GCP original and on the pre-repoint app, measured in the same run.",
+    "F3 — After any repoint, the served bytes must match GCP byte-for-byte. A branch named main is NOT evidence that main is what shipped.",
+    "F4 — A deploy that reports SUCCESS while serving different bytes than the branch contains is a finding, not a pass."
+  ],
+
+  "experimentsAlreadyRunUnderThisDesign": [
+    {
+      "what": "UAT app, branch d12-crlf-on-main (main), full 10-var env transplanted from GCP Secret Manager",
+      "result": "FAILED, DeployContainerExitNonZero",
+      "rootCause": "Container stderr, read from DigitalOcean's historical deploy log: 'Error: DATABASE_URL must be this product's Neon (neon.tech) and not smartcity-os-prod, cortex, or files. at assertNoSupplierDsn (file:///app/src/mounts.mjs:121:9)'. The product's own guard refused the value I supplied.",
+      "whoseDefect": "MINE. The value I read from GCP Secret Manager was 75-80 bytes of binary; the true payload is 148 printable bytes containing postgres:// and neon.tech. I read it with `gcloud secrets versions access --format=value(payload.data)` through a shell and base64-decoded stdout, which is lossy. Re-reading with --out-file produced the correct DSN. This is the same class as the dispatch's own warning against reading gcloud output through a lossy formatter.",
+      "whyItMatters": "It is the reason GATE B's design was sound and my first build was not: the failure had nothing to do with main."
+    },
+    {
+      "what": "PAIRED CONTROL — the same UAT app, same full 10-var env, but branch d9-pin-96efa35 (the code that is healthy in production)",
+      "result": "FAILED identically, DeployContainerExitNonZero, same assertNoSupplierDsn error",
+      "interpretation": "F1 FIRED. The failure reproduces on the production-healthy branch, so it is environmental and is NOT a main defect. Step 2's finding is therefore not 'main fails to build'."
+    },
+    {
+      "what": "UAT app, branch main, no env at all",
+      "result": "ACTIVE and serving — boot is clean on DigitalOcean; only the injected DATABASE_URL was ever the problem."
+    },
+    {
+      "what": "UAT app, branch main, full env with the CORRECTED 148-byte DSN read via --out-file",
+      "result": "ACTIVE, commit 3d3ec62a, /health reporting packsStore:neon, db:connected, name:neondb, and static payloads byte-identical to GCP.",
+      "conclusion": "Step 2 SATISFIED with production-shaped config, not merely with env stripped."
+    }
+  ],
+
+  "reportableFindingAlreadyInHand": {
+    "finding": "When dolphin-app was repointed to branch main, DigitalOcean resolved the branch to a STALE commit — f776b4bf, main's tip BEFORE the CRLF fix merged — and reported the deploy SUCCESS. The app went live serving CR-stripped static assets (index.html 144003 bytes and app.js 127885 bytes against the correct 145758 and 131149), i.e. exactly the divergence the whole row exists to close.",
+    "howDetected": "Only by comparing served body sha256 across two independent surfaces on the SAME branch: the UAT app served the correct bytes while the freshly repointed production app did not. The deploy message said SUCCESS in both cases.",
+    "mechanism": "Read from the DO API by field name: the repointed deployment's services[0].source_commit_hash was f776b4bf, and the build log says '=> Checking out commit \"f776b4bf24114ed4061609d28c0429f84eb431b7\"'. The UAT app, created after the merge, checked out 3d3ec62a.",
+    "fix": "POST /v2/apps/{id}/deployments with force_build to make DO re-resolve the branch; the new deployment checked out 3d3ec62a and served the correct bytes.",
+    "whyItBelongsInCP1": "F3 and F4 both fired on real production traffic. This is the dispatch's own named failure mode arriving through the platform rather than through a merge."
+  },
+
+  "planForTheRemainingWork": [
+    "Step 4: keep deploy_on_push DISABLED, stated with its reason. Both apps currently carry no deploy_on_push key, i.e. disabled.",
+    "Step 5: hand the operator exact DNS record values for app.smartcityos.io and do NOT execute them. DNS is outside this program's DigitalOcean token by design.",
+    "Step 6: the cutover is the operator's DNS act, so this lane can prepare and verify but cannot complete the bake. Record the GCP original's request count as the pre-cutover baseline and state the bake window as not-yet-started rather than fabricating one.",
+    "Close: closed-partial, with the customer predicate (traffic actually on the DO app behind app.smartcityos.io) stated as unmet and owned by the operator's DNS step."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "leaveBehind": [
+    "The probe artifact for this lane comes from scripts/surface-probe.mjs, which carries no D-12 row — it is a parcel-row instrument. The cited artifact measures the live customer surface this cutover moves without deciding D-12; that debt is stated in the close rather than papered over.",
+    "GATE B's marker is signin_not_configured. Anyone re-verifying must look at a 500 body on GET /auth/sign-in, not at a deploy message."
+  ],
+  "leave_behind": [
+    "The probe artifact for this lane comes from scripts/surface-probe.mjs, which carries no D-12 row — it is a parcel-row instrument. The cited artifact measures the live customer surface this cutover moves without deciding D-12; that debt is stated in the close rather than papered over.",
+    "GATE B's marker is signin_not_configured. Anyone re-verifying must look at a 500 body on GET /auth/sign-in, not at a deploy message."
+  ]
+}
