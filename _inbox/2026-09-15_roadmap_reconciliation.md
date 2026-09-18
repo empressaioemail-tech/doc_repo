@@ -93,11 +93,12 @@ nothing was built on it. Fund ledger and department spend are absent from every 
 the lens draws them as unaccounted, which is the honest state.
 
 **The order for Finance.** The `d14-d13-v1-reach` lane puts v1 `main` on `walrus-app` (D-14), then points
-the dashboards at `walrus-app` instead of the GCP copy of v1 (D-13). Then comes the `bastrop_tx` finance
-grant, which is G-159's leave-behind. After it, the G-156 lens shows the budget as measured with no lens
-change. G-162 fixes three v1 finance defects that G-159 found and left alone: a budget filter that
-counts "do not use" budgets, a clamp that turns a negative difference into zero, and a default tenant.
-It runs after D-14, so that D-14's repoint changes no behaviour.
+the dashboards at `walrus-app` instead of the GCP copy of v1 (D-13). **Both are now done.** Then comes the
+`bastrop_tx` finance grant, which is G-159's leave-behind. After it, the G-156 lens shows the budget as
+measured with no lens change. G-162 fixes three v1 finance defects that G-159 found and left alone: a
+budget filter that counts "do not use" budgets, a clamp that turns a negative difference into zero, and a
+default tenant. It runs after D-14, so that D-14's repoint changes no behaviour, and **D-14 has landed, so
+G-162 is COMPILED 2026-09-18 and awaiting hand-over.**
 
 **Permit revenue is wrong at the source, not just unreachable.** `mygov_fees` shows a 150 percent
 collection rate, because a fee listed in several report windows is counted once per window. Which window
@@ -131,7 +132,7 @@ GCP mount and needs re-scoping for DigitalOcean before it is dispatched, and it 
 `check.mjs` from G-148's lane rather than writing its own. G-155 (Smart Files) and G-150 (plan review)
 build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
 
-**What blocks it:** nothing, for the first build lane. G-153 can be compiled and handed over. The
+**What blocks it:** nothing, for the first build lane. **G-153 is COMPILED 2026-09-18 and awaiting hand-over.** The
 credential is not a blocker for any row here, and neither G-161 nor D-13 is any longer.
 
 **G-135's second parcel has an owner rather than being an orphan:** the operator folded it on 2026-09-18
@@ -172,8 +173,16 @@ different commits. G-150's close-out found the plan-review console fifteen days 
 
 Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried
 `g135-mint`, `g154-dev-services-live`, `d14-d13-v1-reach`, `g161-never-default-a-city`,
-`g142-citizen-lens` and `g147-record-search`. **Two are compiled and NOT yet handed over**:
-`g160-served-commit-parity` and `g148-design-instruments`. Neither has a claim, so neither is running.
+`g142-citizen-lens` and `g147-record-search`. **Four are compiled and NOT yet handed over**:
+`g160-served-commit-parity`, `g148-design-instruments`, and two compiled later the same day,
+`g153-fleet-police-lens` and `g162-v1-finance-honesty`. None of the four has a claim, so none is
+running. The two new ones were chosen from the rows rather than from preference: G-153's blocker D-12 is
+closed-partial and the roadmap's own precondition (G-161 and D-13 landed) is now met, and G-162's
+blocker D-14 has LANDED, which is exactly the condition its row set. They do not collide with each other
+or with the two already compiled: G-153 writes `smartcity-dashboards` and the two Fleet and Police design
+folders, G-162 writes `smartcity-os`, G-148 writes four other design folders, and G-160 writes
+`plan-review` and `smart-files`. **Both carry the current canon markers (v49001500 preamble), verified
+across all 40 of today's dispatches with zero mismatches**, so a hand-carry will not trip the canon gate.
 Every status below was read at source by the planner, not taken from a lane's report or from the fact
 that a dispatch was sent.
 
@@ -187,6 +196,8 @@ that a dispatch was sent.
 | `g147-record-search` | G-147 | **CLOSED-PARTIAL 2026-09-18.** Claim released. The planner re-ran its instruments: `check.mjs` exits 0 with all 18 predicate counts non-zero, `violate.mjs` catches 24 of 24 with boards restored, and the `records` block in `surface_coverage.json` flipped. Records search PASSES; Compass is DEFERRED, not dropped | `_design/smartcity-records-search/` drawn against `7487d7c0`; the applicant view adjudicated COVERED by the RATIFIED `smartcity-applicant-precheck` and not redrawn; the close records that no seat worktree was created, against the dispatch's preference |
 | `g160-served-commit-parity` | G-160 | **COMPILED, NOT YET HANDED OVER.** Unblocked, and it writes only in `plan-review` and `smart-files`, so it collides with nothing above | neither product reports its served commit today (both `GET /` only); both carry `web/vercel.json`; read at `plan-review` `99c156b` and `smart-files` `6d71bf3` |
 | `g148-design-instruments` | G-148 | **COMPILED, NOT YET HANDED OVER. Hold released 2026-09-18 at the operator's ruling.** Writes the four missing `check.mjs` files, and writes nothing in `_design/INDEX.md`. It is now the ONLY lane between the gate and exit 0 | the gate's R3 list of four, re-measured 2026-09-18T18:22Z; all four designs have build rows today; G-142's and G-147's instruments are the shape to match |
+| `g153-fleet-police-lens` | G-153 | **COMPILED 2026-09-18 EVENING, NOT YET HANDED OVER.** The first lens build, and the only one that may run: every lens renders into `web/app.js` and `web/index.html`, so G-152, G-151 and G-149 queue behind it and must not start in parallel. It also **inherits G-135's parcel 2**, the full-shell authenticated `bastrop_tx` probe that mounts the map iframe, which no lane has ever run; G-135 closes when this lane reports it | its named blocker D-12 is closed-partial and the deploy path moved further today (`app.smartcityos.io` serves `7487d7c0`); the operator-namespace blocker cleared 2026-09-17; the three live-mapper defects are quoted with file and line in the row, and the `check.mjs:154` `\bOPR-` extraction trap is named in the mission so it is not misread as a design defect |
+| `g162-v1-finance-honesty` | G-162 | **COMPILED 2026-09-18 EVENING, NOT YET HANDED OVER.** Three defects G-159 found in the production finance code and deliberately did not touch: the budget filter that lets DNU budgets count, the `Math.max(0, ...)` clamp that turns an impossible state into a clean zero, and the missing-tenant default to 1. Explicitly not in scope: which MyGov fee window is authoritative, and `getBnpApiKey()`, which is the only reason BNP answers | its blocker D-14 has LANDED, which is the exact condition the row set ("landing it first would make D-14's repoint change behaviour when it must change none"); each change is a bridge to prove on a non-production app under rule 4 |
 
 **A control that did not fire on the two lanes that are actually running.** `node scripts/lane-claim.mjs
 status` reports seven open claims, and **neither `d14-d13-v1-reach` nor `g161-never-default-a-city` is
@@ -227,6 +238,7 @@ rather than through `walrus-app` directly.
 |---|---|
 | ~~**Ship `main` to `dolphin-app`?**~~ **RULED YES 2026-09-18 (OPS-17 A-149).** **RULED YES 2026-09-18 (OPS-17 A-149) AND SHIPPED 2026-09-18T17:29Z (OPS-25 A-10).** The `d14-d13-v1-reach` lane holds no claim and filed no close, so the planner performed the ship as A-149's own named fallback: `dolphin-app` deployment `e98f127c` ACTIVE serving `7487d7c0` read back byte for byte, with the configured platform base in the same deploy. **Governed by nothing further.** D-13 stays LANDED and not CLOSED on its scope 5 bake | staff moving to v2 on the better surface: the work-order Subject cell no longer renders resident free text, and the finance route serves |
 | ~~Hand-carry the three dispatches~~ **DONE 2026-09-18.** Operator: *"i have already sent all three"* | nothing; M2 and M3 now wait on the lanes |
+| **Hand-carry four compiled dispatches** (`g160-served-commit-parity`, `g148-design-instruments`, `g153-fleet-police-lens`, `g162-v1-finance-honesty`) | M5's gate (G-148), M3's next lens and G-135's last unmeasured parcel (G-153), M2's finance honesty (G-162), and the console-vs-API control (G-160). All four are compiled, unclaimed and carry today's canon markers |
 | ~~G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`~~ **DONE 2026-09-18T14:49Z, your key never read.** The G-154 lane minted its OWN credential (`key_id 2510a3ff`) under A-118's precedent rather than using yours, so the pilot key stayed untouched | nothing; G-154 is regraded |
 | ~~**Housekeeping the G-154 proof leaves:** delete `P:\tmp\g154-hauska-key.txt` and revoke `key_id 2510a3ff`~~ **BOTH DONE 2026-09-18, verified at source.** `P:\tmp\g154-hauska-key.txt` is ABSENT and no other `g154` key material remains in `P:\tmp`. `2510a3ff` already read `revoked` when the planner read the census, so that lane filed its own key. | nothing; the plaintext credential is gone |
 | ~~**Decide the fate of two non-pilot `bastrop_tx` keys the mint's census found:** `acf2cf9f` and `2510a3ff`~~ **DECIDED AND EXECUTED 2026-09-18.** Operator: *"if we dont need these delete them dormant G-134 lane key"*. The planner revoked `acf2cf9f` with its own instrument (`_inbox/2026-09-18_planner_revoke_dormant_g134_key.mjs`, artifact `_inbox/2026-09-18_planner_revoke_dormant_g134_key.json`), which reads the admin key at point of use and never prints it, and which refuses unless the target is the exact expected `key_id`, is absent from a must-not-touch list (the pilot, the minted key, and the G-154 key), and is genuinely dormant. `acf2cf9f` last ran 2026-09-15T00:49:49Z, three days idle, so the dormancy condition held. `2510a3ff` was already revoked. **The `bastrop_tx` census is now the minted verification key `96e40316` plus the operator's own pilot, and nothing else.** Both keys were safe to remove because the G-135 verification key supersedes them for any future G-134 work, which is why nothing in flight breaks | nothing; the credential census is true rather than approximately true |
