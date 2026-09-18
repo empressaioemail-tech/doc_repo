@@ -14,6 +14,9 @@ related:
   - _decisions/2026-09-15_plan_review_role_gate_deferred.md
   - _decisions/2026-09-14_staff_identity_and_department_rbac.md
 sources:
+  - smartcity-dashboards origin/main 7487d7c0, read 2026-09-18T20:19Z by design-completion-gate.mjs
+  - _design/smartcity-flood-study, smartcity-map-dock, plan-review-departments and smartcity-overview-lens, read on disk 2026-09-18T20:19Z (the g148 lane's in-flight instruments, uncommitted)
+  - node scripts/govtech/smartcity-tracker.mjs, node scripts/govtech/design-completion-gate.mjs and node scripts/govtech/design-instrument-exits.mjs, all re-run 2026-09-18 (the gate reads 18 of 20 folders instrumented, zero findings, exit 0; the exits instrument reads 18 run, 4 failing, and the gate's exit 0 alongside it)
   - smartcity-dashboards origin/main 96fdafb and smartcity-os origin/main 1f0262f1, read 2026-09-18T15:09Z
   - smartcity-dashboards origin/main 7267c3f and smartcity-os origin/main a400f7be, read 2026-09-18 earlier the same day
   - _inbox/2026-09-18_planner_three_lane_verify.json (the planner's twice-run probe of all three lanes and the four deployed apps, 14:42Z and 15:09Z)
@@ -124,16 +127,24 @@ answers 200. **No close is filed for that lane**, so the row moves on the deploy
 own acceptance items and leave-behind are still owed.
 
 **The next lens is therefore UNBLOCKED**, because both things it was waiting on are now true: G-161 has
-landed and D-13's dashboards change is in `main` at `7487d7c0`. Lens rows run one at a time, because
-every lens renders in two shared files (`web/app.js`, `web/index.html`), and G-153 and G-152 also change
-the vendor mappers. The queue is G-153 (Fleet and Police, and it carries G-135's parcel 2), G-152
-(Public works, Fire and EMS), G-151 (Parks), then G-149 (the flood study). G-149's row still describes the
-GCP mount and needs re-scoping for DigitalOcean before it is dispatched, and it also INHERITS its
-`check.mjs` from G-148's lane rather than writing its own. G-155 (Smart Files) and G-150 (plan review)
-build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
+landed and D-13's dashboards change is in `main` at `7487d7c0`. **G-153 (Fleet and Police) is RUNNING and
+holding a claim**, and it carries G-135's parcel 2. Lens rows run one at a time, because every lens
+renders in two shared files (`web/app.js`, `web/index.html`), and G-153 and G-152 also change the vendor
+mappers.
 
-**What blocks it:** nothing, for the first build lane. **G-153 is COMPILED 2026-09-18 and awaiting hand-over.** The
-credential is not a blocker for any row here, and neither G-161 nor D-13 is any longer.
+**The queue, re-ordered on a measured dependency rather than on the row order (OPS-17 `A-154`).** The old
+order put G-149 (flood study) right after G-153, and it cannot go there: G-149 INHERITS its instrument,
+since its acceptance requires `_design/smartcity-flood-study/check.mjs` to exit non-zero on a planted
+violation and that file is G-148's deliverable, and G-148 still owns that folder and is mid-delivery. So
+the queue is **G-152** (Public works and Fire and EMS, COMPILED 2026-09-18 and queued behind G-153, whose
+two designs no running lane touches and whose instruments both exit 0 with non-zero matched-input counts as
+re-measured today), then **G-151** (Parks), then **G-149**. G-153 is in flight now, so none of the three may
+start until its close is filed. G-155 (Smart Files) and G-150 (plan review) build in their own repos and
+are closed. G-155 still owes a check on Bastrop's own files.
+
+**What blocks it:** nothing, for the running build lane. One lane at a time is the only constraint, and it
+is now the actual bottleneck: the queue is longer than the number of lanes that may run. The credential is
+not a blocker for any row here, and neither G-161 nor D-13 is any longer.
 
 **G-135's second parcel has an owner rather than being an orphan:** the operator folded it on 2026-09-18
 into the next lens BUILD lane (G-153, Fleet and Police, first in the queue above), because a full-shell
@@ -159,21 +170,68 @@ enumerates. **One new row came out of the ship's acceptance, G-163:** `firstdue/
 
 The design completion gate exits 0: every shipped nav surface is designed or excluded by a dated ruling.
 
-**What remains.** **The Citizen lens (G-142) and Records search (G-147) are DRAWN AND CLOSED as of 2026-09-18**, so both of the gate's R4 findings are gone. **G-148's hold is RELEASED (2026-09-18, `_decisions/2026-09-18_g148_hold_released.md`) and the lane is compiled but not yet handed over:** the gate's R3 names four designs past DRAFT with no adversarial read
-(`plan-review-departments`, `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`),
-and all four now HAVE build rows, so the hold's stated exemption ("designs with no build row") covered
-none of them. G-148 writes all four instruments and G-149 and G-157 inherit theirs rather than
-rebuilding them; G-142's and G-147's finished instruments are the shape to match, and both are proven
-able to fire (16 of 16 and 24 of 24 planted violations caught, respectively). G-160 is a control that fails a deploy when a product's console and its API serve
-different commits. G-150's close-out found the plan-review console fifteen days behind its API.
+**What remains.** **The Citizen lens (G-142) and Records search (G-147) are DRAWN AND CLOSED as of 2026-09-18**, so both of the gate's R4 findings are gone. **`g148` has since delivered its fourth instrument and the gate has gone GREEN** (OPS-17 `A-156`): at 2026-09-18T20:32:13Z it reads `20 design folders, with an instrument: 18`, zero findings under every rule, and `verdict: FINISHED`, `exit 0`. The progression inside one session was 14 of 20 with four R3 lines at the start, 17 of 20 with one at 20:19:39Z, and 18 of 20 with none at 20:32:13Z.
 
-**So the gate has one lane standing between it and exit 0:** G-148, for its four R3 findings. **Both of its R4 findings are gone**, and that is measured rather than recalled: the gate now reads `uncovered: 0` and reports zero R4 lines, where it reported `lens:citizen` and `work:records` this morning.
+**And the green gate is the problem, not the conclusion.** All four instruments `g148` delivered FAIL, measured at
+the same disk state immediately after the gate exited 0 (the table is below, and `A-156` carries the full
+reading). `smartcity-flood-study` is the one worth using as the example: its `check.mjs` exits **1** on the
+shipped boards, because the design states that naming a depth by return period is unavailable since it "would
+need a local rainfall atlas nobody has cited yet", while the engine already carries `rainfallSource:
+'noaa-atlas14'`, cites NOAA Atlas 14 seven times, and renders the default through
+`returnPeriodYearsForDepthInches` as "100-yr (NOAA Atlas 14)". Its `violate.mjs` catches 30 of 30 planted
+violations.
+
+**The gate's R3 rule tests that an instrument EXISTS, never that it passes.** R3 asks whether a folder past DRAFT has a `check.mjs` and answers by testing `hasCheck` (`design-completion-gate.mjs:157-163`), reading no exit code. Its own wording is honest about this, printing "carries an instrument", but `exit 0` from an artifact named `design-completion-gate` reads as "the designs are clean" and four of them are not. This is the concrete instance of why `A-152` ruled that G-146 does not close when G-148's instruments land. **Recommended and not done, because carding is operator-ruled:** one row for the four design repairs plus a gate that reports each instrument's exit code, since the repair and the instrument that proves it are the same unit of work.
+
+**Why the flood-study finding is not a one-line copy fix.** G-149's own row records the contradicting
+fact: G-125's unowned leave-behind is that NOAA's Atlas 14 HDSC endpoint changed payload shape,
+`parsePfdsDepthTable` never matches, and every no-parameter study in every county silently uses Bastrop's
+9.5in regional default regardless of location. So the engine cites NOAA Atlas 14 as though it were a live
+value while that citation is produced by a broken parser. The design's stated reason is wrong and its
+conclusion may still be right, and the two facts have to be reconciled together: a design-only correction
+would entrench the parser defect by making the page agree with a value the parser invents. G-149's mission
+carries both, which is a second reason it is not in the current wave.
+
+**The gate then went GREEN inside the same session, and that is the moment that matters.** As `g148` delivered
+its fourth instrument, `design-completion-gate.mjs` reached `exit 0` and `verdict: FINISHED` at
+2026-09-18T20:32:13Z, reading `20 design folders, with an instrument: 18`, zero findings of any rule, and
+`uncovered: 0`. **The two folders without an instrument are `plan-review` and `smartcity-place-tab`, and both
+are SUPERSEDED by dated rulings, so neither requires one** (R3's instrument-required set is exactly
+`RATIFIED`, `APPROVED` and `IN REVIEW`). That exemption is correct.
+
+**But all four instruments the gate counted FAIL, and they are the four `g148` delivered** (OPS-17 `A-156`).
+Run at the same disk state, immediately after the green gate:
+
+| Instrument | Exit | Its finding |
+|---|---|---|
+| `smartcity-overview-lens` | **1** | `Sparse.dc.html` is granted 1 of 10 sources and still promotes Connections above the decision |
+| `smartcity-flood-study` | **1** | the rainfall-atlas claim (see above) |
+| `smartcity-map-dock` | **1** | `Expand.dc.html`: the tab nav drops "Licenses" |
+| `plan-review-departments` | **1** | the design states the product has "no department model at all", where the README's source-state section says otherwise |
+| `smartcity-fleet-lens` | 0 | 2 artboards pass (`g153`'s, in flight) |
+| `smartcity-police-lens` | 0 | 4 artboards pass (`g153`'s, in flight) |
+
+**These are design defects and not instrument defects, proven rather than assumed:** each failing folder's
+`violate.mjs` exits 0, catching its planted violations on a real artboard (`plan-review-departments` 17 of 17)
+and confirming that a repaired copy passes with a matched-input count. **And the whole reading is now one
+instrument rather than a hand-run loop:** `node scripts/govtech/design-instrument-exits.mjs` prints every
+instrument's exit code beside the gate's verdict and derives that ownership itself, with a 6 of 6 self-test
+(OPS-17 `A-157`).
+
+**In fairness to the gate, its own wording does not overclaim.** It prints "every design past DRAFT **carries
+an instrument**", which is exactly what it tested and exactly what is now true. The defect is that `exit 0`
+from an artifact named `design-completion-gate` will be read by every downstream consumer as "the designs
+are clean", and four of them are not. **So four designs now carry an open, reproducible finding, and no row
+owns them.** The repairs are design work in `doc_repo` (planner-owned), and each is an adjudication rather
+than a typo: whether the flood study may name a return period at all depends on G-125's broken parser;
+whether the map dock's tab nav should carry Licenses is a navigation question; and whether the product has a
+department model is a factual question about `smartcity-os` that A-145 already answered in the affirmative.
 
 ## In flight
 
 Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried
 `g135-mint`, `g154-dev-services-live`, `d14-d13-v1-reach`, `g161-never-default-a-city`,
-`g142-citizen-lens` and `g147-record-search`, and **hand-carried the last four on 2026-09-18**:
+`g142-citizen-lens` and `g147-record-search`, and **hand-carried the next four on 2026-09-18**:
 `g160-served-commit-parity`, `g148-design-instruments`, `g153-fleet-police-lens` and
 `g162-v1-finance-honesty`. **Two of the four claimed their lanes**, `g153` by seat `cente-vsc-g153` and
 `g148` by seat `cente-vsc-g148`; **`g162` is running unclaimed; and `g160` STOPPED.** The `g160` lane
@@ -181,13 +239,15 @@ ended on the verdict that its work was already done. That verdict does not survi
 artifacts, and the planner re-read both product repos at source: the check IS built and proven on two
 branches, nothing triggers it, no deploy sets `SERVED_COMMIT`, and neither commit is merged (OPS-17
 `A-153`). **Parcel 2 is compiled and owed** at `_dispatches/2026-09-18_g160-served-commit-parity_dispatch.md`,
-recompiled in place to arm it. The two new ones were chosen from the rows rather than from preference:
-G-153's blocker D-12 is closed-partial and the roadmap's own precondition (G-161 and D-13 landed) is now
-met, and G-162's blocker D-14 has LANDED, which is exactly the condition its row set. They do not collide
-with each other: G-153 writes `smartcity-dashboards` and the two Fleet and Police design
-folders, G-162 writes `smartcity-os`, G-148 writes four other design folders, and G-160 writes
-`plan-review` and `smart-files`. **All were verified to carry the current canon markers (v49001500
-preamble) across all 40 of today's dispatches with zero mismatches**, so a hand-carry will not trip the
+recompiled in place to arm it. **Two more were compiled the same session and are queued rather than
+running** (OPS-17 `A-154`): `g152-public-works-fire-ems` and `g163-opaque-platform-routes`. Each names the
+lane it must wait behind, because the two serializations in force are different rules: every dashboards
+lens renders into `web/app.js` and `web/index.html`, so dashboards rows run one at a time, and a product
+repo has one owning seat. **G-152 was chosen ahead of G-149 on a measured dependency** (G-149 inherits the
+flood-study instrument that `g148` is still delivering), and the `smartcity-os` collision between G-162 and
+G-163 was MEASURED rather than assumed: their primary route files do not overlap, so that one is discipline
+rather than a hard merge necessity. **All were verified to carry the current canon markers (v49001500
+preamble) across all of today's dispatches with zero mismatches**, so a hand-carry will not trip the
 canon gate. Every status below was read at source by the planner, not taken from a lane's report or from
 the fact that a dispatch was sent.
 
@@ -200,20 +260,26 @@ the fact that a dispatch was sent.
 | `g142-citizen-lens` | G-142 | **CLOSED 2026-09-18.** Claim released. The planner re-ran all three instruments rather than taking the close's word: `check.mjs` exits 0 with every matched-input count non-zero, `violate.mjs` catches 16 of 16, and the gate's `lens:citizen` R4 line is gone | `_design/smartcity-citizen-lens/` drawn against `7487d7c0`; premise read from the product's own source (0 of 11 domains, 0 of 3 route literals); its sharpest finding came off the SHIPPED page (`None on file` is outside the declared badge vocabulary); falsifier filed and unresolved |
 | `g147-record-search` | G-147 | **CLOSED-PARTIAL 2026-09-18.** Claim released. The planner re-ran its instruments: `check.mjs` exits 0 with all 18 predicate counts non-zero, `violate.mjs` catches 24 of 24 with boards restored, and the `records` block in `surface_coverage.json` flipped. Records search PASSES; Compass is DEFERRED, not dropped | `_design/smartcity-records-search/` drawn against `7487d7c0`; the applicant view adjudicated COVERED by the RATIFIED `smartcity-applicant-precheck` and not redrawn; the close records that no seat worktree was created, against the dispatch's preference |
 | `g160-served-commit-parity` | G-160 | **PARCEL 1 STOPPED; THE STOP VERDICT IS REFUTED; PARCEL 2 COMPILED AND OWED.** The lane ended saying the work was already done. Read at source it is not: the check is built and proven on `plan-review` `b4b44b9` and `smart-files` `a238072` (tests **31/31** and **36/36**, falsifier firing both directions), but **nothing triggers it**, **no deploy sets `SERVED_COMMIT`** so the planner's live run REFUSED at exit 2, and **neither commit is merged**. Parcel 2 has the ordering constraint that the commit recording and the trigger land in ONE change | OPS-17 `A-153`; both suites re-run by the planner; live run `revision plan-review-00029-gom records no commit`; branches based on current `origin/main` (`99c156b`, `6d71bf3`), 1 commit each |
-| `g148-design-instruments` | G-148 | **HANDED OVER 2026-09-18 AND CLAIMED by seat `cente-vsc-g148`.** Writes the four missing `check.mjs` files, and writes nothing in `_design/INDEX.md`. It is the ONLY lane between the gate and exit 0 | the gate's R3 list of four, re-measured 2026-09-18T18:22Z; all four designs have build rows today; G-142's and G-147's instruments are the shape to match |
-| `g153-fleet-police-lens` | G-153 | **HANDED OVER 2026-09-18 AND CLAIMED by seat `cente-vsc-g153`.** The first lens build, and the only one that may run: every lens renders into `web/app.js` and `web/index.html`, so G-152, G-151 and G-149 queue behind it and must not start in parallel. It also **inherits G-135's parcel 2**, the full-shell authenticated `bastrop_tx` probe that mounts the map iframe, which no lane has ever run; G-135 closes when this lane reports it | its named blocker D-12 is closed-partial and the deploy path moved further today (`app.smartcityos.io` serves `7487d7c0`); the operator-namespace blocker cleared 2026-09-17; the three live-mapper defects are quoted with file and line in the row, and the `check.mjs:154` `\bOPR-` extraction trap is named in the mission so it is not misread as a design defect |
-| `g162-v1-finance-honesty` | G-162 | **HANDED OVER 2026-09-18 AND RUNNING, unclaimed.** Three defects G-159 found in the production finance code and deliberately did not touch: the budget filter that lets DNU budgets count, the `Math.max(0, ...)` clamp that turns an impossible state into a clean zero, and the missing-tenant default to 1. Explicitly not in scope: which MyGov fee window is authoritative, and `getBnpApiKey()`, which is the only reason BNP answers | its blocker D-14 has LANDED, which is the exact condition the row set ("landing it first would make D-14's repoint change behaviour when it must change none"); each change is a bridge to prove on a non-production app under rule 4 |
+| `g148-design-instruments` | G-148 | **RUNNING 2026-09-18, CLAIMED by seat `cente-vsc-g148`. ALL FOUR INSTRUMENTS DELIVERED**, taking the gate from four R3 lines to none and `exit 0` (OPS-17 `A-155`, `A-156`). **All four FAIL**, which is the finding: `plan-review-departments`, `smartcity-flood-study`, `smartcity-map-dock` and `smartcity-overview-lens` each exit 1, while each folder's `violate.mjs` exits 0 and confirms a repaired copy passes, so the defects are the designs'. Its files are UNCOMMITTED in `doc_repo`, which is correct (doc_repo edits are the planner's to commit), and the lane has left debug debris (`.dbg.mjs`, `.check.log`, `.violate.log` in `smartcity-flood-study`) that must not reach the commit | the gate at 2026-09-18T20:32:13Z: `20 design folders, with an instrument: 18`, zero findings, `verdict: FINISHED`, `exit 0`; the two instrument-less folders are `plan-review` and `smartcity-place-tab`, both SUPERSEDED by dated rulings; the planner ran all six lens instruments itself and all three `violate.mjs` proofs |
+| `g153-fleet-police-lens` | G-153 | **RUNNING 2026-09-18, CLAIMED by seat `cente-vsc-g153`.** The first lens build, and the only one that may run: every lens renders into `web/app.js` and `web/index.html`, so G-152, G-151 and G-149 queue behind it and must not start in parallel. It also **inherits G-135's parcel 2**, the full-shell authenticated `bastrop_tx` probe that mounts the map iframe, which no lane has run; G-135 closes when this lane reports it. Artifact activity is current: fleet and police check and violate runs, a live record refusal, and a full-shell probe all written in the last 30 minutes | its named blocker D-12 is closed-partial and the deploy path moved further today (`app.smartcityos.io` serves `7487d7c0`); the operator-namespace blocker cleared 2026-09-17; the three live-mapper defects are quoted with file and line in the row, and the `check.mjs:154` `\bOPR-` extraction trap is named in the mission so it is not misread as a design defect |
+| `g162-v1-finance-honesty` | G-162 | **RUNNING 2026-09-18, UNCLAIMED.** Three defects G-159 found in the production finance code and deliberately did not touch: the budget filter that lets DNU budgets count, the `Math.max(0, ...)` clamp that turns an impossible state into a clean zero, and the missing-tenant default to 1. Explicitly not in scope: which MyGov fee window is authoritative, and `getBnpApiKey()`, which is the only reason BNP answers. **`g163` is compiled and must not start until this lane's close is filed** | its blocker D-14 has LANDED, which is the exact condition the row set ("landing it first would make D-14's repoint change behaviour when it must change none"); each change is a bridge to prove on a non-production app under rule 4 |
+| `g152-public-works-fire-ems` | G-152 | **COMPILED 2026-09-18, NOT HANDED OVER, QUEUED behind `g153`** (OPS-17 `A-154`). The next dashboards lane and the successor to G-153 by the queue above. Both its designs are RATIFIED, touched by no running lane, and their instruments were re-run by the planner today and exit 0 with non-zero matched-input counts | dispatch `_dispatches/2026-09-18_g152-public-works-fire-ems_dispatch.md`, 25,337 bytes, canonical markers read back; `check.mjs` 4 and 2 artboards pass; the two folders carry `check.mjs` and no `violate.mjs`, because their two-direction proof is embedded as self-tests inside `check.mjs` |
+| `g163-opaque-platform-routes` | G-163 | **COMPILED 2026-09-18, NOT HANDED OVER, QUEUED behind `g162`** (OPS-17 `A-154`). Fixes the two platform routes that answer a Cloudflare `504` where the GCP copy named the vendor permission, so a vendor failure arrives as the vendor's own structured status rather than as an edge timeout's HTML | dispatch `_dispatches/2026-09-18_g163-opaque-platform-routes_dispatch.md`, 25,543 bytes, canonical markers read back; the collision with `g162` was measured, not assumed: `firstdue.ts` and `goto.ts` against `finance.ts`, `opengov-bnp.ts` and `services/opengov-bnp.ts` do not overlap, and `ai-assistant.ts` matches both greps so the mission names it |
 
-**A control that did not fire on the two lanes that are actually running.** `node scripts/lane-claim.mjs
-status` reports seven open claims, and **neither `d14-d13-v1-reach` nor `g161-never-default-a-city` is
-among them.** Both were compiled with the claim instruction in them, and the claim is what tells a
-second session to stand down (exit 3) instead of starting the same lane. So on the two lanes the
-operator believes are running, the guard that exists to prevent the 2026-09-14 duplicate-dispatch
-failure reports nothing. This is the shape `ENFORCEMENT.md` names directly: a control that fails to
-fire produces no complaint, and nobody finds the miss from the outside. It is recorded, not fixed here:
-whether those lanes claimed and released, or never ran the claim step, is not knowable from this seat.
-**The two lanes that did close DID hold claims and DID release them**, read in their closes and
-confirmed by the absence of both lane ids from the claim status, so the practice works when it is run.
+**A control that fired on two of four lanes, and one lane is running without it.** `node scripts/lane-claim.mjs
+status` now shows `g153-fleet-police-lens` live under `cente-vsc-g153` and `g148-design-instruments` live
+under `cente-vsc-g148`, so this wave the guard did fire. **Two did not claim: `g162-v1-finance-honesty` is
+running unclaimed, and `g160` stopped without one.** The earlier wave was worse: **neither
+`d14-d13-v1-reach` nor `g161-never-default-a-city` ever appeared in the registry**, and both were compiled
+with the claim instruction in them. The claim is what tells a second session to stand down (exit 3) instead
+of starting the same lane, so on the lanes the operator believed were running, the guard that exists to
+prevent the 2026-09-14 duplicate-dispatch failure reported nothing. This is the shape `ENFORCEMENT.md` names
+directly: a control that fails to fire produces no complaint, and nobody finds the miss from the outside.
+**The two lanes that did close DID hold claims and DID release them**, read in their closes and confirmed by
+the absence of both lane ids from the claim status, so the practice works when it is run. **One honesty note
+on the artifact itself:** G-153's claim records a start of `18:54:22Z`, and a planner read at `18:56Z` showed
+neither live claim, so the record was written after the read while carrying an earlier start time. The guard
+is working; the artifact lags the session that writes it.
 Also stale: `d12-dashboards-do-cutover` holds a claim on D-12 started 2026-09-17T22:46Z, now **19.6
 hours old**, against a row that is already closed-partial. That claim is left in place rather than
 released at this seat, because `lane-claim.mjs release` takes `--seat` and releasing it from here would
@@ -232,7 +298,8 @@ rather than through `walrus-app` directly.
 | Staff on v2 | ship `main` to `dolphin-app` → operator tells staff the URL → D-12 bake → WorkOS credentials → G-134 live test → G-143 ratified → G-127 |
 | Finance live on Bastrop | D-14 → D-13 → G-159 grant, proven with the G-135 key → G-156 shows measured |
 | Any Bastrop proof on a deployed app | ~~the G-135 verification key minted~~ **CLEARED 2026-09-18T14:44Z.** One `gcloud secrets versions access` command against `hauska-prod-497015/hauska-tenant-key-bastrop-tx-lane-verification`, recorded in `_catalog/credential_access_index.json` |
-| The next lens build | ~~G-161 and D-13's dashboards change merged~~ **G-161 AND D-13'S CODE LANDED 2026-09-18.** G-161's fix is in `smartcity-dashboards` `main` `7487d7c0` and live on `d12-main-uat`; D-13's repoint is in the same commit. Nothing blocks compiling G-153, which runs on `d12-main-uat`, where both are live. The production half of D-13 is a separate act (A-9) |
+| The next lens build | ~~G-161 and D-13's dashboards change merged~~ **G-161 AND D-13'S CODE LANDED 2026-09-18.** G-161's fix is in `smartcity-dashboards` `main` `7487d7c0` and live on `d12-main-uat`; D-13's repoint is in the same commit, and its production half is now done too (A-10). **G-153 is RUNNING, and G-152 is compiled and queued behind it.** The only constraint is one dashboards lane at a time |
+| The flood study on the page | G-153 closes (dashboards serialization) AND G-148 closes (it still owns `_design/smartcity-flood-study/`) → G-149, whose lane must ALSO fix G-125's NOAA parser, because the parser silently defaults every county to Bastrop's 9.5in while the engine cites it as a live value |
 | Hotel occupancy tax | Azavar reply sent and answers filed → G-137 |
 | City management board | v1 combined-dashboard capture → G-157 |
 | GCP decommissioned | D-13 → a bake in which a lens was actually opened → D-20 |
@@ -245,6 +312,9 @@ rather than through `walrus-app` directly.
 | ~~Hand-carry the three dispatches~~ **DONE 2026-09-18.** Operator: *"i have already sent all three"* | nothing; M2 and M3 now wait on the lanes |
 | ~~**Hand-carry four compiled dispatches** (`g160-served-commit-parity`, `g148-design-instruments`, `g153-fleet-police-lens`, `g162-v1-finance-honesty`)~~ **DONE 2026-09-18.** `g148` and `g153` claimed their lanes, `g162` is running unclaimed, and `g160` stopped on a verdict its own artifacts refute | M5's gate (G-148), M3's next lens and G-135's last unmeasured parcel (G-153), M2's finance honesty (G-162), and the console-vs-API control (G-160) |
 | **Hand-carry `g160-served-commit-parity` PARCEL 2** | the console-vs-API control (G-160). It is recompiled to `_dispatches/2026-09-18_g160-served-commit-parity_dispatch.md` and its mission carries the one thing that can go wrong: the commit recording and the trigger must land in ONE change, because arming a must-refuse check first would fail every deploy of both products (OPS-17 `A-153`) |
+| **Rule whether the design gate should RUN the instruments it counts, and whether to card the four design repairs** | what G-146's `exit 0` means. The gate went green at 2026-09-18T20:32:13Z while **all four** instruments it counted FAIL, because R3 tests only that a `check.mjs` EXISTS (`design-completion-gate.mjs:157-163`) and reads no exit code. So `exit 0` certifies "instrumented", not "clean", and four designs carry an open, reproducible finding that **no row owns**: `smartcity-overview-lens`, `smartcity-flood-study`, `smartcity-map-dock`, `plan-review-departments`. Each is an adjudication rather than a typo, and the repair and the instrument that proves it are one unit of work (OPS-17 `A-155`, `A-156`) |
+| **Rule on the flood-study rainfall claim, or leave it to G-149** | G-149's copy. The design says the local rainfall atlas is uncited, the engine cites NOAA Atlas 14 seven times, and G-125's parser is silently defaulting every county to Bastrop's 9.5in (OPS-17 `A-155`) |
+| **Hand-carry the two queued dispatches when their lanes close** (`g152-public-works-fire-ems` behind `g153`; `g163-opaque-platform-routes` behind `g162`) | M3's lens queue and the two opaque platform routes. Both are compiled, canonical, and deliberately held rather than sent, because each would collide with a lane in its repo (OPS-17 `A-154`) |
 | ~~G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`~~ **DONE 2026-09-18T14:49Z, your key never read.** The G-154 lane minted its OWN credential (`key_id 2510a3ff`) under A-118's precedent rather than using yours, so the pilot key stayed untouched | nothing; G-154 is regraded |
 | ~~**Housekeeping the G-154 proof leaves:** delete `P:\tmp\g154-hauska-key.txt` and revoke `key_id 2510a3ff`~~ **BOTH DONE 2026-09-18, verified at source.** `P:\tmp\g154-hauska-key.txt` is ABSENT and no other `g154` key material remains in `P:\tmp`. `2510a3ff` already read `revoked` when the planner read the census, so that lane filed its own key. | nothing; the plaintext credential is gone |
 | ~~**Decide the fate of two non-pilot `bastrop_tx` keys the mint's census found:** `acf2cf9f` and `2510a3ff`~~ **DECIDED AND EXECUTED 2026-09-18.** Operator: *"if we dont need these delete them dormant G-134 lane key"*. The planner revoked `acf2cf9f` with its own instrument (`_inbox/2026-09-18_planner_revoke_dormant_g134_key.mjs`, artifact `_inbox/2026-09-18_planner_revoke_dormant_g134_key.json`), which reads the admin key at point of use and never prints it, and which refuses unless the target is the exact expected `key_id`, is absent from a must-not-touch list (the pilot, the minted key, and the G-154 key), and is genuinely dormant. `acf2cf9f` last ran 2026-09-15T00:49:49Z, three days idle, so the dormancy condition held. `2510a3ff` was already revoked. **The `bastrop_tx` census is now the minted verification key `96e40316` plus the operator's own pilot, and nothing else.** Both keys were safe to remove because the G-135 verification key supersedes them for any future G-134 work, which is why nothing in flight breaks | nothing; the credential census is true rather than approximately true |
@@ -286,7 +356,7 @@ what has been described to the customer. As of 2026-09-18:
 | Hotel occupancy tax integration, priced separately | The design is buildable. The integration waits on Azavar's credentials |
 | Departmental parallel plan review | The design is approved. The build is blocked by the deferred role gate (G-144) |
 | v2 replaces the v1 dashboard | Five lenses read live data. Finance has its v1 routes built and waits on D-14 and D-13. The combined city management board is not built |
-| Four-inch flood question | Built into the flood engine (G-125). The v2 flood lens (G-149) is queued and needs re-scoping for DigitalOcean |
+| Four-inch flood question | Built into the flood engine (G-125), but the depth basis is silently wrong: the NOAA Atlas 14 parser never matches and every county falls back to Bastrop's 9.5in. The v2 flood lens (G-149) is queued behind G-153 and G-148, and its lane must fix the parser (`A-155`) |
 
 ---
 

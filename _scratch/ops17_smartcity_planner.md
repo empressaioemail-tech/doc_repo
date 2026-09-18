@@ -226,3 +226,67 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
   Independence is a property of the SOURCE, not of the run count. No committed claim rested on it as two
   sources, so nothing had to be corrected, but it is the shape that manufactures a false second derivation
   for free.
+
+## 2026-09-18 20:00Z-20:45Z - the next wave compiled, the gate caught mid-flight
+
+### GROUND-TRUTH (read at source this session, with timestamps)
+
+- **`design-completion-gate.mjs` re-run at 2026-09-18T20:19:39.877Z:** 20 design folders, **17 carrying an
+  instrument**, nav `smartcity-dashboards` origin/main `7487d7c0` read at `src/staff-review.mjs`; 15 nav
+  surfaces, 13 designed, 2 excluded by ruling, **0 uncovered**; **ONE R3 line** (`smartcity-overview-lens`);
+  `exit 1`. At session start it read **14 instrumented and FOUR R3 lines**. The change happened during the
+  session because `g148` is delivering mid-flight.
+- **`_design/smartcity-flood-study/check.mjs` EXITS 1 on the shipped boards, with one finding.**
+  `violate.mjs` exits 0 catching **30 of 30** planted violations, so the instrument works both directions.
+  The finding: the design says naming a depth by return period needs "a local rainfall atlas nobody has
+  cited yet", while the engine carries `rainfallSource: noaa-atlas14 / parameter / default`, cites NOAA
+  Atlas 14 seven times, and `returnPeriodYearsForDepthInches` renders `100-yr (NOAA Atlas 14)`.
+- **`smartcity-public-works-lens` and `smartcity-fire-ems-lens` carry `check.mjs` and NO `violate.mjs`.**
+  Their two-direction proof is EMBEDDED as self-tests inside `check.mjs`, which prints
+  `self-tests: N/N passed, both directions` before reading a board. A-139's separate-`violate.mjs` is the
+  newer convention, not the only valid one. Both `check.mjs` exit 0 with non-zero matched-input counts.
+- **The `g148` instruments are UNCOMMITTED** (`??` in `git status`) and carry debris:
+  `.dbg.mjs`, `.check.log`, `.violate.log` in `smartcity-flood-study` must not reach the commit.
+- **Claims now:** `g153-fleet-police-lens` live (seat `cente-vsc-g153`), `g148-design-instruments` live
+  (seat `cente-vsc-g148`), `g162-v1-finance-honesty` RUNNING UNCLAIMED, `g160` stopped without one.
+  9 open claims, 7 stale. `g153`'s artifacts are current: fleet and police check and violate runs, a live
+  record refusal, and the full-shell probe that is G-135's parcel 2.
+- **`smartcity-os`'s local checkout is on `d9-api-8bea7fa` at `e783f351`, a SIDE BRANCH, not `main`.**
+  Read `origin/main` from it, never the working tree, before concluding anything about that repo.
+
+### LESSON
+
+- **LESSON a markdown table row has TWO index bases and I used the wrong one.** `line.split(/(?<!\\)\|/)`
+  keeps the empty leading element, so the STATUS cell is `parts[7]`; `parts.slice(1,-1)` drops it, so the
+  same cell is `c[6]`. I wrote with `parts[6]` believing it was the status and **OVERWROTE the BLOCKED cell
+  on G-152 and G-163**. The tracker did not catch it, because it reads the status cell, which I had not
+  touched. It was caught by re-reading the rows. **Rule: assert the CURRENT value of the cell you are about
+  to write, and the row's cell count before and after.** Both are now in the repair script.
+- **LESSON the tracker REFUSES a status whose LEADING word is not in its vocabulary.** `CLASSES` is at
+  `smartcity-tracker.mjs:40`; `classify()` returns `unknown` and the run exits 2 naming the row. `DISPATCHED`
+  is a routing fact, not a completion class, so it must FOLLOW the class word:
+  `OPEN, DISPATCHED 2026-09-18 (A-154), ...`. Do NOT widen the vocabulary to admit a routing word; the
+  refusal is the control.
+- **LESSON R3 tests `hasCheck`, never the exit code** (`design-completion-gate.mjs:157-163`). The gate can
+  therefore exit 0 with an instrument on disk that reports a live FAIL. Enumerate what a control's answer
+  MEANS before treating its exit code as a verdict. Recommended fix, NOT done because it is G-146's gate and
+  the operator's call: either run the instruments and report exit codes, or state that existence is all it
+  checked.
+- **LESSON G-149 and G-152 were not interchangeable, and row order would have picked the wrong one.** G-149
+  INHERITS `_design/smartcity-flood-study/check.mjs`, which `g148` is still delivering and still owns, so
+  G-149 waits on `g148` AND `g153`. G-152's two designs are touched by no running lane. Choosing by
+  dependency beat choosing by position in the recommended order.
+- **LESSON a same-repo collision is worth MEASURING, not asserting.** G-162 (`finance.ts`, `opengov-bnp.ts`,
+  `services/opengov-bnp.ts`) and G-163 (`firstdue.ts`, `goto.ts`) do not overlap on their primary files;
+  `ai-assistant.ts` matches both greps. So the `smartcity-os` serialization is discipline, not a hard merge
+  necessity, and both the mission and A-154 say so rather than overstating it.
+
+### OPEN
+
+- **Hand-carry owed:** `g160` parcel 2 now; `g152` and `g163` WHEN their lanes close. Both are compiled and
+  deliberately held, because sending them early is the collision the serialization exists to prevent.
+- **Operator rulings owed:** whether the design gate RUNS the instruments it counts; and the flood-study
+  rainfall claim (design copy vs the engine's broken-parser citation).
+- **`g148`'s debug debris** (`.dbg.mjs`, `.check.log`, `.violate.log`) must not be committed.
+- **G-163 is not in any milestone's tracked row list**, so it will never appear in the tracker's counts.
+  Deliberate or not, nothing grades it.
