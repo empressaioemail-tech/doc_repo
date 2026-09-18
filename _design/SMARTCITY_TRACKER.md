@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `a1349e3e`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `cb4c202a`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 981 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -54,7 +54,7 @@ programs: [OPS-17, OPS-25]
 | G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | closed, partly | The four corrections are implemented, merged and proven on the live bastrop_tx surface on d12-main-uat - three of the four by direct measurement, and the fourth NAMED AS UNMEASURED because the live feed draws no workload ranking for it to be measured on. Getting there exposed four defects, three of them in the proving tools rather than the product; all three are fixed and each fix is proven in both directions. |
 | G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | open | — |
 | G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | closed, partly | closed |
-| G-152 | BUILD THE PUBLIC WORKS AND FIRE AND EMS LENSES. | open | — |
+| G-152 | BUILD THE PUBLIC WORKS AND FIRE AND EMS LENSES. | landed, not graded | — |
 | G-151 | BUILD THE PARKS LENS, the one lens that does not exist, drawn as not existing. | open | — |
 | G-155 | BUILD THE SMART FILES DESIGN, in its own repo and outside the DigitalOcean gate. | closed | closed |
 | G-150 | BUILD THE RATIFIED REASONER PATH, the plan review design a city is shown. | closed | closed |
