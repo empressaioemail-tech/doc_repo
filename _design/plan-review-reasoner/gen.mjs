@@ -47,13 +47,16 @@ const DET = {
 };
 const det = (d) => {
   const [c, w] = DET[d];
-  return '<span style="flex:none; font:500 12px/16px var(--sc-font-data); letter-spacing:.05em; color:var(' + c + '); background:var(' + w + '); border-radius:var(--sc-r-control); padding:1px 6px;">' + d + '</span>';
+  return '<span data-determination="' + d + '" style="flex:none; font:500 12px/16px var(--sc-font-data); letter-spacing:.05em; color:var(' + c + '); background:var(' + w + '); border-radius:var(--sc-r-control); padding:1px 6px;">' + d + '</span>';
 };
-const tag = (t, c, w) => '<span style="flex:none; font:500 12px/16px var(--sc-font-data); letter-spacing:.06em; color:var(' + c + '); background:var(' + w + '); border-radius:var(--sc-r-control); padding:1px 5px;">' + t + '</span>';
-const T_LIVE = () => tag('LIVE CHECK', '--sc-ok', '--sc-ok-wash');
-const T_PROP = () => tag('NO ADJUDICATOR', '--sc-warn', '--sc-warn-wash');
-const T_REV = () => tag('REVIEWER', '--sc-ink-3', '--sc-quiet-wash');
-const T_OWED = () => tag('CITATION OWED', '--sc-crit', '--sc-crit-wash');
+/* THE MARKERS CARRY AN ATTRIBUTE AS WELL AS THEIR TEXT, so check.mjs reads the
+   badge a board claims rather than pattern-matching a colour or a position. A
+   badge is a claim about source; the claim should be extractable. */
+const tag = (t, c, w, attr) => '<span ' + (attr ? attr + '="' + t + '" ' : '') + 'style="flex:none; font:500 12px/16px var(--sc-font-data); letter-spacing:.06em; color:var(' + c + '); background:var(' + w + '); border-radius:var(--sc-r-control); padding:1px 5px;">' + t + '</span>';
+const T_LIVE = () => tag('LIVE CHECK', '--sc-ok', '--sc-ok-wash', 'data-badge');
+const T_PROP = () => tag('NO ADJUDICATOR', '--sc-warn', '--sc-warn-wash', 'data-badge');
+const T_REV = () => tag('REVIEWER', '--sc-ink-3', '--sc-quiet-wash', 'data-marker');
+const T_OWED = () => tag('CITATION OWED', '--sc-crit', '--sc-crit-wash', 'data-marker');
 
 const topbar = (o) =>
 '    <header style="height:var(--sc-topbar); flex:none; display:flex; align-items:center; gap:var(--sc-3); padding:0 var(--sc-5); background:var(--sc-surface); border-bottom:1px solid var(--sc-line);">\n' +
@@ -138,10 +141,17 @@ const SHEET = (o) => {
 };
 
 const fRow = (f) =>
-'            <div style="display:flex; gap:var(--sc-3); padding:var(--sc-3) var(--sc-4); border-bottom:1px solid var(--sc-line-faint); ' + (f.on ? 'background:var(--sc-accent-wash); box-shadow:inset 2px 0 0 var(--sc-accent);' : '') + '">\n' +
+'            <div data-finding="' + (f.pin || 'none') + '" data-rule="' + f.t + '" data-book="' + (f.book || '') + '" data-section="' + (f.section || '') + '" data-determination="' + f.d + '" data-author="' + (f.author || 'machine') + '" data-citation="' + (f.cite || '') + '" data-live="' + (f.live ? '1' : '0') + '" style="display:flex; gap:var(--sc-3); padding:var(--sc-3) var(--sc-4); border-bottom:1px solid var(--sc-line-faint); ' + (f.on ? 'background:var(--sc-accent-wash); box-shadow:inset 2px 0 0 var(--sc-accent);' : '') + '">\n' +
 '              <span style="flex:none; width:22px; height:22px; border-radius:var(--sc-r-full); display:grid; place-items:center; font:600 12px var(--sc-font-data); color:var(--sc-surface); background:var(' + f.tone + ');">' + (f.pin || '&middot;') + '</span>\n' +
 '              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;">\n' +
-'                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;"><span style="font:600 13px/18px var(--sc-font-ui); color:var(--sc-ink);">' + f.t + '</span>' + det(f.d) + (f.tags || []).join('') + '</div>\n' +
+'                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;"><span style="font:600 13px/18px var(--sc-font-ui); color:var(--sc-ink);">' + f.t + '</span>' + det(f.d) +
+  /* ONE badge on every finding, machine or reviewer, because it is a claim about
+     whether an adjudicator exists for the rule -- not about who determined it.
+     A reviewer's Uncertain did not come from an adjudicator either, and leaving
+     the badge off those rows is how the draft's "every other rule is badged"
+     became untrue on the one board that had to say it. */
+  tag(f.live ? 'LIVE CHECK' : 'NO ADJUDICATOR', f.live ? '--sc-ok' : '--sc-warn', f.live ? '--sc-ok-wash' : '--sc-warn-wash', 'data-badge') +
+  (f.author === 'reviewer' ? T_REV() : '') + (f.cite ? '' : T_OWED()) + '</div>\n' +
 '                <div style="font:400 12px/17px var(--sc-font-data); color:var(' + (f.cite ? '--sc-ink-2' : '--sc-ink-3') + ');">' + (f.cite || 'No citation. The section is not in our corpus, so none can be built.') + '</div>\n' +
 '                <div style="font:400 12px/17px var(--sc-font-ui); color:var(--sc-ink-3);">' + f.d2 + '</div>\n              </div>\n            </div>';
 
@@ -156,7 +166,7 @@ const basis = (t, w) =>
 '            <div style="padding:var(--sc-3) var(--sc-4); font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3); border-left:2px solid var(--sc-line); margin:var(--sc-2) var(--sc-4) var(--sc-3); ' + (w ? 'max-width:' + w + ';' : '') + '">' + t + '</div>';
 
 const link = (l) =>
-'              <div style="display:flex; gap:var(--sc-3); padding:var(--sc-3) 0; ' + (l.last ? '' : 'border-bottom:1px solid var(--sc-line-faint);') + '">\n' +
+'              <div ' + (l.attr || '') + ' style="display:flex; gap:var(--sc-3); padding:var(--sc-3) 0; ' + (l.last ? '' : 'border-bottom:1px solid var(--sc-line-faint);') + '">\n' +
 '                <div style="flex:none; width:104px; font:500 12px/17px var(--sc-font-data); letter-spacing:.07em; text-transform:uppercase; color:var(--sc-ink-3); padding-top:1px;">' + l.k + '</div>\n' +
 '                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">\n' +
 '                  <div style="font:400 14px/20px var(--sc-font-ui); color:var(--sc-ink);">' + l.v + '</div>\n' +
@@ -176,7 +186,7 @@ const shell = (o) =>
   '<!doctype html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <script src="./support.js"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n  <style>\n' + KIT + '\n  </style>\n</helmet>\n' +
   '<div class="{{themeClass}}" style="width:1600px; height:' + o.h + 'px; display:flex; flex-direction:column; background:var(--sc-canvas); overflow:hidden;">\n' +
   topbar({ navOn: o.navOn || 'Queue' }) + '\n' +
-  '    <main style="flex:1; min-width:0; overflow:hidden; padding:var(--sc-5) var(--sc-6); display:flex; flex-direction:column; gap:var(--sc-4); min-height:0;">\n' +
+  '    <main data-board="' + o.board + '" style="flex:1; min-width:0; overflow:hidden; padding:var(--sc-5) var(--sc-6); display:flex; flex-direction:column; gap:var(--sc-4); min-height:0;">\n' +
   '        <div style="display:flex; flex-direction:column; gap:var(--sc-2);">\n' +
   '          <div style="display:flex; align-items:center; gap:var(--sc-3); flex-wrap:wrap;">\n' +
   '            <h1 style="font:650 24px/30px var(--sc-font-ui); letter-spacing:-.02em; margin:0; color:var(--sc-ink);">' + o.h1 + '</h1>\n' +
@@ -194,25 +204,62 @@ const CITE_008 = 'City of Bastrop Building Block B3 Section 14-02-008 (bastrop_t
 const CITE_IBC = '2018 International Building Code Section 705.5 (IBC-2018)';
 
 /* ONE numbering, used identically on every artboard. Pin numbers are the finding
-   numbers; a finding with no place on a sheet has no pin and says so. */
+   numbers; a finding with no place on a sheet has no pin and says so.
+
+   `live` is whether an adjudicator EXISTS for the rule, which is the badge; it
+   is NOT whether this finding passed. `author` is who determined it. The two are
+   independent and the draft conflated them. */
 const F = [
-  { pin: '1', t: 'Front setback', d: 'Fail', tone: '--sc-crit', tags: [T_LIVE()], cite: CITE_003,
+  { pin: '1', t: 'Front setback', d: 'Fail', tone: '--sc-crit', live: true, author: 'machine',
+    book: 'BASTROP-UDC', section: '14-02-003', cite: CITE_003,
     d2: 'Proposed 22\u2032-0\u2033 is below the 25\u2032-0\u2033 minimum for SF-1.', on: true },
-  { pin: '2', t: 'Fire separation distance', d: 'Uncertain', tone: '--sc-restricted', tags: [T_REV()], cite: CITE_IBC,
+  { pin: '2', t: 'Fire separation distance', d: 'Uncertain', tone: '--sc-restricted', live: false, author: 'reviewer',
+    book: 'IBC2018P6', section: '705.5', cite: CITE_IBC,
     d2: 'M. Leavis recorded a conflict between two adopted authorities for the west wall, 12 Sep.' },
-  { pin: '3', t: 'Side setback, west', d: 'Unchecked', tone: '--sc-ink-3', tags: [T_PROP()], cite: null,
+  { pin: '3', t: 'Side setback, west', d: 'Unchecked', tone: '--sc-ink-3', live: false, author: 'machine',
+    book: '', section: '', cite: null,
     d2: 'Only the front setback has an adjudicator. This rule is drawn, not built.' },
-  { pin: '4', t: 'Rear setback', d: 'Unchecked', tone: '--sc-ink-3', tags: [T_PROP()], cite: null,
+  { pin: '4', t: 'Rear setback', d: 'Unchecked', tone: '--sc-ink-3', live: false, author: 'machine',
+    book: '', section: '', cite: null,
     d2: 'Only the front setback has an adjudicator. This rule is drawn, not built.' },
-  { pin: null, t: 'Permitted use', d: 'Unchecked', tone: '--sc-ink-3', tags: [], cite: CITE_008,
+  { pin: null, t: 'Permitted use', d: 'Unchecked', tone: '--sc-ink-3', live: false, author: 'machine',
+    book: 'BASTROP-UDC', section: '14-02-008', cite: CITE_008,
     d2: 'Permitted use is not a numeric comparison, so there is nothing to adjudicate against. Cited, not evaluated. No place on a sheet.' },
-  { pin: null, t: 'Driveway width', d: 'Fail', tone: '--sc-crit', tags: [T_REV(), T_OWED()], cite: null,
+  { pin: null, t: 'Driveway width', d: 'Fail', tone: '--sc-crit', live: false, author: 'reviewer',
+    book: '', section: '', cite: null,
     d2: 'Added by M. Leavis from C-101. Cannot enter the letter until a section is supplied.' },
 ];
 
+/* THE DESIGN'S OWN COUNTS, DECLARED ONCE.
+   Three surfaces print these numbers -- the console's filter chips, Coverage's
+   two axes, and the letter's correction notice -- and a draft of this board had
+   them disagree with each other: the chips read "Unchecked 9 ... Pass 1" while
+   Coverage said 10 not evaluated and the letter said 10 not evaluated too. The
+   Pass was the permitted-use row that the corrections section says was drawn
+   where source sets adjudicated:null, and it survived in a filter chip after it
+   was removed from the finding list. Numbers typed at three surfaces agreed only
+   because somebody had checked them by eye.
+
+   `check.mjs` compares every one of these to the PRODUCT's own composeReasoner()
+   output over the same 13-finding scope (source-state.json), so a design number
+   and a product number that disagree is a failure and not a difference of
+   opinion. `Pass: 0` is here rather than absent on purpose: an adjudicator for
+   permitted use does not exist, so a Pass is not a number this product can
+   produce, and typing the zero is what makes that visible. */
+const COUNTS = {
+  findings: 13,
+  determinations: { Fail: 2, Uncertain: 1, Unchecked: 10, Pass: 0 },
+  corpus: { 'absent-verified': 2, 'not-entitled': 1, 'source-unavailable': 1, unchecked: 5 },
+  reasoning: 1,
+  notice: { corrections: 1, escalations: 1, notEvaluated: 10, heldBack: 1 },
+};
+const CORPUS_TOTAL = Object.values(COUNTS.corpus).reduce((a, b) => a + b, 0);
+const NOTICE_TOTAL = Object.values(COUNTS.notice).reduce((a, b) => a + b, 0);
+const DRAWN = F.length;
+
 /* =======================  1. CONSOLE  ======================= */
 const consoleBoard = shell({
-  h: 1240, navOn: 'Queue', spine: 'Findings', h1: 'PR-2026-0418',
+  board: 'console', h: 1240, navOn: 'Queue', spine: 'Findings', h1: 'PR-2026-0418',
   meta: '908 PINE ST &middot; single-family &middot; cycle 1 &middot; edition declared',
   hdrRight: ghost('Open in Dashboards'),
   body:
@@ -233,18 +280,26 @@ const consoleBoard = shell({
       right: ghost('Add a finding'),
       body:
         '            <div style="display:flex; gap:var(--sc-1); padding:var(--sc-2) var(--sc-4); border-bottom:1px solid var(--sc-line-faint); flex-wrap:wrap;">' +
-        ['All 13', 'Fail 2', 'Uncertain 1', 'Unchecked 9', 'Pass 1'].map((f, i) =>
-        '<span style="font:500 12px/16px var(--sc-font-ui); padding:3px 9px; border-radius:var(--sc-r-full); color:var(' + (i === 0 ? '--sc-ink' : '--sc-ink-2') + '); background:var(' + (i === 0 ? '--sc-surface-3' : '--sc-surface-2') + ');">' + f + '</span>').join('') +
+        ['All ' + COUNTS.findings].concat(Object.entries(COUNTS.determinations).map(([d, n]) => d + ' ' + n)).map((f, i) =>
+        '<span data-chip="' + f + '" style="font:500 12px/16px var(--sc-font-ui); padding:3px 9px; border-radius:var(--sc-r-full); color:var(' + (i === 0 ? '--sc-ink' : '--sc-ink-2') + '); background:var(' + (i === 0 ? '--sc-surface-3' : '--sc-surface-2') + ');">' + f + '</span>').join('') +
         '</div>\n' +
         '            <div style="flex:1; min-height:0; overflow:hidden;">\n' + F.map(fRow).join('\n') + '\n' +
-        '              <div style="padding:var(--sc-3) var(--sc-4); font:400 12px/17px var(--sc-font-ui); color:var(--sc-ink-3);">Showing 6 of 13. The other seven are Unchecked with no place on a sheet; they are on Coverage.</div>\n            </div>' +
+        '              <div style="padding:var(--sc-3) var(--sc-4); font:400 12px/17px var(--sc-font-ui); color:var(--sc-ink-3);">Showing ' + DRAWN + ' of ' + COUNTS.findings + '. The other ' + (COUNTS.findings - DRAWN) + ' are Unchecked with no place on a sheet; they are on Coverage.</div>\n            </div>' +
         basis('One numbering, used on every screen and in the letter. A reviewer-authored finding sits in the same list as a machine one and is distinguished only by author.'),
     }) + '\n          </aside>\n        </div>',
 });
 
 /* =======================  2. REASONING  ======================= */
+/* THE PROVENANCE LADDER, declared here with the product's own rung names.
+   `check.mjs` compares these against PROVENANCE_RUNGS in the product and
+   against `PROVENANCE_UPGRADE.built`, so the day G-107 lands and the top rung
+   becomes real, this board fails until the claim is withdrawn. That is the
+   point: a board asserting "not built" is a claim with an expiry date. */
+const RUNG = 'form-assertion';
+const RUNG_NEXT = 'captured-reading';
+
 const reasoning = shell({
-  h: 1200, navOn: 'Queue', spine: 'Findings', h1: 'Finding 1 \u2014 Front setback',
+  board: 'reasoning', h: 1200, navOn: 'Queue', spine: 'Findings', h1: 'Finding 1 \u2014 Front setback',
   meta: 'PR-2026-0418 &middot; the one rule with a live adjudicator &middot; pinned to A-101',
   hdrRight: det('Fail'),
   body:
@@ -260,6 +315,7 @@ const reasoning = shell({
             act: ghost('Read section') },
           { k: 'Input', v: 'Proposed front setback 22\u2032-0\u2033.',
             meta: 'Typed into the intake form on 11 Sep. No sheet, no location, no source.',
+            attr: 'data-provenance="' + RUNG + '" data-provenance-next="' + RUNG_NEXT + '" data-provenance-next-built="0"',
             flag: 'Lowest provenance on the ladder. It is an assertion by whoever filled the form, and nothing ties it to the drawing. Capturing the same value from the dimension string on A-101 would move it to the top rung.',
             flagTone: '--sc-warn', act: ghost('Capture from sheet') },
           { k: 'Comparison', v: '22\u2032-0\u2033 is less than 25\u2032-0\u2033, so the rule is not met.',
@@ -294,36 +350,36 @@ const reasoning = shell({
 
 /* =======================  3. COVERAGE  ======================= */
 const covRow = (r) =>
-'            <div style="display:grid; grid-template-columns:156px 62px minmax(0,1fr); gap:0 var(--sc-4); align-items:start; padding:var(--sc-3) var(--sc-4); border-bottom:1px solid var(--sc-line-faint);">\n' +
+'            <div data-absence-kind="' + r.k + '" data-absence-count="' + r.n + '" style="display:grid; grid-template-columns:156px 62px minmax(0,1fr); gap:0 var(--sc-4); align-items:start; padding:var(--sc-3) var(--sc-4); border-bottom:1px solid var(--sc-line-faint);">\n' +
 '              <span style="font:600 13px/19px var(--sc-font-data); color:var(' + r.tone + ');">' + r.k + '</span>\n' +
 '              <span style="font:400 20px/24px var(--sc-font-data); font-variant-numeric:tabular-nums; color:var(--sc-ink); text-align:right;">' + r.n + '</span>\n' +
 '              <div style="display:flex; flex-direction:column; gap:2px;"><span style="font:400 13px/19px var(--sc-font-ui); color:var(--sc-ink);">' + r.what + '</span><span style="font:400 12px/17px var(--sc-font-ui); color:var(--sc-ink-3);">' + r.says + '</span></div>\n            </div>';
 
 const coverage = shell({
-  h: 1200, navOn: 'Queue', spine: 'Findings', h1: 'What was checked, and what was not',
+  board: 'coverage', h: 1200, navOn: 'Queue', spine: 'Findings', h1: 'What was checked, and what was not',
   meta: 'PR-2026-0418 &middot; 12 rules in scope for SF-1 and this use',
   body:
     '        <section style="border:1px solid var(--sc-line); border-left:3px solid var(--sc-accent); border-radius:var(--sc-r); background:var(--sc-surface); box-shadow:var(--sc-e1); padding:var(--sc-4) var(--sc-5);">\n' +
-    '          <div style="font:650 19px/26px var(--sc-font-ui); letter-spacing:-.014em; color:var(--sc-ink); margin-bottom:3px;">1 of 12 rules was actually evaluated. 1 was escalated. 10 were not evaluated.</div>\n' +
+    '          <div style="font:650 19px/26px var(--sc-font-ui); letter-spacing:-.014em; color:var(--sc-ink); margin-bottom:3px;">' + COUNTS.notice.corrections + ' of 12 rules was actually evaluated. ' + COUNTS.notice.escalations + ' was escalated. ' + (CORPUS_TOTAL + COUNTS.reasoning) + ' were not evaluated.</div>\n' +
     '          <div style="font:400 14px/21px var(--sc-font-ui); color:var(--sc-ink-2); max-width:110ch;">One evaluated rule is not a failure of honesty, it is the honest number: exactly one adjudicator is built. The ten are broken out below on two axes that must never be added together, and both appear in the applicant\u2019s letter.</div>\n        </section>\n' +
     panel({
-      title: 'Our corpus could not supply the rule', sub: '9 &middot; four kinds, from the service\u2019s own absence taxonomy',
+      title: 'Our corpus could not supply the rule', sub: CORPUS_TOTAL + ' &middot; four kinds, from the service\u2019s own absence taxonomy',
       body:
         [
-          { k: 'absent-verified', tone: '--sc-ok', n: '2', what: 'Read the adopted edition and confirmed the section is not in it.',
+          { k: 'absent-verified', tone: '--sc-ok', n: String(COUNTS.corpus['absent-verified']), what: 'Read the adopted edition and confirmed the section is not in it.',
             says: 'The strong claim. There is no such requirement in this jurisdiction, and we looked. Safe to stop worrying about.' },
-          { k: 'not-entitled', tone: '--sc-restricted', n: '1', what: 'Behind a licence this product does not hold.',
+          { k: 'not-entitled', tone: '--sc-restricted', n: String(COUNTS.corpus['not-entitled']), what: 'Behind a licence this product does not hold.',
             says: 'The section is cited and its text is not reproduced. We will not paraphrase a code we are not licensed to quote.' },
-          { k: 'source-unavailable', tone: '--sc-warn', n: '1', what: 'Ingested, but the body could not be retrieved on this run.',
+          { k: 'source-unavailable', tone: '--sc-warn', n: String(COUNTS.corpus['source-unavailable']), what: 'Ingested, but the body could not be retrieved on this run.',
             says: 'A transient fault on our side, not a statement about the code. Re-running may resolve it.' },
-          { k: 'unchecked', tone: '--sc-ink-3', n: '5', what: 'Never ingested into our corpus.',
+          { k: 'unchecked', tone: '--sc-ink-3', n: String(COUNTS.corpus.unchecked), what: 'Never ingested into our corpus.',
             says: 'A statement about what we hold, not about the code book. The requirement may well apply. A human must check it.' },
         ].map(covRow).join('\n') +
         basis('These four are the reason a reviewer can trust the one. `unchecked` is a claim about OUR CORPUS; `absent-verified` is a claim about the CODE. Collapsing them would let a gap in our ingest read as a clean bill of health.', '120ch'),
     }) + '\n' +
     '        <div style="display:flex; gap:var(--sc-4);">\n' +
     panel({
-      title: 'A different axis', sub: '1 &middot; nothing to do with the corpus',
+      title: 'A different axis', sub: COUNTS.reasoning + ' &middot; nothing to do with the corpus',
       body:
         '            <div style="padding:var(--sc-4) var(--sc-5); display:flex; flex-direction:column; gap:3px;">\n' +
         '              <div style="font:620 15px/22px var(--sc-font-ui); color:var(--sc-ink);">No adjudicator is built for this rule.</div>\n' +
@@ -333,7 +389,7 @@ const coverage = shell({
     panel({
       title: 'And one the taxonomy cannot describe', sub: 'the whole chain, not a section',
       body:
-        '            <div style="padding:var(--sc-4) var(--sc-5); display:flex; flex-direction:column; gap:3px;">\n' +
+        '            <div data-whole-chain="1" data-whole-chain-collapses="to-one-row" style="padding:var(--sc-4) var(--sc-5); display:flex; flex-direction:column; gap:3px;">\n' +
         '              <div style="font:620 15px/22px var(--sc-font-ui); color:var(--sc-ink);">If the corpus itself is unreachable, that is one row, not twelve.</div>\n' +
         '              <div style="font:400 13px/19px var(--sc-font-ui); color:var(--sc-ink-2);">A whole-chain fetch failure must not be rendered as twelve per-section absences. Twelve identical failures read as twelve findings about the code; they are one finding about us.</div>\n' +
         '              <div style="margin-top:var(--sc-1); font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3); border-left:2px solid var(--sc-line); padding-left:var(--sc-3);">Required by the service already, and not shown on this page in the first draft.</div>\n            </div>',
@@ -359,8 +415,11 @@ const lRow = (r) =>
 '                    <div style="font:400 13px/20px var(--sc-font-ui); color:var(--sc-ink-2); max-width:92ch;">' + r.body + '</div>\n' +
 '                    <div style="display:flex; gap:var(--sc-4); flex-wrap:wrap; font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3);"><span>' + r.cite + '</span><span>Sheet ' + r.sheet + '</span><span>' + r.who + '</span></div>\n                  </div>\n                </div>';
 
+const WORDS = ['zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen'];
+const word = (n) => WORDS[n] || String(n);
+
 const letter = shell({
-  h: 1280, navOn: 'Queue', spine: 'Letter', h1: 'Correction notice',
+  board: 'letter', h: 1280, navOn: 'Queue', spine: 'Letter', h1: 'Correction notice',
   meta: 'PR-2026-0418 &middot; cycle 1 &middot; draft, not issued',
   hdrRight: btn('Issue to applicant', 'primary'),
   body:
@@ -370,29 +429,29 @@ const letter = shell({
     '              <div style="display:flex; align-items:baseline; gap:var(--sc-3); padding-bottom:var(--sc-4); border-bottom:2px solid var(--sc-ink);">\n' +
     '                <span style="font:650 22px/28px var(--sc-font-ui); letter-spacing:-.018em; color:var(--sc-ink);">Correction notice</span>\n' +
     '                <span style="font:400 13px/18px var(--sc-font-data); color:var(--sc-ink-2);">PR-2026-0418 &middot; cycle 1 &middot; 908 PINE ST</span>\n              </div>\n' +
-    '              <p style="margin:var(--sc-4) 0 var(--sc-5); max-width:94ch; font:400 14px/22px var(--sc-font-ui); color:var(--sc-ink-2);">One item must be corrected before this application can be approved. One further item is escalated to a reviewer and is not a correction. Ten rules in scope could not be evaluated and are listed at the end; none of them is an approval.</p>\n' +
-    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin-bottom:var(--sc-1);">Corrections required &mdash; 1</div>\n' +
+    '              <p style="margin:var(--sc-4) 0 var(--sc-5); max-width:94ch; font:400 14px/22px var(--sc-font-ui); color:var(--sc-ink-2);">' + word(COUNTS.notice.corrections) + ' item must be corrected before this application can be approved. ' + word(COUNTS.notice.escalations) + ' further item is escalated to a reviewer and is not a correction. ' + word(COUNTS.notice.notEvaluated) + ' rules in scope could not be evaluated and are listed at the end; none of them is an approval.</p>\n' +
+    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin-bottom:var(--sc-1);">Corrections required &mdash; ' + COUNTS.notice.corrections + '</div>\n' +
     lRow({ n: '1.', t: 'Front setback', cite: CITE_003, sheet: 'A-101', who: 'Automated check, accepted by M. Leavis',
       body: 'The proposed front setback of 22\u2032-0\u2033 is less than the 25\u2032-0\u2033 minimum for the SF-1 district. Revise the site plan or apply for a variance. The proposed figure was taken from your application form; if the drawing shows a different dimension, tell us and we will re-check against the sheet.' }) + '\n' +
-    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Escalated, not a correction &mdash; 1</div>\n' +
+    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Escalated, not a correction &mdash; ' + COUNTS.notice.escalations + '</div>\n' +
     lRow({ n: '2.', t: 'Fire separation distance', cite: CITE_IBC, sheet: 'A-101', who: 'M. Leavis, Building &middot; reviewer override, 12 Sep',
-      body: 'A reviewer has recorded that two adopted authorities conflict for the west wall. That conflict is being resolved inside the city and is not a defect in your drawing. No action is required from you on this item. The text of the cited section is not reproduced here; this product is not licensed to quote it.' }) + '\n' +
-    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Not evaluated &mdash; 10</div>\n' +
+      body: 'A reviewer has recorded that two adopted authorities conflict for the west wall. That conflict is being resolved inside the city and is not a defect in your drawing. No action is required from you on this item. <span data-refusal="1" style="color:var(--sc-ink-2);">The text of the cited section is not reproduced here; this product is not licensed to quote it.</span>' }) + '\n' +
+    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Not evaluated &mdash; ' + COUNTS.notice.notEvaluated + '</div>\n' +
     '              <p style="margin:0; max-width:94ch; font:400 13px/20px var(--sc-font-ui); color:var(--sc-ink-2);">Five sections are not in our corpus, two were read and confirmed not to apply in this jurisdiction, one is behind a licence we do not hold, one could not be retrieved on this run, and one has no automated check built. Each is named with its reason in the attached list. <strong>None of this is an approval.</strong></p>\n            </div>\n' +
     '            <div style="flex:none; padding:var(--sc-3) var(--sc-9); border-top:1px solid var(--sc-line-faint); font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3);">Items marked as an automated check were produced by a comparison against the adopted editions named above, and reviewed by the named reviewer before issue.</div>\n          </div>\n' +
     '          <aside style="width:430px; flex:none; display:flex; flex-direction:column; gap:var(--sc-4); min-height:0;">\n' +
     panel({
-      title: 'What goes in', sub: '13 findings &middot; 2 printed individually',
+      title: 'What goes in', sub: COUNTS.findings + ' findings &middot; ' + (COUNTS.notice.corrections + COUNTS.notice.escalations) + ' printed individually',
       body:
-        '            <div style="display:flex; flex-direction:column; padding:var(--sc-1) 0;">\n' +
+        '            <div data-notice-total="' + NOTICE_TOTAL + '" style="display:flex; flex-direction:column; padding:var(--sc-1) 0;">\n' +
         [
-          ['1 accepted', 'printed as a correction', '--sc-crit'],
-          ['1 escalated', 'own heading, no action asked of the applicant', '--sc-restricted'],
-          ['10 not evaluated', 'summarised by reason, full list attached', '--sc-ink-3'],
-          ['1 held back', 'reviewer finding with no citation yet', '--sc-warn'],
-        ].map(([a, b, t]) =>
-        '              <div style="display:flex; align-items:baseline; gap:var(--sc-3); padding:var(--sc-2) var(--sc-4); border-bottom:1px solid var(--sc-line-faint);"><span style="flex:none; font:600 13px/19px var(--sc-font-data); color:var(' + t + '); width:114px;">' + a + '</span><span style="flex:1; font:400 12px/18px var(--sc-font-ui); color:var(--sc-ink-2);">' + b + '</span></div>').join('\n') +
-        '\n            </div>' + basis('1 + 1 + 10 + 1 = 13.'),
+          [COUNTS.notice.corrections + ' accepted', 'printed as a correction', '--sc-crit', 'corrections'],
+          [COUNTS.notice.escalations + ' escalated', 'own heading, no action asked of the applicant', '--sc-restricted', 'escalations'],
+          [COUNTS.notice.notEvaluated + ' not evaluated', 'summarised by reason, full list attached', '--sc-ink-3', 'notEvaluated'],
+          [COUNTS.notice.heldBack + ' held back', 'reviewer finding with no citation yet', '--sc-warn', 'heldBack'],
+        ].map(([a, b, t, k]) =>
+        '              <div data-notice="' + k + '" data-count="' + COUNTS.notice[k] + '" style="display:flex; align-items:baseline; gap:var(--sc-3); padding:var(--sc-2) var(--sc-4); border-bottom:1px solid var(--sc-line-faint);"><span style="flex:none; font:600 13px/19px var(--sc-font-data); color:var(' + t + '); width:114px;">' + a + '</span><span style="flex:1; font:400 12px/18px var(--sc-font-ui); color:var(--sc-ink-2);">' + b + '</span></div>').join('\n') +
+        '\n            </div>' + basis(Object.values(COUNTS.notice).slice(0, 4).join(' + ') + ' = ' + NOTICE_TOTAL + '.'),
     }) + '\n' +
     panel({
       title: 'Held back', sub: 'finding 6 &middot; driveway width',
@@ -414,15 +473,22 @@ const letter = shell({
 
 /* =======================  5. CYCLE 2  ======================= */
 const c2Row = (r) =>
-'            <div style="display:grid; grid-template-columns:30px minmax(0,1.4fr) 128px 118px minmax(0,1.3fr); gap:0 var(--sc-4); align-items:center; min-height:56px; padding:0 var(--sc-4); border-bottom:1px solid var(--sc-line-faint);">\n' +
+'            <div data-finding="' + r.n + '" data-rule="' + r.t + '" data-book="' + (r.book || '') + '" data-section="' + (r.section || '') + '" data-determination="' + r.d + '" data-was="' + r.was + '" data-author="' + r.author + '" data-citation="' + (r.c || '') + '" data-live="' + (r.live ? '1' : '0') + '" style="display:grid; grid-template-columns:30px minmax(0,1.4fr) 128px 232px minmax(0,1.2fr); gap:0 var(--sc-4); align-items:center; min-height:56px; padding:0 var(--sc-4); border-bottom:1px solid var(--sc-line-faint);">\n' +
 '              <span style="width:22px; height:22px; border-radius:var(--sc-r-full); display:grid; place-items:center; font:600 12px var(--sc-font-data); color:var(--sc-surface); background:var(' + r.tone + ');">' + r.n + '</span>\n' +
 '              <div style="display:flex; flex-direction:column; gap:1px; min-width:0;"><span style="font:600 13px/18px var(--sc-font-ui); color:var(--sc-ink);">' + r.t + '</span><span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + r.cite + '</span></div>\n' +
 '              <span style="font:400 13px/18px var(--sc-font-data); color:var(--sc-ink-2);">' + r.was + '</span>\n' +
-'              ' + r.now + '\n' +
+/* One cell holds the determination and the badge together, because the badge is a
+   claim about the same rule and splitting them across cells invites reading one
+   without the other. A carried-forward reviewer finding names its reviewer here
+   too: an Uncertain that appears on a surface without a name is an Uncertain that
+   arrived from nowhere, and this board is the one that says what carried over. */
+'              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' + det(r.d) +
+  tag(r.live ? 'LIVE CHECK' : 'NO ADJUDICATOR', r.live ? '--sc-ok' : '--sc-warn', r.live ? '--sc-ok-wash' : '--sc-warn-wash', 'data-badge') +
+  (r.author === 'reviewer' ? tag('M. LEAVIS', '--sc-restricted', '--sc-restricted-wash', 'data-reviewer') : '') + '</div>\n' +
 '              <span style="font:400 12px/18px var(--sc-font-ui); color:var(--sc-ink-3);">' + r.note + '</span>\n            </div>';
 
 const cycle = shell({
-  h: 1160, navOn: 'Queue', spine: 'Findings', h1: 'Cycle 2',
+  board: 'cycle', h: 1160, navOn: 'Queue', spine: 'Findings', h1: 'Cycle 2',
   meta: 'PR-2026-0418 &middot; resubmitted 14 Sep &middot; 2 sheets changed of 6',
   hdrRight: ghost('Compare A-101 against cycle 1'),
   body:
@@ -436,15 +502,15 @@ const cycle = shell({
     panel({
       grow: true, title: 'Cycle 1 findings against cycle 2', sub: '5 shown &middot; nothing is re-derived on an unchanged sheet',
       body:
-        '            <div style="display:grid; grid-template-columns:30px minmax(0,1.4fr) 128px 118px minmax(0,1.3fr); gap:0 var(--sc-4); padding:var(--sc-2) var(--sc-4); border-bottom:1px solid var(--sc-line-faint); background:var(--sc-surface-2);">\n' +
+        '            <div style="display:grid; grid-template-columns:30px minmax(0,1.4fr) 128px 232px minmax(0,1.2fr); gap:0 var(--sc-4); padding:var(--sc-2) var(--sc-4); border-bottom:1px solid var(--sc-line-faint); background:var(--sc-surface-2);">\n' +
         ['', 'Finding', 'Cycle 1', 'Cycle 2', 'What changed'].map((h) =>
         '              <span style="font:500 12px/16px var(--sc-font-data); letter-spacing:.07em; text-transform:uppercase; color:var(--sc-ink-3);">' + h + '</span>').join('\n') + '\n            </div>\n' +
         [
-          { n: '1', tone: '--sc-ok', t: 'Front setback', cite: CITE_003, was: 'Fail 22\u2032-0\u2033', now: det('Pass'), note: 'A-101 revised to 25\u2032-0\u2033, and this time the value was captured from the sheet rather than typed on a form.' },
-          { n: '2', tone: '--sc-restricted', t: 'Fire separation distance', cite: CITE_IBC, was: 'Uncertain', now: det('Uncertain'), note: 'Carried. The conflict is between two authorities and no resubmittal can resolve it.' },
-          { n: '3', tone: '--sc-ink-3', t: 'Side setback, west', cite: 'No citation', was: 'Unchecked', now: det('Unchecked'), note: 'Carried. Still no adjudicator and still no section in our corpus.' },
-          { n: '5', tone: '--sc-warn', t: 'Permitted use', cite: CITE_008, was: 'Unchecked', now: det('Unchecked'), note: 'BASIS CHANGED. The applicant supplied the use on the revised sheet, and it is still Unchecked \u2014 because what is missing is our adjudicator, not their data.' },
-          { n: '6', tone: '--sc-crit', t: 'Driveway width', cite: 'Citation owed', was: 'Fail, held', now: det('Fail'), note: 'Carried, still held back. C-101 changed; the finding still has no section, so it still cannot be issued.' },
+          { n: '1', tone: '--sc-ok', t: 'Front setback', cite: CITE_003, c: CITE_003, book: 'BASTROP-UDC', section: '14-02-003', live: true, d: 'Pass', was: 'Fail 22\u2032-0\u2033', author: 'machine', note: 'A-101 revised to 25\u2032-0\u2033, and this time the value was captured from the sheet rather than typed on a form.' },
+          { n: '2', tone: '--sc-restricted', t: 'Fire separation distance', cite: CITE_IBC, c: CITE_IBC, book: 'IBC2018P6', section: '705.5', live: false, d: 'Uncertain', was: 'Uncertain', author: 'reviewer', note: 'Carried. The conflict is between two authorities and no resubmittal can resolve it.' },
+          { n: '3', tone: '--sc-ink-3', t: 'Side setback, west', cite: 'No citation', c: null, book: '', section: '', live: false, d: 'Unchecked', was: 'Unchecked', author: 'machine', note: 'Carried. Still no adjudicator and still no section in our corpus.' },
+          { n: '5', tone: '--sc-warn', t: 'Permitted use', cite: CITE_008, c: CITE_008, book: 'BASTROP-UDC', section: '14-02-008', live: false, d: 'Unchecked', was: 'Unchecked', author: 'machine', note: 'BASIS CHANGED. The applicant supplied the use on the revised sheet, and it is still Unchecked \u2014 because what is missing is our adjudicator, not their data.' },
+          { n: '6', tone: '--sc-crit', t: 'Driveway width', cite: 'Citation owed', c: null, book: '', section: '', live: false, d: 'Fail', was: 'Fail, held', author: 'reviewer', note: 'Carried, still held back. C-101 changed; the finding still has no section, so it still cannot be issued.' },
         ].map(c2Row).join('\n') +
         basis('Finding 5 is the case that justifies the two axes on Coverage. A value arrived from the applicant and the determination did not move, because the gap was never theirs. A product that treated "not evaluated" as one bucket would have told them to resubmit something that would not have helped.', '130ch'),
     }),
@@ -470,7 +536,7 @@ fs.writeFileSync(new URL('./canvas.json', import.meta.url), JSON.stringify({
     { id: 'honest', x: 1720, y: -360, w: 680, text: 'ONE RULE HAS AN ADJUDICATOR. THE SCREEN SAYS SO.\nadjudicateMinimumSetback is called exactly once, for the FRONT setback. So finding 1 carries LIVE CHECK, and side and rear setback carry NO ADJUDICATOR — drawn, not built.\nPermitted use is Unchecked, not Pass: source sets adjudicated:null because a use table is not a numeric comparison. An earlier draft showed five adjudications that do not exist.' },
     { id: 'nocite', x: 2460, y: -360, w: 660, text: 'A FINDING WITH NO SECTION SHOWS NO CITATION.\nThe UDC book holds exactly two sections, 14-02-003 and 14-02-008. A section outside it returns a typed absence that deliberately carries NO citation field, so those rows print "No citation" rather than a plausible-looking reference.\nAnd finding 6 is BLOCKED FROM THE LETTER for the same reason: buildCitation throws without an edition, a book and a section. A reviewer\'s confidence is not a citation.' },
     { id: 'absence', x: 3440, y: -360, w: 680, text: 'TWO AXES, NEVER ADDED TOGETHER.\nAxis 1, our corpus: absent-verified (read the edition, confirmed not in it — THE STRONG CLAIM), not-entitled, source-unavailable, unchecked.\nAxis 2, our reasoning: the section is fine and readable, and no adjudicator exists.\nA corpus gap and a reasoning gap have different owners and different fixes. Plus a third row the taxonomy cannot describe: a whole-chain failure is ONE finding about us, never twelve about the code.' },
-    { id: 'quote', x: 0, y: 1210, w: 700, text: 'WE DO NOT PARAPHRASE A CODE WE CANNOT QUOTE.\nCODE_BOOKS.IBC2018P6.quotable is false. An earlier draft stated what IBC 705.5 requires three times, on the same canvas as a panel promising we would never do that.\nNow the reviewer names the conflict, the letter says the text is not reproduced and why, and the product never characterises the codes or picks between them.' },
+    { id: 'quote', x: 0, y: 1210, w: 700, text: 'WE DO NOT PARAPHRASE A CODE WE CANNOT QUOTE.\nCODE_BOOKS.IBC2018P6.quotable is false. An earlier draft stated what that book requires three times, on the same canvas as a panel promising we would never do that.\nThe reviewer names the conflict, the letter says the text is not reproduced and why, and the product never characterises the codes or picks between them.' },
     { id: 'letter', x: 720, y: 1210, w: 700, text: 'THE LETTER IS THE PRODUCT, AND ITS COUNTS MUST TIE.\n1 correction + 1 escalation + 10 not evaluated + 1 held back = 13 findings. An escalation is printed under its own heading and explicitly asks nothing of the applicant, because counting it as a correction would tell them to fix a disagreement inside the city.\nOne finding numbering across the console, the letter and the manifest.' },
     { id: 'cyclen', x: 1720, y: 1210, w: 700, text: 'CYCLE 2 — AND THE CASE THAT JUSTIFIES THE TWO AXES.\nFinding 5: the applicant supplied the use on the revised sheet and the determination DID NOT MOVE, because what was missing was our adjudicator, not their data.\nA product with one "not evaluated" bucket would have asked them to resubmit something that could not have helped. That is the cost of collapsing the axes, in one row.' },
     { id: 'owed', x: 2460, y: 1210, w: 700, text: 'WHAT DOES NOT EXIST — this design is ahead of the code on purpose.\n• No viewer, no sheet index, no pin model, no dimension capture, no cycle, no department routing.\n• ONE adjudicator (front setback). Every other rule is drawn and badged NO ADJUDICATOR.\n• The provenance ladder is proposed here, not in source.\n• The 12-rule scope is a design premise.\nPARALLEL DEPARTMENT REVIEW is the category\'s core value and is NOT designed here. Pinned, and the next argument to have.' },
