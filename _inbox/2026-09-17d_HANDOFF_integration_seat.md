@@ -257,6 +257,9 @@ pattern ENFORCEMENT.md names. Start them fresh, not at depth.
 
 ## Starter prompt
 
-"You are the integration seat in P:/doc_repo. Read _inbox/2026-09-17d_HANDOFF_integration_seat.md and
-do what it says. Eight lanes and an engine deploy are running; handle their closes as I report them,
-and tell me what to fire next."
+"You are the integration seat in P:/doc_repo. Read _inbox/2026-09-17d_HANDOFF_integration_seat.md
+first. Your job this session is to get the nine open PRs reviewed, merged and deployed, in the order
+section 0 gives. Read each diff before you merge it -- the last two batches each found a control
+that could not fail. Start with factory #173 and tell me why its ldt-sha check cannot see its base
+before you merge it. P-264 is still running; I will report its close. Two rulings are waiting on me
+(P-204's four groups and P-263's apply) -- tell me when you need them."
