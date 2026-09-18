@@ -217,3 +217,12 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
   redirect, which is UTF-16LE (`FF FE` BOM), so git stores it as a BINARY blob no `rg` can read. 121
   `*surface_probe.json` are tracked and ZERO `*.log.txt` ever was: the JSON is the artifact of record and the
   log is shell scratch. Unstaged and deleted rather than introducing the repo's first binary log.
+
+- **LESSON two runs of ONE instrument are ONE derivation, however much time passes between them.** The
+  acceptance read the per-feed domain counts twice, ending 17:47:43Z and 17:56:43Z, and the two bodies are
+  BYTE-IDENTICAL except `elapsed_ms` and `ended_at`, over 120 body lines. That is a stability observation
+  about a nine-minute window and NOT corroboration of the number: one party running one predicate twice
+  cannot disagree with itself, so agreement carries no information about whether the source is right.
+  Independence is a property of the SOURCE, not of the run count. No committed claim rested on it as two
+  sources, so nothing had to be corrected, but it is the shape that manufactures a false second derivation
+  for free.
