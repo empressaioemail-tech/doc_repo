@@ -1,0 +1,100 @@
+{
+  "lane": "g135-mint",
+  "planRows": ["G-135"],
+  "status": "closed-partial",
+  "statusReason": "G-135's pass condition has two parcels. Parcel 1 -- any lane can obtain a bastrop_tx-scoped credential from a documented location without asking a human -- is PASS, measured live. Parcel 2 -- a full-shell authenticated probe on bastrop_tx mounts the map iframe -- was NOT run by this lane: it is not among this dispatch's five work steps, and _inbox/2026-09-18_HANDOFF_smartcity_planner.md assigns the three probe commands to the G-154 lane. A close may only say 'closed' if every parcel of every row in planRows is PASS on the cited artifact, so this one says closed-partial and names the parcel it did not measure.",
+  "filedAt": "2026-09-18T14:49:46Z",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-18_144729_g135_mint_credential_probe.json",
+    "instrument": "_inbox/2026-09-18_g135-mint_probe.mjs (this lane's own, not scripts/surface-probe.mjs)",
+    "verdict": "PASS",
+    "rowsMeasured": ["G-135"],
+    "parcels": [
+      { "parcel": "a lane can obtain a bastrop_tx-scoped credential from a documented location without asking a human", "verdict": "PASS", "basis": "8 of 8 probe cells PASS; the credential is readable by one documented gcloud command from Secret Manager hauska-prod-497015/hauska-tenant-key-bastrop-tx-lane-verification, and that command is recorded in _catalog/credential_access_index.json" },
+      { "parcel": "a full-shell authenticated probe on bastrop_tx mounts the map iframe", "verdict": "UNMEASURED", "basis": "not run here; not in this dispatch's work steps; assigned to the G-154 lane by the 2026-09-18 handoff" }
+    ],
+    "skeletonDeviation": "The CLOSE SKELETON says probe.artifact is 'a path under _inbox/ produced by scripts/surface-probe.mjs'. THIS ARTIFACT WAS NOT. Declared rather than papered over: scripts/surface-probe.mjs is the OPS-23/OPS-24 parcel instrument whose ROWS are smartsite.cloud parcel predicates keyed P-151..P-320, run with --rows <P-row>. It carries no predicate for a G-row, and G-135 is outside the close gate's GATED_RANGES, so the gate does not fire on this close and the skeleton's producer clause cannot be satisfied by this row's own predicate without first building one. See leave_behind item 4: this is an instrument gap, not a lane shortcut.",
+    "whatItWouldTakeToSatisfy": "A ROWS entry in scripts/surface-probe.mjs for the credential predicate family (tenant-scoped key: 200 scoped-in, 401 keyless, 401 garbage, 403 other tenant), then re-run and cite that artifact. Deliberately not done here: extending a shared 2411-line instrument is not one of this dispatch's five work steps and was not authorised."
+  },
+
+  "falsifier": "This lane's claim is: a verification-scoped bastrop_tx credential now exists at a documented location, and it is tenant-scoped rather than a master key, proven live on d12-main-uat. The observations that would have falsified it, and did not, are (a) cell F returning 200 instead of 403 -- the minted key reaching fixture-city, the other tenant-private pack, which would have meant the credential is a master key and the tenancy model is decorative; (b) cell D returning 200 instead of 401 -- the gate not being live, which would mean the credential proves nothing; (c) cell A returning anonymous:true -- the stored value not resolving to the minted row at all. Each was declared as an expected value in the instrument BEFORE the probe ran, and each came back the other way.",
+  "contradicted": "TWO claims this lane measured false. (1) The dispatch's own premise -- 'The only active bastrop_tx key is labelled \"Nick, bastrop_tx staff pilot\"' -- is FALSE. CP1 read THREE active rows scoped to bastrop_tx: the pilot (2a26c318, 2026-09-03), 'G-134 lane verification (bastrop_tx)' (acf2cf9f, 2026-09-15, used once and apparently never since), and 'G-154 lane verification (machine credential, not a person)' (2510a3ff, created 2026-09-18T14:36:21Z and last used 14:42:18Z -- 23 seconds before CP1 read the store, so another lane holds and is using a lane-usable bastrop_tx credential right now). The dispatch's other premise, that no DOCUMENTED location for one existed, held: no Secret Manager secret held a bastrop_tx lane credential and the index read 'REQUESTED, NOT YET MINTED'. (2) Step 4's expectation that /auth/whoami returns 'the new key_id' is not achievable on the deployed route: it returns {\"anonymous\":false,\"jurisdiction_tenant\":\"bastrop_tx\"} and no key_id field. Recorded, not worked around; the key_id linkage was instead established by reading /admin/keys immediately after the probe and observing that 96e40316's last_used_at advanced to 2026-09-18T14:47:21.181Z, inside the probe's own window.",
+
+  "leave_behind": [
+    {
+      "item": "G-135's second pass parcel is still UNMEASURED",
+      "detail": "A full-shell authenticated probe on bastrop_tx that mounts the map iframe. This lane did not run it. _inbox/2026-09-18_HANDOFF_smartcity_planner.md gives the G-154 lane three probe commands to run; if G-135's closure is claimed on the map iframe, that output is the artifact to grade it on, not this one.",
+      "owner": "planner"
+    },
+    {
+      "item": "Two other active bastrop_tx keys exist and neither is in this index with a storage location",
+      "detail": "acf2cf9f-72ad-4008-9bf4-684a35470e99 ('G-134 lane verification (bastrop_tx)', 2026-09-15, exercised once 14s after creation) and 2510a3ff-0d3c-47f4-8026-eadd6172b000 ('G-154 lane verification (machine credential, not a person)', 2026-09-18T14:36:21Z, IN ACTIVE USE as of 14:42:18Z). Neither is backed by a Secret Manager secret as far as gcloud secrets list shows, so a lane holding either got it some way this index does not describe. THIS LANE REVOKED NEITHER and touched neither row: the handoff is explicit that what to do with them is the planner's call, and 2510a3ff belongs to a lane that is mid-flight. The revocation command for either is the same shape as this key's howToRevoke.",
+      "owner": "planner"
+    },
+    {
+      "item": "A secret named *_MCP_URL holds a Postgres DSN with a password, and this lane read it into a terminal before recognising it",
+      "detail": "hauska-prod-497015 secrets PRODUCTION_HAUSKA_MCP_URL and STAGING_HAUSKA_MCP_URL both contain postgresql:// connection strings with embedded credentials, not URLs. This lane read them while looking for the MCP's HTTP base URL, so both values were printed into this session's terminal and now sit in this session's harness output file under C:\\Users\\cente\\.cursor\\projects\\... . The values were used for nothing, appear in no artifact, commit or message written by this lane, and this lane rotated nothing. Two separable decisions for a human: (a) whether the misexposure warrants rotating that DSN, and (b) whether a secret whose name promises a URL should be renamed or split so the next lane does not print a production database credential by following the name. Note the MCP base URL never needed a secret lookup: _inbox/2026-09-14_g133-bastrop-verify-access_cp2.json records it matches the dashboards' HAUSKA_MCP_URL.",
+      "owner": "planner + operator (rotation is theirs; no lane should rotate a production store credential on its own initiative)"
+    },
+    {
+      "item": "The close skeleton demands a surface-probe.mjs artifact that the instrument cannot produce for any G-row",
+      "detail": "script/enforcement/probe-close-gate.mjs gates P-151..P-174 and P-186..P-320 only; scripts/surface-probe.mjs has no ROWS entry for a G-row. So every G-row close is structurally unable to satisfy the skeleton's producer clause and can only declare the deviation, as this one did. Either the skeleton should scope its producer clause to gated rows, or a credential/tenancy predicate belongs in the instrument. Raised, not fixed.",
+      "owner": "planner"
+    },
+    {
+      "item": "THE PROBE-CLOSE-GATE HOOK IS MISSING THE ROWS IT CLAIMS TO GATE, AND ITS OWN SELF-TEST SAYS SO",
+      "detail": "Found by running the control while filing this close. `node scripts/enforcement/probe-close-gate.mjs --self-test` FAILS one check: 'GATED_RANGES equals EVERY registry range for OPS-23 and OPS-24'. Cause: _catalog/plan_registry.json now declares OPS-24 rows [[186,198],[200,250],[252,320],[327,351]] while the hook's literal OPS24_RANGES in scripts/enforcement/probe-close-gate.mjs stops at 320, so rows P-327..P-351 are NOT gated: a close for one of them can be committed with no probe.artifact at all and the hook will not fire. This is the third instance of the same class -- the 2026-09-14 violation (P-169..P-174) extended it to 174, then A-185/A-199 extended it to 320; each time the gap was found late. The fix is one line (add [327,351] to OPS24_RANGES), and the file's own self-test is the check that would confirm it. NOT DONE BY THIS LANE: probe-close-gate.mjs is a shared control with an active OPS-24 wave in flight, this dispatch scopes this lane to a credential mint, and the same file warns that a control silently widened by whoever touched it last is the defect it exists to catch. Reported with the repro command instead of edited.",
+      "reproduce": "cd <doc_repo>; node scripts/enforcement/probe-close-gate.mjs --self-test   # 1 check FAILED, named above. Compare OPS24_RANGES in the hook against programs['OPS-24'].rows in _catalog/plan_registry.json.",
+      "owner": "planner or the OPS-24 wave's own lane, deliberately not this one"
+    },
+    {
+      "item": "doc_repo edits left uncommitted, by contract",
+      "detail": "AGENT-CONTRACT says doc_repo commits are planner-owned. Uncommitted in P:\\seat-worktrees\\substrate\\doc_repo on branch seat/substrate: _catalog/credential_access_index.json (updated entry for the new key + a dated correction to the hauska-admin-bootstrap-key entry's store location), plus this lane's four _inbox artifacts (cp1, cp2, close, probe, and the three .mjs instruments). Nothing staged, nothing committed.",
+      "owner": "planner"
+    }
+  ],
+
+  "missionPremise": "\"The operator ruled that SmartCity designs are proven on bastrop_tx, Bastrop's real tenant-private pack. On any deployed app, a tenant-private pack answers 401 to an anonymous read. So every lane that must prove on Bastrop needs a credential, and none exists that a lane may use. The only active bastrop_tx key is labelled 'Nick, bastrop_tx staff pilot' and belongs to the operator's own account, and G-135 ruled it must not be handed out.\" -- VERDICT: the need is real and was measured; the census is wrong. Anonymous reads DID answer 401 (cell D), and there WAS no documented location for a lane credential (no secret, index read NOT YET MINTED). But lane-usable bastrop_tx credentials already existed -- two of them, one minted by the G-134 lane three days earlier and one minted by the in-flight G-154 lane 23 seconds before this lane read the store. So this dispatch is deduplication and documentation, not first provisioning.",
+  "completionPredicate": "\"Any lane can obtain a bastrop_tx-scoped credential from a documented location without asking a human; a full-shell authenticated probe on bastrop_tx mounts the map iframe, which has never once happened.\" Parcel 1 PASS (one gcloud command, now recorded in the index, proven by 8 live cells). Parcel 2 UNMEASURED by this lane.",
+  "scopeBasis": "\"This dispatch is for the SUBSTRATE seat. Minting happens in hauska-mcp-server, which the substrate seat owns, through that repo's own admin API. You write no product code. You launch no sub-agents (FAN-DEPTH 0).\" Honoured exactly: zero product code written, zero deployments, zero sub-agents, the pilot row untouched, and the only writes were one api_keys row via the repo's own admin API, one Secret Manager secret, and doc_repo text.",
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "snapshot": {
+    "docRepo": { "worktree": "P:\\seat-worktrees\\substrate\\doc_repo", "branch": "seat/substrate", "commit": "247b0455", "dirty": "yes -- this lane's artifacts and the index edit, uncommitted by contract" },
+    "hauskaMcpServer": { "worktree": "P:\\seat-worktrees\\substrate\\hauska-mcp-server", "branch": "seat/substrate", "commit": "d7723742fce24270a0cfb05a752c588d62984121", "dirty": "unchanged from CP1: three files modified by an earlier session, none by this lane" },
+    "proofTarget": { "app": "d12-main-uat", "deploymentId": "939947a9-4445-4cd1-8381-a40274ddabf7", "sourceCommitHash": "53ade8a9dbdb649acbe04c721a54fa518779d0b1", "phase": "ACTIVE", "health": "HEALTHY", "deployedAt": "2026-09-18T13:39:06Z", "deployedBy": "manual UPDATE_SPEC, before this lane existed -- this lane deployed nothing" },
+    "mcp": { "url": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app" },
+    "key": { "key_id": "96e40316-0907-49f3-8c6e-d47d9013f02e", "tier": "team", "product": "public", "jurisdiction_tenant": "bastrop_tx", "platform_internal": false, "created_at": "2026-09-18T14:44:19.961Z", "status": "active" },
+    "secretPath": "projects/hauska-prod-497015/secrets/hauska-tenant-key-bastrop-tx-lane-verification/versions/1 (ENABLED)",
+    "whoamiResult": "GET /auth/whoami with the minted key in x-hauska-key -> 200 {\"anonymous\":false,\"jurisdiction_tenant\":\"bastrop_tx\"}. No key_id field exists on this route; see contradicted (2).",
+    "probeCells": [
+      { "cell": "A", "artifactCell": "A whoami with minted key (MCP)", "request": "GET /auth/whoami (MCP), with key", "httpStatus": 200, "artifactVerdict": "PASS" },
+      { "cell": "B", "artifactCell": "B whoami anonymous (MCP, control)", "request": "GET /auth/whoami (MCP), no key", "httpStatus": 200, "artifactVerdict": "PASS" },
+      { "cell": "C", "artifactCell": "C bastrop_tx with minted key (app)", "request": "GET /api/city-domains?cityKey=bastrop_tx (d12-main-uat), with key", "httpStatus": 200, "artifactVerdict": "PASS" },
+      { "cell": "D", "artifactCell": "D bastrop_tx no key (app)", "request": "same, no key", "httpStatus": 401, "artifactVerdict": "PASS" },
+      { "cell": "E", "artifactCell": "E bastrop_tx garbage key (app)", "request": "same, garbage key", "httpStatus": 401, "artifactVerdict": "PASS" },
+      { "cell": "F", "artifactCell": "F fixture-city (OTHER tenant-private pack) with minted key (app)", "request": "same key against cityKey=fixture-city", "httpStatus": 403, "artifactVerdict": "PASS" },
+      { "cell": "G", "artifactCell": "G template-city (public-free) no key (app, control)", "request": "cityKey=template-city, no key (control)", "httpStatus": 200, "artifactVerdict": "PASS" },
+      { "cell": "H", "artifactCell": "H no-such-city with minted key (app, control)", "request": "unknown city, with key (control)", "httpStatus": 404, "artifactVerdict": "PASS" }
+    ],
+    "celledToArtifact": "Each entry's artifactCell is the exact `cell` label in the cited artifact and each httpStatus is that cell's `httpStatus` field, so the two files can be diffed by machine rather than by eye. Cross-checked after filing: 8 of 8 agree."
+  },
+
+  "laneClaim": { "claimedVia": "scripts/lane-claim.mjs claim --lane g135-mint --seat cente-vsc-substrate-g135", "released": true, "releasedVia": "scripts/lane-claim.mjs release --lane g135-mint --seat cente-vsc-substrate-g135" },
+
+  "fleetMemory": [
+    { "kind": "GROUND-TRUTH", "at": "2026-09-18T14:42Z", "entry": "bastrop_tx had THREE active api_keys rows, not one: pilot 2a26c318 (2026-09-03), G-134 lane  acf2cf9f (2026-09-15), G-154 lane 2510a3ff (2026-09-18T14:36:21Z, in use). Read off GET /admin/keys, public projection only." },
+    { "kind": "GROUND-TRUTH", "at": "2026-09-18T14:44Z", "entry": "hauska-tenant-key-bastrop-tx-lane-verification now exists in Secret Manager hauska-prod-497015 at version 1, ENABLED, and the key 96e40316 is tenant-scoped: 200 on bastrop_tx, 401 keyless, 401 garbage, 403 on fixture-city, on d12-main-uat deployment 939947a9 at commit 53ade8a9." },
+    { "kind": "GROUND-TRUTH", "at": "2026-09-18T14:47Z", "entry": "The deployed /auth/whoami on hauska-mcp-server returns only {anonymous, jurisdiction_tenant} -- NO key_id. Any dispatch or script that expects key_id there will fail its own assertion. Link a presented key to its row via /admin/keys last_used_at instead." },
+    { "kind": "LESSON", "entry": "A tenant-private pack answer set cannot be fully proven without a SECOND tenant-private pack to point the same key at: fixture-city is what turned 'the key works' into 'the key is tenant-scoped' (403). The dispatch expected this direction to be UNMEASURED; it was measurable, because smartcity-dashboards ships bastrop_tx AND fixture-city as tenant-private (src/city-pack.test.mjs). Check the pack list before declaring a direction unmeasurable." },
+    { "kind": "LESSON", "entry": "Secret names are an interface and they lie. PRODUCTION_HAUSKA_MCP_URL / STAGING_HAUSKA_MCP_URL in hauska-prod-497015 hold postgresql:// DSNs with passwords. A lane looking for an HTTP URL by name will print a production database credential. Read the value only after some source other than the name says what it should contain." },
+    { "kind": "LESSON", "entry": "gcloud secrets versions add --data-file=- reads the value from STDIN, so a minted secret can go from an HTTP response to Secret Manager without touching argv, a temp file, or a log. Pair it with a describe-first guard so a re-run of the lane cannot silently rotate a credential that other lanes are already reading." },
+    { "kind": "DEAD-END", "entry": "scripts/surface-probe.mjs cannot produce the artifact the generic close skeleton demands for a G-row: its ROWS are smartsite.cloud parcel predicates for P-151..P-320 and it is invoked with --rows <P-row>. Do not spend a lane trying to make a G-row close conform by running it; either the skeleton's producer clause is scoped to gated rows or a credential predicate family is added to it." },
+    { "kind": "OPEN", "entry": "G-135 parcel 2 (full-shell probe mounting the map iframe on bastrop_tx) is UNMEASURED and belongs to the G-154 lane per the 2026-09-18 handoff. Nothing in this lane's artifacts should be cited as evidence for it." },
+    { "kind": "OPEN", "entry": "Whether acf2cf9f (G-134 lane, dormant) and 2510a3ff (G-154 lane, in flight) should be revoked, and where their values live, is unanswered and is the planner's call. If 2510a3ff is revoked while its lane is mid-flight, that lane breaks." },
+    { "kind": "OPEN", "entry": "probe-close-gate.mjs does NOT gate P-327..P-351: the registry declares OPS-24 rows [327,351] and the hook's literal range stops at 320. Its own self-test fails on that check. Until the one-line fix lands, any OPS-24 close in that range commits ungraded. Repro: node scripts/enforcement/probe-close-gate.mjs --self-test." },
+    { "kind": "LESSON", "entry": "Run a control's own self-test when you are about to rely on it, not only when you suspect it. The gate here fails LOUD in self-test and silently in production use -- it just does not fire for rows outside its literal ranges, which is indistinguishable from 'this close had nothing to gate'. A control whose miss looks identical to a pass has to be exercised positively to be believed." }
+  ]
+}
