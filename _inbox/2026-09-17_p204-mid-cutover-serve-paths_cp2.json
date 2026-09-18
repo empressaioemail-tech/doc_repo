@@ -1,0 +1,110 @@
+{
+  "checkpoint": "CP2 pilot/mid-work — the five-rail ruling table",
+  "lane": "p204-mid-cutover-serve-paths",
+  "planRows": ["P-204"],
+  "seat": "cente-vsc-p204",
+  "filedAt": "2026-09-17T22:52:00Z",
+  "evidenceArtifact": "_inbox/2026-09-17_p204-mid-cutover-serve-paths_live-serve-measurements.json",
+  "missionPremise": "OPS-24 / P-204: the five rails {parcelGeometry, pipelines, railCorridor, etjStatus, landUseDescription} stand open in all six counties with verdict excluded-mid-cutover because RAIL_POLICY gives the mid-cutover class no accept list — the program has never ruled whether the ledger is meant to become their source. The ruling is the operator's; this lane supplies what a ruling needs, writes no store and changes no serving behaviour (dispatch, Mission).",
+
+  "rulingTable": [
+    {
+      "rail": "parcelGeometry",
+      "servesToday": "cortex-api facets route brokerageNodeFacets.ts -> loadBoundaryEdgeFactAtom (legacy-design-tools artifacts/api-server/src/lib/boundaryEdgeFactRead.ts): prefix-range SELECT over `atoms` where entity_type='property-boundary-edge', dual grammar {fips}:{prop} and {fips}:{prop}.00000000 -> wire field boundaryEdgeFact (serveLayer 'boundary', provenanceClass 'Derivation') -> the map draw via lib/parcelDrawFromReads.ts. Atom writer: boundary-primitive-county-batch (ring tessellated at WRITE).",
+      "ledgerCellState": "EMPTY in all six counties (rail open, verdict excluded-mid-cutover in each; the cell would be accounting for an edge set). The value serves from atoms while the cell stays unwritten — accounting-only gap, not a data gap.",
+      "cutoverCost": "No writer to build: the atoms exist. Cost = write the cell per parcel referencing the atom set + a rendering key (the ledger model already stores 'a cached rendering keyed to atom version'), and let the one retrieval-api reader walk it. No vocabulary or contract change: the wire field and its serveLayer already exist. Population: parcel-node scale — 25,181 in Caldwell 48055, 114,369 in McLennan 48309, and note McLennan has 0 boundary-edge atoms today, so a cutover there would serve 114,369 honest refusals, not rings.",
+      "costOfNotCuttingOver": "A second read path survives, which is the named exception to 'the ledger IS the serving path' (2026-09-11). Six cells stay open and block the Phase 0 exit. Worse, an instrument cannot distinguish 'atom-backed and unaccounted' from 'not acquired' — the audit's on-wire test (parcel-node family) says on-wire while the ledger says excluded, and DEV_PROCESS's 'measured, never subtracted' rule is the loser.",
+      "recommendation": "CUT OVER",
+      "servePathNamed": "ledger cell (parcelGeometry) -> haska-engine retrieval-api cell reader -> dereference property-boundary-edge / parcel-node atoms -> boundaryEdgeFact on /facets (unchanged shape) -> map draw and InspectCard.",
+      "provenByViolation": "yes — atoms 9/12/5/7 -> served edges 9/12/5/7; atoms 0 -> boundaryEdgeFact {state refused, code atom-miss} on 4 parcels; no GIS fallback exists in the reader."
+    },
+    {
+      "rail": "pipelines",
+      "servesToday": "cortex-api -> loadPipelineFactAtom (legacy-design-tools artifacts/api-server/src/lib/pipelineFactRead.ts) over `atoms` where entity_type='rrc-pipeline-fact', bound by bare parcelNodeId -> wire field pipelineFact (serveLayer 'rrc-pipelines', provenanceClass 'Derivation'). Atom writer: tx-rrc-pipeline-staged-v1 (staged RRC public GIS, 152.4 m buffer in the body).",
+      "ledgerCellState": "EMPTY in all six counties. The atoms are written at near-parity: Caldwell 24,988 rrc-pipeline-fact against 25,181 parcel-nodes (99.2%), McLennan 114,254 against 114,369 (99.9%).",
+      "cutoverCost": "No writer to build. Cost = the cell per parcel, its atom reference and its render key. No vocabulary change (the served shape is a scalar boolean plus bufferMeters / nearestPipelineDistanceMeters / operatorName, all derivations of one atom). Two named defects the cutover would surface, both worth carrying into the ruling: (1) the atom body carries sourceVintage 'UNKNOWN' for RRC pipelines, so the cell's vintage is UNKNOWN and a customer-facing vintage cannot be stated until the staged source is dated; (2) the served value is a DERIVATION (proximity <= 152.4 m), not a claim by the RRC, so the cell must record derivation, not a source assertion.",
+      "costOfNotCuttingOver": "Same exception as geometry, plus the vintage gap stays invisible: the customer reads nearPipeline with no way to see that the pipeline source is undated. Six cells open.",
+      "recommendation": "CUT OVER",
+      "servePathNamed": "ledger cell (pipelines) -> retrieval-api cell reader -> rrc-pipeline-fact atom -> pipelineFact on /facets (unchanged shape) -> card row.",
+      "provenByViolation": "yes — two parcels whose atoms say nearPipeline=true serve true with nearestPipelineDistanceMeters 12.3 / 13.8 and operatorName 'MPH BASTROP LATERAL, LLC' / 'ENERGY TRANSFER COMPANY'; six whose atoms say false serve false; bufferMeters 152.4 on every row matches the atom body."
+    },
+    {
+      "rail": "railCorridor",
+      "servesToday": "NOTHING. No surface reached carries a rail-corridor slot: the customer facets payload has no railCorridorFact key and the only 'rail' strings in the body are two prose sentences about rail-slate allowlists; the cortex-api payload likewise; legacy-design-tools has no reader outside registries (instrument-registry/classifications.json, lib/db schema bindings, railScoring/registry.ts); hauska-mcp-server names the entity type in property-entity-types.ts and reads it nowhere. The atoms DO exist: rail-corridor-fact, writer write-rail-corridor-fact-county.mjs, contract 1.17.0, NTAD NARN 2026-07-21 vintage, 152.4 m buffer, one atom per parcel — Caldwell 24,988 of 25,181 parcel-nodes, McLennan 114,254 of 114,369.",
+      "ledgerCellState": "EMPTY — and unlike the other four, there is no other path either. This rail is WRITTEN AND UNSERVED, which is a third state the dispatch's framing did not anticipate: the dispatch says 'all five serve now, so a ruling changes no customer outcome either way'.",
+      "cutoverCost": "The ledger becomes this rail's FIRST serve path. Cost = the cells; one additive wire block (mirror pipelineFact: nearRailCorridor, bufferMeters, sourceVintage, sourceCitation, entityId); optionally one UI row. No new writer (the writer exists and has applied) and no vocabulary change (the engine audit already declares serveLayer token 'rail-corridor' with slot tokens ['railcorridor','railroad','corridor'], and hauska-map's instrument registry already maps rail-corridor-fact -> serveLayer rail-corridor). Population: roughly parcel-node parity in every staged county.",
+      "costOfNotCuttingOver": "Six cells open; ~139k atoms' worth of applied work invisible to every customer; and the audit cannot tell 'unserved' from 'absent'. Retiring instead would mean deleting or de-registering a rail the operator ruled in on 2026-08-09 ('make it three rails, rail-corridor now', R1) and that the registry already counts.",
+      "recommendation": "CUT OVER (the ledger as the rail's first serve path). RETIRE is the defensible alternative ONLY if the operator rules that a rail corridor is not a customer fact — that is a product call, and it is the one of the five where the cheap default is not obviously right, because cutting over does not preserve a customer outcome: it creates one.",
+      "servePathNamed": "ledger cell (railCorridor) -> retrieval-api cell reader -> rail-corridor-fact atom -> a new railCorridorFact block on /facets -> card row (if an operator wants the row; the cell and the wire block are useful even if the card stays silent).",
+      "provenByViolation": "yes (by absence at both ends): the surface was searched for the rail's own slot tokens and the atom's presence on the same parcels was confirmed by SQL — atoms present, slot absent."
+    },
+    {
+      "rail": "etjStatus",
+      "servesToday": "Two places, and they disagree. (a) cortex-api (authoritative): brokerageNodeFacets.ts / propertyExplorer.ts -> loadCityLimitsFactForServe (cityLimitsFactServeCutover.ts) -> overlayEtjStatus -> loadEtjFact (etjFactRead.ts), a point-in-polygon against tx_etj_boundary + tx_etj_source in the deployment store, written onto cityLimitsFact.etjStatus plus an etjFact block. Live: 48453:134392 -> present, etjId austin-tx:39, ring 'AUSTIN 2 MILE ETJ'; 48209:97658 -> absent, coveredBy ['san-marcos-tx'], ringsConsulted 1. (b) the customer surface: the PE facets BFF (hauska-map apps/property-explorer/api/_lib/pe-property-atoms.ts -> applyRecordPatch -> pe-record-to-facets.ts composeCityLimits) REPLACES the whole cityLimitsFact whenever the retrieval-api /record serves rail cityLimits as 'record' (live: serve 'record', X-PE-Read-Path 'record'), and composeCityLimits writes etjStatus: \"unresolved\" as a literal in all four of its branches. Only queryPoint is carried through (withPreservedQueryPoint). Live: 13 of 13 parcels sampled serve 'unresolved', 0 carry an etjFact block or an 'ETJ:' basis segment.",
+      "ledgerCellState": "WRITTEN-AND-UNREAD at the customer surface: the determination is produced by cortex from P-296's ingested rings and then discarded by the panel composer; as a ledger cell the rail is empty (open in all six counties). P-296's work IS the cutover — on the cortex path — and it is upstream of a consumer that throws it away.",
+      "cutoverCost": "Mint etj-fact atoms (one atom per determination, per publisher layer, at one vintage: the P-296 wire already carries etjId, ringLabel, coveredBy, ringsConsulted, sourceCitation and queryPoint, i.e. an atom body already shaped), then the cells. Writer: the ETJ acquisition path (P-241/P-296, lib/cad-ingest boundary/ejtCli) would publish to atoms instead of computing at serve time. Vocabulary: the rail key etjStatus is a three-valued scalar already present in the engine's rail registry (parcel-record-rail-registry.ts, scalar, jurisdiction group); the etjFact block is additive. Population: bounded by parcels inside a registered publisher's extent (20 publishers statewide per the dispatch), not by county.",
+      "costOfNotCuttingOver": "The strongest cost in the set, and it is being paid now: the customer reads a literal that is wrong in BOTH directions. A parcel genuinely inside Austin's 2-mile ETJ reads 'unresolved' (false negative), and a parcel with a CHECKED absence — publishers named, rings counted — reads 'unresolved' too, collapsing the three-valued disposition the module's own header says exists to prevent exactly this. Under the ledger law this is a second read path that is also a silent downgrade.",
+      "recommendation": "CUT OVER, plus a separate immediate defect fix in hauska-map (the BFF must stop replacing cityLimitsFact wholesale, or must merge the ETJ fields). Both acts are needed and neither substitutes for the other: a cutover without the panel fix changes nothing a customer reads, and a panel fix without the cells leaves the rail open.",
+      "servePathNamed": "ledger cell (etjStatus) -> retrieval-api cell reader -> minted etj-fact atom (PIP against the publisher's published ring, with publisher, ring id and vintage) -> cityLimitsFact.etjFact on /facets -> card row. Today's cortex overlay is the same path minus the atom and the cell.",
+      "provenByViolation": "yes — the same parcel read at both ends: cortex present -> card unresolved; cortex verified-absent -> card unresolved. This is the strongest violation in the set: at the customer surface the value is a literal, not a read."
+    },
+    {
+      "rail": "landUseDescription",
+      "servesToday": "The BAKE. facets.baseFacts.landUse.{code,description,source,vintage} (sources observed: 'cad-roll-address-join' and 'cad-roll'; vintage a tier+adapter+drop stamp) -> the card's land-use row; provenance.landUseSource records the bake. A parallel read rides the same payload: landUseFact -> loadLandUseFactAtom (land-use-fact atoms at {parcelNodeId}:{taxYear}, max taxYear, dual grammar) which serves present (landUseCode) or a typed absence. The atom read does not control the displayed description.",
+      "ledgerCellState": "EMPTY in all six counties; atoms at near-parity (Caldwell 24,988 / 25,181; McLennan 114,254 / 114,369) with writer cad-property-land-use-v1.",
+      "cutoverCost": "Mechanically cheap (atoms exist, one writer, scalar + label), but it is the ONE cutover that CHANGES what a customer reads, in both directions, measured: 48209:97658 serves 'Vacant lot or tract' from the bake while its atom is a typed absence (join-hold: LANDUSE_JOIN_HOLD county 48209 — TxGIO prop_id does not join CAD property_use_code); 48209:97650 and 48209:34137 are the same shape; 48021:8723767 serves NOTHING while its atom holds C1. So the cost includes a named precondition: repair the Hays/TxGIO-CAD land-use join, or accept that 48209's four sampled vacant-lot descriptions become declared absences. Vocabulary: no change (label plus code already exist; A-193 makes a declared absence a legal served value).",
+      "costOfNotCuttingOver": "Two land-use answers on one payload with the customer reading the non-atom one is precisely the second read path the standing ruling forbids, and it is the reason the D2 parity audit (r1BriefCompose) has to keep policing bake-vs-atom agreement. Six cells open. The rail is also the one where 'excluded-mid-cutover' reads as a data gap while the truth is a source-disagreement the program has not adjudicated.",
+      "recommendation": "CUT OVER, with the join-hold named as its precondition (or the declared-absence outcome explicitly accepted for the join-hold counties). Needs its own decision: it is the only one of the five whose cutover subtracts a customer-visible value.",
+      "servePathNamed": "ledger cell (landUseDescription) -> retrieval-api cell reader -> land-use-fact atom ({parcelNodeId}:{taxYear}) -> the card's land-use row, with the declared absence and its reason served where the atom holds a typed absence.",
+      "provenByViolation": "yes — the two paths disagree on the same parcel in both directions (bake C1/description vs atom join-hold absence; atom C1 vs empty bake), which is only possible if the displayed value comes from the bake."
+    }
+  ],
+
+  "groupingRecommendation": {
+    "ruleTogether": [
+      {
+        "group": "A",
+        "rails": ["parcelGeometry", "pipelines"],
+        "why": "Both are atom-backed today, both proven load-bearing by ablation, and both cut over as pure accounting: no writer to build, no vocabulary change, and — the decisive point — no change to what a customer reads (the atom already IS the served value). One ruling for the pair is safe because a wrong cell here is caught by the same instrument (six-county-completeness) and costs no customer outcome, which is what 'rule together' should mean."
+      }
+    ],
+    "ruleAlone": [
+      {
+        "group": "B",
+        "rails": ["etjStatus"],
+        "why": "Different act, different owner, and a live defect. Its cutover is already running on the authoritative path and is being discarded by a consumer in another repo; the operator's decision is 'the ledger owns it, fix the consumer', plus whether to mint etj-fact atoms. Bundling it with geometry/pipelines would hide a customer-facing false negative behind a bookkeeping decision."
+      },
+      {
+        "group": "C",
+        "rails": ["landUseDescription"],
+        "why": "The only cutover that REMOVES a value a customer reads today (Hays join-hold). A product decision to serve a declared absence in place of a description must be made on its own record, not by association with a group whose cutovers are value-preserving."
+      },
+      {
+        "group": "D",
+        "rails": ["railCorridor"],
+        "why": "It has no serve path at all, so its decision is 'build the first serve' or 'retire a rail we ruled in on 2026-08-09 and have since written ~139k atoms for'. That is a product question, and it is the one rail where the dispatch's own premise (all five serve now, so a ruling changes no customer outcome) is false — cutting over ADDS a customer outcome. May be ruled with C if the operator wants a single 'what do we show that we do not show today' decision, but not with A."
+      }
+    ]
+  },
+
+  "provenServePaths": [
+    { "rail": "parcelGeometry", "broken": "atom presence ablated by subject (0 vs n atoms, 7 parcels)", "result": "edges served equal atoms present exactly; refusal atom-miss at 0" },
+    { "rail": "pipelines", "broken": "the atom's own boolean, both directions (true/false), with distance and operator as witnesses", "result": "served value tracks the atom body; operator names cannot come from any bake" },
+    { "rail": "landUseDescription", "broken": "the two candidate paths made to disagree on the same parcel", "result": "the served description is the bake; the atom is a parallel read" },
+    { "rail": "etjStatus", "broken": "same parcel read at cortex and at the customer", "result": "present/absent at cortex, literal unresolved at the customer" }
+  ],
+
+  "claimsICouldNotVerify": [
+    "Per-rail parcel_record_cell / parcel_gate_verdict rows read at source (no factory-store credential in this seat); the cell state above is quoted from _inbox/2026-09-17_six_county_completeness_post_apply.json, produced by scripts/six-county-completeness.mjs, not re-read by me.",
+    "tx_etj_boundary contents (355 rings / 20 publishers) and the dispatch's cortex revision string 00824-qay: neither re-read. The only deployment-store DSN reachable here is the wrong store (neondb, contains none of the four tables) and is corrupted in-file by a pasted 'empressaioemail@cloudshell' suffix.",
+    "railCorridor's absence on the PDF/site-plan report surface and on a live MCP tool call (source-level search only).",
+    "P-296's own probe output was not read, only its source; that probe runs the serve entry point in-process with an injected txgio_parcel centroid and declares its own parcel-record credential degradation, so it is not a customer-surface measurement."
+  ],
+
+  "falsifiedOrAmendedPremises": [
+    "dispatch 'all five serve now' — false for railCorridor (written and unserved).",
+    "dispatch 'a ruling changes no customer outcome either way' — false for railCorridor (adds an outcome) and for landUseDescription (subtracts one in Hays), and already false today for etjStatus (the customer reads a literal).",
+    "dispatch 'P-296 shipped ETJ to customers ... the Austin parcel moved from unresolved to present' — true at cortex-api, false at the customer surface; the panel composer overwrites it.",
+    "dispatch '30 of the 67 open cells' — the rail count is confirmed (30); the artifact the program cites totals 66 open cells."
+  ]
+}
