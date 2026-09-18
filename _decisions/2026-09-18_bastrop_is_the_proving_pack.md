@@ -45,14 +45,15 @@ lane at fixture traceability, which lives on `template-city`.
 
 ## What "harness the data" means, measured
 
-`bastrop_tx` already grants seven live feeds: the municode meeting calendar, MyGov permits, Samsara,
-Spireon, FirstDue, Power BI CIP and GoTo. Fleet, Police, Public works and Fire and EMS can read live
-Bastrop data today. Bastrop's v1 dashboard (`smartcity-os`) is wired to more than v2 can reach:
+`bastrop_tx` already grants seven live feeds: the municode meeting calendar, MyGov (one kind-level grant
+covering permits, work orders, inspections, code violations and business licenses), Samsara, Spireon,
+FirstDue, Power BI CIP and GoTo. Development services, Fleet, Police, Public works and Fire and EMS can
+read live Bastrop data today. Bastrop's v1 dashboard (`smartcity-os`) is wired to more than v2 can reach:
 
 | Bastrop data | Wired in v1 | Reachable from v2 | Granted to `bastrop_tx` |
 |---|---|---|---|
 | Samsara, Spireon, FirstDue, Power BI, GoTo, MyGov permits | yes | yes | yes |
-| MyGov inspections, code violations, business licenses, work orders | yes | yes, served by production v1 at `8bea7fa` | no |
+| MyGov inspections, code violations, business licenses, work orders | yes | yes | **yes: MyGov is one kind-level grant covering all five MyGov domains** (corrected 2026-09-18, OPS-17 A-147) |
 | OpenGov, OpenGov budgeting and planning, v1 permit revenue | yes, with API keys in production | no platform route | no |
 | v1 executive overview | yes | no | no |
 

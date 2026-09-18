@@ -77,7 +77,7 @@ carries it (`_decisions/2026-09-18_bastrop_is_the_proving_pack.md`).
 |---|---|---|
 | G-153 Fleet, Police | Samsara, Spireon | **yes, granted** |
 | G-152 Public works, Fire | Power BI, GoTo, FirstDue | **yes, granted** |
-| G-154 Dev services delta | MyGov inspections, code violations, licenses, work orders | **routes served; four grants now in G-154's scope** |
+| G-154 Dev services delta | MyGov inspections, code violations, licenses, work orders | **yes, already live: MyGov is one kind-level grant** (A-147 corrects an earlier claim that four grants were needed) |
 | G-156 Finance | OpenGov, budgeting and planning, permit revenue | **no: wired in v1 with keys in production, no route to v2. G-159 is the bridge** |
 | G-157 City management board | v1 executive overview | no: needs a bridge and your v1 capture |
 
