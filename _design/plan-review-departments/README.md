@@ -24,9 +24,13 @@ roster stays the nine lenses and no department is invented.
 
 ## Source state
 
-`P:\plan-review` has **no department model at all**. Personas are `orgId/userId` with roles
-reviewer, observer, applicant and staff; there is no discipline, no routing, no sign-off.
-Confirmed by grep across `src/` and `web/`. Everything on these artboards is proposed.
+`P:\plan-review` now declares **DEPARTMENT_ROLES** in `src/staff-identity.mjs`. The seven role ids
+this design proposes are the roster the product already carries. Personas are `orgId/userId` with
+roles reviewer, observer, applicant and staff. Re-read at `plan-review` `origin/main` `99c156ba`
+on 2026-09-18: the department model this canvas was drawn against did not exist then and exists
+now, so the roster below is the product's rather than a proposal. The rest of the position holds —
+discipline, routing and sign-off still return nothing across `src/` and `web/`. Everything else
+on these artboards is proposed.
 
 The roster is fixed by the ruling to the nine lenses, so the seven department roles are
 Development services, Finance, Public works, Parks, Police, Fire and EMS, Fleet. No

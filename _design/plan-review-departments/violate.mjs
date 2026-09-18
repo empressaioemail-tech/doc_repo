@@ -3,18 +3,21 @@
  *
  *   node violate.mjs
  *
- * WHAT IT DOES, IN TWO DIRECTIONS. It copies the real design into a scratch directory, REPAIRS
- * the three defects check.mjs found on the shipped boards so there is a baseline that must pass,
- * then plants one violation at a time and requires the check to fail for the named reason. After
- * each case it restores the baseline and requires the check to pass again. Exit 1 if either
- * direction is wrong.
+ * WHAT IT DOES, IN TWO DIRECTIONS. It copies the real design into a scratch directory, requires
+ * that copy to pass -- the baseline -- then plants one violation at a time and requires the check
+ * to fail for the named reason. After each case it restores the baseline and requires the check
+ * to pass again. Exit 1 if either direction is wrong.
  *
- * WHY THE REPAIRS. check.mjs reports three real violations on the boards as shipped, so the
- * unmodified design cannot be the baseline: a violation planted on top of a design that is
- * already failing proves nothing about the planted violation. The repairs are the three findings
- * themselves -- the stale department-model claim, finding 13's heading, and the held-back item
- * printed as an escalation -- and they exist ONLY in the scratch copy. Nothing in this file
- * writes to the design folder.
+ * WHY THE BASELINE IS NOW JUST A COPY (G-164, 2026-09-18). check.mjs used to report three real
+ * violations on the boards as shipped -- the stale department-model claim, finding 13's heading,
+ * and the held-back item printed as an escalation -- so the unmodified design could not be the
+ * baseline, and this file patched those three defects out IN A SCRATCH COPY to get one. G-164
+ * repaired the design itself, in gen.mjs, so the shipped boards now ARE the clean baseline and
+ * that patch is deleted rather than kept. It is deleted, not merely unused: a scratch repair
+ * whose anchors no longer exist cannot apply, and one that still applied would make this
+ * instrument's baseline a copy of a board the folder no longer ships. No predicate moved and no
+ * plant was removed -- all three defects are still planted below, so any of them coming back
+ * fails this instrument rather than hiding inside its own baseline step.
  *
  * WHY A SCRATCH COPY AT ALL. A violation planted in place and interrupted would leave the design
  * carrying a defect, and a tool whose failure mode is a corrupted artifact does not get run.
@@ -66,26 +69,18 @@ const edit = (file, fn) => {
 const del = (file) => fs.rmSync(path.join(scratch, file), { force: true });
 
 /* ------------------------------------------------------------- the baseline
-   The three defects check.mjs found, repaired in the scratch copy only. */
+   The baseline is the design AS IT SHIPS. Until G-164 it was a scratch copy with the three
+   defects check.mjs found patched out; the design now carries the repairs, so the list is empty
+   and the loop below simply copies the folder. Kept as a named list so a later lane can see
+   exactly what used to be patched here and cannot quietly reintroduce a patch step. */
 const HELD_BACK_HEADING = '<div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Held back &mdash; cannot enter this letter &mdash; 1</div>\n                ';
 
-const repairs = [
-  // 1. The source-state claim: the product declares DEPARTMENT_ROLES at origin/main.
-  () => swap('README.md', 'has **no department model at all**.', 'now declares **DEPARTMENT_ROLES** in `src/staff-identity.mjs`.'),
-  () => swap('canvas.json', 'has NO department model at all', 'now declares DEPARTMENT_ROLES'),
-  // 2. Finding 13 is "Parking spaces required" in the product's numbering.
-  () => swap('Department.dc.html', '>Fire apparatus access<', '>Parking spaces required<'),
-  // 3. The notice: the escalation heading claims its own class, and the held-back item gets its own.
-  () => swap('Letter.dc.html', 'no action from you &mdash; 2</div>', 'no action from you &mdash; 1</div>'),
-  () => {
-    const s = fs.readFileSync(path.join(scratch, 'Letter.dc.html'), 'utf8');
-    const item6 = s.indexOf('">6.</span>');
-    must(item6 > -1, 'the notice item 6 is not on the letter');
-    const rowStart = s.lastIndexOf('<div style="display:flex; gap:var(--sc-4); padding:var(--sc-4) 0;', item6);
-    must(rowStart > -1, 'the row around notice item 6 was not found');
-    write('Letter.dc.html', s.slice(0, rowStart) + HELD_BACK_HEADING + s.slice(rowStart));
-  },
-];
+/* Empty on purpose. It used to hold three swaps that patched the three findings out of the
+   scratch copy: the stale "no department model at all" claim in README.md and canvas.json,
+   finding 13's heading, and the escalation/held-back fold in Letter.dc.html. G-164 repaired
+   all three on the boards, and each is still planted as a case below, so the list stays as a
+   named step only so a later lane cannot reintroduce a patch here without it being visible. */
+const repairs = [];
 
 const baseline = () => {
   for (const f of fs.readdirSync(scratch)) fs.rmSync(path.join(scratch, f), { recursive: true, force: true });
@@ -225,12 +220,12 @@ let planted = 0;
 baseline();
 const clean = run();
 if (clean.code !== 0) {
-  console.error('the repaired baseline does not pass, so no violation can be attributed to a planted one:');
+  console.error('the baseline does not pass, so no violation can be attributed to a planted one:');
   console.error(clean.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('SELF-TEST') || l.startsWith('REFUSING')).slice(0, 8).join('\n'));
   fs.rmSync(scratch, { recursive: true, force: true });
   process.exit(1);
 }
-console.log('direction 1  repaired baseline       exit 0  PASS');
+console.log('direction 1  baseline as it ships  exit 0  PASS');
 console.log('             ' + (clean.out.match(/matched inputs: (.*)/) || [, ''])[1]);
 console.log('             self-tests: ' + (clean.out.match(/self-tests: (\d+\/\d+)/) || [, '?'])[1]);
 console.log('');
@@ -276,4 +271,4 @@ if (failures) {
   console.error(failures + ' case(s) wrong. ' + planted + '/' + cases.length + ' violations were caught.');
   process.exit(1);
 }
-console.log(planted + '/' + cases.length + ' violations caught on a real artboard, and the repaired baseline passes in both directions.');
+console.log(planted + '/' + cases.length + ' violations caught on a real artboard, and the shipped design passes in both directions.');

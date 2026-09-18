@@ -31,7 +31,7 @@ const topbar = () =>
 '    <span style="font:500 12px/16px var(--sc-font-data); letter-spacing:.06em; color:var(--sc-ink-3); background:var(--sc-quiet-wash); border-radius:var(--sc-r-control); padding:0 6px;">STAGING</span>\n' +
 '    <div style="flex:1;"></div>\n  </header>';
 
-const TABS = ['Pipeline','Inspections','Work orders','Code enforcement','Licences','Plan review','Flood study'];
+const TABS = ['Pipeline','Inspections','Work orders','Code enforcement','Licenses','Plan review','Flood study'];
 const tabs = () => '      <div style="display:flex; gap:var(--sc-4); border-bottom:1px solid var(--sc-line); padding:0 var(--sc-1); flex:none;">\n' +
 TABS.map((t, i) => '        <span style="font:' + (i === 0 ? '620' : '400') + ' 13px/19px var(--sc-font-ui); color:var(' + (i === 0 ? '--sc-ink' : '--sc-ink-2') + '); padding:var(--sc-2) 0 9px; box-shadow:' + (i === 0 ? 'inset 0 -2px 0 var(--sc-accent)' : 'none') + '; white-space:nowrap;">' + t + '</span>').join('\n') + '\n      </div>';
 

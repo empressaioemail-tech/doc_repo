@@ -8,9 +8,12 @@ const KIT = fs.readFileSync(new URL('./_kit.css', import.meta.url), 'utf8');
    the reasoner design pinned: more than one department reviewing at once.
 
    READ FROM SOURCE, not assumed:
-     P:\plan-review src/actors.mjs -- personas are orgId/userId with roles
-       reviewer, observer, applicant, staff. THERE IS NO DEPARTMENT MODEL AT ALL,
-       no routing, no discipline. Confirmed by grep across src/ and web/.
+   P:\plan-review src/actors.mjs -- personas are orgId/userId with roles
+     reviewer, observer, applicant, staff. src/staff-identity.mjs DOES declare a
+     department model: DEPARTMENT_ROLES and TIER_ROLES, the same seven roles this
+     design proposes. No routing, no discipline, no sign-off. Re-read at origin/main
+     99c156ba on 2026-09-18 (G-164): the earlier "no department model at all" was
+     true when this canvas was drawn and is not true now.
      _decisions/2026-09-14_staff_identity_and_department_rbac.md --
        the roster is THE NINE LENSES, not Bastrop's ~25 budget departments, so the
        seven department roles are Development services, Finance, Public works,
@@ -187,7 +190,7 @@ const fireBoard = shell({
           { n: '2', t: 'Fire separation distance', d: 'Uncertain', cite: CIBC,
             body: 'You recorded on 12 Sep that two adopted authorities conflict for the west wall. The product cites the section and does not reproduce its text; the licence it holds does not permit quoting it. It has not picked between the two and will not.',
             act: 'Record which authority governs' },
-          { n: '13', t: 'Fire apparatus access', d: 'Unchecked', cite: null,
+          { n: '13', t: 'Parking spaces required', d: 'Unchecked', cite: null,
             body: 'This rule is in your scope and the section is not in our corpus, so we have nothing to say about it. It is not a pass. It is yours to check by hand.',
             act: 'Add a finding' },
         ].map((f) =>
@@ -332,9 +335,10 @@ const letter = shell({
     '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin-bottom:var(--sc-1);">Corrections required &mdash; 1</div>\n' +
     lRow({ n: '1.', t: 'Front setback', d: 'Development services', cite: C3, who: 'Automated check, accepted by M. Leavis &middot; Sheet A-101',
       body: 'The proposed front setback of 22\u2032-0\u2033 is less than the 25\u2032-0\u2033 minimum for the SF-1 district. Revise the site plan or apply for a variance.' }) + '\n' +
-    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Escalated inside the city, no action from you &mdash; 2</div>\n' +
+    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Escalated inside the city, no action from you &mdash; 1</div>\n' +
     lRow({ n: '2.', t: 'Fire separation distance', d: 'Fire and EMS', cite: CIBC, who: 'R. Garner &middot; reviewer override, 12 Sep',
       body: 'Two adopted authorities conflict for the west wall. That is being resolved inside the city. The text of the cited section is not reproduced here; this product is not licensed to quote it.' }) + '\n' +
+    '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Held back &mdash; cannot enter this letter &mdash; 1</div>\n' +
     lRow({ n: '6.', t: 'Driveway width', d: 'Unrouted', cite: 'No citation on one of the two claims', who: 'Two departments, owed a determination',
       body: 'Development services and Public works have recorded different minimum widths for the drive. You will receive one number, not two, once the city has determined which governs.' }) + '\n' +
     '              <div style="font:500 12px/16px var(--sc-font-data); letter-spacing:.1em; text-transform:uppercase; color:var(--sc-ink-3); margin:var(--sc-5) 0 var(--sc-1);">Not evaluated, by department &mdash; 10</div>\n' +
@@ -379,7 +383,7 @@ fs.writeFileSync(new URL('./canvas.json', import.meta.url), JSON.stringify({
     { file: 'Letter.dc.html', x: 1720, y: 1400, w: 1600, h: 1240, title: 'One notice, four departments' },
   ],
   annotations: [
-    { id: 'brief', x: 0, y: -350, w: 660, text: 'PLAN REVIEW — PARALLEL DEPARTMENT REVIEW.\nContinues _design/plan-review-reasoner: same product, same finding numbers, same three real citations.\nParallel review is the category\'s hardest-sold feature and the reasoner design pinned it. This is the argument.\nSOURCE: P:\\plan-review has NO department model at all — personas are orgId/userId with roles reviewer/observer/applicant/staff. Confirmed by grep across src/ and web/.\nFIXTURE throughout.' },
+    { id: 'brief', x: 0, y: -350, w: 660, text: 'PLAN REVIEW — PARALLEL DEPARTMENT REVIEW.\nContinues _design/plan-review-reasoner: same product, same finding numbers, same three real citations.\nParallel review is the category\'s hardest-sold feature and the reasoner design pinned it. This is the argument.\nSOURCE: P:\\plan-review now declares DEPARTMENT_ROLES in src/staff-identity.mjs — the same seven roles proposed here — with personas orgId/userId holding roles reviewer/observer/applicant/staff. Re-read at origin/main 99c156ba on 2026-09-18; routing, discipline and sign-off still return nothing.\nFIXTURE throughout.' },
     { id: 'amend', x: 720, y: -350, w: 700, text: 'THIS DESIGN NEEDS A RULING AMENDED, AND SAYS SO RATHER THAN ROUTING AROUND IT.\n_decisions/2026-09-14_staff_identity_and_department_rbac.md gates PLAN REVIEW to Development services and city-manager. Parallel review requires Fire, Public works and Parks to reach it. As ruled, this cannot be built.\nProposed amendment, using that ruling\'s OWN logic: a department reaches plan review only through its own scope — its findings, its coverage, its sign-off. That is exactly what the ruling says makes Overview "a roll-up rather than a leak".\nThe roster stays the nine lenses. No new department is invented.' },
     { id: 'scope', x: 1720, y: -350, w: 680, text: 'WE DO NOT ROUTE. WE SCOPE.\nWhich departments get a submittal is the city\'s decision and its workflow system\'s job — we said we are a companion and this is where that has teeth.\nWhat a finding BELONGS to is decided by the section it cites, through a map the city declares once. Declared, so it is auditable and consistent; not inferred per submittal.\nA section absent from the map does NOT default to Development services. It produces an unrouted finding.' },
     { id: 'unrouted', x: 2460, y: -350, w: 640, text: 'UNROUTED HAS TWO CAUSES AND THEY ARE NOT THE SAME.\nZERO departments claim the section, or TWO do. Both are refusals to guess, and the surface never collapses them into one grey state.\nThis is the same shape as the absence taxonomy on the reasoner canvas: the reason for an absence is the product, not the absence itself.' },
@@ -387,7 +391,7 @@ fs.writeFileSync(new URL('./canvas.json', import.meta.url), JSON.stringify({
     { id: 'board', x: 0, y: 1170, w: 700, text: 'THE BOARD IS ABOUT THE APPLICATION, NEVER THE PEOPLE.\nIt shows where work is sitting and for how long. It does not rank staff, count individual throughput, or name who has not opened something. Handing a government customer a productivity leaderboard is a different product with a different politics, and we are not shipping it by accident.\nTHREE STATES THAT LOOK ALIKE: not opened / reviewed and found nothing / we produce nothing for them. Parks is the last two at once. Collapsing any of them is how a cycle closes on a review nobody did.' },
     { id: 'conflict', x: 740, y: 1170, w: 700, text: 'TWO DEPARTMENTS ARE TWO AUTHORITIES — the rule already exists.\nUncertain was reserved for two code editions disagreeing. A department disagreeing with a department is the same shape: name both, pick neither, escalate to the role that sees across lanes.\nTHE REFUSALS ARE THE DESIGN. Not the stricter number — stricter is not a synonym for correct, and it teaches every department that claiming higher wins. Not the claim that has a citation — our corpus is not an authority on which department governs the right of way. Not both numbers to the applicant.' },
     { id: 'letter', x: 1720, y: 1170, w: 700, text: 'ONE NOTICE, FOUR DEPARTMENTS, AND IT WILL NOT ISSUE.\nThe applicant gets one list, each item carrying its department beside its citation. Escalations print under a heading that says no action is required from them.\n"Not evaluated" is broken out BY DEPARTMENT, and it states plainly that Public works has no rule in our corpus, so nothing in the notice reflects an automated check of their requirements.\nThe Issue button is not live while two departments have not opened the submittal. 8 + 2 + 2 + 0 + 1 = 13.' },
-    { id: 'owed', x: 2460, y: 1170, w: 660, text: 'WHAT DOES NOT EXIST.\n• No department model, no routing, no sign-off, no cycle, no declared section-to-department map. All of it is proposed here.\n• The ruling amendment above is a precondition, not a detail.\n• Department colour is a SECOND CHANNEL (a dot) and determination stays the badge. One element never carries both.\n• Still pinned from the reasoner canvas: the viewer, the dimension capture, and every adjudicator except the front setback.' },
+    { id: 'owed', x: 2460, y: 1170, w: 660, text: 'WHAT DOES NOT EXIST.\n• No routing, no sign-off, no cycle, no declared section-to-department map — and the roster left this list: src/staff-identity.mjs declares DEPARTMENT_ROLES, the same seven roles proposed here. Everything else on this canvas is proposed.\n• The ruling amendment above is a precondition, not a detail.\n• Department colour is a SECOND CHANNEL (a dot) and determination stays the badge. One element never carries both.\n• Still pinned from the reasoner canvas: the viewer, the dimension capture, and every adjudicator except the front setback.' },
   ],
   launch: { view: 'canvas' },
 }, null, 2));

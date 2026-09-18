@@ -3,15 +3,18 @@
  *
  *   node check.mjs && node violate.mjs
  *
- * WHY THIS FILE OPENS WITH A REPAIR. The G-150 model requires the unmodified boards to pass
- * before a violation can be attributed to a planted one. These boards do not pass, and they
- * should not: Main's "Across departments" subhead says "4 of 6 reading" over three lanes that
- * render a fact, and Sparse promotes Connections above the decision queue while its own footer
- * says "1 of 10 sources granted", which is the figure the shipped `placeOverviewConnections`
- * demotes on. So the first direction here is the two shipped boards FAILING for those reasons,
- * and the clean baseline is established the only honest way left: those two clauses are
- * corrected IN THE SCRATCH COPY and the check is required to pass with a matched-input count.
- * Nothing edits a design; the dispatch says report the defect, do not redraw the board.
+ * WHY THIS FILE NO LONGER OPENS WITH A REPAIR (G-164, 2026-09-18). The G-150 model requires the
+ * unmodified boards to pass before a violation can be attributed to a planted one, and until
+ * this lane they did not: Main's "Across departments" subhead said "4 of 6 reading" over three
+ * lanes that render a fact, and Sparse promoted Connections above the decision queue while its
+ * own footer said "1 of 10 sources granted", which is the figure the shipped
+ * `placeOverviewConnections` demotes on. This file patched both clauses IN THE SCRATCH COPY to
+ * get a clean baseline. G-164 repaired the boards themselves, in gen.mjs, so the shipped boards
+ * now ARE the clean baseline, and the patch is deleted rather than kept: a scratch repair whose
+ * anchors no longer exist cannot apply, and one that still applied would make this instrument's
+ * baseline a copy of a board the folder no longer ships. No predicate moved and no plant was
+ * removed -- both clauses are still planted below, and a board that drifts back still has to be
+ * caught.
  *
  * WHAT A PASSING VIOLATION MEANS. Exit codes are not trusted alone. Every case names the
  * substring the failure must carry, so a check that fails for the wrong reason -- a broken
@@ -132,14 +135,12 @@ const removeTile = (file, label) => {
 
 /* The two clauses that carry the shipped defects, corrected in the scratch copy. Each anchor is
    required to be present, so this cannot silently become a repair of a board already fixed. */
-const repair = () => {
-  copyIn();
-  swap('Main.dc.html', '4 of 6 reading', '3 of 6 reading');
-  sectionToBottom('Sparse.dc.html', '>Connections</div>', '>Public meetings</div>');
-};
+/** The clean baseline every case plants on: the folder as it ships, copied. Until G-164 this
+    corrected the two shipped clauses in the scratch copy; that repair is gone because the boards
+    no longer carry the defects, and the plants below put each one back. */
 const strip = () => {
   for (const f of fs.readdirSync(scratch)) fs.rmSync(path.join(scratch, f), { recursive: true, force: true });
-  repair();
+  copyIn();
 };
 
 /* ----------------------------------------------------------- the cases */
@@ -254,7 +255,7 @@ const cases = [
     expect: 'still promotes Connections above the decision queue',
   },
   {
-    name: 'Connections is promoted on the granted pack as it ships',
+    name: 'Connections is promoted on the granted pack',
     board: 'Sparse.dc.html',
     plant: () => sectionToTop('Sparse.dc.html', '>Connections</div>', '>What needs you today</div>'),
     expect: 'is granted 1 of 10 sources and still promotes Connections',
@@ -411,35 +412,35 @@ const cases = [
 let failures = 0;
 let planted = 0;
 
-/* Direction 1, on the boards as they stand. These are the real defects, not planted ones. */
+/* Direction 1, on the boards as they stand: the baseline the plants below are attributed to.
+   G-164 repaired the two clauses on the boards themselves, so this is a PASS rather than the
+   catch it used to be, and this instrument now fails if either defect comes back. */
 copyIn();
 const asShipped = run();
-const shippedLines = ['states "4 of 6 reading"', 'is granted 1 of 10 sources and still promotes Connections'];
-const missing = shippedLines.filter((l) => !asShipped.out.includes(l));
-if (asShipped.code !== 1 || missing.length) {
+if (asShipped.code !== 0) {
   failures += 1;
-  console.error('THE SHIPPED BOARDS WERE NOT CAUGHT. The lane roll-up and the promoted Connections are the');
-  console.error('two defects this lane found on real artboards, and the check must fail on both. Got exit ' + asShipped.code + '.');
-  if (missing.length) console.error('missing: ' + missing.join(' | '));
+  console.error('THE SHIPPED BOARDS DO NOT PASS. Both directions below are unreadable until they do:');
+  console.error('a violation planted on a board that is already failing cannot be attributed to the plant.');
+  console.error('Got exit ' + asShipped.code + '.');
   console.error(asShipped.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('SELF-TEST') || l.startsWith('REFUSING')).slice(0, 6).join('\n'));
 } else {
-  console.log('direction 1  the boards as they ship                   exit ' + asShipped.code + '  caught: both defects');
+  console.log('direction 1  the boards as they ship                   exit ' + asShipped.code + '  PASS, clean baseline');
   console.log('             ' + (asShipped.out.match(/matched inputs: (.*)/) || [, ''])[1]);
   console.log('             ' + asShipped.out.split('\n').filter((l) => l.startsWith('FAIL')).length + ' finding(s) on the shipped boards');
 }
 console.log('');
 
-/* Direction 2, the clean baseline: the two clauses corrected in the scratch copy and nothing
-   else touched. Without this, nothing below is attributable to a plant. */
+/* Direction 2 is the baseline itself, used again by every case. It is kept as its own named
+   run so the counts printed above and the ones below come from the same copy. */
 strip();
 const base = run();
 if (base.code !== 0) {
-  console.error('AFTER CORRECTING ONLY THE TWO SHIPPED CLAUSES IN A SCRATCH COPY THE BOARDS STILL DO NOT PASS, so');
-  console.error('nothing below can be attributed to a planted violation. Got exit ' + base.code + '.');
+  console.error('THE COPIED BASELINE DOES NOT PASS, so nothing below can be attributed to a planted');
+  console.error('violation. Got exit ' + base.code + '.');
   console.error(base.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('REFUSING') || l.startsWith('NOTE')).slice(0, 10).join('\n'));
   process.exit(1);
 }
-console.log('direction 2  the same boards with the two shipped clauses corrected in a scratch copy, nothing else');
+console.log('direction 2  the same boards copied with nothing changed');
 console.log('             exit 0  PASS');
 console.log('             ' + (base.out.match(/matched inputs: (.*)/) || [, ''])[1]);
 console.log('             ' + (base.out.match(/self-tests: (\d+\/\d+)/) || [, '?'])[1] + ' self-tests inside check.mjs');
@@ -503,5 +504,5 @@ if (failures) {
   console.error(failures + ' case(s) wrong. ' + planted + '/' + cases.length + ' planted violations were caught.');
   process.exit(1);
 }
-console.log(planted + '/' + cases.length + ' planted violations caught, the shipped boards fail on the two defects');
-console.log('they actually carry, and a copy with those two clauses corrected passes with a matched-input count.');
+console.log(planted + '/' + cases.length + ' planted violations caught, and the shipped boards pass the');
+console.log('check until one of them is planted.');

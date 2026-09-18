@@ -224,7 +224,7 @@ const populated = artboard({
     { t: 'Work orders past due', b: 'mygov · 67 open past due date', a: 'Open', c: 'var(--sc-warn)' },
   ],
   decEmptyH: '', decEmptyP: '', decEmptyB: '',
-  laneNote: '4 of 6 reading',
+  laneNote: '3 of 6 reading',
   lanes: [
     { name: 'Development services', state: 'live', facts: [{ v: '586', k: 'permits' }, { v: '709', k: 'projects' }, { v: '73', k: 'open WOs' }], basis: 'mygov · read live for this request' },
     { name: 'Police', state: 'live', facts: [{ v: '12', k: 'units' }], basis: 'spireon · read live for this request' },
@@ -291,8 +291,8 @@ const sparse = artboard({
     { n: 'OpenGov', sub: 'would fill Finance', state: 'none' },
     { n: 'Samsara', sub: 'would fill Fleet', state: 'none' },
   ],
-  connectionsFirst: true,
-  leadNote: 'This city reads one source. Every quiet panel below names the source that would fill it.',
+  connectionsFirst: false,
+  leadNote: 'This city reads one source, so the queue comes first and Connections sits last. Every quiet panel here names the source that would fill it.',
   mapNote: 'Elgin city limits', onMapSub: '2 located this week', onMapBasis: '',
   onMap: [
     { t: 'Residential remodel', a: '204 N MAIN ST', s: 'Permit', c: 'var(--sc-info)', w: 'var(--sc-info-wash)' },

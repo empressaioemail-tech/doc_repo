@@ -3,18 +3,19 @@
  *
  *   node violate.mjs
  *
- * WHERE THIS DIFFERS FROM THE G-150 MODEL, AND WHY IT HAS TO. That violate.mjs opens by
- * requiring the unmodified boards to pass, because a violation can only be attributed to
- * a planted one if the clean baseline is clean. These boards are NOT clean: the tab nav
- * ships "Licences" and the product's TAB_LABELS ships "Licenses", so the unmodified
- * boards fail, correctly, and that precondition cannot be met.
+ * WHY THIS FILE NO LONGER OPENS WITH A REPAIR (G-164, 2026-09-18). Until this lane, the
+ * boards did not pass: the tab nav shipped "Licences" where the product's TAB_LABELS ships
+ * "Licenses", so the G-150 model's precondition -- a clean baseline -- could not be met, and
+ * this file patched that one character out IN A SCRATCH COPY to get one. G-164 repaired the
+ * boards themselves, in gen.mjs, so the shipped boards now ARE the clean baseline. The patch
+ * is deleted rather than kept: a scratch repair whose anchor no longer exists cannot apply,
+ * and one that still applied would make this instrument's baseline a copy of a board the
+ * folder no longer ships. No predicate moved and no plant was removed -- the misspelling is
+ * still case 1 below, and a board that ships it again still has to be caught.
  *
- * Rather than weaken the model, this file runs the defect as the first case and then
- * establishes the clean baseline the only honest way available: it repairs the one
- * character IN THE SCRATCH COPY and requires the check to pass. So both directions are
- * shown on a real artboard -- the real board fails for the named reason, and a copy with
- * one character changed passes with a matched-input count. Nothing here edits a design;
- * the dispatch says report defects, not redraw them.
+ * The baseline is therefore the folder as it stands, copied. Both directions are shown on a
+ * real artboard: the shipped boards pass with a matched-input count, and every plant fails
+ * for its own named reason and passes again when it is taken away.
  *
  * WHAT A PASSING VIOLATION MEANS. Nothing trusts an exit code alone. Every case names the
  * substring the failure must carry, so a check that fails for the wrong reason -- a broken
@@ -58,27 +59,19 @@ const swap = (file, from, to) => {
   write(file, s.replace(from, to));
 };
 
-/** The scratch copy with the tab misspelling repaired -- the baseline every case plants on.
-    Reads the real board first and refuses if the defect it repairs is gone, so the proof
-    cannot silently become a proof about a board that has already been fixed. */
-const repair = () => {
-  copyIn();
-  for (const f of ['Main.dc.html', 'Expand.dc.html']) {
-    const s = read(f);
-    must(s.includes('>Licences<'), 'the Licences defect is no longer on ' + f + '; re-read the board before trusting this proof');
-    write(f, s.replace(/Licences/g, 'Licenses'));
-  }
-};
+/** The clean baseline every case plants on: the folder as it ships, copied. Until G-164
+    this patched the tab misspelling out of the scratch copy; that repair is gone because the
+    boards no longer carry the defect, and the plant below puts it back. */
 const strip = () => {
   for (const f of fs.readdirSync(scratch)) fs.rmSync(path.join(scratch, f), { recursive: true, force: true });
-  repair();
+  copyIn();
 };
 
 /* ----------------------------------------------------------- the cases */
 
 const cases = [
   {
-    name: 'the tab nav ships Licences where the product ships Licenses',
+    name: 'the tab nav renders Licences where the product ships Licenses',
     board: 'Main.dc.html',
     plant: () => swap('Main.dc.html', '>Licenses<', '>Licences<'),
     expect: 'renders "Licences", which is not a product tab',
@@ -227,35 +220,35 @@ const cases = [
 let failures = 0;
 let planted = 0;
 
-/* Direction 1, on the boards as they stand. The defect is real, so this is the check
-   catching something nobody planted. */
+/* Direction 1, on the boards as they stand: the baseline the plants below are attributed to.
+   G-164 repaired the misspelling on the boards themselves, so this is a PASS rather than the
+   catch it used to be, and this instrument now fails if the defect comes back. */
 copyIn();
 const asShipped = run();
-const shippedCaught = asShipped.code === 1 && asShipped.out.includes('renders "Licences", which is not a product tab');
-if (!shippedCaught) {
+if (asShipped.code !== 0) {
   failures += 1;
-  console.error('THE SHIPPED BOARDS WERE NOT CAUGHT. The tab misspelling is the defect this lane found,');
-  console.error('and the check must fail on it. Got exit ' + asShipped.code + '.');
+  console.error('THE SHIPPED BOARDS DO NOT PASS. Both directions below are unreadable until they do:');
+  console.error('a violation planted on a board that is already failing cannot be attributed to the plant.');
+  console.error('Got exit ' + asShipped.code + '.');
   console.error(asShipped.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('SELF-TEST') || l.startsWith('REFUSING')).slice(0, 6).join('\n'));
 } else {
-  console.log('direction 1  the boards as they ship    exit ' + asShipped.code + '  caught: renders "Licences", which is not a product tab');
+  console.log('direction 1  the boards as they ship    exit ' + asShipped.code + '  PASS, clean baseline');
 }
 console.log('             ' + ((asShipped.out.match(/matched inputs: (.*)/) || [, ''])[1] || '') + '');
 console.log('             ' + asShipped.out.split('\n').filter((l) => l.startsWith('FAIL')).length + ' finding(s) on the shipped boards');
 console.log('');
 
-/* Direction 2, on a copy with the one character repaired and nothing else changed. This is
-   the clean baseline: without it, every case below would be failing for a reason already
-   present, and none of them would be attributable to what it planted. */
+/* Direction 2 is the baseline itself, used again by every case. It is kept as its own named
+   run so the counts printed above and the ones below come from the same copy. */
 strip();
 const base = run();
 if (base.code !== 0) {
-  console.error('AFTER REPAIRING ONLY THE MISSPELLING THE BOARDS STILL DO NOT PASS, so nothing below can be');
-  console.error('attributed to a planted violation. Got exit ' + base.code + '.');
+  console.error('THE COPIED BASELINE DOES NOT PASS, so nothing below can be attributed to a planted');
+  console.error('violation. Got exit ' + base.code + '.');
   console.error(base.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('REFUSING') || l.startsWith('NOTE')).slice(0, 10).join('\n'));
   process.exit(1);
 }
-console.log('direction 2  the same boards, "Licences" repaired in a scratch copy, nothing else touched');
+console.log('direction 2  the same boards copied with nothing changed');
 console.log('             exit 0  PASS');
 console.log('             ' + (base.out.match(/matched inputs: (.*)/) || [, ''])[1]);
 console.log('');
@@ -318,6 +311,6 @@ if (failures) {
   console.error(failures + ' case(s) wrong. ' + planted + '/' + cases.length + ' planted violations were caught.');
   process.exit(1);
 }
-console.log(planted + '/' + cases.length + ' planted violations caught on a real artboard, the shipped boards fail on the');
-console.log('defect they actually carry, and a copy with that one character repaired passes.');
+console.log(planted + '/' + cases.length + ' planted violations caught on a real artboard, and the shipped');
+console.log('boards pass the check until one of them is planted.');
 console.log('self-tests inside check.mjs: ' + (base.out.match(/self-tests: (\d+\/\d+)/) || [, '?'])[1]);
