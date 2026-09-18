@@ -1,0 +1,43 @@
+{
+  "lane": "g135-tenant-key-distribution",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-15T01:20:00Z",
+  "purpose": "Pilot/mid-work checkpoint: everything doable within this lane's actual write authority is now done or in flight; states plainly what is NOT done and why before writing the close, so the close does not narrate completion it did not measure.",
+
+  "delivered": {
+    "creditRequestFiledToSubstrate": {
+      "artifact": "_inbox/2026-09-15_g135_substrate_mint_request.md",
+      "content": "Exact POST /admin/keys body (tier/product/jurisdiction_tenant/platform_internal/owner_email/owner_name/notes), sourced from reading hauska-mcp-server/src/admin.ts directly (CP1) rather than guessing the shape. Names what should come back (key_id, owner fields, Secret Manager location) and where to record it (_catalog/credential_access_index.json)."
+    },
+    "credentialAccessIndexBuilt": {
+      "artifact": "_catalog/credential_access_index.json",
+      "entries": 5,
+      "content": "hauska-tenant-key-bastrop_tx-operator-pilot (existing, do-not-use), hauska-tenant-key-bastrop_tx-lane-verification (requested, not minted), hauska-admin-bootstrap-key, dashboards-api-key, platform-internal-api-key. Each cites the close/checkpoint it was sourced from -- not asserted from memory. Marked append-only and explicitly incomplete ('does not need to be complete to be useful', per dispatch's own words)."
+    },
+    "envExampleDocumented": {
+      "repo": "smartcity-dashboards",
+      "pr": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/64",
+      "branch": "g135-tenant-key-env-doc",
+      "headCommit": "e74e525",
+      "content": "Documents HAUSKA_MCP_URL (the live endpoint, previously undocumented -- a real gap G-133 found) and HAUSKA_TENANT_KEYS (the local/unit-test-only bypass), and points to _catalog/credential_access_index.json for how to obtain a verification-scoped key. Deliberately does NOT document a literal 'HAUSKA_TENANT_KEY' (singular) as the dispatch's own text suggested, because that name is not read anywhere in the deployed code (CP1 finding) -- documenting it would have been actively misleading.",
+      "ciStatus": "test: pass. a11y: pending as of this checkpoint (unrelated job, scans served surfaces; this PR changes only .env.example, a template file with zero runtime effect) -- will be confirmed green before merge, not assumed."
+    },
+    "closesAnnotated": {
+      "g116": "_inbox/2026-09-03_g116-bastrop-dashboards-pack_close.json -- added correction_2026-09-15_g135 field, quoting the exact false line ('...which does not exist yet') and pointing to G-133/G-135 for the current truth. Original text left byte-for-byte unchanged.",
+      "g128": "_inbox/2026-09-14_g128-map-dock_close.json -- added correction_2026-09-15_g135 field. Distinguished (rather than flattened) what G-128 actually claimed (key 'unavailable in this build/verification environment', true) from what it inherited from G-116 by citation ('does not exist', false) -- these are different claims and this checkpoint does not collapse them, per this dispatch's own Method section."
+    }
+  },
+
+  "notDelivered_andWhy": {
+    "acceptanceTest_fullShellProbeMountingMapIframe": {
+      "status": "NOT RUN. Cannot be run by this lane.",
+      "why": "The acceptance test requires a real raw key value to present as x-hauska-key against the live deployed smartcity-dashboards service. Three ways to get one, all unavailable or forbidden: (1) mint one myself -- forbidden by the seat boundary (CP1), hauska-mcp-server is substrate-owned and this session holds no worktree there; (2) use the operator's existing pilot key's raw value -- forbidden twice over, by this dispatch's own explicit instruction not to hand it out, AND structurally impossible regardless, since key_hash is a one-way hash and the raw value was never stored anywhere retrievable after creation (G-133's own finding, confirmed again reading src/admin.ts's mint response comment: 'it cannot be retrieved later'); (3) wait for the mint request filed this checkpoint to be fulfilled -- not yet fulfilled as of this checkpoint.",
+      "consequence": "The violation test (new credential accepted for bastrop_tx, refused for another tenant) is equally blocked -- there is no new credential yet to test."
+    }
+  },
+
+  "enumerationCoverage": {
+    "covered": ["doc_repo (P:/doc_repo, this session's own root)", "smartcity-dashboards (P:/smartcity-dashboards, base path synced to origin/main@35a4ae2 for this lane's own branch)", "hauska-mcp-server (P:/hauska-mcp-server, base path -- READ ONLY: src/admin.ts, .env.example var names only, git log/status)", "_catalog/seat_register.json and _catalog/lane_claims.json (for seat-identity/authority determination)"],
+    "notCovered": ["hauska-mcp-server's registered substrate worktree (P:/seat-worktrees/substrate/hauska-mcp-server) -- not accessed, this lane has no standing there", "hauska-mcp-server's own Neon DB / api_keys table -- not queried this session (G-133 already did, this lane relied on that close rather than re-querying, since re-querying would not change the seat-boundary conclusion and this lane was told not to provision)", "plan-review, smart-files repos -- not touched, out of this lane's actual scope of work (distribution targets named by the dispatch were doc_repo and smartcity-dashboards specifically)", "GCP Secret Manager in any project -- not queried live this session; the mint-request artifact names where the new key SHOULD go based on G-133's prior enumeration, not a fresh check"]
+  }
+}

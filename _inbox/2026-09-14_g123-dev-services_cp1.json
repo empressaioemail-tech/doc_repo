@@ -1,0 +1,55 @@
+{
+  "lane": "g123-dev-services",
+  "checkpoint": "CP1",
+  "at": "2026-09-14",
+  "repo": "smartcity-dashboards (empressaioemail-tech/smartcity-dashboards)",
+  "worktree": "P:/smartcity-dashboards-worktrees/g123-dev-services",
+  "branch": "g123-dev-services",
+  "baseSha": "86487fa",
+  "baseNote": "origin/main as fetched 2026-09-14, HEAD at 'feat(G-117): full parity for the native property map's GIS layer catalog (#56)'",
+  "readBeforeStarting": [
+    "90_runbooks/AGENT_CONTRACT.md",
+    "90_runbooks/DEV_PROCESS.md",
+    "90_runbooks/fleet_memory_practice.md",
+    "_design/smartcity-dev-services/README.md",
+    "approved design artifact 1ed0733e-e10c-4ec6-948e-66d2b24e562e"
+  ],
+  "priorStateFound": {
+    "dataLayer": "Already built (G-92). src/domains/{inspections,code-violations,business-licenses,permits-pipeline,work-orders}.mjs register 5 domains in DOMAIN_REGISTRY, all gatedBy mygov, all reachable through composeDomainById and the four-source-state seam (ok/ungranted/granted-empty/no-fixture-source). Fully tested in src/domains-dev-services.test.mjs. No domain-layer work needed for this lane.",
+    "renderLayer": "Already built at a basic level (G-97). web/index.html #lens-development-services carries all 5 tabs plus Place; web/app.js renders each via the shared renderRegion/renderRegionMetrics/regionHead functions (G-97's own incumbent, not to be duplicated per DEV_PROCESS 2.4). Each tab already uses a real <table class=\"dt\"> (not v1's stacked-rows problem) but with the WRONG column sets (more columns than the approved spec, several real-feed-only columns bolted on) and the OLD two-walls-of-numbers hierarchy (a 4-tile .metrics strip + one panel per tab, no attention row, no inline tab-strip counts, no load-component consolidation, no view modes, no pagination).",
+    "scopeCorrection": "G-123's actual scope is narrower than a literal reading of the dispatch: this is a REDESIGN of an existing, working, tested render layer to the new three-tier pattern plus ONE table/ONE load component/view modes/pagination -- not new data plumbing. Confirmed by reading src/ds-render.test.mjs (G-97's own render gate) end to end; that file's assertions will need updating in step with the markup changes, guided by (not blindly preserved against) since the pattern itself is changing."
+  },
+  "piiFinding": {
+    "summary": "CONFIRMED live PII exposure on the Inspections tab's real (non-fixture) data path, predating this dispatch.",
+    "mechanism": "src/mygov-live.mjs mapRealInspectionRecord() (line ~193) maps row.comments verbatim from smartcity-os's live /api/platform/mygov/inspections feed onto record.comments, with a comment citing the real staff dashboard's own insp.comments block as precedent. web/app.js inspectionRow() (line ~1039) renders record.comments directly into a table cell via td(record.comments, \"t-data\") -- an undocumented 'Comments' column not in any spec.",
+    "exampleTextClass": "The dispatch's own PII examples (citizen names + phone numbers, e.g. 'DEBORAH MOORE, PH#737-762-6252') are exactly this class of field on this vendor.",
+    "accessGateVerified": "Checked at source (src/tenancy.mjs): bastrop_tx carries accessPolicy 'tenant-private'; packContentReadStatus requires callerIsPackSubject (caller.kind==='tenant' AND caller.tenant===cityKey, resolved via Hauska MCP /auth/whoami) for a tenant-private pack. A 'service' bearer (DASHBOARDS_API_KEY) does NOT satisfy callerIsPackSubject. So this is NOT anonymous-reachable and NOT reachable by the shared service key -- the hard rule ('none of this data may reach ... any unauthenticated surface') is not violated. It IS reachable by any authenticated Bastrop tenant caller, which is still a live violation of the PII rule's actual requirement ('the free-text description is not a list column on any tab').",
+    "relatedLatentPaths": [
+      "src/mygov-live.mjs mapRealCodeViolationRecord(): subject: row.type || row.description || 'Untitled violation' -- falls back to the free-text description field when type is absent. Currently INERT because web/app.js codeViolationRow() reads record.violationType (which the real mapper never sets, only fixture generators do), not record.subject -- masked by an unrelated field-name mismatch bug, not by design.",
+      "src/mygov-permits.mjs (line ~60, pre-existing, not part of G-92/G-97): subject: row.title || row.description || row.type || 'Untitled permit' -- same fallback shape, and this one IS live: web/app.js renderPipeline() renders record.subject directly (td(record.subject, \"subj\")). Whether any real permit row actually lacks a title (making this reachable in practice) could not be verified without a live read, which is out of reach against G-122's open incident."
+    ],
+    "planned": "Fix within this lane's own scope, since it is a strict subset of the column-spec rebuild: (1) Inspections table drops the Comments column entirely (matches approved spec exactly: Inspection # / Type / Address / Inspector / Result / Scheduled -- no description field). (2) Remove the '|| row.description' fallback from both mapRealCodeViolationRecord's and mapRealPermitRecord's subject construction so the free-text field can never reach a displayed field via that path, closing the latent one at the source rather than only at the renderer. (3) Will NOT strip record.comments from the wire (API JSON) -- the design README is explicit that the design decision is scoped to rendering ('not a list column'), not a data-layer gate, and building that gate is named as separate, future work. Will state this residual explicitly in the close: comments still transits the /api/domains/inspections JSON response for an authenticated tenant caller, inspectable via browser network tools even though nothing paints it."
+  },
+  "cssGates": {
+    "shellCssNoColour": "will verify with src/type-conformance.test.mjs + manual grep for hex/rgb() after edits",
+    "scKitByteIdentical": "will not touch web/sc-kit.css at all, which trivially holds this gate",
+    "typeRampPinned": "src/type-conformance.test.mjs is the machine gate (G-76/G-88), runs under npm test",
+    "noUnstyledClass": "will check new classes against web/shell.css rules before shipping any"
+  },
+  "buildPlan": [
+    "Add attention-row component: 6 filtered entry tiles above the tab strip, each a real navigating link (lens+tab+filter query params), primary treatment; unread source shows the existing 'Not read' word value per source, never a zero.",
+    "Promote per-tab record counts onto the tab strip itself (inline, next to each tab label), sourced from the same domain map /api/city-domains already serves.",
+    "Demote the existing 4-tile .metrics strip per tab to the compact/secondary tier already closest to spec; expand each to the full metric list the mission names per tab (e.g. Pipeline gains requested/pending-docs/on-hold beyond the current 4).",
+    "Rewrite each tab's <table class=\"dt\"> column set to the approved spec exactly, dropping every undocumented real-feed-only column (fees itemization stays -- money is not the PII class named here -- but description/comments does not).",
+    "Build ONE load component (inspector/manager/officer) replacing the ad hoc register calls, parameterized by roster + counting rule.",
+    "Add pagination (previous / position / total) at the foot of every table.",
+    "Add the List/Map/Performance segmented control on Work orders; Map renders an honest not-built state (the mapping component itself is G-121/G-124's pinned, held work -- building real mapping here would be scope creep into a HELD row) with its own basis; Performance absorbs the existing SLA summary + daily queue panels.",
+    "Regression-check every tab against template-city (empty pack; generatesFixtures=true) primarily, and spot-check empty-city (no-fixture-source) for the honest-absence states, per the dispatch's explicit emphasis on developing against template-city rather than fixture-city.",
+    "Update src/ds-render.test.mjs's assertions to the new markup shape (ids, column sets) -- it is the gate this lane's own G-97 predecessor built and must keep passing, adapted rather than deleted.",
+    "Run npm test in full before opening a PR."
+  ],
+  "openQuestionsForNextCheckpoint": [
+    "Whether 'View modes: List / Map / Performance' was meant to be Work-orders-only (per the per-tab column spec) or all five tabs (per the shared-pattern prose) -- proceeding with Work-orders-only since that is the only tab the mission's per-tab spec names it on, and the design artboards (canvas.json) name Work orders as 'the hard case: load strip, view modes, pagination, PII' specifically."
+  ],
+  "status": "cp1-filed, proceeding to build"
+}

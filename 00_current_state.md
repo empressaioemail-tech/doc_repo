@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-18 (2026-09-18 session checkpoint, integration seat: all nine 2026-09-17 lane PRs merged, Property Explorer and two factory job sets deployed and graded, the Phase 0 close-out ruled (A-213 to A-216) and written into a durable register, Wave 1 compiled; start from _inbox/2026-09-18_HANDOFF_integration_seat.md)
+last_updated: 2026-09-18 (2026-09-18 session checkpoint, integration seat: all nine 2026-09-17 lane PRs merged, Property Explorer and two factory job sets deployed and graded, the Phase 0 close-out ruled (A-213 to A-216) and written into a durable register, Wave 1 compiled; start from _inbox/2026-09-18_HANDOFF_integration_seat.md; SmartCity lines refreshed at the SmartCity planner's close, A-148)
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -227,7 +227,7 @@ findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 - **THE FACTORY (OPS-19).** Plan `90_operations/OPS-19_factory_plan_of_record.md`. The six Central Texas counties serve `node-facets-tier1-conformant-v1` from walked card H production publishes (image `sha256:7bef3ce7`, LDT `889b1556`). That met A-020 shape. It is not county-complete. **Live remainder 2026-08-30T13:48:33Z: 232,770 unstamped 0,0. Do not quote pre-H 534,700 as live.** Travis `no-row` still 119,389 (situs never tried). Seed leak 0. Operator go on the remainder; cards at `_inbox/2026-08-30_ctx_facts_complete_WDLL.md` and `_inbox/2026-08-30_ctx_w1_bake_WDLL.md`. **Do not start W1 until the operator routes `_inbox/2026-08-30_ctx_remainder_deep_review.md`** (block-then-amend: landUse on W1, PE wiring card with a plan row, Wave R allowed but not customer-done). Rainmaker `48021:8720522` atom-miss is not a card H wipe; recon `_inbox/2026-08-30_rainmaker_open_complete_recon.md`. `_state/property/STATE.md` is stale (still card F / 534,700). Pickup `_sessions/2026-08-30_ctx_remainder_and_rainmaker_wiring_claude_code.md`. Deferred by A-020 stays deferred: wave 1 remainder, F-09, F-11 to F-14. Do not restart `scllr`. Do not lift the seed.
 
 - **OPS-16 / L26** Fill factory stopped. QA/launch on current map (A-017). Backfill redesign later. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
-- **OPS-17 Lane B** G-61 through G-65 CLOSED. Serving Dashboards `00007-8sc` `https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app`. MCP `00082-mat` tag g11. Next card G-66 Dashboards UI (draft). Not a Bastrop cutover. Three identities: template-city demo, live Bastrop island, next-city pack. Path `_decisions/2026-08-17_dashboards_ui_then_one_feed.md`. `P:\smartcity-os` no-touch.
+- **SmartCity (OPS-17, and OPS-25's SmartCity rows), refreshed 2026-09-18.** Live state is `_inbox/2026-09-15_roadmap_reconciliation.md` (the roadmap) and `_design/SMARTCITY_TRACKER.md` (generated; `node scripts/govtech/smartcity-tracker.mjs` refuses when a row disagrees with its close). Bastrop is the proving pack (A-146). The dashboards run on DigitalOcean `dolphin-app` behind `app.smartcityos.io`, serving `3d3ec62`; `main` is ahead and ships only when deployed. G-159 (finance bridge) is closed-partial and G-154 (Development services) is merged, with its live proof waiting on the G-135 verification key. Compiled and not yet sent: `g135-mint` (substrate seat), `d14-d13-v1-reach`, `g161-never-default-a-city` (A-148).
 - **OPS-17 G-60** CLOSED_ON_DEMO_PATH STOP. ICC-demo https://icc-demo.vercel.app. Plan-review `00012-pen` @100% tag `g60g`. Applicant `/applicant?token=` met. Smart Files QA personas restored. Held: store UPDATE, F4, G-58b, G-50.
 - **OPS-17 Lane A Smart Files.** G-58/G-59 CLOSED serving path. G-58b OPEN. `smart-files-app` is G-59 QA plus icc-demo rooms. Plan-review owns the review files UI.
 - **L25** not seated. **L24** flood remainder banked. Do not redo flood.
@@ -240,11 +240,11 @@ findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 
 ## 4. Agent fleet assignments
 
-- Doc_repo planner (this seat): G-66 WDLL drafted, pending operator approval. Do not steal L26. Do not touch `P:\smartcity-os`. Do not start G-52 or a feed grant.
+- SmartCity planner: the next one starts from `_inbox/2026-09-18_HANDOFF_smartcity_planner.md`. It owns no product repo. Do not steal L26.
 - L26 detached Node jobs: work root `P:/tmp/l26_flood_drain_20260815/`.
 - Dirty `P:\legacy-design-tools` on `feat/s1-instrument-hardening`: never clean or stash.
 - Dirty `P:\hauska-map` linked to Vercel `property-explorer`: never deploy Command Center or plan-review from it.
-- `P:\smartcity-os` is no-touch.
+- `smartcity-os` (v1, `smartcityos.io`) changes only through lanes, as bridges proven on a non-production app first (A-146 rule 4). `walrus-app` builds from side branch `d9-api-8bea7fa` until D-14 lands.
 - `P:\smart-files` has uncommitted `src/actors.mjs` + `web/` persona restore (live on Vercel). Do not lose it.
 - `P:\icc-portal\web\.vercel\project.json` may still say `web`. Confirm `icc-portal-app` before deploy.
 
@@ -280,4 +280,4 @@ findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 - Hauska inbound meter / ICC store UPDATE waits a quiet L26 slot.
 - `MEMORY.md` exists (six prose rows, unenforced). Do not invent a second copy this close.
 - cortex-api traffic is pinned. Read `status.traffic[]` before asserting serving. Baked `CORTEX_USER_DAILY_API_LIMIT=50000` in LDT deploy-canary (`ci-cortex-daily-limit-50000`). Do not shift staging `00644-soz`.
-- **SmartCity design is 10 of 15 nav surfaces, not "48 boards" (2026-09-16).** All nine lenses now have a design; Citizen (G-142), Records search (G-147) and People and access (G-143) are the three uncovered surfaces, and Assets and Connections are excluded by ruling. Measured by `node scripts/govtech/design-completion-gate.mjs`, which refuses rather than reports and exits 1 while design is unfinished. **Five designs past DRAFT still carry no instrument and two are dispatched to build (G-148, HELD).** Separately: the Bastrop zoning the map serves comes from a city ArcGIS layer last edited 2023-04-28 while three newer ones are published, and nothing errors, because the query succeeds (G-140, `_inbox/2026-09-15_bastrop_zoning_layer_findings.md`). Session `_sessions/2026-09-16_design_completion_and_five_lenses_claude_code.md`, amendments A-136 to A-139.
+- **SmartCity design (2026-09-18):** every design is approved except People and access (G-143, DRAFT). Citizen (G-142) and Records search (G-147) are undrawn; Assets and Connections are excluded by ruling.

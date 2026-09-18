@@ -1,0 +1,105 @@
+{
+  "lane": "g135-tenant-key-distribution",
+  "planRows": ["G-135"],
+  "status": "closed-partial",
+  "probe": { "artifact": "_inbox/2026-09-15_010551_surface_probe.json" },
+
+  "crux": "This lane could do everything G-135 asked EXCEPT the one thing that requires holding a real raw key value -- and the seat boundary the dispatch itself insists on is exactly what makes that impossible for this session. Minting is substrate-owned; this session has no registered substrate worktree; the operator's existing pilot key's raw value is both explicitly off-limits (do not hand it out) and structurally unobtainable (one-way hashed, never retrievable after creation, confirmed again reading hauska-mcp-server's own admin.ts). So the acceptance test (full-shell probe mounting the map iframe with the new credential) and the violation test (accepted for bastrop_tx, refused elsewhere) are UNMEASURED, not faked, and everything upstream of holding a raw key -- the request, the index, the docs, the corrections -- is done.",
+
+  "falsifier": "If this session in fact held a registered substrate worktree (checked directly against _catalog/seat_register.json's substrate entry: only P:/seat-worktrees/substrate/hauska-mcp-server, branch seat/substrate, is registered) or if the operator's existing raw key value were retrievable from the database (checked against hauska-mcp-server/src/admin.ts's own mint-response comment: 'raw is returned ONCE here... it cannot be retrieved later', consistent with G-133's finding that key_hash, the stored column, is one-way), either fact would let this lane complete the acceptance test itself and this close would say 'closed', not 'closed-partial'. Neither is true, live-checked, not assumed.",
+
+  "contradicted": "This dispatch's own text says '.env.example, naming HAUSKA_TENANT_KEY with a comment' -- reading src/tenancy.mjs at origin/main directly (not trusting G-133's close's paraphrase, which used the same singular name) found that env var does not exist in the deployed code at all. The real mechanism is a per-request x-hauska-key header validated live against HAUSKA_MCP_URL/auth/whoami, with HAUSKA_TENANT_KEYS (plural) as a local/unit-test-only bypass. Documented the real mechanism instead of the literal instruction; flagged rather than silently substituted (CP1, probe row R4).",
+
+  "item1_credential": {
+    "existing_doNotUse": {
+      "label": "Nick, bastrop_tx staff pilot",
+      "tenant_scope": "bastrop_tx",
+      "location": "hauska-mcp-server's api_keys table, GCP project hauska-prod-497015 (substrate seat)",
+      "id": "key_id 2a26c318-271d-414c-967d-caba619a6f73 (as established by G-133; not re-queried this session)"
+    },
+    "new_requested_not_minted": {
+      "status": "REQUESTED, NOT MINTED. Minting is substrate-owned; this lane is not that seat and holds no registered substrate worktree.",
+      "requestArtifact": "_inbox/2026-09-15_g135_substrate_mint_request.md",
+      "proposedShape": "tier matching the existing pilot key (deferred to substrate to read off that row), product=public, jurisdiction_tenant=bastrop_tx, platform_internal=false, owner_name='govtech-lane-verification (bastrop_tx)', owner_email left to substrate/operator (a Gmail '+'-alias on the operator's own address suggested as one option, not prescribed)",
+      "id": "none yet -- assigned at mint time by hauska-mcp-server's own admin API"
+    }
+  },
+
+  "item2_placement": {
+    "secretManager": "NOT DONE -- there is no raw value yet to place. The mint-request artifact tells the minting seat exactly where to put it once minted (the same GCP project HAUSKA_MCP_URL and DASHBOARDS_API_KEY already live in, per G-133's own enumeration).",
+    "envExample": "DONE. smartcity-dashboards PR #64 (branch g135-tenant-key-env-doc, commit e74e525) documents HAUSKA_MCP_URL, the live x-hauska-key mechanism, and HAUSKA_TENANT_KEYS (local-only bypass), and points to _catalog/credential_access_index.json. CI: test PASS; a11y PENDING as of this close's filing (unrelated job, scans served surfaces; this change touches only a template file) -- reported as its actual current state, not assumed green or assumed merged. If not merged by the time this close is read, the PR is open and mergeable, not abandoned.",
+    "catalogIndex": "DONE. _catalog/credential_access_index.json, 5 entries, names/owners/locations only, explicitly append-only and explicitly incomplete per the dispatch's own words."
+  },
+
+  "item3_acceptanceTest_fullShellProbe": "NOT RUN. See crux. This is the one deliverable this close cannot claim, and does not pretend to.",
+
+  "item4_correctionsMade": {
+    "g116": "_inbox/2026-09-03_g116-bastrop-dashboards-pack_close.json -- added correction_2026-09-15_g135 (additive field, original text untouched) quoting the exact false claim ('...which does not exist yet') and pointing to G-133/G-135.",
+    "g128": "_inbox/2026-09-14_g128-map-dock_close.json -- added correction_2026-09-15_g135 (additive field, original text untouched), distinguishing what G-128 itself measured (genuinely unavailable in its own build environment, true) from what it inherited by citing G-116 ('does not exist', false) rather than re-enumerating at source -- these are different claims, not collapsed here."
+  },
+
+  "structuralFinding_creditIndex": "Built per the dispatch's own request: _catalog/credential_access_index.json. Proposed mechanism is exactly what the dispatch suggested (a doc_repo catalog, names/owners/locations only) rather than a different one, because the actual failure mode (three lanes' enumeration boundary being the seat boundary) is a doc_repo-visibility problem specifically -- a lane can read doc_repo regardless of which repo-seat it holds, so a doc_repo-local index is reachable exactly where the gap was. Considered and rejected: a comment/pointer inside each product repo's own README pointing at other repos' credentials -- rejected because that scatters the index across N repos a lane still has to know to check, reproducing the same discovery problem in miniature; one doc_repo location any lane already reads (dispatches live here) is the smaller, single place.",
+
+  "leave_behind": [
+    {
+      "item": "Mint the verification-scoped bastrop_tx key per _inbox/2026-09-15_g135_substrate_mint_request.md, place its raw value in Secret Manager per that file, and update _catalog/credential_access_index.json's hauska-tenant-key-bastrop_tx-lane-verification entry's status to active with the real key_id.",
+      "owner": "substrate seat",
+      "plan_row": "G-135 (this row, remains open until this lands)"
+    },
+    {
+      "item": "Once minted: run the acceptance test (full-shell authenticated probe on bastrop_tx mounting the map iframe) and the violation test (accepted for bastrop_tx, refused for another tenant) that this close could not run. Natural owner is whoever holds the raw value at mint time (it is shown exactly once), or the next lane it is handed to once, out of doc_repo, per this lane's own mint-request artifact.",
+      "owner": "substrate seat (at mint time) or the next assigned lane (e.g. a G-135 follow-on, or G-134 which needs this same access)",
+      "plan_row": "G-135 follow-on, not yet filed as a separate row"
+    },
+    {
+      "item": "PR #64 (smartcity-dashboards, .env.example doc) merge status should be confirmed and completed if still open -- a11y CI was pending, not failed, as of this close.",
+      "owner": "whoever next touches smartcity-dashboards, or this lane if resumed",
+      "plan_row": "not applicable, trivial follow-up"
+    },
+    {
+      "item": "_catalog/credential_access_index.json has 5 entries and is explicitly declared incomplete. HAUSKA_RETRIEVAL_API_KEY/HAUSKA_ENGINE_API_KEY (substrate-owned, consumed by dashboards for atom reads) and SMART_FILES_API_KEY (govtech, smart-files) are named in this repo's own .env.example files but were not added as entries this session -- named here rather than silently left for someone to assume completeness.",
+      "owner": "next lane that touches those credentials, or a dedicated small follow-up",
+      "plan_row": "not filed"
+    }
+  ],
+
+  "missionPremise": "G-133 (closed 2026-09-15) established the bastrop_tx Hauska key was never missing -- it exists, is active, and the real problem is distribution: nobody found it because it lives in hauska-mcp-server, under the substrate seat, outside every dashboards lane's dispatch scope. G-135's mission was to distribute a NEW, verification-scoped credential (never hand out the existing pilot key), place it where lanes look, prove it works with a live acceptance test, correct the two closes that assert the key doesn't exist, and build a cheap credential/access index so the next lane doesn't hit the same seat-boundary wall.",
+
+  "completionPredicate": "PARTIALLY MET. Met: a concrete mint request exists (item 1); documentation and the catalog index are placed and correct, including a correction of the dispatch's own imprecise env-var-name instruction (item 2, contradicted); the two false closes carry dated corrections without rewritten history (item 4); the structural credential/access index is built with a stated rationale and stated incompleteness. NOT met: the credential itself is requested, not minted (item 1's second half) -- correctly, per the seat boundary this dispatch itself insists on, since this lane holds no substrate worktree; Secret Manager placement (item 2's first half) has nothing to place yet; and the acceptance test plus violation test (item 3, the dispatch's own stated acceptance test for 'the whole row') could not run at all. A close claiming 'closed' would require all of planRows' rows to PASS on the cited probe artifact -- rows R10 and R11 there are UNMEASURED, not PASS, so this close states closed-partial rather than narrate a completion it did not measure.",
+
+  "scopeBasis": "Distribution and documentation work (doc_repo _catalog/_inbox artifacts, smartcity-dashboards' .env.example) is explicitly in-scope per this dispatch regardless of seat, and this lane did all of it. Minting in hauska-mcp-server is explicitly out of this lane's write scope per the same dispatch and per _catalog/seat_register.json's substrate entry -- this lane requested rather than wrote. Enumeration this session covered: doc_repo (own root), smartcity-dashboards (base path, synced to origin/main@35a4ae2 for this lane's own branch, real PR opened), hauska-mcp-server (base path, READ ONLY -- src/admin.ts, .env.example var names, git log/status; no query against its DB, no write). Enumeration did NOT cover: hauska-mcp-server's registered substrate worktree (no standing there); a fresh query of hauska-mcp-server's api_keys table (relied on G-133's prior, cited query rather than re-running it, since re-running would not change the seat-boundary conclusion and this dispatch explicitly says not to provision/query further than needed); plan-review and smart-files repos (not named as distribution targets by this dispatch); live GCP Secret Manager in any project (not queried fresh this session -- the mint-request artifact's placement instructions rely on G-133's prior enumeration, cited, not re-verified).",
+
+  "checkpoints": [
+    "_inbox/2026-09-15_g135-tenant-key-distribution_cp1.json",
+    "_inbox/2026-09-15_g135-tenant-key-distribution_cp2.json"
+  ],
+
+  "constraintsHonored": [
+    "Never hand out the existing key: not read, not queried, not requested from the operator, not referenced beyond its label/id/owner (all already public in G-133's own close).",
+    "Never print secret VALUES: no raw key value, no HAUSKA_ADMIN_BOOTSTRAP_KEY value, no database credential was read, requested, or printed anywhere in this lane's artifacts. Only env-var NAMES (confirmed to exist in .env.example files) were checked.",
+    "Seat boundary honored as a real constraint, not a formality: verified this session's lack of a substrate worktree directly against _catalog/seat_register.json before concluding it could not mint, rather than assuming.",
+    "Verify by violation, attempted honestly: named exactly what the test would be and why it could not run, rather than fabricating a PASS or skipping the requirement silently.",
+    "Enumerate before asserting absence: this close's scopeBasis states plainly what was and was not checked this session, including relying on G-133's prior enumeration by citation rather than re-claiming it as fresh work.",
+    "State a mechanism, then a second mechanism considered and rejected: done for the env-var-name discrepancy (CP1/probe R4) and for the credential-index design (structuralFinding_creditIndex).",
+    "Every verification command exit-bounded: git fetch/push, gh pr create/checks all ran under explicit `timeout` in this lane's shell history.",
+    "Doc_repo edits (this close, CP1, CP2, the probe artifact, the credential index, the mint request, the two close annotations) are in this session's own P:/doc_repo working copy, left uncommitted per AGENT_CONTRACT section 6, for the planner to review and commit. Only smartcity-dashboards received a real git commit + PR, since product-repo changes land through PRs, not planner-owned doc_repo commits."
+  ],
+
+  "fleetMemoryScratch": {
+    "LESSON": [
+      "A prior close's paraphrase of an env var name (HAUSKA_TENANT_KEY, singular, from G-133's close, repeated in this dispatch's own text) can itself be a small inaccuracy that propagates -- re-reading the actual source file (src/tenancy.mjs) found the real name is different (HAUSKA_TENANT_KEYS, plural, and only a local-test bypass) and the actual live mechanism is a per-request header, not any env var at all. Worth re-checking even a name that two independent documents already agree on, when the next action is to write that name somewhere permanent (a .env.example).",
+      "'Minting happens in repo X, which seat Y owns' is checkable, not just statable -- _catalog/seat_register.json's registered-worktree list is the actual ground truth for whether a session may write a given product repo, and checking it directly (rather than trusting the dispatch's own assertion, even though it happened to be correct here) is what makes 'not that seat' a verified finding instead of an assumption.",
+      "A key's raw value being a one-way hash in storage isn't just a security detail -- it structurally forecloses one entire category of workaround (retrieve-then-reuse an existing key) for any future lane facing a similar 'don't hand out this credential' constraint. Worth remembering as a general shape: 'may not use X' and 'cannot use X even if permitted' can both be true for different reasons, and stating both is stronger than stating either alone."
+    ],
+    "GROUND-TRUTH": [
+      "(2026-09-15, this session) hauska-mcp-server base path (P:/hauska-mcp-server) is a shared, multi-session READ location distinct from the registered substrate worktree (P:/seat-worktrees/substrate/hauska-mcp-server) -- it carries uncommitted _scratch/ artifacts from other sessions' prior reads, confirming other lanes use this same path for read-only investigation without it being anyone's write worktree.",
+      "(2026-09-15, this session) smartcity-dashboards' origin/main moved from c7174f8 (G-128's deployed commit) to 35a4ae2 between G-133's close and this session starting -- confirms very active concurrent development; this lane synced fresh rather than branching from a stale local clone (which was 48 commits behind).",
+      "(2026-09-15, this session) smartcity-dashboards PR #64 opened, test CI green, a11y CI pending at close time."
+    ],
+    "OPEN": [
+      "Whether/when the substrate seat mints the requested key -- the single item blocking this row from closing fully.",
+      "PR #64's a11y check and merge -- pending, not failed, at close time.",
+      "Whether owner_email for the new key should be a Gmail '+'-alias on the operator's own address or a genuinely separate identity -- left as the substrate seat's/operator's call in the mint-request artifact, not decided here."
+    ]
+  }
+}

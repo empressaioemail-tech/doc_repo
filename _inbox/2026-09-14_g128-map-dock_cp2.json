@@ -1,0 +1,37 @@
+{
+  "lane": "g128-map-dock",
+  "planRows": ["G-128"],
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "seat": "cente-g128",
+  "repository": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g128-map-dock",
+  "baseCommit": "52f70350d8748c92c601a8820e65c51284399271",
+  "commit": "07efc80",
+  "pr": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/60",
+  "status": "implementation complete, unit tests and local a11y clean, CI running, deploy and live verification not yet done",
+  "implementationSummary": [
+    "Removed the Development services Place tab and its tab-strip link; the map is now a persistent right rail spanning every remaining DS tab (pipeline/inspections/work-orders/code-enforcement/licenses/plan-review/flood-study), matching Overview's existing pattern.",
+    "Built the Dock/Expand/Full pill inside web/property-map.js/.html/.css (the map's own iframe), replacing the old external Expand/Full region-bar buttons for the map stage (removed from Overview's rail too, since the in-iframe pill now owns that affordance). The pill posts its mode to the parent shell via postMessage (sc-map-dock-mode) as UI state only, never map data.",
+    "THE LAYERS RULE implemented inside the iframe: the categorized 52-layer panel (already existing, category grouping + search) renders full-height only in Full mode; Dock/Expand collapse it to a compact button with the active count that opens the same panel as a sheet on click. No second layer list; still sourced from getAllLayerKeys() via property-map-catalog.mjs, untouched.",
+    "Shell listens for the mode message (web/app.js bindMapDockMode()), sets data-map-mode on whichever .shell-regions currently contains the visible map anchor, and calls MountStage.settle() (a plain resize, not the animated modal transitionTo) to reposition the floating iframe onto its new anchor size. New CSS in web/shell.css reflows the lens per mode: Expand shrinks the lens's own primary content to a quiet 250px strip; Full hides it; a shared .mapdock-row wrapper turns the rail's trailing panels from stacked (Dock, display:contents, no override needed) into a side-by-side row (Expand/Full).",
+    "New shell-native property-detail panel (zoning, flood zone from the real composePropertyIntelSummary snapshot; buildable area always REFUSED with basis per ruling R-2, independent of fetch outcome) and on-this-parcel records panel (permits+violations+inspections combined, id/subject/status columns only, never free-text description), both fed by the shell calling GET /api/property-map/summary directly -- the SAME route the iframe's own search already calls. No new server route, no map-engine change.",
+    "Sliver defect: CONFIRMED as a layout bug, not a component failure. #pm-panel (property-map.html's own search-result aside) carried no `hidden` of its own -- only its child <section>s did -- so it always claimed a fixed flex:0 0 340px inside .pm-layout even with nothing to show. At the ~380px rail width (--sc-rail, web/shell.css) that left #pm-map (the Leaflet canvas) a few pixels: exactly rail-width-minus-340px, reproducible on first paint with zero resize/interaction involved. Rejected mechanism: a Leaflet invalidateSize/stale-container-size failure, ruled out because the effect is a plain CSS flex-basis computation visible before Leaflet ever measures its container, and the observed sliver width matches the arithmetic prediction exactly rather than an arbitrary stale size. Fixed: #pm-panel and this page's own header/search/status chrome hide when embedded (window.self !== window.top); a direct, non-embedded visit to /property-map.html is unchanged.",
+    "Bastrop-only refusal and record field allowlist verified by construction: loadPropertyDock() renders the honest not-read/no-match state whenever composePropertyIntelSummary returns non-ok (which it does by design for any cityKey other than its one real pack), and propertyRecordRow() only ever reads .permitNumber/.caseNumber/.type/.status off each record, never spreading or reading a description-shaped field."
+  ],
+  "verification": {
+    "unitTests": "634/634 pass (node --test src/*.test.mjs), zero regressions vs. clean origin/main baseline (confirmed by stash-and-rerun before starting: 160 pass / 23 fail both before and after, the 23 being a pre-existing missing-node_modules gap in the fresh worktree, fixed by npm install and unrelated to this lane's code)",
+    "a11yLocal": "npm run test:a11y: clean (0 unwaived conformance nodes) after fixing two real findings this row introduced -- th-has-data-cells on the new records table (headers with an empty tbody before data loads; fixed with a mutually-hidden table/honest-empty-state pair, same shape as ds-pipeline-records elsewhere on this lens) and a new punctuation-only contrast blind spot on .pdl-row .v's em-dash placeholder (declared as a new CONTRAST_GROUPS entry, .crumb-span style). Local run is INDICATIVE per this repo's own CI header comment; CI's ubuntu-latest a11y job is the figure of record, running now.",
+    "ci": "PR #60 opened; test and a11y jobs both pending as of this checkpoint",
+    "liveProbe": "NOT YET RUN. Pending: deploy under the traffic-lease protocol, then verify each of the three states at its own width on a pack with a boundary and without one, confirm the sliver fix against a live bastrop_tx Overview render, and confirm the '908 Pine St' address actually resolves against the real geocoder (could not verify locally -- no PLATFORM_INTERNAL_API_KEY available in this build environment; only a .env.example template exists)."
+  },
+  "openItems": [
+    "Confirm CI passes on PR #60 (both test and a11y jobs).",
+    "Confirm the '908 Pine St' address resolves live; if it does not, the property-detail/records panels will show their honest not-read/no-match state (by construction, not a crash), but the row's intent -- showing populated detail per the approved mockup -- would not be met and needs a different address or a different resolution path.",
+    "Deploy under the per-service traffic lease (AGENT_CONTRACT section 3), canary --no-traffic, smoke, shift, verify the served revision by field name from the traffic JSON.",
+    "Live-verify all three dock states at their own widths, with-boundary and without-boundary packs, and the sliver-defect fix on the live bastrop_tx Overview render.",
+    "Run scripts/surface-probe.mjs for the close artifact per CHECKPOINTS AND CLOSE."
+  ],
+  "missionPremise": "OPS-17 G-128, dispatch _dispatches/2026-09-14_g128-map-dock_dispatch.md, approved design _design/smartcity-map-dock/ (operator-approved 2026-09-14), gated on G-120+G-123 merge (verified clear at CP1). Property-detail composition approach (shell fetches the existing API directly, no postMessage bridge for click-to-select) confirmed with the operator between CP1 and this checkpoint.",
+  "completionPredicate": "closed requires: CI green on PR #60; PR merged; deployed revision serving traffic and verified by field name; live probe PASS for all three states on both a with-boundary and a without-boundary pack; sliver-defect fix confirmed live; close artifact filed with a surface-probe.mjs measurement.",
+  "scopeBasis": "Unchanged from CP1: map engine, feed/grant work, and smartcity-os beyond reading its layer catalog stay excluded per the dispatch's own Out of scope section."
+}

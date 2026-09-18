@@ -9,17 +9,17 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `bdfb0b69`: 114 OPS-17 rows, 14 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `f7870420`: 116 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 944 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 957 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
 | Milestone | Rows | Done | Open or blocked |
 |---|---|---|---|
 | M1 Staff on v2: the soft launch | 6 | 2 | 4 |
-| M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 5 | 2 | 3 |
-| M3 Lens builds on Bastrop live data | 7 | 2 | 5 |
+| M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 3 | 3 |
+| M3 Lens builds on Bastrop live data | 9 | 3 | 6 |
 | M4 DigitalOcean migration complete | 6 | 4 | 2 |
 | M5 Design complete, and the controls that keep it honest | 5 | 0 | 5 |
 
@@ -39,7 +39,8 @@ programs: [OPS-17, OPS-25]
 | Row | What | Status | Close on file |
 |---|---|---|---|
 | G-156 | BUILD THE FINANCE LENS, once the operator rules whether Finance belongs in the Bastrop package a | closed, partly | CLOSED-PARTIAL |
-| G-159 | THE FINANCE BRIDGE — put Bastrop's live finance data where v2 can read it. | open | — |
+| G-159 | THE FINANCE BRIDGE — put Bastrop's live finance data where v2 can read it. | closed, partly | closed-partial |
+| G-162 | v1 FINANCE HONESTY: THREE DEFECTS G-159 FOUND IN THE PRODUCTION FINANCE CODE AND DELIBERATELY DI | open | — |
 | G-138 | the filings design carries two citations to external authorities that trace to nothing, and it i | closed | — |
 | G-137 | the Localgov Filings feed — the hotel occupancy tax integration the customer prioritised and wil | open | — |
 | G-157 | THE CITY MANAGEMENT BOARD — v2 must not remove what the city manager works from in v1. | open | — |
@@ -48,6 +49,8 @@ programs: [OPS-17, OPS-25]
 
 | Row | What | Status | Close on file |
 |---|---|---|---|
+| G-135 | distribute the bastrop_tx tenant key — it exists, it works, and no lane can reach it. | closed, partly | closed-partial |
+| G-161 | NEVER DEFAULT A CITY, EVERYWHERE, NOT ONLY ON THE FINANCE ROUTE. | open | — |
 | G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | open | — |
 | G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | open | — |
 | G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | open | — |

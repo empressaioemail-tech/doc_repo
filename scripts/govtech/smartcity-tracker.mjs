@@ -29,8 +29,8 @@ import { dirname, join } from 'node:path';
 /* ---------- the milestones, declared: the roadmap's skeleton ---------- */
 export const MILESTONES = [
   { id: 'M1', name: 'Staff on v2: the soft launch', rows: ['D-12', 'G-134', 'G-143', 'G-127', 'G-144', 'G-158'] },
-  { id: 'M2', name: 'The next deliverable: Finance, hotel occupancy tax, RBAC, city management board', rows: ['G-156', 'G-159', 'G-138', 'G-137', 'G-157'] },
-  { id: 'M3', name: 'Lens builds on Bastrop live data', rows: ['G-154', 'G-149', 'G-153', 'G-152', 'G-151', 'G-155', 'G-150'] },
+  { id: 'M2', name: 'The next deliverable: Finance, hotel occupancy tax, RBAC, city management board', rows: ['G-156', 'G-159', 'G-162', 'G-138', 'G-137', 'G-157'] },
+  { id: 'M3', name: 'Lens builds on Bastrop live data', rows: ['G-135', 'G-161', 'G-154', 'G-149', 'G-153', 'G-152', 'G-151', 'G-155', 'G-150'] },
   { id: 'M4', name: 'DigitalOcean migration complete', rows: ['D-5', 'D-9', 'D-10', 'D-11', 'D-13', 'D-14'] },
   { id: 'M5', name: 'Design complete, and the controls that keep it honest', rows: ['G-146', 'G-142', 'G-147', 'G-148', 'G-160'] },
 ];

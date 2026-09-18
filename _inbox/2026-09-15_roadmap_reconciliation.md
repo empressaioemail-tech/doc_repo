@@ -6,7 +6,7 @@ last_updated: 2026-09-18
 status: active roadmap (live row status is generated in _design/SMARTCITY_TRACKER.md)
 kind: reconciliation
 owner: nick
-programs: [OPS-17]
+programs: [OPS-17, OPS-25]
 related:
   - _inbox/2026-09-15_design_thread_HANDOFF.md
   - _design/INDEX.md
@@ -14,6 +14,7 @@ related:
   - _decisions/2026-09-15_plan_review_role_gate_deferred.md
   - _decisions/2026-09-14_staff_identity_and_department_rbac.md
 sources:
+  - smartcity-dashboards origin/main 7267c3f and smartcity-os origin/main a400f7be, read 2026-09-18
   - Nick and Jaime call, 2026-09-15, transcript and summary supplied by the operator
   - smartcity-dashboards origin/main f776b4bf, web/index.html
   - smart-files origin/main 61c84f6
@@ -27,19 +28,32 @@ Bastrop. It does not copy row statuses, because copied status is how this progra
 itself: four OPS-17 rows read OPEN while their own closes said closed. The tracker reads the plan of
 record and every lane close, and it refuses when they disagree.
 
-## Where we are, 2026-09-18
+## Where we are, 2026-09-18, afternoon
 
-Every SmartCity design is approved. The one exception is People and access (G-143), which was drawn
-afterwards and is DRAFT awaiting ratification. The staff dashboards run on DigitalOcean behind
-`app.smartcityos.io`, but no Bastrop staff have moved to them yet. The operator ruled that **Bastrop is
-the proving pack**: designs are implemented against the live data Bastrop already has wired, and a pass
-on `template-city` is not a pass. That rule now leads the program preamble compiled into every
-dispatch, because the August rules that preceded it are what sent the first wave of builds to
-`template-city`.
+Every SmartCity design is approved except People and access (G-143), which is DRAFT awaiting
+ratification. The staff dashboards run on DigitalOcean behind `app.smartcityos.io`. The operator ruled
+that **Bastrop is the proving pack**: designs are implemented against the live data Bastrop already has
+wired, and a pass on `template-city` is not a pass.
 
-Five lenses already read live Bastrop data on `bastrop_tx`: Development services (MyGov), Fleet
-(Samsara), Police (Spireon), Public works (Power BI, GoTo) and Fire and EMS (FirstDue). Finance does
-not. Its data is wired into v1 and has no path to v2.
+Five lenses read live Bastrop data on `bastrop_tx`: Development services (MyGov), Fleet (Samsara),
+Police (Spireon), Public works (Power BI, GoTo) and Fire and EMS (FirstDue). Finance does not yet, but its
+path now exists. G-159 proved Bastrop's budget is live and readable, and built the v1 routes that serve
+it. Two DigitalOcean rows, D-14 and D-13, make those routes reachable.
+
+**Nothing merged today is live for customers.** `app.smartcityos.io` serves `3d3ec62`, from before the
+Finance lens, the Development services corrections and the city-default fix. These apps deploy only when
+someone deploys them, and a merge deploys nothing.
+
+**Production is worse than `main` on one point that matters.** At `3d3ec62` the Development services
+work-order table shows the vendor's free-text title, which is where residents write their names and
+phone numbers. `main` no longer does (G-154). The planner recommends shipping `main` to production before
+staff are told to use it (OPS-17 A-148).
+
+**One missing credential blocks every Bastrop proof on a deployed app.** A tenant-private pack answers
+401 to an anonymous read, and the only active `bastrop_tx` key is the operator's own, which G-135 ruled
+must not be handed out. G-135 asked the substrate seat for a separate verification key on 2026-09-15. It
+was never minted, and G-135's artifacts sat untracked for three days, so nothing surfaced it. The mint is
+now dispatched.
 
 ## The milestones
 
@@ -50,24 +64,37 @@ disagree about which row belongs where.
 
 Real Bastrop staff sign in to v2 as themselves, and see what their department should see.
 
-**The order.** First the operator tells staff to use `app.smartcityos.io`, which is what starts the
-D-12 bake. The WorkOS wiring (G-134) is built and waits only on the operator's WorkOS credentials for
-its live test. The People and access design (G-143) needs ratifying before department access (G-127)
-and the plan-review role gate (G-144) are built. The access log (G-158) comes after G-134.
+**The order.** Ship `main` to `dolphin-app` (the operator's call; recommended). Then the operator tells
+staff to use `app.smartcityos.io`, which starts the D-12 bake. The WorkOS wiring (G-134) is built and
+waits only on the operator's WorkOS credentials for its live test. The People and access design (G-143)
+needs ratifying before department access (G-127) and the plan-review role gate (G-144) are built. The
+access log (G-158) comes after G-134.
 
-**What blocks it:** the operator's word to staff, the WorkOS credentials, G-143's ratification, and an
-owner and turnaround for offboarding. A role limits nothing yet: every signed-in account can open every
-lens.
+**What blocks it:** the ship decision, the operator's word to staff, the WorkOS credentials, G-143's
+ratification, and an owner and turnaround for offboarding. A role limits nothing yet: every signed-in
+account can open every lens.
 
 ### M2. The next deliverable: Finance, hotel occupancy tax, RBAC, city management board
 
 Named by the operator on 2026-09-17 as one deliverable. RBAC is M1's work and is not repeated here.
 
-**The order for Finance.** G-159 proves the OpenGov keys return Bastrop's data, then writes the v1
-platform routes and declares the adapter. Two DigitalOcean rows then make it reachable. D-14 makes
-`walrus-app` build from v1 `main`, which it currently does not. D-13 points the dashboards at
-`walrus-app` instead of the GCP copy of v1. G-159 then grants the source to `bastrop_tx`, and the G-156
-lens moves the budget from unaccounted to measured with no lens change.
+**Finance, where it stands.** G-159 is closed-partial. OpenGov's Budgeting and Performance service
+returns Bastrop's 12 budgets and reproduces the operator's capture to the digit. Four v1 platform routes
+serve it, merged to `smartcity-os` `main` and not deployed. The dashboards' finance route now refuses a
+request that names no city. OpenGov's older REST API returned 32 entities, none of them Bastrop's, so
+nothing was built on it. Fund ledger and department spend are absent from every source G-159 read, and
+the lens draws them as unaccounted, which is the honest state.
+
+**The order for Finance.** The `d14-d13-v1-reach` lane puts v1 `main` on `walrus-app` (D-14), then points
+the dashboards at `walrus-app` instead of the GCP copy of v1 (D-13). Then comes the `bastrop_tx` finance
+grant, which is G-159's leave-behind. After it, the G-156 lens shows the budget as measured with no lens
+change. G-162 fixes three v1 finance defects that G-159 found and left alone: a budget filter that
+counts "do not use" budgets, a clamp that turns a negative difference into zero, and a default tenant.
+It runs after D-14, so that D-14's repoint changes no behaviour.
+
+**Permit revenue is wrong at the source, not just unreachable.** `mygov_fees` shows a 150 percent
+collection rate, because a fee listed in several report windows is counted once per window. Which window
+is authoritative is a question for Bastrop's finance owner, not a code question.
 
 **Hotel occupancy tax (G-137)** waits on the Azavar reply being sent and Khalid's answers being filed
 verbatim. The filings design's block (G-138) is closed. **The city management board (G-157)** waits on
@@ -75,61 +102,83 @@ a capture of the v1 combined dashboard, which no lane can take because v1 sits b
 
 ### M3. Lens builds on Bastrop live data
 
-Every lens design built into `smartcity-dashboards` and proven on `bastrop_tx`. These rows run one at a
-time, because every lens renders in two shared files (`web/app.js`, `web/index.html`), and parallel
-lanes there collide.
+Every lens design built into `smartcity-dashboards` and proven on `bastrop_tx`.
 
-**The order.** G-154, Development services, is in flight. It is already live on MyGov data and is being
-made to match its design. G-149 (flood study), G-153 (Fleet and Police), G-152 (Public works and Fire
-and EMS) and G-151 (Parks) follow. G-155 (Smart Files) and G-150 (plan review) build in their own repos
-and are closed. G-155 still owes a check on Bastrop's own files.
+**The order.** First the credential: `g135-mint` asks the substrate seat to mint G-135's verification
+key. Without it, no lane can prove anything on `bastrop_tx` on a deployed app. G-154 (Development
+services) is merged and waits only on that key for its live proof. G-161 removes the remaining places
+where the product silently serves the demo city to a caller who named none.
 
-**What blocks it:** nothing upstream. Shipping to production waits on the operator's call on whether
-real records reach every department before department access exists.
+The next lens starts after G-161 and D-13's dashboards change merge. Lens rows run one at a time, because
+every lens renders in two shared files (`web/app.js`, `web/index.html`), and G-153 and G-152 also change
+the vendor mappers that D-13 is repointing. After that the queue is G-153 (Fleet and Police), G-152
+(Public works, Fire and EMS), G-151 (Parks), then G-149 (the flood study). G-149's row still describes the
+GCP mount and needs re-scoping for DigitalOcean before it is dispatched. G-155 (Smart Files) and G-150
+(plan review) build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
+
+**What blocks it:** the verification key. Shipping to production waits on the operator's ship decision
+(M1).
 
 ### M4. The DigitalOcean migration complete
 
 Every SmartCity service on DigitalOcean, and the GCP originals decommissioned after a clean bake.
 
-**The order.** D-5, D-9, D-10 and D-11 are closed. D-14 (`walrus-app` builds from `main`) and D-13 (the
-dashboards call `walrus-app`) come next, and both also serve M2. After them come the bakes, then
-decommissioning.
+**The order.** D-5, D-9, D-10 and D-11 are closed. D-12 is closed-partial: `app.smartcityos.io` now
+resolves to `dolphin-app`, and the bake starts when staff move. `d14-d13-v1-reach` runs D-14, then D-13.
+After them comes the SmartCity decommission bundle (D-20), then the bakes, then decommissioning. A full
+GCP exit is being planned by another seat, and this milestone is its first phase.
 
 **What blocks it:** the GCP `smartcity-api` is not idle. The dashboards read every Bastrop feed from it,
-so decommissioning it before D-13 would cut every live figure. The scraper's concurrency and missing TLS
-(OPS-25 open items 2 and 3) and the apex certificate renewal before 2026-12-16 (item 4) have no owner.
+so decommissioning it before D-13 would cut every live figure. The bake needs staff on
+`app.smartcityos.io`.
 
 ### M5. Design complete, and the controls that keep it honest
 
 The design completion gate exits 0: every shipped nav surface is designed or excluded by a dated ruling.
 
 **What remains.** The Citizen lens (G-142) and Records search (G-147) are undrawn. G-148 (instruments
-for designs past DRAFT) is held by the operator. G-160 is a new control that fails a deploy when a
-product's console and its API serve different commits. G-150's close-out found the plan-review console
-fifteen days behind its API.
+for designs past DRAFT) is held by the operator. G-160 is a control that fails a deploy when a product's
+console and its API serve different commits. G-150's close-out found the plan-review console fifteen
+days behind its API.
+
+## In flight
+
+Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carries each one.
+
+| Lane | Rows | Repo | Owns while it runs |
+|---|---|---|---|
+| `g135-mint` | G-135 | `hauska-mcp-server` (substrate seat) | nothing in a SmartCity repo |
+| `d14-d13-v1-reach` | D-14, D-13 | `smartcity-os`, then `smartcity-dashboards` | the five data-source files in the dashboards |
+| `g161-never-default-a-city` | G-161 | `smartcity-dashboards` | `src/server.mjs`, the module-level defaults, `web/app.js`, `web/index.html` |
+| `g154-dev-services-live` | G-154 | `smartcity-dashboards` (merged) | nothing; waits on the G-135 key |
 
 ## Critical paths, stated as dependencies
 
 | To reach | Needs, in order |
 |---|---|
-| Staff on v2 | operator tells staff the URL → D-12 bake → WorkOS credentials → G-134 live test → G-143 ratified → G-127 |
-| Finance live on Bastrop | G-159 key proof and routes → D-14 → D-13 → G-159 grant → G-156 shows measured |
+| Staff on v2 | ship `main` to `dolphin-app` → operator tells staff the URL → D-12 bake → WorkOS credentials → G-134 live test → G-143 ratified → G-127 |
+| Finance live on Bastrop | D-14 → D-13 → G-159 grant, proven with the G-135 key → G-156 shows measured |
+| Any Bastrop proof on a deployed app | the G-135 verification key minted |
+| The next lens build | G-161 and D-13's dashboards change merged |
 | Hotel occupancy tax | Azavar reply sent and answers filed → G-137 |
 | City management board | v1 combined-dashboard capture → G-157 |
-| GCP decommissioned | D-13 → a bake in which a lens was actually opened → decommission |
+| GCP decommissioned | D-13 → a bake in which a lens was actually opened → D-20 |
 
 ## Owed by the operator
 
 | Item | Blocks |
 |---|---|
+| **Ship `main` to `dolphin-app`?** Recommended: yes. Production shows residents' free-text work-order titles, and `main` does not | staff moving to v2 on the better surface. It is the D-13 lane's last step, and runs only if an OPS-17 amendment records the ruling |
+| Hand-carry the three dispatches: `g135-mint` to the substrate seat; `d14-d13-v1-reach` and `g161-never-default-a-city` to the govtech seat | everything in M2 and M3 |
+| G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`. G-135 ruled against handing that key out | G-154's close |
 | Tell Bastrop staff to use `app.smartcityos.io` | the D-12 bake, and everything after it in M1 and M4 |
-| WorkOS org, client id, API key, MFA, `bastrop_tx` key | G-134's live test, then all of RBAC |
+| WorkOS org, client id, API key, MFA | G-134's live test, then all of RBAC |
 | Ratify G-143, People and access | G-127, G-144, G-158 |
 | Amend the 2026-09-14 ruling, which says both "read-only for the city manager" and "admin only" | nothing now; the code follows the first |
 | Name an owner and a turnaround for offboarding | the first staff departure after go-live |
 | Send the Azavar reply, and file Khalid's answers verbatim | G-137, and lifting the scope card's Q1 and Q2 freezes |
+| Ask Bastrop's finance owner which MyGov fee report window is authoritative | permit revenue reading true; G-162 leaves it out on purpose |
 | A capture of the v1 combined dashboard | G-157 |
-| Whether real records ship to every department before department access exists | G-154 and G-156 moving to production |
 | Whether to republish the stale design links (filings, reasoner) | the gallery Bastrop reviews |
 | The blending ruling | the applicant precheck |
 
@@ -144,8 +193,8 @@ what has been described to the customer. As of 2026-09-18:
 | "Drop any link, Google Drive or OneDrive, into one database" | **No server path exists** (G-141). Smart Files takes bytes in hand only |
 | Hotel occupancy tax integration, priced separately | The design is buildable. The integration waits on Azavar's credentials |
 | Departmental parallel plan review | The design is approved. The build is blocked by the deferred role gate (G-144) |
-| v2 replaces the v1 dashboard | Five lenses read live data. Finance and the combined city management board do not yet |
-| Four-inch flood question | Built into the flood engine (G-125). The v2 flood lens (G-149) is queued |
+| v2 replaces the v1 dashboard | Five lenses read live data. Finance has its v1 routes built and waits on D-14 and D-13. The combined city management board is not built |
+| Four-inch flood question | Built into the flood engine (G-125). The v2 flood lens (G-149) is queued and needs re-scoping for DigitalOcean |
 
 ---
 

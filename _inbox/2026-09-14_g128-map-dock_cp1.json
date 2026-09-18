@@ -1,0 +1,48 @@
+{
+  "lane": "g128-map-dock",
+  "planRows": ["G-128"],
+  "checkpoint": "CP1 (design/pre-build)",
+  "seat": "cente-g128",
+  "laneClaim": "claimed via node scripts/lane-claim.mjs against P:/doc_repo/_catalog/lane_claims.json (exit 0)",
+  "worktrees": {
+    "smartcity-dashboards": "P:/seat-worktrees/g128-map-dock/smartcity-dashboards, branch g128-map-dock, based on origin/main",
+    "doc_repo": "P:/seat-worktrees/g128-map-dock/doc_repo, branch lane/g128-map-dock (checkpoint/close artifacts only, never committed by this lane)"
+  },
+  "sequencingGate": {
+    "requirement": "G-120 and G-123 merged before this lane starts (both touch the lens shell)",
+    "verifiedAtSource": "gh pr list --state merged (smartcity-dashboards): G-120 PR #57 (657ae87), G-123 PR #58 (52f7035), both present in origin/main history",
+    "originMainTip": "52f70350d8748c92c601a8820e65c51284399271",
+    "verdict": "CLEAR - proceeding"
+  },
+  "designRead": [
+    "_design/smartcity-map-dock/README.md",
+    "_design/smartcity-map-dock/Main.dc.html (Dock state, 1500x940 dark)",
+    "_design/smartcity-map-dock/Expand.dc.html",
+    "_design/smartcity-map-dock/Full.dc.html"
+  ],
+  "currentArchitectureFindings": [
+    "The map is a single persistent floating iframe ('MountStage' class in web/app.js:316-472), shared machinery for three stages: map, review (Plan review), files (Smart Files). States are collapsed/presented/max, driven by [data-stage-present]/[data-stage-max] buttons. Currently only Expand (presented) and Full (max) buttons exist; Dock is reached implicitly by re-clicking the active button or Escape, not an explicit third control.",
+    "presented and max both trigger a background 'recede' (scale 1.03 + dim to brightness 0.72) and a scrim + Escape affordance (web/app.js:491-523) shared across all three stages. The approved Full.dc.html and Expand.dc.html mockups show the left nav, top bar and lens tabs fully undimmed with the surrounding layout reflowed in place -- not a dimmed floating modal. This means map's presented/max behavior needs to diverge from review/files' shared modal behavior, which must not regress (Plan review and Smart Files still use the floating/scrim pattern and are out of scope).",
+    "The map iframe src is /property-map.html?cityKey=... (src/compose.mjs:269), field name 'smartsite.url' is legacy naming from the pre-G-117 SmartSite embed but now points at the native Leaflet page (G-117).",
+    "CRITICAL GAP: property detail (zoning/flood/setbacks/buildable-area), 'on this parcel' records, and the 52-layer panel are ALL rendered INSIDE web/property-map.html/.js today -- a fully self-contained page with its own search form, its own fetch to GET /api/property-map/summary (src/server.mjs:315, calling composePropertyIntelSummary in src/property-map.mjs), and its own dark-only pm-* styling that does not share the sc-kit design system. There is no postMessage bridge between the iframe and the parent shell (grepped web/property-map.js for postMessage: no matches) and no property-intel data in the shell's own compose() payload (grepped src/compose.mjs: no matches for composePropertyIntelSummary/propertyIntel).",
+    "The approved mockups render property detail and 'On this parcel' records as shell-native sc-kit-styled <section> panels beside a plain map, for a fixed example parcel (908 PINE ST, 48021:34137). Implementing that as drawn requires either (a) the shell fetching /api/property-map/summary itself for the current/gold parcel and rendering its own panels (map iframe narrows to just the Leaflet canvas), with click-to-select sync deferred, or (b) a new postMessage bridge for live click-driven sync. The dispatch does not say which; the mockups only show one static populated parcel, which reads as (a). Flagging rather than assuming: this is a materially different scope than a pure CSS/layout pass, and the dispatch text ('this row is layout and state, not a map-engine change') is consistent with (a) -- the map engine and its data plumbing stay untouched, and the shell composes the same already-existing API for display.",
+    "getAllLayerKeys() confirmed at src/property-map-catalog.mjs:164, already the single source consumed by property-map.js's own layers panel -- no second list exists to drift, consistent with the dispatch's constraint.",
+    "Development services' 'Place' tab (web/index.html:482, 540-583) is the superseded parity design (_design/smartcity-place-tab/) to be removed; its 'colstack rail' + region/anchor-place-map pattern is the template to generalize into a persistent rail wrapping every remaining DS tab, matching Overview's existing region/anchor-overview-map pattern (web/index.html:408-435)."
+  ],
+  "plan": [
+    "1. Decide and implement property-detail/records composition as (a) above: shell fetches GET /api/property-map/summary for the current gold parcel per pack and renders sc-kit panels; narrow the iframe to map-only.",
+    "2. Replace the two-button Expand/Full affordance with an explicit three-segment Dock/Expand/Full control, and give the map stage its own in-place reflow behavior (no scrim/dim, nav+tabs stay visible) separate from review/files' shared modal MountStage path.",
+    "3. Build the three layout containers (Dock rail ~360px stacked; Expand top map + 2/3-1/3 row; Full dominant map + full-width permit row + narrow detail column) once, shared between Overview and Development services, each toggling visibility per state so MountStage's existing findAnchor() picks the right one.",
+    "4. Layers: Dock/Expand get a Layers button with active count opening a sheet; only Full renders the categorized 7-group/52-key sidebar, sourced from getAllLayerKeys().",
+    "5. Remove the Place tab and its markup; make the rail persistent across all remaining DS tabs.",
+    "6. Diagnose the live bastrop_tx Overview rail sliver defect (layout bug vs. component failure) before/alongside the CSS work, since the fix likely shares the same code path.",
+    "7. Verify Bastrop-only refusal, buildable-area REFUSED-with-basis, and record-row field allowlist (id/subject/status, never free-text description) hold in all three states, with and without a boundary.",
+    "8. Deploy under the traffic-lease protocol, verify the served revision by field name, then close."
+  ],
+  "openQuestions": [
+    "Confirm assumption in finding 5, item (a): is a static current/gold-parcel detail panel acceptable for this row, or does 'one-click property detail' in the Full-state description require live click-to-select sync via a new postMessage bridge? Proceeding on (a) as the dispatch's own text supports it ('layout and state, not a map-engine change'); will report if evidence during build contradicts this."
+  ],
+  "missionPremise": "OPS-17 G-128, dispatch _dispatches/2026-09-14_g128-map-dock_dispatch.md, approved design _design/smartcity-map-dock/ (operator-approved 2026-09-14), gated on G-120+G-123 merge (verified clear).",
+  "completionPredicate": "Not yet applicable at CP1; will be stated in full at close per AGENT_CONTRACT section 6.",
+  "scopeBasis": "Per dispatch Out of scope section: map engine, feed/grant work, and smartcity-os beyond reading its layer catalog are excluded. This checkpoint's scope is confined to the shell-level layout/composition question raised above."
+}

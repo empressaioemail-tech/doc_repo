@@ -1,0 +1,31 @@
+{
+  "lane": "g135-tenant-key-distribution",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-15T00:40:00Z",
+  "purpose": "Design/pre-build checkpoint (AGENT_CONTRACT section 1), adapted for a non-code distribution/coordination lane: establish this session's own seat identity and write authority BEFORE minting anything or writing to any repo, since this dispatch's own text makes the seat boundary the central constraint.",
+
+  "seatIdentity": {
+    "howChecked": "Read P:/doc_repo/_catalog/seat_register.json in full for the named-seat registry (property, markets, trading, systems, substrate, govtech, dispatch-planner) and its write-gate meaning; cross-checked against _catalog/lane_claims.json for how sessions actually self-label for lane-claim.mjs (observed pattern: cente-<lane-tag>, free text, zero registry validation).",
+    "finding": "This session started rooted at C:/Users/cente (not a git repo, not inside any registered doc_repo worktree) with no seat assignment anywhere -- no dotfile, env var, or manifest under C:/Users/cente names a seat, and P:/doc_repo's own CLAUDE.md/AGENT_CONTRACT only carry roster prose, never a per-session assignment mechanism. Claimed the lane as seat id `cente-g135` (lane-claim.mjs, free-text label, exit 0, CLAIMED) from P:/doc_repo, which this dispatch's own CHECKPOINTS note identifies as where it was compiled.",
+    "substrateSeatCheck": "seat_register.json (~line 2172) registers hauska-mcp-server's ONLY worktree as P:/seat-worktrees/substrate/hauska-mcp-server, branch seat/substrate, owned by the named seat 'substrate'. This session holds no worktree there and is not that seat. CONCLUSION: per this program's own seat-boundary rule and the dispatch's own explicit instruction, this lane MUST NOT write to hauska-mcp-server -- request the mint instead."
+  },
+
+  "gateMechanismVerifiedAtSource": {
+    "note": "G-133's close states the credential is 'carried in HAUSKA_TENANT_KEY' -- read at source (P:/smartcity-dashboards src/tenancy.mjs on origin/main@35a4ae2, fetched fresh) to confirm before writing any documentation citing it, since propagating a prior close's paraphrase without re-checking is exactly the failure class G-133's own close named against G-128/G-116.",
+    "finding": "No env var named HAUSKA_TENANT_KEY (singular) exists anywhere in the deployed code. The real mechanism: on Cloud Run (K_SERVICE set), resolveHauskaTenant ALWAYS resolves the tenant live -- the caller presents a raw key value in the x-hauska-key request header, this service calls HAUSKA_MCP_URL's own /auth/whoami with that same header, and reads jurisdiction_tenant off the response. HAUSKA_TENANT_KEYS (plural) exists but is a LOCAL/unit-test-only static JSON map (parseTenantKeyMap), explicitly disabled whenever K_SERVICE is set -- it never applies to the deployed surface.",
+    "secondMechanismConsideredAndRejected": "Considered: maybe HAUSKA_TENANT_KEY is an alias resolved elsewhere (e.g. a build-time env substitution) rather than genuinely absent. Rejected: grepped the full deployed src/tenancy.mjs and its only two Hauska-key-shaped env references are HAUSKA_TENANT_KEYS (local bypass) and HAUSKA_MCP_URL (the endpoint) -- no substitution layer exists in this repo (plain process.env reads throughout, confirmed by reading envMap's call sites).",
+    "consequenceForDeliverable2": "The dispatch's instruction to name 'HAUSKA_TENANT_KEY' in .env.example would document a variable the code does not read. Documenting the REAL mechanism (HAUSKA_MCP_URL + the per-request x-hauska-key header + HAUSKA_TENANT_KEYS as the local-only bypass) serves the dispatch's actual intent -- guidance instead of silence -- more accurately than the literal instruction. Flagged here rather than silently substituted."
+  },
+
+  "mintMechanismReadOnly": {
+    "howChecked": "Read P:/hauska-mcp-server/src/admin.ts (the base repo path, not the registered substrate worktree -- read-only, no write attempted or possible from this path per git status showing it tracks a different branch state than the worktree) to make any mint REQUEST concrete and actionable rather than vague.",
+    "finding": "POST /admin/keys, gated by header X-Hauska-Admin-Key matching HAUSKA_ADMIN_BOOTSTRAP_KEY (env var name only, confirmed present in hauska-mcp-server/.env.example line 74; value never read). Body: {tier, product, jurisdiction_tenant, platform_internal, owner_email, owner_name, notes}. Response returns raw_key exactly once, on creation, and states it 'cannot be retrieved later' -- consistent with G-133's finding that key_hash is a one-way hash (no path exists, even for an admin, to retrieve an EXISTING key's raw value after the fact)."
+  },
+
+  "openForCp2": [
+    "File the mint request to substrate (this lane cannot mint) and the doc_repo credential access index (the structural fix).",
+    "Update smartcity-dashboards' .env.example with the corrected (not literal-as-instructed) mechanism.",
+    "Annotate G-116's and G-128's closes with dated corrections.",
+    "State plainly, in the close, that the acceptance test (full-shell probe mounting the map iframe with the NEW credential, plus the violation test) CANNOT run in this session -- no raw key value exists yet, and none of the three ways to get one (mint it myself, ask the operator for the existing pilot key's value, guess/reuse a value) are available or permitted."
+  ]
+}
