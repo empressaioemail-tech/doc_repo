@@ -129,6 +129,24 @@ Off the exit path, recorded here because it was ruled in the same program sessio
   Reversal: if the rebased events work cannot pass its suites or the live checks, ship neither half
   and re-card rather than shipping the base tag alone.
 
+### Ruling 5 amended (A-224, operator, 2026-09-18 about 17:55Z)
+
+- **P-300 serves a jurisdiction default only where the city's own ordinance sets one.** Ruling 5
+  said the default row serves the 48,829 parcels P-326 labelled "jurisdiction-default-servable". That
+  label means "no zoning district on file", and for 48,825 of them the reason is that the city's
+  zoning layer was never acquired (40 cities). Several are zoned cities with district-by-district
+  setbacks: Manor (Code of Ordinances Chapter 14, zoning map and PUD districts) and Lago Vista
+  (Chapter 14, Table A "Table of Development Standards" by district) alone are 20,826 parcels. A
+  city-wide default there would state a line the parcel's real district may contradict. So the lane
+  classifies each of the 40 cities at source: (a) a zoned city whose layer we never acquired gets a
+  declared refusal naming the city ("zoning district not acquired; verify with the city"), accepted
+  as a Phase 0 terminal state on the same terms as ruling 6, with acquisition carried to Phase 1
+  (P-364); (b) an unzoned city whose ordinance sets a city-wide line gets the default row with its
+  plat disclosure (Gholson first, per OT-10); (c) an unzoned city with no city-wide line, read at
+  source, gets a checked absence naming what was read.
+  Reversal: if a zoned city's ordinance is found to set one line for every district, it moves to (b)
+  with that finding cited.
+
 ### The exit
 
 18. **The operator walks the 45 probe buckets** once the customer re-run is clean.

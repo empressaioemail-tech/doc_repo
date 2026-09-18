@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-18 (17:45Z, A-223)
+last_updated: 2026-09-18 (18:05Z, A-224)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -308,6 +308,7 @@ Two factory lanes (P-335, P-327) and two engine lanes (P-342, P-328) run on disj
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
 | 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-18 18:05 | **A-224: P-255 census re-graded; ruling 5 amended; P-300/P-338 compiled.** False absences 219,472 to 0; 58,339 unaccounted remain (9,510 district misses, 48,829 in 40 cities whose zoning layer was never acquired). The operator ruled a default line only where the city's ordinance sets one (Manor and Lago Vista are zoned: 20,826 parcels take a declared refusal instead). Writer and surface dispatches compiled; P-364 carded for Phase 1. Wave 2 is fully compiled. |
 | 2026-09-18 17:45 | **A-223: P-258's re-run is a no-op; San Marcos's switch is P-363 plus the Hays bake.** Dry runs `9pg2r` and `v7xfd` propose exactly the stored setback counts in all six counties (the writer never reopens an earned value). 387,237 setback value cells still cite corpus 1.1.0 (numbers right except 6 San Marcos N-CM parcels). P-363 compiled. Next: the P-255 census re-grade, then compile P-300 with P-338. |
 | 2026-09-18 17:20 | **San Marcos coverage re-check HOLDS (ruling 19's precondition).** 1.4.0 covers 88.38 percent of zoned area (1.1.0, served today: 50.47); the 2026-09-07 figure reproduced at 12.93. Record `_inbox/2026-09-18_san_marcos_coverage_recheck_RECORD.md`. Next: P-258's re-run, Hays first (the San Marcos switch), dry run first. |
 | 2026-09-18 17:25 | **A-222: P-324 ships with its staged events, CAPI and share-URL scrubbing (operator); recompiled** as `_dispatches/2026-09-18_p324-pixel-events-attribution_dispatch.md`. The Wave 2 batch is pushed (`d6ab5e46`); eleven Wave 2 dispatches are ready to fire. `META_CAPI_ACCESS_TOKEN` is owed by the operator for the Property Explorer deploy. |

@@ -2,7 +2,7 @@
 id: 2026-09-18_phase0_closeout_REGISTER
 title: Phase 0 close-out register (living)
 date: 2026-09-18
-last_updated: 2026-09-18 (17:45Z, A-223: P-258 closed as measured; P-363)
+last_updated: 2026-09-18 (18:05Z, A-224: census re-graded; P-300/P-338 compiled; P-364)
 status: living. The integration seat updates a row whenever its state changes and records the change in the log at the bottom. This is the durable list; the roadmap carries the live queue and points here.
 kind: register
 owner: nick
@@ -88,7 +88,7 @@ when it starts; a row's own `Depends` in OPS-16 is the authority where they diff
 | P-328 | The engine's parcel-node reconcile under the shared threshold | hauska-engine | off (safety) | 1 | **closed; #474 HELD:** it loosens the engine's live 0.05 to the program's 0.5; operator decision owed |
 | P-336 | P-204 A and B cut over: cells written, graded, served | hauska-factory, hauska-engine, doc_repo | 1 | 2 | carded |
 | P-339, P-340, P-341 | Surface agreement: envelope reason, table disagreement, impervious; Waco XD-2 | hauska-map, legacy-design-tools | 2 | 2 (after P-332 merges) | carded |
-| P-300 with P-338 | Jurisdiction-default line, broadly; district-miss refusal names district and city | corpus, hauska-factory, surfaces | 1, 2 | 2 (after P-258's re-run) | carded |
+| P-300 with P-338 | Jurisdiction-default line where the city's ordinance sets one (A-224); district-miss and zoning-not-acquired refusals name the district or city | corpus, hauska-factory, surfaces | 1, 2 | 2 | **compiled 2026-09-18 in two halves:** writer `_dispatches/2026-09-18_p300-p338-setback-residual-writer_dispatch.md`, surfaces `_dispatches/2026-09-18_p338-refusal-surfaces_dispatch.md`; population 58,339 (9,510 district misses, 48,829 in 40 no-layer cities) |
 | P-333 | Genuine join-miss absences restored per population | hauska-factory | off (accuracy) | 2 (after P-335) | **compiled 2026-09-18** `_dispatches/2026-09-18_p333-join-miss-scoped-guard_dispatch.md`; restores absences only in bare-key counties (Hays and Williamson join through crosswalks, and Hays' bare-id overlap of 172,377 of 173,050 is a collision count); threshold value to the operator before merge |
 | P-351 | The bake's retirement arm made keyspace-aware | legacy-design-tools | before P-350 | 2 (after P-335) | **compiled 2026-09-18** `_dispatches/2026-09-18_p351-bake-retirement-keyspace_dispatch.md`; both bake writers, the 1,385 split, the dollar facts on the same bare lookup, and the factory pin move |
 | P-334, P-329, P-330 | Watch can run; `ldt-sha` check; runner continues past a declared refusal | hauska-factory | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p334-p329-p330-factory-controls_dispatch.md` (three PRs) |
@@ -156,6 +156,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 | P-344 | `railCorridor`'s first serve path, or a ruling to retire it |
 | P-345 | `landUseDescription` cutover after the Hays join |
 | P-346 | District tables for the 9,510 district-miss parcels |
+| P-364 | Zoning layers and district tables for the zoned cities A-224 class (a) finds among the 40 no-layer cities (Manor and Lago Vista at least: 20,826 parcels) |
 | P-267, P-283 | Cotality agValuation and the contract read (A-212) |
 | P-285 onward | Burnet through the farm, then Bell and Milam |
 
@@ -188,6 +189,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 18:05 | P-255 census re-graded (false absences 219,472 to 0; 58,339 unaccounted equal P-326's population). A-224: ruling 5 amended by the operator, so a default line applies only where the city's ordinance sets one; P-300/P-338 compiled in two halves; P-364 carded (Phase 1). |
 | 2026-09-18 17:45 | A-223: P-258's re-run checked before it ran and closed as a no-op (zero cells in all six counties); the handoff's premise that a Hays run switches San Marcos is wrong; P-363 carded and compiled; OPS-24 range extended to 363. |
 | 2026-09-18 17:20 | Seat Wave 2, item 1: the San Marcos coverage re-check HOLDS (88.38 percent under 1.4.0 against 50.47 under the 1.1.0 table served today; the 2026-09-07 figure reproduced at 12.93). New instrument `scripts/san-marcos-coverage-recheck.mjs`, self-tested and checked by violation. P-258's re-run may proceed. |
 | 2026-09-18 17:25 | A-222: the operator ruled P-324 ships with its staged events, CAPI and scrubbing; recorded and recompiled. Wave 2 batch pushed `d6ab5e46`. |
