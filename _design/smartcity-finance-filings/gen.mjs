@@ -18,6 +18,7 @@ const BADGE = {
   'NOT READ': ['var(--sc-ink-3)', 'var(--sc-quiet-wash)'],
   'NOT BUILT': ['var(--sc-ink-3)', 'var(--sc-quiet-wash)'],
   'UNLABELLED': ['var(--sc-warn)', 'var(--sc-warn-wash)'],
+  'UNVERIFIED': ['var(--sc-warn)', 'var(--sc-warn-wash)'],
   'TENANT PRIVATE': ['var(--sc-restricted)', 'var(--sc-restricted-wash)'],
 };
 const badge = (t) => {
@@ -25,6 +26,28 @@ const badge = (t) => {
   const [c, w] = BADGE[t] || BADGE['EMPTY'];
   return '<span style="flex:none; font:500 12px/16px var(--sc-font-data); letter-spacing:.06em; color:' + c + '; background:' + w + '; border-radius:var(--sc-r-control); padding:1px 5px;">' + t + '</span>';
 };
+
+/* G-138. An external-authority citation: a figure this product attributes to an authority outside
+   itself (the city's ordinance, the city's ledger). While no traceable source is on file it renders
+   with data-verified="false" and the UNVERIFIED badge beside the value. check.mjs refuses any text
+   occurrence of a registered citation that is not inside one of these, and refuses verified=true
+   without a source. Promote a citation by setting verified:true AND recording its source in
+   check.mjs's REGISTRY; setting only one of the two fails the check. */
+const CITES = {
+  'ordinance-rate': { verified: false },
+  'fund-108': { verified: false },
+};
+const cite = (id, text) => {
+  const c = CITES[id];
+  if (!c) throw new Error('cite(): unregistered citation ' + id);
+  return '<span data-citation="' + id + '" data-verified="' + (c.verified ? 'true' : 'false') + '" style="display:inline-flex; align-items:center; gap:4px;">' + text + (c.verified ? '' : badge('UNVERIFIED')) + '</span>';
+};
+
+/* The Exceptions tab counts every SCORED finding. While the ordinance rate is unverified the rate
+   check is held and scores nothing, so its three findings leave the count. Deriving the count from
+   the same flag that holds the check makes the two unable to disagree. */
+const RATE_N = 3, OUTSTANDING_N = 4, LATE_N = 5;
+const EX_COUNT = String((CITES['ordinance-rate'].verified ? RATE_N : 0) + OUTSTANDING_N + LATE_N);
 
 const LENSES = [
   ['Overview', 'LIVE RECORDS'], ['Development services', 'LIVE RECORDS'], ['Finance', 'LIVE RECORDS'],
@@ -97,7 +120,7 @@ items.map((t) => {
   const on = t.n === active;
   return '          <div style="display:flex; align-items:center; gap:6px; padding:var(--sc-2) 0 10px; box-shadow:' + (on ? 'inset 0 -2px 0 var(--sc-accent)' : 'none') + ';">' +
     '<span style="font:' + (on ? '620' : '400') + ' 14px/20px var(--sc-font-ui); color:var(' + (on ? '--sc-ink' : '--sc-ink-2') + ');">' + t.n + '</span>' +
-    (t.c ? '<span style="font:400 12px/16px var(--sc-font-data); font-variant-numeric:tabular-nums; color:var(' + (t.tone || '--sc-ink-3') + ');">' + t.c + '</span>' : '') + '</div>';
+    (t.c ? '<span data-tab="' + t.n + '" data-count="' + t.c + '" style="font:400 12px/16px var(--sc-font-data); font-variant-numeric:tabular-nums; color:var(' + (t.tone || '--sc-ink-3') + ');">' + t.c + '</span>' : '') + '</div>';
 }).join('\n') + '\n        </div>';
 
 const cell = (c) => {
@@ -115,7 +138,7 @@ o.rows.map((r) =>
 r.map((c) => '              ' + cell(c)).join('\n') + '\n            </div>').join('\n');
 
 const panel = (o) =>
-'        <section style="border:1px solid var(--sc-line); border-radius:var(--sc-r); background:var(--sc-surface); overflow:hidden; box-shadow:var(--sc-e1); display:flex; flex-direction:column;' + (o.grow ? ' flex:1; min-height:0;' : '') + '">\n' +
+'        <section' + (o.data || '') + ' style="border:1px solid var(--sc-line); border-radius:var(--sc-r); background:var(--sc-surface); overflow:hidden; box-shadow:var(--sc-e1); display:flex; flex-direction:column;' + (o.grow ? ' flex:1; min-height:0;' : '') + '">\n' +
 '          <div style="display:flex; align-items:center; gap:var(--sc-2); min-height:40px; padding:var(--sc-1) var(--sc-4); border-bottom:1px solid var(--sc-line-faint);">\n' +
 '            <span style="font:620 15px/22px var(--sc-font-ui); letter-spacing:-.008em; color:var(--sc-ink);">' + o.title + '</span>\n' +
 '            <span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);">' + o.sub + '</span>\n' +
@@ -194,17 +217,17 @@ const main = shell({
     agreement({
       tone: OK, wash: '--sc-ok-wash', icon: CHECK,
       head: 'Localgov and the ledger agree for Q3 FY26',
-      sub: 'Tax received through Localgov is $3,460 above what fund 108 booked for the same three months, which is 0.27 percent of receipts.',
-      basis: 'Localgov AmountPaid, 34 filings, read 09/14 16:02 &middot; OpenGov fund 108 revenue, read 09/14 06:00 &middot; AmountPaid excludes processing fees and the two sources close on different days, so a gap of this shape is expected. It is not evidence of an error.',
+      sub: 'Tax received through Localgov is $3,460 above what ' + cite('fund-108', 'fund 108') + ' booked for the same three months, which is 0.27 percent of receipts.',
+      basis: 'Localgov AmountPaid, 34 filings, read 09/14 16:02 &middot; OpenGov ' + cite('fund-108', 'fund 108') + ' revenue, read 09/14 06:00 &middot; AmountPaid excludes processing fees and the two sources close on different days, so a gap of this shape is expected. It is not evidence of an error.',
       figureK: 'Unreconciled', figure: '-$3,460', figureSub: '0.27% of receipts',
     }) + '\n' +
     '        <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sc-3);">\n' +
     [
       { k: 'Filed', read: true, v: '$1,276,401', field: 'TotalAmountDue', src: 'What filers reported owing &middot; Localgov' },
       { k: 'Received', read: true, v: '$1,264,880', field: 'AmountPaid', src: 'Tax received, excludes processing fees &middot; Localgov' },
-      { k: 'Booked', read: true, v: '$1,261,420', field: 'Fund 108 revenue', src: 'City ledger &middot; OpenGov' },
+      { k: 'Booked', read: true, v: '$1,261,420', field: cite('fund-108', 'Fund 108 revenue'), src: 'City ledger &middot; OpenGov' },
     ].map(measure).join('\n') + '\n        </div>\n' +
-    tabs(TABS_MAIN('12', '34'), 'Reconciliation') + '\n' +
+    tabs(TABS_MAIN(EX_COUNT, '34'), 'Reconciliation') + '\n' +
     panel({
       grow: true, title: 'By filing period', sub: 'Q3 FY26 &middot; May to July',
       right: '<span style="font:500 12px/16px var(--sc-font-ui); color:var(--sc-accent); padding:0 var(--sc-2);">Export</span>',
@@ -221,16 +244,18 @@ const main = shell({
   rail:
     railBlock('Reading from', [
       sourceRow({ n: 'Localgov Filings', d: '34 filings &middot; read 09/14 16:02' }),
-      sourceRow({ n: 'OpenGov fund 108', d: 'FY26 ledger &middot; read 09/14 06:00' }),
+      sourceRow({ n: cite('fund-108', 'OpenGov fund 108'), d: 'FY26 ledger &middot; read 09/14 06:00' }),
     ]) + '\n' +
     railBlock('Needs attention', [
       '            <div style="display:flex; flex-direction:column; gap:var(--sc-2);">\n' +
       [
-        { k: 'Rate does not match ordinance', v: '3', tone: CRIT },
+        (CITES['ordinance-rate'].verified
+          ? { k: 'Rate does not match ordinance', v: String(RATE_N), tone: CRIT, finding: 'rate-mismatch', scored: true }
+          : { k: 'Rate check held: the ordinance rate is not sourced', v: 'Held', tone: Q, finding: 'rate-mismatch', scored: false }),
         { k: 'Outstanding after 30 days', v: '4', tone: WARN },
         { k: 'Filed late', v: '5', tone: WARN },
       ].map((x) =>
-        '              <div style="display:flex; align-items:baseline; gap:var(--sc-3); padding:var(--sc-2) var(--sc-3); border:1px solid var(--sc-line-faint); border-radius:var(--sc-r-control); background:var(--sc-surface);"><span style="font:400 19px/24px var(--sc-font-data); font-variant-numeric:tabular-nums; color:var(' + x.tone + ');">' + x.v + '</span><span style="flex:1; font:400 12px/17px var(--sc-font-ui); color:var(--sc-ink-2);">' + x.k + '</span></div>').join('\n') +
+        '              <div' + (x.finding ? ' data-finding="' + x.finding + '" data-scored="' + (x.scored ? 'true' : 'false') + '"' : '') + ' style="display:flex; align-items:baseline; gap:var(--sc-3); padding:var(--sc-2) var(--sc-3); border:1px solid var(--sc-line-faint); border-radius:var(--sc-r-control); background:var(--sc-surface);"><span style="font:400 19px/24px var(--sc-font-data); font-variant-numeric:tabular-nums; color:var(' + x.tone + ');">' + x.v + '</span><span style="flex:1; font:400 12px/17px var(--sc-font-ui); color:var(--sc-ink-2);">' + x.k + '</span></div>').join('\n') +
       '\n              <div style="display:flex; align-items:center; gap:5px; font:400 12px/16px var(--sc-font-ui); color:var(--sc-accent); padding-top:var(--sc-1);"><span>Open exceptions</span>' + ARROW + '</div>\n            </div>',
     ]) + '\n' +
     railBlock('This feed cannot answer', [
@@ -239,29 +264,54 @@ const main = shell({
     ]),
 });
 
+/* G-138. The rate check is meaning-shaped: the implied rate comes from the filing and the expected
+   rate from the city ordinance, two independent sources. That holds only while the second input is
+   real. With the ordinance rate unsourced, scoring a filing against it hands the city a worklist
+   accusing its own taxpayers of filing at the wrong rate, citing a number nobody has traced to the
+   ordinance. So while it is unverified the region is HELD and scores nothing, and says why. It also
+   honours the scope card, which forbids computing any rate over the monetary fields until the
+   Azavar Q2 answer is filed. The scored table below returns unchanged the moment the citation is
+   promoted. */
+const RATE_CITATION = '<span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3); display:inline-flex; align-items:center; gap:4px;">' + cite('ordinance-rate', 'Ordinance rate 7.00%') + ' &middot; Bastrop code of ordinances</span>';
+const ratePanel = () => (CITES['ordinance-rate'].verified
+  ? panel({
+      data: ' data-region="worklist" data-worklist="rate" data-count="' + RATE_N + '" data-scored="true"',
+      title: 'Rate does not match the ordinance', sub: RATE_N + ' filings &middot; tax due divided by taxable revenue',
+      right: RATE_CITATION,
+      body: table({
+        cols: '112px 96px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 92px 92px 96px',
+        head: ['Filing ref', 'Submitted', { t: 'Gross revenue', right: true }, { t: 'Exemptions', right: true }, { t: 'Tax due', right: true }, { t: 'Implied', right: true }, { t: 'Expected', right: true }, { t: 'Difference', right: true }],
+        rows: [
+          [M('AB12CD34'), M('07/18/26'), R('$1,284,000'), R('$0'), R('$83,460'), R('6.50%', CRIT), R(cite('ordinance-rate', '7.00%')), R('-$6,420', CRIT)],
+          [M('GH88KL21'), M('06/20/26'), R('$402,800'), R('$61,200'), R('$28,196'), R('8.25%', CRIT), R(cite('ordinance-rate', '7.00%')), R('+$4,284', CRIT)],
+          [M('RS40TU19'), M('05/19/26'), R('$96,400'), R('$96,400'), R('$0'), { t: 'n/a', mono: true, right: true, tone: Q }, R(cite('ordinance-rate', '7.00%')), { t: 'review', mono: true, right: true, tone: WARN }],
+        ],
+      }) +
+      '\n            <div style="padding:var(--sc-3) var(--sc-4); font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3); border-left:2px solid var(--sc-line); margin:var(--sc-2) var(--sc-4) var(--sc-3); max-width:118ch;">The implied rate is computed from the filing itself and compared against the rate in the city ordinance, which is a separate source. A filing that claims full exemption has no implied rate and is shown for review rather than scored.</div>',
+    })
+  : panel({
+      data: ' data-region="worklist" data-worklist="rate" data-count="0" data-scored="false"',
+      title: 'Rate against the ordinance', sub: 'held &middot; no filing is scored',
+      right: RATE_CITATION,
+      body: emptyRegion({
+        k: 'Check held',
+        h: 'The ordinance rate is not sourced, so no filing is scored against it.',
+        p: 'This check compares the rate each filing implies with the rate in the city ordinance, and that second, separate source is what makes it a real check rather than a filing agreeing with itself. It only works while the second input is real. The rate here has no traceable source on file, so scoring filings against it would tell staff that Bastrop taxpayers filed at the wrong rate on the strength of a number nobody has checked against the ordinance.',
+        b: 'Resumes when the ordinance rate is sourced at Bastrop&#39;s published code of ordinances, and when the Azavar answer on which fields the form captures is filed. Until then no rate is computed over any monetary field.',
+      }),
+    }));
+
 /* =======================  2. EXCEPTIONS  ======================= */
 const exceptions = shell({
   theme: 'light', city: 'City of Bastrop', seal: 'BX', role: 'Finance', crumb: 'Filings / Exceptions',
   h: 1300, h1: 'Exceptions', pageBadges: ['FIXTURE', 'TENANT PRIVATE'], foot: FOOT_LIVE,
   sub: 'Filings whose arithmetic, timing or payment does not look like the rest. This is the worklist, not a report: every row names a filing reference staff can open in Localgov.',
   body:
-    tabs(TABS_MAIN('12', '34'), 'Exceptions') + '\n' +
-    panel({
-      title: 'Rate does not match the ordinance', sub: '3 filings &middot; tax due divided by taxable revenue',
-      right: '<span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);">Ordinance rate 7.00% &middot; Bastrop code of ordinances</span>',
-      body: table({
-        cols: '112px 96px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 92px 92px 96px',
-        head: ['Filing ref', 'Submitted', { t: 'Gross revenue', right: true }, { t: 'Exemptions', right: true }, { t: 'Tax due', right: true }, { t: 'Implied', right: true }, { t: 'Expected', right: true }, { t: 'Difference', right: true }],
-        rows: [
-          [M('AB12CD34'), M('07/18/26'), R('$1,284,000'), R('$0'), R('$83,460'), R('6.50%', CRIT), R('7.00%'), R('-$6,420', CRIT)],
-          [M('GH88KL21'), M('06/20/26'), R('$402,800'), R('$61,200'), R('$28,196'), R('8.25%', CRIT), R('7.00%'), R('+$4,284', CRIT)],
-          [M('RS40TU19'), M('05/19/26'), R('$96,400'), R('$96,400'), R('$0'), { t: 'n/a', mono: true, right: true, tone: Q }, R('7.00%'), { t: 'review', mono: true, right: true, tone: WARN }],
-        ],
-      }) +
-      '\n            <div style="padding:var(--sc-3) var(--sc-4); font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3); border-left:2px solid var(--sc-line); margin:var(--sc-2) var(--sc-4) var(--sc-3); max-width:118ch;">The implied rate is computed from the filing itself and compared against the rate in the city ordinance, which is a separate source. A filing that claims full exemption has no implied rate and is shown for review rather than scored.</div>',
-    }) + '\n' +
+    tabs(TABS_MAIN(EX_COUNT, '34'), 'Exceptions') + '\n' +
+    ratePanel() + '\n' +
     '        <div style="display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:var(--sc-4); min-height:0;">\n' +
     panel({
+      data: ' data-region="worklist" data-worklist="outstanding" data-count="' + OUTSTANDING_N + '" data-scored="true"',
       title: 'Outstanding', sub: '4 filings &middot; $11,521 &middot; aged from submission',
       body: table({
         cols: '108px 86px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 70px',
@@ -275,6 +325,7 @@ const exceptions = shell({
       }),
     }) + '\n' +
     panel({
+      data: ' data-region="worklist" data-worklist="late" data-count="' + LATE_N + '" data-scored="true"',
       title: 'Filed late', sub: '5 filings &middot; $4,280 penalty, $1,115 interest',
       body: table({
         cols: '108px 86px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)',
@@ -320,7 +371,7 @@ const lodging = shell({
       basis: 'Localgov GrossRevenue as reported by filers, 12 months to July 2026 &middot; Year over year is withheld: it needs filings from mid-2025, earlier than this feed has been read. Figures are as filed and are not adjusted for amendments.',
       figureK: 'Q3 gross revenue', figure: '$18.94M', figureSub: 'highest of the 12 months read',
     }) + '\n' +
-    tabs(TABS_MAIN('12', '34'), 'Lodging economy') + '\n' +
+    tabs(TABS_MAIN(EX_COUNT, '34'), 'Lodging economy') + '\n' +
     '        <div style="display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:var(--sc-4); min-height:0;">\n' +
     panel({
       title: 'Reported gross revenue by month', sub: 'August 2025 to July 2026',
@@ -334,7 +385,7 @@ const lodging = shell({
           { k: 'Gross revenue reported', v: '$18,940,200', d: 'before exemptions' },
           { k: 'Exemptions claimed', v: '$612,400', d: '3.2% of gross' },
           { k: 'Taxable base', v: '$18,327,800', d: 'gross less exemptions' },
-          { k: 'Tax due on that base', v: '$1,282,946', d: '7.00% on every filing period', tone: OK },
+          { k: 'Tax due on that base', v: '$1,282,946', d: CITES['ordinance-rate'].verified ? cite('ordinance-rate', '7.00%') + ' on every filing period' : 'at ' + cite('ordinance-rate', '7.00%') + ', derived from a rate not yet sourced', tone: CITES['ordinance-rate'].verified ? OK : Q },
           { k: 'Timely-filing allowance', v: '$11,940', d: 'forgone for on-time filing' },
         ].map((x) =>
           '              <div style="display:flex; align-items:baseline; gap:var(--sc-3); padding:var(--sc-3) var(--sc-4); border-bottom:1px solid var(--sc-line-faint);">\n' +
@@ -344,7 +395,7 @@ const lodging = shell({
         '            <div style="padding:var(--sc-3) var(--sc-4); font:400 12px/17px var(--sc-font-data); color:var(--sc-ink-3); border-left:2px solid var(--sc-line); margin:var(--sc-2) var(--sc-4) var(--sc-3);">Rates and shares are computed only over fields Bastrop&#39;s form captures. A field the form does not capture arrives as zero and is excluded from every denominator rather than averaged in.</div>',
     }) + '\n        </div>\n' +
     panel({
-      title: 'Against the fund', sub: 'fund 108 &middot; OpenGov',
+      title: 'Against the fund', sub: cite('fund-108', 'fund 108') + ' &middot; OpenGov',
       body:
         '            <div style="display:flex; align-items:center; gap:var(--sc-6); padding:var(--sc-4) var(--sc-5);">\n' +
         '              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--sc-2);">\n' +
@@ -369,16 +420,16 @@ const unlabelled = shell({
       tone: WARN, wash: '--sc-warn-wash', icon: ALERT,
       head: 'These filings are not labelled as hotel occupancy tax',
       sub: 'The filings endpoint returns no tax-type field, so nothing here can be attributed to a specific tax without asserting something the source did not say.',
-      basis: 'Basis: the response carries FilingId, FilingRefId, SubmittedDate and ten amounts. There is no tax type on the row and no separate report per type. Reconciliation against fund 108 is suspended while the attribution is unconfirmed, because a match to that fund would be the assertion, not the evidence.',
+      basis: 'Basis: the response carries FilingId, FilingRefId, SubmittedDate and ten amounts. There is no tax type on the row and no separate report per type. Reconciliation against ' + cite('fund-108', 'fund 108') + ' is suspended while the attribution is unconfirmed, because a match to that fund would be the assertion, not the evidence.',
       figureK: 'Received', figure: '$1,264,880', figureSub: 'tax unattributed',
     }) + '\n' +
     '        <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sc-3);">\n' +
     [
       { k: 'Filed', read: true, v: '$1,276,401', field: 'TotalAmountDue', src: 'What filers reported owing &middot; Localgov' },
       { k: 'Received', read: true, v: '$1,264,880', field: 'AmountPaid', src: 'Tax received, excludes processing fees &middot; Localgov' },
-      { k: 'Booked', read: false, tag: 'NOT READ', field: 'Fund 108 revenue', src: 'Suspended: cannot match an unattributed figure to a named fund' },
+      { k: 'Booked', read: false, tag: 'NOT READ', field: cite('fund-108', 'Fund 108 revenue'), src: 'Suspended: cannot match an unattributed figure to a named fund' },
     ].map(measure).join('\n') + '\n        </div>\n' +
-    tabs([{ n: 'Filings', c: '34' }, { n: 'Exceptions', c: '12', tone: CRIT }, { n: 'Reconciliation', c: 'held' }], 'Filings') + '\n' +
+    tabs([{ n: 'Filings', c: '34' }, { n: 'Exceptions', c: EX_COUNT, tone: CRIT }, { n: 'Reconciliation', c: 'held' }], 'Filings') + '\n' +
     panel({
       grow: true, title: 'All filings', sub: 'showing 6 of 34 &middot; Q3 FY26',
       body: table({

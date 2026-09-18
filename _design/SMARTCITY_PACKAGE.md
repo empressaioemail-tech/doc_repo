@@ -2,7 +2,7 @@
 id: smartcity_package
 title: "SmartCity OS — the package: links, state, and what is next"
 status: active
-last_updated: 2026-09-17
+last_updated: 2026-09-18
 applies_to: smartcity
 owner: nick
 programs: [OPS-17]
@@ -23,7 +23,7 @@ Unparked 2026-09-17. Open this first, then `_design/INDEX.md` for the designs th
 
 **Every design is approved** (`_decisions/2026-09-17_design_ratification_all_approved.md`). Three of
 them are approved and still not buildable, and the reasons are defects and deferrals rather than
-review states: `smartcity-finance-filings` (G-138), `plan-review-departments` (G-144) and
+review states: `smartcity-finance-filings` (G-138, closed 2026-09-18; it now waits only on G-137's credentials), `plan-review-departments` (G-144) and
 `smartcity-applicant-precheck` (the blending ruling is deferred, so no service owns the check).
 
 **The staff dashboards surface is still on GCP, and it moves to DigitalOcean before any build
@@ -57,8 +57,7 @@ blocks them rather than one row per folder:
 | G-156 | Finance lens | D-12 only — **scope call answered 2026-09-17: Finance ships** |
 | G-157 | City management board (v1 parity) | **a v1 capture, operator-owed** — and D-12 |
 
-Not buildable and not carded: finance-filings (G-138), plan-review-departments (G-144),
-applicant-precheck (blending ruling deferred).
+Not buildable and not carded: finance-filings (its design block, G-138, closed 2026-09-18; the build now waits only on G-137's Azavar credentials), plan-review-departments (G-144), applicant-precheck (blending ruling deferred).
 
 **No lens is blocked on a vendor.** That was checked at source rather than assumed, and the obvious
 answer was wrong: every lens design draws its own blocked state as design content, so Fire and EMS,
@@ -88,9 +87,9 @@ merge conflict in two files. One govtech lane, one PR per row, planner-verified 
 | 6 | dashboards lane | G-151 Parks | G-152 merged |
 | P1 | `smart-files` | G-155 Smart Files | nothing, parallel |
 | P2 | `plan-review` | G-150 close-out: file the close, GATE 2, a live console probe | nothing, parallel |
-| M1 | planner | G-138 filings design fix, which unblocks G-137 | nothing |
+| M1 | planner | ~~G-138 filings design fix~~ **DONE 2026-09-18**: both citations badged at every use, the rate check held, count derived; `check.mjs` + `violate.mjs` 13/13 | — |
 | M2 | planner | G-143 People and access design, the first leg of RBAC | nothing |
-| M3 | planner | HOT scope card: fix the `AmountPaid` acceptance test | nothing |
+| M3 | planner | ~~HOT scope card test~~ **DONE 2026-09-17**: reported and payment figures split into two rules; Q1/Q2 freezes deliberately left in place | — |
 | M4 | planner | Fleet and Police design regeneration | G-153 merged |
 | W1 | waits on operator | G-157 city management board | a v1 capture |
 | W2 | waits on operator | G-137 hotel occupancy tax | the Azavar reply, sent |
