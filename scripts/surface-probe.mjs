@@ -50,7 +50,8 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { createServer } from "node:http";
 import { execFileSync, execSync } from "node:child_process";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -203,6 +204,21 @@ export const P304_SUBJECTS = [
   { id: "48021:34049", role: "verified-control-must-keep", label: "1109 Pecan St, Bastrop; derivePath ends +atom-reconciled", expectWithheld: false, expectSqFt: 19052, expectPct: 63.5 },
 ];
 
+// P-347: the COVERAGE leg of the Phase 0 exit (P-205, P-210), graded at the customer's surfaces.
+// Coverage means the serving path (P-210's ruling). A coverage refusal fires only when the search
+// finds nothing, so each subject is an address that genuinely does not exist in a real locality:
+// the search must then say WHICH answer it is (covered-and-no-match `no-hit`, a named uncovered
+// county, or out of state) instead of an empty list the customer cannot tell apart. The retrieval
+// endpoint is the derived covered set; the Find box and the MCP's find_parcel are what a customer
+// reads. Expectations are the live endpoint's own answers read 2026-09-18 13:08Z.
+export const COVERAGE_SUBJECTS = [
+  { key: "coverage:austin", query: "99999 ZZYZX RD, AUSTIN, TX 78701", city: "Austin", state: "TX", zip: "78701", endpoint: "covered", search: "no-hit", countyFips: null },
+  { key: "coverage:cameron", query: "99999 ZZYZX RD, CAMERON, TX 76520", city: "Cameron", state: "TX", zip: "76520", endpoint: "not-covered", search: "county_out_of_coverage", countyFips: "48331" },
+  { key: "coverage:marble-falls", query: "99999 ZZYZX RD, MARBLE FALLS, TX 78654", city: "Marble Falls", state: "TX", zip: "78654", endpoint: "not-covered", search: "county_out_of_coverage", countyFips: "48053" },
+  { key: "coverage:denver", query: "1600 BROADWAY, DENVER, CO 80202", city: "Denver", state: "CO", zip: "80202", endpoint: null, search: "out_of_coverage", countyFips: null },
+];
+export const RETRIEVAL_BASE = process.env.SURFACE_PROBE_RETRIEVAL_BASE || "https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app";
+
 // The required case measured by the integration seat on 2026-09-17 and handed to this lane:
 // Travis `48453:367134` (5833 Taylor Draper Cv, SF-2, Austin). Its own read carries a RULED setback
 // table (front 25, side 5, rear 10, corner 15), and a surface nevertheless tells the customer the
@@ -234,7 +250,7 @@ export const OPS24_DEFECTS = [
   { id: "XD-8", defect: "the card does not name the governing city", row: "P-270", gradedBy: "jurisdictionNamed" },
   { id: "XD-9", defect: "malformed situs breaks envelope drawing", row: "P-272", gradedBy: "malformedSitusDraws" },
   { id: "XD-10", defect: "land-use contradiction within one payload", row: "P-217", gradedBy: null },
-  { id: "XD-11", defect: "setback citation without an effective date", row: "P-270", gradedBy: "citationDatePresent" },
+  { id: "XD-11", defect: "setback citation served undated AND undeclared (P-270: an unreadable vintage is a conflict row, never a silent pick; a DECLARED undated citation is no longer this defect and is counted separately as `XD-11-declared`)", row: "P-270", gradedBy: "citationDatePresent" },
   { id: "XD-12", defect: "salesHistory absent from the MCP schema", row: "P-209", gradedBy: null },
   { id: "XD-13", defect: "dollar value reaches an ungranted caller", row: "P-246 (done)", gradedBy: "dollarReachesAnonymous" },
   { id: "XD-14", defect: "\"PUD\"-coded districts resolve Euclidean setbacks", row: "P-257, after the operator's ruling", gradedBy: "pudReadsPudMessage" },
@@ -246,7 +262,7 @@ export const OPS24_DEFECTS = [
   { id: "X8", defect: "no-table cities decline with \"no zoning district observed\" while the payload holds the district", row: "hauska-map", gradedBy: "noTableDeclineNamesDistrict" },
   { id: "X9", defect: "a malformed situs (\", ,\") breaks envelope drawing", row: "hauska-map, LDT", gradedBy: "malformedSitusDraws" },
   { id: "X10", defect: "\"PUD\"-coded districts get the PUD message", row: "LDT, hauska-map", gradedBy: "pudReadsPudMessage" },
-  { id: "X11", defect: "setback citation without an effective date on Pflugerville", row: "LDT", gradedBy: "citationDatePresent" },
+  { id: "X11", defect: "setback citation served undated AND undeclared on Pflugerville (P-270; LDT's copy of XD-11)", row: "LDT", gradedBy: "citationDatePresent" },
 ];
 
 // --------------------------------------------------------------------------- small helpers
@@ -411,6 +427,51 @@ export function extractFacets(resp) {
      *  which of the two was read. Absent is absent: an unreadable vintage is a conflict row. */
     envelopeCitationDate: str(env?.citationEffectiveDate ?? env?.effectiveDate ?? env?.sourceVintage ?? env?.citedAt) ?? firstDateIn([str(env?.disclosure), str(env?.summary)]),
     envelopeCitationDateFrom: str(env?.citationEffectiveDate ?? env?.effectiveDate ?? env?.sourceVintage ?? env?.citedAt) ? "field" : firstDateIn([str(env?.disclosure), str(env?.summary)]) ? "disclosure-text" : null,
+    /**
+     * P-270 (OPS-24 X11): the citation's VINTAGE DECLARATION — the conflict row a
+     * payload must carry when its citation is served without a readable effective
+     * date. Read as `{ kind, state, note }`, or null when the payload declares
+     * nothing.
+     *
+     * WHY THIS FACET EXISTS. XD-11 asks "does this citation carry a usable
+     * vintage". Before P-270 the only honest answer available to the instrument
+     * was "no date found", because an undated citation and an undeclared citation
+     * were indistinguishable on the wire — that IS the defect. P-270 makes them
+     * distinguishable: an undated citation must now SAY SO. So the instrument
+     * grades the declaration, and `envelopeCitationDateFrom` stays about the DATE
+     * alone — a declaration is never a date and must never be read as one. The
+     * note is deliberately digit-free (a test in the lane pins that), so it cannot
+     * leak into `firstDateIn`'s disclosure-text fallback and be mistaken for a
+     * vintage; `citationVintageFromDisclosureText` below measures that separately.
+     */
+    envelopeCitationVintage: rec(env?.citationVintage)
+      ? {
+          kind: str(rec(env.citationVintage).kind),
+          state: str(rec(env.citationVintage).state),
+          note: str(rec(env.citationVintage).note),
+        }
+      : null,
+    /** The declaration's state token, or null. `read` is never a legal value here: a readable date is not a conflict. */
+    envelopeCitationVintageState: rec(env?.citationVintage) ? str(rec(env.citationVintage).state) : null,
+    /**
+     * XD-11's other half, measured rather than assumed: does the vintage sentence
+     * reach the DISCLOSURE prose too? A payload can carry the row and not the
+     * sentence (a transformer that rewrites the disclosure is exactly how, and one
+     * did — the P-304 withholding path). Grading only the row would let the
+     * customer-facing paragraph go silent while the instrument stayed green.
+     */
+    citationVintageInDisclosure: /vintage unknown/i.test(`${str(env?.disclosure)} ${str(env?.summary)}`),
+    /**
+     * The trap this lane had to avoid, measured directly: does the declaration's
+     * OWN text look like a date? If a future edit puts a year in the sentence, the
+     * disclosure-text fallback above would read it as an effective date and this
+     * probe would grade a silent pick as dated. Recorded so that regression is
+     * visible as a facet rather than as a false PASS.
+     */
+    citationVintageFromDisclosureText:
+      !str(env?.citationEffectiveDate ?? env?.effectiveDate ?? env?.sourceVintage ?? env?.citedAt) &&
+      !!rec(env?.citationVintage) &&
+     !!firstDateIn([str(env?.citationVintage?.note)]),
     envelopeProvisional: typeof env?.provisional === "boolean" ? env.provisional : null,
     /** XD-1/XD-13's other half: the watershed impervious figure, a TOP-LEVEL fact, printed
      *  beside the panel envelope's zoning-table `maxImperviousPct`. Two numbers a customer reads
@@ -1068,8 +1129,11 @@ export const ROWS = {
       if (fx.measured === false) return { verdict: "UNMEASURED", basis: `${id}: the card payload did not answer (${fx.error ?? "http " + fx.http})` };
       if (s.role === "waco-draws-no-figure") {
         if (!legs.draw?.measured) return { verdict: "UNMEASURED", basis: `${id}: the draw route did not answer, so "an envelope its own endpoint can draw" is not measured` };
-        const figure = fx.buildableAreaSqFtInPayload != null || fx.envelopeBuildableAreaPct != null;
-        if (figure) return { verdict: "FAIL", basis: `${id}: the panel prints an area figure (${fx.buildableAreaSqFtInPayload ?? "-"} sqFt / ${fx.envelopeBuildableAreaPct ?? "-"} pct) and must print none (P-153/P-159 figure ruling)` };
+        // A-215 ruling 13 (P-347) replaced the P-153/P-159 blanket refusal: a figure a verified
+        // envelope atom backs may show; an unbacked one may not; an unreadable backing grades nothing.
+        const fig = figureVerdict(legs);
+        if (fig.verdict === "FAIL") return { verdict: "FAIL", basis: `${id}: ${fig.basis}` };
+        if (fig.verdict === "UNMEASURED") return { verdict: "UNMEASURED", basis: `${id}: ${fig.basis}` };
         const drew = legs.draw.status === "ok" && legs.draw.geometryPresent === true;
         if (!drew) return { verdict: "FAIL", basis: `${id}: the panel must draw an envelope its own endpoint can draw and the route answered ${legs.draw.status ?? "?"} with geometryPresent ${legs.draw.geometryPresent} (${legs.draw.vertexCount ?? "?"} vertices)` };
         if (panelEnvelopeDeclined({ facets: fx }).declined) return { verdict: "FAIL", basis: `${id}: the route draws ${legs.draw.vertexCount} vertices for this parcel while the panel declines the envelope (${panelEnvelopeDeclined({ facets: fx }).why}); the panel declines what its own place/buildable-envelope route draws (XD-2/X5)` };
@@ -1109,6 +1173,38 @@ export const ROWS = {
       if (s.expectSqFt != null && sqFt !== s.expectSqFt) return { verdict: "FAIL", basis: `${id}: expected ${s.expectSqFt} sqFt and the payload serves ${sqFt}` };
       if (s.expectPct != null && pct !== s.expectPct) return { verdict: "FAIL", basis: `${id}: expected ${s.expectPct} pct and the payload serves ${pct}` };
       return { verdict: "PASS", basis: `${id}: verified control keeps ${sqFt} sqFt / ${pct} pct in the same anonymous read that withholds on the unverified parcel` };
+    },
+  },
+
+  // P-347: the coverage leg of the Phase 0 exit. P-210 grades the derived covered set (the retrieval
+  // endpoint); P-205 grades what the customer reads on both search surfaces. A surface that was not
+  // driven leaves its half UNMEASURED; a FAIL on either surface fails the subject.
+  "P-210": {
+    title: "coverage is the serving path, derived live: the retrieval endpoint answers covered, or not-covered naming the county and its state",
+    // Only subjects with an endpoint expectation. An out-of-state subject has none, and grading it
+    // "recorded only" as a PASS would count a pass nothing measured.
+    parcels: COVERAGE_SUBJECTS.filter((s) => s.endpoint !== null).map((s) => s.key),
+    optional: true,
+    evaluate(id, legs) {
+      const s = COVERAGE_SUBJECTS.find((x) => x.key === id);
+      const e = legs.coverageEndpoint;
+      if (!s || !e || s.endpoint === null) return { verdict: "UNMEASURED", basis: `${id}: not a P-210 subject, or the coverage legs were not driven (run with --rows P-210)` };
+      if (!e.measured) return { verdict: "UNMEASURED", basis: `${id}: ${e.error}` };
+      if (e.status !== s.endpoint) return { verdict: "FAIL", basis: `${id}: the endpoint answers "${e.status}" where "${s.endpoint}" is owed` };
+      if (s.countyFips && (e.countyFips !== s.countyFips || !e.countyName || !e.state)) return { verdict: "FAIL", basis: `${id}: not-covered must name ${s.countyFips} with its name and state; served ${e.countyFips ?? "-"} "${e.countyName ?? "-"}" ${e.state ?? "-"}` };
+      return { verdict: "PASS", basis: `${id}: ${e.status}${e.countyName ? ` naming ${e.countyName} (${e.countyFips}), ${e.state}` : ""}` };
+    },
+  },
+  "P-205": {
+    title: "Texas is held correctly at the customer's search: an uncovered county is named, a covered miss reads no-hit, never a silent empty list, on the Find box and the MCP",
+    parcels: COVERAGE_SUBJECTS.map((s) => s.key),
+    optional: true,
+    evaluate(id, legs) {
+      const s = COVERAGE_SUBJECTS.find((x) => x.key === id);
+      if (!s || !legs.findBox) return { verdict: "UNMEASURED", basis: `${id}: the coverage legs were not driven (run with --rows P-205)` };
+      const parts = [gradeCoverageSurface(s, legs.findBox, "map Find box"), gradeCoverageSurface(s, legs.mcpFind, "MCP find_parcel")];
+      const verdict = parts.some((p) => p.verdict === "FAIL") ? "FAIL" : parts.some((p) => p.verdict === "UNMEASURED") ? "UNMEASURED" : "PASS";
+      return { verdict, basis: `${id}: ${parts.map((p) => `${p.verdict} ${p.basis}`).join(" | ")}`, surfaces: { map: parts[0].verdict, mcp: parts[1].verdict } };
     },
   },
 };
@@ -1181,7 +1277,7 @@ async function runLegs(parcel, opts) {
 // names the reason rather than reporting a green Phase 0 leg over a surface nobody reached.
 const OPS24_LEG_TIMEOUT_MS = 45_000;
 /** The gate front the map itself presents to the engine-api on the export read path. */
-const gateFrontHeaders = (reqId, pkgId) => ({
+export const gateFrontHeaders = (reqId, pkgId) => ({
   "x-hauska-product": "cortex",
   "x-hauska-tenant-id": "public-catalog",
   "x-hauska-package-id": pkgId,
@@ -1238,7 +1334,9 @@ async function callRaw(method, url, body, timeoutMs, headers = {}) {
       body: body ? JSON.stringify(body) : undefined,
       signal: ctl.signal,
     });
-    return { http: res.status, ms: Date.now() - t0, text: await res.text() };
+    // P-347: the headers are kept. The MCP session id travels in `mcp-session-id`, and a caller
+    // that cannot read it can never make a second call on the session it opened.
+    return { http: res.status, ms: Date.now() - t0, headers: res.headers, text: await res.text() };
   } catch (e) {
     return { http: 0, ms: Date.now() - t0, error: String(e?.message || e) };
   } finally {
@@ -1317,31 +1415,148 @@ export function pdfSurfaceState(pdf) {
  * ONCE per run, records the gate's own refusal verbatim, and only calls `get_smart_site` when the
  * session actually opened. With no token the whole surface is UNMEASURED — never PASS.
  */
-async function runMcpLegs(ids) {
-  const token = (process.env.SURFACE_PROBE_MCP_TOKEN || "").trim();
+async function runMcpLegs(token, tokenSource) {
   const headers = { accept: "application/json, text/event-stream" };
   if (token) headers.authorization = `Bearer ${token}`;
-  const init = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "surface-probe-p254", version: "1" } } }, OPS24_LEG_TIMEOUT_MS, headers);
-  const body = parseMcpBody(init.text);
-  const session = str(init.headers?.get?.("mcp-session-id"));
+  const init = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: MCP_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: "surface-probe-p347", version: "1" } } }, OPS24_LEG_TIMEOUT_MS, headers);
+  const body = parseMcpBody(init.text) ?? (() => { try { return JSON.parse(init.text ?? ""); } catch { return null; } })();
   const gate = str(body?.error?.data?.reason) ?? str(typeof body?.error === "string" ? body.reason : body?.error?.message) ?? str(body?.reason) ?? (init.http ? `http ${init.http}` : init.error);
   const gateMessage = str(typeof body?.error === "string" ? body.message : body?.error?.message) ?? null;
-  if (!body || body.error) {
-    return { measured: false, http: init.http, ms: init.ms, tokenSupplied: !!token, gateReason: gate, gateMessage, error: `REFUSED by the MCP gate: ${gate}${gateMessage ? ` ("${gateMessage}")` : ""}${token ? "" : " (no SURFACE_PROBE_MCP_TOKEN supplied; the engine key is not an OAuth token)"}`, calls: {} };
+  if (!body || body.error || !body.result) {
+    return { measured: false, http: init.http, ms: init.ms, tokenSupplied: !!token, tokenSource: tokenSource ?? null, gateReason: gate, gateMessage, error: `REFUSED by the MCP gate: ${gate}${gateMessage ? ` ("${gateMessage}")` : ""}${token ? "" : " (no token: run with --mcp-sign-in, ruling 9; the engine key is not an OAuth token)"}`, calls: {} };
   }
-  return { measured: true, http: init.http, ms: init.ms, tokenSupplied: true, serverInfo: body.result?.serverInfo ?? null, gateReason: null, gateMessage: null, calls: {}, argKeyUsed: null };
+  // P-347: a Streamable-HTTP session is carried by `mcp-session-id`, and the client must confirm
+  // `notifications/initialized` before the server owes it a tool call. The 2026-09-17 version of
+  // this leg read the header off an object that never carried headers and skipped the
+  // notification, so a token alone would still have measured nothing.
+  const session = { token, sessionId: str(init.headers?.get?.("mcp-session-id")), protocolVersion: str(body.result?.protocolVersion) ?? MCP_PROTOCOL_VERSION, tiers: new Set(), tools: {} };
+  await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", method: "notifications/initialized" }, OPS24_LEG_TIMEOUT_MS, mcpHeaders(session));
+  const list = parseMcpBody((await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 2, method: "tools/list" }, OPS24_LEG_TIMEOUT_MS, mcpHeaders(session))).text);
+  for (const t of list?.result?.tools ?? []) session.tools[t.name] = Object.keys(rec(t.inputSchema)?.properties ?? {});
+  return { measured: true, http: init.http, ms: init.ms, tokenSupplied: true, tokenSource: tokenSource ?? null, serverInfo: body.result?.serverInfo ?? null, protocolVersion: session.protocolVersion, sessionIdPresent: !!session.sessionId, toolArgKeys: session.tools, gateReason: null, gateMessage: null, calls: {}, session };
 }
 
-/** One `get_smart_site` at node depth. The argument key is probed in order and recorded. */
-async function runMcpCall(id, token) {
-  for (const argKey of ["node_id", "nodeId", "parcel_node_id"]) {
-    const r = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "get_smart_site", arguments: { [argKey]: id } } }, OPS24_LEG_TIMEOUT_MS, { accept: "application/json, text/event-stream", authorization: `Bearer ${token}` });
-    const body = parseMcpBody(r.text);
-    if (body?.result) return { measured: true, http: r.http, ms: r.ms, argKey, payload: body.result, text: JSON.stringify(body.result) };
-    if (body?.error?.code === -32602) continue; // bad arguments: try the next spelling
-    return { measured: false, http: r.http, ms: r.ms, argKey, error: str(body?.error?.message) ?? (r.error ? `http 0 ${r.error}` : `http ${r.http}`) };
+export const MCP_PROTOCOL_VERSION = "2025-06-18";
+function mcpHeaders(session) {
+  const h = { accept: "application/json, text/event-stream", authorization: `Bearer ${session.token}`, "mcp-protocol-version": session.protocolVersion };
+  if (session.sessionId) h["mcp-session-id"] = session.sessionId;
+  return h;
+}
+
+/** Ruling 9: the tier the run graded at, read off what the server itself says (`subscriptionTier`). */
+export function tiersIn(text) {
+  return [...new Set([...String(text ?? "").matchAll(/\\?"subscriptionTier\\?"\s*:\s*\\?"([a-z_-]+)\\?"/gi)].map((m) => m[1].toLowerCase()))];
+}
+
+/** One MCP tool call on the opened session. The argument key comes from the tool's own schema. */
+async function runMcpTool(session, name, candidates, value, extra = {}) {
+  const keys = session.tools[name];
+  if (!keys) return { measured: false, error: `the server lists no ${name} tool (tools: ${Object.keys(session.tools).join(", ") || "none listed"})` };
+  const argKey = candidates.find((k) => keys.includes(k));
+  if (!argKey) return { measured: false, error: `${name} takes none of ${candidates.join(", ")} (schema keys: ${keys.join(", ")})` };
+  const r = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name, arguments: { [argKey]: value, ...extra } } }, OPS24_LEG_TIMEOUT_MS, mcpHeaders(session));
+  const body = parseMcpBody(r.text);
+  if (body?.result) {
+    const text = JSON.stringify(body.result);
+    for (const t of tiersIn(text)) session.tiers.add(t);
+    return { measured: true, http: r.http, ms: r.ms, argKey, payload: body.result, text, isError: body.result.isError === true };
   }
-  return { measured: false, error: "no accepted argument key among node_id, nodeId, parcel_node_id" };
+  return { measured: false, http: r.http, ms: r.ms, argKey, error: str(body?.error?.message) ?? (r.error ? `http 0 ${r.error}` : `http ${r.http}`) };
+}
+
+/** One `get_smart_site` at node depth. */
+async function runMcpCall(id, session) {
+  return runMcpTool(session, "get_smart_site", ["node_id", "nodeId", "parcel_node_id", "parcelNodeId"], id);
+}
+
+// ------------------------------------------------------------ MCP sign-in (P-347, A-216 ruling 9)
+/**
+ * The operator signs in per run with the paid Solo test account; the token lives in this process's
+ * memory for this run only, and nothing new is stored. The flow is OAuth 2.1 authorization code
+ * with PKCE and a loopback redirect, which is the flow an MCP connector uses, with the resource
+ * indicator the server's own metadata names (its tokens are audience-checked against it).
+ *
+ * THE CLIENT IDENTITY IS NOT INVENTED HERE. AuthKit advertises no dynamic registration endpoint,
+ * and the server's own WORKOS_CLIENT_ID is not an OAuth application there (measured 2026-09-18:
+ * `invalid_client: Application not found`). The client id comes from SURFACE_PROBE_MCP_CLIENT_ID:
+ * either a client-ID metadata document URL or a public client registered for the probe. Missing,
+ * the helper refuses and says so; it never falls back to another client's identity.
+ */
+export const MCP_REDIRECT_PORT = Number(process.env.SURFACE_PROBE_MCP_REDIRECT_PORT || 53682);
+/**
+ * The probe's own public OAuth client (A-218): registered by the operator 2026-09-18 in WorkOS
+ * (Connect, production), "Smart Site MCP Probe", PKCE, no secret, redirect
+ * http://127.0.0.1:53682/callback. A client id is a public identifier, not a credential; the token
+ * it obtains is never stored. SURFACE_PROBE_MCP_CLIENT_ID overrides it.
+ */
+export const MCP_PROBE_CLIENT_ID = "client_01M2TETZ4K9N2Z48KBJRD46ABF";
+/** Standard OIDC scopes from the authorization server's metadata; the server needs only `sub`. */
+export const MCP_PROBE_SCOPE = process.env.SURFACE_PROBE_MCP_SCOPE || "openid profile email";
+const b64url = (buf) => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+export function pkcePair() {
+  const verifier = b64url(randomBytes(32));
+  return { verifier, challenge: b64url(createHash("sha256").update(verifier).digest()) };
+}
+/** Ruling 9's write guard: true when a serialized artifact carries the token (or a long run of it). */
+export function artifactLeaksToken(text, token) {
+  if (!token) return false;
+  const t = String(token);
+  return String(text).includes(t) || (t.length > 64 && String(text).includes(t.slice(-48)));
+}
+
+/** The claims the run records about its own token: never the token, never the subject. */
+export function tokenFacts(token) {
+  try {
+    const c = JSON.parse(Buffer.from(String(token).split(".")[1], "base64url").toString("utf8"));
+    return { iss: c.iss ?? null, aud: c.aud ?? null, exp: c.exp ? new Date(c.exp * 1000).toISOString() : null, scope: c.scope ?? null };
+  } catch { return null; }
+}
+
+async function mcpSignIn() {
+  const clientId = (process.env.SURFACE_PROBE_MCP_CLIENT_ID || MCP_PROBE_CLIENT_ID).trim();
+  if (!clientId) return { ok: false, error: "no MCP client identity: set SURFACE_PROBE_MCP_CLIENT_ID (a client-ID metadata document URL or a public client registered for the probe). AuthKit has no dynamic registration, and the server's own WORKOS_CLIENT_ID is not an OAuth application there (invalid_client, measured 2026-09-18)" };
+  let prm, asm;
+  try {
+    prm = await (await fetch(`${MCP_BASE}/.well-known/oauth-protected-resource`)).json();
+    asm = await (await fetch(`${prm.authorization_servers[0].replace(/\/$/, "")}/.well-known/oauth-authorization-server`)).json();
+  } catch (e) {
+    return { ok: false, error: `OAuth discovery failed: ${e?.message ?? e}` };
+  }
+  const { verifier, challenge } = pkcePair();
+  const state = b64url(randomBytes(16));
+  const redirectUri = `http://127.0.0.1:${MCP_REDIRECT_PORT}/callback`;
+  const codeP = new Promise((resolveCode, rejectCode) => {
+    const srv = createServer((req, res) => {
+      const u = new URL(req.url ?? "/", redirectUri);
+      if (u.pathname !== "/callback") { res.writeHead(404).end(); return; }
+      const err = u.searchParams.get("error");
+      const okState = u.searchParams.get("state") === state;
+      res.writeHead(okState && !err ? 200 : 400, { "content-type": "text/plain" }).end(okState && !err ? "Signed in. You can close this tab; the probe continues." : `Sign-in failed: ${err ?? "state mismatch"}`);
+      srv.close();
+      if (!okState) rejectCode(new Error("state mismatch on the loopback callback"));
+      else if (err) rejectCode(new Error(`${err}: ${u.searchParams.get("error_description") ?? ""}`));
+      else resolveCode(u.searchParams.get("code"));
+    });
+    srv.on("error", (e) => rejectCode(new Error(`loopback listener on ${redirectUri} failed: ${e.message}`)));
+    srv.listen(MCP_REDIRECT_PORT, "127.0.0.1");
+    setTimeout(() => { srv.close(); rejectCode(new Error("no sign-in completed within 5 minutes")); }, 300_000).unref();
+  });
+  const auth = new URL(asm.authorization_endpoint);
+  for (const [k, v] of Object.entries({ response_type: "code", client_id: clientId, redirect_uri: redirectUri, code_challenge: challenge, code_challenge_method: "S256", state, scope: MCP_PROBE_SCOPE, resource: prm.resource })) auth.searchParams.set(k, v);
+  console.log(`\nSign in to Smart Site with the paid Solo test account (ruling 9). Open:\n  ${auth}\n`);
+  try {
+    if (process.platform === "win32") execFileSync("rundll32", ["url.dll,FileProtocolHandler", auth.toString()]);
+    else execFileSync(process.platform === "darwin" ? "open" : "xdg-open", [auth.toString()]);
+  } catch { /* the URL is printed; opening a browser is a convenience */ }
+  let code;
+  try { code = await codeP; } catch (e) { return { ok: false, error: e.message }; }
+  const form = new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri, client_id: clientId, code_verifier: verifier, resource: prm.resource });
+  const tr = await fetch(asm.token_endpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form });
+  const tj = await tr.json().catch(() => null);
+  if (!tj?.access_token) return { ok: false, error: `token exchange failed: http ${tr.status} ${tj?.error ?? ""} ${tj?.error_description ?? ""}`.trim() };
+  const facts = tokenFacts(tj.access_token);
+  const audOk = [facts?.aud].flat().includes(prm.resource);
+  return { ok: true, token: tj.access_token, obtainedAt: new Date().toISOString(), facts, resource: prm.resource, audienceMatchesResource: audOk };
 }
 
 /**
@@ -1376,15 +1591,108 @@ async function runOps24Legs(subject, opts) {
   }
   if (!legs.draw) legs.draw = { measured: false, error: "no composed address, no record point and no bare situs: the map has nothing to draw from", drawKey: null };
   legs.pdf = await runPdfLeg(id, opts);
-  if (opts.mcp?.measured && opts.mcpToken) legs.mcpCall = await runMcpCall(id, opts.mcpToken);
+  if (opts.mcp?.measured && opts.mcpSession) legs.mcpCall = await runMcpCall(id, opts.mcpSession);
+  return legs;
+}
+
+/** P-347 coverage: the retrieval endpoint's answer, as served. */
+export function extractCoverageEndpoint(resp) {
+  if (!resp || resp.http === 0) return { measured: false, error: resp?.error ?? "the coverage endpoint did not answer" };
+  if (resp.http === 401 || resp.http === 403) return { measured: false, http: resp.http, error: `the coverage endpoint refused the key (http ${resp.http})` };
+  const j = rec(resp.json);
+  if (!j) return { measured: false, http: resp.http, error: `non-JSON body (${String(resp.text ?? "").slice(0, 120)})` };
+  return { measured: true, http: resp.http, status: str(j.status), countyFips: str(j.countyFips), countyName: str(j.countyName), state: str(j.state), candidates: Array.isArray(j.candidates) ? j.candidates.length : null, reason: str(j.reason) };
+}
+
+/** P-347 coverage: what a search surface told the customer, from a JSON body or an MCP result. */
+export function extractSearchCoverage(obj) {
+  const j = rec(obj);
+  if (!j) return { measured: false, error: "no JSON body" };
+  if (str(j.error)) return { measured: false, error: `${j.error}: ${j.message ?? ""}`.trim() };
+  const hits = Array.isArray(j.hits) ? j.hits.length : Array.isArray(j.candidates) ? j.candidates.length : null;
+  const county = rec(j.outOfCoverageCounty);
+  const st = j.outOfCoverageState;
+  return { measured: true, hits, missClass: str(j.missClass), countyFips: str(county?.countyFips), countyName: str(county?.countyName), state: str(county?.state) ?? str(rec(st)?.state ?? st), unavailableReason: str(j.coverageCheckUnavailableReason), displayText: str(j.missClassDisplayText) };
+}
+
+/** An MCP tool result's JSON: structuredContent first, else the first text block that parses. */
+export function mcpResultJson(result) {
+  const r = rec(result);
+  if (!r) return null;
+  if (rec(r.structuredContent)) return r.structuredContent;
+  for (const c of Array.isArray(r.content) ? r.content : []) {
+    if (c?.type !== "text") continue;
+    try { const j = JSON.parse(c.text); if (rec(j)) return j; } catch { /* prose block */ }
+  }
+  return null;
+}
+
+/**
+ * Pure. One surface's coverage answer against the subject's expectation. An empty list with no
+ * missClass is the P-205 collapse itself (the customer cannot tell "we looked" from "we do not
+ * cover this"), so it FAILS for every subject, never passes as a silent no-hit.
+ */
+export function gradeCoverageSurface(subject, read, surface) {
+  if (!read?.measured) return { verdict: "UNMEASURED", basis: `${surface}: ${read?.error ?? "not driven"}` };
+  if (read.hits) return { verdict: "UNMEASURED", basis: `${surface}: the search found ${read.hits} hit(s) for "${subject.query}", so no coverage answer was owed; the subject is not a genuine miss` };
+  if (!read.missClass) return { verdict: "FAIL", basis: `${surface}: an empty result with no missClass for "${subject.query}"; the customer cannot tell a covered-and-no-match from a county we do not cover (the P-205 collapse)` };
+  if (read.missClass !== subject.search) return { verdict: "FAIL", basis: `${surface}: missClass "${read.missClass}" where "${subject.search}" is owed${read.unavailableReason ? ` (${read.unavailableReason})` : ""}` };
+  if (subject.countyFips && read.countyFips !== subject.countyFips) return { verdict: "FAIL", basis: `${surface}: names county ${read.countyFips ?? "none"} (${read.countyName ?? "-"}) where ${subject.countyFips} is owed` };
+  if (subject.search === "county_out_of_coverage" && (!read.countyName || !read.state)) return { verdict: "FAIL", basis: `${surface}: an uncovered-county answer must name the county and its state; served county "${read.countyName ?? "-"}" state "${read.state ?? "-"}"` };
+  return { verdict: "PASS", basis: `${surface}: ${read.missClass}${read.countyName ? ` naming ${read.countyName}, ${read.state}` : ""}` };
+}
+
+async function runCoverageLegs(subject, mcpSession) {
+  const legs = { coverageSubject: subject };
+  const key = (process.env.HAUSKA_ENGINE_API_KEY || "").trim();
+  legs.coverageEndpoint = key
+    ? extractCoverageEndpoint(await call("GET", `${RETRIEVAL_BASE}/parcel-record-gate-verdict/coverage/check?city=${encodeURIComponent(subject.city)}&state=${subject.state}&zip=${subject.zip}`, null, 30_000, { authorization: `Bearer ${key}` }))
+    : { measured: false, error: "HAUSKA_ENGINE_API_KEY is not set; the coverage endpoint needs it" };
+  const fb = await call("GET", `${PE_BASE}/api/pe-situs-search?q=${encodeURIComponent(subject.query)}&limit=7`, null, 30_000);
+  legs.findBox = fb.json ? { ...extractSearchCoverage(fb.json), http: fb.http } : { measured: false, http: fb.http, error: fb.error ?? "no JSON body" };
+  if (mcpSession) {
+    const r = await runMcpTool(mcpSession, "find_parcel", ["query", "address", "q", "text"], subject.query);
+    legs.mcpFind = r.measured ? { ...extractSearchCoverage(mcpResultJson(r.payload)), http: r.http, argKey: r.argKey } : { measured: false, error: r.error };
+  } else {
+    legs.mcpFind = { measured: false, error: "no MCP session (run with --mcp-sign-in, ruling 9)" };
+  }
   return legs;
 }
 
 async function runPdfLeg(id, opts) {
+  // P-347: the PDF leg carries the engine key. Without it the route answers 401, and a 401 is a
+  // refused read, not a measurement of the PDF surface, so it is named as such rather than being
+  // folded into UNREACHED beside a real outage.
   const key = (process.env.HAUSKA_ENGINE_API_KEY || "").trim();
+  if (!key) return { measured: false, http: 0, error: "HAUSKA_ENGINE_API_KEY is not set: the PDF leg needs the engine key (P-347), and an unauthenticated read is a 401, not a measurement" };
   const headers = gateFrontHeaders(id.replace(/[^0-9a-zA-Z]/g, "-"), "feasibility-export");
-  if (key) headers.authorization = `Bearer ${key}`;
-  return extractPdfRecord(await call("GET", `${ENGINE_BASE}/v1/property-nodes/${encodeURIComponent(id)}/feasibility-export`, null, OPS24_LEG_TIMEOUT_MS, headers));
+  headers.authorization = `Bearer ${key}`;
+  const resp = await call("GET", `${ENGINE_BASE}/v1/property-nodes/${encodeURIComponent(id)}/feasibility-export`, null, OPS24_LEG_TIMEOUT_MS, headers);
+  if (resp.http === 401 || resp.http === 403) return { measured: false, http: resp.http, error: `the export refused the engine key (http ${resp.http}): ${str(rec(resp.json)?.error) ?? str(resp.text) ?? "no reason"}` };
+  return extractPdfRecord(resp);
+}
+
+/**
+ * P-347: the probe measures nothing on a host whose CA store Node does not trust (the Windows
+ * integration host needs `node --use-system-ca`). Every leg then fails with the same certificate
+ * error and the run reads as 45 UNMEASURED buckets, which looks like a surface outage. A preflight
+ * names the cause once and refuses the run instead.
+ */
+export function tlsErrorCode(e) {
+  const c = String(e?.cause?.code ?? e?.code ?? "");
+  return /CERT|SELF_SIGNED|UNABLE_TO_(GET|VERIFY)|DEPTH_ZERO/.test(c) ? c : null;
+}
+async function tlsPreflight(bases) {
+  const out = [];
+  for (const base of bases) {
+    try {
+      const r = await fetch(base, { method: "HEAD", signal: AbortSignal.timeout(20_000) });
+      out.push({ base, ok: true, http: r.status });
+    } catch (e) {
+      out.push({ base, ok: false, tls: tlsErrorCode(e), error: String(e?.cause?.code ?? e?.message ?? e) });
+    }
+  }
+  return out;
 }
 
 // ------------------------------------------------------------------ OPS-24 grading (P-254)
@@ -1441,6 +1749,43 @@ export function saysUnruled(legs) {
  *  set names it `envelopeByAddress`. The defect scan must read both or 48453:367134 — a P-153
  *  subject, not a fixture row — would be skipped. */
 const drawOf = (legs) => legs.draw ?? legs.envelopeByAddress ?? null;
+
+/**
+ * P-347 (A-215 ruling 13: P-304's rule governs). A buildable-area figure MAY show when a verified
+ * envelope atom backs it. The backing is read from a SECOND surface, the draw route's derive path
+ * (`+atom-reconciled`), never from the payload that carries the figure: one payload vouching for
+ * its own figure is internal consistency, not a check. A draw route that did not answer, or
+ * answered for another parcel, leaves the backing UNMEASURED, and an unmeasured backing never
+ * admits a figure.
+ */
+export function figureBacking(legs) {
+  const d = drawOf(legs);
+  if (!d || d.measured === false) return { state: "unmeasured", why: `the draw route did not answer (${d?.error ?? "no draw leg"}), so whether a verified envelope atom backs the figure is not measured` };
+  // A timeout or error body is not an answer about the envelope. Measured 2026-09-18 on 48021:14899:
+  // the route returned 504 "upstream aborted after 10000ms" with a JSON body, and reading its absent
+  // derivePath as "no reconciled atom" produced a false XD-1 FAIL. Absent evidence is not evidence.
+  if (!(d.http >= 200 && d.http < 300)) return { state: "unmeasured", why: `the draw route answered http ${d.http}${d.message ? ` ("${d.message}")` : ""}, so the backing is not measured` };
+  if (d.wrongParcel) return { state: "unmeasured", why: `the draw route answered for ${d.answeredFor ?? d.parcelNodeId}, not this parcel` };
+  if (d.status && d.status !== "ok") return { state: "unbacked", why: `the draw route declines the envelope (status "${d.status}"), so no envelope atom backs a figure` };
+  if (!d.derivePath) return { state: "unmeasured", why: "the draw route answered ok and named no derive path, so the backing is not readable" };
+  return d.atomReconciled === true
+    ? { state: "backed", why: `derivePath ${d.derivePath} carries a reconciled envelope atom` }
+    : { state: "unbacked", why: `derivePath ${d.derivePath} carries no reconciled envelope atom` };
+}
+
+/** Pure: the figure on each surface a bucket reads, and whether ruling 13 admits it. */
+export function figureVerdict(legs) {
+  const fx = legs.facets ?? {};
+  const d = drawOf(legs) ?? {};
+  const onCard = fx.buildableAreaSqFtInPayload != null || fx.envelopeBuildableAreaPct != null;
+  const onDraw = d.buildableAreaSqFtInPayload != null || d.buildableAreaPctInPayload != null;
+  if (!onCard && !onDraw) return { verdict: "PASS", present: false, basis: "no buildable-area figure on the panel payload or the draw route" };
+  const where = [onCard && `the panel payload (${fx.buildableAreaSqFtInPayload ?? "-"} sqFt / ${fx.envelopeBuildableAreaPct ?? "-"} pct)`, onDraw && `the draw route's feature (${d.buildableAreaSqFtInPayload ?? "-"} sqFt / ${d.buildableAreaPctInPayload ?? "-"} pct)`].filter(Boolean).join(" and ");
+  const b = figureBacking(legs);
+  if (b.state === "backed") return { verdict: "PASS", present: true, backed: true, basis: `a figure on ${where}, admitted by ruling 13: ${b.why}` };
+  if (b.state === "unbacked") return { verdict: "FAIL", present: true, backed: false, basis: `a figure on ${where} with no verified envelope atom behind it: ${b.why}` };
+  return { verdict: "UNMEASURED", present: true, backed: null, basis: `a figure on ${where}; ${b.why}` };
+}
 
 /** Both kinds of contradiction, each labelled, each requiring the thing the phrase denies. */
 export function contradictions(legs) {
@@ -1509,13 +1854,33 @@ export function gradeOps24Bucket(subject, legs) {
   // cases. The per-defect classes the plan names (XD-1 figure, XD-8/X2 jurisdiction, XD-11 citation
   // date) are RECORDED here and COUNTED in the open-defect ledger, because folding them into the
   // per-bucket verdict made 25 of 45 buckets fail on XD-11 alone and hid the two required cases.
-  if (fx.buildableAreaSqFtInPayload != null) violations.push(`XD-1: the card payload carries buildableAreaSqFt ${fx.buildableAreaSqFtInPayload}; the figure is refused by ruling and must not be printed`);
-  if (draw.hasBuildableAreaSqFtKey && draw.buildableAreaSqFtInPayload != null) violations.push(`XD-1: the draw route's feature carries buildableAreaSqFt ${draw.buildableAreaSqFtInPayload}`);
+  // XD-1 under A-215 ruling 13 (P-347): a figure is a violation only when no verified envelope atom
+  // backs it, and a figure whose backing cannot be read leaves the bucket ungraded, never passed.
+  const fig = figureVerdict(legs);
+  if (fig.verdict === "FAIL") violations.push(`XD-1: ${fig.basis}`);
+  else if (fig.verdict === "UNMEASURED") unknowns.push(`XD-1 (${fig.basis})`);
   const p2 = panelDeclinesWhatRouteDraws(legs);
   if (p2.hit) violations.push(`XD-2/X5: the panel declines this envelope (${p2.why}) while its own place/buildable-envelope route answers ok with geometry (${draw.vertexCount ?? "?"} vertices)`);
   for (const c of contradictions(legs)) violations.push(`${c.kind} on ${c.where}: "${c.text}"`);
   if (fx.zoningDistrict && !fx.zoningJurisdictionKey && !str(fx.composedAddress)?.includes(",")) defects.push(`XD-8/X2: the payload holds district ${fx.zoningDistrict} and names no jurisdiction (no jurisdictionKey, no composed address to read a city from)`);
-  if (fx.envelopeCitationUrl && !fx.envelopeCitationDate) defects.push(`XD-11: the payload cites ${fx.envelopeCitationUrl} with no effective date; an unreadable vintage is a conflict row, never a silent pick`);
+  // P-270 (OPS-24 X11). An undated citation is the defect ONLY when it is also
+  // undeclared. The declared case is recorded as its own class rather than
+  // dropped: DEV-PROCESS says classes are measured, never subtracted, so the
+  // population of undated citations must stay visible after the fix — it is the
+  // same population, now declaring itself. A future edit that stops declaring
+  // moves a subject from `XD-11-declared` back to `XD-11`, which is exactly the
+  // direction the revert-and-run proves.
+  if (fx.envelopeCitationUrl && !fx.envelopeCitationDate) {
+    if (fx.envelopeCitationVintageState && /^unreadable-/.test(fx.envelopeCitationVintageState)) {
+      defects.push(`XD-11-declared: the payload cites ${fx.envelopeCitationUrl} with no effective date and DECLARES it (${fx.envelopeCitationVintageState})${fx.citationVintageInDisclosure ? "" : " — but the vintage sentence is missing from the disclosure prose"}`);
+    } else {
+      defects.push(`XD-11: the payload cites ${fx.envelopeCitationUrl} with no effective date and no declaration; an unreadable vintage is a conflict row, never a silent pick`);
+    }
+  }
+  // The trap, graded directly: if the declaration's own prose ever reads as a
+  // date, the instrument's disclosure-text fallback would score a silent pick as
+  // dated. Measured rather than trusted.
+  if (fx.citationVintageFromDisclosureText) defects.push(`XD-11-self-defeat: the citation vintage declaration's own text parses as a date, so the disclosure-text fallback would grade an undated citation as dated`);
   if (fx.facetCoverage?.zoning === false && fx.zoningDistrict) defects.push(`FACET-COVERAGE: facetCoverage.zoning is false while the payload serves district ${fx.zoningDistrict}`);
 
   // --- the category rule ---
@@ -1605,14 +1970,11 @@ export function defectLedger(defects, subjects) {
 
 /** One grader per defect this instrument can actually decide. Absent means UNMEASURED, never OPEN. */
 const OPS24_DEFECT_GRADERS = {
+  // A-215 ruling 13 (P-347): open only where a figure shows with no verified envelope atom behind it.
   figureLeak: (id, legs) => {
-    const v = legs.facets?.buildableAreaSqFtInPayload;
-    const dv = legs.draw?.buildableAreaSqFtInPayload;
-    return v != null
-      ? { verdict: "FAIL", basis: `the panel payload serves buildableAreaSqFt ${v}` }
-      : dv != null
-        ? { verdict: "FAIL", basis: `the draw route's feature serves buildableAreaSqFt ${dv}` }
-        : { verdict: "PASS", basis: "no buildable-area figure on the panel payload or the draw route" };
+    if (legs.facets?.measured === false) return { verdict: "UNMEASURED", basis: "the card payload did not answer" };
+    const v = figureVerdict(legs);
+    return { verdict: v.verdict, basis: v.basis };
   },
   p303PanelDraws: (id, legs) => {
     const p2 = panelDeclinesWhatRouteDraws(legs);
@@ -1672,7 +2034,20 @@ const OPS24_DEFECT_GRADERS = {
   citationDatePresent: (id, legs) => {
     const fx = legs.facets ?? {};
     if (!fx.envelopeCitationUrl) return { verdict: "UNMEASURED", basis: "no citation on the payload to date" };
-    return fx.envelopeCitationDate ? { verdict: "PASS", basis: `citation dated ${fx.envelopeCitationDate}` } : { verdict: "FAIL", basis: `citation ${fx.envelopeCitationUrl} with no effective date` };
+    if (fx.envelopeCitationDate) return { verdict: "PASS", basis: `citation dated ${fx.envelopeCitationDate}` };
+    // P-270 (OPS-24 X11): an undated citation is only a DEFECT when it is also
+    // undeclared. The date is genuinely unreadable at source here — the ruling
+    // forbids inventing one — so a payload that SAYS SO has done what this row
+    // requires, and the grader must not keep calling it a silent pick. The
+    // declaration is never treated as a date: the PASS basis names the state and
+    // says the vintage is unknown.
+    if (fx.envelopeCitationVintageState && /^unreadable-/.test(fx.envelopeCitationVintageState)) {
+      return {
+        verdict: "PASS",
+        basis: `citation ${fx.envelopeCitationUrl} served undated and DECLARED (${fx.envelopeCitationVintageState})${fx.citationVintageInDisclosure ? "" : "; WARNING: the row is present but the vintage sentence is NOT in the disclosure prose"}`,
+      };
+    }
+    return { verdict: "FAIL", basis: `citation ${fx.envelopeCitationUrl} with no effective date and no declaration; an unreadable vintage is a conflict row, never a silent pick` };
   },
   dollarReachesAnonymous: (id, legs) => {
     const fx = legs.facets ?? {};
@@ -1757,8 +2132,10 @@ export function ops24Findings(bucketLegs, parcelLegs) {
       out.push({ kind: "SITUS-ABSENT-UNDECLARED", parcel: id, bucket, detail: `the payload serves ${legs.facets.zoningDistrict ? `district ${legs.facets.zoningDistrict}` : "a setback table"} and its situsAddress is absent with no declared absence (a bare null: no verdict, no authority, no scope) while ${sibling} (AGENT_CONTRACT section 5: an empty result is not an absence; only a positive determination writes one, and every absence carries its basis)` });
     }
     const fx = legs.facets;
-    if (fx?.measured && fx.buildableAreaSqFtInPayload != null) {
-      out.push({ kind: "FIGURE-IN-PAYLOAD", parcel: id, bucket, leg: "facets", value: fx.buildableAreaSqFtInPayload, detail: "buildableAreaSqFt travels in the card payload and must not be printed by any surface (XD-1)" });
+    // A-215 ruling 13 (P-347): a figure a verified envelope atom backs is admitted, and is not a finding.
+    const fig = fx?.measured ? figureVerdict(legs) : null;
+    if (fig?.present && fig.verdict !== "PASS") {
+      out.push({ kind: fig.verdict === "FAIL" ? "FIGURE-UNBACKED" : "FIGURE-BACKING-UNMEASURED", parcel: id, bucket, leg: "facets", value: fx.buildableAreaSqFtInPayload, detail: `${fig.basis} (XD-1 under ruling 13)` });
     }
     // The dual figure: the zoning table's maxImperviousPct beside the watershed fact's percent.
     if (fx?.panelMaxImperviousPct != null && fx?.imperviousFactPercent != null && fx.panelMaxImperviousPct !== fx.imperviousFactPercent) {
@@ -1782,7 +2159,7 @@ export function ops24Findings(bucketLegs, parcelLegs) {
   }
   // The population counts the close reads. Stated as numbers over a stated denominator.
   const pdfStates = scan.map((s) => pdfSurfaceState(s.legs.pdf).state);
-  if (scan.length) out.push({ kind: "POPULATION", parcel: `${scan.length} scanned`, bucket: null, detail: `PDF surface: ${["SERVED", "NOT-BUILT", "FAILED", "UNREACHED"].map((k) => `${k} ${pdfStates.filter((x) => x === k).length}`).join(", ")}; figure-in-payload ${scan.filter((s) => s.legs.facets?.buildableAreaSqFtInPayload != null).length}; unruled-beside-ruled ${scan.filter((s) => contradictions(s.legs).some((c) => c.kind.startsWith("SAYS-RULES"))).length}; geometry-withheld-beside-drawn ${scan.filter((s) => contradictions(s.legs).some((c) => c.kind.startsWith("SAYS-GEOMETRY"))).length}; panel-draw-table-disagree ${out.filter((f) => f.kind === "PANEL-DRAW-TABLE-DISAGREE").length}; dual-impervious ${out.filter((f) => f.kind === "IMPERVIOUS-DUAL-FIGURE").length}` });
+  if (scan.length) out.push({ kind: "POPULATION", parcel: `${scan.length} scanned`, bucket: null, detail: `PDF surface: ${["SERVED", "NOT-BUILT", "FAILED", "UNREACHED"].map((k) => `${k} ${pdfStates.filter((x) => x === k).length}`).join(", ")}; figure present ${scan.filter((s) => s.legs.facets?.measured && figureVerdict(s.legs).present).length} (backed ${scan.filter((s) => s.legs.facets?.measured && figureVerdict(s.legs).backed === true).length}, unbacked ${scan.filter((s) => s.legs.facets?.measured && figureVerdict(s.legs).backed === false).length}, backing unmeasured ${scan.filter((s) => s.legs.facets?.measured && figureVerdict(s.legs).present && figureVerdict(s.legs).backed === null).length}); unruled-beside-ruled ${scan.filter((s) => contradictions(s.legs).some((c) => c.kind.startsWith("SAYS-RULES"))).length}; geometry-withheld-beside-drawn ${scan.filter((s) => contradictions(s.legs).some((c) => c.kind.startsWith("SAYS-GEOMETRY"))).length}; panel-draw-table-disagree ${out.filter((f) => f.kind === "PANEL-DRAW-TABLE-DISAGREE").length}; dual-impervious ${out.filter((f) => f.kind === "IMPERVIOUS-DUAL-FIGURE").length}` });
   return out;
 }
 
@@ -2138,15 +2515,83 @@ function selfTest() {
   check("XD-11 reads a citation's effective date out of the disclosure prose", dateFacets.envelopeCitationDate === "2026-04-14" && dateFacets.envelopeCitationDateFrom === "disclosure-text", `${dateFacets.envelopeCitationDate}/${dateFacets.envelopeCitationDateFrom}`);
   check("a citation with no date anywhere still reads undated", extractFacets({ http: 200, json: { facets: { envelope: { citationUrl: "https://x", disclosure: "no vintage stated" } } } }).envelopeCitationDate === null);
 
+  // --- P-270 (OPS-24 X11): the DECLARATION, and that the instrument can still fire without it.
+  // The instrument change this lane hands back is only trustworthy if its new PASS branch is
+  // reachable AND its FAIL branch is still reachable. Both directions are asserted here, against
+  // the real grader (`gradeOps24Bucket`, the function the P-254 row runs) rather than against a
+  // copy of its logic — a check that re-implements the rule cannot catch the rule regressing.
+  const VINTAGE_ROW = {
+    kind: "setback-citation-vintage-unreadable",
+    state: "unreadable-absent-at-source",
+    sourceLabel: "codified setback table pflugerville-tx (City of Pflugerville)",
+    citationUrl: "https://x/udc",
+    note: "Setback rule vintage unknown — the rule is served undated, not as current. Verify with the city.",
+  };
+  const declaredFacets = extractFacets({
+    http: 200,
+    json: {
+      facets: {
+        envelope: {
+          citationUrl: "https://x/udc",
+          disclosure: `Estimated buildable area. ${VINTAGE_ROW.note}`,
+          citationVintage: VINTAGE_ROW,
+        },
+      },
+    },
+  });
+  // A minimal subject so the grader's defect ledger can be read on its own. `fx_codified` will add
+  // its own VIOLATIONS about drawing — those are a different list and are not what is asserted.
+  const XD11_SUBJECT = {
+    key: "selftest|xd11",
+    county: "selftest",
+    city: "xd11",
+    fixtures: [],
+    gradedFixture: { category: "fx_codified", id: "selftest:1", district: "SF-S" },
+    chosen: [],
+    offered: 1,
+    ungradedFixtures: [],
+  };
+  const undeclaredFacets = {
+    ...declaredFacets,
+    envelopeCitationVintage: null,
+    envelopeCitationVintageState: null,
+    citationVintageInDisclosure: false,
+  };
+  const undeclaredDefects = gradeOps24Bucket(XD11_SUBJECT, { facets: undeclaredFacets }).defects;
+  const declaredDefects = gradeOps24Bucket(XD11_SUBJECT, { facets: declaredFacets }).defects;
+
+  check("XD-11 reads the declaration's state off the payload", declaredFacets.envelopeCitationVintageState === "unreadable-absent-at-source", `${declaredFacets.envelopeCitationVintageState}`);
+  check("XD-11 reads the declaration's sentence off the payload", declaredFacets.envelopeCitationVintage?.note === VINTAGE_ROW.note);
+  check("a DECLARED undated citation is not read as a date — the note carries no date and the fallback must not find one", declaredFacets.envelopeCitationDate === null && declaredFacets.envelopeCitationDateFrom === null, `${declaredFacets.envelopeCitationDate}/${declaredFacets.envelopeCitationDateFrom}`);
+  check("the declaration's own prose is measured for date-likeness (the self-defeat trap)", declaredFacets.citationVintageFromDisclosureText === false);
+  check("the declaration's sentence is separately measured as present in the disclosure prose", declaredFacets.citationVintageInDisclosure === true);
+  check("XD-11 PASSES a cited-undated-DECLARED payload (the fix's own direction)", !declaredDefects.some((d) => d.startsWith("XD-11:")), JSON.stringify(declaredDefects));
+  check("XD-11 STILL FAILS a cited-undated-UNDECLARED payload (the pre-fix state, so the indicator can FIRE)", undeclaredDefects.some((d) => d.startsWith("XD-11:")), JSON.stringify(undeclaredDefects));
+  check("a declared undated citation is COUNTED, not subtracted (DEV-PROCESS: classes are measured)", declaredDefects.some((d) => d.startsWith("XD-11-declared:")), JSON.stringify(declaredDefects));
+  check("the row's own grader PASSES the declared case and FAILS the undeclared one", OPS24_DEFECT_GRADERS.citationDatePresent("selftest:1", { facets: declaredFacets }).verdict === "PASS" && OPS24_DEFECT_GRADERS.citationDatePresent("selftest:1", { facets: undeclaredFacets }).verdict === "FAIL", `${OPS24_DEFECT_GRADERS.citationDatePresent("selftest:1", { facets: declaredFacets }).verdict}/${OPS24_DEFECT_GRADERS.citationDatePresent("selftest:1", { facets: undeclaredFacets }).verdict}`);
+  check("a declaration whose prose carries a date is caught as self-defeating", extractFacets({ http: 200, json: { facets: { envelope: { citationUrl: "https://x/udc", disclosure: "x", citationVintage: { ...VINTAGE_ROW, note: "Rule effective 2011-03-02" } } } } }).citationVintageFromDisclosureText === true);
+
   // P-254: the bucket grader in both directions, plus the refusal that must not read as a pass.
   const sbBucket = { key: "48453|austin", county: "48453", city: "austin", gradedFixture: { category: "fx_codified", id: "48453:367134", district: "SF-2" }, offered: 3, chosen: [], ungradedFixtures: ["fx_pud:x", "fx_vacant:y"] };
   const goodFacets = { measured: true, http: 200, situsAddress: "5833 Taylor Draper Cv", composedAddress: "5833 TAYLOR DRAPER CV, AUSTIN, TX 78759", zoningDistrict: "SF-2", zoningJurisdictionKey: "austin-tx", setbacks: { front: 25, side: 5, rear: 10, corner: 15 }, envelopeStatus: "ok", envelopeFigureWithheld: false, buildableAreaSqFtInPayload: null, envelopeBuildableAreaPct: null };
-  const goodDraw = { measured: true, http: 200, status: "ok", geometryPresent: true, vertexCount: 7, hasBuildableAreaSqFtKey: false, buildableAreaSqFtInPayload: null, atomReconciled: true };
+  const goodDraw = { measured: true, http: 200, status: "ok", geometryPresent: true, vertexCount: 7, hasBuildableAreaSqFtKey: false, buildableAreaSqFtInPayload: null, atomReconciled: true, derivePath: "labelEdges+derive+atom-reconciled" };
   const goodPdf = { measured: true, http: 200, status: "ok", artifactPresent: true, artifactKeys: ["pdf-feasibility"], artifactUrl: "https://example.invalid/pdf" };
   const okBucket = { facets: goodFacets, draw: goodDraw, pdf: goodPdf, mcp: { measured: true }, mcpCall: { measured: true, text: "{}" } };
   const g254 = gradeOps24Bucket(sbBucket, okBucket);
   check("P-254 can PASS a bucket on all three surfaces", g254.verdict === "PASS", g254.basis);
-  check("P-254 FAILS when the panel payload carries the buildable-area figure", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } }).verdict === "FAIL");
+  // XD-1 under A-215 ruling 13 (P-347): the figure's BACKING decides, read from the draw route. Both directions.
+  const unbackedDraw = { ...goodDraw, atomReconciled: false, derivePath: "setback-table" };
+  check("P-254 FAILS when the panel payload carries a figure no verified envelope atom backs (ruling 13)", gradeOps24Bucket(sbBucket, { ...okBucket, draw: unbackedDraw, facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } }).verdict === "FAIL");
+  check("P-254 does NOT fail a figure a verified envelope atom backs (ruling 13)", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052, envelopeBuildableAreaPct: 63.5 } }).verdict === "PASS");
+  check("P-254 FAILS when the draw route's own feature carries an unbacked figure", gradeOps24Bucket(sbBucket, { ...okBucket, draw: { ...unbackedDraw, hasBuildableAreaSqFtKey: true, buildableAreaSqFtInPayload: 5022 } }).verdict === "FAIL");
+  check("P-254 never PASSES a figure whose backing is unreadable (the draw route did not answer)",
+    (() => { const r = gradeOps24Bucket({ ...sbBucket, gradedFixture: { ...sbBucket.gradedFixture, category: "fx_any" } }, { ...okBucket, draw: { measured: false, error: "timeout" }, facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } }); return r.verdict === "UNMEASURED" && r.unknowns.some((u) => /XD-1/.test(u)); })());
+  check("figureBacking never reads the figure's own payload as its backing", figureBacking({ facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052, envelopeStatus: "ok" } }).state === "unmeasured");
+  check("a draw route that answered for another parcel leaves the backing unmeasured", figureBacking({ draw: { ...goodDraw, wrongParcel: true, answeredFor: "48453:1" } }).state === "unmeasured");
+  check("NOT VACUOUS, the live 48021:14899 shape: a 504 from the draw route leaves the backing unmeasured, never unbacked", figureBacking({ draw: { measured: true, http: 504, status: null, derivePath: null, atomReconciled: false, message: "upstream aborted after 10000ms" } }).state === "unmeasured");
+  check("a 200 decline from the draw route is unbacked: the route says there is no envelope", figureBacking({ draw: { measured: true, http: 200, status: "declined", derivePath: null, atomReconciled: false } }).state === "unbacked");
+  check("an ok draw that names no derive path leaves the backing unmeasured", figureBacking({ draw: { measured: true, http: 200, status: "ok", derivePath: null, atomReconciled: false } }).state === "unmeasured");
+  check("an ok draw whose derive path lacks the reconciled atom is unbacked", figureBacking({ draw: { measured: true, http: 200, status: "ok", derivePath: "labelEdges+derive", atomReconciled: false } }).state === "unbacked");
   check("P-254 FAILS when a ruled table is called unruled", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeSummary: "setback rules unruled" } }).verdict === "FAIL");
   check("P-254 FAILS when the panel declines the envelope its own draw route draws", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeStatus: "declined", envelopeDeclineReason: "no envelope atom for this parcel" } }).verdict === "FAIL");
   check("P-254 does NOT fail the honest outline-drawn, figure-withheld shape", gradeOps24Bucket(sbBucket, { ...okBucket, facets: { ...goodFacets, envelopeFigureWithheld: true, envelopeDisclosure: "The envelope outline is modelled from the setback table on record and drawn for reference; the area figure stays withheld." } }).verdict === "PASS");
@@ -2166,7 +2611,8 @@ function selfTest() {
   const r303fail = ROWS["P-303"].evaluate("48309:103015", waco);
   check("P-303 FAILS when the panel declines an envelope its own route draws", r303fail.verdict === "FAIL", r303fail.basis);
   check("P-303 PASSES when the route draws and the panel does not decline and prints no figure", ROWS["P-303"].evaluate("48309:103015", { facets: { ...goodFacets, envelopeFigureWithheld: true }, draw: goodDraw }).verdict === "PASS");
-  check("P-303 FAILS when the panel prints a figure", ROWS["P-303"].evaluate("48309:103015", { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 }, draw: goodDraw }).verdict === "FAIL");
+  check("P-303 FAILS when the panel prints a figure no verified envelope atom backs (ruling 13)", ROWS["P-303"].evaluate("48309:103015", { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 }, draw: { ...goodDraw, atomReconciled: false } }).verdict === "FAIL");
+  check("P-303 admits a figure a verified envelope atom backs (ruling 13)", ROWS["P-303"].evaluate("48309:103015", { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 }, draw: goodDraw }).verdict === "PASS");
   check("P-303 FAILS when a no-district class member is served a district", ROWS["P-303"].evaluate("48021:10001", { facets: { ...goodFacets, zoningDistrict: "SF-2" } }).verdict === "FAIL");
   check("P-303 PASSES when a no-district class member declines and invents nothing", ROWS["P-303"].evaluate("48021:10001", { facets: { measured: true, http: 200, zoningDistrict: null, envelopeStatus: "declined", envelopeDeclineReason: "no zoning district observed for this parcel" } }).verdict === "PASS");
   check("P-303 FAILS when a no-district class member is not declined at all", ROWS["P-303"].evaluate("48021:10001", { facets: { measured: true, http: 200, zoningDistrict: null, envelopeStatus: "ok" } }).verdict === "FAIL");
@@ -2187,7 +2633,10 @@ function selfTest() {
   const ledger = defectLedger(OPS24_DEFECTS, [{ id: "48453:367134", key: "x", legs: okBucket }]);
   check("the defect ledger counts a defect as CLOSED only where a grader measured it", (ledger.counts.CLOSED ?? 0) > 0 && (ledger.counts.OPEN ?? 0) === 0, JSON.stringify(ledger.counts));
   check("the defect ledger reports a defect with no grader as UNMEASURED with the row that owns it", ledger.rows.some((r) => r.id === "XD-3" && r.verdict === "UNMEASURED" && /P-222/.test(r.basis)));
-  check("the defect ledger counts XD-1 OPEN where a figure reaches a payload", (defectLedger(OPS24_DEFECTS, [{ id: "x", key: "x", legs: { facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } } }]).counts.OPEN ?? 0) > 0);
+  const xd1 = (legs) => defectLedger(OPS24_DEFECTS.filter((d) => d.id === "XD-1"), [{ id: "x", key: "x", legs }]).rows[0].verdict;
+  check("the defect ledger counts XD-1 OPEN where an UNBACKED figure reaches a payload", xd1({ facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 }, draw: { ...goodDraw, atomReconciled: false } }) === "OPEN");
+  check("the defect ledger counts XD-1 CLOSED where the figure is backed by a verified envelope atom", xd1({ facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 }, draw: goodDraw }) === "CLOSED");
+  check("the defect ledger keeps XD-1 UNMEASURED where a figure shows and its backing is unreadable", xd1({ facets: { ...goodFacets, buildableAreaSqFtInPayload: 19052 } }) === "UNMEASURED");
   check("the defect ledger is never vacuous: every one of its verdicts names a basis", ledger.rows.every((r) => !!r.basis));
 
   // XD-7 must be able to FIRE on the population it names. The first draft returned UNMEASURED
@@ -2229,6 +2678,45 @@ function selfTest() {
   check("parseMcpBody returns a gate refusal, which the caller must treat as no session", parseMcpBody('{"jsonrpc":"2.0","id":1,"error":{"message":"invalid_oauth_token"}}')?.error?.message === "invalid_oauth_token");
   check("parseMcpBody returns null on a body that is neither", parseMcpBody("<html>401</html>") === null);
 
+  // ---- P-347 ----
+  // TLS preflight: a certificate failure is named; an ordinary network failure is not mistaken for one.
+  check("tlsErrorCode names a certificate failure", tlsErrorCode({ cause: { code: "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" } }) === "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" && tlsErrorCode({ cause: { code: "SELF_SIGNED_CERT_IN_CHAIN" } }) === "SELF_SIGNED_CERT_IN_CHAIN");
+  check("tlsErrorCode does NOT call a timeout or a reset a certificate failure", tlsErrorCode({ cause: { code: "UND_ERR_CONNECT_TIMEOUT" } }) === null && tlsErrorCode({ cause: { code: "ECONNRESET" } }) === null);
+  // Ruling 9: tier recorded from the server's own words; the token never reaches the artifact.
+  check("tiersIn reads subscriptionTier plain and JSON-escaped", JSON.stringify(tiersIn('{"subscriptionTier":"solo"}')) === '["solo"]' && JSON.stringify(tiersIn(JSON.stringify({ text: '{"subscriptionTier":"Studio"}' }))) === '["studio"]');
+  check("tiersIn finds nothing where no tier is named (never a default tier)", tiersIn('{"tier":"paid"}').length === 0);
+  const fakeJwt = `x.${Buffer.from(JSON.stringify({ iss: "https://a.example", aud: "https://mcp.smartsite.cloud/mcp", exp: 2000000000, sub: "user_123" })).toString("base64url")}.y`;
+  check("tokenFacts records iss, aud and exp and never the subject", (() => { const f = tokenFacts(fakeJwt); return f.aud === "https://mcp.smartsite.cloud/mcp" && f.iss === "https://a.example" && !JSON.stringify(f).includes("user_123"); })());
+  check("pkcePair: the challenge is base64url(sha256(verifier))", (() => { const p = pkcePair(); return p.challenge === createHash("sha256").update(p.verifier).digest("base64url") && p.verifier.length >= 43; })());
+  const tok = "eyJ" + "a".repeat(120);
+  check("NOT VACUOUS: the write guard refuses an artifact carrying the token", artifactLeaksToken(JSON.stringify({ legs: { mcp: { token: tok } } }), tok) === true);
+  check("the write guard refuses a partial copy of a long token", artifactLeaksToken(`...${tok.slice(-60)}...`, tok) === true);
+  check("the write guard admits an artifact with no token in it, and a run with no token", artifactLeaksToken('{"tokenSource":"sign-in helper"}', tok) === false && artifactLeaksToken("anything", null) === false);
+  // Coverage (P-205, P-210).
+  const cam = COVERAGE_SUBJECTS.find((s) => s.key === "coverage:cameron");
+  const aus = COVERAGE_SUBJECTS.find((s) => s.key === "coverage:austin");
+  const silent = extractSearchCoverage({ hits: [] });
+  check("NOT VACUOUS: the live map shape (an empty list, no missClass) FAILS for an uncovered county", gradeCoverageSurface(cam, silent, "map").verdict === "FAIL");
+  check("...and FAILS for a covered miss too: silence is not no-hit", gradeCoverageSurface(aus, silent, "map").verdict === "FAIL");
+  check("an uncovered county named with its state PASSES", gradeCoverageSurface(cam, extractSearchCoverage({ hits: [], missClass: "county_out_of_coverage", outOfCoverageCounty: { countyFips: "48331", countyName: "Milam County", state: "TX" } }), "map").verdict === "PASS");
+  check("no-hit for an uncovered county FAILS (the P-205 bug itself)", gradeCoverageSurface(cam, extractSearchCoverage({ hits: [], missClass: "no-hit" }), "map").verdict === "FAIL");
+  check("the wrong county named FAILS", gradeCoverageSurface(cam, extractSearchCoverage({ hits: [], missClass: "county_out_of_coverage", outOfCoverageCounty: { countyFips: "48027", countyName: "Bell County", state: "TX" } }), "map").verdict === "FAIL");
+  check("an uncovered-county answer with no county name FAILS", gradeCoverageSurface(cam, extractSearchCoverage({ hits: [], missClass: "county_out_of_coverage", outOfCoverageCounty: { countyFips: "48331" } }), "map").verdict === "FAIL");
+  check("coverage_check_unavailable where an answer is owed FAILS", gradeCoverageSurface(cam, extractSearchCoverage({ hits: [], missClass: "coverage_check_unavailable", coverageCheckUnavailableReason: "timeout" }), "map").verdict === "FAIL");
+  check("a covered miss reading no-hit PASSES", gradeCoverageSurface(aus, extractSearchCoverage({ hits: [], missClass: "no-hit" }), "map").verdict === "PASS");
+  check("a subject that found hits is UNMEASURED, never PASS", gradeCoverageSurface(cam, extractSearchCoverage({ hits: [{ parcelNodeId: "48331:1" }] }), "map").verdict === "UNMEASURED");
+  check("mcpResultJson reads structuredContent, else a JSON text block", mcpResultJson({ structuredContent: { missClass: "no-hit" } }).missClass === "no-hit" && mcpResultJson({ content: [{ type: "text", text: "prose" }, { type: "text", text: '{"hits":[],"missClass":"no-hit"}' }] }).missClass === "no-hit");
+  const covLegs = (fb, mcpF, ep) => ({ coverageSubject: cam, findBox: fb, mcpFind: mcpF, coverageEndpoint: ep });
+  const named = extractSearchCoverage({ hits: [], missClass: "county_out_of_coverage", outOfCoverageCounty: { countyFips: "48331", countyName: "Milam County", state: "TX" } });
+  check("P-205 FAILS on a map FAIL even while the MCP half is unmeasured", ROWS["P-205"].evaluate("coverage:cameron", covLegs(silent, { measured: false, error: "no session" })).verdict === "FAIL");
+  check("P-205 is UNMEASURED when the map passes and the MCP half was not driven", ROWS["P-205"].evaluate("coverage:cameron", covLegs(named, { measured: false, error: "no session" })).verdict === "UNMEASURED");
+  check("P-205 PASSES only when both surfaces pass", ROWS["P-205"].evaluate("coverage:cameron", covLegs(named, named)).verdict === "PASS");
+  const ep = (j, http = 200) => extractCoverageEndpoint({ http, json: j });
+  check("P-210 PASSES a not-covered answer naming the county and its state", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ status: "not-covered", countyFips: "48331", countyName: "Milam County", state: "TX" }))).verdict === "PASS");
+  check("P-210 FAILS a not-covered answer naming another county", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ status: "not-covered", countyFips: "48053", countyName: "Burnet County", state: "TX" }))).verdict === "FAIL");
+  check("P-210 FAILS when the endpoint calls an uncovered county covered", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ status: "covered" }))).verdict === "FAIL");
+  check("P-210 is UNMEASURED on a refused key, never PASS", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ error: "unauthorized" }, 401))).verdict === "UNMEASURED");
+
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;
 }
@@ -2263,6 +2751,39 @@ async function main() {
   let source;
   let ops24Report = null;
   let ops24LegsByBucket = {};
+  let tls = null;
+  let mcpRun = null;
+  let mcpSession = null;
+  if (!flag("--fixtures")) {
+    // P-347: refuse the whole run, once and by name, on a host whose CA store Node cannot use.
+    tls = await tlsPreflight([PE_BASE, ENGINE_BASE, MCP_BASE]);
+    const bad = tls.find((t) => t.tls);
+    if (bad) {
+      console.error(`UNMEASURED: TLS to ${bad.base} failed (${bad.tls}). On this host run \`node --use-system-ca scripts/surface-probe.mjs ...\` (P-347); nothing was measured.`);
+      process.exit(2);
+    }
+    // P-347, ruling 9: one MCP session per run, opened only when a row needs the MCP surface. The
+    // token comes from the sign-in helper (in memory) or, if the operator passes one, the env; the
+    // run records which, and the tier it graded at, and never the token.
+    const needsMcp = rowFilter && rowFilter.some((r) => ["P-254", "P-303", "P-304", "P-205"].includes(r));
+    if (needsMcp) {
+      let token = (process.env.SURFACE_PROBE_MCP_TOKEN || "").trim() || null;
+      let tokenSource = token ? "env SURFACE_PROBE_MCP_TOKEN" : null;
+      mcpRun = { signIn: null };
+      if (!token && flag("--mcp-sign-in")) {
+        const si = await mcpSignIn();
+        mcpRun.signIn = si.ok ? { ok: true, obtainedAt: si.obtainedAt, tokenFacts: si.facts, resource: si.resource, audienceMatchesResource: si.audienceMatchesResource } : { ok: false, error: si.error };
+        if (si.ok) { token = si.token; tokenSource = "sign-in helper (in memory, this run only)"; }
+        console.log(si.ok ? `signed in; token audience ${JSON.stringify(si.facts?.aud)} expires ${si.facts?.exp}` : `sign-in did not complete: ${si.error}`);
+      }
+      process.stdout.write(`opening the MCP session against ${MCP_BASE} ... `);
+      const opened = await runMcpLegs(token, tokenSource);
+      mcpSession = opened.session ?? null;
+      delete opened.session;
+      mcpRun.open = opened;
+      console.log(opened.measured ? `done (session id ${opened.sessionIdPresent ? "present" : "absent"}, tools ${Object.keys(opened.toolArgKeys ?? {}).length})` : `did not open (${opened.gateReason})`);
+    }
+  }
   if (flag("--fixtures")) {
     const fx = loadFixtureLegs();
     legsById = fx.legsById;
@@ -2316,14 +2837,12 @@ async function main() {
       findings: [],
       ledger: { counts: {}, rows: [] },
     };
-    process.stdout.write(`opening the MCP session against ${MCP_BASE} ... `);
-    ops24Report.mcp = await runMcpLegs();
-    console.log(ops24Report.mcp.measured ? "done" : `did not open (${ops24Report.mcp.gateReason})`);
+    ops24Report.mcp = mcpRun?.open ?? { measured: false, error: "the MCP leg did not run in this pass" };
     const ids = [...new Set([...subjects.flatMap((s) => s.chosen.map((c) => c.id)), ...P303_SUBJECTS.map((s) => s.id), ...P304_SUBJECTS.map((s) => s.id), UNRULED_SUBJECT])];
     const byId = {};
     for (const id of ids) {
-      process.stdout.write(`probing ${id} (map+draw+pdf) ... `);
-      byId[id] = await runOps24Legs({ id }, { mcp: ops24Report.mcp, mcpToken: (process.env.SURFACE_PROBE_MCP_TOKEN || "").trim() });
+      process.stdout.write(`probing ${id} (map+draw+pdf${mcpSession ? "+mcp" : ""}) ... `);
+      byId[id] = await runOps24Legs({ id }, { mcp: ops24Report.mcp, mcpSession });
       console.log(`done (panel ${byId[id].facets.http}, draw ${byId[id].draw.http ?? "-"}, pdf ${byId[id].pdf.http})`);
     }
     for (const s of subjects) {
@@ -2379,6 +2898,18 @@ async function main() {
     ];
   }
 
+  // P-347: the coverage leg (P-205, P-210), one pass over the coverage subjects on every surface.
+  if (!flag("--fixtures") && rowFilter && rowFilter.some((r) => ["P-205", "P-210"].includes(r))) {
+    for (const s of COVERAGE_SUBJECTS) {
+      process.stdout.write(`coverage ${s.key} ("${s.query}") ... `);
+      legsById[s.key] = await runCoverageLegs(s, mcpSession);
+      console.log(`endpoint ${legsById[s.key].coverageEndpoint.status ?? "-"}, find box ${legsById[s.key].findBox.missClass ?? (legsById[s.key].findBox.measured ? "no missClass" : "unmeasured")}, mcp ${legsById[s.key].mcpFind.missClass ?? (legsById[s.key].mcpFind.measured ? "no missClass" : "unmeasured")}`);
+    }
+  }
+  // Ruling 9: the run records the tier it graded at, read off the server's own answers.
+  if (mcpRun) mcpRun.tiersSeen = mcpSession ? [...mcpSession.tiers] : [];
+  if (mcpRun && mcpSession && !mcpRun.tiersSeen.length) mcpRun.tierNote = "no MCP answer in this run named a subscriptionTier, so the tier graded at is NOT recorded; the close must say so";
+
   const results = evaluateRows(legsById, obs ?? (flag("--fixtures") ? loadFixtureLegs().manifest.observations : null), rowFilter, ops24LegsByBucket);
   // The per-class tallies the close reads: which defect class is failing how many buckets, so a
   // single class firing everywhere (XD-11 did, on 25 of 45 before this tally existed) is visible
@@ -2399,7 +2930,16 @@ async function main() {
   if (!existsSync(artifactDir)) mkdirSync(artifactDir);
   const stamp = ranAt.slice(0, 10) + "_" + ranAt.slice(11, 19).replace(/:/g, "");
   const outPath = val("--out") ?? join(artifactDir, `${stamp}_surface_probe.json`);
-  writeFileSync(outPath, JSON.stringify({ instrument: "scripts/surface-probe.mjs", ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally, ops24: ops24Report }, null, 2));
+  // P-347: HEAD alone does not name the instrument when the run uses a working-tree revision; the
+  // file's own hash does, committed or not.
+  const instrumentSha256 = createHash("sha256").update(readFileSync(fileURLToPath(import.meta.url))).digest("hex");
+  const artifactText = JSON.stringify({ instrument: "scripts/surface-probe.mjs", instrumentSha256, ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, tls, mcpRun, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally, ops24: ops24Report }, null, 2);
+  // Ruling 9: nothing new is stored. The token never reaches the artifact; if it would, nothing is written.
+  if (artifactLeaksToken(artifactText, mcpSession?.token)) {
+    console.error("REFUSED: the artifact would contain the MCP token; nothing was written");
+    process.exit(2);
+  }
+  writeFileSync(outPath, artifactText);
   console.log(`\nartifact: ${outPath.replace(/\\/g, "/")}`);
 
   if (tally.FAIL) process.exit(1);

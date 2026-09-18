@@ -20,7 +20,12 @@
  *        vendor-pending  -> _catalog/vendor_contracts.json must say the vendor is not in hand;
  *        deferred        -> the P-264 road residual artifact must show no unruled
  *                           road-blocked render in the county (UNMEASURED until it exists);
- *        county-scoped   -> accepted outside its scope, as an exclusion or an honest refusal.
+ *        county-scoped   -> accepted outside its scope, as an exclusion or an honest refusal;
+ *        ruled-exclusion -> (P-337, A-215 rulings 3 and 4) the rail's roadmap entry must say
+ *                           paused-by-ruling and name the rail's Phase 1 row, NO tracked close in
+ *                           _inbox may name that row (a close means the reason may be gone; the
+ *                           seat re-rules or acknowledges that close by path in the roadmap), and
+ *                           the verdict must still be the exact string the ruling accepted.
  *   4. Rail-list drift: RAIL_POLICY must equal the factory's rail list at the pinned SHA
  *      (read with git from a local hauska-factory clone). Drift, or no clone, is UNMEASURED.
  *
@@ -63,7 +68,9 @@ export const FACTORY_RAIL_KEYS_PATH = "src/lib/parcel-record-engine/rail-keys.js
  * Per-rail policy. `accept` lists the non-pass verdict KINDS the program has ruled acceptable
  * ("excluded" matches every excluded* string). Anything else that is not `pass` is open.
  * Classes: must-pass | ruled-withheld | county-scoped | ruled-unavailable | mid-cutover |
- * no-source | make-unbuilt | derived-trivial | deferred | vendor-pending.
+ * ruled-exclusion | no-source | make-unbuilt | derived-trivial | deferred | vendor-pending.
+ * `verdictExact`, where set, narrows acceptance to one verdict string: an exclusion ruled for one
+ * reason is not accepted when the store starts giving another.
  */
 export const RAIL_POLICY = {
   // Ruled withheld (R-2, _decisions/2026-09-11_ruling_b_reversed_polygon_only.md).
@@ -77,12 +84,17 @@ export const RAIL_POLICY = {
   // Operator ruling 2026-09-14 (P-209): declared Unavailable in Texas, rail kept. Still carried
   // on the capability roadmap; the customer-facing declaration is graded by the customer leg.
   salesHistory: { cls: "ruled-unavailable", accept: ["excluded"], ruling: "P-209" },
-  // P-204: data exists and serves by another path; the ledger is the serving path, so these cut over.
+  // P-204: data exists and serves by another path; the ledger is the serving path, so these cut over
+  // (A-215 rulings 1 and 2, P-336).
   parcelGeometry: { cls: "mid-cutover" },
   pipelines: { cls: "mid-cutover" },
-  railCorridor: { cls: "mid-cutover" },
   etjStatus: { cls: "mid-cutover" },
-  landUseDescription: { cls: "mid-cutover" },
+  // P-337. A-215 ruling 3: landUseDescription stays on the bake for Phase 0, because cutting over
+  // removes a description a customer reads today; its cutover is P-345. Ruling 4: railCorridor is
+  // deferred, not retired; its first serve path (or a retirement ruling) is P-344. Each is
+  // accepted only while its Phase 1 row is open and the store still says mid-cutover.
+  landUseDescription: { cls: "ruled-exclusion", accept: ["excluded"], verdictExact: "excluded-mid-cutover", ruling: "A-215 ruling 3", coupling: "phase1-row", phase1Row: "P-345" },
+  railCorridor: { cls: "ruled-exclusion", accept: ["excluded"], verdictExact: "excluded-mid-cutover", ruling: "A-215 ruling 4", coupling: "phase1-row", phase1Row: "P-344" },
   // Operator 2026-09-16 (A-177): the road-node pass comes after Phase 2 unless roads block
   // rendering. Accepted only while P-264's residual shows no unruled road-blocked render.
   roads: { cls: "deferred", accept: ["excluded"], ruling: "A-177", coupling: "road-residual" },
@@ -150,6 +162,16 @@ export const FALSE_EARNED = [
     why: "agricultural valuation applies Texas-wide; no source was acquired. A guard: these cells " +
       "were honestly unaccounted on 2026-09-16, so this reads 0 unless a sweep writes the false state.",
   },
+  {
+    id: "situsState-retired-d1-constant",
+    rail: "situsState",
+    kind: "value",
+    sql: "cell_state->>'source' = 'derived-county-fips'",
+    why: "P-348: the OPS-21 D1 constant wrote TX from the county FIPS without looking at the parcel. " +
+      "P-266 retired it and re-resolves every such cell it can; one it cannot (its own situs names " +
+      "another state) keeps the constant, because the upsert never downgrades, and the rail passes " +
+      "on it. Measured 2026-09-18: one cell, Hays 48209:88885. P-352 replaces it.",
+  },
 ];
 
 /** Pure: the acceptance kind of a verdict string. */
@@ -178,7 +200,41 @@ export function couplingState(pol, rail, fips, ctx) {
     if (c.ruledAcceptable === true && c.ruling) return { state: "holds", detail: `road-blocked renders ruled acceptable (${c.ruling})` };
     return { state: "broken", detail: `${c.roadBlockedRenders} road-blocked renders with no ruling` };
   }
+  if (pol.coupling === "phase1-row") {
+    if (!ctx.roadmap) return { state: "unmeasured", detail: "capability roadmap not readable" };
+    const e = ctx.roadmap.rails?.[rail];
+    if (!e) return { state: "broken", detail: "the capability roadmap no longer lists this rail" };
+    if (e.status !== "paused-by-ruling") return { state: "broken", detail: `roadmap status is ${e.status}, not paused-by-ruling` };
+    if (e.row !== pol.phase1Row) return { state: "broken", detail: `roadmap names ${e.row}; the ruling's Phase 1 row is ${pol.phase1Row}` };
+    if (!ctx.closes) return { state: "unmeasured", detail: "tracked closes not readable" };
+    const acknowledged = new Set(e.acknowledgedCloses ?? []);
+    const hits = ctx.closes.filter((c) => c.rows.includes(pol.phase1Row) && !acknowledged.has(c.path));
+    if (hits.length) {
+      return { state: "broken", detail: `${pol.phase1Row} has a close (${hits.map((h) => h.path).join(", ")}): the reason may be gone; re-rule, or acknowledge the close by path in the roadmap` };
+    }
+    return { state: "holds", detail: `paused-by-ruling (${pol.ruling}); ${pol.phase1Row} has no close` };
+  }
   return { state: "holds", detail: "" };
+}
+
+/**
+ * Pure: the plan rows a close names. Parsed closes are read by field (five spellings are in use);
+ * a close that does not parse is read conservatively, as naming every row id in its text, so an
+ * unreadable close can break a coupling but can never hold one open.
+ */
+export const CLOSE_ROW_FIELDS = ["planRows", "planRow", "plan_row", "plan_rows", "planRowList"];
+export function closeRows(text) {
+  const t = String(text ?? "").replace(/^﻿/, "");
+  const all = () => [...new Set(t.match(/\bP-\d+\b/g) ?? [])];
+  let d;
+  try { d = JSON.parse(t); } catch { return all(); }
+  if (!d || typeof d !== "object" || Array.isArray(d)) return all();
+  const out = new Set();
+  for (const f of CLOSE_ROW_FIELDS) {
+    if (d[f] == null) continue;
+    for (const m of JSON.stringify(d[f]).match(/\bP-\d+\b/g) ?? []) out.add(m);
+  }
+  return [...out];
 }
 
 /** Pure classification. ctx: { roadmap, vendors, roadResidual, drift }. */
@@ -220,6 +276,10 @@ export function classify(verdicts, falseEarned, counties = Object.keys(SIX), ctx
         else if (status === "in-hand") { c.open.push({ cls: pol.cls, rail: r.rail, verdict: r.verdict, detail: `${pol.vendor} is in hand; the data is owed` }); continue; }
       }
       if (!ok) { c.open.push({ cls: pol.cls, rail: r.rail, verdict: r.verdict, unaccounted: r.unaccounted ?? null }); continue; }
+      if (pol.verdictExact && r.verdict !== pol.verdictExact) {
+        c.open.push({ cls: `${pol.cls}-verdict-changed`, rail: r.rail, verdict: r.verdict, detail: `accepted only as ${pol.verdictExact}` });
+        continue;
+      }
       const cp = couplingState(pol, r.rail, fips, ctx);
       if (cp.state === "broken") { c.open.push({ cls: `${pol.cls}-coupling-broken`, rail: r.rail, verdict: r.verdict, detail: cp.detail }); continue; }
       if (cp.state === "unmeasured") { c.unmeasured.push({ cls: pol.cls, rail: r.rail, verdict: r.verdict, detail: cp.detail }); continue; }
@@ -256,6 +316,24 @@ function readFactoryRailKeys(repo, sha) {
 }
 
 const readJson = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } };
+
+/**
+ * Every TRACKED lane close in _inbox with the rows it names. Tracked only: an untracked close is
+ * another seat's work in progress, and canon cites only what is tracked. Returns null (the
+ * coupling then reads UNMEASURED) if git cannot list them or any listed close cannot be read.
+ */
+function readTrackedCloses() {
+  let files;
+  try {
+    files = execFileSync("git", ["-C", DOC_REPO, "ls-files", "--", "_inbox/*_close.json"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+      .split(/\r?\n/).filter(Boolean);
+  } catch { return null; }
+  const out = [];
+  for (const path of files) {
+    try { out.push({ path, rows: closeRows(readFileSync(join(DOC_REPO, path), "utf8")) }); } catch { return null; }
+  }
+  return out;
+}
 
 function latestRoadResidual() {
   const dir = join(DOC_REPO, "_inbox");
@@ -307,11 +385,12 @@ function selfTest() {
   const pending = { vendors: { cotality: { status: "pending" } } };
   const inHand = { vendors: { cotality: { status: "in-hand" } } };
   const residualClean = { counties: { "48209": { roadBlockedRenders: 0 }, "48453": { roadBlockedRenders: 0 } } };
-  const ctx = { roadmap, vendors: pending, roadResidual: residualClean, drift: { state: "match" } };
+  const ctx = { roadmap, vendors: pending, roadResidual: residualClean, drift: { state: "match" }, closes: [] };
   const full = (fips, overrides = {}) => Object.keys(RAIL_POLICY).map((rail) => {
     const pol = RAIL_POLICY[rail];
     let verdict = "pass";
     if (["ruled-withheld", "no-source", "ruled-unavailable", "deferred"].includes(pol.cls)) verdict = "excluded";
+    if (pol.verdictExact) verdict = pol.verdictExact;
     if (pol.cls === "county-scoped" && !pol.onlyIn.includes(fips)) verdict = "excluded";
     if (pol.cls === "vendor-pending" && pol.pendingIn.includes(fips)) verdict = "refuse";
     return { county: fips, rail, verdict: overrides[rail] ?? verdict, unaccounted: 0 };
@@ -361,6 +440,50 @@ function selfTest() {
   check("28 the factory rail parser reads the META shape", JSON.stringify(parseFactoryRailKeys('{ key: "apn", grain: "scalar" },\n    { key: "situsCity", grain: "scalar" }')) === JSON.stringify(["apn", "situsCity"]));
   check("29 an unknown county reads its FIPS as its name", classify(full("48999"), [], ["48999"], ctx).counties["48999"].name === "48999");
 
+  // P-337 (A-215 rulings 3 and 4). Both directions for every leg of the coupling.
+  const openOn = (res, fips, rail, re) => res.counties[fips].open.some((o) => o.rail === rail && (!re || re.test(o.cls)));
+  const acceptedOn = (res, fips, rail) => res.counties[fips].accepted.some((a) => a.rail === rail);
+  const closeFor = (row) => ({ path: `_inbox/2099-01-01_${row.toLowerCase()}_close.json`, rows: [row] });
+  const withEntry = (rail, patch) => ({ ...roadmap, rails: { ...roadmap?.rails, [rail]: patch === null ? undefined : { ...roadmap?.rails?.[rail], ...patch } } });
+  check("30 landUseDescription excluded-mid-cutover is ACCEPTED while P-345 has no close",
+    acceptedOn(classify(full("48209"), [], one, ctx), "48209", "landUseDescription"));
+  check("31 railCorridor excluded-mid-cutover is ACCEPTED while P-344 has no close",
+    acceptedOn(classify(full("48209"), [], one, ctx), "48209", "railCorridor"));
+  check("32 NOT VACUOUS: a tracked close naming P-345 OPENS landUseDescription",
+    openOn(classify(full("48209"), [], one, { ...ctx, closes: [closeFor("P-345")] }), "48209", "landUseDescription", /coupling-broken/));
+  check("33 NOT VACUOUS: a tracked close naming P-344 OPENS railCorridor, and leaves landUseDescription accepted",
+    (() => { const r = classify(full("48209"), [], one, { ...ctx, closes: [closeFor("P-344")] }); return openOn(r, "48209", "railCorridor", /coupling-broken/) && acceptedOn(r, "48209", "landUseDescription"); })());
+  check("34 a close the seat acknowledged by path in the roadmap keeps the acceptance",
+    acceptedOn(classify(full("48209"), [], one, { ...ctx, closes: [closeFor("P-345")], roadmap: withEntry("landUseDescription", { acknowledgedCloses: [closeFor("P-345").path] }) }), "48209", "landUseDescription"));
+  check("35 the roadmap entry removed OPENS the rail",
+    openOn(classify(full("48209"), [], one, { ...ctx, roadmap: withEntry("railCorridor", null) }), "48209", "railCorridor", /coupling-broken/));
+  check("36 the roadmap entry flipped to carried (not paused-by-ruling) OPENS the rail",
+    openOn(classify(full("48209"), [], one, { ...ctx, roadmap: withEntry("landUseDescription", { status: "carried" }) }), "48209", "landUseDescription", /coupling-broken/));
+  check("37 the roadmap entry naming another row OPENS the rail",
+    openOn(classify(full("48209"), [], one, { ...ctx, roadmap: withEntry("landUseDescription", { row: "P-999" }) }), "48209", "landUseDescription", /coupling-broken/));
+  check("38 the store relabelling it excluded-not-applicable OPENS the rail (verdictExact)",
+    openOn(classify(full("48209", { landUseDescription: "excluded-not-applicable" }), [], one, ctx), "48209", "landUseDescription", /verdict-changed/));
+  check("39 a refusal on a ruled-exclusion rail is open", openOn(classify(full("48209", { railCorridor: "refuse" }), [], one, ctx), "48209", "railCorridor"));
+  check("40 the cutover landing (verdict pass) counts as a pass, not an exclusion",
+    (() => { const r = classify(full("48209", { landUseDescription: "pass" }), [], one, ctx); return r.verdict === "COMPLETE" && !acceptedOn(r, "48209", "landUseDescription"); })());
+  check("41 unreadable closes make the ruled exclusions UNMEASURED, never accepted",
+    (() => { const r = classify(full("48209"), [], one, { ...ctx, closes: null }); return r.verdict === "UNMEASURED" && r.counties["48209"].unmeasured.some((u) => u.rail === "landUseDescription"); })());
+  check("42 the live roadmap register carries both ruled exclusions, paused-by-ruling, on their Phase 1 rows",
+    !!roadmap && Object.entries(RAIL_POLICY).filter(([, p]) => p.coupling === "phase1-row").every(([k, p]) => roadmap.rails?.[k]?.status === "paused-by-ruling" && roadmap.rails?.[k]?.row === p.phase1Row));
+  check("43 the other three P-204 rails are still open while excluded (P-336 has not cut them over)",
+    ["parcelGeometry", "pipelines", "etjStatus"].every((rail) => openOn(classify(full("48209", { [rail]: "excluded-mid-cutover" }), [], one, ctx), "48209", rail)));
+  check("44 closeRows reads each field spelling, and never a row named only in prose",
+    JSON.stringify(closeRows('{"planRow":"P-345","note":"see P-344"}')) === JSON.stringify(["P-345"])
+      && JSON.stringify(closeRows('{"plan_rows":["P-1","P-2"]}')) === JSON.stringify(["P-1", "P-2"])
+      && closeRows('﻿{"planRows":["P-344"]}').includes("P-344"));
+  check("45 closeRows reads an unparseable close conservatively (every row in its text)",
+    closeRows('{"planRows": ["P-345"] broken').includes("P-345"));
+  // P-348: the retired D1 situsState constant is a false earned state.
+  check("46 the retired D1 situsState predicate is declared on situsState, as a value",
+    FALSE_EARNED.some((f) => f.id === "situsState-retired-d1-constant" && f.rail === "situsState" && f.kind === "value" && /derived-county-fips/.test(f.sql)));
+  check("47 NOT VACUOUS: one retired D1 cell makes the county INCOMPLETE",
+    classify(full("48209"), [{ county: "48209", id: "situsState-retired-d1-constant", n: 1 }], one, ctx).verdict === "INCOMPLETE");
+
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}`);
   const bad = results.filter((r) => !r.ok).length;
   console.log(bad ? `SELF-TEST FAILED (${bad})` : `SELF-TEST OK (${results.length})`);
@@ -386,6 +509,7 @@ function main() {
     vendors: readJson(join(DOC_REPO, "_catalog", "vendor_contracts.json")),
     roadResidual: residualPath ? readJson(residualPath) : null,
     drift: railDrift(existsSync(factoryRepo) ? readFactoryRailKeys(factoryRepo, PINNED_FACTORY_SHA) : null),
+    closes: readTrackedCloses(),
   };
   const started = new Date().toISOString();
   let data;
@@ -396,6 +520,7 @@ function main() {
     ranAt: started, verdictsEvaluatedFrom: evals[0] ?? null, verdictsEvaluatedTo: evals.at(-1) ?? null,
     factoryRailListPin: PINNED_FACTORY_SHA, roadResidual: residualPath ?? null,
     vendorStatus: ctx.vendors?.vendors?.cotality?.status ?? null,
+    trackedClosesRead: ctx.closes?.length ?? null,
   };
   const out = argValue(args, "--json");
   if (out) writeFileSync(out, JSON.stringify(result, null, 2));

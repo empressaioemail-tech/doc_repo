@@ -1,0 +1,94 @@
+{
+  "lane": "p206-retirement-serve",
+  "checkpoint": "CP1 (recon + design, filed before the fix was written)",
+  "planRows": ["P-206"],
+  "seat": "cente-p206",
+  "filedAt": "2026-09-16T16:36:00Z",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/p206-retirement-serve/legacy-design-tools",
+      "branch": "fix/p206-retirement-serve (cut from origin/main before any file edit)",
+      "baseCommitAtClaim": "0bf2377f44d66849fdcbdf1e7cfa26b784a0a567",
+      "baseCommitSubject": "fix(records-mcp): list/read_purchased_record go coming-soon, fix the export-copy defect (P-242) (#698)",
+      "note": "STANDALONE CLONE, the same convention P-242 used one lane earlier: the primary P:/legacy-design-tools checkout is dirty on another lane's branch and every registered legacy-design-tools-* worktree under P:/seat-worktrees/ belongs to a different named lane. Path equals worktree."
+    },
+    "doc_repo": {
+      "worktree": "P:/seat-worktrees/p206-retirement-serve/doc_repo",
+      "branch": "lane/p206-retirement-serve",
+      "note": "Artifacts land HERE, not in P:/doc_repo. The dispatch's own path-resolution rule says a lane spawned by the dispatch planner writes into the planner's worktree and the dispatch planner itself writes into its own seat worktree, 'never P:/doc_repo, the integration seat's checkout'. This session was handed the compiled dispatch directly and is therefore its own seat; it cut its own worktree rather than write into the integration seat's checkout or into another lane's."
+    }
+  },
+
+  "laneClaim": {
+    "method": "node scripts/lane-claim.mjs claim --lane p206-retirement-serve --seat cente-p206 --plan-row P-206 --dispatch _dispatches/2026-09-16_p206-retirement-serve_dispatch.md",
+    "result": "CLAIMED. `status` read back at 16:36Z: '1 open lane claim(s): live p206-retirement-serve seat=cente-p206 row=P-206 started=2026-09-16T16:30:45.289Z'."
+  },
+
+  "missionPremise": "A node whose record carries an EARNED retirement serves, to the customer, as `parcel_not_found` with `parcelExists: false`. The dispatch's own example is 48209:84629. Earned retirement is the Factory/ledger vocabulary for a positive, checked claim that a value is absent -- the opposite of 'we never looked' -- so if a retired node reaches a customer as 'no parcel with this node id exists in the parcel store' then the ledger's strongest absence verdict is being served as its weakest, and a genuine data hole is indistinguishable from a verified one.",
+
+  "falsifiersPreRegistered": [
+    "1. Re-measure 48209:84629 live on current main.",
+    "2. Name the exact function and repo that first sets parcelExists/reason.",
+    "3. Account/parcel layering test on the same node.",
+    "4. A genuine never-existed node must still read parcel_not_found.",
+    "5. The residual ~1.8 percent still-retired Bastrop nodes: does the fix present any of them as a confident 'retired' claim that is itself still wrong? The dispatch's own words: the row does not get to inherit P-212's residual error silently."
+  ],
+
+  "recon": {
+    "handoffInTheDispatchWasWrong_thisIsTheFinding": {
+      "whatTheDispatchSaid": "That `propertyExplorer.ts` is provably NOT the route because `grep -rn parcelExists artifacts/api-server/src` returns nothing, and that the next agent should trace get_smart_site and 'start at cortexNodeLookup's caller'.",
+      "whatIsActuallyTrue": "`propertyExplorer.ts` IS the route, and the dispatch's grep proved less than it read as. `parcelExists` is a FIELD NAME ON THE WIRE, minted on the smartsite-mcp side; the api-server never needs the word, because it renames the state to `reason`. Grepping for the field name on the producer side is guaranteed to return nothing even when the producer owns the decision -- a false negative dressed as evidence.",
+      "theExactChain_measuredAtSource": [
+        "1. `artifacts/smartsite-mcp/src/tools.ts` get_smart_site calls cortex `POST /api/property-explorer/v1/research/brief`.",
+        "2. `artifacts/api-server/src/routes/propertyExplorer.ts` `sendBriefMiss(res, parcelNodeId)` -- ORIGIN. It calls `cortexNodeLookup()` and answers `{error:'parcel_not_found', message:'No parcel with this node id exists in the parcel store.', parcelNodeId}` when the probe is null (propertyExplorer.ts:772-793 in the pre-change tree).",
+        "3. `artifacts/api-server/src/lib/peScreenSaveResolve.ts` `cortexNodeLookup()` -> `lookupParcelNodeForScreen({parcelNodeId})`.",
+        "4. `artifacts/api-server/src/lib/txgioAddressResolve.ts` `lookupParcelNodeForScreen` -- the DECIDER. A row in `txgioParcel` matching (countyFips, propId) is what makes a node 'exist'; no row returns null.",
+        "5. `artifacts/smartsite-mcp/src/tool-honesty.ts` `mapGetSmartSiteNonOk` -- the TRANSLATOR. `body.error === 'parcel_not_found'` becomes `{parcels:[], notFound:[id], reason:'parcel_not_found', parcelExists:false}`. This is the only place the boolean `false` is minted, and it is minted from the reason, not measured."
+      ],
+      "whyItStayedHidden": "Two layers each rename the same state -- api-server speaks `error`/`reason`, smartsite-mcp speaks `parcelExists` -- so tracing by field name across the seam fails in exactly the direction that matters. This is a DEV_PROCESS instrument failure, not an oversight by the dispatch author: the grep was run against the wrong vocabulary, not the wrong folder."
+    },
+
+    "theSecondMechanism_theRowAlreadyNamed": {
+      "found": "`artifacts/api-server/src/lib/serveGuards.ts` `shouldDeclineRetiredRecordAtServe`, wired into `artifacts/api-server/src/routes/brokerageNodeFacets.ts` `loadBakedNodeFacetSnapshot`. It declines an earned retirement in a LANDUSE_JOIN_DISABLED_FIPS_SEED county by returning `null` -- the same `null` a node with no tier-1 row returns.",
+      "theSmokingGun": "serveGuards.ts's own P-180 doc comment stated the collapse as the INTENT: 'Callers treat `true` as \"no baked snapshot\": the brokerage node-facets route answers its existing `404 no_coverage/not_baked`, which is the decline the P-177 close asked for.' The decline is correct; the intent to make it indistinguishable from a never-baked node is what P-206 measured as a defect. The mechanism P-206 was dispatched to find was not a bug someone overlooked -- it was a decision documented in the file."
+    },
+
+    "liveProbes_production_2026_09_16_verbatim": {
+      "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:84629/facets": "404 {\"error\":\"not_baked\",\"errorClass\":\"no_coverage\",\"message\":\"No baked facets for this parcel node\"}",
+      "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:999999/facets": "404 {\"error\":\"not_baked\",\"errorClass\":\"no_coverage\",\"message\":\"No baked facets for this parcel node\"}  <-- BYTE-IDENTICAL TO THE ROW ABOVE",
+      "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:97648/facets": "200, full facets, situsAddress '609 STURGEON DR, SAN MARCOS, TX 78666', legalDescription 'CONWAY ADDITION SEC IV, BLOCK 1, LOT 1', single-family, livingArea 3040, built 2019, publishRunId bc47625c-2de9-4c59-bec9-1e5fe0b313ce, AND `\"recordRetirement\":null` EXPLICITLY PRESENT",
+      "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/48209:97658/facets": "200, full facets, '629 STURGEON DR', LOT 11, landUse 'Vacant lot or tract', `\"recordRetirement\":null`",
+      "significance": "Three things established by measurement rather than inference. (a) FALSIFIER 4 IS SATISFIED: a fabricated id and the row's own retired node produce the identical body, so the customer cannot tell them apart -- the defect is real and reproduced. (b) `recordRetirement` is a first-class field in the SERVED tier-1 payload, carrying `null` on live nodes -- so the decline reads a field that is already on the wire, and a fix can declare it without inventing a channel. (c) The account/parcel layering is confirmed: 84629 + 3019 = 97648, and 97648 is a live, fully-baked single-family parcel. The retired account number and the live parcel number are the same property."
+    },
+
+    "storesNotReachable_disclosedNotAssumed": {
+      "mcp.smartsite.cloud/mcp": "401 Unauthorized -- no MCP credential in this session, so get_smart_site itself was never called end-to-end. Every claim above about the MCP path is a SOURCE-read plus the api-server's own wire behaviour, not an MCP invocation.",
+      "smartsite.cloud/api/spine/cortex/api/property-explorer/v1/research/brief": "403 'Anonymous browse proxy allows facet/envelope/map-data paths only. GTM consent/events use /api/pe-gtm; authenticated deep routes use /api/spine-deep.'",
+      "smartsite.cloud/api/spine-deep/property-explorer/v1/research/brief": "401 Unauthorized.",
+      "consequence": "THE STORE ITSELF WAS NEVER READ. Whether PRODUCTION's tier-1 store holds a row for 48209:84629 at all is unmeasured, and the decline makes those two states indistinguishable from outside -- which is the defect. P-180's close records that its retirement write went to STAGING ('Production still 404s on 48209:84629 at the time of writing, so step 4 is a real serving-store write'), so the row's evidence may be mixing environments. The fix is correct either way, but this is the single largest hole in this lane's knowledge and it is stated as a hole, not papered over. It is the leave_behind."
+    }
+  },
+
+  "predicateBranch": {
+    "branchesOffered": "(a) a node with an earned retirement serves a declared retirement state with its vintage; or (b) the account/parcel layering is shown to make the question malformed.",
+    "branchTaken": "(a), THE FIX. The layering is real and measured (84629 is the Hays CAD account number; 97648 is the TxGIO parcel node, the same lot) -- but it does NOT make the question malformed, because the question is about a NODE, and the serve holds the retirement in its hand at the moment it declines and throws it away. A malformed question would be one whose answer does not exist at the point of serve. This answer exists there and was being discarded."
+  },
+
+  "designPlan": {
+    "oneImplementation": "`retiredRecordAtServe` returns the retirement or null; `shouldDeclineRetiredRecordAtServe` becomes `!== null` over it. Two implementations of one rule is how the divergence in this very row happened, so the boolean is derived, never re-derived.",
+    "makeTheDeclineCarryItsReason": "`readBakedNodeFacetSnapshot` returns a three-way `BakedNodeFacetRead` (`snapshot` | `retired` | `none`) so the two facts stop sharing a return value. `loadBakedNodeFacetSnapshot` keeps its exact old signature and still collapses both to `null`, so no existing caller's behaviour moved -- the new read is opt-in for the two callers that must tell them apart.",
+    "doNotWidenTheErrorTaxonomy": "`GTM_ERROR_CLASSES` is NOT extended. The 404 status and the `no_coverage` class stay as they are so the panel's fallback routing is untouched and this change cannot become an outage; the discriminator moves into the `error` TOKEN (`not_baked` -> `record_retired`) plus the retirement object. Adding an error CLASS has its own consumers and is a ruled change, not a lane's call.",
+    "parcelExistsIsUnmeasuredNotFalse": "On `record_retired` the MCP reports `parcelExists: 'unmeasured'`. The serve answered about the RECORD; it said nothing about whether a parcel row exists, so the response is evidence neither way. The old hard `false` was the defect -- it converted a deliberate verified absence into an affirmative 'never existed'.",
+    "halfFormsBuyNothing": "The retirement is structurally validated on the MCP side too (status/verdict/4 non-empty strings/lastSeenTaxYear numeric-or-null) and DROPPED if unreadable, never passed along as the basis of a claim -- the same discipline `isEarnedRecordRetirement` applies upstream.",
+    "noDeploy": "Per the dispatch. PR green, handed back."
+  },
+
+  "knownTraps_acknowledged": [
+    "Repo is legacy-design-tools; the artifacts are artifacts/api-server and artifacts/smartsite-mcp. Confirmed by tracing the live call, not assumed from the dispatch text.",
+    "`pnpm install --frozen-lockfile` fails on this Windows host at the root `preinstall` (a POSIX `sh` one-liner) AFTER linking 1053 packages, so the tree is usable but the lifecycle exits non-zero. Disclosed because a green CI run and a green local run are not the same evidence.",
+    "The full `api-server` suite leaves 190 test FILES uncollected on `DATABASE_URL must be set` while 2140 tests pass with zero failures -- pre-existing environment, not this change. Of 397 files, 206 passed and 1 skipped.",
+    "The full `smartsite-mcp` suite has 13 failures, all inside `records-extraction.test.ts` and all `Failed query: delete from \"engagements\"` (DB teardown) -- pre-existing, unrelated, and in the P-242 records lane's own file, not one this lane touched.",
+    "This repo does not auto-deploy on merge; no deploy is planned or performed."
+  ]
+}

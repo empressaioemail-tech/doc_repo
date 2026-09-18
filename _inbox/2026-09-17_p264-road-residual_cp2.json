@@ -1,0 +1,114 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p264-road-residual",
+  "seat": "cente-vsc-p264",
+  "dispatch": "_dispatches/2026-09-17_p264-road-residual_dispatch.md",
+  "filedAt": "2026-09-17T23:12:00Z",
+  "status": "open",
+  "operatorDecision": {
+    "question": "How should P-264 obtain a road-name bucket that does not exist?",
+    "optionsOffered": [
+      "add the road-name bucket at source in honest-decline-promote.ts (single implementation)",
+      "classify road-name inside the dry-run instrument only (zero blast radius, second implementation)",
+      "report road-class only and declare road-name UNMEASURED pending a planner ruling"
+    ],
+    "selected": "add the road-name bucket at source in honest-decline-promote.ts",
+    "decidedAt": "2026-09-17T23:05:00Z"
+  },
+
+  "pr": {
+    "repo": "empressaioemail-tech/hauska-engine",
+    "number": 473,
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/473",
+    "state": "draft",
+    "branch": "p264-road-residual-bucket-taxonomy",
+    "commit": "d98a30b",
+    "base": "main",
+    "filesChanged": 3,
+    "insertions": 312,
+    "deletions": 5,
+    "merges": false
+  },
+
+  "whatLanded": {
+    "rootCause": "depth-warm-city-batch.mjs flattened the six mechanical gates' reason strings into one list before classifying, destroying gate identity; classification could then only guess at prose.",
+    "defectsFixed": [
+      "ROAD-NAME THEFT: the facesAnswer gate is the road-name parity gate, but its reason interpolates the resolved street name as a VALUE, so a parcel facing 'Front Street' injected the substring 'front' and the prose cascade claimed it as 'front-orientation'. A road-name failure was reported as an orientation failure.",
+      "NO ROAD-NAME CLASS: road-class had a bucket, road-name had none, so the split A-177 turns on was not readable off the artifact.",
+      "UNRECOGNISED FAILURES INFERRED RATHER THAN REACHED: the old catch-all was arrived at by elimination."
+    ],
+    "newApi": {
+      "verifyFailGateBuckets": "gates -> all failing classes by identity; returns EVERY failing class, not the first",
+      "bucketVerifyFailGates": "single-bucket convenience for one-bucket-per-parcel callers",
+      "ROAD_NAME_MISMATCH_BUCKET": "new class, distinct from road-class and from orientation",
+      "UNCLASSIFIED_VERIFY_FAIL_BUCKET": "explicit sink, reached not inferred; an unrecognised-but-failing gate lands here rather than being dropped"
+    },
+    "proseFallback": "bucketVerifyFailReasons retained for string-only callers; road-name test reordered BEFORE the orientation test so the theft cannot recur. The bare 'front' test is deliberately kept because genuine orientation reasons are prose ('fresh labeling produced no front edge'); narrowing it would trade one misclassification for another.",
+    "batchRunner": "classifies by gate; emits gateFailureBuckets (per-class counts) alongside the existing one-bucket-per-parcel failureBuckets."
+  },
+
+  "evidence": {
+    "instrument": "npx vitest run",
+    "newFalsifierTests": "src/depth-warm/__tests__/p264-road-residual-buckets.test.ts - 10 passed, 0 failed",
+    "regressions": [
+      "src/depth-warm/__tests__/honest-decline-promote.test.ts - 7 passed",
+      "src/warden/__tests__/envelope-sanity.test.ts - 11 passed",
+      "scripts/__tests__/depth-warm-bastrop-dryrun-fork-parity.test.ts - 3 passed"
+    ],
+    "typecheck": "npx tsc --noEmit -p tsconfig.json - clean, exit 0",
+    "wardenBlastRadius": "ZERO. isHonestEnvelopeDecline (src/warden/envelope-sanity.ts:123) accepts any non-empty decline code, so a new bucket needs no whitelist change."
+  },
+
+  "falsifierOutcomes": [
+    {
+      "falsifier": "an unrecognised failure must land in unclassified, not be absorbed into a named class",
+      "outcome": "HOLDS. Note: this falsifier CAUGHT A DEFECT IN THE FIRST IMPLEMENTATION. The initial verifyFailGateBuckets iterated only known gates, so an unrecognised gate key would have been silently dropped. Fixed to surface unknown-but-failing gates as unclassified. This is the falsifier working as intended."
+    },
+    {
+      "falsifier": "a genuine draw must not increment any failure class",
+      "outcome": "HOLDS. All-pass gate set yields an empty bucket list."
+    },
+    {
+      "falsifier": "absent road coverage must not be reported as a road-name or road-class failure",
+      "outcome": "HOLDS. Road gates are honestly non-comparable when no roads resolve, producing no reasons."
+    },
+    {
+      "falsifier": "a road-name failure must be reported as road-name, not as orientation",
+      "outcome": "HOLDS, on both the gate path and the prose path, including when the road name is 'Front Street'."
+    },
+    {
+      "falsifier": "store digests identical before and after",
+      "outcome": "NOT APPLICABLE YET. No run has occurred. No store access was made in this increment."
+    }
+  ],
+
+  "preExistingHoleFound": {
+    "claim": "Setback reasons on the PROSE path name no class and land in unclassified.",
+    "measurement": "verify-mechanical.ts:98-99 and :111-112 emit 'edge N: inset Xft != expected Yft for role Z' and 'edge N: applied Xft != labeled Yft'. These contain no 'r32', no 'setback', no bare 'front', and no 'geometry', so the prose cascade cannot classify them.",
+    "status": "MEASURED (read) and asserted in a test",
+    "note": "PRE-EXISTING, not introduced by this change. On the gate path the same failure is correctly setback-edge-distance. Asserted in the test file so that a future fix cannot quietly paper over the ambiguity with another substring."
+  },
+
+  "notYetMeasured": [
+    "The per-city road-name / road-class residual split. UNMEASURED - no run has occurred.",
+    "The outcome of the 123706 reason-less zeros under re-derivation. UNMEASURED.",
+    "Write-proof digests. NOT TAKEN - no run has occurred.",
+    "Road-dominated cities. UNMEASURED and dependent on the above.",
+    "The remaining six counties' county-scoped probes (48021/48055/48209/48309 road and edge counts were probed; Travis and Williamson returned zero on both)"
+  ],
+
+  "remainingWork": [
+    "Build the per-city residual aggregation over the batch runner's gateFailureBuckets (it now exists; the aggregator does not).",
+    "Take heavy-scan lease; take store digests; run the bounded dry run; retake digests and reconcile.",
+    "File CLOSE with the per-city residual, the unclassified bucket, the reason-less-zero outcomes, and leave_behind."
+  ],
+
+  "leaveBehind": {
+    "claimedLaneHeld": true,
+    "docRepoWorktree": "P:/seat-worktrees/p264-road-residual/doc_repo",
+    "engineClone": "P:/tmp/p264-engine (branch p264-road-residual-bucket-taxonomy, pushed)",
+    "scratch": "P:/tmp/p264-engine/.p264-scratch and packages/engine-core/.p264-scratch are reconnaissance ONLY, untracked, NOT committed and NOT a deliverable.",
+    "writes": "none to the store; every store access was SELECT-only",
+    "note": "PR #473 is a DRAFT and merges nothing. Lane remains claimed; no close filed."
+  }
+}

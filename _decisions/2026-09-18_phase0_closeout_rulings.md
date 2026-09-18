@@ -84,6 +84,23 @@ Phase 0 is not to be rushed to a close.** Work is sequenced in waves, not held.
     2026-11-01**, and no surface cites the adopted-but-not-yet-effective rewrite as the governing
     source before then. Then the Hays bake that customer-closes P-260 runs.
 
+### Later the same day (A-218, operator, 2026-09-18 about 14:40Z)
+
+- **Ruling 8, taken.** P-264 closed partial: a per-city road residual is measurable for three cities
+  only, and four of the six counties have no way to re-derive at all. The operator accepted the
+  seat's recommendation: **roads and edgeSignal are accepted for Phase 0 in all six counties on the
+  measured share.** Stored road declines are 684 of 58,325 (1.17 percent) in 48021 and zero in the
+  other five, where the zero means no verify pass ever ran there, not a measured absence, so those
+  five are carried as unmeasured with the ruling as their acceptance rather than as zeros. The
+  per-county measurement (warm runners for Hays, McLennan, Williamson and Travis) and Elgin's
+  road-name failures (20 of 37 verify-stage failures) are Phase 1 work (P-355, P-356).
+- **Ruling 19 amended for Georgetown.** The operator: "I'm good with Georgetown showing the next
+  version of setbacks, they will take place soon enough and frankly anyone using our site should be
+  planning for the new codes." **Georgetown is served from its adopted rewrite ahead of 2026-11-01.**
+  What the ruling still requires is that the surface says so: the citation names the adoption date
+  and the effective date, never "vintage unknown" (P-354, re-scoped). San Marcos's half of ruling 19
+  is unchanged.
+
 ### The exit
 
 18. **The operator walks the 45 probe buckets** once the customer re-run is clean.
@@ -119,8 +136,12 @@ reason silently.
 - Rulings 3 and 4 are revisited at the Phase 1 boundary through P-345 and P-344.
 - Ruling 11 stops, county by county, if any county's apply moves more than its own measured share.
 - Ruling 13 reverses if a verified envelope atom is found to back a wrong figure.
-- Ruling 19 stops for San Marcos if the coverage re-check falls below the 2026-09-07 figure; it is
-  revisited for Georgetown on 2026-11-01.
+- Ruling 19 stops for San Marcos if the coverage re-check falls below the 2026-09-07 figure. Its
+  Georgetown amendment (A-218) reverses if Georgetown repeals or postpones the rewrite before
+  2026-11-01, or if a surface serves a rewrite row without naming its effective date.
+- Ruling 8 (A-218) reverses for a county if a measurement there (P-355) finds road-blocked renders
+  above 48021's 1.17 percent share, or if Elgin's road-name class (P-356) is found to block renders
+  outside Elgin.
 
 ## Dependencies
 

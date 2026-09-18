@@ -1,0 +1,154 @@
+{
+  "lane": "p264-road-residual",
+  "planRows": ["P-264"],
+  "status": "closed-partial",
+  "probe": { "artifact": "_inbox/2026-09-18_003318_surface_probe.json" },
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "filedAt": "2026-09-18T00:40:00Z",
+  "seat": "cente-vsc-p264",
+
+  "missionPremise": "Re-deriving envelopes over the six Phase-0 counties will show whether the residual is dominated by road-name and road-class failures; if it is, road data work must move earlier in the OPS-24 programme.",
+  "completionPredicate": "A dry-run instrument re-derives envelopes, splits every decline into named failure classes with road-name and road-class separated, plus an explicit unclassified bucket, is falsified by self-test, and reports a per-city residual with store digests identical before and after.",
+  "scopeBasis": "The scope question is the programme-level one named in OPS-16 and the A-177 mission: does road data work move earlier. Per-city attribution comes from jurisdiction_tenant, which carries the county FIPS.",
+
+  "falsifier": "A failure class that absorbs everything, producing a clean-looking residual that means nothing. Pre-registered before running: (1) an unrecognised failure must land in an explicit unclassified bucket, not the nearest named class; (2) a parcel that genuinely draws must not be counted as a failure; (3) a location with no roads must report road coverage as an honest absence, not as a road failure; (4) store digests before and after must be identical.",
+  "contradicted": "THE PREMISE IS CONTRADICTED IN BOTH DIRECTIONS, AND FOR A REASON THE DISPATCH DID NOT ANTICIPATE. The re-derive cannot reach the road gates for most of the population, so a per-city road residual is not measurable as specified. (a) Only 3 of 14 registry rows carry a warmRunner (Bastrop, Elgin, Lockhart); no city in Hays, McLennan, Williamson or Travis can be re-derived at all, so 4 of the 6 Phase-0 counties have NO measurable residual by this route. (b) Even inside a runnable city, the dominant outcome is an absent setback input, not road logic: no-setback-row was 491/500 and 492/500 in two Bastrop runs, 254/500 in Elgin and 281/500 in Lockhart. Three of four runs produced ZERO parcels reaching verify, hence zero road evidence. (c) Where verify IS reached, road-name is large but road-class is absent: Elgin 20/37 verify failures are road-name (54.1%) and 0 are road-class; Lockhart 2/68 (2.9%) and 0. (d) Over the whole stored decline corpus, road-ish declines are 684/58325 = 1.17% in 48021 and 0.00% in the other five counties. So whether any city is 'road-dominated' depends entirely on the denominator, and the honest answer is: not by share of declines, but Elgin is by share of verify-stage failures. Both are reported below.",
+  "falsifierOutcome": "Falsifiers 1-3 HOLD (asserted in src/depth-warm/__tests__/p264-road-residual-buckets.test.ts, 10 cases, all passing; falsifier 1 caught a defect in the first implementation, which silently dropped an unrecognised gate rather than bucketing it). Falsifier 4 HOLDS by measurement: digests identical across a bracketed live run. Falsifier 3 held with one nuance: absent road coverage was observed directly (no-road-adjacency 5/500 in Elgin) and was NOT counted as a road-name or road-class failure.",
+
+  "startCommit": {
+    "docRepo": "df9ced8c264723c69c873ba62ab21e4a5f10b662",
+    "engineBase": "72d72c0296510a057ac3f1d0857123c825454084",
+    "enginePr": "https://github.com/empressaioemail-tech/hauska-engine/pull/473",
+    "enginePrCommit": "d98a30b"
+  },
+
+  "perCityResidual": {
+    "denominatorNote": "Two denominators are reported because they answer different questions. 'reachedVerify' is the only population in which road logic participates at all, so a road share of it is the instrument's own residual. The stored corpus is the whole declined population and is the programme-level denominator.",
+    "reDerive": {
+      "instrument": "scripts/depth-warm-city-batch.mjs --dry-run (gate-classified via the new verifyFailGateBuckets)",
+      "rows": [
+        { "city": "Bastrop", "fips": "48021", "cohort": 500, "reachedVerify": 0, "verifyPass": 0, "verifyFail": 0, "roadName": null, "roadClass": null, "verdict": "UNMEASURED - zero parcels reached verify (492/500 no-setback-row)" },
+        { "city": "Bastrop (--city-cohort)", "fips": "48021", "cohort": 500, "reachedVerify": 0, "verifyPass": 0, "verifyFail": 0, "roadName": null, "roadClass": null, "verdict": "UNMEASURED - 491/500 no-setback-row" },
+        { "city": "Elgin", "fips": "48021", "cohort": 500, "reachedVerify": 92, "verifyPass": 55, "verifyFail": 37, "roadName": 20, "roadClass": 0, "verdict": "road-NAME 54.1% of its verify failures; road-CLASS 0%" },
+        { "city": "Lockhart", "fips": "48055", "cohort": 500, "reachedVerify": 83, "verifyPass": 15, "verifyFail": 68, "roadName": 2, "roadClass": 0, "verdict": "road-NAME 2.9% of its verify failures; road-CLASS 0%" }
+      ],
+      "elginGateFailureBuckets": { "road-name-mismatch": 20, "r32-per-edge-inset": 19, "geometry": 4, "front-orientation": 1 },
+      "lockhartGateFailureBuckets": { "front-orientation": 64, "r32-per-edge-inset": 19, "geometry": 4, "road-name-mismatch": 2 },
+      "perClassVsSingleBucketNote": "Lockhart's single-bucket count for r32 is 4 while its per-class count is 19: 15 parcels failed BOTH r32 and a higher-priority class. A first-class-only residual would have under-reported r32 by 79%. This is why verifyFailGateBuckets returns every failing class."
+    },
+    "storedCorpus": {
+      "instrument": "read-only aggregate over active buildable-envelope atoms, classified on the gate-specific literals '!= OSM tag' (road-CLASS) and 'facesAnswer:'/'no resolved road name' (road-NAME). Deliberately NOT keyed on a bare 'front', which is the substring that stole road-name rows under the old taxonomy.",
+      "caveat": "These are STORED reasons written by earlier runs. They are a historical record, not this run's re-derive, and they only contain verify-stage reasons where a depth-warm verify pass ever ran.",
+      "byCity": [
+        { "fips": "48021", "declined": 58325, "roadName": 203, "roadClass": 466, "both": 15, "roadShareOfDeclines": "1.17%" },
+        { "fips": "48055", "declined": 21385, "roadName": 0, "roadClass": 0, "both": 0, "roadShareOfDeclines": "0.00%" },
+        { "fips": "48209", "declined": 91401, "roadName": 0, "roadClass": 0, "both": 0, "roadShareOfDeclines": "0.00%" },
+        { "fips": "48309", "declined": 65814, "roadName": 0, "roadClass": 0, "both": 0, "roadShareOfDeclines": "0.00%" },
+        { "fips": "48453", "declined": 166256, "roadName": 0, "roadClass": 0, "both": 0, "roadShareOfDeclines": "0.00%" },
+        { "fips": "48491", "declined": 239491, "roadName": 0, "roadClass": 0, "both": 0, "roadShareOfDeclines": "0.00%" }
+      ]
+    },
+    "roadDominatedCities": {
+      "byShareOfAllDeclines": "NONE. The maximum is 48021 at 684/58325 = 1.17%.",
+      "byShareOfVerifyStageFailures": "ELGIN (48021), 20/37 = 54.1% road-name. This is the only city that meets the A-177 ruling trigger on any denominator.",
+      "operatorTrigger": "Elgin meets the trigger if 'residual' means the verify-stage residual. No city meets it if 'residual' means all declines. The dispatch does not define which, and this is the decision the operator is being asked to make."
+    }
+  },
+
+  "unclassifiedBucket": {
+    "implementation": "UNCLASSIFIED_VERIFY_FAIL_BUCKET, reached explicitly rather than inferred by elimination.",
+    "reachability": "PROVEN by test, not asserted: falsifier 1 (an unrecognised gate) returns exactly ['unclassified-verify-fail']. This falsifier caught a defect in the first implementation, which iterated only known gates and would have silently dropped an unknown one - fixed.",
+    "observedInReDerive": 0,
+    "gateFailureClassesObserved": 4,
+    "note": "A zero count here is a real result: no failure in 175 verify-stage failures fell outside the four named classes."
+  },
+
+  "reasonlessZeros": {
+    "theFigureReconcilesExactlyButIsMisnamed": {
+      "expected": 123706,
+      "reasonlessEmptyReason": 26598,
+      "tier1SnapshotStatusOnly": 97108,
+      "sum": 123706,
+      "finding": "The dispatch calls 123,706 the 'reason-less zeros'. Only 26,598 are literally reason-less. The other 97,108 carry an empty-of-meaning reason, 'Tier-1 snapshot status no-buildable-area', which states provenance and names no failure class. The compound figure reconciles to the digit.",
+      "distribution": { "48055": 2886, "48209": 23712, "note": "reasonless (empty reason) only; these two counties are the whole reason-less class" }
+    },
+    "zeroProofPresence": {
+      "noBuildableAreaInSixCounties": 490185,
+      "withZeroProofKey": 0,
+      "withZeroProofValue": 0,
+      "finding": "Every one of the 490,185 no-buildable-area atoms in the six counties asserts a zero with no proof behind it. This matches the dispatch's stated 490,185 exactly."
+    },
+    "fullClassBreakdown707394": {
+      "unzoned": 208868,
+      "notYetOnboarded": 153775,
+      "provisionalFrontEdge": 152487,
+      "other": 100944,
+      "buildable": 64722,
+      "reasonlessZero": 26598,
+      "note": "unzoned and not-yet-onboarded reproduce the OPS-16 P-249 figures (208,868 and 153,775) to the digit, so the two censuses agree on the classes they share."
+    },
+    "outcomeUnderReDerive": "UNMEASURED. The dry run did not touch this population and did not re-mint it: every run reported atomWrites=0 and the digests are unmoved. The dispatch forbids silently fixing or re-minting them, and nothing did."
+  },
+
+  "writeProof": {
+    "method": "Content fingerprint of the six-county buildable-envelope population (count and sum of hashtext(content_hash)), taken immediately before and immediately after a bracketed live dry run.",
+    "before": { "n": 707394, "hashSum": -397944211891 },
+    "run": { "rowId": "Bastrop", "limit": 50, "dryRun": true, "atomWrites": 0 },
+    "after": { "n": 707394, "hashSum": -397944211891 },
+    "identical": true,
+    "allRunsAtomWrites": 0,
+    "note": "Proven, not asserted. atomWrites=0 held on all five runs."
+  },
+
+  "environment": {
+    "storeHost": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech",
+    "atomsDatabase": "SUBSTRATE_DATABASE_URL (secret ATOMS_DATABASE_URL)",
+    "geometryDatabase": "TXGIO_DATABASE_URL (secret PRODUCTION_NEONDB_URL); table txgio_parcel, 16,428,786 rows",
+    "sameHostNote": "The atoms store and the geometry store are DIFFERENT DATABASES ON THE SAME NEON HOST, so the single host-keyed heavy-scan lease correctly covers both.",
+    "tlsFinding": "This machine performs TLS interception. Every Node outbound HTTPS call fails with UNABLE_TO_VERIFY_LEAF_SIGNATURE unless run with --use-system-ca. curl succeeds because it uses the system store. Verification was NOT disabled; the system CA store was used. Any other session on this box running the engine will hit the same wall.",
+    "heavyScanLease": {
+      "token": "31d7655b-23d0-4fd1-9739-18b8efddbace",
+      "id": "bbf98a1f-ffa1-497c-a5b0-5d248b42cf30",
+      "store": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech",
+      "takenAt": "2026-09-18T00:14:13.057Z",
+      "expiresRef": "2026-09-18T01:44:13.057Z",
+      "contended": false,
+      "selfGranted": false,
+      "note": "Taken through the factory-control API. At take time the only live lease was on a DIFFERENT store (the factory store, ep-round-base-au0jofwp...), so this store was uncontended. Released in a finally-equivalent after the final run."
+    },
+    "county48491": "NOT TOUCHED. Read-only aggregates included it in GROUP BY populations, which is a read, not a write. No run was launched for any row in 48491 and no row for 48491 was written."
+  },
+
+  "filesChanged": {
+    "enginePR473": [
+      "packages/engine-core/src/depth-warm/honest-decline-promote.ts (new verifyFailGateBuckets / bucketVerifyFailGates, ROAD_NAME_MISMATCH_BUCKET, UNCLASSIFIED_VERIFY_FAIL_BUCKET; prose-fallback ordering fixed)",
+      "packages/engine-core/scripts/depth-warm-city-batch.mjs (classify by gate; emit gateFailureBuckets)",
+      "packages/engine-core/src/depth-warm/__tests__/p264-road-residual-buckets.test.ts (new, 10 falsifier cases)"
+    ],
+    "docRepo": [
+      "_inbox/2026-09-17_p264-road-residual_cp1.json",
+      "_inbox/2026-09-17_p264-road-residual_cp2.json",
+      "_inbox/2026-09-18_003318_surface_probe.json",
+      "_inbox/2026-09-17_p264-road-residual_close.json"
+    ]
+  },
+
+  "verification": {
+    "newTests": "10 passed, 0 failed",
+    "regressions": "honest-decline-promote 7 passed; envelope-sanity 11 passed; bastrop-dryrun-fork-parity 3 passed",
+    "typecheck": "tsc --noEmit clean, exit 0",
+    "wardenBlastRadius": "ZERO - isHonestEnvelopeDecline (src/warden/envelope-sanity.ts:123) accepts any non-empty decline code."
+  },
+
+  "leave_behind": [
+    "P-264 is closed-PARTIAL, not closed. The per-city road residual the dispatch specifies is NOT fully measured: it is measurable in 3 city rows only, and 4 of 6 Phase-0 counties have no runnable derive at all.",
+    "hauska-engine PR #473 is a DRAFT and merges nothing. It carries the taxonomy fix that makes road-name separable from road-class. Review and merge decision is the operator's.",
+    "The re-derive is blocked by no-setback-row, not by road logic: 491/500 and 492/500 in Bastrop, 254/500 Elgin, 281/500 Lockhart. Whoever picks up P-264 must explain or resolve the layer-23 setback gap for Bastrop city before a road residual over that city can mean anything.",
+    "Only 3 of 14 jurisdiction registry rows carry a warmRunner (Bastrop, Elgin, Lockhart). Hays, McLennan, Williamson and Travis have none, so the 'every envelope whose ledger now holds setbacks' population the dispatch names is largely unreachable by this route. This is a scope gap, not a bug in the instrument, and it is the single biggest obstacle to the P-264 deliverable.",
+    "The 123,706 figure is a compound of 26,598 literally reason-less zeros and 97,108 'Tier-1 snapshot status no-buildable-area' records. Any later work that treats 123,706 as a single class will be working with the wrong population.",
+    "road-class mismatches are HISTORICAL: 466 recorded in 48021's stored corpus, but 0 produced by the current re-derive in 1,500 sampled parcels. Whether that is a classifier change or a cohort effect is NOT determined by this run and is worth a follow-up.",
+    "TLS: this machine intercepts TLS. Run every Node engine script with --use-system-ca (or NODE_OPTIONS=--use-system-ca). Do not disable certificate verification.",
+    "Scratch probe scripts under P:/tmp/p264-engine/packages/engine-core/.p264-scratch and P:/tmp/p264-engine/.p264-scratch are reconnaissance ONLY, untracked, deliberately NOT committed, and are not deliverables.",
+    "The Elgin road-name share (54.1% of verify failures) is the only measurement that meets the A-177 ruling trigger. It rests on 37 verify failures from a 500-parcel cohort, so it is a signal, not a settled number. A larger Elgin cohort is the cheapest way to firm it up."
+  ]
+}
