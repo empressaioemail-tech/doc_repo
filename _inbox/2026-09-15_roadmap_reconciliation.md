@@ -129,7 +129,10 @@ GCP mount and needs re-scoping for DigitalOcean before it is dispatched. G-155 (
 (plan review) build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
 
 **What blocks it:** G-161, and D-13's dashboards change. The credential is no longer a blocker for any row
-here; the one thing it did not buy is G-135's second parcel (below), which no lane has run.
+here. **G-135's second parcel now has an owner rather than being an orphan:** the operator folded it on
+2026-09-18 into the next lens BUILD lane (G-153, Fleet and Police, first in the queue below), because a
+full-shell authenticated probe that mounts the map iframe is a browser-driven probe a lens lane already
+does. G-135 closes when that lane reports it, and it is the only thing left unmeasured in that row.
 
 ### M4. The DigitalOcean migration complete
 
@@ -148,10 +151,17 @@ so decommissioning it before D-13 would cut every live figure. The bake needs st
 
 The design completion gate exits 0: every shipped nav surface is designed or excluded by a dated ruling.
 
-**What remains.** The Citizen lens (G-142) and Records search (G-147) are undrawn. G-148 (instruments
-for designs past DRAFT) is held by the operator. G-160 is a control that fails a deploy when a product's
-console and its API serve different commits. G-150's close-out found the plan-review console fifteen
-days behind its API.
+**What remains.** The Citizen lens (G-142) and Records search (G-147) are undrawn and both are now
+dispatched. **G-148's hold is RELEASED (2026-09-18, `_decisions/2026-09-18_g148_hold_released.md`) and
+the lane is compiled:** the gate's R3 names four designs past DRAFT with no adversarial read
+(`plan-review-departments`, `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`),
+and all four now HAVE build rows, so the hold's stated exemption ("designs with no build row") covered
+none of them. G-148 writes all four instruments and G-149 and G-157 inherit theirs rather than
+rebuilding them. G-160 is a control that fails a deploy when a product's console and its API serve
+different commits. G-150's close-out found the plan-review console fifteen days behind its API.
+
+**So the gate has three lanes standing between it and exit 0:** G-142 and G-147 for its two R4 findings,
+and G-148 for its four R3 ones.
 
 ## In flight
 
@@ -170,6 +180,7 @@ that a dispatch was sent.
 | `g142-citizen-lens` | G-142 | **COMPILED, NOT YET HANDED OVER.** Unblocked (its own blocker column reads `Nothing`) and first in G-146's declared order | the completion gate reports `lens:citizen` at R4; `_design/smartcity-citizen-lens/` does not exist; the shipped surface and the copy that must not regress are read at `smartcity-dashboards` `96fdafbb` |
 | `g147-record-search` | G-147 | **COMPILED, NOT YET HANDED OVER.** Scoped to Records search, the surface the gate is failing on, plus an adjudication of the applicant view. Compass is deferred in the dispatch | the gate reports `work:records` at R4; G-145's lens designs are shipped and G-142 is in flight, which is what Compass was waiting on |
 | `g160-served-commit-parity` | G-160 | **COMPILED, NOT YET HANDED OVER.** Unblocked, and it writes only in `plan-review` and `smart-files`, so it collides with nothing above | neither product reports its served commit today (both `GET /` only); both carry `web/vercel.json`; read at `plan-review` `99c156b` and `smart-files` `6d71bf3` |
+| `g148-design-instruments` | G-148 | **COMPILED, NOT YET HANDED OVER. Hold released 2026-09-18 at the operator's ruling.** Writes the four missing `check.mjs` files, and writes nothing in `_design/INDEX.md` because G-142 and G-147 are appending to it | the gate's R3 list of four; all four designs have build rows today; `plan-review-reasoner` is DONE (G-150) and is the model the mission names |
 
 **A control that did not fire on the two lanes that are actually running.** `node scripts/lane-claim.mjs
 status` reports seven open claims, and **neither `d14-d13-v1-reach` nor `g161-never-default-a-city` is
@@ -229,6 +240,11 @@ and move at the operator's timing; and **G-143 is the highest-leverage item on t
 is the single ratification that unblocks three rows (G-127, G-144, G-158) and it is a design that is
 already DRAFT with its instrument built. The M2 items are HELD by the operator until Khalid replies, so
 G-137 stays blocked on the operator and nothing was dispatched against it.
+
+Two further operator rulings the same day, both closing items that were waiting on a triage call rather
+than on new information: **G-148's hold is released** and its lane is compiled
+(`_decisions/2026-09-18_g148_hold_released.md`), and **G-135's parcel 2 is folded into the next lens
+build lane** rather than given a credential lane of its own.
 
 ## Promised to Bastrop, against what exists
 
