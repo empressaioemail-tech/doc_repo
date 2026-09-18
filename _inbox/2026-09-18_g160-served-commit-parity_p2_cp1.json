@@ -1,0 +1,134 @@
+{
+  "_what": "CP1 for G-160 PARCEL 2 (the arm parcel): the design and the falsifiers, PRE-REGISTERED BEFORE any file was written. Parcel 1's CP1 confessed that it was filed after the plan-review build had already happened; this one is filed first and the ordering is checkable against the product commit timestamps.",
+  "lane": "g160-served-commit-parity",
+  "planRows": ["G-160"],
+  "checkpoint": "CP1 -- design / pre-build",
+  "parcel": 2,
+  "seat": "cente-vsc-g160p2",
+  "filedAt": "2026-09-18T20:18:00Z",
+  "supersedes": "The Parcel 1 CP1 in this same path, which described building the check. Parcel 2 does not rebuild the check; it arms it. Parcel 1's instrument is CONTINUED, not redone.",
+
+  "disclosure": {
+    "sequencing": "Filed BEFORE implementation, on purpose. At the moment of filing, neither product worktree had been written to in this parcel: both were still at the Parcel 1 heads (plan-review b4b44b9, smart-files a238072) with clean working trees. The pre-registered falsifiers below are therefore genuine predictions, not descriptions of work already done.",
+    "whatChangedFromParcel1sProcessFailure": "Parcel 1's CP1 said of itself: 'This CP1 was filed AFTER the plan-review copy of the check was built and proven, and BEFORE the smart-files copy was built. It is not backdated and it does not claim to have gated the plan-review work.' That is the defect this CP1 is shaped to avoid: a checkpoint that describes rather than gates is not a control.",
+    "noSubAgents": "FAN-DEPTH is 0 and this lane launches no sub-agents. The contract's sub-agent supervision duty is vacuous here; every claim in this parcel is an exit code, a test assertion, or a file read."
+  },
+
+  "missionPremise": "Quoted from the Parcel 2 mission (_catalog/dispatch_missions/mission_g160_served_commit_parity.md): 'Parcel 1 built the check and stopped; the planner verified it, and it is not done.' The row's predicate is 'a deploy is not done until the console and the API serve the same commit'. A-153 measured three gaps that make that predicate unenforced today: (1) nothing triggers the check -- no workflow in either repo references it, and it is a manual `npm run parity`; (2) the control is STARVED -- `SERVED_COMMIT` is read and never set by any deploy path, so the check REFUSES (exit 2) on both live products; (3) neither commit is on `origin/main`. Parcel 2 must close (1) and (2) and leave (3) to the integration seat.",
+
+  "completionPredicate": "Done means: (a) both products carry a deploy path that resolves SERVED_COMMIT from the commit the build actually came from, against a tree proven clean, and sets it on the API side, and the close says where a deploy gets that value; (b) the console side is able to report the commit it serves, resolved rather than defaulted, so a deploy-time or scheduled check can read BOTH sides without holding platform credentials; (c) both products carry a trigger whose home is a path or a job name, naming what executes it, what triggers it and what fails, with a schedule rather than only a manual run; (d) all three outcomes are observed and pasted in a harness for both products -- PASS with agreement, FAIL on the recorded 2026-09-17 state, REFUSE with SERVED_COMMIT absent; (e) a live run is recorded with its timestamp and its refusal, as a fact rather than an assumption; (f) the three-question gate is answered in writing with any 'a human remembers' answer said out loud. Steps (a) and (c) land in ONE commit per repo, because arming a check that must refuse before the deploy records a commit fails every deploy of both products.",
+
+  "whyOneChangeAndWhatItProtects": {
+    "theRisk": "The mission states it as the one thing that can go wrong: 'Arming a check that must refuse, before the deploy records a commit, fails every deploy of both products. A control that blocks all deploys is not a stricter control. It is a control that teaches the fleet to reach for the bypass flag, and ENFORCEMENT.md names an over-broad control as a worse defect than a narrow one.'",
+    "howTheDesignAvoidsIt": "The deploy-time gate runs the check AFTER both sides of that deploy have landed, and the check reads the SERVED surfaces. Both surfaces report the commit this same commit introduces. So the first deploy through the new path PASSES its own gate rather than failing it. The ordered pair -- the deploy path that sets SERVED_COMMIT and the trigger that reads it -- is therefore one commit, not two.",
+    "whatIsNotClaimed": "This parcel does NOT deliver a green live run. It cannot: the lane does not deploy or merge. It delivers a deploy path and a trigger that are proven in a harness and whose first live run is the integration seat's."
+  },
+
+  "design": {
+    "continueDoNotRestart": "Both branches are continued from the Parcel 1 heads. plan-review `g160-served-commit-parity` @ b4b44b9 (base origin/main 99c156b), smart-files `g160-served-commit-parity` @ a238072 (base origin/main 6d71bf3). The check, the fixtures and the measurements are NOT re-derived.",
+
+    "step1_apiSide_recordsItsCommit": {
+      "file": "scripts/deploy.mjs (new, one per repo)",
+      "rule": "The value is `git rev-parse HEAD` resolved at deploy time from a tree proven CLEAN, never a tag, never a branch name, never a default, never an empty string. A dirty tree REFUSES the deploy, because a commit recorded from a dirty tree is an upper bound on what was built, not an identity -- which is exactly the `meta.gitDirty=1` weakness Parcel 1 measured on 8 of smart-files' 10 production console deployments.",
+      "howItIsSet": "On the Cloud Run revision via `--update-env-vars SERVED_COMMIT=<sha>` AND `--update-labels commit-sha=<sha>`. Both, because readApiSide() already reads both and refuses when the two disagree; a deploy that sets only one leaves the other rule unexercised in production.",
+      "whyUpdateNotSet": "`--set-env-vars` REPLACES the whole env set. Measured 2026-09-18: plan-review's serving revision carries two plain env vars (SMART_FILES_BACKEND_URL, HAUSKA_MCP_URL) beside its secret refs, so a `--set-env-vars` deploy would silently delete them. `--update-env-vars`/`--update-labels` merge. The same flag is used in both repos for symmetry even though smart-files' serving revision currently carries only secret refs.",
+      "commitValueShape": "The full 40-character SHA, lowercased. The surface accepts 7..40 hex, but the deploy supplies 40 so two records of the same commit cannot differ by abbreviation."
+    },
+
+    "step1_consoleSide_recordsItsCommit": {
+      "file": "web/api/version.js (new, one per repo; Vercel serverless function, route /api/version)",
+      "whyANewSurface": "The parity check as built reads the console side from the Vercel deployment RECORD (`meta.gitCommitSha`), which needs the Vercel CLI and a token. That is why the check cannot run in CI today: neither repo carries a single GitHub secret (read 2026-09-18 via `gh secret list`, both empty). A scheduled trigger that needs credentials it does not have is a control that is red for the wrong reason, which is its own defect class. Giving the console a SERVED surface makes a credential-free comparison possible.",
+      "routeWhyItIsSafe": "Both `web/vercel.json` files rewrite `/((?!api/).*)` to `/index.html`. The negative lookahead excludes `api/`, so `/api/version` is NOT rewritten and reaches the function, exactly as `/api/backend` and `/api/files` already do.",
+      "resolutionRule": "Precedence SERVED_COMMIT then VERCEL_GIT_COMMIT_SHA (Vercel's own system variable, documented 'Available at: Both build and runtime'), matching the API side's shape. It refuses rather than defaults: an unset pair resolves to null; a present-but-not-a-commit value resolves to null; two present valid values that disagree resolve to null. Never \"\", never \"unknown\", never a branch name. Absent resolves to a 503 with commit:null, which is the same contract as the API's /version.",
+      "theRuleIsDuplicatedAndThatIsTested": "The function cannot import src/served-commit.mjs across the Vercel function boundary, so the rule appears twice in each repo. That is a drift risk and it is closed by a DIVERGENCE TEST rather than by a comment: a test drives BOTH implementations over the same input table and asserts they agree on every row. DEV_PROCESS: paired controls need a divergence test."
+    },
+
+    "step2_trigger": {
+      "whatExecutesIt": "node scripts/served-commit-parity.mjs --served (a new mode on the existing instrument, no credentials, reads only the two public origins).",
+      "whatTriggersIt": "(a) DEPLOY-TIME: scripts/deploy.mjs runs the gate at the end of every deploy of either side, with a bounded poll so propagation is not mistaken for a split; (b) SCHEDULE: .github/workflows/served-commit-parity.yml, a cron plus workflow_dispatch, whose existence is required because 'a deploy made without running it is its bypass' -- the scheduled run is what catches a deploy made outside the deploy path.",
+      "whatFails": "A non-zero exit. 1 the two sides serve different commits, 2 a side could not be read. Either blocks calling a deploy done, and fails the scheduled job.",
+      "whatBypassesIt": "Named, not implied away: (a) a deploy made by hand outside scripts/deploy.mjs skips the deploy-time gate -- the schedule is the control for exactly that case, and it is why the schedule is not optional; (b) a deploy that passes SERVED_COMMIT from somewhere other than the commit it built. The second is caught as far as it can be because the gate compares the two live surfaces AND the Deploy script refuses a dirty tree, but a determined mis-supply is not detectable from outside."
+    },
+
+    "step3_harnessProof": {
+      "shape": "One harness run per product showing all three outcomes over REAL HTTP against locally-started servers, plus the CLI's fixture-driven cases, with raw output pasted into an evidence file.",
+      "threeOutcomes": [
+        "PASS -- both sides serve the same commit, exit 0",
+        "FAIL -- the recorded 2026-09-17 state, exit 1 (and the planted violation, exit 1)",
+        "REFUSE -- SERVED_COMMIT absent, exit 2, and specifically NOT 0"
+      ],
+      "whyLocallyServed": "A fixture-driven pass is not the same claim as a served pass. Parcel 1 was honest that 'the check has NOT been observed passing against production anywhere'. Parcel 2 cannot fix that (no deploy), but it CAN make the passing case a served case rather than a fixture case, by starting the real server and the real console function and reading them over HTTP."
+    }
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1",
+      "what": "The recorded 2026-09-17 state must still FAIL after the change. Arming the check must not have weakened the falsifier it was carded from.",
+      "shape": "API at plan-review-00029-gom serving 99c156ba while the console's newest production deployment serves 1af5ac59.",
+      "expected": "exit 1, DISAGREE",
+      "where": "scripts/fixtures/g160-recorded-2026-09-17.json; CLI --reconstruct-2026-09-17; asserted in both suites"
+    },
+    {
+      "id": "F2",
+      "what": "The passing direction must still pass -- the check must not be a constant.",
+      "shape": "Both sides at the same commit, driven through the SERVED mode over real HTTP.",
+      "expected": "exit 0, AGREE",
+      "where": "the harness, both products"
+    },
+    {
+      "id": "F3",
+      "what": "With SERVED_COMMIT absent the API surface must still REFUSE rather than default, and the REFUSE must not read as agreement.",
+      "shape": "The real server started with SERVED_COMMIT unset.",
+      "expected": "GET /version -> 503 with commit:null and commit !== \"\"; the parity check -> exit 2, never 0",
+      "where": "the harness, both products"
+    },
+    {
+      "id": "F4",
+      "what": "The console surface must obey the same no-stand-in rule as the API surface, and the two implementations of that rule must not drift.",
+      "shape": "SERVED_COMMIT and VERCEL_GIT_COMMIT_SHA in the table {\"\", \"   \", \"unknown\", \"main\", \"HEAD\", \"v1.2.3\", \"not a sha\", undefined, null}, plus a disagreeing pair and an agreeing pair.",
+      "expected": "resolveServedCommit (API, src/served-commit.mjs) and resolveConsoleServedCommit (console, web/api/version.js) return the SAME commit and the SAME null on every row",
+      "where": "asserted in both suites"
+    },
+    {
+      "id": "F5",
+      "what": "The deploy path must refuse a dirty tree, because a commit recorded from a dirty tree is an upper bound rather than an identity.",
+      "shape": "The deploy script's own gate, driven with an injected tree-clean predicate in both directions.",
+      "expected": "clean -> proceed and the argv carries SERVED_COMMIT=<40-hex> and commit-sha=<40-hex>; dirty -> REFUSE, non-zero, and NO deploy command is issued",
+      "where": "asserted in both suites"
+    },
+    {
+      "id": "F6",
+      "what": "A side that reports ok but resolves no commit must not agree with another such side. This is the fail-open the row was carded from, and the served mode must not reopen it.",
+      "shape": "Both served sides answering 503 with commit:null.",
+      "expected": "exit 2, explicitly not 0",
+      "where": "asserted in both suites"
+    },
+    {
+      "id": "F7",
+      "what": "The trigger must exist as a file whose home is a path, not as prose.",
+      "shape": "Read .github/workflows/served-commit-parity.yml in each repo and assert it carries a schedule with a cron and a dispatch, and that it runs the check.",
+      "expected": "both present; smart-files had NO .github/workflows at all before G-160's test file landed",
+      "where": "asserted in both suites"
+    }
+  ],
+
+  "preRegisteredBoundaries": [
+    "Write only in plan-review and smart-files; continue the existing branches rather than re-cutting them.",
+    "Read smartcity-dashboards at a named ref, write nothing there.",
+    "Do not deploy, merge or publish. The integration seat does. No platform state is written: the harness starts LOCAL servers and reads them.",
+    "doc_repo is planner-owned: hand doc edits back uncommitted.",
+    "FAN-DEPTH 0: no sub-agents.",
+    "No privileged data, no tenant credential, no database URL read into this process."
+  ],
+
+  "whatWouldFalsifyThisDesign": [
+    "If the recorded 2026-09-17 fixture produced exit 0 under the served mode, the mode would be blind to the defect it is for. (Predicted: exit 1.)",
+    "If the served mode could return 0 with both sides unresolved, the schedule would be a fail-open and worse than no schedule. (Predicted: exit 2.)",
+    "If the console function's resolution agreed with the API module on the stand-in table, the divergence would be real and the console side would be able to fake a commit. (Predicted: they agree, and the test asserts it.)",
+    "If scripts/deploy.mjs issued a gcloud command while the tree was dirty, the recorded commit would not be the built tree and the whole parcel would be built on the same weakness it is meant to remove. (Predicted: it refuses and issues nothing.)",
+    "If the deploy-time gate ran BEFORE the deploy landed, the first deploy would fail its own gate -- the exact over-broad-control failure the mission names. (Predicted: the gate runs after, and the harness shows a passing direction.)"
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

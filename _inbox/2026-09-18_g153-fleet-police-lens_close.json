@@ -1,0 +1,309 @@
+{
+  "lane": "g153-fleet-police-lens",
+  "planRows": ["G-153"],
+  "status": "closed",
+  "seat": "cente-vsc-g153",
+  "closedAt": "2026-09-18T20:38:32Z",
+  "amendedAt": "2026-09-18T20:38:32Z",
+  "amendment": "The close was first written at ~20:31Z with the a11y check unresolved; both checks are now green (a11y pass 8m38s at 20:34:26Z), so the PR and openThreads entries below were rewritten to say what the checks actually say. No product, design or evidence artifact changed in this amendment -- it is the same head eef12a49b598e61e0be66d3981489195b9226d0b.",
+  "dispatch": "_dispatches/2026-09-18_g153-fleet-police-lens_dispatch.md",
+  "planRowSource": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-18_202628_surface_probe.json",
+    "producedBy": "node --use-system-ca scripts/surface-probe.mjs, run from P:/seat-worktrees/dispatch-planner/doc_repo (the planner's seat worktree, which carries this queue's own copy of the script) and written to that worktree's _inbox/",
+    "verdict": "PASS 6  FAIL 1  UNMEASURED 33",
+    "whatItMeasuresAboutThisLane": "Nothing, and that is stated rather than implied by the citation. G-153 is a dashboards build row and is not in the probe's registry: it has no parcel legs, so no row in this artifact could carry a G-153 verdict. The one FAIL row (P-154, parcel 48021:33223 -- the panel and the endpoint DISAGREE on a setback) belongs to that row and not to this lane; the UNMEASURED 33 are the same rows the probe reports UNMEASURED on every run of this surface, including the rows whose legs need a credential this session does not hold. The artifact is cited because the close schema requires the field to name an _inbox artifact produced by this script.",
+    "thisLanesOwnProbeArtifacts": [
+      "_inbox/2026-09-18_g153-fleet-police-lens_full-shell-probe.json -- the authenticated full-shell bastrop_tx session, the map iframe (G-135 parcel 2), both lenses, and six refusal directions",
+      "_inbox/2026-09-18_g153-fleet-police-lens_live-record-refusal.json -- 102 live records judged by the branch's own declared shapes",
+      "_inbox/2026-09-18_g153-fleet-police-lens_fleet-violate.txt and _police-violate.txt -- both instruments failing against planted violations, both ways",
+      "_inbox/2026-09-18_g153-fleet-police-lens_fleet-check.txt and _police-check.txt -- both instruments passing with their matched-input counts printed"
+    ]
+  },
+
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/smartcity-dashboards",
+      "number": 75,
+      "url": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/75",
+      "branch": "g153-fleet-police-lens",
+      "head": "eef12a49b598e61e0be66d3981489195b9226d0b",
+      "base": "main 7487d7c0a55deeefc286c4a1047545757b802c5b",
+      "ci": "'test' pass (15s) and 'a11y' pass (8m38s, the figure-of-record axe gate over ubuntu-latest). At 2026-09-18T20:34:26Z the run is success and gh reports MERGEABLE/CLEAN on head eef12a49b598e61e0be66d3981489195b9226d0b, so the PR is green and ready for the planner to merge.",
+      "merged": false,
+      "whyNotMerged": "The lane's measurements are complete; the merge and every deploy are planner-owned (CANON: DEPLOYS ARE PLANNER-OWNED; the dispatch says this lane writes the product 'on your own branch, landing as a PR'). No deploy was attempted and the deployed app is untouched, so nothing on app.smartcityos.io changed."
+    }
+  ],
+
+  "defects": [
+    {
+      "n": 1,
+      "defect": "assertRecordShape is never called on the live path",
+      "changed": [
+        "src/adapters.mjs:856 `recordShapeFaults(record)` -- every way a record fails its declared shape, in declaration order; :930 `assertRecordShape` is now a thin thrower over it, so the rule stays written once instead of being copied for the live path",
+        "src/vendor-live.mjs:81 `guardLiveRecords` (judges every mapped row), :199 `refusedResult` (`status: \"refused\"`, recordCount 0, faults named, refusals in extras), :245 `guardedRead` (all-refused -> refused; mixed -> conforming records served with refusals in extras)",
+        "web/app.js:2615 `unavailable` and `refused` are two kickers, and regionHead no longer falls through to the ok head sentence for either"
+      ],
+      "before": "`grep -n assertRecordShape src/*.mjs` at base 7487d7c hit fixture-seam.mjs:546 and the tests only; vendor-live.mjs contained zero calls, so every live record was served unjudged.",
+      "after_measured_on_live_records": "102 of 102 live records (75 Samsara, 27 Spireon) refused by the branch's own recordShapeFaults: 102x 'status must be one of out-of-service, inspection-due, in-shop, in-service', 75x 'fleet-vehicle requires operatorRef', 27x 'patrol-vehicle requires operatorRef', 75x 'fleet-vehicle requires odometerBand'. This is the dispatch's bar met literally: the live Samsara record, not a fixture, and the guard REFUSES it.",
+      "after_measured_on_the_guard": "src/vendor-live.test.mjs 'record-shape guard on the live path (G-153 defect 1)': REFUSES the live Samsara record and names ALL THREE faults rather than only the first; asserts the composer answers `refused` and does NOT report it as an empty read; REFUSES the live Spireon record on its own two faults; and is not a blanket refusal (a conforming record with a namespaced reference passes).",
+      "the_planted_violation_it_fails_on": "fleet violate case 'no domain/gate pair rendered at all' removes the composer pair and the instrument fails the board; the guard's own two directions are the two tests above."
+    },
+    {
+      "n": 2,
+      "defect": "the literal \"Unnamed unit\" is produced on an empty row by BOTH mappers, so identifier collisions cross lenses",
+      "changed": [
+        "src/vendor-live.mjs:50-51 `unknownIdFor(kindId, noun)` / `unnamedLabelFor(kindId, noun)` -- the sentinel and the fallback record id now carry the vendor kind",
+        "src/vendor-live.mjs:258/264 (Samsara), :343/349 (Spireon), :451/457 (FirstDue), :484/490 (PowerBI) all route through them",
+        "src/opengov-budget.mjs: the comment that quoted the old literal now quotes the namespaced form"
+      ],
+      "before": "vendor-live.mjs:131 (Samsara) and :186 (Spireon) fell back to the SAME string, so two vendors' rows could carry one identifier; the dispatch's words: 'a sentinel that two vendors share is not an identifier'.",
+      "after_measured": "src/vendor-live.test.mjs 'unit labels and record ids are namespaced by vendor (G-153 defect 2)': an empty row produces a label that names its own vendor; feeding an empty row to BOTH mappers yields labels that differ; the shared sentinel is gone and the ids are namespaced the same way. Measured live: zero unit-label sentinel collisions across vendors and zero labels beginning 'Unnamed' among the 102 live rows.",
+      "the_planted_violation_it_fails_on": "the fixture that feeds both mappers an empty row and asserts the labels differ -- the dispatch's own acceptance wording ('proven by a fixture feeding both an empty row'), which is the only direction available today because no live row is empty."
+    },
+    {
+      "n": 3,
+      "defect": "operatorRef is `required: true` on the Spireon shape and occurs ZERO times in vendor-live.mjs",
+      "changed": [
+        "src/operator-ref.mjs (new): OPERATOR_REF_PREFIXES, operatorRefFormat(), mintOperatorRef(), isOperatorRef() -- the one declaration of the scheme",
+        "src/vendor-live.mjs:285 and :364 -- both live mappers carry `operatorRef: null` with an `operatorBasis` stating why no reference is minted",
+        "src/domains/fleet-vehicles.mjs:3,65,107 -- OPERATOR_REF_FORMAT = operatorRefFormat('fleet-vehicles') (/^FL-OPR-\\d{2}$/), minted through mintOperatorRef",
+        "src/domains/patrol-vehicles.mjs:3,55,87 -- the same for /^PV-OPR-\\d{2}$/",
+        "src/vendor-live.mjs:294 adds `odometerBand: null` with its own basis, because the Samsara shape requires a band and the live read carries a raw reading"
+      ],
+      "before": "`grep -c operatorRef src/vendor-live.mjs` = 0 at base, while RECORD_SHAPES.samsara and RECORD_SHAPES.spireon each declare `{ name: \"operatorRef\", type: \"text\", required: true }`: a required field silently absent on every live record. OPERATOR_REF_FORMAT was the bare /^OPR-\\d{2}$/ on both domains.",
+      "after_measured": "Measured live: operatorRef present on 0 of the 102 raw deployed records. In the branch the key is present on every mapped record (null + basis) and the guard refuses the record rather than serving the absence, which is the acceptance sentence verbatim: 'operatorRef is either populated or the record is refused, never silently absent'.",
+      "why_not_populated": "Not for want of effort and deliberately: the read holds no operator identity to pseudonymise (the platform route's own `operator` is null on every row), and a reference derived from the vehicle would print a pseudonym for a MACHINE in the column that groups people. Minting a plausible-looking FL-OPR-01 from a vehicle id would have satisfied the shape while quietly doing the thing the lens exists to stop.",
+      "the_planted_violation_it_fails_on": "fleet violate case 'a driver name arriving in the operator-reference column' (CAUGHT, exit 1) and 'an operator reference the composer never minted' (CAUGHT, exit 1): the instrument refuses both a person and an un-minted reference in that column."
+    }
+  ],
+
+  "designInstrument": {
+    "filesEditedInDocRepo": [
+      "_design/smartcity-fleet-lens/check.mjs (UNCOMMITTED in P:/doc_repo; planner-owned commit)",
+      "_design/smartcity-police-lens/check.mjs (UNCOMMITTED in P:/doc_repo; planner-owned commit)"
+    ],
+    "the_trap_and_the_fix": {
+      "whatItWas": "check.mjs:154 hardcoded `const OPR_RE = /\\bOPR-[A-Za-z0-9]+/g`, a hand-written second implementation of the declared format. In `FL-OPR-01` the `\\b` sits before `OPR` (the hyphen is not a word character), so it extracted the truncated `OPR-01` and failed it against the namespaced format: an extraction bug that reads as a defective board.",
+      "whatItIsNow": "_design/smartcity-fleet-lens/check.mjs:122-145 -- formatBody()/stemFrom()/sampleFrom()/candidateReFor() derive the extractor and every fixture from the DECLARED format's own body. The candidate is the maximal hyphen-and-alphanumeric token carrying the stem, never a prefix of it, and it is deliberately WIDER than the format: a predicate that refuses references outside the format must be able to SEE one, and an extractor as strict as the format would pass over a bare `OPR-01` silently.",
+      "the_widening_defended": "The tail of the candidate pattern is `+`, not `*`, so a lone stem -- how a board DESCRIBES the format in prose ('declared format: OPR- followed by exactly two digits') -- is not treated as a reference. That case is a self-test.",
+      "fixtures_changed": [
+        "fleet check.mjs:321-352 -- self-tests now mint their sample from the declared format; the old hand-written extractor's truncation of `FL-OPR-01` is asserted as a fact about the pattern; the derived extractor is asserted to return the namespaced form whole, to still SEE a bare reference, to see an undeclared prefix, and to keep the namespace test refusing a bare reference",
+        "police check.mjs:191-229 -- OPERATOR_REF_SAMPLE is minted from the declared format and COMPOSER_OPERATOR_REF is read out of the composer's own records; the two plate self-tests that used the literal `OPR-01` now use them, and the file REFUSES A VERDICT (exit 2) if the composer produced no operator reference, because a fixture invented by the check is exactly the failure mode this file exists to refuse",
+        "police check.mjs:472-493 -- the strip test keeps a real composer identifier rather than a typed one"
+      ]
+    },
+    "fleetCheckRun": {
+      "command": "node _design/smartcity-fleet-lens/check.mjs",
+      "exit": 0,
+      "selfTests": "79/79 passed, both directions",
+      "artboards": "2 artboards pass",
+      "matchedInputCount": "pairs=3, recordTypes=2, regions=2, badges=34, chips=14, cells=108, labels=35, numbers=123, vehicleIds=14, operatorRefs=22, vendors=4, verbatim=11 of 11 distinct source sentences (12 required, 1 of them identical to another)",
+      "nonZeroClaim": "operatorRefs=22 and vehicleIds=14 are the counts this lane's fix moved: the pre-lane extractor could not see a namespaced reference whole, so this number is the one that would have gone to zero under a recapture."
+    },
+    "policeCheckRun": {
+      "command": "node _design/smartcity-police-lens/check.mjs",
+      "exit": 0,
+      "selfTests": "87/87 passed, both directions",
+      "artboards": "4 artboards pass",
+      "matchedInputCount": "pairs=14, gates=14, badges=79, cells=142, states=7, camIds=18, pvIds=10, refusals=10, figures=25, bigFigures=18, occupancies=18, bands=4, matrixCells=8, vendorMentions=2, plateScanTokens=11, packRefs=5, verbatim=16 of 16 sentences, templates=2 of 2"
+    },
+    "violations": {
+      "fleet": {
+        "suite": "_inbox/2026-09-18_g153-fleet-police-lens_fleet-violate.mjs (scratch: Fleet ships no violate.mjs, and this lane's doc_repo writes were fixed to the two check.mjs files)",
+        "result": "13 planted violation(s) caught, 4 positive control(s) held, of 17 cases; artboard hashes identical after the run",
+        "namedCaughtRules": [
+          "a driver name arriving in the operator-reference column",
+          "an operator reference the composer never minted",
+          "a NAMESPACED reference on a board whose declared format is still bare (the widened extractor must SEE it)",
+          "asset-inventory vocabulary in an ASSERTIVE position (a column header)",
+          "inventory vocabulary this design wrote, outside any quoted source sentence",
+          "a money token on a generated-record surface",
+          "an uncatalogued fleet vendor named",
+          "a status band the product does not declare",
+          "a vehicle id outside the declared format",
+          "a roster the composer did not produce (two ids swapped out of order)",
+          "no domain/gate pair rendered at all"
+        ],
+        "theTrapBothSides": [
+          "HELD 'THE TRAP, FIXED SIDE': a synthetic recapture into the namespaced form passes [exit 0]",
+          "CAUGHT 'THE TRAP, PRE-LANE SIDE': HEAD's own instrument REFUSES A VERDICT on the recaptured namespace (exit 2) because its bare-form fixture is stale -- four self-test failures, no verdict reached on the boards",
+          "CAUGHT 'THE TRAP, GUARDED SIDE': reintroducing the old extractor into TODAY's instrument makes it refuse a verdict instead [exit 2]"
+        ]
+      },
+      "police": {
+        "suite": "_design/smartcity-police-lens/violate.mjs (shipped with the design; not edited by this lane)",
+        "result": "17 of 17 planted defects caught; artboard hashes identical after restoration; final baseline re-run exit 0",
+        "namedCaughtRules": [
+          "a plate string in a device cell; a plate BESIDE a record id (the shape the first rule missed)",
+          "a person named in a table cell",
+          "an uncatalogued vendor kind; a vendor named in prose that this lens does not gate",
+          "an invented state word IN THE NAV, which the body-scoped read missed; an invented state word in the lens body; the lens body marker removed",
+          "a bare head count where the product carries a band; an invented big figure at a NON-KIT weight",
+          "two rows swapped out of composer order; a composer sentence paraphrased away",
+          "an unmarked surveillance term in prose; a surveillance field name outside its refusal marker",
+          "a forbidden matrix cell drawn as a count; the probe domain id on the canvas; British 'per cent'"
+        ]
+      }
+    }
+  },
+
+  "g135Parcel2": {
+    "theUnmeasuredThing": "'a full-shell authenticated probe on bastrop_tx that mounts the map iframe, which has never once happened'",
+    "status": "MEASURED, and it happens",
+    "artifact": "_inbox/2026-09-18_g153-fleet-police-lens_full-shell-probe.json (plus the run log and four screenshots under _inbox/2026-09-18_g153-fleet-police-lens_probe-shots/)",
+    "session": "https://app.smartcityos.io with the lane-verification key read at point of use and seeded into the product's own hauska_key localStorage slot by an init script, so the app authenticates through its own path. Four passes: bare visit, /?cityKey=bastrop_tx, /?lens=fleet, /?lens=police.",
+    "theWordsG135AskedFor": "For the full-shell pass: '#map-site src=/property-map.html?cityKey=bastrop_tx, stage hidden=false, frame box 378x200'; and it RENDERED -- inside the frame the url is https://app.smartcityos.io/property-map.html?cityKey=bastrop_tx, #pm-map carries 'pm-map leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom', 6 of 6 tile images loaded, and 12 layers responses came FROM the mounted frame with 0 non-200.",
+    "thePagesOwnSearch": "Driven through the page's own control events inside the frame (no pointer can reach it -- see below) and it SETTLED: the frame's own status line moved to 'Matched: 908 PINE ST, BASTROP, TX, 78602' with parcel 34137, and 1 /api/property-map/summary request came FROM the frame (http 200).",
+    "whyAPointerCannotDriveIt": "Measured, then read at source: web/property-map.js adds `pm-embedded` to the frame's own body when window.self !== window.top, and web/property-map.css hides `.pm-search` and `.pm-status` under that class. In the mounted frame embedded=true, computed display of the search form = none, of the status line = none, and the page's own Search button measures 0x0. The shell reads the same route for its own dock from the TOP frame (web/app.js loadPropertyDock, G-128), which the probe also records: status ok, found true, parcel 34137, futureLandUse Downtown Bastrop.",
+    "refusalDirections": [
+      "keyless GET /api/domains/fleet-vehicles?cityKey=bastrop_tx -> 401",
+      "keyless GET /api/city-packs -> 401",
+      "bogus key literal -> 401",
+      "keyed GET on an unknown pack (no_such_city_tx) -> 404",
+      "keyless GET /api/property-map/summary -> 401",
+      "paired control, tenant key present -> 200 with 75 records"
+    ],
+    "whatThisMeansForG135": "The one unmeasured thing G-135 was closed-partial on is measured on the deployed surface, with the artifact that shows it. G-135 can be closed on this report."
+  },
+
+  "recaptureStatement": {
+    "theStatement": "Both designs now need `source-state.json` recaptured against the product and their artboards regenerated, because the products' operator references are namespaced by domain and both dumps still declare the bare form (they were captured at f776b4bf, before the ruling of 2026-09-17, and this lane was forbidden to recapture them).",
+    "occurrenceCounts": {
+      "countingRule": "One token rule applied to every file: a match of /(?<![\\w-])OPR-\\d{2}(?![-\\w])/ -- a reference counted whole whether or not it already carries a namespace, and not double-counted when it does.",
+      "fleet_Main_dc_html": "22 -- 18 in operator cells (14 at color:var(--sc-ink-2), 4 at color:var(--sc-ink)) and 4 inline in the sentence 'The stride, measured and not drawn: OPR-01 2 of 4, OPR-02 2 of 4, OPR-03 1 of 3, OPR-04 1 of 3.' All bare today; a recapture rewrites all 22 to FL-OPR-nn.",
+      "fleet_source_state_json": "22 (the operator axis in the dump), with 6 more in canvas.json and 6 in gen.mjs.",
+      "police_Patrol_dc_html": "13 -- 10 at color:var(--sc-ink-2), 3 at color:var(--sc-ink), all in cells. All bare today; a recapture rewrites all 13 to PV-OPR-nn.",
+      "police_source_state_json": "10, with 5 more in gen.mjs.",
+      "dispatchFiguresDiffer": "The dispatch's close section says Main.dc.html carries 20 occurrences and Patrol.dc.html 14. This lane measures 22 and 13 with the rule stated above. No artboard was touched by this lane (the violation suites assert the hashes are unchanged), so the difference is a counting rule, not a board: the planner should recapture and let the recapture print its own counts rather than paste either pair."
+    },
+    "whatTheRecaptureWillDoToTheseInstruments": "Fleet's check is built to survive it ('THE TRAP, FIXED SIDE' case, exit 0). Police's is built to survive it too: its operator fixtures are derived from the declared format and from the composer's own records, so a namespace recapture moves them. The PRE-LANE Fleet instrument does NOT survive it, which is exactly what the 'PRE-LANE SIDE' case proves: it refuses a verdict at exit 2. So if the recapture is run before this lane's check.mjs edit is committed, the Fleet instrument will report a self-test failure and no verdict, and that output is the trap rather than a defect in the boards."
+  },
+
+  "indexLine": {
+    "edited": false,
+    "note": "_design/INDEX.md was not edited, per the dispatch. No replacement line is strictly required: both entries describe position and rules, not reference formats, and nothing this lane changed alters either description.",
+    "optionalAppendIfThePlannerWantsTheNamespaceRecorded": "For the Fleet line: append 'Operator references are namespaced by domain since the ruling of 2026-09-17: Fleet mints `FL-OPR-nn` and a bare `OPR-nn` is valid nowhere, which the dump will declare after the next recapture.' For the Police line: append the same sentence with `PV-OPR-nn`."
+  },
+
+  "missionPremise": "G-153 builds the Fleet and Police lenses on the three live-mapper defects both of them run on, and carries G-135's parcel 2. The premise this lane verified rather than assumed: the product already ships both lenses (they are reached on the deployed app with records painted), so the row's work is not to build a surface but to make the live path that feeds it honest -- call the shape guard the fixture seam already calls, stop two vendors sharing one sentinel, stop a required field from going silently missing, and land the operator-reference namespace ruling in the code that mints references rather than after a feed has minted them. G-135's parcel 2 rides along because it needs exactly the browser-driven probe of the map iframe that this lane was already building.",
+  "completionPredicate": "Done means all five, each readable by a stranger from artifacts rather than from this sentence. (1) Both check.mjs pass with NON-ZERO matched-input counts printed, and both fail against planted violations in both directions -- Fleet 13 caught / 4 controls held of 17, Police 17 of 17, with the named rule for each plant. (2) The three defects are shown by a violation rather than asserted: the guard refuses the LIVE Samsara record (102 of 102 live rows refused, faults named), an empty row fed to both mappers yields two different sentinels, and operatorRef is present-or-refused with the absent case measured on the live records. (3) The named trap is demonstrated on both sides: the fixed instrument passes a synthetic recapture, and the pre-lane instrument refuses a verdict on it. (4) The G-135 parcel 2 probe shows an authenticated full-shell bastrop_tx session with the map iframe mounted, rendered, its own search answered, and the six refusal directions. (5) The designs' recapture need is stated with counts, in a form the planner can paste.",
+  "scopeBasis": "In scope: src/ (adapters.mjs, vendor-live.mjs, the two domain format declarations, the new operator-ref module), web/app.js's status vocabulary, the two design instruments in doc_repo, and the two probe scripts this lane wrote. Out of scope and untouched: web/index.html, every other design folder and every other check.mjs, _design/INDEX.md, source-state.json (not recaptured) and the artboards (not regenerated), the finance routes and getBnpApiKey(), G-152/G-151/G-149, every deploy, and the merging of PR #75.",
+
+  "falsifier": "What would falsify this close: (a) a live record that passes the declared shape on the deployed surface before the mapping work lands -- that would mean the guard is not being reached on the live path at all; (b) a run of either design instrument that passes with a ZERO matched-input count on any axis this lane touched, which would mean the widened extractor is matching nothing; (c) the pre-lane extractor returning `FL-OPR-01` whole -- the trap would not exist; (d) an empty row fed to both mappers producing the same unit label; (e) a mapped live record carrying no `operatorRef` key at all (absent rather than null-with-basis), which would mean defect 3 is only cosmetically fixed; (f) the map iframe mounting on a KEYLESS visit -- the session claim would be wrong; (g) the frame's own search request arriving from the top frame rather than from the frame, which would mean the probe invented a data path instead of driving the page's own; (h) an artboard hash that moves across a violation run, which would mean the suite had written to the real design folder.",
+  "contradicted": [
+    {
+      "what": "G-135's own words: 'a full-shell authenticated probe on bastrop_tx that mounts the map iframe, which has never once happened'.",
+      "status": "NOW FALSE, in the direction the row wanted",
+      "detail": "Measured 2026-09-18: the frame mounts (#map-site src=/property-map.html?cityKey=bastrop_tx, box 378x200) and renders (leaflet-container, 6 of 6 tiles, 12 layers responses from the frame, 0 non-200), and the page's own search answers from inside the frame. The probe artifact is cited above."
+    },
+    {
+      "what": "The implication, in the dispatch and in G-135, that the map page's address search is a thing a browser can be pointed at inside the shell.",
+      "status": "CONTRADICTED, measured and then read at source",
+      "detail": "The frame is embedded, and the map page's own code hides its search form and status line when embedded (web/property-map.js adds `pm-embedded`; web/property-map.css hides `.pm-search`/`.pm-status`). Measured in the mounted frame: embedded=true, display none for both, button box 0x0. Three driver strategies failed before this was read; the fourth drives the page's own control events and requires a request FROM the frame to believe it."
+    },
+    {
+      "what": "This lane's own earlier probe artifact, which said the address search 'did not settle inside the frame'.",
+      "status": "CORRECTED -- the earlier artifact was the instrument's own defect, not the product's",
+      "detail": "That run's last rung returned ok without throwing because the fill's value had not survived, so the page's handler read an empty field and returned early; no request ever reached the wire. The rung now requires a request FROM the frame within a bounded wait, and the corrected run shows the search settling with parcel 34137."
+    },
+    {
+      "what": "The dispatch's recapture counts: 'Main.dc.html carries 20 occurrences, Patrol.dc.html 14'.",
+      "status": "DIFFERENT, counted rather than argued",
+      "detail": "Measured with the token rule stated in recaptureStatement: Main.dc.html 22 (18 cells + 4 in the stride sentence), Patrol.dc.html 13 (all in cells). No artboard was modified by this lane, and the violation suites assert their hashes are unchanged, so the difference lies in the counting rule. The planner should let the recapture print its own counts."
+    },
+    {
+      "what": "The dispatch's premise that the live Samsara record failing the shape is a defect of the guard's absence only.",
+      "status": "BROADENED",
+      "detail": "The guard's absence was one half; the other half is that no live record satisfies its declared shape today -- 102 of 102 -- so wiring the guard changes both live regions from 'painting rows' to 'refused with faults named' on the proving pack. That is the acceptance wording met, and it re-scopes the next unit of work to the mapping (engine state onto declared bands, a band from the raw reading, an operator identity from the platform route)."
+    }
+  ],
+
+  "leave_behind": [
+    "THE NEXT UNIT OF WORK IS THE VENDOR MAPPING, NOT ANOTHER GUARD. Every live fleet and patrol record fails its declared shape (102 of 102 measured): the status enum (Samsara reads `unknown`, Spireon reads Stopped/Idle/Moving/Unknown while the shape declares out-of-service/inspection-due/in-shop/in-service), operatorRef, and Samsara's odometerBand. Until that lands, Bastrop's two live regions answer `refused` with the faults named -- a declared absence, not a blank.",
+    "FLEET STILL SHIPS NO DURABLE VIOLATION SUITE. The suite is a scratch instrument in _inbox (it takes --src, defaulting to the integration checkout, because the fixed check.mjs is uncommitted there). Adding _design/smartcity-fleet-lens/violate.mjs is a planner call, and the dispatch fixed this lane's writes to the two check.mjs files.",
+    "THE TWO DUMPS LAG THE CODE BY CONSTRUCTION until the planner recaptures: both declare bare /^OPR-\\d{2}$/ while the code mints FL-OPR-nn and PV-OPR-nn. A reader who runs the PRE-LANE Fleet instrument against a recaptured dump will see a self-test failure and exit 2, and that is the trap, not a board defect.",
+    "PR #75 IS LEFT UNMERGED ON PURPOSE, AND IT IS NOW GREEN: at 20:34:26Z 'test' (15s) and 'a11y' (8m38s) both pass and gh reports MERGEABLE/CLEAN, and the merge is still planner-owned rather than blocked. Nothing was deployed; the deployed app still serves the pre-fix build.",
+    "PRACTICE CORRECTION, RECORDED BECAUSE THE NEXT LANE WILL HIT IT: this lane claimed its lane in P:/doc_repo first and moved the claim to P:/seat-worktrees/dispatch-planner/doc_repo after re-reading the dispatch's close section. Both the claim and every artifact now live only in the planner's worktree, which is where this queue's other lanes (g150, g155, g156) file."
+  ],
+
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-18_g153-fleet-police-lens_cp1.json",
+    "cp2": "_inbox/2026-09-18_g153-fleet-police-lens_cp2.json",
+    "close": "_inbox/2026-09-18_g153-fleet-police-lens_close.json"
+  },
+
+  "gates": {
+    "fanDepth": "0, honored. subAgents {spawned: 0, maxDepth: 0} in CP1, CP2 and this close.",
+    "agentContractSection6": "Checkpoints and close written to the paths the dispatch names, in the worktree the session running the lane is rooted in (the dispatch planner's seat worktree), not in the integration checkout.",
+    "matchedInputsNonZero": true,
+    "bothDirectionsOnBothInstruments": true,
+    "credentialHandling": "read at point of use from Secret Manager into the process environment; never printed, written, committed or echoed; removed from the environment after each run; the operator's pilot key and the two revoked lane keys were not used.",
+    "uncommittedDocRepoEdits": ["_design/smartcity-fleet-lens/check.mjs", "_design/smartcity-police-lens/check.mjs"],
+    "uncommittedDocRepoEditsAreExactlyTheseTwo": "Measured in P:/doc_repo at 2026-09-18T20:40Z with `git status --porcelain -uno -- _design`: exactly five paths are dirty under _design/ and only the two check.mjs files are this lane's. The other three (_design/SMARTCITY_TRACKER.md, _design/plan-review-reasoner/identifier-extraction.json, _design/smartcity-records-search/Main.dc.html) belong to the sibling lane G-148 and are named here so that whoever commits this lane's work commits these two paths BY PATH and does not sweep a sibling's in-flight files into the same commit.",
+    "commitsMadeInDocRepo": 0
+  },
+
+  "countsWithCountingRules": {
+    "liveRecordsRead": "102 (75 Samsara + 27 Spireon), the records /api/domains/* served on the deployed surface with the lane-verification key",
+    "liveRecordsRefusedByTheDeclaredShape": "102 of 102, judged by the branch's own recordShapeFaults",
+    "undeclaredFieldsOnTheLiveSamsaraRow": "12, including vin, make, model, odometerMiles",
+    "operatorRefPresentOnLiveRecords": "0 of 102",
+    "unitLabelSentinelCollisionsAcrossVendors": 0,
+    "mapLayersResponsesFromTheMountedFrame": "12 of 16 property-map responses; 0 not 200",
+    "productTests": "834 pass, 0 fail, 168 suites",
+    "fleetInstrument": "79/79 self-tests, 2 artboards pass, operatorRefs=22 matched",
+    "policeInstrument": "87/87 self-tests, 4 artboards pass, pvIds=10 and plateScanTokens=11 matched",
+    "fleetViolationCases": "13 caught / 4 controls held of 17",
+    "policeViolationCases": "17 caught of 17",
+    "artboardHashesMovedByAnyRun": 0
+  },
+
+  "openThreads": [
+    "The vendor mapping (state bands, an odometer band, an operator identity) -- named above as the next unit of work.",
+    "The recapture + artboard regeneration for both designs, with the counts stated above; planner-owned.",
+    "A durable fleet violation suite in the design folder, if the planner wants Fleet's instrument to carry its own second direction.",
+    "PR #75's merge (planner-owned; the PR itself is green -- test pass, a11y pass, MERGEABLE/CLEAN).",
+    "The deployed app still serves the pre-fix build; after the planner deploys, Bastrop's Fleet and Police regions will read `refused` until the mapping lands."
+  ],
+
+  "m0Scratch": {
+    "LESSON": [
+      "A browser probe is only as honest as what it does when a gesture fails. Wrapping driver calls in `.catch(() => {})` makes an unreachable control and a control that never fired produce the same artifact: nothing. Record each gesture's outcome and its error.",
+      "A gesture that did not THROW is not a gesture that WORKED. `form.requestSubmit()` returned cleanly while the field was empty and no request ever left the page. Believe a driven search only when the request it should cause arrives, from the frame that was driven.",
+      "When a UI control refuses a pointer with 'Element is not visible' in EVERY dock mode, stop re-trying and read the page's own CSS: the product may be hiding it deliberately when embedded. The failing click was the clue that found `pm-embedded`, and without that read the probe would have reported a product defect that is a design decision.",
+      "A candidate EXTRACTOR must be wider than the FORMAT it feeds. An extractor as strict as the format finds nothing to refuse and passes over exactly the strings the rule exists to catch; the widening has to exclude prose that merely DESCRIBES the format (a lone stem), and both edges need a self-test.",
+      "Wiring a validator into a live path is a RE-SCOPING event, not a cleanup: measured first, 102 of 102 live rows fail their declared shapes, so the honest outcome is refusal, and the next unit of work is the mapping. Measure before wiring rather than after deploying."
+    ],
+    "DEAD_END": [
+      "Poking Playwright's `fill`/`click` at the embedded map frame's search form through a strategy ladder of normal -> Full dock mode -> force. All three fail, because the form is `display: none` under the page's own `pm-embedded` rule. Do not retry this; drive the page's own control events or accept that the shell's own dock path (G-128) is the path.",
+      "Fixing the operator-reference extractor by making it exactly as strict as the declared format. It passes the failing case and then matches NOTHING on a namespaced board, so every format rule goes vacuously true. The candidate must stay wider than the format.",
+      "Making the live mapper mint an operator reference from the vehicle id so the required field is populated. It satisfies the shape and prints a machine's pseudonym in the column that groups people; the shapes' own requirement is met by refusing the record instead.",
+      "Backfilling the design dumps' declared format to the namespaced form to make the code and the dump agree. The dispatch forbids recapturing, and the trap's whole point is that the dump lags on purpose."
+    ],
+    "GROUND_TRUTH": [
+      "2026-09-18T20:22Z: on https://app.smartcityos.io with the bastrop_tx lane-verification key, the full shell resolves the bare visit to bastrop_tx and the map iframe MOUNTS AND RENDERS inside it (leaflet-container, 6 of 6 tiles, 12 layers responses from the frame, 0 non-200). G-135's parcel 2 is no longer unmeasured.",
+      "2026-09-18T20:29Z: the deployed app's live records are 75 Samsara + 27 Spireon, and 102 of 102 fail the shapes this branch declares (status enum, operatorRef, Samsara odometerBand); 12 undeclared fields arrive on the Samsara row. The deployed build predates this branch.",
+      "2026-09-18T20:26Z: the deployed app's map page answers /api/property-map/summary?address=908 Pine St with status ok, found true, parcel 34137, Downtown Bastrop -- from the TOP frame (the shell's own G-128 dock read), and separately from the frame when its own control is driven.",
+      "2026-09-18: `'FL-OPR-01'.match(/\\bOPR-[A-Za-z0-9]+/g)` returns `['OPR-01']` -- the named trap is a property of that pattern, reproduced on demand rather than recalled.",
+      "2026-09-18T20:28Z: the surface probe on the planner's worktree reports PASS 6 / FAIL 1 / UNMEASURED 33, and its single FAIL (P-154, parcel 48021:33223) is another row's disagreement between panel and endpoint, unrelated to G-153."
+    ],
+    "OPEN": [
+      "The vendor mapping that would let Bastrop's live fleet and patrol regions serve records again (bands, odometer band, operator identity).",
+      "The planner's recapture of both designs' source-state.json and regeneration of their artboards, which will move every bare OPR-nn to its namespaced form.",
+      "PR #75's merge, which is planner-owned: both required checks are green (test pass, a11y pass 8m38s) and the head is MERGEABLE/CLEAN, so nothing about the lane is waiting on a measurement.",
+      "After the merge and the next deploy: re-run scripts/full-shell-probe.mjs against the deployed surface and confirm the two live regions now answer `refused` with the faults named -- the branch's own behaviour has not been observed on the deployed app, only its pre-fix state."
+    ]
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "laneClaim": {
+    "id": "g153-fleet-police-lens",
+    "seat": "cente-vsc-g153",
+    "claimedInPlannerWorktree": true,
+    "released": true,
+    "note": "Held in P:/seat-worktrees/dispatch-planner/doc_repo/_catalog/lane_claims.json and RELEASED there at 2026-09-18T20:39Z (exit 0), after this close was filed, per the dispatch's 'Release when your close is filed'. The claim taken by mistake in P:/doc_repo was released at 2026-09-18T20:24Z (exit 0). `node scripts/lane-claim.mjs status` in the planner worktree now shows only the stale g154-dev-services-live claim, which is not this lane's to release."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "lane": "g162-v1-finance-honesty",
+  "planRows": ["G-162"],
+  "artifactType": "CP2 — pilot / mid-work adversarial checkpoint, and what it changed",
+  "filedAt": "2026-09-18T20:10:00Z",
+  "stateAtFiling": {
+    "code": "all three defects fixed on fix/g162-finance-honesty, committed bb7ca23f, PR #60 open",
+    "localTests": "22/22 green in the two files this lane adds; 224/228 in the full local suite, the four failures being machine-speed flakes unrelated to this diff (three pass in isolation; tests/server/powerbi-cip-phase-fields.test.ts also times out on the base machine at module import)",
+    "nonProductionApp": "g162-v1-uat ACTIVE at commit 1f0262f1 (pre-fix) — the post-fix deploy was in flight"
+  },
+  "adversarialFindings": [
+    {
+      "finding": "A DigitalOcean app CANNOT be given another app's encrypted env value. ",
+      "measured": "the first spec update failed with `errors validating app spec; first error in field \"services.envs.5.value\": secret env value cannot be decrypted` — the EV[...] ciphertext in walrus-app's spec is not portable",
+      "consequence": "the UAT app's environment had to be written as plaintext from a process that never echoes it. scripts/g162-build-spec.ps1 (lane tool, P:\\tmp) reads the values from GCP Secret Manager and the fleet's local secrets file, writes them straight into the spec JSON and prints only KEY NAMES. No credential appears in this session's transcript, in the repo, or in the artifact."
+    },
+    {
+      "finding": "The app does not boot from a partial environment.",
+      "measured": "deployment e94c9f01 exited non-zero (DeployContainerExitNonZero) with only the ten keys the lane started with; the runtime logs were already unreachable when queried (phase final_cleanup), so the throw was not read directly, and the fix was justified by the difference that matters: walrus-app's env KEY SET, read from its spec",
+      "consequence": "the UAT app now carries all 43 production key names. 23 are sourced (4 from GCP Secret Manager, 19 from the fleet's local secrets file) and 18 are labelled placeholders because their values exist only inside walrus-app's encrypted env and this lane will not move production secrets it cannot source. The placeholder key names are recorded IN the app's own environment (G162_UAT_PLACEHOLDER_KEYS) so the divergence is visible from the app, not only from this close. None of the 18 is on a path under test: the finance routes read Postgres and the OpenGov BNP API."
+    },
+    {
+      "finding": "The probe's own CONTROL legs could report a pass they had not measured.",
+      "measured": "with the network failing, `an unauthenticated caller is refused at HTTP undefined` was printed as a CONTROL — a sentence about a refusal that never happened",
+      "consequence": "both control legs now carry `reachable` and answer UNMEASURED when the call did not happen. Found by violation, in the lane's own instrument, before any artifact was cited: a leg that cannot run is a refusal, never a pass."
+    },
+    {
+      "finding": "Node on this fleet machine cannot reach the app at all with a bare `node` run.",
+      "measured": "every leg returned a bare `fetch failed` (host resolves AAAA-first) and, once that was fixed, `unable to verify the first certificate` until `--use-system-ca`",
+      "consequence": "the instrument's header carries both flags and the reason. This is not cosmetic: a probe run without them refuses every leg while the app is perfectly healthy, and a lane that read the refusal as a product failure would have closed the wrong way."
+    },
+    {
+      "finding": "The loopback-only `x-internal-ai` / `x-tenant-id` path is NOT spoofable from the internet.",
+      "measured": "HTTP 401 with X-Forwarded-For: 127.0.0.1 plus both headers, on both the pre-fix and post-fix deployments (routes.ts and middleware/tenant.ts both gate on req.ip)",
+      "consequence": "two things at once: (a) the session-route violation had to be staged with a real Bastrop login instead, which is the better path anyway; (b) there is no cross-tenant read hole here, and the probe keeps the attempt as a standing CONTROL so a future change that opens it shows up as VULNERABILITY rather than passing silently."
+    }
+  ],
+  "falsifier": "A post-fix probe run that does not reach exit 0, or a pre-fix run that does. Both were observed in the direction that makes the fix meaningful: pre-fix exit 1 (budgets FAIL, session FAIL, DIVERGENT), post-fix exit 0 (5 PASS + 2 controls, AGREE).",
+  "leaveBehind": [
+    "doc_repo edits are left uncommitted per AGENT_CONTRACT §6: _inbox/2026-09-18_g162-v1-finance-honesty_cp1.json, _cp2.json, _close.json, _inbox/2026-09-18_201529_g162_surface_probe.json and its two raw legs"
+  ],
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

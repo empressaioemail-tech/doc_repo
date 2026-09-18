@@ -1,0 +1,317 @@
+﻿G-160 PARCEL 2 -- EVIDENCE, smart-files (the arm parcel)
+captured 2026-09-18T20:29:54.750Z
+repo      P:\smart-files-worktrees\g160-served-commit-parity
+branch    g160-served-commit-parity
+HEAD      2c5d4e1df229c8caa17adf1ce9e6340bbf863093
+base      origin/main 6d71bf38fe0cc67fafd4fe8b55fb55b7f07c863d
+parcel1head a238072 (the commit this parcel continued from, not restarted)
+tree      CLEAN
+
+=== 1. WHAT LANDED: git diff --stat vs origin/main ===
+ .github/workflows/served-commit-parity.yml     |  68 +++
+ .github/workflows/test.yml                     |   9 +
+ README.md                                      |  35 ++
+ package.json                                   |   4 +-
+ scripts/deploy.mjs                             | 240 +++++++++
+ scripts/fixtures/g160-measured-2026-09-18.json |  84 ++++
+ scripts/fixtures/g160-planted-split.json       |  29 ++
+ scripts/fixtures/g160-recorded-2026-09-17.json |  49 ++
+ scripts/g160-served-harness.mjs                | 193 ++++++++
+ scripts/served-commit-parity.mjs               | 643 +++++++++++++++++++++++++
+ src/served-commit-parity.test.mjs              | 553 +++++++++++++++++++++
+ src/served-commit.mjs                          |  69 +++
+ src/server.mjs                                 |  13 +
+ web/api/version.js                             | 134 ++++++
+ 14 files changed, 2122 insertions(+), 1 deletion(-)
+=== 1b. name-status (A = introduced by this parcel) ===
+A	.github/workflows/served-commit-parity.yml
+M	.github/workflows/test.yml
+M	README.md
+M	package.json
+A	scripts/deploy.mjs
+A	scripts/fixtures/g160-measured-2026-09-18.json
+A	scripts/fixtures/g160-planted-split.json
+A	scripts/fixtures/g160-recorded-2026-09-17.json
+A	scripts/g160-served-harness.mjs
+A	scripts/served-commit-parity.mjs
+A	src/served-commit-parity.test.mjs
+A	src/served-commit.mjs
+M	src/server.mjs
+A	web/api/version.js
+
+=== 2. STEP 1 -- the deploy records its commit. Clean tree: the plan it would issue. ===
+[dry-run] smart-files -- would deploy commit 2c5d4e1df229c8caa17adf1ce9e6340bbf863093 (git rev-parse HEAD on a clean tree)
+  api      gcloud run deploy smart-files --project smart-files-505619 --region us-east1 --source P:\smart-files-worktrees\g160-served-commit-parity --update-env-vars SERVED_COMMIT=2c5d4e1df229c8caa17adf1ce9e6340bbf863093 --update-labels commit-sha=2c5d4e1df229c8caa17adf1ce9e6340bbf863093 --quiet
+  console  vercel deploy P:\smart-files-worktrees\g160-served-commit-parity\web --prod --yes --project smart-files-app --env SERVED_COMMIT=2c5d4e1df229c8caa17adf1ce9e6340bbf863093
+  gate     C:\Program Files\nodejs\node.exe P:\smart-files-worktrees\g160-served-commit-parity\scripts\served-commit-parity.mjs --served
+  nothing was issued: this run only resolves the commit and prints the plan.
+exit=0
+
+=== 2b. The same command with a DIRTY tree. This is the refusal, not a narration of one. ===
+REFUSED to deploy smart-files: the working tree is dirty. A commit recorded from a dirty tree is an upper bound on what was built, not an identity, so the parity check would compare a number that does not mean what it appears to mean. Commit or stash, then deploy.
+exit=2
+
+=== 3. STEP 3 -- all three outcomes, over real HTTP, from this product's own surfaces ===
+G-160 served harness -- smart-files
+  suite   3 required outcomes, observed over HTTP from the real surfaces
+
+  PASS   both sides serve the same commit
+    api      http://127.0.0.1:59583/version -> 200 commit="99c156babe10d83d0840a81a3ccc7c6f5ff94fff"
+    console  http://127.0.0.1:59589/api/version -> 200 commit="99c156babe10d83d0840a81a3ccc7c6f5ff94fff"
+    --- check output ---
+    served-commit parity -- smart-files
+      snapshot      smart-files@2c5d4e1df229c8caa17adf1ce9e6340bbf863093 read 2026-09-18T20:29:55.952Z
+      API           smart-files (smart-files-505619/us-east1)
+        surface     http://127.0.0.1:59583/version
+        commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [SERVED_COMMIT]
+      console       smart-files-app (http://127.0.0.1:59589)
+        surface     http://127.0.0.1:59589/api/version
+        commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [SERVED_COMMIT]
+      VERDICT       AGREE -- both sides serve 99c156babe10d83d0840a81a3ccc7c6f5ff94fff
+    --------------------
+    ok   exit code = 0
+    ok   verdict = "AGREE"
+
+  FAIL   the recorded 2026-09-17 shape: console behind the API
+    api      http://127.0.0.1:59594/version -> 200 commit="99c156babe10d83d0840a81a3ccc7c6f5ff94fff"
+    console  http://127.0.0.1:59597/api/version -> 200 commit="1af5ac59f0c1f1bdd7d5f2f1e8a2b0a8dd34d6f2"
+    --- check output ---
+    served-commit parity -- smart-files
+      snapshot      smart-files@2c5d4e1df229c8caa17adf1ce9e6340bbf863093 read 2026-09-18T20:29:56.428Z
+      API           smart-files (smart-files-505619/us-east1)
+        surface     http://127.0.0.1:59594/version
+        commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [SERVED_COMMIT]
+      console       smart-files-app (http://127.0.0.1:59597)
+        surface     http://127.0.0.1:59597/api/version
+        commit      1af5ac59f0c1f1bdd7d5f2f1e8a2b0a8dd34d6f2  [SERVED_COMMIT]
+      VERDICT       DISAGREE -- API serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff but the console serves 1af5ac59f0c1f1bdd7d5f2f1e8a2b0a8dd34d6f2
+    --------------------
+    ok   exit code = 1
+    ok   verdict = "DISAGREE"
+    ok   the split is named in the output = true
+
+  REFUSE SERVED_COMMIT absent on both sides
+    api      http://127.0.0.1:59602/version -> 503 commit=null
+    console  http://127.0.0.1:59605/api/version -> 503 commit=null
+    --- check output ---
+    served-commit parity -- smart-files
+      snapshot      smart-files@2c5d4e1df229c8caa17adf1ce9e6340bbf863093 read 2026-09-18T20:29:56.896Z
+      API           smart-files (smart-files-505619/us-east1)
+        REFUSED     API side http://127.0.0.1:59602/version answered 503 without resolving a commit (error=served_commit_unresolved)
+      console       smart-files-app (http://127.0.0.1:59605)
+        REFUSED     console side http://127.0.0.1:59605/api/version answered 503 without resolving a commit (error=served_commit_unresolved)
+      VERDICT       REFUSED -- a side could not be read; fail closed
+        - API side: API side http://127.0.0.1:59602/version answered 503 without resolving a commit (error=served_commit_unresolved)
+        - console side: console side http://127.0.0.1:59605/api/version answered 503 without resolving a commit (error=served_commit_unresolved)
+    --------------------
+    ok   exit code = 2
+    ok   verdict = "REFUSED"
+    ok   two unresolved sides are NOT agreement = false
+    ok   the API surface answered commit:null rather than an empty string = "null"
+    ok   the API surface answered 503 = 503
+
+all 3 outcomes observed: PASS (exit 0), FAIL (exit 1), REFUSE (exit 2), over HTTP.
+exit=0
+
+=== 3b. The instrument's own self-test ===
+  pass  PRODUCT.repo matches the repo this file is in
+  pass  agreement -> AGREE/0
+  pass  console behind API -> DISAGREE/1
+  pass  split does not read as agree
+  pass  same commits but different strings disagree
+  pass  unreadable API -> REFUSED/2
+  pass  unreadable console -> REFUSED/2
+  pass  both unreadable -> REFUSED/2
+  pass  a null commit never agrees with another null commit
+  pass  the recorded 2026-09-17 shape has the console FIFTEEN DAYS behind at the API advance
+  pass  the recorded 2026-09-17 shape splits for 2h28m
+  pass  the check FAILS against the recorded 2026-09-17 state
+  pass  ...and passes once the console catches up
+  pass  the planted violation FAILS on the exit code, not on narration
+
+all self-tests pass (both directions, fail-closed, non-vacuous)
+exit=0
+
+=== 4. THE LIVE REFUSAL, RECORDED. This is a fact read now, not a claim it would pass. ===
+read at 2026-09-18T20:29:57.268Z
+served-commit parity -- smart-files
+  snapshot      smart-files@2c5d4e1df229c8caa17adf1ce9e6340bbf863093 read 2026-09-18T20:30:02.734Z
+  API           smart-files (smart-files-505619/us-east1)
+    REFUSED     revision smart-files-00015-lod records no commit: neither the label commit-sha nor the SERVED_COMMIT env var is set. Cloud Run records no git revision of its own and the image is built from an uploaded archive with .git excluded, so the deploy has to record it. REFUSED rather than defaulted.
+  console       smart-files-app (https://smart-files-app.vercel.app)
+    deployment  smart-files-j9nyjftgx-empressaioemail-techs-projects.vercel.app
+    created     2026-09-18T01:29:51.722Z
+    commit      1caeb981bf7eccdfafa7e6a4ec7078de16722314  [meta.gitCommitSha]
+    git ref     g155-tag-verify
+    tree        DIRTY at deploy (meta.gitDirty=1): the recorded commit is an upper bound, not an identity
+    message     feat(G-155): a deploy-time probe that can tell the new revision from the old one
+  VERDICT       REFUSED -- a side could not be read; fail closed
+    - API side: revision smart-files-00015-lod records no commit: neither the label commit-sha nor the SERVED_COMMIT env var is set. Cloud Run records no git revision of its own and the image is built from an uploaded archive with .git excluded, so the deploy has to record it. REFUSED rather than defaulted.
+exit=2
+
+=== 4b. The same live state through the credential-free --served path (what CI/the schedule runs) ===
+served-commit parity -- smart-files
+  snapshot      smart-files@2c5d4e1df229c8caa17adf1ce9e6340bbf863093 read 2026-09-18T20:30:03.228Z
+  API           smart-files (smart-files-505619/us-east1)
+    REFUSED     API side https://smart-files-padrd77ava-ue.a.run.app/version answered 404 without resolving a commit (body named no error)
+  console       smart-files-app (https://smart-files-app.vercel.app)
+    REFUSED     console side https://smart-files-app.vercel.app/api/version answered 404 without resolving a commit (error=404)
+  VERDICT       REFUSED -- a side could not be read; fail closed
+    - API side: API side https://smart-files-padrd77ava-ue.a.run.app/version answered 404 without resolving a commit (body named no error)
+    - console side: console side https://smart-files-app.vercel.app/api/version answered 404 without resolving a commit (error=404)
+exit=2
+
+=== 5. All Cloud Run traffic entries for this service, to show WHY traffic[0] is not the answer ===
+percent=100 is the serving revision; the other three entries are alias tags on old revisions.
+{'revisionName': 'smart-files-00008-geb', 'tag': 'g106-read-scope', 'url': 'https://g106-read-scope---smart-files-padrd77ava-ue.a.run.app'};{'revisionName': 'smart-files-00010-rig', 'tag': 'g107-provenance', 'url': 'https://g107-provenance---smart-files-padrd77ava-ue.a.run.app'};{'revisionName': 'smart-files-00013-ruq', 'tag': 'search-wave', 'url': 'https://search-wave---smart-files-padrd77ava-ue.a.run.app'};{'percent': 100, 'revisionName': 'smart-files-00015-lod', 'tag': 'g155-search-reason', 'url': 'https://g155-search-reason---smart-files-padrd77ava-ue.a.run.app'}
+
+=== 6. Full unit suite ===
+
+> test
+> node --test src/identity.test.mjs src/cid.test.mjs src/actors.test.mjs src/extract.test.mjs src/staff-identity.test.mjs src/g155_contract.test.mjs src/served-commit-parity.test.mjs
+
+✔ G-71 calendar actor is a QA persona so files writes can scope to template-city (0.7571ms)
+▶ G-134 GAP 4: staffFileScopeRefusal
+  ✔ refuses a non-staff caller (no bearer resolved at all) (0.9111ms)
+  ✔ refuses a staff caller from a different tenant (0.1561ms)
+  ✔ refuses a verified staff person with no tenant claim rather than treating it as a match (0.0972ms)
+  ✔ allows the matching tenant, and only the matching tenant (0.116ms)
+  ✔ allows when ANY of several scope pairs matches the staff tenant (e.g. a blob linked to multiple scopes) (0.0765ms)
+  ✔ refuses a staff caller against a non-tenant scope type -- deliberate narrow no, not an oversight (0.124ms)
+  ✔ accepts a single scope object as well as an array (call sites pass both) (0.0853ms)
+✔ G-134 GAP 4: staffFileScopeRefusal (1.937ms)
+✔ slugify and folder id (2.0582ms)
+✔ folder id defaults to tenant so every live folder id is unchanged (0.2422ms)
+✔ instrument folders carry the scope type in the id (0.128ms)
+✔ cid is sha256 of bytes (0.6042ms)
+✔ SEARCH_INDEXABLE_CONTENT_TYPES is exactly application/pdf (1.1592ms)
+✔ non-PDF content types are skipped cleanly: not attempted, not an error (0.3204ms)
+Warning: Indexing all PDF objects
+✔ a real PDF's text layer is extracted (85.8252ms)
+✔ a corrupt PDF fails extraction honestly: attempted, text null, reason named, never throws (1.2338ms)
+✔ a valid PDF with no text operators is no-text-layer, not a failure (1.2854ms)
+✔ extraction never throws even on empty bytes (0.5338ms)
+✔ reasonCode keeps the detail of an extraction failure and collapses only the code (0.5581ms)
+✔ the closed vocabularies are exactly what the design names, no extras (0.5016ms)
+✔ searchability: an indexed row is indexed, and it does not claim a reason (0.1785ms)
+✔ searchability: each named reason round-trips as itself, never as a sibling (0.1052ms)
+✔ searchability: a not-recorded row says so and is NOT inferred from content_type (0.1396ms)
+✔ emptyCoverage states a zero denominator instead of dividing it away (0.1436ms)
+✔ provenance: a missing key refuses with the code and the key name (1.0113ms)
+✔ provenance: a sourceKind outside the closed set names the set it wanted (0.1392ms)
+✔ provenance: an unparseable capturedAt is refused as itself, not as a missing key (0.1082ms)
+✔ read refusal: the body names the scope required and the scopes actually held (0.251ms)
+✔ read refusal: an anonymous caller is told it holds no identity at all (0.1015ms)
+✔ roundtrip jurisdiction (1.7926ms)
+✔ last-segment-is-slug keeps colons inside site scopeId (0.2479ms)
+✔ superseded FIPS-only three-segment shape is null (0.1473ms)
+✔ jurisdiction FIPS denorm is null for tenant and site (0.1575ms)
+✔ instrument is a scope type and is writable (2.5159ms)
+✔ roundtrip instrument, keyed to a security-master node (0.3443ms)
+✔ iss_ nodes are accepted alongside sec_ (0.1736ms)
+✔ instrument jurisdiction denorm is null (0.1333ms)
+✔ instrument validator is its own rule, not the FIPS rule and not the tenant rule (0.8019ms)
+✔ an instrument scopeId cannot swallow extra colons (0.6712ms)
+✔ every live tenant slug still builds and parses (0.4871ms)
+✔ tenant accepts shapes no other scope would, and site keeps its colons (0.1371ms)
+✔ jurisdiction keeps the FIPS rule it already had (0.0915ms)
+✔ parseServiceIdentities: empty/absent env yields no identities (0.2226ms)
+✔ parseServiceIdentities: rejects malformed JSON, non-array, and missing fields (0.3983ms)
+✔ parseServiceIdentities: parses a well-formed grant list (0.1883ms)
+✔ resolveCallerIdentity: no token, unknown token, and empty identity list all resolve null (0.1247ms)
+✔ identityAllowsScope: exact match, wrong tenant, and per-field wildcards (0.1001ms)
+✔ identityHasBlanketGrant: only an explicit */* grant qualifies (0.1057ms)
+✔ identityAllowsAnyScope: an unknown scope (empty candidate list) refuses without a blanket grant (0.1143ms)
+✔ isValidDocSlug: same alphabet as the entityId docSlug segment (0.0466ms)
+✔ validateProvenance: all five keys required, missing key refuses rather than defaults (0.2552ms)
+✔ validateProvenance: sourceKind is the closed set, capturedAt must parse (0.1676ms)
+✔ agreement passes; the exit code is 0 (1.2605ms)
+✔ the collision this row exists for: console behind the API fails with exit 1 (0.2316ms)
+✔ case differences are not a split, and a one-character difference is (0.1576ms)
+✔ FAIL CLOSED: an unreadable side refuses (exit 2) rather than passing (0.1751ms)
+✔ FAIL CLOSED: two null commits must never agree with each other (0.3005ms)
+✔ API side reads the SERVING revision by percent=100, not by tag and not the latest ready name (0.653ms)
+✔ API side reports the DIGEST, not the requested tag (0.3767ms)
+✔ API side REFUSES when no commit is recorded on the revision (0.257ms)
+✔ API side REFUSES when the label and the env var disagree (0.2879ms)
+✔ API side REFUSES on ambiguous or absent 100% traffic (0.2809ms)
+✔ API side REFUSES when the image digest is missing or is a tag (0.2234ms)
+✔ API side REFUSES when gcloud itself fails (0.1974ms)
+✔ the surface leg binds the public origin to the serving revision (0.2866ms)
+✔ the surface leg FAILS when the public origin serves a different revision (0.1432ms)
+✔ the surface leg FAILS when the origin's commit disagrees with the platform record (0.0976ms)
+✔ the surface leg FAILS on the unresolved-commit refusal and on transport failure (0.2955ms)
+✔ console side takes the NEWEST READY production deployment (1.4531ms)
+✔ console side ignores a newer NON-production deployment (0.3633ms)
+✔ console side REFUSES when the deployment carries no git commit (0.1705ms)
+✔ console side reads the GitHub-integration field name too, because this product has both paths (0.1275ms)
+✔ console side REFUSES when its own two commit records disagree (0.1214ms)
+✔ console side DECLARES a dirty deploy instead of hiding it, and does not refuse on it (0.1543ms)
+✔ console side REFUSES on an empty deployment list (0.0847ms)
+✔ console side REFUSES when the CLI fails, and names the TLS remedy only for a cert failure (0.4543ms)
+✔ the check FAILS against the recorded 2026-09-17 state (0.5418ms)
+✔ ...and PASSES once the console catches up: the same check, both directions (0.3605ms)
+✔ the recorded fixture's own arithmetic matches the platform timestamps it quotes (0.2805ms)
+✔ the planted violation fires, and is not the recorded state (0.2921ms)
+✔ the planted tree-identical pair still disagrees by commit identity, and that limitation is declared (0.3603ms)
+✔ the measured 2026-09-18 state REFUSES: the serving revision records no commit (0.553ms)
+✔ the measured console side resolves, and the measurement's answer is stated as two claims (0.4209ms)
+✔ the measurement's windows are arithmetic over the timestamps it quotes (0.2239ms)
+✔ the measurement's forensic matched BOTH commits that share one tree, and says why (0.2394ms)
+✔ resolveServedCommit resolves a real SHA and reports where it came from (0.1139ms)
+✔ resolveServedCommit NEVER substitutes a stand-in for a commit (0.1618ms)
+✔ the surface answers 200 with the commit, and 503 with a refusal when it cannot resolve one (0.1714ms)
+✔ served leg: two sides at the same commit AGREE, and the exit code is 0 (0.2158ms)
+✔ served leg: the 2026-09-17 shape, one side redeployed and the other not, FAILS with exit 1 (0.0759ms)
+✔ served leg FAILS CLOSED on a 503 with commit:null, and two unresolved sides never agree (0.1242ms)
+✔ served leg FAILS CLOSED on a non-JSON body, no commit, a non-commit, and a dead origin (0.219ms)
+✔ served leg names the refusal when the body's `error` is an object, not [object Object] (0.1207ms)
+✔ the console surface resolves a real SHA, and reports which record it came from (0.1553ms)
+✔ DIVERGENCE TEST: the console rule and the API rule agree on EVERY row, stand-ins included (0.1326ms)
+✔ the console surface REFUSES a self-contradicting pair, and never steps over a stand-in (0.1146ms)
+✔ the console surface answers 200 with the commit and 503 with commit:null, never an empty string (0.1087ms)
+✔ the deploy REFUSES a dirty tree, and the refusal says why it is not cosmetic (0.0864ms)
+✔ the deploy resolves the commit from a clean tree, and refuses a HEAD that is not a commit (0.0634ms)
+✔ the deploy plan records the SAME commit on both sides -- label AND env var, from one value (0.118ms)
+✔ the gate POLLS, and a real split exhausts the deadline instead of being waited out (0.222ms)
+✔ the scheduled trigger EXISTS as a file at a named path, with a cron and a dispatch (0.3188ms)
+▶ staff-identity: not a staff bearer at all
+  ✔ returns null for a non-JWT-shaped bearer (the existing service-key path) (0.9914ms)
+  ✔ looksLikeJwt distinguishes shape only, both directions (1.7155ms)
+✔ staff-identity: not a staff bearer at all (3.9037ms)
+▶ staff-identity: fail-closed configuration
+  ✔ refuses a JWT-shaped bearer when no issuer is configured, never accepts unverifiably (25.1414ms)
+✔ staff-identity: fail-closed configuration (25.2857ms)
+▶ staff-identity: the positive path, and it must be observed working
+  ✔ verifies a well-formed token and reads sub/role/tenant (28.1136ms)
+  ✔ honors STAFF_ROLE_CLAIM / STAFF_TENANT_CLAIM overrides for a namespaced-claim provider (57.7412ms)
+  ✔ verifies a person provisioned with no role yet, and says so rather than refusing or guessing (12.6528ms)
+✔ staff-identity: the positive path, and it must be observed working (98.7466ms)
+▶ staff-identity: every refusal is exercised on the real failing case, not asserted possible
+  ✔ refuses an unknown issuer (19.7382ms)
+  ✔ refuses an expired token (50.9856ms)
+  ✔ refuses a not-yet-valid token (nbf in the future) (31.2596ms)
+  ✔ refuses a token older than STAFF_TOKEN_MAX_AGE_SECONDS even though exp has not passed (G-134 GAP 3) (32.1069ms)
+  ✔ accepts a token within the default 900s max age with no override configured (24.7578ms)
+  ✔ refuses a token older than the default 900s cap when no override is configured (67.6298ms)
+  ✔ does not refuse on age when STAFF_TOKEN_MAX_AGE_SECONDS is explicitly disabled (0) (23.9038ms)
+  ✔ does not refuse on age when iat is absent (spec-optional; exp/nbf already bounded it) (28.2065ms)
+  ✔ refuses alg:none outright, before any crypto operation runs (6.9932ms)
+  ✔ refuses a tampered payload even though the outer shape is still a valid JWT (38.6585ms)
+  ✔ refuses a token signed by a DIFFERENT keypair than the one this issuer publishes (37.3637ms)
+  ✔ refuses an unknown kid (key rotated out) after attempting one refresh (30.8367ms)
+  ✔ refuses a malformed token that cannot be base64/JSON decoded (0.1375ms)
+  ✔ refuses a token with no sub claim (83.0922ms)
+  ✔ refuses when the injected revocation check reports the account disabled -- both directions, offboarding proven live (23.7074ms)
+  ✔ propagates a revocation-check transport failure as a refusal, never as a silent accept (50.2261ms)
+✔ staff-identity: every refusal is exercised on the real failing case, not asserted possible (550.1734ms)
+ℹ tests 124
+ℹ suites 5
+ℹ pass 124
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 851.3603
+
+--- end of smart-files parcel 2 evidence ---

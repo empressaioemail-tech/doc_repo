@@ -1,0 +1,98 @@
+{
+  "_what": "CP2 for G-160 PARCEL 2 (the arm parcel): the pilot and the adversarial review, run against the CP1 pre-registration (p2_cp1.json). Every entry is an observation with its evidence. This parcel's OWN errors are listed beside the product's, because a checkpoint that only lists what went right is a checkpoint that describes rather than gates.",
+  "lane": "g160-served-commit-parity",
+  "planRows": ["G-160"],
+  "checkpoint": "CP2 -- pilot / adversarial review",
+  "parcel": 2,
+  "seat": "cente-vsc-g160p2",
+  "filedAt": "2026-09-18T20:32:00Z",
+
+  "pilot": {
+    "whatWasFlown": "The thing Parcel 1 could not do: the PASSING case was made a SERVED case rather than a fixture case. scripts/g160-served-harness.mjs starts this product's real src/server.mjs and the console's real web/api/version.js on real ports, sets SERVED_COMMIT on both, and runs the shipped check against them over HTTP. Run in both products. Alongside it, per product: the deploy path dry-run in BOTH directions (clean tree and dirty tree), the check's --served mode against the two LIVE public origins, the check's default mode against the LIVE platforms, --reconstruct-2026-09-17, --self-test, and the full unit suite. All raw output with exit codes is filed as _inbox/2026-09-18_g160-served-commit-parity_p2_plan-review_evidence.txt and ..._p2_smart-files_evidence.txt.",
+    "harnessResult_plan-review": { "PASS": "exit 0 AGREE, both surfaces 200 with the same commit", "FAIL": "exit 1 DISAGREE, console one commit behind", "REFUSE": "exit 2, both surfaces 503 with commit:null", "verdict": "all 3 outcomes observed, harness exit 0" },
+    "harnessResult_smart-files": { "PASS": "exit 0 AGREE", "FAIL": "exit 1 DISAGREE", "REFUSE": "exit 2, both surfaces 503 with commit:null", "verdict": "all 3 outcomes observed, harness exit 0" },
+    "deployPathFlownInBothDirections": "Clean tree: exit 0, prints the exact gcloud and vercel argv that WOULD be issued, both carrying SERVED_COMMIT=<40-hex HEAD> and the commit-sha label from the SAME value. Dirty tree: exit 2 and NOTHING is issued, with the refusal naming why the commit would be an upper bound rather than an identity. Driven in both products.",
+    "theUncomfortablePartOfThePilot": "The LIVE verdict is still REFUSED on both products, and this parcel did NOT change that -- it cannot, because the lane does not deploy. Read now: plan-review REFUSED/2 ('revision plan-review-00029-gom records no commit'), smart-files REFUSED/2 ('revision smart-files-00015-lod records no commit'). The credential-free --served mode reads 404/404 on both. So the first live PASS is still not in this lane's gift, exactly as the mission says. What IS new is that the passing case is now observed over real HTTP rather than only inferred from fixtures, and that the two live refusals are recorded with their timestamps as facts.",
+    "theRefusalIsAlsoProofTheControlIsStarvedNotBroken": "The live refusal names the revision by name and states the exact reason (neither the label commit-sha nor the SERVED_COMMIT env var is set). It does not say 'unknown', it does not say 'error', and it does not return 0. That is the difference between a control that is starved of its input and a control that is broken, and the output makes it visible."
+  },
+
+  "preRegistrationCheckedAgainstObservation": [
+    { "id": "F1", "preRegistered": "the recorded 2026-09-17 state must still FAIL after the change; arming the check must not have weakened the falsifier it was carded from", "observed": "exit 1, DISAGREE: 'API serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff (plan-review-00029-gom) but the console serves 1af5ac596d28d5040c56af2545fbe4782f2dac3d'; recorded split window 8880s / 2h28m0s", "held": true, "where": "_inbox/..._p2_plan-review_evidence.txt section 5; asserted in both suites" },
+    { "id": "F2", "preRegistered": "the passing direction must still pass -- the check must not be a constant", "observed": "exit 0, AGREE, over REAL HTTP from a running server and a running Vercel function in BOTH products (the harness), not only from fixtures", "held": true, "where": "harness, both products; ..._evidence.txt section 3" },
+    { "id": "F3", "preRegistered": "with SERVED_COMMIT absent the API surface must still REFUSE rather than default, and the REFUSE must not read as agreement", "observed": "503 with commit:null on both surfaces; check exit 2, explicitly not 0; the harness additionally asserts an unresolved side is NOT agreement", "held": true, "where": "harness, both products, all 5 assertions on the refusal" },
+    { "id": "F4", "preRegistered": "the console surface must obey the same no-stand-in rule as the API surface, and the two implementations must not drift", "observed": "DIVERGENCE TEST passes in both suites: resolveServedCommit (API) and resolveConsoleServedCommit (console) agree on EVERY row including the stand-in table, a disagreeing pair and an agreeing pair", "held": true, "where": "asserted in both suites; the test is named 'DIVERGENCE TEST' so it is not lost among the others" },
+    { "id": "F5", "preRegistered": "the deploy path must refuse a dirty tree", "observed": "clean -> exit 0 and the argv carries SERVED_COMMIT=<40-hex> on the API side and commit-sha=<40-hex> on the label from one value; dirty -> exit 2 and NO deploy command is issued", "held": true, "where": "asserted in both suites; driven live in both products (_evidence.txt section 2 and 2b)" },
+    { "id": "F6", "preRegistered": "a side that reports ok but resolves no commit must not agree with another such side", "observed": "exit 2, explicitly not 0; asserted on the observed exit code, and the surface's shape asserted too so a refusal that resolved to an empty string could not pass", "held": true, "where": "harness refusal case, both products" },
+    { "id": "F7", "preRegistered": "the trigger must exist as a file whose home is a path, not as prose", "observed": "both products carry .github/workflows/served-commit-parity.yml with a cron schedule and workflow_dispatch, running the credential-free --served mode; the existence is asserted in the unit suites", "held": true, "where": "asserted in both suites ('the scheduled trigger EXISTS as a file at a named path, with a cron and a dispatch')" }
+  ],
+
+  "theOneChangeClaim": {
+    "claim": "Steps 1 (record the commit) and 2 (wire the trigger) landed in ONE change per repository, as the mission requires.",
+    "howItIsCheckable": "Not asserted from memory -- read from git. In both repos `git rev-list --count <parcel1head>..HEAD` is 1, and that single commit's own --stat carries scripts/deploy.mjs (the deploy path that sets SERVED_COMMIT), web/api/version.js (the console recording its commit) and .github/workflows/served-commit-parity.yml (the trigger) together.",
+    "plan-review": { "parcel1head": "b4b44b9", "commit": "cdd4cb344fe8621f28c70d593874238003bba1f8", "commitsBetween": 1, "files": 8, "insertions": 1277, "deletions": 319 },
+    "smart-files": { "parcel1head": "a238072", "commit": "2c5d4e1df229c8caa17adf1ce9e6340bbf863093", "commitsBetween": 1, "files": 8, "insertions": 1373, "deletions": 407 },
+    "whyItMattersThatItIsOne": "If the trigger had landed without the deploy recording a commit, every deploy of both products would fail its own gate from the first run, and the fleet would learn the bypass flag. The mission states this as the one thing that can go wrong. It is verifiable rather than trusted: one commit, containing both halves.",
+    "whyTheGateCannotFailTheFirstDeploy": "The gate runs AFTER both sides of that deploy have landed, and reads the SERVED surfaces. Both surfaces report the commit that same change introduces, so the first deploy through the new path passes its own gate. A bounded poll absorbs propagation rather than mistaking it for a split -- and a REAL split still exhausts the deadline, which is asserted."
+  },
+
+  "contradicted": [
+    {
+      "what": "This parcel's own assertion about the shape of an unresolved served side: that the API surface would answer commit undefined.",
+      "status": "CONTRADICTED BY THE HARNESS ON ITS FIRST RUN -- corrected in the harness",
+      "detail": "The assertion was written as String(apiSurface.body.commit) === 'undefined' and FAILED: the surface answers commit:null, so the string was 'null'. The product's behaviour is correct (a JSON null, never an empty string and never absent); the lane's expectation was wrong. Corrected to assert the observed shape (JSON 'null') AND the 503 status, so the refusal is now pinned by two independent properties rather than one guessed one. Recorded because this is exactly the class of error a harness is for."
+    },
+    {
+      "what": "This parcel's assumption that Parcel 1's served-mode refusal messages were already readable.",
+      "status": "CONTRADICTED BY RUNNING IT AGAINST A REAL ERROR -- fixed",
+      "detail": "When the console surface answers with a non-JSON or error body, the refusal text rendered the error object literally as '[object Object]'. It never showed in fixture-driven tests because the fixtures carried string errors. Fixed with a describeError helper that names the error in the shapes Vercel actually returns. The new test asserts the refusal names it, rather than asserting a paraphrase."
+    },
+    {
+      "what": "This parcel's assumption that the check's disagreement line could not print a placeholder.",
+      "status": "CONTRADICTED BY READING THE HARNESS OUTPUT -- fixed",
+      "detail": "The served-mode detail line printed 'revision (null)' when a side had no revision to name (the served mode reads an origin, not a platform record, so there is no revision). Cosmetic, but it is the kind of line a reader learns to skip, and a skipped line is where a real null hides. Fixed to include the revision only when one exists."
+    },
+    {
+      "what": "Parcel 1's shipped scripts/served-commit-parity.mjs file encoding.",
+      "status": "CONTRADICTED BY node --check -- fixed",
+      "detail": "The file carried a UTF-8 BOM, so `node --check` failed with 'Invalid or unexpected token' on line 1. It ran anyway under `node <file>` because Node strips a BOM on the main module, which is why Parcel 1's suites never caught it. It would have broken any tool that concatenates, diffs or imports the file. Stripped in both copies and verified: all nine files this parcel touched are now BOM-free."
+    },
+    {
+      "what": "THIS LANE'S OWN method of reading the serving Cloud Run revision during the Parcel 2 measurement.",
+      "status": "CONTRADICTED BY ITS OWN OUTPUT -- caught and corrected in-flight",
+      "detail": "Reading `status.traffic[0].revisionName` returned plan-review-00004-xez (created 2026-08-16) as the 'serving' revision for plan-review and smart-files-00008-geb (2026-09-02) for smart-files. Both are WRONG: those are alias-tag entries and the serving entries are further down the array. The correct read filters to percent=100 and returns plan-review-00029-gom and smart-files-00015-lod -- the same revisions Parcel 1 measured. This is precisely the mistake smart-files' own fixture warns about ('a canary alias cannot be mistaken for what the product serves'), and the shipped check does NOT make it (it selects by percent=100); the lane did, by hand, while producing evidence. Caught by cross-checking against the fixture rather than by a test. Both evidence files now carry the full traffic array so the trap is visible on the record."
+    },
+    {
+      "what": "The assumption that the Parcel 1 heads named in CP1 could simply be confirmed by reading them.",
+      "status": "CONFIRMED, not contradicted -- recorded because it was checked rather than assumed",
+      "detail": "`git merge-base --is-ancestor` is YES in both repos (b4b44b9 -> plan-review HEAD, a238072 -> smart-files HEAD). Both branches were CONTINUED, not re-cut, so Parcel 1's instrument, fixtures and measurements are not re-derived anywhere in this parcel."
+    }
+  ],
+
+  "threeQuestionGate": {
+    "_what": "ENFORCEMENT.md's gate, answered in writing as the mission requires, with the 'a human remembers' answer said out loud rather than implied away. The same answers are carried in the shipped script's own header so they are not answered from memory at read time.",
+    "1_whatExecutesIt": "scripts/served-commit-parity.mjs. Two modes now: the default (platform records, needs the Vercel CLI on the workstation) and --served (the two public origins, NO credentials). It is ALSO wired into each product's own `npm test`, so its ability to fail is re-proven on every pull request, and scripts/g160-served-harness.mjs exercises all three outcomes on every CI run and every scheduled run.",
+    "2_whatTriggersIt": "(a) DEPLOY-TIME: scripts/deploy.mjs runs the check as its LAST step, after both sides of that deploy have landed, with a bounded poll. (b) SCHEDULE: .github/workflows/served-commit-parity.yml, a cron (every 2 hours) plus workflow_dispatch, whose home is a path in each repo.",
+    "3_whatFails": "A non-zero exit. 1 = the two sides serve different commits. 2 = a side could not be read at all. Either fails the scheduled job and blocks calling a deploy done.",
+    "4_whatBypassesIt": "Named, not implied away. (a) A deploy made BY HAND outside scripts/deploy.mjs skips the deploy-time gate. The schedule is the control for exactly that case, which is why the schedule is not optional -- and it is also the honest limit: a hand-deploy is caught within two hours, not at the moment it happens. (b) A deploy that passes SERVED_COMMIT from somewhere other than the commit it built. The deploy script refuses a dirty tree and requires the live surface of the SERVING revision to agree with the platform record, which catches a stale or borrowed commit; it cannot catch a deploy that lies to both sides consistently. (c) --api-origin/--console-origin can point the check at different origins. Those exist so the harness can observe a real PASS without a deploy; they are measurement scoping, NOT a bypass: they cannot make two sides agree, and neither the deploy gate nor the schedule passes them. (d) 'a human remembers' -- NOT an answer anywhere in this row. Every trigger is a path or a job name; there is no step that depends on someone remembering to run it."
+  },
+
+  "boundariesHonored": [
+    "Wrote only in plan-review and smart-files, on the EXISTING g160-served-commit-parity branches (continued from b4b44b9 and a238072, verified ancestors).",
+    "Did NOT deploy, merge or publish. Both branches are committed locally and unpushed; the integration seat owns the push and the PRs. The harness starts LOCAL servers on loopback and reads them; no platform state was written by this parcel.",
+    "No platform state was mutated: the only gcloud and vercel calls this parcel made were READS, and the deploy path was exercised only in --dry-run.",
+    "doc_repo is planner-owned: the handback artifacts are filed uncommitted in the seat worktree.",
+    "FAN-DEPTH 0: zero sub-agents spawned. Every claim here is an exit code, a test assertion or a file read.",
+    "No tenant credential, no privileged data and no database URL was read into this process."
+  ],
+
+  "recordIntegrity": {
+    "_what": "Disclosed because it is a cost to the record, not a success.",
+    "whatHappened": "Parcel 1's CP1 lived at _inbox/2026-09-18_g160-served-commit-parity_cp1.json. This parcel's CP1 was filed over that same path and its `supersedes` field says so explicitly.",
+    "isItRecoverable": "NO, and the answer is stated rather than left to be discovered. The file was untracked in the seat worktree, so git does not hold it; a search of the seat inbox, the integration repo's inbox found no other copy. The Parcel 2 CP1 was renamed to ..._p2_cp1.json after the fact so the naming is unambiguous, but that does not restore the original.",
+    "whatSurvivesOfIt": "Two fragments, both on the record: (a) Parcel 1's close.json carries a filedAtNote summarising CP1's own disclosure ('CP1 was filed after the plan-review build and before the smart-files build'), and (b) p2_cp1.json's supersedes field quotes CP1's self-description verbatim ('It is not backdated and it does not claim to have gated the plan-review work'). So the substance of what Parcel 1's CP1 admitted is preserved even though its body is not.",
+    "whyRecordedHere": "A checkpoint overwritten in place is indistinguishable from a checkpoint that never existed, and the fleet's rule is that the record says which happened. Parcel 2's remaining artifacts use Parcel-2-specific names (..._p2_cp1.json, ..._p2_cp2.json, ..._p2_close.json, ..._p2_*_evidence.txt) so this cannot silently recur for them.",
+    "theDisciplinePoint": "Parcel 2's CP1 was filed BEFORE implementation and said so -- which fixed Parcel 1's own confessed sequencing defect. It then created a different one, by reusing a path. Both are recorded; neither is smoothed."
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

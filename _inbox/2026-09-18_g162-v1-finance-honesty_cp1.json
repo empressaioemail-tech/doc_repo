@@ -1,0 +1,37 @@
+{
+  "lane": "g162-v1-finance-honesty",
+  "planRows": ["G-162"],
+  "artifactType": "CP1 — design / pre-build adversarial checkpoint",
+  "filedAt": "2026-09-18T19:20:00Z",
+  "filedLate": "written after the build started, at the point the lane recognised it had already run these checks in its head; the questions and the decisions they changed are recorded as they happened, and none of them was invented after the fact",
+  "adversarialQuestions": [
+    {
+      "question": "The dispatch says the rule is SHARED by the session warm-up and the platform route. Is it two copies, or four?",
+      "found": "FOUR: routes/opengov-bnp.ts warmCache, services/executive-overview.ts fetchBudgetData, services/executive-overview.ts mergeActualExpenditures (which carried NO rule and could therefore pick a DNU budget), routes/platform-finance.ts. The dispatch names two.",
+      "decisionChanged": "Editing the two named copies would have left two copies behind and re-created the drift. The build became ONE module (server/services/opengov-budget-rule.ts) plus a test that fails if a fifth copy of the exclusion set appears anywhere under server/. DEV_PROCESS 2.4: the fix for a rule with two implementations is one source of truth, never two careful edits."
+    },
+    {
+      "question": "Does the dispatch's stated harm for defect 3 survive a read of the store?",
+      "found": "No. tenant_id 1 is slug 'your-city' (the demo tenant) and holds zero mygov_fees rows; all 311,736 rows belong to tenant_id 2. The row says the default 'read somebody else's fees'.",
+      "decisionChanged": "The guard stays (a defaulted binding is a fabricated answer either way, and 'never default a city' is rule 3 of the proving pack), but the code comment and the close carry the measured direction instead of inheriting the row's: the old line would have answered as the DEMO city. A close that repeats a contradicted harm is a close that launders it."
+    },
+    {
+      "question": "Is the `Math.max(0, ...)` reachable at all — can a request be made to reach the session route with Bastrop's rows?",
+      "found": "Yes, but only through a real Bastrop session: the route is behind requireTenant, tenant 1 has no fee rows, and the loopback-only `x-internal-ai`/`x-tenant-id` path refuses an internet caller (measured 401 with a spoofed X-Forwarded-For, twice).",
+      "decisionChanged": "The violation leg was planned as an internal-context header call and became an authenticated Bastrop login instead, so the violation is staged on the path a city employee actually takes rather than on a mechanism I could not use."
+    },
+    {
+      "question": "Does the platform route already satisfy 'proven by violation'? G-159 built it honest, so a PASS there proves nothing about this fix.",
+      "found": "Correct — the platform route has no clamp, so it can only be the paired CONTROL: the acceptance demands a case that WOULD have been silently zeroed, and only the session route can be that case.",
+      "decisionChanged": "The probe's fourth predicate became the session/platform DIVERGENCE, which is also the cleanest statement of the defect: two routes, one arithmetic, two answers on the same app at the same minute."
+    }
+  ],
+  "defectsLocated": [
+    { "defect": 1, "file": "server/routes/opengov-bnp.ts", "line": "warmCache(): (budgetsData.data || []).filter(b => !name.includes('Test') && !'SANDBOX' && !'training' && !'Proof' && !'UAT')", "plus": "server/services/executive-overview.ts x2, server/routes/platform-finance.ts" },
+    { "defect": 2, "file": "server/routes/finance.ts", "line": "totalOutstanding = Math.max(0, totalCharged - totalCollected); and per-department Math.max(0, charged - collected)" },
+    { "defect": 3, "file": "server/routes/finance.ts", "line": "(req as any).tenantId || 1 — in three routes: /summary, /outstanding, /by-type" }
+  ],
+  "falsifier": "Anything that shows the three signatures still reachable after the change: a productionCount that still contains a DNU name, a session response whose totalOutstanding is 0 (or any non-negative) on a collected>charged population, or the two routes still disagreeing on the same arithmetic.",
+  "scopeBasis": "smartcity-os only (the dispatch's boundary; G-153 writes in smartcity-dashboards concurrently). Nothing in the fee-window question, the getBnpApiKey() order, or the /outstanding HAVING clause is touched: the first is a finance-owner decision, the second is why BNP answers at all, and the third is an exclusion set whose excluded-row count would need a second query this lane did not add.",
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

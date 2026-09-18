@@ -1,0 +1,396 @@
+﻿G-160 PARCEL 2 -- EVIDENCE, plan-review (the arm parcel)
+captured 2026-09-18T20:30:32.314Z
+repo      P:\plan-review-worktrees\g160-served-commit-parity
+branch    g160-served-commit-parity
+HEAD      cdd4cb344fe8621f28c70d593874238003bba1f8
+base      origin/main 99c156babe10d83d0840a81a3ccc7c6f5ff94fff
+parcel1head b4b44b9 (the commit this parcel continued from, not restarted)
+tree      CLEAN
+
+=== 1. WHAT LANDED: git diff --stat vs origin/main ===
+ .github/workflows/served-commit-parity.yml     |  68 +++
+ .github/workflows/test.yml                     |   9 +
+ README.md                                      |  32 ++
+ package.json                                   |   4 +-
+ scripts/deploy.mjs                             | 240 ++++++++++
+ scripts/fixtures/g160-planted-split.json       |  16 +
+ scripts/fixtures/g160-recorded-2026-09-17.json |  49 ++
+ scripts/g160-served-harness.mjs                | 193 ++++++++
+ scripts/served-commit-parity.mjs               | 628 +++++++++++++++++++++++++
+ src/served-commit.mjs                          |  69 +++
+ src/server.mjs                                 |  16 +
+ web/api/served-commit-parity.test.mjs          | 465 ++++++++++++++++++
+ web/api/version.js                             | 129 +++++
+ 13 files changed, 1917 insertions(+), 1 deletion(-)
+=== 1b. name-status (A = introduced by this parcel) ===
+A	.github/workflows/served-commit-parity.yml
+M	.github/workflows/test.yml
+M	README.md
+M	package.json
+A	scripts/deploy.mjs
+A	scripts/fixtures/g160-planted-split.json
+A	scripts/fixtures/g160-recorded-2026-09-17.json
+A	scripts/g160-served-harness.mjs
+A	scripts/served-commit-parity.mjs
+A	src/served-commit.mjs
+M	src/server.mjs
+A	web/api/served-commit-parity.test.mjs
+A	web/api/version.js
+
+=== 2. STEP 1 -- the deploy records its commit. Clean tree: the plan it would issue. ===
+[dry-run] plan-review -- would deploy commit cdd4cb344fe8621f28c70d593874238003bba1f8 (git rev-parse HEAD on a clean tree)
+  api      gcloud run deploy plan-review --project plan-review-505715 --region us-east1 --source P:\plan-review-worktrees\g160-served-commit-parity --update-env-vars SERVED_COMMIT=cdd4cb344fe8621f28c70d593874238003bba1f8 --update-labels commit-sha=cdd4cb344fe8621f28c70d593874238003bba1f8 --quiet
+  console  vercel deploy P:\plan-review-worktrees\g160-served-commit-parity\web --prod --yes --project plan-review-app --env SERVED_COMMIT=cdd4cb344fe8621f28c70d593874238003bba1f8
+  gate     C:\Program Files\nodejs\node.exe P:\plan-review-worktrees\g160-served-commit-parity\scripts\served-commit-parity.mjs --served
+  nothing was issued: this run only resolves the commit and prints the plan.
+exit=0
+
+=== 2b. The same command with a DIRTY tree. This is the refusal, not a narration of one. ===
+REFUSED to deploy plan-review: the working tree is dirty. A commit recorded from a dirty tree is an upper bound on what was built, not an identity, so the parity check would compare a number that does not mean what it appears to mean. Commit or stash, then deploy.
+exit=2
+
+=== 3. STEP 3 -- all three outcomes, over real HTTP, from this product's own surfaces ===
+G-160 served harness -- plan-review
+  suite   3 required outcomes, observed over HTTP from the real surfaces
+
+  PASS   both sides serve the same commit
+    api      http://127.0.0.1:61103/version -> 200 commit="99c156babe10d83d0840a81a3ccc7c6f5ff94fff"
+    console  http://127.0.0.1:61108/api/version -> 200 commit="99c156babe10d83d0840a81a3ccc7c6f5ff94fff"
+    --- check output ---
+    served-commit parity -- plan-review
+      snapshot      plan-review@cdd4cb344fe8621f28c70d593874238003bba1f8 read 2026-09-18T20:30:33.471Z
+      API           plan-review (plan-review-505715/us-east1)
+        surface     http://127.0.0.1:61103/version
+        commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [SERVED_COMMIT]
+      console       plan-review-app (http://127.0.0.1:61108)
+        surface     http://127.0.0.1:61108/api/version
+        commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [SERVED_COMMIT]
+      VERDICT       AGREE -- both sides serve 99c156babe10d83d0840a81a3ccc7c6f5ff94fff
+    --------------------
+    ok   exit code = 0
+    ok   verdict = "AGREE"
+
+  FAIL   the recorded 2026-09-17 shape: console behind the API
+    api      http://127.0.0.1:61116/version -> 200 commit="99c156babe10d83d0840a81a3ccc7c6f5ff94fff"
+    console  http://127.0.0.1:61120/api/version -> 200 commit="1af5ac59f0c1f1bdd7d5f2f1e8a2b0a8dd34d6f2"
+    --- check output ---
+    served-commit parity -- plan-review
+      snapshot      plan-review@cdd4cb344fe8621f28c70d593874238003bba1f8 read 2026-09-18T20:30:34.005Z
+      API           plan-review (plan-review-505715/us-east1)
+        surface     http://127.0.0.1:61116/version
+        commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [SERVED_COMMIT]
+      console       plan-review-app (http://127.0.0.1:61120)
+        surface     http://127.0.0.1:61120/api/version
+        commit      1af5ac59f0c1f1bdd7d5f2f1e8a2b0a8dd34d6f2  [SERVED_COMMIT]
+      VERDICT       DISAGREE -- API serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff but the console serves 1af5ac59f0c1f1bdd7d5f2f1e8a2b0a8dd34d6f2
+    --------------------
+    ok   exit code = 1
+    ok   verdict = "DISAGREE"
+    ok   the split is named in the output = true
+
+  REFUSE SERVED_COMMIT absent on both sides
+    api      http://127.0.0.1:61127/version -> 503 commit=null
+    console  http://127.0.0.1:61133/api/version -> 503 commit=null
+    --- check output ---
+    served-commit parity -- plan-review
+      snapshot      plan-review@cdd4cb344fe8621f28c70d593874238003bba1f8 read 2026-09-18T20:30:34.765Z
+      API           plan-review (plan-review-505715/us-east1)
+        REFUSED     API side http://127.0.0.1:61127/version answered 503 without resolving a commit (error=served_commit_unresolved)
+      console       plan-review-app (http://127.0.0.1:61133)
+        REFUSED     console side http://127.0.0.1:61133/api/version answered 503 without resolving a commit (error=served_commit_unresolved)
+      VERDICT       REFUSED -- a side could not be read; fail closed
+        - API side: API side http://127.0.0.1:61127/version answered 503 without resolving a commit (error=served_commit_unresolved)
+        - console side: console side http://127.0.0.1:61133/api/version answered 503 without resolving a commit (error=served_commit_unresolved)
+    --------------------
+    ok   exit code = 2
+    ok   verdict = "REFUSED"
+    ok   two unresolved sides are NOT agreement = false
+    ok   the API surface answered commit:null rather than an empty string = "null"
+    ok   the API surface answered 503 = 503
+
+all 3 outcomes observed: PASS (exit 0), FAIL (exit 1), REFUSE (exit 2), over HTTP.
+exit=0
+
+=== 3b. The instrument's own self-test ===
+  pass  PRODUCT.repo matches the repo this file is in
+  pass  agreement -> AGREE/0
+  pass  console behind API -> DISAGREE/1
+  pass  split does not read as agree
+  pass  same commits but different strings disagree
+  pass  unreadable API -> REFUSED/2
+  pass  unreadable console -> REFUSED/2
+  pass  both unreadable -> REFUSED/2
+  pass  a null commit never agrees with another null commit
+  pass  the recorded 2026-09-17 shape has the console FIFTEEN DAYS behind at the API advance
+  pass  the recorded 2026-09-17 shape splits for 2h28m
+  pass  the check FAILS against the recorded 2026-09-17 state
+  pass  ...and passes once the console catches up
+  pass  the planted violation FAILS on the exit code, not on narration
+
+all self-tests pass (both directions, fail-closed, non-vacuous)
+exit=0
+
+=== 4. THE LIVE REFUSAL, RECORDED. This is a fact read now, not a claim it would pass. ===
+read at 2026-09-18T20:30:35.131Z
+served-commit parity -- plan-review
+  snapshot      plan-review@cdd4cb344fe8621f28c70d593874238003bba1f8 read 2026-09-18T20:30:41.043Z
+  API           plan-review (plan-review-505715/us-east1)
+    REFUSED     revision plan-review-00029-gom records no commit: neither the label commit-sha nor the SERVED_COMMIT env var is set. Cloud Run records no git revision of its own and the image is built from an uploaded archive with .git excluded, so the deploy has to record it. REFUSED rather than defaulted.
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    deployment  plan-review-k5wml23xb-empressaioemail-techs-projects.vercel.app
+    created     2026-09-18T01:11:51.368Z
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [meta.gitCommitSha]
+    git ref     HEAD
+    tree        clean at deploy
+    message     G-150: the ratified reasoner path -- registry-derived badges, honest absence, the provenance ladder 
+  VERDICT       REFUSED -- a side could not be read; fail closed
+    - API side: revision plan-review-00029-gom records no commit: neither the label commit-sha nor the SERVED_COMMIT env var is set. Cloud Run records no git revision of its own and the image is built from an uploaded archive with .git excluded, so the deploy has to record it. REFUSED rather than defaulted.
+exit=2
+
+=== 4b. The same live state through the credential-free --served path (what CI/the schedule runs) ===
+served-commit parity -- plan-review
+  snapshot      plan-review@cdd4cb344fe8621f28c70d593874238003bba1f8 read 2026-09-18T20:30:41.589Z
+  API           plan-review (plan-review-505715/us-east1)
+    REFUSED     API side https://plan-review-ozx33wafia-ue.a.run.app/version answered 404 without resolving a commit (body named no error)
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    REFUSED     console side https://plan-review-app-ten.vercel.app/api/version answered 404 without resolving a commit (error=404)
+  VERDICT       REFUSED -- a side could not be read; fail closed
+    - API side: API side https://plan-review-ozx33wafia-ue.a.run.app/version answered 404 without resolving a commit (body named no error)
+    - console side: console side https://plan-review-app-ten.vercel.app/api/version answered 404 without resolving a commit (error=404)
+exit=2
+
+=== 5. The recorded 2026-09-17 falsifier, through the CLI ===
+served-commit parity -- plan-review
+  snapshot      plan-review (recorded 2026-09-17 state, reconstructed)@(no git ref) read 2026-09-18T20:30:41.710Z
+  API           plan-review (plan-review-505715/us-east1)
+    serving rev plan-review-00029-gom
+    digest      us-east1-docker.pkg.dev/plan-review-505715/cloud-run-source-deploy/plan-review@sha256:3fdfd30f1fd62b9ef433f454c020bcad6cc57b872449abcfce8108e3c4e68f5f
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [fixture]
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    deployment  a production deployment of plan-review-app created 2026-09-03T03:11:22.887Z
+    created     2026-09-03T03:11:22.887Z
+    commit      1af5ac596d28d5040c56af2545fbe4782f2dac3d  [unreported]
+  VERDICT       DISAGREE -- API serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff (plan-review-00029-gom) but the console serves 1af5ac596d28d5040c56af2545fbe4782f2dac3d
+
+  recorded split window: 8880s (2h28m0s (2026-09-17T22:43:51.130Z, the API revision becoming ready, to 2026-09-18T01:11:51.368Z, the console promotion))
+exit=1
+
+=== 6. All Cloud Run traffic entries for this service, to show WHY traffic[0] is not the answer ===
+percent=100 is the serving revision; every other entry is an alias tag on an old revision.
+{'revisionName': 'plan-review-00004-xez', 'tag': 'g60b', 'url': 'https://g60b---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00006-duj', 'tag': 'g60c', 'url': 'https://g60c---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00008-pol', 'tag': 'g60e', 'url': 'https://g60e---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00010-cey', 'tag': 'g60f', 'url': 'https://g60f---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00012-pen', 'tag': 'g60g', 'url': 'https://g60g---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00014-zot', 'tag': 'g105-7', 'url': 'https://g105-7---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00016-buh', 'tag': 'g107-staff-upload', 'url': 'https://g107-staff-upload---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00018-hoq', 'tag': 'diag-g110', 'url': 'https://diag-g110---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00019-puj', 'tag': 'g110-fix', 'url': 'https://g110-fix---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00021-huc', 'tag': 'g112-recon', 'url': 'https://g112-recon---plan-review-ozx33wafia-ue.a.run.app'};{'revisionName': 'plan-review-00025-ley', 'tag': 'g126-tenant-isolation', 'url': 'https://g126-tenant-isolation---plan-review-ozx33wafia-ue.a.run.app'};{'percent': 100, 'revisionName': 'plan-review-00029-gom', 'tag': 'g150-reasoner', 'url': 'https://g150-reasoner---plan-review-ozx33wafia-ue.a.run.app'}
+
+=== 7. Full unit suite ===
+
+> test
+> node --test web/api/*.test.mjs src/*.test.mjs
+
+▶ G-132: staffEngagementRefusal
+  ✔ refuses a non-staff caller (no bearer resolved at all) (0.7454ms)
+  ✔ refuses a staff caller from a different tenant (0.1406ms)
+  ✔ refuses a verified staff person with no tenant claim rather than treating it as a match (0.0984ms)
+  ✔ allows the matching tenant, and only the matching tenant (0.7544ms)
+✔ G-132: staffEngagementRefusal (2.4958ms)
+▶ staff-identity: not a staff bearer at all
+  ✔ returns null for a non-JWT-shaped bearer (the existing service-key path) (0.9744ms)
+  ✔ looksLikeJwt distinguishes shape only, both directions (0.277ms)
+✔ staff-identity: not a staff bearer at all (2.3372ms)
+▶ staff-identity: fail-closed configuration
+  ✔ refuses a JWT-shaped bearer when no issuer is configured, never accepts unverifiably (32.0309ms)
+✔ staff-identity: fail-closed configuration (33.129ms)
+▶ staff-identity: the positive path, and it must be observed working
+  ✔ verifies a well-formed token and reads sub/role/tenant (63.7178ms)
+  ✔ honors STAFF_ROLE_CLAIM / STAFF_TENANT_CLAIM overrides for a namespaced-claim provider (11.8036ms)
+  ✔ verifies a person provisioned with no role yet, and says so rather than refusing or guessing (63.9357ms)
+✔ staff-identity: the positive path, and it must be observed working (139.6802ms)
+▶ staff-identity: every refusal is exercised on the real failing case, not asserted possible
+  ✔ refuses an unknown issuer (265.5732ms)
+  ✔ refuses an expired token (23.6286ms)
+  ✔ refuses a not-yet-valid token (nbf in the future) (27.5102ms)
+  ✔ refuses a token older than STAFF_TOKEN_MAX_AGE_SECONDS even though exp has not passed (G-134 GAP 3) (13.1251ms)
+  ✔ accepts a token within the default 900s max age with no override configured (25.0962ms)
+  ✔ refuses a token older than the default 900s cap when no override is configured (63.1838ms)
+  ✔ does not refuse on age when STAFF_TOKEN_MAX_AGE_SECONDS is explicitly disabled (0) (77.1803ms)
+  ✔ does not refuse on age when iat is absent (spec-optional; exp/nbf already bounded it) (32.6615ms)
+  ✔ refuses alg:none outright, before any crypto operation runs (39.9402ms)
+  ✔ refuses a tampered payload even though the outer shape is still a valid JWT (57.3548ms)
+  ✔ refuses a token signed by a DIFFERENT keypair than the one this issuer publishes (118.8237ms)
+  ✔ refuses an unknown kid (key rotated out) after attempting one refresh (27.6975ms)
+  ✔ refuses a malformed token that cannot be base64/JSON decoded (0.1483ms)
+  ✔ refuses a token with no sub claim (5.9457ms)
+  ✔ refuses when the injected revocation check reports the account disabled -- both directions, offboarding proven live (34.1328ms)
+  ✔ propagates a revocation-check transport failure as a refusal, never as a silent accept (59.0813ms)
+✔ staff-identity: every refusal is exercised on the real failing case, not asserted possible (871.9946ms)
+✔ the live exploit is refused: no persona, names any tenant (0.8759ms)
+✔ no persona is refused even for a tenant that does not exist (0.1872ms)
+✔ a persona from one org cannot read another org (0.9111ms)
+✔ a malformed persona is refused rather than parsed loosely (0.2439ms)
+✔ an unrecognised scopeType is refused, not passed through (0.2213ms)
+✔ a missing scopeId is refused rather than defaulted (0.1335ms)
+✔ the legitimate same-org read is allowed (0.174ms)
+✔ allow is per-org, not a blanket pass once a persona is present (0.1756ms)
+✔ the gate is not vacuous: it returns null on at least one input (0.1466ms)
+✔ an unknown IBC section refuses instead of returning a neighbour (1.3999ms)
+✔ the two sections that used to BE the fallback are themselves unknown now (0.2566ms)
+✔ the UDC branch no longer answers an unknown section with 14-02-003 (0.8228ms)
+✔ an absence carries no citation, heading, atom id or deep link (0.2204ms)
+✔ two different unknown sections do not collapse to one answer (0.19ms)
+✔ an unrecognised book refuses rather than falling through to the IBC (0.3986ms)
+✔ a missing book refuses rather than defaulting to the IBC (2.474ms)
+✔ chapter-only browsing no longer answers with the first section it finds (0.2179ms)
+✔ the four absence kinds are distinct and none of them is a 200 (0.4737ms)
+✔ unchecked and absent-verified are not interchangeable (0.2832ms)
+✔ source-unavailable is its own kind and is not a 404 (0.2222ms)
+✔ an absence without a basis raises rather than serving an untyped absence (0.4296ms)
+✔ an unlisted absence kind raises rather than defaulting a status (0.1811ms)
+✔ no ICC book manifest claims an R-prefixed section (0.1111ms)
+✔ the matrix does not attribute an R-prefixed section to the IBC (1.1028ms)
+✔ the matrix still produces both residential rows and the two UDC rows (0.2233ms)
+✔ a residential row with no declared edition carries no citation, only a typed absence (G-108) (0.3355ms)
+✔ no matrix row is a Pass, so nothing is fabricated as compliant (0.1256ms)
+✔ an ingested UDC section resolves (0.0998ms)
+✔ the second ingested section resolves to its OWN atom, not its neighbour (0.0822ms)
+✔ book aliases still resolve to the same books they did before (0.0655ms)
+✔ a resolved section carries the identity a real citation needs, and no pre-built citation string (G-113) (0.0671ms)
+✔ the gate is not vacuous in either direction (0.0576ms)
+✔ only ICC-published books can carry an ICC deep link (0.0497ms)
+✔ a real-shaped IBC section number resolves live, marked for verification (0.109ms)
+✔ a multi-dot IBC section number maps every dot, not just the first (0.0899ms)
+✔ an R-prefixed (IRC-shaped) input against IBC still refuses without a live check (0.0697ms)
+✔ IPMC2018P2 has no live path: the same real-shaped section number stays unchecked (0.0599ms)
+✔ classifyLiveSectionFetch: a section-shaped atom resolves (0.2446ms)
+✔ classifyLiveSectionFetch: a confirmed {atom: null} answer is ABSENT_VERIFIED, not SOURCE_UNAVAILABLE (0.094ms)
+✔ classifyLiveSectionFetch: the substrate's own accessPolicy-denial text is NOT_ENTITLED (0.1049ms)
+✔ classifyLiveSectionFetch: a thrown fetch error is SOURCE_UNAVAILABLE, never a served row (0.0831ms)
+✔ classifyLiveSectionFetch: an unrecognised non-section payload also falls to SOURCE_UNAVAILABLE, not a false ABSENT_VERIFIED (0.1041ms)
+✔ buildCitation refuses a citation without an editionId (transaction contract rule 1) (1.255ms)
+✔ buildCitation refuses without bookId or sectionNumber (0.1852ms)
+✔ renderCitationText derives its string from the structured fields, never the reverse (0.1499ms)
+✔ AVAILABLE_EDITIONS lists IRC-2018 as declarable even though no IRC content is ingested (0.1979ms)
+✔ an unlisted edition id is not available (0.118ms)
+✔ adjudicateMinimumSetback reaches a real Pass (0.1415ms)
+✔ adjudicateMinimumSetback reaches a real Fail, not just a Pass (0.0853ms)
+✔ adjudicateMinimumSetback is Unchecked with a typed absence when nothing was proposed (0.2034ms)
+✔ adjudicateMinimumSetback is Unchecked, not Fail, when the requirement itself is missing (0.3224ms)
+✔ matrixFromChain: no declared edition leaves IRC rows citation-less with a named absence (0.9165ms)
+✔ matrixFromChain: declaring IRC-2018 makes the IRC rows carry a real, non-null editionId (item 8) (0.4182ms)
+✔ matrixFromChain: every returned citation-shaped row (non-null citation) carries a non-empty editionId (0.2268ms)
+✔ matrixFromChain: UDC rows always carry their real editionId regardless of the engagement's declared edition (0.2672ms)
+✔ matrixFromChain: chain.error produces a SOURCE_UNAVAILABLE absence on every row, distinct from a genuinely missing slot (item 9) (1.2888ms)
+✔ matrixFromChain: chain.error is a different absence than a chain that fetched fine with no setback-rule slot (0.358ms)
+✔ matrixFromChain: a real proposed setback makes the UDC district row reach Pass or Fail live, not just Unchecked (0.2819ms)
+✔ matrixFromChain: no row's absence is null unless its determination is Pass or Fail (0.2238ms)
+✔ matrixFromChain: no row uses 'Uncertain' for a missing requirement (reserved for authority conflicts, O-6) (0.1244ms)
+✔ no src file outside citation.mjs assigns a string literal to a `citation` field (4.5718ms)
+✔ the guard is not vacuous: it catches the exact pattern the six pre-G-108 sites used (0.4369ms)
+✔ no CODE_BOOKS section entry carries its own citation field (structural, not just textual) (0.335ms)
+✔ matrixFromChain's citation, when present, is exactly what buildCitation derives from that row's own fields (0.7107ms)
+✔ the real bastrop_tx persona is registered and resolves (0.9872ms)
+✔ no persona asserted: unchanged from today, read passes through (0.218ms)
+✔ bastrop_tx persona reading a template-city engagement is refused (0.1693ms)
+✔ the reverse direction is refused too: template-city persona reading a bastrop_tx engagement (0.1445ms)
+✔ the matching-tenant read is allowed (0.0868ms)
+✔ an unregistered persona is refused rather than silently treated as no-identity (0.1543ms)
+✔ a partial identity (org only, no user) is refused, not parsed loosely (0.0944ms)
+✔ the gate is not vacuous: it returns null on at least one input (0.0917ms)
+✔ no persona asserted: refused, not passed through (the reported violation) (0.8038ms)
+✔ an empty-string persona is treated the same as no persona (0.1433ms)
+✔ an unregistered persona is refused rather than silently treated as no-identity (0.1669ms)
+✔ a partial identity (org only, no user) is refused, not parsed loosely (0.7423ms)
+✔ every registered persona is allowed through its own gate (0.1863ms)
+✔ the gate is not vacuous: it returns null on at least one input (0.1146ms)
+✔ one adjudicator is registered, and it is the front setback (1.6647ms)
+✔ every other rule on the real matrix renders NO ADJUDICATOR (1.5844ms)
+✔ GATE 2 falsifier: a second adjudicator fixture makes the badge disappear for its rule (1.7038ms)
+✔ the badge is derived from the registry, not from the determination it happens to sit beside (0.2362ms)
+✔ a rule with no adjudicator cannot be rendered as Pass, and the composer refuses rather than degrading (0.3595ms)
+✔ the real matrix renders the permitted-use row Unchecked, never Pass (item 2, live path) (0.1215ms)
+✔ Pass and Fail are still genuinely reachable for the one adjudicated rule (0.158ms)
+✔ Uncertain is refused when no reviewer authored it (item 3, machine path) (0.1455ms)
+✔ a reviewer's Uncertain without a name or without a reason is refused, both halves (0.1632ms)
+✔ a named reviewer with a written reason renders Uncertain, and the surface names them (0.1695ms)
+✔ no code path in the composer emits Uncertain from a typed absence (0.1496ms)
+✔ every sectionId the reasoner emits comes off a row, and a citation-less row invents no identifier (item 4) (0.3075ms)
+✔ a rule with no section renders no citation and says why, rather than borrowing a neighbour (0.1343ms)
+✔ IBC is quotable:false and the reasoner will not carry a paraphrase of it, wrong-way (0.2025ms)
+✔ no finding ever renders verbatim code text, quotable book or not (0.2045ms)
+✔ the provenance ladder starts at the bottom rung and names the rung above as not built (item 6) (0.0861ms)
+✔ the rung is derived from whether a value is present, not from whether one could be (0.1304ms)
+✔ two axes are reported separately and never summed, and axis 2 requires a citation (0.1039ms)
+✔ a reviewer's recorded conflict is on neither axis, and is reported separately (0.0522ms)
+✔ a whole-chain failure is ONE finding about us, not one per section (0.1493ms)
+✔ a chain that fetched fine with nothing in it is NOT collapsed: four separate absences are four findings (0.0758ms)
+✔ the correction notice ties, and ties by construction rather than by arithmetic (0.0959ms)
+✔ an escalation prints under its own heading and is not counted as a correction (0.1448ms)
+✔ the letter accounts for every finding; none is silently dropped (0.1262ms)
+✔ ruleKey has one shape, so a registry entry can never be looked up under a second spelling (0.0431ms)
+✔ an absence that is required but missing is refused, not rendered as Unchecked-with-nothing (0.0789ms)
+✔ the correction notice refuses rather than printing counts that do not tie (0.0678ms)
+✔ a contract violation becomes a named refusal (0.0607ms)
+✔ anything that is not a contract violation is NOT relabelled a refusal (0.0732ms)
+{"event":"ledger_reconciliation_fetch_skipped","reason":"HAUSKA_MCP_PLATFORM_KEY is not configured"}
+{"event":"ledger_reconciliation_fetch_error","status":null,"message":"fetch failed"}
+{"event":"ledger_reconciliation_fetch_skipped","reason":"HAUSKA_MCP_PLATFORM_KEY is not configured"}
+✔ fetchLedgerRows returns null, not an empty array, when no platform key is configured (1.2686ms)
+✔ fetchLedgerRows returns null (not throwing, not []) when the reader call fails (19.6756ms)
+✔ null ledgerRows produces ledger-unavailable, not a false zero-match report (0.7155ms)
+✔ mapLedgerRow maps every reader field to its camelCase name (0.1758ms)
+✔ mapLedgerRow output feeds reconcileActivity's join correctly (requestId, sourceActorDid survive the mapping) (0.1391ms)
+✔ an activity row with no request_id is NO_CORRELATION_KEY, never matched by guessing (0.1061ms)
+✔ matching request_id with agreeing actor is MATCHED (0.0939ms)
+✔ matching request_id with disagreeing actor is DIVERGENT, not silently matched (0.0773ms)
+✔ summary counts a mixed batch correctly (0.1ms)
+✔ agreement passes; the exit code is 0 (0.7064ms)
+✔ the 2026-09-17 collision: console behind the API fails with exit 1 (0.0933ms)
+✔ case differences are not a split, and a one-character difference is (0.0881ms)
+✔ FAIL CLOSED: an unreadable side refuses (exit 2) rather than passing (0.087ms)
+✔ FAIL CLOSED: two null commits must never agree with each other (0.1653ms)
+✔ API side reads the SERVING revision by field name, not the latest ready one (0.4244ms)
+✔ API side reports the DIGEST, not the requested tag (0.223ms)
+✔ API side REFUSES when no commit is recorded on the revision (0.1231ms)
+✔ API side REFUSES when the label and the env var disagree (0.1226ms)
+✔ API side REFUSES on ambiguous or absent 100% traffic (0.1923ms)
+✔ API side REFUSES when the image digest is missing or is a tag (0.1325ms)
+✔ API side REFUSES when gcloud itself fails (0.1693ms)
+✔ the surface leg binds the public origin to the serving revision (0.3308ms)
+✔ the surface leg FAILS when the public origin serves a different revision (0.1286ms)
+✔ the surface leg FAILS when the origin's commit disagrees with the platform record (0.0903ms)
+✔ the surface leg FAILS on the unresolved-commit refusal and on transport failure (0.3557ms)
+✔ console side takes the NEWEST READY production deployment (1.3147ms)
+✔ console side ignores a newer NON-production deployment (0.1709ms)
+✔ console side REFUSES when the deployment carries no git commit (0.3792ms)
+✔ console side reads the GitHub-integration field name too (0.1315ms)
+✔ console side REFUSES when its own two commit records disagree (0.0983ms)
+✔ console side DECLARES a dirty deploy instead of hiding it, and does not refuse on it (0.1254ms)
+✔ console side REFUSES on an empty deployment list (0.0708ms)
+✔ console side REFUSES when the CLI fails, and names the TLS remedy only for a cert failure (0.2509ms)
+✔ the check FAILS against the recorded 2026-09-17 state (0.4037ms)
+✔ ...and PASSES once the console catches up: the same check, both directions (0.3138ms)
+✔ the fixture's own arithmetic matches the platform timestamps it quotes (0.4006ms)
+✔ the planted violation fires, and is not the recorded state (0.2353ms)
+✔ resolveServedCommit resolves a real SHA and reports where it came from (0.1553ms)
+✔ resolveServedCommit NEVER substitutes a stand-in for a commit (0.1832ms)
+✔ the surface answers 200 with the commit, and 503 with a refusal when it cannot resolve one (0.1638ms)
+✔ served leg: two sides at the same commit AGREE, and the exit code is 0 (0.3108ms)
+✔ served leg: the 2026-09-17 shape, one side redeployed and the other not, FAILS with exit 1 (0.1344ms)
+✔ served leg FAILS CLOSED on a 503 with commit:null, and two unresolved sides never agree (0.1492ms)
+✔ served leg FAILS CLOSED on a non-JSON body, no commit, a non-commit, and a dead origin (0.2724ms)
+✔ served leg names the refusal when the body's `error` is an object, not [object Object] (0.115ms)
+✔ the console surface resolves a real SHA, and reports which record it came from (0.2258ms)
+✔ DIVERGENCE TEST: the console rule and the API rule agree on EVERY row, stand-ins included (0.2011ms)
+✔ the console surface REFUSES a self-contradicting pair, and never steps over a stand-in (0.1804ms)
+✔ the console surface answers 200 with the commit and 503 with commit:null, never an empty string (0.1734ms)
+✔ the deploy REFUSES a dirty tree, and the refusal says why it is not cosmetic (0.1494ms)
+✔ the deploy resolves the commit from a clean tree, and refuses a HEAD that is not a commit (0.105ms)
+✔ the deploy plan records the SAME commit on both sides -- label AND env var, from one value (0.2271ms)
+✔ the gate POLLS, and a real split exhausts the deadline instead of being waited out (0.2553ms)
+✔ the scheduled trigger EXISTS as a file at a named path, with a cron and a dispatch (0.3007ms)
+ℹ tests 187
+ℹ suites 5
+ℹ pass 187
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1143.75
+
+--- end of plan-review parcel 2 evidence ---

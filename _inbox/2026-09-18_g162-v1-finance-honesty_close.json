@@ -1,0 +1,187 @@
+{
+  "lane": "g162-v1-finance-honesty",
+  "planRows": ["G-162"],
+  "status": "closed-partial",
+  "statusDetail": "All three defects are fixed, committed and open as PR #60. Defects 1 and 2 are PROVEN BY LIVE READS on the non-production app g162-v1-uat, with the violation measured before the fix and gone after it. Defect 3's refusal is proven at the route level (a named 500 with no SQL run) and is NOT proven on the deployed surface, because no deployed request can present a missing tenant binding: the app refuses such a request earlier, at 401, before any finance handler runs (measured, both legs). The lane did not stage a violation it could not produce. That single un-surface-proven clause is why this close is partial rather than full.",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-18_201529_g162_surface_probe.json",
+    "rawLegs": [
+      "_inbox/2026-09-18_201529_g162_surface_probe_prefix.json",
+      "_inbox/2026-09-18_201529_g162_surface_probe_postfix.json"
+    ],
+    "instrument": "scripts/g162-surface-probe.mjs (smartcity-os, in PR #60)",
+    "instrumentDivergence": "The close skeleton says probe.artifact is produced by scripts/surface-probe.mjs. That instrument carries OPS-23's parcel rows for smartsite.cloud and has no G-162 predicate, so citing it would be a claim about an instrument that measured something else; probe-close-gate.mjs's GATED_ROW matches only P-\\d+ rows and does not gate G-162. This lane's own probe is cited instead, with its revision named: both legs were produced by the same revision of it, one per app commit.",
+    "pairedControl": "one app (g162-v1-uat), one variable changed between legs (services[0].github.branch main -> fix/g162-finance-honesty, and therefore source_commit_hash 1f0262f1 -> bb7ca23f), one store, one instrument revision. pre-fix exit 1, post-fix exit 0."
+  },
+
+  "nonProductionApp": {
+    "name": "g162-v1-uat",
+    "appId": "5f160d17-be0b-4b26-b562-90280824079b",
+    "url": "https://g162-v1-uat-9oq3p.ondigitalocean.app",
+    "region": "nyc",
+    "instance": "apps-s-1vcpu-1gb x1",
+    "readDistinguishingItFromWalrus": "the app's own active_deployment.services[0].source_commit_hash read back per leg: 1f0262f15f8d1898a6c32826ec2e45407518e29e then bb7ca23f4307ba3997c432303f9be73b80df1b23; walrus-app (2a2a3a1a-b441-4296-8628-a82b20ded1b2) was never deployed to and its spec was only read, for its env KEY NAMES",
+    "leftAsEvidence": "left ACTIVE on fix/g162-finance-honesty for the planner. Its environment carries its own provenance so a later reader does not have to trust this close: G162_UAT_DB_SOURCE, G162_UAT_PLATFORM_KEY_SOURCE, G162_UAT_PLACEHOLDER_KEYS.",
+    "environmentDisclosure": "the app carries all 43 of walrus-app's env KEY NAMES so it can boot; 23 values are sourced (4 from GCP Secret Manager, 19 from the fleet's local secrets file) and 18 are labelled placeholders whose real values exist only in walrus-app's encrypted env. The app's PLATFORM_INTERNAL_API_KEY and SESSION_SECRET are lane-generated for this app only — the value walrus-app accepts was not moved. The 18 placeholders are all on paths outside this lane's three defects.",
+    "storeDisclosure": "the app reads smartcity-staging-DATABASE_URL, which resolves to the SAME Neon endpoint as smartcity-DATABASE_URL (ep-floral-sound-afocvkct) with the same 311,736 rows. There is no separate non-production smartcity-os store; the UAT app therefore reads production data, and saying 'pointed at staging' would claim a separation that does not exist. Being a non-production APP is what the row asked for and what was done; the DATA is shared and that is stated here."
+  },
+
+  "pullRequests": [
+    {
+      "number": 60,
+      "url": "https://github.com/empressaioemail-tech/smartcity-os/pull/60",
+      "title": "fix(G-162): one production-budget rule, a signed difference, and a tenant that refuses",
+      "repo": "empressaioemail-tech/smartcity-os",
+      "head": "fix/g162-finance-honesty",
+      "headSha": "bb7ca23f4307ba3997c432303f9be73b80df1b23",
+      "base": "main",
+      "baseSha": "1f0262f15f8d1898a6c32826ec2e45407518e29e",
+      "state": "open",
+      "mergeSha": null,
+      "mergeNote": "not merged: the dispatch says prove on a non-production app and leave the promotion to the planner",
+      "ciConclusions": [
+        "Gitleaks — detect secrets in code and history: pass (17s) https://github.com/empressaioemail-tech/smartcity-os/actions/runs/35389877845/job/105745485638",
+        "Semgrep — static analysis: pass (1m8s) https://github.com/empressaioemail-tech/smartcity-os/actions/runs/35389877865/job/105745485652",
+        "Trivy — dependency vulnerability scan: pass (39s) https://github.com/empressaioemail-tech/smartcity-os/actions/runs/35389878188/job/105745486767"
+      ],
+      "ciGapStated": "this repo runs no unit-test workflow on pull requests; `gh pr checks 60` lists exactly those three. The lane's own test evidence is local and is recorded under counts.tests, and it is not presented as a CI conclusion."
+    }
+  ],
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-18_g162-v1-finance-honesty_cp1.json",
+    "_inbox/2026-09-18_g162-v1-finance-honesty_cp2.json"
+  ],
+
+  "defects": [
+    {
+      "defect": 1,
+      "name": "the production budget filter dropped the wrong set",
+      "file": "server/routes/opengov-bnp.ts (warmCache) plus the three other copies",
+      "before": "five substrings (Test, SANDBOX, training, Proof, UAT) in FOUR separate implementations; DNU absent from all four, and the fourth (mergeActualExpenditures) had no rule at all",
+      "after": "server/services/opengov-budget-rule.ts is the only implementation; DNU joined the substring list; an unreadable name is no longer admitted; the rule string published on the wire is built from the applied list so the two cannot drift; a test fails if a fifth copy appears under server/",
+      "proof": "live BNP read on g162-v1-uat: productionCount 6 of 12 with the DNU pair inside the count and productionExcludedNames ABSENT -> productionCount 4 of 12 with productionExcludedNames naming 'FY2027 Operating Budget (DNU)' and 'FY2027 Operating Budget (DNU2)'"
+    },
+    {
+      "defect": 2,
+      "name": "a clamped difference fabricated a clean zero",
+      "file": "server/routes/finance.ts (summary route, total and per-department)",
+      "before": "totalOutstanding = Math.max(0, totalCharged - totalCollected); each department's outstanding clamped the same way",
+      "after": "the difference is published SIGNED and the conflict is NAMED, from server/services/finance-honesty.ts, which the platform route now calls too — one implementation of one arithmetic (DEV_PROCESS 2.4)",
+      "proof": "live read as an authenticated Bastrop admin over all 290,077 FY2026 rows on g162-v1-uat: totalOutstanding 0 with collectionRate 150 (and at least one department clamped to 0) while the platform route published -87,700,895.05 -> totalOutstanding -87,700,895.05 with arithmeticConflict.code 'collected_exceeds_charged'; the session-vs-platform divergence moved DIVERGENT -> AGREE"
+    },
+    {
+      "defect": 3,
+      "name": "a defaulted tenant is a binding that was never resolved",
+      "file": "server/routes/finance.ts (three routes: /summary, /outstanding, /by-type)",
+      "before": "(req as any).tenantId || 1 in all three",
+      "after": "requireResolvedRequestTenantId(req, res) in all three: a named 500 tenant_unresolved and an immediate return, before any SQL runs",
+      "proof": "route-level test (tests/api/finance-honesty.test.ts) asserting the named refusal and that no query runs. NOT proven on the deployed surface, with the read that explains why: session_summary_anonymous measures the app answering 401 to an unauthenticated caller before any finance handler runs, so no deployed request can present a missing binding — the guard is latent, not observed firing. No violation was staged for it."
+    }
+  ],
+
+  "counts": {
+    "budgets": {
+      "value": "productionCount 6 -> 4 of 12",
+      "countingRule": "listBudgets() for entity 3c8981ac-1a8b-463d-b26b-5ef37c66734f, filtered by the production-budget rule; the same twelve live names in both legs, so the denominator is held constant",
+      "denominator": "12 live budgets, all twelve named in the artifact"
+    },
+    "permitRevenue": {
+      "value": "charged 174,092,822.21; collected 261,793,717.26; difference -87,700,895.05; collectionRate 150 percent",
+      "countingRule": "mygov_fees WHERE tenant_id = 2 AND fiscal_year = 2026 — 290,077 rows across 1,491 permits, the whole population, not a sample. The 150 percent is fee rows summed once per MyGov report window and is NOT corrected here.",
+      "caveat": "the store read (SELECT tenant_id, COUNT(*) FROM mygov_fees GROUP BY tenant_id) returned 311,736 rows, ALL tenant_id 2; tenant 1 is slug 'your-city' with zero fee rows"
+    },
+    "tests": {
+      "value": "22 passed in the two files this lane adds; 4 failed / 224 passed in the full local suite",
+      "countingRule": "vitest run, in the lane's own worktree",
+      "flakesStated": "the four failures are calendar-municode-timeout, health (responds under 500ms), spireon, powerbi-cip-phase-fields: machine-speed flakes unrelated to this diff — three pass in isolation on re-run, the fourth also times out on the base tree at module import. Not presented as a green suite."
+    },
+    "appDeployments": {
+      "value": "4 deployment attempts on g162-v1-uat: 1 CANCELED (superseded), 1 ERROR (container exit non-zero on a partial env), 1 ACTIVE at 1f0262f1, 1 ACTIVE at bb7ca23f",
+      "countingRule": "doctl apps list-deployments, read after each step"
+    }
+  },
+
+  "acceptance": [
+    {
+      "clause": "the two DNU budgets leave the production count, measured on a live BNP read",
+      "verdict": "PASS",
+      "evidence": "probe leg 'budgets' on g162-v1-uat: 6 of 12 -> 4 of 12, with 'FY2027 Operating Budget (DNU)' and 'FY2027 Operating Budget (DNU2)' named in productionExcludedNames"
+    },
+    {
+      "clause": "the clamp is gone and a negative difference renders as a named conflict, proven by violation",
+      "verdict": "PASS",
+      "evidence": "the violation was produced first: totalOutstanding 0 beside collectionRate 150 over 290,077 rows on the pre-fix commit. After the fix the same request returns -87,700,895.05 with conflict 'collected_exceeds_charged', and the session and platform routes agree."
+    },
+    {
+      "clause": "a missing tenant refuses",
+      "verdict": "PARTIAL",
+      "evidence": "refusal proven at the route level; unreachable on the deployed surface (401 arrives first, measured). See statusDetail."
+    }
+  ],
+
+  "constraintsHonored": [
+    "smartcity-os only; smartcity-dashboards untouched (G-153 writes there concurrently)",
+    "walrus-app was never deployed to and never written to; it was read once, for its env KEY NAMES, to learn what a booting instance needs",
+    "the DNU classification's MEANING was not widened to make a count come out: DNU joined because 'do not use' budgets are not production budgets by their own name, and the two meaning changes made (DNU, and refusing an unreadable name) can only ever SHRINK the set. The unreadable-name clause fires zero times on Bastrop's twelve live names and is reported as a posture, not a fix.",
+    "getBnpApiKey() was not touched and its OPENGOV_API_KEY-first order is unchanged",
+    "no fee report window was chosen and the 150 percent rate was not 'fixed' by dividing",
+    "no credential value appears in this close, in the artifacts, in the repo, or in the lane's transcript; the UAT app's DB, OpenGov, and encryption values were read into the spec from GCP Secret Manager by a script that prints only key names",
+    "no sub-agents (FAN-DEPTH 0)"
+  ],
+
+  "whatRemainsOpen": [
+    "OWED BY THE OPERATOR (unchanged by this lane, now the binding constraint on the figures): which MyGov fee report window is authoritative for mygov_fees. Until that is chosen, FY2026 charged/collected are sums across overlapping report windows and the 150 percent rate stands. The lane names the conflict and does not resolve it.",
+    "OWED BY THE PLANNER: merge PR #60 and promote to walrus-app. The lane's evidence is a non-production app; nothing merged here has reached production.",
+    "FINDING (not fixed, deliberately): GET /api/finance/permit-revenue/outstanding has a HAVING clause that silently excludes permits whose collections exceed their charges — the permit-level form of the direction the summary route's clamp fabricated into. Reported as an unstated exclusion; counting the excluded rows needs a second query this lane did not add.",
+    "FINDING (not fixed, outside this row's three defects): requireTenant's fallback binds an anonymous visitor to the demo tenant (slug 'your-city', id 1). It is deliberate and it is measured here as the reachable tenant-binding behaviour, but it is 'default a city' in the direction rule 3 of the proving pack cares about, and it is what makes defect 3's guard latent. Fixing it is a product decision about what an unauthenticated visitor should see.",
+    "FINDING (environment): the 'staging' smartcity-os database is the production one. Any future lane told to 'test against staging' is testing against production data, and any UAT app built this way shares production writes.",
+    "DEBT the lane leaves visible: g162-v1-uat carries 18 placeholder env values and a lane-generated platform key; it is a proof surface, not a staging environment."
+  ],
+
+  "missionPremise": "OPS-17 A-146 'BASTROP IS THE PROVING PACK', rule 4: v1 (smartcity-os, behind smartcityos.io) is still production, a change to it is proven on a NON-PRODUCTION app before walrus-app carries it, and the surface Bastrop uses today is never broken. Its enabling condition is D-14 in OPS-25, which has landed: walrus-app builds from main, so a merge reaches production and nothing lands unproven. The defect class itself is the one ENFORCEMENT.md names — a fabricated zero that enters averages and ratios without announcing that it was invented — and the fix shape is DEV_PROCESS 2.4: one rule, one source of truth.",
+  "completionPredicate": "On a non-production DigitalOcean app at the commit under test, a live OpenGov BNP read reports the two DNU budgets outside the production count with the count and the excluded names both visible on the wire; an authenticated Bastrop read of /api/finance/permit-revenue/summary?fy=2026 over the full FY2026 fee population returns a SIGNED negative difference and a NAMED arithmetic conflict, and returns the same figure as the platform route; and /api/finance routes refuse a request that reaches them with no resolved tenant binding rather than substituting tenant 1. A stranger can evaluate this from _inbox/2026-09-18_201529_g162_surface_probe.json plus the two raw legs it points at.",
+  "scopeBasis": "The dispatch's boundary is smartcity-os only, with the fee-window question explicitly excluded and getBnpApiKey() explicitly protected. Three defects were in scope and all three are fixed. Within defect 1 the lane went wider than the dispatch named (four copies, not two) because editing two would have left the drift the row exists to end. Within defect 2 the lane refused two tempting expansions: it did not touch the /outstanding HAVING clause (an exclusion set, reported instead) and it did not correct the collection rate (a finance-owner decision). Defect 3's guard was kept even though it is unreachable today, because the alternative is a silent binding the next edit to the file can reintroduce.",
+  "falsifier": "A post-fix run of scripts/g162-surface-probe.mjs against the deployed commit that does not exit 0, or a pre-fix run that does. Both directions are recorded: pre-fix exit 1 with budgets FAIL, session_summary_bastrop FAIL and divergence DIVERGENT; post-fix exit 0 with five PASS, two controls and divergence AGREE. Second falsifier, and the one that would break the close's own honesty: a reviewer who reproduces the tenant_refusal reachability and finds a path from the internet to the route with no bound tenant. The lane's own probe attempts the loopback header path on every run and records 401 — if that ever becomes 200, the probe reports VULNERABILITY and its exit is non-zero.",
+  "contradicted": "Three, each with the read that shows it. (1) The dispatch's defect-3 harm — 'tenant 1 is a REAL city's data, so the old line read somebody else's fees'. MEASURED: tenant 1 is slug 'your-city', the demo tenant, and holds ZERO of the 311,736 mygov_fees rows. The old default would have answered as the demo city; the harm direction in the row is wrong, and the code comment and this close carry the measured version instead of the row's. (2) The dispatch names TWO copies of the production budget rule; there are FOUR, one of which carried no rule at all. (3) The close skeleton's probe convention (scripts/surface-probe.mjs under _inbox/) does not apply to a G-row: that instrument has no G-162 predicate and probe-close-gate.mjs does not gate G-\\d+ rows. Named rather than silently substituted.",
+  "leaveBehind": [
+    "g162-v1-uat (5f160d17-be0b-4b26-b562-90280824079b) ACTIVE on fix/g162-finance-honesty, with its DB source, platform-key provenance and placeholder key list recorded in its own environment",
+    "scripts/g162-surface-probe.mjs in smartcity-os (PR #60) — reusable for any finance change on this repo, with the pre-fix run as its violation fixture",
+    "_inbox/2026-09-18_201529_g162_surface_probe.json plus the two raw legs",
+    "P:\\tmp\\g162-build-spec.ps1 as a lane tool (not committed): builds an app spec from GCP Secret Manager without echoing a value — the pattern for the next lane that has to point a UAT app at a real store",
+    "the two DNU budgets, named, out of the production count"
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "scratch": {
+    "LESSON": [
+      "A DigitalOcean app cannot reuse another app's EV[...] encrypted env value: 'secret env value cannot be decrypted'. Environment values must be written per app. The safe shape is a script that reads the plaintext from GCP Secret Manager, writes the spec file, and prints only key names — the value never touches a command line, a transcript or the repo.",
+      "A smartcity-os container exits non-zero at boot with a partial environment, and DO discards the runtime logs quickly (the deployment reaches final_cleanup and `doctl apps logs --type run` then answers 'no deployment found'). Read walrus-app's spec for its env KEY SET before building any UAT app for this repo, and add placeholder values for the keys you cannot source; the app's own environment is the right place to record which are placeholders.",
+      "On this fleet's Windows box, Node cannot reach a DO app without BOTH `--dns-result-order=ipv4first` (the host resolves AAAA-first and fetch dies with a bare 'fetch failed') and `--use-system-ca` (a fleet CA terminates TLS; without it, 'unable to verify the first certificate'). A healthy app looks completely dead to a probe run without them.",
+      "The loopback-only internal-context path (`x-internal-ai: smartcity-ctx` + `x-tenant-id`) is NOT spoofable from the internet on DO App Platform, even with a forged X-Forwarded-For: both routes.ts's /api gate and middleware/tenant.ts read req.ip and answered 401 in every attempt. Reaching a tenant-specific session route from outside therefore requires a real login.",
+      "requireTenant binds an anonymous caller to the demo tenant (slug 'your-city', id 1) — which holds ZERO mygov_fees rows. Any 'tenant 1' reasoning about this store must start from that read: tenant 1 is the empty demo city, tenant 2 is Bastrop, and all 311,736 fee rows belong to tenant 2.",
+      "The 'staging' smartcity-os credential and the production one resolve to the same Neon endpoint and the same rows. Read the endpoint host before describing an app as pointed at non-production data."
+    ],
+    "DEAD-END": [
+      "Trying to authorize the DO CLI with the MCP agent token to reach the Apps API for secret handling: it works for Apps/Droplets, but the CLI route is not needed — the constraint was never the tool, it was that a secret's plaintext must not appear in a command, a spec on disk that is not deleted, or a transcript.",
+      "Staging the clamp violation through the internal-context header path from the internet: refused twice, on both commits. Use a real session instead.",
+      "Adding the app's missing secrets as one spec update after creation: DO re-validates the whole spec and rejects any EV[...] it cannot decrypt, so the app either has its full environment from the start or the update fails wholesale.",
+      "Running the full vitest suite on this box as a gate: module import alone took minutes and produced four timing flakes that pass in isolation. Use it for signal, not as a verdict, and say which failures are environment."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-18T20:00Z — g162-v1-uat serving 1f0262f1 (pre-fix main): productionCount 6 of 12 with both DNU budgets inside it and no productionExcludedNames; the Bastrop session route returns totalOutstanding 0 with collectionRate 150 over 290,077 FY2026 rows; the platform route returns -87,700,895.05; the two routes DIVERGE.",
+      "2026-09-18T20:15Z — g162-v1-uat serving bb7ca23f (fix/g162-finance-honesty, PR #60): productionCount 4 of 12 with both DNU budgets named as excluded; the session route returns -87,700,895.05 with conflict 'collected_exceeds_charged'; the two routes AGREE; unauthenticated callers get 401 and the loopback header path still refuses.",
+      "2026-09-18T19:5xZ — the store: 311,736 mygov_fees rows, all tenant_id 2 (Bastrop); tenants are id 1 'your-city' and id 2 'bastrop'; FY2026 is 290,077 rows over 1,491 permits, 174,092,822.21 charged against 261,793,717.26 collected.",
+      "2026-09-18 — GitHub main for smartcity-os is 1f0262f1, the lane's base; PR #60 = fix/g162-finance-honesty at bb7ca23f, three checks (Gitleaks, Semgrep, Trivy) all pass, no unit-test workflow on PRs in this repo.",
+      "2026-09-18 — walrus-app's env KEY SET is 43 names; the app currently serving production is walrus-app-kzog6.ondigitalocean.app."
+    ],
+    "OPEN": [
+      "The MyGov fee report window is still unchosen AND is now the binding constraint on FY2026 permit-revenue figures. Owed by the operator.",
+      "PR #60 is unmerged and unpromoted; the planner owns the promotion to walrus-app (canary, with source_commit_hash read back per OPS-25 rule 13).",
+      "requireTenant's demo-tenant fallback is the reachable tenant-binding behaviour on this route and is untouched; whether an anonymous visitor should see the demo city's finance page is a product decision, and it is also the reason defect 3's guard cannot fire today.",
+      "g162-v1-uat is a proof surface with 18 placeholder env values and a lane-generated platform key; it should be torn down or re-pointed deliberately rather than inherited as a staging environment."
+    ]
+  }
+}

@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `02c57512`: 118 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `9a53c8ae`: 118 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 981 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -20,8 +20,8 @@ programs: [OPS-17, OPS-25]
 | M1 Staff on v2: the soft launch | 6 | 2 | 4 |
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
 | M3 Lens builds on Bastrop live data | 9 | 5 | 4 |
-| M4 DigitalOcean migration complete | 6 | 4 | 2 |
-| M5 Design complete, and the controls that keep it honest | 5 | 4 | 1 |
+| M4 DigitalOcean migration complete | 7 | 4 | 3 |
+| M5 Design complete, and the controls that keep it honest | 6 | 4 | 2 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -69,6 +69,7 @@ programs: [OPS-17, OPS-25]
 | D-11 | FLIP hauska-mcp-server'S DASHBOARDS_BACKEND_URL. | closed | closed |
 | D-13 | THE DASHBOARDS STILL READ EVERY BASTROP FEED FROM THE GCP v1. REPOINT THEM AT walrus-app, OR DEC | landed, not graded | — |
 | D-14 | walrus-app BUILDS FROM A SIDE BRANCH, SO NOTHING MERGED TO v1 main CAN REACH smartcityos.io. | landed, not graded | — |
+| G-163 | TWO PLATFORM ROUTES FAIL OPAQUELY ON walrus-app, WHERE THE GCP COPY STATED THE REASON. | open | — |
 
 ## M5. Design complete, and the controls that keep it honest
 
@@ -79,3 +80,4 @@ programs: [OPS-17, OPS-25]
 | G-147 | the three designed-nowhere surfaces that had no row at all. | closed, partly | closed-partial |
 | G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | closed | closed |
 | G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed, partly | closed-partial |
+| G-164 | REPAIR THE 11 FINDINGS G-148 DISCLOSED, WHICH NO ROW OWNED. | open | — |
