@@ -3,6 +3,19 @@
  *
  * `node check.mjs` after `node gen.mjs`. Non-zero exit on any violation.
  *
+ * `node check.mjs --dir <path>` reads ANOTHER COPY of the surface instead of the
+ * artboards in this folder: the built product's own markup, as
+ * scripts/export-finance-lens.mjs writes it (a file, or a directory of them).
+ * capture-figures.json is read from THIS folder either way, because it is the
+ * record the figures are checked against and a copy of the surface must not be
+ * able to bring its own. Added by G-156 under operator ruling, so that the
+ * ratified instrument can be pointed at what the product actually renders.
+ *
+ * Exit 2 is also what a scan returns when it matched ZERO money tokens. A money
+ * check that found no money has not passed; it has found nothing to check, and
+ * reporting that as a pass is the same defect class as the plausible figure this
+ * whole instrument exists for.
+ *
  * THE CHECK THAT MATTERS HERE is money traceability. This lens draws figures
  * about a real city budget, and the defect class that has already reached two
  * canvases in this folder set is a number that looks right, carries a citation
@@ -19,6 +32,8 @@
  * Each check self-tests in BOTH directions before it reads an artboard.
  */
 import fs from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const here = new URL('.', import.meta.url);
 
@@ -30,11 +45,20 @@ const STATES = ['MEASURED', 'UNACCOUNTED', 'REFUSED', 'CONFLICT', 'PARTIAL'];
 
 const MONEY = /\$[0-9][0-9,.]*\s?[MKB]?/g;
 const BADGE = /border-radius:var\(--sc-r-control\); padding:1px 6px; white-space:nowrap;">([A-Z]+)<\/span>/g;
+/**
+ * The built surface marks a state cell with data-finance-pill / data-finance-state
+ * rather than the artboards' inline style, so on a built file the vocabulary rule
+ * below would otherwise be vacuous - it would find no badges at all and pass.
+ * Both forms are read, and the artboards' own form is untouched by this line.
+ */
+const BADGE_BUILT = /data-finance-(?:pill|state)="[a-z-]+">([A-Z][A-Z ]*)</g;
 const PERSON = /^(?:[A-Z]\.\s*)+[A-Z][a-z]+(?:-[A-Z][a-z]+)?$|^[A-Z]{2,}\s+[A-Z]{2,}(?:-[A-Z]{2,})?$/;
 const CELL = /font:400 13px\/18px var\(--sc-font-(?:ui|data)\); font-variant-numeric:tabular-nums; color:var\(--sc-ink(?:-2|-3)?\);">([^<]*)<\/span>/g;
 
 const money = (html) => [...new Set(html.match(MONEY) || [])].map((s) => s.trim());
-const badges = (html) => [...new Set([...html.matchAll(BADGE)].map((m) => m[1]))];
+const badges = (html) => [
+  ...new Set([...html.matchAll(BADGE), ...html.matchAll(BADGE_BUILT)].map((m) => m[1])),
+];
 const cells = (html) => [...html.matchAll(CELL)].map((m) => m[1].trim());
 const people = (html) => cells(html).filter((c) => PERSON.test(c));
 
@@ -59,6 +83,16 @@ const selfTests = [
   ['people: REFUSES an initialised name in a cell', people(dataCell('D. Moore')).length === 1],
   ['people: ALLOWS a department', people(dataCell('Streets & Drainage')).length === 0],
   ['people: ALLOWS a figure', people(dataCell('$14.2M')).length === 0],
+  /**
+   * G-156. The built surface's own markup, in both directions, and the vacuity
+   * rule itself. Without these three the bridge could be pointed at a built file
+   * and quietly check nothing: no badges read, no figures matched, exit 0.
+   */
+  ['built: accepts the declared vocabulary in the built pill form', statesOk(`<span class="pill p-quiet" data-finance-pill="fund-ledger">UNACCOUNTED</span>`) === true],
+  ['built: REFUSES an invented state in the built pill form', statesOk(`<span class="pill p-quiet" data-finance-pill="fund-ledger">ESTIMATED</span>`) === false],
+  ['built: the badge extractor reads the built form', badges(`<span data-finance-state="a">PARTIAL</span> AND <span data-finance-pill="b">REFUSED</span>`).length === 2],
+  ['vacuity: a surface with no figures matches none', money('<p>nothing here</p>').length === 0],
+  ['vacuity: a surface with one figure matches one', money('<p>total $69.6M</p>').length === 1],
 ];
 
 let failed = 0;
@@ -83,12 +117,41 @@ try {
   process.exit(2);
 }
 
-const files = fs.readdirSync(here).filter((f) => f.endsWith('.dc.html')).sort();
-if (!files.length) { console.error('no artboards. Run `node gen.mjs` first.'); process.exit(2); }
+/**
+ * G-156. WHICH SURFACE IS READ. Default: the artboards in this folder. With
+ * `--dir <path>`: another copy of the surface - a file, or a directory of
+ * .dc.html files - which is how this instrument is pointed at what the product
+ * renders. capture-figures.json is NOT read from there: the record is the thing
+ * the figures are checked against, and a surface must not arrive with its own.
+ */
+const di = process.argv.indexOf('--dir');
+let target = null;
+if (di >= 0) {
+  const value = process.argv[di + 1];
+  if (!value || value.startsWith('--')) {
+    console.error('\nREFUSING A VERDICT: --dir needs a path.');
+    process.exit(2);
+  }
+  if (!fs.existsSync(value)) {
+    console.error(`\nREFUSING A VERDICT: ${value} does not exist, so there is no surface to read.`);
+    process.exit(2);
+  }
+  target = value;
+}
+
+const sourceDir = target || fileURLToPath(here);
+const files = (target && fs.statSync(target).isFile()
+  ? [target]
+  : fs.readdirSync(sourceDir).filter((f) => f.endsWith('.dc.html')).sort().map((f) => join(sourceDir, f))
+);
+if (!files.length) { console.error(`no artboards in ${sourceDir}. Run \`node gen.mjs\` first.`); process.exit(2); }
 
 let bad = 0;
-for (const file of files) {
-  const html = fs.readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
+let matched = 0;
+const empty = [];
+for (const reader of files) {
+  const file = reader.split(/[\\/]/).pop();
+  const html = fs.readFileSync(reader, 'utf8');
   const problems = [];
 
   const declared = html.includes('ILLUSTRATIVE');
@@ -96,7 +159,9 @@ for (const file of files) {
     problems.push('is listed as illustrative but the page never says so');
   }
   if (!ILLUSTRATIVE.has(file)) {
-    const untraced = money(html).filter((t) => !traceable(t, blob));
+    const found = money(html);
+    matched += found.length;
+    const untraced = found.filter((t) => !traceable(t, blob));
     if (untraced.length) problems.push(`money not traceable to the capture record: ${untraced.join(', ')}`);
   }
 
@@ -110,11 +175,32 @@ for (const file of files) {
     bad += 1;
     console.error(`FAIL ${file}`);
     for (const p of problems) console.error(`     ${p}`);
+  } else if (money(html).length === 0 && !ILLUSTRATIVE.has(file)) {
+    /**
+     * NOT AN OK LINE. A surface that carries no money token has been read but
+     * not checked, and the vacuity refusal below exits 2 on it. Printing
+     * "ok ... all traceable" first put a quotable pass on screen immediately
+     * before the refusal - and a line that says ok is what gets screenshotted.
+     * The refusal is the verdict, so it is the only thing that gets printed.
+     */
+    empty.push(file);
   } else {
     const n = money(html).length;
     console.log(`ok   ${file}${ILLUSTRATIVE.has(file) ? `  (${n} figures, declared illustrative)` : `  (${n} figures, all traceable)`}`);
   }
 }
 
+/**
+ * THE VACUITY REFUSAL. Zero matched figures is not a pass. Pointed at a surface
+ * that renders no money at all - which is what the built product's default
+ * Finance lens honestly does - this instrument has nothing to check, and says so
+ * at exit 2 rather than reporting a clean bill of health it did not earn.
+ */
+if (!bad && matched === 0) {
+  console.error(`\nREFUSING A VERDICT: 0 money tokens matched across the surface that was read${empty.length ? ` (${empty.join(', ')})` : ''}.`);
+  console.error('A money traceability check that matched nothing has not checked anything.');
+  process.exit(2);
+}
+
 if (bad) { console.error(`\n${bad} of ${files.length} artboards failed.`); process.exit(1); }
-console.log(`\n${files.length} artboards pass.`);
+console.log(`\n${files.length} artboards pass, ${matched} matched money token(s) traced.`);

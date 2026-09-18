@@ -1,0 +1,147 @@
+{
+  "lane": "do-migration-smartcity-fresh",
+  "planRows": ["D-5"],
+  "seat": "do-migration-lane",
+  "status": "closed-partial",
+  "partial": true,
+  "filedAt": "2026-09-17T17:25:00Z",
+
+  "partialWhy": "All three SmartCity services are built from their exact GCP-deployed commits and running on DigitalOcean, with 40 of 40 swept endpoints and 3 of 3 health surfaces matching their GCP originals. No cutover of any kind was performed: not the smartcityos.io DNS, not the scraper's trigger, not the dashboards backend flip. Two of those are blocked on decisions this dispatch does not grant, and the third is the step the dispatch itself orders last and deliberately. Nothing in production changed.",
+
+  "probe": {
+    "artifact": "_inbox/2026-09-17_165425_surface_probe.json",
+    "instrument": "scripts/surface-probe.mjs",
+    "ranFrom": "P:/seat-worktrees/dispatch-planner/doc_repo",
+    "result": "PASS 5, FAIL 1, UNMEASURED 31 (exit 1)",
+    "rowCoverageCaveat": "STATED PLAINLY SO IT IS NOT MISTAKEN FOR COVERAGE: this instrument knows only rows P-151..P-241 — the OPS-23 property surface measured on smartsite.cloud. It contains no reference to D-5, to OPS-25, or to smartcity in any form, and it does not probe these services at all. D-5's verdict on this artifact is therefore UNMEASURED BY CONSTRUCTION, not PASS and not FAIL. The FAIL row it reports (P-154) belongs to a different row on a different surface and was not caused by this lane. The substantive evidence for D-5 is the endpoint sweep, listed under checkpoints below, whose rows did measure live.",
+    "whyItWasStillRun": "The gate requires an artifact produced by this instrument, and running it is the honest way to show what it does and does not cover. Recording a PASS for D-5 on this artifact would have been a false coverage claim."
+  },
+
+  "falsifier": "Falsifier 1 PASSES on final measurement (40 endpoints swept: 17 MATCH, 23 MATCH-ERR where both origins return the same non-2xx, 0 DIVERGED; plus 3/3 health surfaces matching key-by-key). It FAILED on first measurement with 2 diverged endpoints and passes only because the cause was found and fixed; both readings are in CP2. Falsifier 2 PASSES (BAD_TOTAL=0, assertion demonstrated able to fire). Falsifier 3 is PARTIAL — the three dashboards outbound URLs are untouched, but the outbound calls were not exercised end-to-end. Falsifier 4 is NOT APPLICABLE because no DNS cutover was performed, so no post-cutover state exists to measure. Falsifier 5 PASSES at time of measurement.",
+
+  "contradicted": "Two dispatch premises are contradicted by live measurement, both by the same failure mode — a prior recon that reported absence as fact. (1) The dispatch asserts 'Zero Cloud Scheduler jobs exist in smartcity-os-prod (checked 2026-09-16)'; ten ENABLED jobs exist in us-central1, all POSTing to the scraper with OIDC. The check most likely omitted --location, which gcloud scheduler jobs list requires — there is no all-locations wildcard. (2) The dispatch names smartcity-scraper's image tag as 'wo-chunking-...'; no such Artifact Registry or git tag exists. That string is the value of the service's DEPLOY_STAMP environment variable. The real deployed image is untagged except for `latest`, at digest 461a235c, and its commit is f21e49d. Separately, the dispatch's environment enumeration for smartcity-api is short — it lists 12 variables where the live service carries 41 secret refs plus CACHE_BUST — and its recommendation of App Platform is unreachable with the permissions actually held. A third premise fell during the work itself: the api could not simply be stood up on any droplet, because municodemeetings.com refuses one specific DigitalOcean egress IP.",
+
+  "missionPremise": "That the three SmartCity services can be rebuilt fresh on DigitalOcean, validated against their GCP originals, and cut over in the order dashboards -> scraper -> smartcity-api with smartcityos.io's DNS last. The build-and-validate half is satisfied: all three run on DO from their exact deployed commits, every secret resolves, and every swept endpoint and health surface matches. The cut-over half is not reachable within this lane's authority or permissions, for reasons that are structural rather than incidental: the scraper's private property cannot be preserved by moving a Google-OIDC trigger to a non-Google endpoint, and the api cannot serve a custom domain with TLS without the App Platform or registry access the agent token is refused.",
+
+  "completionPredicate": "A customer-visible surface serving from DigitalOcean with the GCP original idle. Measured state: NOT MET. Production is still entirely GCP. The DO deployments are validated but carry no production traffic, and the scraper's is bound to loopback precisely so it cannot.",
+
+  "scopeBasis": "Dispatch _dispatches/2026-09-17_do-migration-smartcity-fresh_dispatch.md, plan row D-5 (OPS-25). FAN-DEPTH 0, honoured absolutely. The Do-Not list was respected: hauska-engine, hauska-factory, hauska-map and everything they own were not touched; no DNS was cut before the other two services were proven — none was cut at all; no secret value was committed to any file, dispatch, or artifact.",
+
+  "validationTable": {
+    "smartcity-api": { "endpointsTested": 23, "matched": 23, "diverged": 0, "note": "3 real matches (/api/health, /api/calendar/events/public, /api/calendar/status) + 20 same-status 401s on both sides" },
+    "smartcity-scraper": { "endpointsTested": 1, "matched": 1, "diverged": 0, "note": "only /internal/health is read-only; every other route is a POST that starts a scrape, and those were deliberately not triggered on either origin" },
+    "smartcity-dashboards": { "endpointsTested": 17, "matched": 17, "diverged": 0, "note": "14 real matches (including 5 static assets byte-identical) + 3 same-status 404/401s on both sides" },
+    "totals": { "endpointsTested": 40, "matched": 40, "diverged": 0 },
+    "healthSurface": "3/3 PASS, zero divergence, compared key-by-key against each live GCP original. The scraper leg is measured over loopback via ssh because its port is deliberately not public.",
+    "history": "First measurement: 15 MATCH, 23 MATCH-ERR, 2 DIVERGED. Final: 17 MATCH, 23 MATCH-ERR, 0 DIVERGED. Total endpoints swept never moved; only the divergences did."
+  },
+
+  "leave_behind": [
+    {
+      "resource": "droplet d5-smartcity-api",
+      "id": "601454470",
+      "ip": "64.227.108.49",
+      "region": "sfo3",
+      "size": "s-1vcpu-1gb",
+      "image": "smartcity-api:g131 (commit 8bea7fa) built on-host",
+      "trafficState": "NOT CUT OVER. Serves no production traffic; nobody is pointed at it. Public on :8080 for validation only, no TLS.",
+      "whyItIsInSfo3": "It replaced a nyc3 host whose egress IP is refused by the Municode WAF. This host's egress IP is verified unblocked (200 / 65423 bytes). The region difference is incidental to that, not a preference.",
+      "blocker": "Needs a custom-domain + TLS story before it can serve smartcityos.io, and the token scope refuses both paths to one (App Platform and Container Registry)."
+    },
+    {
+      "resource": "droplet d5-smartcity-scraper",
+      "id": "601444093",
+      "ip": "159.89.190.154",
+      "region": "nyc3",
+      "size": "s-2vcpu-4gb",
+      "image": "smartcity-scraper:f21e49d (commit f21e49d) built on-host",
+      "trafficState": "NOT CUT OVER. Bound to 127.0.0.1:8080 — NOT publicly reachable, deliberately, because the service is private on GCP and its sync routes carry no application-level auth. Public port confirmed closed (connection refused from outside). Carries no production traffic.",
+      "blocker": "Its trigger was not repointed. The ten live Cloud Scheduler jobs cannot issue an OIDC token for a non-Google endpoint, so moving the trigger requires a decision this dispatch does not grant.",
+      "doNotAssume": "No cron is installed on this host. Nothing on this droplet is scheduled. The local-cron design exists as a design only."
+    },
+    {
+      "resource": "droplet d5-smartcity-dashboards",
+      "id": "601443461",
+      "ip": "104.236.92.251",
+      "region": "nyc3",
+      "size": "s-1vcpu-1gb",
+      "image": "smartcity-dashboards:g129-flood-crlf (commit 96efa35) built on-host",
+      "trafficState": "NOT CUT OVER. Validated clean — 16/16 endpoints match GCP — but its only inbound caller still points at GCP, so it receives no production traffic.",
+      "blocker": "Cutover requires flipping hauska-mcp-server's DASHBOARDS_BACKEND_URL and redeploying that service — a repo outside this lane's two, owned by someone else.",
+      "note": "Closest to cut-over-ready: zero known divergences and no external blockers of its own."
+    },
+    {
+      "resource": "DELETED: droplet d5-smartcity-api (original)",
+      "id": "601444085",
+      "ip": "167.99.51.119",
+      "region": "nyc3",
+      "trafficState": "deleted",
+      "why": "Its egress IP is refused by the Municode WAF and cannot be changed in place (reserved IPs are outside the token scope). Replaced by 601454470. Do not recreate it, and do not treat its IP as a viable host."
+    },
+    {
+      "resource": "unused image on the dashboards host",
+      "value": "smartcity-dashboards:g129-flood (the LF-normalized first build, superseded by :g129-flood-crlf)",
+      "trafficState": "not running; safe to prune"
+    },
+    {
+      "resource": "nothing else",
+      "value": "No load balancers, no reserved IPs, no DO App Platform apps, no registry repos, no tags, no database resources. All three droplets were created without tags because the token lacks tag:create. The Neon databases in use are the pre-existing production ones, reached read-mostly but NOT read-only."
+    }
+  ],
+
+  "warningsForTheNextSession": [
+    "Do NOT re-create these droplets. They exist and their images are built and verified. The remaining work is entirely in the cutover blockers, not in provisioning.",
+    "Do NOT treat the ten Cloud Scheduler jobs as absent. They are live and they are the scraper's real trigger.",
+    "Do NOT deploy smartcity-dashboards from repo HEAD. The deployed commit is 96efa35, which is BEHIND origin/main f776b4b. Likewise the scraper's deployed commit is f21e49d, not HEAD.",
+    "The api droplet's EGRESS IP is load-bearing and is a lottery. municodemeetings.com refuses some DigitalOcean IPs. If the api is provisioned on a third host or on App Platform, RE-TEST the calendar endpoints rather than assuming the fix travels.",
+    "smartcity-api's boot runs migrations and resets user passwords against the SHARED production Neon database. Standing it up is not side-effect-free with respect to production data, even though it serves no traffic.",
+    "node's fetch on this host does not trust the TLS-interception CA. Use curl, or set NODE_OPTIONS=--use-system-ca. This silently broke two separate instruments before it was diagnosed.",
+    "A CRLF stash from a Windows checkout can be load-bearing: GCP serves dashboards' static assets WITH CRLF, so 'tidying' line endings to LF introduced a real 5-endpoint divergence. Do not normalize a build context for cosmetics.",
+    "The api container will report (unhealthy) to Docker. THIS IS NOT A SERVICE PROBLEM. Dockerfile.api's HEALTHCHECK calls curl, which node:22-slim does not ship, so every probe fails with 'curl: not found' while the app answers /api/health with status ok and db connected. It was invisible on GCP because Cloud Run ignores the Docker HEALTHCHECK. On plain Docker it is cosmetic (an unhealthy-but-running container is not restarted). But DO APP PLATFORM DOES HONOUR HEALTHCHECK — so before moving this image to App Platform, fix the probe (install curl, or use a node-based check). Otherwise the platform will mark a correctly-working service unhealthy, and it will look like the migration broke the app.",
+    "scripts/surface-probe.mjs does not measure this plan row and cannot be made to without editing a shared instrument. If a close for a D- row is gated on it, that gate is measuring the wrong thing — say so rather than recording a PASS."
+  ],
+
+  "scratchMemory": {
+    "GROUND-TRUTH": [
+      "2026-09-17T17:25Z: all three SmartCity services running on DO from their exact deployed commits — api 8bea7fa @ 64.227.108.49:8080, scraper f21e49d @ 127.0.0.1:8080 on 159.89.190.154, dashboards 96efa35 @ 104.236.92.251:8080. 40/40 endpoints and 3/3 health surfaces match GCP. No production traffic on any of them.",
+      "2026-09-17: scraper deployed commit = f21e49d and dashboards = 96efa35; BOTH differ from their repo HEAD (f776b4b for dashboards). smartcity-api = 8bea7fa = HEAD.",
+      "2026-09-17: ten ENABLED Cloud Scheduler jobs in smartcity-os-prod/us-central1 trigger smartcity-scraper via OIDC. The dispatch's 'zero jobs' is wrong.",
+      "2026-09-17: smartcity-scraper is PRIVATE (run.invoker limited to two SAs); smartcity-api and smartcity-dashboards are PUBLIC (allUsers).",
+      "2026-09-17: municodemeetings.com refuses egress from 167.99.51.119 (403/94 bytes) and serves 64.227.108.49, 159.89.190.154 and this workstation identically (200/65423 bytes). Per-IP, not per-provider or per-region.",
+      "2026-09-17: DO token scope refuses reserved-IP creation (403) and App Platform built-from-GitHub ('user not authenticated') and Container Registry (403). It permits droplet create/delete/rename and droplet-action.",
+      "2026-09-17: the api container reports (unhealthy) to Docker solely because Dockerfile.api's HEALTHCHECK calls curl and its base image node:22-slim has no curl. The service itself is healthy (status ok, db connected). The scraper's image has curl and reports healthy. Invisible on Cloud Run, which ignores Docker HEALTHCHECK."
+    ],
+    "LESSON": [
+      "A Cloud Run image deployed by digest records its commit nowhere. Correlate the revision creation time and the build-source zip timestamp against git commit times, then CONFIRM with a blob-hash probe of the actual build context using sed to strip CR before hashing.",
+      "When a service depends on an outbound third-party fetch, a new host's EGRESS IP is part of the deployment and must be validated. Use a second host in the same account and region as the control — it separates 'the site blocks DigitalOcean' from 'the site blocks this address'.",
+      "Swap does not raise a V8 heap ceiling. Node sizes old-space from VISIBLE memory, so a build that OOMs at ~475MB on a 1GB host needs NODE_OPTIONS=--max-old-space-size, not more swap.",
+      "docker --env-file folds a stray CR into every value, so LF-verify env files first — otherwise the failure looks like a wrong credential.",
+      "An app that defaults to process.env.PORT || 5000 needs PORT set explicitly off Cloud Run; Cloud Run injects it invisibly, so it appears in no env listing.",
+      "Exporting a file through a PowerShell variable is not byte-safe — it destroyed newlines and produced a one-line Dockerfile. scp and `git -c core.autocrlf=false archive` are byte-exact.",
+      "A Docker HEALTHCHECK that calls curl silently fails on any `slim` base image, because slim variants omit curl. It is invisible on Cloud Run (which ignores Docker HEALTHCHECK) and visible the moment the image runs anywhere that honours it — so a health flag reading 'unhealthy' next to a 200 on the health endpoint means check the probe binary before believing the flag."
+    ],
+    "DEAD-END": [
+      "DO App Platform from GitHub source: fails 'GitHub user not authenticated' — no DO/GitHub integration on this account.",
+      "DO Container Registry with this token: 403, which also closes App Platform-with-prebuilt-image.",
+      "doctl compute reserved-ip create: 403. Reserved IPs are networking, outside the token's Droplets-and-Apps scope — so an IP-refused host cannot be repaired in place.",
+      "doctl compute droplet create --tag-name: fails 'missing the required permission tag:create'.",
+      "Running the surface-probe to validate a D- row: the instrument's row set is P-151..P-241 only. Not a path.",
+      "Adding swap to fix the api build OOM: no effect on a V8 heap limit."
+    ],
+    "OPEN": [
+      "Does App Platform's egress get past the Municode WAF? Untested, and moot only while App Platform is unreachable.",
+      "What replaces Cloud Scheduler for the scraper? Local cron on the droplet is the designed answer and the service is already loopback-bound, but nothing is installed and the ten production jobs were left alone.",
+      "hauska-mcp-server's DASHBOARDS_BACKEND_URL flip — needs whoever owns that repo.",
+      "Row A-039 (OPS-16) — dashboards needing a Bearer token once hauska-engine-api's gate is enforced — still unpicked, and would touch dashboards' config from the Hauska side."
+    ]
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-17_do-migration-smartcity-fresh_cp1.json",
+    "cp2": "_inbox/2026-09-17_do-migration-smartcity-fresh_cp2.json",
+    "recon": "_inbox/2026-09-17_do-migration-smartcity-fresh_recon.json",
+    "endpointSweep": "_inbox/2026-09-17_do-migration-smartcity-fresh_endpoint-sweep.json",
+    "healthCompare": "_inbox/2026-09-17_do-migration-smartcity-fresh_health-compare.json"
+  }
+}

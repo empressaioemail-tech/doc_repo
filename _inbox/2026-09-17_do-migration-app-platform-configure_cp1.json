@@ -1,0 +1,126 @@
+{
+  "checkpoint": "CP1",
+  "kind": "Orientation, design, and the pre-registered falsifier answers for D-9. DISCLOSURE, first because it is not the contract's order: this file was WRITTEN AT CLOSE, not at execution start. The lane claim is contemporaneous (recorded below from the claim registry, startedAt 2026-09-17T18:33:31.037Z, before any DO mutation); the design record is not. What is reconstructible is labelled per item: dispatch facts are re-measured live and marked with the instrument that measured them, or marked NOT-VERIFIED. Falsifier answers are the DISPATCH's pre-registered wording with the outcome each produced.",
+  "lane": "do-migration-app-platform-configure",
+  "planRows": ["D-9"],
+  "seat": "do-migration-lane",
+  "seatNote": "Claimed with `node scripts/lane-claim.mjs claim --lane do-migration-app-platform-configure --seat do-migration-lane --plan-row D-9 --dispatch _dispatches/2026-09-17_do-migration-app-platform-configure_dispatch.md`. Read back at close with `node scripts/lane-claim.mjs status`: `live do-migration-app-platform-configure seat=do-migration-lane row=D-9 started=2026-09-17T18:33:31.037Z`. No other seat held the lane at claim time (the same status read shows the sibling D-10 lane `do-migration-scraper-trigger-auth` held by seat `do-migration-lane` as a separate claim; it is a different lane key, not a competing holder of this one).",
+  "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo, branch seat/dispatch-planner, HEAD 14284eb7adcd9e7464b6b643be368c58a2820738 at close (same commit the dispatch names as carrying D-5's close: 'committed at 14284eb7 on seat/dispatch-planner'). Every artifact of this lane is written here. P:/doc_repo, the integration seat's checkout, holds no D-9 artifact.",
+  "planOfRecordDiscrepancy": {
+    "claim": "The dispatch header cites `90_operations/OPS-25_cloud_infrastructure_and_cost_program.md` as this row's source.",
+    "measured": "That file does NOT exist in this lane's worktree. `Get-ChildItem -Recurse -Filter OPS-25*` over P:/seat-worktrees/dispatch-planner/doc_repo returns nothing; `cmd dir /b 90_operations` lists OPS-20, OPS-21, OPS-22, OPS-23, OPS-24, OPS-2 and no OPS-25.",
+    "whereItDoesExist": "P:/doc_repo/90_operations/OPS-25_cloud_infrastructure_and_cost_program.md (the integration seat's checkout).",
+    "consequence": "The dispatch's mission text and its Do-Not list were read from the dispatch itself, and governing rules 3 and 4 were read from the P:/doc_repo copy of OPS-25 rather than from this worktree. Nothing in the mission depended on the missing file beyond those two rules, which were read at source. Recorded because a successor rooted in this worktree will hit the same absence."
+  },
+
+  "stepOne_appToRepoMapping": {
+    "question": "Which auto-named app tracks which repo, and does the smartcity-os app build the right component?",
+    "howConfirmed": "Read from the platform, then confirmed against behaviour, not inferred from the animal names. `doctl apps list --output json` gives each app's id, spec.name and live_url; `doctl apps spec get <id>` gives the repo, branch and dockerfile_path actually configured; the byte-for-byte sweep then confirms the code those settings produced.",
+    "result": {
+      "dolphin-app": {
+        "id": "95691c40-27ca-4afb-b9b4-a37e079c5e69",
+        "repo": "empressaioemail-tech/smartcity-dashboards",
+        "component": "the repo's single service (Dockerfile at /Dockerfile, source_dir /)",
+        "liveUrl": "https://dolphin-app-y4ixf.ondigitalocean.app"
+      },
+      "walrus-app": {
+        "id": "2a2a3a1a-b441-4296-8628-a82b20ded1b2",
+        "repo": "empressaioemail-tech/smartcity-os",
+        "component": "smartcity-api specifically: dockerfile_path /Dockerfile.api, source_dir /, service name smartcity-os, http_port 8080. NOT smartcity-scraper.",
+        "liveUrl": "https://walrus-app-kzog6.ondigitalocean.app",
+        "howComponentWasDisambiguated": "smartcity-os holds two components (smartcity-api, smartcity-scraper) and App Platform must be told which. The spec names dockerfile_path /Dockerfile.api explicitly, and the behaviour confirms it: the built container answers GET /api/health with {\"status\":\"ok\",\"db\":\"connected\"} -- the api's health contract, which the scraper does not serve. An earlier attempt without an explicit Dockerfile produced an ERROR deployment with `Error: DATABASE_URL must be set. Did you forget to provision a database?`, i.e. it had fallen back to Node-buildpack detection and was building neither component correctly; the explicit Dockerfile.api plus the full env set from GCP replaced it."
+      },
+      "thirdApp": {
+        "name": "d5-capability-probe",
+        "id": "c69bacc5-d8a1-4657-a914-65b64be0bf2e",
+        "note": "Pre-existing from D-5. Not touched by this lane. No custom domain."
+      }
+    }
+  },
+
+  "dispatchPremiseChecks": [
+    {
+      "premise": "'origin/main for smartcity-dashboards is at f776b4b; the commit D-5 verified against the live GCP original is 96efa35, which is BEHIND that HEAD.'",
+      "measured": "VERIFIED AT SOURCE. `git -C P:/smartcity-dashboards rev-parse origin/main` -> f776b4bf24114ed4061609d28c0429f84eb431b7. `git rev-parse 96efa35` -> 96efa35766e5d6114eb71bdf409986c383625b97. `git log --oneline -3` on the pin branch shows 96efa35 'G-129: mount the flood & drainage screening capability on the map stage (#63)' sitting under the branch's own commit, with main's extra commits above it. Status: still true at 19:00Z, staleness had NOT resolved."
+    },
+    {
+      "premise": "'smartcity-os ... the commit it deploys equals the D-5-verified 8bea7fa'. The dispatch also orders a re-check of origin/main before assuming staleness still holds.",
+      "measured": "RE-CHECKED, AND IT HAS MOVED. `git -C P:/smartcity-os rev-parse origin/main` -> 92c73e39c9003d87cde5f9aaac5210d240229d2a, whereas D-5 verified the deployed GCP commit as 8bea7fa591134fc24154630fa869081f4ddf003d. The dispatch's instruction is to deploy '8bea7fa, or the current verified-equivalent if smartcity-os has moved since'. I did NOT treat the new main HEAD as verified-equivalent: nothing in this lane measured 92c73e39 against the live GCP original, and D-5's byte-level validation was done against 8bea7fa. The branch was therefore cut at 8bea7fa, not at main. This is the conservative reading and it is the one the mission's own risk note supports ('do not redeploy from HEAD without re-validating')."
+    },
+    {
+      "premise": "'Dockerfile.api's HEALTHCHECK calls curl, which the node:22-slim base image does not ship. This is cosmetic, not a real failure, but App Platform may act on it.'",
+      "measured": "VERIFIED, and the second half is the part that mattered. A Cloud Build step running `node:22-slim` executed `command -v curl` and printed 'curl ABSENT from node:22-slim -> original curl -f ... probe could never exit 0'. So on App Platform, which honours HEALTHCHECK (unlike Cloud Run), the container would have reported unhealthy on every probe of a perfectly healthy service. Not cosmetic there: it is the difference between a service App Platform routes and one it may restart or route as down."
+    },
+    {
+      "premise": "'Which one tracks smartcity-os and which tracks smartcity-dashboards was not recorded at creation time -- determine this yourself.'",
+      "measured": "Done; see stepOne_appToRepoMapping. The mapping is dolphindashboards / walrusapi -- the names carry no meaning, as warned."
+    }
+  ],
+
+  "designDecisions": [
+    {
+      "decision": "Pin the dashboards app with a dedicated deploy branch created AT 96efa35 (`d9-pin-96efa35`), with `deploy_on_push: false`, rather than pointing the app at main or trusting a historical SHA.",
+      "why": "The dispatch names this as the likely mechanism and asks me to state which one I used and why. App Platform's github block takes a repo and a branch; it has no field for an arbitrary historical commit, so a branch is the platform's own way to express 'this exact tree'. deploy_on_push:false is what stops it drifting forward to main HEAD the next time someone pushes, which is the failure mode the dispatch is guarding against.",
+      "mechanismStated": "branch pin + autodeploy disabled, in the app spec. Recorded as the answer to 'state which mechanism you used and why'."
+    },
+    {
+      "decision": "The pin branch carries one extra commit on top of 96efa35 -- a 4-line .gitattributes -- because the served bytes, not the commit hash, are what the customer receives.",
+      "why": "D-5's recon found the GCP original serves all 7 web/ assets with CRLF. Checking 96efa35 out anywhere with a normal git config can normalise those to LF and silently change every byte of the served CSS/JS. `.gitattributes` with `web/** -text` marks them binary-adjacent so no checkout on any platform rewrites them. Measured result: `git diff --ignore-cr-at-eol --numstat 96efa35 d9-pin-96efa35` returns ONLY `.gitattributes` (4 added lines) -- i.e. ignoring line endings the tree IS 96efa35 -- while the raw numstat shows all 7 web files' lines changed, which is exactly the CRLF-vs-LF delta. On disk web/app.js is 131149 bytes with CR=3264 and LF=3264, pure CRLF, and the live sweep shows the App Platform app serving /app.js at 131149 bytes byte-identical to GCP.",
+      "honestCaveat": "So the DEPLOYED COMMIT is 178e968b5bb4beadbaad60f93afb2b8573b3ed74, not literally 96efa35766e5d6114eb71bdf409986c383625b97. The claim that is true and measured is the one that matters: the code is 96efa35 (modulo a .gitattributes that changes no served byte), and the served output is byte-identical to the GCP original at all 17 swept paths. Stated this way rather than as 'deployed 96efa35' because the difference is real and a successor comparing hashes would otherwise be misled."
+    },
+    {
+      "decision": "Fix the HEALTHCHECK by replacing the curl call with a Node global-fetch one-liner, rather than installing curl into the image.",
+      "why": "Node 22 ships a global fetch, so the probe needs no new dependency, no extra image layer, and no change to the runtime's attack surface. Installing curl would have added a network tool to a production image purely to answer a liveness question the runtime can already answer itself.",
+      "theProbe": "HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 CMD node -e \"fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+      "whyThoseNumbersKept": "interval/timeout/start-period/retries were left exactly as they were; only the command changed. start-period=120s already accommodates the boot plus migration, so the fix did not need to touch the timing contract."
+    },
+    {
+      "decision": "Set PORT=8080 explicitly as a RUN_TIME GENERAL env var on the api app.",
+      "why": "Cloud Run injects PORT invisibly; App Platform does not. The api binds `process.env.PORT || 5000` while App Platform's http_port is 8080, so without the explicit var the container would listen on 5000 and the platform would probe 8080. This was found by reading the app's own binding, and it is the difference between a working app and a silently-unroutable one. It is the only env var this lane added; every other one is carried across from the GCP service definition verbatim."
+    },
+    {
+      "decision": "Env values are pulled live from the GCP service spec and Secret Manager by a script that writes only to a temp directory outside any repo.",
+      "why": "The dispatch forbids committing any secret value to any file, dispatch, or close artifact. Building the spec from live GCP state (rather than transcribing) also means DO and GCP cannot silently disagree about a value. 43 env entries were carried for the api (1 added PORT + 42 from the GCP service) and the dashboards app likewise; the generated spec files live under the OS temp directory, never in a repo, and no value was printed into any artifact."
+    },
+    {
+      "decision": "Validate from GCP Cloud Build rather than from this host.",
+      "why": "This host's network resets connections to *.ondigitalocean.app -- every local curl and fetch to both DO addresses failed with 'Recv failure: Connection was reset' while the apps were demonstrably serving. Rather than read that as an app fault, the sweep runs inside Cloud Build, which reaches both origins. This is also strictly better evidence than a local run: the measurement is taken from a different network than the original's.",
+      "cost": "It needs a gcloud-authenticated project and a Cloud Build run per measurement, and Cloud Build's own egress is what the numbers describe -- stated so the vantage point is not mistaken for the app's."
+    },
+    {
+      "decision": "Classify sweep differences in three tiers instead of two, and record the reason for every benign call.",
+      "why": "The first sweep reported 3 DIVERGED on the api. Reading only 'DIVERGED' would have either blocked a working cutover or been waved away. The two real causes were (a) transport framing -- Cloud Run sets an explicit Content-Length, App Platform streams the same bytes chunked with no such header -- and (b) volatile fields (timestamps, heap counters) legitimately differing between two independent processes. Both are benign, and both are now itemised per path in the artifact rather than absorbed, so a reviewer can audit each call. A third tier that silently swallowed differences would be exactly the silent pass the program hunts, so the artifact carries the volatile key list, the first differing byte offset, and the framing note for every row."
+    }
+  ],
+
+  "falsifiersPreRegistered": [
+    {
+      "falsifier": "Each App Platform app is confirmed building the intended repo/component from the intended commit, not an assumed one.",
+      "registeredAnswer": "Confirmed by reading the platform (repo, branch, dockerfile_path, http_port per app), and then by behaviour: 17 dashboards paths and 23 api paths serve byte-for-byte what the GCP originals serve. Evidence: validation artifact measurements[].",
+      "status": "ANSWERED, with one honest qualification: the dashboards app's deployed commit hash is 178e968, not 96efa35, because the pin branch carries one extra .gitattributes commit. Both the hash and the reason are stated above rather than glossed."
+    },
+    {
+      "falsifier": "Every endpoint and health surface that matched on D-5's droplets still matches on the corresponding App Platform app.",
+      "registeredAnswer": "0 hard divergences across all 40 paths: dashboards 17 (14 MATCH, 3 MATCH-ERR) and api 23 (3 MATCH-~, 20 MATCH-ERR). All 3 MATCH-~ are explained per path in the artifact. Evidence: validation artifact; re-confirmed after the domain change.",
+      "status": "ANSWERED (PASS)"
+    },
+    {
+      "falsifier": "After the smartcityos.io cutover, the GCP original is confirmed still running and receiving no real traffic (uptime checker only) via its own request logs -- not assumed from the DNS change.",
+      "registeredAnswer": "There is no 'after the cutover' state to measure, because the DNS record change was not performed (see the blocker below). What WAS measured is the pre-cutover state of the same logs, and it does not support the dispatch's parenthetical: smartcityos.io in the 6h to 19:12Z receives real browser traffic (iPhone Safari and Windows/Mac Chrome page loads), search-engine and crawler traffic (Googlebot, AhrefsBot, enrich/1.0), and vulnerability-scanner traffic (WordPress `?rest_route=/batch/v1`, `/readme.html`, `/wp-admin/install.php`, `/mongo.zip`, `/department.zip`), in addition to the uptime checker. So the falsifier's premise -- that the GCP original would be idle but for its own health checker -- is CONTRADICTED for the domain as a whole. Evidence and timestamps in CP2.",
+      "status": "CONTRADICTED on the pre-cutover state; the post-cutover reading is UNMEASURED because no cutover occurred"
+    },
+    {
+      "falsifier": "The healthcheck fix is verified by observing the container report healthy on the new base, not by reading the Dockerfile diff alone.",
+      "registeredAnswer": "Three arms, all measured: (1) the premise, disproved directly -- `command -v curl` inside node:22-slim reports absent, so the old probe could never exit 0; (2) the replacement, executed from a neutral vantage point -- the exact fetch expression returns http 200 with {\"status\":\"ok\",\"db\":\"connected\"} and evaluates to exit 0; (3) the platform's own view -- the app has been ACTIVE since 18:47Z and again ACTIVE after the 19:09Z domain-triggered rebuild, with no restart-driven deployment in that window. Evidence in CP2.",
+      "status": "ANSWERED for arms 1-3. Stated limitation, because the dispatch asks for observation and I should not overclaim it: App Platform does not expose Docker's HEALTHCHECK status through its API, so the container's own reported health is inferred from the absence of restart behaviour plus the probe's measured exit code, not read from a health field. That is weaker than 'observed healthy' and is recorded as such."
+    }
+  ],
+
+  "theOneBlocker": {
+    "step": "Dispatch item 5's final moves: lower the GoDaddy TTL a day ahead, update the GoDaddy apex A/AAAA and www CNAME to what App Platform domain-verification provides, verify the certificate, watch both origins' logs during propagation.",
+    "whyBlocked": "No GoDaddy credential exists anywhere this lane can reach, and the DNS record change is the operator's to make. Searched: C:/Users/cente/.cursor/mcp.json (only do-apps and do-droplets, neither a DNS provider), the process environment (`Get-ChildItem Env:` filtered on godaddy|dns, empty), and Secret Manager in all three relevant projects (smartcity-os-prod 48 secrets, hauska-prod-497015 40, legacy-design-tools-prod 60 -- none matching godaddy|dns|registrar). The DigitalOcean agent token is scoped to Droplets and Apps only, which is confirmed live: `doctl compute domain list` and `doctl compute domain records list smartcityos.io` both return 403 'You are not authorized to perform this operation', so DO cannot read or write the DNS either.",
+    "precedentForOperatorHoldingIt": "90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover.md records the same pattern for cortex.empressa.io: gcloud emitted the required record and the record itself was created 'at GoDaddy' by hand. DNS record edits at GoDaddy are a manual operator step in this fleet.",
+    "whatWasDoneInstead": "The reversible half was completed so the operator's step is a paste rather than a design exercise: smartcityos.io and www.smartcityos.io are now attached to walrus-app as custom domains, and DO's own validation pipeline is live and telling us exactly what it needs. See CP2 for the required records.",
+    "ttlLeadTimeFlag": "Required by the dispatch to be flagged rather than skipped: NO day-ahead TTL lowering was performed, because this session cannot make that edit. Mitigating measurement: the live apex A records and the www CNAME already carry TTL=600 (10 minutes), so the propagation window the rule exists to shrink is already the low end of what GoDaddy offers. The rule's intent (a short propagation window on the switch) is therefore already satisfied by the zone's existing state, but the literal step -- lower it a day ahead -- was not executed by this lane."
+  }
+}

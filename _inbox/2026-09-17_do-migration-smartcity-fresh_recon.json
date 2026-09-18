@@ -1,0 +1,116 @@
+{
+  "artifact": "D-5 do-migration-smartcity-fresh — live recon of the three GCP originals",
+  "lane": "do-migration-smartcity-fresh",
+  "planRow": "D-5",
+  "seat": "do-migration-lane",
+  "capturedAt": "2026-09-17T16:45Z",
+  "capturedBy": "agent, live gcloud/doctl/ssh reads (no values copied from a prior report)",
+  "reposIdle": {
+    "note": "Falsifier 5 precondition: both repos idle since 2026-09-15 at dispatch compile time. Re-checked live.",
+    "smartcity-os": {
+      "originMain": "8bea7fa591134fc24154630fa869081f4ddf003d",
+      "committed": "2026-09-14T20:29:01-05:00",
+      "subject": "fix(platform): resolve property-intel/summary tenant via getBastropTenantId, not a bare literal (G-131) (#56)",
+      "worktreeHead": "8bea7fa (matches origin/main)"
+    },
+    "smartcity-dashboards": {
+      "originMain": "f776b4bf24114ed4061609d28c0429f84eb431b7",
+      "committed": "2026-09-14T20:18:17-05:00",
+      "subject": "feat(G-134): WorkOS provisioning client, staff-token max age, sign-in flow (#65)",
+      "worktreeHead": "f776b4b (matches origin/main)"
+    }
+  },
+  "deployedCommitPerService": {
+    "_method": "The missions's assumed method (read the image string from gcloud run services describe) only yields a commit for smartcity-api, which is deployed by tag. The other two are deployed by digest, so each was pinned to a commit by two independent means: (a) the build-source zip timestamp / revision creation time, correlated against git commit times, and (b) a blob-hash probe of the actual build context left on the DO droplet, compared against the candidate commits' git blob SHAs with CRLF normalized away.",
+    "smartcity-api": {
+      "deployedImage": "us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-api:g131-tenant-resolution",
+      "digest": "sha256:c66c89b25650a145c8f63f22e391cd34af9b8cc544ac5a329cb51a3b24e44edc",
+      "advertisedTag": "g131-tenant-resolution (an Artifact Registry tag, NOT a git tag — git rev-parse fails on it)",
+      "servingRevision": "smartcity-api-00142-yuv created 2026-09-15T01:34:44Z",
+      "commit": "8bea7fa591134fc24154630fa869081f4ddf003d",
+      "confidence": "high",
+      "evidence": [
+        "commit 8bea7fa committed 2026-09-15T01:29:01Z; serving revision created 2026-09-15T01:34:44Z (5m43s later)",
+        "commit subject cites G-131; deployed AR tag is named g131-tenant-resolution",
+        "the preceding revision 00140-kaj (2026-09-15T00:38:04Z) carries digest 1a3054a4, i.e. the api was rolled BACK from `latest` to g131-tenant-resolution at 01:34Z, consistent with 8bea7fa being the fix for a regression"
+      ]
+    },
+    "smartcity-scraper": {
+      "deployedImage": "us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-scraper@sha256:461a235cebd3e8c310b7da2af3b703873df7a0cc95d830fe7bbc327deeeabf00",
+      "artifactRegistryTags": ["latest"],
+      "servingRevision": "smartcity-scraper-00043-fen created 2026-08-01T23:11:53Z",
+      "commit": "f21e49df07bd36e88d15a113c8c2f671fe27e3d0",
+      "confidence": "high",
+      "evidence": [
+        "EXPIRES/SUPERSEDES the dispatch text, which said the image tag was `wo-chunking-...`; no tag by that name exists in Artifact Registry (only `latest`) and no git tag matches it",
+        "last origin/main commit before the 2026-08-01T23:11:53Z revision is f21e49d at 2026-08-01T22:25:11Z (46 min earlier); the next commit e2fcdd1 lands 2026-08-02, after the deploy",
+        "EMPIRICAL, not inferred: server/scraper-health.ts is ABSENT at f2bd0b4 (the other candidate) and PRESENT at f21e49d. The live service answers GET /internal/health with exactly the handler body f21e49d introduces. Live response observed 2026-09-17T16:42:14.762Z: {\"status\":\"ok\",\"service\":\"smartcity-scraper\",\"timestamp\":\"...\"}",
+        "blob probe of the DO droplet build context matches f21e49d on all four discriminating files: routes.ts=22866ab (f21e49d) not 840f98f (HEAD); samsara.ts=6975c41 not e4e99f6; powerbi.ts=de84a70 not eb9addd; mygov.ts=b8b3e44 not 6860ef4; scraper-health.ts=6199db2"
+      ]
+    },
+    "smartcity-dashboards": {
+      "deployedImage": "us-east1-docker.pkg.dev/smartcity-dashboards/cloud-run-source-deploy/smartcity-dashboards@sha256:5a4a6cf1023cf198db81fc435e6c05173880091a0d391df2baf0d0372b708b47",
+      "artifactRegistryTags": ["latest"],
+      "servingRevision": "smartcity-dashboards-00074-sil created 2026-09-15T01:07:58Z",
+      "commit": "96efa35766e5d6114eb71bdf409986c383625b97",
+      "confidence": "high",
+      "HEAD_IS_NOT_DEPLOYED": "IMPORTANT — the deployed commit is NOT repo HEAD. origin/main is f776b4b (2026-09-15T01:18:17Z) which is ~10 minutes NEWER than the serving revision. Deploying HEAD would ship a commit GCP has never run.",
+      "evidence": [
+        "revision 00074 build-source zip uploaded 2026-09-15T01:07:39Z (gs://run-sources-smartcity-dashboards-us-east1/services/smartcity-dashboards/1789434459.33416-*.zip), revision created 19s later at 01:07:58Z",
+        "96efa35 committed 2026-09-15T01:06:29Z — 70s before the source upload; f776b4b committed 01:18:17Z — 10min AFTER, so it cannot be what was deployed",
+        "blob probe of the DO droplet context matches 96efa35 on all indicators: server.mjs=ca3de05 (not HEAD's 57d383a), tenancy.mjs=364e1ff (not 8a0af69), staff-identity.mjs=432006a (not 353bfad), and src/staff-signin.mjs is ABSENT — it does not exist at 96efa35 but does at HEAD"
+      ]
+    }
+  },
+  "dispatchPremiseContradicted": {
+    "claim": "Dispatch asserts: 'Zero Cloud Scheduler jobs exist in smartcity-os-prod (checked 2026-09-16) — find its actual trigger mechanism ... before assuming how it starts.'",
+    "liveFinding": "FALSE as of 2026-09-17. There are 10 ENABLED Cloud Scheduler jobs in us-central1, all POSTing to the smartcity-scraper Cloud Run service.",
+    "why_it_matters": "The mission's step 7 says to cut the scraper over 'by whatever mechanism actually triggers it ... repoint that trigger, not a guess at one.' The trigger is Cloud Scheduler and it is live, so the scraper cutover must repoint 10 scheduler jobs, not stand up a new trigger.",
+    "probableCauseOfBadRecon": "The earlier check likely omitted --location. `gcloud scheduler jobs list` REQUIRES a location; there is no 'all locations' wildcard (--location=- errors with INVALID_ARGUMENT).",
+    "jobs": [
+      {"id": "manager-load-past-due",      "schedule": "35 * * * *",      "uri": "/internal/sync/manager-load-past-due", "deadline": "1800s", "retries": 2},
+      {"id": "manager-load-table-sync",    "schedule": "50 * * * *",      "uri": "/internal/sync/manager-load-table",    "deadline": "1800s", "retries": 2},
+      {"id": "active-wo-report-hourly",    "schedule": "30 * * * *",      "uri": "/internal/sync/active-wo-report",      "deadline": "1800s", "retries": 2},
+      {"id": "full-scrape",                "schedule": "0 5,13,21 * * *", "uri": "/internal/sync/full-scrape",          "deadline": "1800s", "retries": 0},
+      {"id": "reviews-sync",               "schedule": "30 6 * * *",      "uri": "/internal/sync/reviews",               "deadline": "1800s", "retries": 2},
+      {"id": "wo-manager-sync",            "schedule": "0 6 * * *",       "uri": "/internal/sync/wo-managers",           "deadline": "1800s", "retries": 2},
+      {"id": "inspection-export",          "schedule": "0 7 * * *",       "uri": "/internal/sync/inspections",           "deadline": "1800s", "retries": 2},
+      {"id": "building-inspections",       "schedule": "30 7 * * *",      "uri": "/internal/sync/inspections",           "deadline": "1800s", "retries": 2},
+      {"id": "fire-inspections",           "schedule": "30 8 * * *",      "uri": "/internal/sync/fire-inspections",      "deadline": "1800s", "retries": 2},
+      {"id": "fee-reports",                "schedule": "30 9 * * *",      "uri": "/internal/sync/fee-reports",           "deadline": "1800s", "retries": 2}
+    ],
+    "allJobsShare": {
+      "timeZone": "Etc/UTC",
+      "method": "POST",
+      "auth": "OIDC token; serviceAccountEmail scheduler-invoker@smartcity-os-prod.iam.gserviceaccount.com; audience = the run.app url",
+      "body": "none (empty)"
+    },
+    "repoScriptHasDrifted": "infra/cloud-scheduler.sh in smartcity-os describes an INTENDED job set that no longer matches live: it omits manager-load-past-due and manager-load-table-sync entirely, and its schedules for full-scrape (`0 * * * *`, hourly) and active-wo-report-hourly (`0 * * * *`) disagree with live (`0 5,13,21 * * *` and `30 * * * *`). Do NOT recreate the trigger from that script; treat live as the source of truth."
+  },
+  "authModel": {
+    "_why": "Determines how each service must be stood up on DO and whether the OIDC-invoking scheduler can survive the move.",
+    "smartcity-scraper": "PRIVATE. run.invoker granted only to serviceAccount:scheduler-invoker@smartcity-os-prod.iam.gserviceaccount.com and serviceAccount:494195107606-compute@developer.gserviceaccount.com. No allUsers binding. Confirmed by a successful gcloud identity-token probe returning HTTP 200.",
+    "smartcity-api": "PUBLIC. roles/run.invoker granted to allUsers.",
+    "smartcity-dashboards": "PUBLIC. roles/run.invoker granted to allUsers."
+  },
+  "resourceShapes": {
+    "smartcity-api":       {"cpu": "1", "memory": "1Gi",  "minScale": 1, "maxScale": 10, "ingress": "all", "port": 8080},
+    "smartcity-scraper":   {"cpu": "2", "memory": "4Gi",  "minScale": null, "maxScale": 1, "ingress": "all", "port": 8080, "note": "template maxScale=1 (single instance); service-level annotation says 3 but the template governs"},
+    "smartcity-dashboards":{"cpu": "1", "memory": "512Mi","minScale": null, "maxScale": 3, "ingress": "all", "port": 8080, "note": "service-level annotation says maxScale=20 but template annotation says 3; template governs"}
+  },
+  "serviceUrls": {
+    "smartcity-api":        {"canonical": "https://smartcity-api-494195107606.us-central1.run.app",        "alt": "https://smartcity-api-7dyaiy7wha-uc.a.run.app",        "customDomain": "https://smartcityos.io (GoDaddy DNS)"},
+    "smartcity-scraper":    {"canonical": "https://smartcity-scraper-494195107606.us-central1.run.app",    "alt": "https://smartcity-scraper-7dyaiy7wha-uc.a.run.app"},
+    "smartcity-dashboards": {"canonical": "https://smartcity-dashboards-666199866241.us-east1.run.app",    "alt": "https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app"}
+  },
+  "buildEnvFinding": {
+    "problem": "The smartcity-api Docker build dies with exit 134 at `npm run build:cloud-run`, V8 reporting 'Ineffective mark-compacts near heap limit - JavaScript heap out of memory' at roughly 475MB of heap.",
+    "deadEnd": "Adding a 6GB swapfile does NOT fix it. V8 sizes its old-space limit from the container's VISIBLE MEMORY, not from available swap; swap cannot raise a V8 heap ceiling. Swap was added, the symptom recurred unchanged.",
+    "fix": "Set NODE_OPTIONS=--max-old-space-size=4096 inline on the RUN line. Build then completed: `vite build` -> '✓ 4030 modules transformed' -> '✓ built in 2m 57s', where it had previously died at 53s.",
+    "sideFinding": "core.autocrlf=true is set on the Windows checkout, so every file exports CRLF while the committed blobs are LF (git ls-files --eol reports i/lf w/crlf). This matters ONLY for Dockerfile.api, the one file in the context executed by /bin/sh: a `sed -i 's|^RUN npm run build:cloud-run$|...|'` anchor silently failed to match until the CR was stripped, so the patch appeared to apply while doing nothing. Verified with `sed -n '20,24p' | cat -A` showing trailing ^M."
+  },
+  "unresolved": [
+    "smartcity-scraper's trigger must be reproduced on DO. Cloud Scheduler cannot issue an OIDC token for a non-Google endpoint, so the 10 jobs cannot simply be repointed at a DO address without a new authentication story (or exposing the scraper publicly, which it is not today).",
+    "smartcity-dashboards deployed commit (96efa35) is BEHIND repo HEAD (f776b4b). Direction of travel for the DO deployment must follow the deployed commit, per mission step 4."
+  ]
+}

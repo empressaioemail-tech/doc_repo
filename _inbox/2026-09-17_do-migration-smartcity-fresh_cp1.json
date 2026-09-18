@@ -1,0 +1,113 @@
+{
+  "artifact": "CP1",
+  "kind": "design/pre-build checkpoint (AGENT_CONTRACT section 1: CP1 design, CP2 pilot; FAN-DEPTH 0, so no sub-agent deliverable is under review and both checkpoints are filed by the lane itself)",
+  "lane": "do-migration-smartcity-fresh",
+  "planRows": ["D-5"],
+  "seat": "do-migration-lane",
+  "filedAt": "2026-09-17T16:56:00Z",
+  "repos": {
+    "smartcity-os": {
+      "clone": "P:/tmp/d5-do-migration-smartcity/smartcity-os",
+      "originMainAtCp1": "8bea7fa591134fc24154630fa869081f4ddf003d",
+      "committed": "2026-09-14T20:29:01-05:00",
+      "idleSince2026_09_15": "confirmed live (origin/main unmoved; worktree HEAD equals it)"
+    },
+    "smartcity-dashboards": {
+      "clone": "P:/tmp/d5-do-migration-smartcity/smartcity-dashboards",
+      "originMainAtCp1": "f776b4bf24114ed4061609d28c0429f84eb431b7",
+      "committed": "2026-09-14T20:18:17-05:00",
+      "idleSince2026_09_15": "confirmed live"
+    },
+    "docRepoRoot": "P:/seat-worktrees/dispatch-planner/doc_repo (the worktree this lane is rooted in and holds its claim in; artifacts filed here, never in P:/doc_repo)"
+  },
+
+  "question": "The dispatch prescribes reading the deployed commit from the Cloud Run image string and standing each service up on DO in its current shape. Three things had to be answered before any build: (a) what commit is each service ACTUALLY serving, given two of the three are deployed by digest rather than tag; (b) how does smartcity-scraper actually get triggered, given the dispatch asserts zero Cloud Scheduler jobs; (c) what is the auth model per service, since one is private and two are public?",
+
+  "answers": {
+    "a_deployed_commits": {
+      "finding": "The dispatch's method yields a commit for smartcity-api only. smartcity-api is deployed under an Artifact Registry TAG (g131-tenant-resolution) which happens to name its fix; smartcity-scraper and smartcity-dashboards are deployed by DIGEST, and the digest-to-commit mapping is recorded nowhere. Worse, neither of those two is at its repo HEAD.",
+      "smartcity-api": "8bea7fa591134fc24154630fa869081f4ddf003d — equals repo HEAD; revision 00142-yuv created 5m43s after the commit; tag name matches the commit's G-131 subject; the prior revision had rolled back from `latest`. Confidence high.",
+      "smartcity-scraper": "f21e49df07bd36e88d15a113c8c2f671fe27e3d0 — NOT the `wo-chunking-...` the dispatch names (that string is the service's DEPLOY_STAMP env var value, not an image tag; no such AR tag exists). Pinned two ways: last origin/main commit before the serving revision's creation time, and empirically by the /internal/health handler shape, which exists only from f21e49d onward. Confidence high.",
+      "smartcity-dashboards": "96efa35766e5d6114eb71bdf409986c383625b97 — which is BEHIND repo HEAD f776b4b by about ten minutes. Deploying HEAD would have shipped a commit GCP has never run. Pinned by the revision's build-source zip upload time (70s after 96efa35, 10min before f776b4b) and by blob-hash probe. Confidence high.",
+      "whyItMatters": "Mission step 4 says deploy from the exact commit currently deployed on GCP. For two of three services that is not HEAD, so a naive `deploy HEAD` would have violated the mission while looking compliant."
+    },
+    "b_scraper_trigger": {
+      "finding": "The dispatch's premise is FALSE as of 2026-09-17. Ten ENABLED Cloud Scheduler jobs exist in us-central1, all POSTing to smartcity-scraper. The check that produced 'zero jobs' most likely omitted --location; gcloud scheduler jobs list requires a location and there is no all-locations wildcard (--location=- errors INVALID_ARGUMENT).",
+      "whyItMatters": "Mission step 7 requires repointing the real trigger rather than guessing one. The trigger is Cloud Scheduler and it is live, so the scraper cutover has to move ten jobs, not one.",
+      "secondFinding": "infra/cloud-scheduler.sh in the repo describes an INTENDED job set that has drifted from live: it omits manager-load-past-due and manager-load-table-sync, and disagrees with live on the full-scrape and active-wo-report schedules. Recreating the trigger from that script would silently change the scrape cadence, so live was treated as the source of truth."
+    },
+    "c_trigger_auth_and_the_central_design_problem": {
+      "finding": "The scraper is PRIVATE — run.invoker is granted only to scheduler-invoker@smartcity-os-prod and the compute default SA. The api and dashboards are PUBLIC (allUsers).",
+      "theProblem": "Cloud Scheduler authenticates to the scraper with a Google-minted OIDC token whose audience is the run.app URL. Cloud Scheduler cannot mint an OIDC token for a non-Google endpoint, and the scraper's /internal/sync/* routes carry NO application-level auth (scraper-worker.ts declares them with no guard) because Cloud Run IAM was the guard. So the ten jobs cannot simply be repointed at a DO address, and standing the scraper up publicly on DO would expose unauthenticated scrape-triggering endpoints that are private today.",
+      "designChosen": "Run the scraper container bound to 127.0.0.1 only, with its trigger reproduced as a local cron on the droplet hitting http://127.0.0.1:8080/internal/sync/*. This (1) keeps the private-service property the GCP original has, (2) needs no source change to add auth the source does not have, (3) makes the trigger's schedule a directly auditable file on the host, and (4) needs no new credential. The alternative — expose it publicly and add an auth middleware — was rejected because it requires modifying a service that must be deployed from its exact deployed commit.",
+      "verified": "Bound to loopback and the public port confirmed closed (connection refused from outside; HTTP 200 on loopback via the container's own health)."
+    },
+    "d_otherDesignDecisions": [
+      {
+        "decision": "Host choice: Droplets with locally-built images for all three, rather than App Platform, for api and dashboards too — departing from the dispatch's recommendation of App Platform for those two.",
+        "why": "App Platform cannot build these services. App Platform built-from-GitHub fails with 'GitHub user not authenticated' — there is no DO-to-GitHub integration on this account — and the alternative, GitHub Actions, is not wired for either repo. App Platform can deploy a PREBUILT image from DO Container Registry, but the agent token is scoped to Droplets and Apps only and is refused registry access (403 on registry endpoints). So there is no path to get these images into App Platform without operator action. Droplets with local builds were reachable with the permissions actually held.",
+        "consequence": "The api and dashboards therefore serve on droplet IPs:8080 with no TLS and no custom-domain mapping, which is sufficient for the validation this mission asks for but is NOT sufficient to serve smartcityos.io. The custom-domain/TLS leg of the api cutover remains open and is named in the close.",
+        "faithfulness": "The deployed artifact is otherwise faithful: same source commit, same image contents, same env, same port."
+      },
+      {
+        "decision": "Secrets were replicated by enumerating the live Cloud Run env lists, not by following the dispatch's enumeration.",
+        "why": "The dispatch lists 12 env vars for smartcity-api; the live service carries 41 secret refs plus one literal (CACHE_BUST). A build made from the dispatch's list would have booted with 29 unset variables. The same check confirmed dashboards' 5 secrets + 5 literals and the scraper's 5 secrets + 2 literals.",
+        "how": "gen-env.ps1 fetches each value byte-faithfully from Secret Manager, then SHAPE-asserts it (regex per key: DATABASE_URL must look like a postgres URI, NODE_ENV must be a bare lowercase word, etc.), rejects any value containing a newline, and refuses empty values. Result: BAD_TOTAL=0 across all three services. One assertion fired during the work and was corrected rather than silenced — DASHBOARDS_API_KEY was assumed to be prefixed `hk_` and is in fact 64 hex chars; the rule was wrong, not the secret."
+      },
+      {
+        "decision": "No secret value is written into any committed file; values live only in /opt/d5/<svc>.env on each droplet, mode 600, and are passed via docker --env-file.",
+        "why": "The mission forbids committing secret values. Note the distinction the mission draws: replicating a secret onto the deployment target is the work; committing one to a file this lane commits is the prohibition.",
+        "hazardChecked": "The env files were verified LF-only before use. --env-file folds a stray CR into the value, which would have put a trailing \\r on DATABASE_URL and every other value — a failure mode that looks like a wrong password rather than a line-ending bug."
+      }
+    ]
+  },
+
+  "falsifiersPreRegistered": [
+    {
+      "falsifier": "The exact commit each service is deployed from on GCP.",
+      "registeredAnswer": "smartcity-api = 8bea7fa; smartcity-scraper = f21e49d (NOT repo HEAD, NOT the `wo-chunking-` string the dispatch names); smartcity-dashboards = 96efa35 (NOT repo HEAD, which is f776b4b). Each pinned by two independent means and recorded with its evidence in the recon artifact.",
+      "status": "ANSWERED (see recon artifact)"
+    },
+    {
+      "falsifier": "smartcity-scraper's actual trigger mechanism.",
+      "registeredAnswer": "Ten live Cloud Scheduler jobs in us-central1, OIDC-authenticated as scheduler-invoker@smartcity-os-prod, all POSTing to /internal/sync/* on the scraper. The dispatch's 'zero jobs' premise is contradicted.",
+      "status": "ANSWERED — contradicts the dispatch"
+    },
+    {
+      "falsifier": "The auth model per service, and therefore what the DO stand-up must preserve.",
+      "registeredAnswer": "scraper private (OIDC-only), api and dashboards public (allUsers). The scraper must stay private on DO; a public stand-up would expose unauthenticated scrape triggers.",
+      "status": "ANSWERED"
+    },
+    {
+      "falsifier": "Every secret resolves with no fallback, default, or empty-string substitution.",
+      "registeredAnswer": "To be proven at CP2 by the shape-asserting fetch: BAD_TOTAL must be 0, meaning every key was fetched non-empty, shape-valid, and single-line. Any unresolved key must appear as a named failure rather than a silent default.",
+      "status": "PRE-REGISTERED, answered at CP2"
+    },
+    {
+      "falsifier": "Each DO deployment serves identical responses to its GCP original on real data, for every endpoint tested.",
+      "registeredAnswer": "To be measured by a live endpoint sweep comparing DO against GCP field-for-field, with only legitimately per-request values (timestamps, heap figures) excluded. Divergence must be reported as divergence, not normalized away.",
+      "status": "PRE-REGISTERED, answered at CP2"
+    }
+  ],
+
+  "knownRisksCarriedIntoBuild": [
+    "smartcity-api serves a combined frontend+API bundle; the frontend assets and /api/analytics/track must be compared, not just the API.",
+    "The api boots migrations against the SHARED production Neon database. Booting the DO copy therefore mutates production data (it ran migrations and reset two users' passwords from env on first start). This is identical to GCP's own boot behaviour, but it means a DO stand-up is not side-effect-free with respect to production data.",
+    "hauska-mcp-server's DASHBOARDS_BACKEND_URL is the one env flip this mission makes outside the two repos; it must be checked for a competing lane claim before the dashboards cutover.",
+    "Row A-039 (OPS-16) — dashboards needing a Bearer token after hauska-engine-api's auth gate is enforced — is dormant but would touch dashboards' config from the Hauska side. Re-check before any cutover."
+  ],
+
+  "postCp1Amendments": [
+    {
+      "what": "The smartcity-api droplet was replaced. Its original host (nyc3, 167.99.51.119, droplet 601444085) could not reach municodemeetings.com — HTTP 403 'Request forbidden by administrative rules' at 94 bytes — while the same URL returned 200 / 65423 bytes from this workstation, from the scraper droplet in the SAME region and provider, and from a fresh throwaway droplet in sfo3. It is therefore an IP-specific WAF refusal, not a DigitalOcean-wide block and not a header or code defect. That host's egress IP cannot be changed in place: a reserved IP would, but the agent token is refused reserved-IP creation (403, networking is outside its Droplets-and-Apps scope). So the api was rebuilt and redeployed on a host whose egress IP is verified unblocked.",
+      "whyItMatters": "CP1's design section said the api would serve on a droplet IP. That is still true, but the specific droplet changed after CP1 was filed, and CP1 named no IP so nothing in it is now wrong. It is amended rather than rewritten so the sequence stays legible.",
+      "stateAfter": "api now runs on d5-smartcity-api, sfo3, 64.227.108.49, droplet 601454470 (a host originally created as an egress probe and renamed into place). The old nyc3 api droplet was deleted. Droplet count is still three."
+    },
+    {
+      "what": "The 'Each DO deployment serves identical responses' falsifier was measured twice and FAILED the first time (2 diverged endpoints, both from the WAF refusal above; the api fell back to last-known-good calendar data). After the rehost it re-measured clean at 0 diverged of 40 endpoints.",
+      "whyItMatters": "Recording only the final clean number would hide that the first measurement was a real, customer-visible behavioural difference. The failure and its remediation are both part of the record."
+    }
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

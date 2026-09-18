@@ -1,0 +1,223 @@
+{
+  "checkpoint": "CP2",
+  "kind": "What was measured, with the instrument, the timestamp, and the raw reading. Every claim in the close traces to a line here. Where a reading is a live platform state it was taken at the timestamp shown and can move; where it is a git hash it is stable.",
+  "lane": "do-migration-app-platform-configure",
+  "planRows": ["D-9"],
+  "snapshot": {
+    "takenAt": "2026-09-17T19:12Z (validation sweep), 19:10Z (platform state), 19:13Z (traffic logs)",
+    "docRepoWorktree": "P:/seat-worktrees/dispatch-planner/doc_repo",
+    "docRepoHead": "14284eb7adcd9e7464b6b643be368c58a2820738",
+    "docRepoBranch": "seat/dispatch-planner"
+  },
+
+  "commitsAndBranches": {
+    "smartcity-dashboards": {
+      "origin/main": "f776b4bf24114ed4061609d28c0429f84eb431b7",
+      "verifiedCommit": "96efa35766e5d6114eb71bdf409986c383625b97",
+      "pinBranch": "d9-pin-96efa35",
+      "pinBranchHead": "178e968b5bb4beadbaad60f93afb2b8573b3ed74",
+      "deployedCommit": "178e968b5bb4beadbaad60f93afb2b8573b3ed74 (= 96efa35 + a 4-line .gitattributes; proof below)",
+      "deployOnPush": false,
+      "lineEndingProof": {
+        "command": "git -C P:/smartcity-dashboards diff --ignore-cr-at-eol --numstat 96efa35 d9-pin-96efa35",
+        "output": "4\\t0\\t.gitattributes",
+        "interpretation": "Ignoring CR at EOL, the ONLY difference between the pin branch and 96efa35 is the .gitattributes. Every other entry the raw numstat shows (web/app.js 3264/3264, web/index.html 1755/1755, web/property-map.css 452/452, web/property-map.html 113/113, web/property-map.js 739/739, web/sc-kit.css 80/80, web/shell.css 1486/1486) is the CRLF-vs-LF delta and nothing else."
+      },
+      "servedByteProof": "web/app.js on disk: 131149 bytes, CR=3264, LF=3264 (pure CRLF). The live sweep returns /app.js from both origins at 131149 bytes, bodyClass identical, i.e. g.body.equals(d.body) was true."
+    },
+    "smartcity-os": {
+      "origin/main": "92c73e39c9003d87cde5f9aaac5210d240229d2a",
+      "verifiedCommit": "8bea7fa591134fc24154630fa869081f4ddf003d",
+      "whyNotMain": "main has MOVED past the verified commit since D-5. The dispatch permits 'the current verified-equivalent if smartcity-os has moved', but nothing in this lane measured 92c73e39 against the GCP original, so it is not a verified equivalent. Branch cut at 8bea7fa.",
+      "fixBranch": "d9-api-8bea7fa",
+      "fixBranchHead": "e783f3510d8f582894c4317e511650af327ea0a1",
+      "deployedCommit": "e783f3510d8f582894c4317e511650af327ea0a1 (= 8bea7fa + the Dockerfile.api HEALTHCHECK fix)",
+      "filesChangedVs8bea7fa": ["Dockerfile.api"],
+      "deployOnPush": false
+    },
+    "note": "Neither main branch was pushed to. Both changes live only on dedicated branches, per the dispatch's 'do not touch main'."
+  },
+
+  "healthcheckFix": {
+    "file": "Dockerfile.api",
+    "before": "HEALTHCHECK ... CMD curl -f http://127.0.0.1:8080/api/health || exit 1 (curl is not in node:22-slim)",
+    "after": "HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 CMD node -e \"fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+    "arm1_premiseDisproved": {
+      "instrument": "Cloud Build step on the node:22-slim image itself",
+      "output": "curl ABSENT from node:22-slim -> original 'curl -f ...' probe could never exit 0",
+      "means": "The old HEALTHCHECK failed on every single probe. On Cloud Run this was invisible (Cloud Run ignores HEALTHCHECK); on App Platform, which honours it, the container reports unhealthy always."
+    },
+    "arm2_replacementWorks": {
+      "instrument": "the same fetch expression, run from GCP Cloud Build against the live service",
+      "output": "http status 200; body {\"status\":\"ok\",\"db\":\"connected\",\"timestamp\":\"2026-09-17T18:57:21.567Z\",\"currentJob\":null,\"queueDepth\":0,\"heapUsedMB\":107,\"heapTotalMB\":121}; r.ok -> true (probe exit 0)"
+    },
+    "arm3_platformView": {
+      "instrument": "doctl apps list-deployments / apps get",
+      "output": "walrus-app deployment 897cae85-de8c-4d6b-9ac7-8e672df2338d ACTIVE created 18:43:14Z updated 18:47:08Z; no restart-driven deployment between 18:47Z and the domain-triggered rebuild at 19:05Z; that rebuild e32caf51 went BUILDING 19:05:10Z -> DEPLOYING 19:08:17Z -> ACTIVE 19:09:08Z. The app has never shown a crash-loop or an unhealthy-restart pattern.",
+      "limitation": "App Platform does not expose Docker's HEALTHCHECK result through its API. There is no field to read. So 'the container reports healthy' is supported by (a) the probe's measured exit code and (b) the absence of restart behaviour -- not by a health field. Recorded as a limitation rather than presented as a direct observation."
+    }
+  },
+
+  "validation": {
+    "method": "Canonical endpoint sweep comparing each App Platform app against its live GCP original. Same path set D-5 used (17 dashboards, 23 api). Three-tier classification: status, byte length, content-type and raw bytes; then CRLF-normalised bytes; then JSON canonicalised with a fixed auditable volatile-key list. Verdicts: MATCH, MATCH-ERR (both sides same non-2xx, identical body), MATCH-~ (equivalent payload, benign difference itemised), DIVERGED (real difference).",
+    "vantagePoint": "GCP Cloud Build, project smartcity-os-prod. Chosen because this host resets connections to *.ondigitalocean.app; every local attempt failed with 'Recv failure: Connection was reset' while the apps were serving.",
+    "bases": {
+      "smartcity-dashboards": { "gcp": "https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app", "do": "https://dolphin-app-y4ixf.ondigitalocean.app" },
+      "smartcity-api": { "gcp": "https://smartcity-api-7dyaiy7wha-uc.a.run.app", "do": "https://walrus-app-kzog6.ondigitalocean.app" }
+    },
+    "cloudBuildRuns": {
+      "firstSweep": "04ba245d-48ea-4bad-adab-6dad18bb0910 (raw byte comparison; reported 3 DIVERGED on the api)",
+      "detailProbe": "51a011e2-641f-4ea8-adf2-d1a28841180f (byte-offset diff of the 3 diverged api paths)",
+      "classifiedSweep": "13a78229-3e71-401b-946b-616abdb29f02 (three-tier; 0 hard divergences)",
+      "postDomainChangeSweep": "b2dcc5eb-396d-4347-9e6e-7bf97f607e46 (0 hard divergences; proves the domain change altered nothing)"
+    },
+    "result_dashboards": {
+      "paths": 17,
+      "counts": { "MATCH": 14, "MATCH-ERR": 3, "DIVERGED": 0 },
+      "matchErrDetail": [
+        "/api/property-map/summary -> 404/29 on both",
+        "/api/property-map/layers -> 404/29 on both",
+        "/api/city-packs -> 401/24 on both"
+      ],
+      "identicalBytes": "All 17 responses byte-identical, including the three error bodies. This is the strongest available evidence that the committed CRLF web assets survive the App Platform build unchanged: /app.js 131149B, /shell.css 56860B, /sc-kit.css 4409B, /property-map.html 5542B and / 145758B all match exactly."
+    },
+    "result_api": {
+      "paths": 23,
+      "counts": { "MATCH-~": 3, "MATCH-ERR": 20, "DIVERGED": 0 },
+      "matchErrDetail": "20 auth-gated routes returning 401/26 identically on both sides, plus /api/calendar/events and /api/calendar/events.json at 401/116 identically -- the same gate behaving the same way on both origins.",
+      "theThreeBenigns": [
+        {
+          "path": "/api/health",
+          "reading": "gcp 200/138, do 200/139, bodyClass volatile-only, first byte difference at offset 65",
+          "whyBenign": "Differs only in the keys heapTotalMB, heapUsedMB, timestamp -- a clock and two heap counters from two independent processes. The 1-byte length difference exists because those volatile numbers render with different digit counts (94 vs 99 MB, 99 vs 119 MB).",
+          "framing": "content-length gcp=138 do=null (App Platform streams chunked)"
+        },
+        {
+          "path": "/api/calendar/status",
+          "reading": "gcp 200/175, do 200/175, bodyClass volatile-only",
+          "whyBenign": "Differs only in lastScrapeAt and lkgFreshAt, the scraper's own timestamps. Both sides report ok:true, lastScrapeStatus ok, cachedSource municode -- the same functional state at a different moment.",
+          "framing": "content-length gcp=175 do=null"
+        },
+        {
+          "path": "/api/calendar/events/public",
+          "reading": "gcp 200/10259, do 200/10259, bodyClass identical -- BODIES IDENTICAL",
+          "whyBenign": "The payload is byte-identical; the only difference is framing. This is the cleanest illustration of why two tiers was not enough: a naive comparison called a byte-identical response DIVERGED purely because Cloud Run sets Content-Length and App Platform omits it in favour of chunked transfer encoding."
+        }
+      ],
+      "framingFinding": "App Platform omits Content-Length and streams chunked where Cloud Run sets the header explicitly. Measured only on the api's 200s; the dashboards app set Content-Length on all 17. Both are equivalent HTTP; recorded so a future byte-comparison does not flag it."
+    },
+    "artifact": "_inbox/2026-09-17_191200_d9_app_platform_validation.json -- carries every row's verdict, byte lengths, content-types, framing, first-differing-byte offset, and the reason for each benign classification. No response body and no secret is stored."
+  },
+
+  "domainAttachAndCurrentCertificateState": {
+    "action": "Added smartcityos.io (PRIMARY) and www.smartcityos.io (ALIAS) to walrus-app's spec. No `zone` field, deliberately: GoDaddy keeps authoritative DNS, so DigitalOcean must not be handed the zone.",
+    "whatDOsPipelineSaidAt1905Z": {
+      "smartcityos.io": "phase CONFIGURING; step ensure-certificate RUNNING with reason DomainCertPendingValidation -- 'Your domain is not yet active because we are validating domain ownership. If this persists for more than 1h, verify DNS records are configured correctly.'",
+      "www.smartcityos.io": "phase CONFIGURING; step verify-cname RUNNING with reason DomainCNAMEMismatch -- 'the CNAME record value does not match the default ingress.'",
+      "stepsReportedSuccess": "ensure-zone, ensure-ns-records, verify-nameservers, ensure-record, ensure-alias-record, ensure-wildcard-record, ensure-ssl-txt-record-saved, ensure-ssl-txt-record, ensure-renewal-email, ensure-CA-authorization -- these operate on a zone DigitalOcean would manage; they report SUCCESS because DO wrote what it wanted to write, NOT because the live DNS now points at DO. Do not read them as propagation."
+    },
+    "whatDOsPipelineSaidAtClose_2026-09-17T19:22Z_READ_THIS_NOT_THE_ABOVE": {
+      "whyThisSupersedes": "The state above was read at 19:05-19:10Z while DO's first validation attempt was still in flight. By 19:22Z the attempt had resolved, and the resolution is the fact a successor needs. Both readings are kept because the transition is itself the evidence that DO does not loop forever on a wrong answer.",
+      "smartcityos.io": {
+        "phase": "ACTIVE",
+        "certificate_expires_at": "1970-01-01T00:00:00Z (epoch, i.e. NO CERTIFICATE EXISTS)",
+        "ensure-certificate": "SUCCESS with reason DomainOwnershipVerificationErr -- 'The domain seems to be hosted on Cloudflare but does not actually point to this app. Please check your DNS CNAME configuration.'",
+        "reading": "DO ran its ownership verification, concluded the domain does not point at the app, recorded the error, marked the remaining steps (create-deployment, configuration-alert) SUCCESS, and stopped. phase=ACTIVE here describes the CONFIGURATION OBJECT being settled, NOT a working custom domain: there is no certificate. Do not read 'smartcityos.io phase ACTIVE' as 'smartcityos.io is live on DigitalOcean'."
+      },
+      "www.smartcityos.io": {
+        "phase": "CONFIGURING",
+        "verify-cname": "RUNNING with reason DomainCNAMEMismatch; every step after it still PENDING",
+        "reading": "Blocked on the same DNS fact."
+      },
+      "consequenceForTheOperator": "Re-verified at 19:34Z: the apex entry is phase ACTIVE with certificate_expires_at at the epoch and ensure-certificate carrying DomainOwnershipVerificationErr, while www is still CONFIGURING with verify-cname RUNNING. The www entry is actively waiting, so it should resolve on its own once the CNAME lands. The apex is the uncertain one: its pipeline already ran to completion and settled, so DO may treat the failed issuance as done rather than retrying. Expect to wait ~15-30 min after the DNS change, then check certificate_expires_at; if it is still the epoch, re-add the apex domain in the app's Domains tab (remove then re-add smartcityos.io) to force a fresh validation run. Stated as a contingency rather than a fact because this lane could not observe a retry: no DNS change was made, so no retry could be provoked."
+    },
+    "didTheCertificateValidationActuallyReachGCP": {
+      "answer": "YES, and this is direct evidence of how DO validates the apex.",
+      "instrument": "GCP Cloud Logging, smartcity-os-prod, smartcity-api request logs",
+      "reading": "19:05:04 and 19:05:03 (x3) -- GET /.well-known/acme-challenge/TiqNzSc_9dyEn7Iznrr__RzaepO6IfLZoRk7EDTuC53QdoVg4GQmfL6lp7DBYO5K with User-Agent 'bushbaby/2026.9.7'; plus the http:// (port 80) form at 19:05:03 (x3).",
+      "whyItMatters": "DO's ACME agent is issuing an HTTP-01 challenge for smartcityos.io. The domain attach was at 19:04:56Z, so these fires are seconds after it and are this lane's doing. The challenge resolves to smartcityos.io, which still points at Google, so it lands on the GCP original -- where no such token exists. That is the DomainCertPendingValidation above, live. It means the apex validates by HTTP-01 via the apex itself, so once the apex A records point at DO's ingress the challenge will reach DO and issuance should complete without a separate TXT record.",
+      "corroboration": "19:04:59-19:05:00 -- /.well-known/cf-custom-hostname-challenge/7d75dbc4-582a-4c3d-b1b8-ea999488b4a1 with User-Agent 'Cloudflare Custom Hostname Verification', consistent with App Platform's ingress being Cloudflare-fronted (the static ingress IPs 162.159.140.98 / 172.66.0.96 are Cloudflare-owned)."
+    },
+    "recordsTheOperatorMustCreate": {
+      "source": "DigitalOcean App Platform documentation, read 2026-09-17: the platform publishes two shared static ingress IPs for A records, and for the www host a CNAME to the app's default ingress.",
+      "apex": [
+        { "type": "A", "host": "@", "value": "162.159.140.98" },
+        { "type": "A", "host": "@", "value": "172.66.0.96" }
+      ],
+      "apexAaaa": [
+        { "type": "AAAA", "host": "@", "value": "2606:4700:7::60" },
+        { "type": "AAAA", "host": "@", "value": "2a06:98c1:58::60" }
+      ],
+      "www": [
+        { "type": "CNAME", "host": "www", "value": "walrus-app-kzog6.ondigitalocean.app" }
+      ],
+      "mustRemove": "The existing conflicting apex A records 216.239.32.21 / 216.239.34.21 / 216.239.36.21 / 216.239.38.21 (Google ghs.googlehosted.com) and the www CNAME to ghs.googlehosted.com. ALSO the four existing apex AAAA records 2001:4860:4802:32::15 / :34::15 / :36::15 / :38::15 (Google) -- read live at 2026-09-17T19:34Z and NOT flagged in the first cut of this artifact. Leaving them is a silent half-cutover: IPv6-capable clients, which include the iPhone Safari traffic seen in the GCP logs, keep reaching Google while IPv4 reaches DigitalOcean. Replace them with the two AAAA values above, or delete them for an IPv4-only apex; do not leave the Google ones in place. Keep any MX/SPF records untouched.",
+      "cannotBeReadFromTheAPI": "DigitalOcean does not return these values through the apps API (the domain object's `validation` field is empty), and `doctl compute domain records list smartcityos.io` is 403 with this token. The A/AAAA values above are the platform's documented shared static ingress IPs; the www CNAME is read directly from this app's default_ingress. If DO's control panel shows a domain-specific value that differs from these, the panel is authoritative."
+    },
+    "sideEffectOfTheAttach": {
+      "read": "`doctl apps list` now reports walrus-app's live_url as https://smartcityos.io",
+      "warning": "That is DO's own bookkeeping, not reality. The live DNS still resolves to Google (measured at 19:13Z: 216.239.36.21/32.21/38.21/34.21 TTL=600; www CNAME ghs.googlehosted.com TTL=600). No customer traffic reaches DigitalOcean today.",
+      "deployment": "Adding the domain created deployment e32caf51-bbb3-4456-8b44-c0159bc1ec5b (BUILDING 19:05:10Z -> ACTIVE 19:09:08Z). The post-change sweep (b2dcc5eb) confirms it serves exactly what the previous deployment served."
+    },
+      "reversibility": "Removing the two entries from the spec's `domains` list detaches the domain and stops the ACME attempts. Nothing else in this lane depends on the attach."
+    },
+
+    "correction_2026-09-17T20_45Z_READ_THIS_BEFORE_TRUSTING_THE_ABOVE": {
+      "why": "Everything above was written before the cutover and describes the pre-cutover state. The operator then changed the GoDaddy records by hand and the cutover completed. Two readings in this file were wrong and are corrected here rather than deleted, so the error and its shape remain visible.",
+      "correction1_noCertificateWasWrong": "The apex reading said 'certificate_expires_at 1970-01-01 -- NO CERTIFICATE EXISTS'. That inference was wrong in its consequence. Measured from GCP Cloud Build at 20:35Z, smartcityos.io serves a chain-verified, publicly-trusted certificate with CN=smartcityos.io issued by Google Trust Services 'WE1', valid to 2026-12-16T20:30:00Z; www serves the same for CN=www.smartcityos.io. certificate_expires_at tracks DigitalOcean's OWN issuance attempt, which did fail; the certificate actually presented for a Cloudflare-fronted custom hostname is obtained by a different path. The field is not a proxy for what a customer receives.",
+      "correction2_noRetryWasWrong": "consequenceForTheOperator said DO 'will not re-attempt issuance until its DNS check sees the records' and offered a remove-and-re-add-the-domain contingency. Both parts were wrong. DO's ACME agent (`bushbaby/2026.9.7`) was observed re-attempting the apex HTTP-01 challenge roughly every 5-11 minutes for 85 minutes -- 19:18, 19:22, 19:27, 19:32, 19:39, 19:46, 19:54, 20:03, 20:14, 20:27, 20:28Z -- so the pipeline never stopped retrying and the contingency was unnecessary. The error was reading a permanent stop into a status field that had merely stopped changing. How to check this class of claim: count the events in the log rather than reading the step status.",
+      "correction3_howTheApexWasActuallyServed": "The apex is served over a valid certificate even though DO's ensure-certificate step still carries DomainOwnershipVerificationErr and its certificate_expires_at remains the epoch. A successor must not use either field to judge certificate health for these hostnames. Check the chain from outside.",
+      "outcome": "Both hostnames resolve to DigitalOcean, are served by App Platform's Cloudflare-fronted ingress (edge header `server: cloudflare` with a cf-ray, against the original's `server: Google Frontend`), and pass with 0 hard divergences across 23 swept paths each. The GCP original received zero customer requests after 20:32:30Z. See _inbox/2026-09-17_204000_d9_cutover_verification.json and the close's `amendment` field."
+    },
+
+  "gcpOriginalTrafficState": {
+    "whyMeasured": "Dispatch falsifier 3. The dispatch states the GCP original should read as 'uptime checker only'. Measured rather than assumed, both before and after the domain attach.",
+    "instrument": "gcloud logging read against run.googleapis.com%2Frequests for smartcity-api, project smartcity-os-prod, freshness 4h and 6h, at 19:13Z",
+    "uptimeCheckerIsPresent": "GoogleStackdriverMonitoring-UptimeChecks(https://...) GET /api/health, repeatedly, on the *.run.app host -- this is the traffic the dispatch expects.",
+    "butRealTrafficAlsoExists": [
+      { "at": "19:03:47Z", "path": "/robots.txt", "ua": "Googlebot/2.1" },
+      { "at": "18:48:50Z / 18:48:42Z", "path": "/sitemap.xml, /robots.txt", "ua": "Mozilla/5.0 AppleWebKit/537.36" },
+      { "at": "18:31:13Z", "path": "/", "ua": "iPhone; CPU iPhone OS 13_" },
+      { "at": "18:27:45Z", "path": "/", "ua": "Mozilla/5.0 (compatible; enrich/1.0)" },
+      { "at": "18:05:44-18:05:48Z", "path": "/?rest_route=/batch/v1, /readme.html?wpcba2a402b6, /feed/?wpcba2a402b6", "ua": "Mac OS X Safari -- a WordPress reconnaissance scan" },
+      { "at": "17:28:45Z", "path": "/wp-admin/install.php?step=1", "ua": "WordPress installer probe" },
+      { "at": "17:25:52Z", "path": "/sitemap.xml, /robots.txt", "ua": "AhrefsBot/7.0" },
+      { "at": "17:12:59Z", "path": "/", "ua": "Windows NT 10.0 Chrome" },
+      { "at": "17:12:06-17:12:07Z", "path": "www.smartcityos.io", "ua": "iPhone Safari" },
+      { "at": "16:16:55Z", "path": "/", "ua": "iPhone Safari" },
+      { "at": "16:12:31Z", "path": "/department.zip, /mongo.zip", "ua": "Windows Chrome -- vulnerability scan" }
+    ],
+    "reading": "smartcityos.io carries search-engine crawlers, at least five distinct human-browser page loads (iPhone Safari x3, Windows Chrome, Mac Safari), and continuous bot/scanner probing. It is NOT idle behind a health checker.",
+    "honestUncertainty": "Some of those browser page loads could be the operator or the migration team opening the site rather than a customer; nothing in the logs distinguishes them. The bots and scanners are unambiguously third-party. Either way the dispatch's 'uptime checker only' does not survive measurement, and the practical consequence is the same: a DNS flip moves live traffic, which is why the TTL rule exists.",
+    "gcpStillRunning": "All three GCP services confirmed serving at 19:13Z, untouched by this lane: smartcity-api (rev smartcity-api-00142-yuv, url https://smartcity-api-7dyaiy7wha-uc.a.run.app), smartcity-scraper (rev smartcity-scraper-00043-fen), smartcity-dashboards (rev smartcity-dashboards-00074-sil, url https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app)."
+  },
+
+  "leaveBehindReadings": {
+    "doApps": [
+      { "name": "dolphin-app", "id": "95691c40-27ca-4afb-b9b4-a37e079c5e69", "repo": "smartcity-dashboards", "branch": "d9-pin-96efa35", "deployment": "b30f632b-1e62-44aa-896d-9631a53d4cdc ACTIVE since 18:41:05Z", "live": "https://dolphin-app-y4ixf.ondigitalocean.app", "traffic": "none (no DNS points at it; DO address only)" },
+      { "name": "walrus-app", "id": "2a2a3a1a-b441-4296-8628-a82b20ded1b2", "repo": "smartcity-os (smartcity-api component)", "branch": "d9-api-8bea7fa", "deployment": "e32caf51-bbb3-4456-8b44-c0159bc1ec5b ACTIVE since 19:09:08Z", "live": "https://walrus-app-kzog6.ondigitalocean.app", "customDomains": "smartcityos.io + www.smartcityos.io attached, both phase CONFIGURING, certificate pending", "traffic": "none (DNS still resolves to Google)" },
+      { "name": "d5-capability-probe", "id": "c69bacc5-d8a1-4657-a914-65b64be0bf2e", "note": "D-5's, untouched" }
+    ],
+    "doDroplets": [
+      { "name": "d5-smartcity-dashboards", "id": "601443461", "region": "nyc3", "size": "s-1vcpu-1gb", "status": "active", "traffic": "none" },
+      { "name": "d5-smartcity-scraper", "id": "601444093", "region": "nyc3", "size": "s-2vcpu-4gb", "status": "active", "traffic": "none" },
+      { "name": "d5-smartcity-api", "id": "601454470", "region": "sfo3", "size": "s-1vcpu-1gb", "status": "active", "traffic": "none" }
+    ],
+    "notDeleted": "Per the dispatch, no droplet and no GCP original was deleted or modified. Billing continues on all six resources.",
+    "dns": { "smartcityos.io": "A 216.239.32.21/34.21/36.21/38.21 TTL=600 (Google); NS ns55/ns56.domaincontrol.com (GoDaddy)", "www.smartcityos.io": "CNAME ghs.googlehosted.com TTL=600", "changedByThisLane": "no" },
+    "productionTraffic": "100% still GCP. DigitalOcean serves zero customer traffic."
+  },
+
+  "scratch": {
+    "LESSON": "A two-tier byte comparison calls a byte-identical response DIVERGED when the only difference is transport framing (Cloud Run sets Content-Length, App Platform streams chunked). Compare payloads, classify framing separately, and record the reason -- otherwise a clean migration reads as a failure.",
+    "LESSON": "git's .gitattributes is load-bearing for served bytes: an asset the origin serves as CRLF can be silently rewritten to LF by any checkout. `git diff --ignore-cr-at-eol --numstat` is the check that distinguishes 'line endings only' from real content drift.",
+    "DEAD-END": "Validating *.ondigitalocean.app from this host. Every curl and fetch failed with 'Recv failure: Connection was reset' while both apps were demonstrably serving to GCP Cloud Build. Use Cloud Build as the vantage point; do not read a local reset as an app fault.",
+    "DEAD-END": "`doctl compute domain list` / `domain records list` with the agent token: 403. The token is Apps+Droplets only. The DNS values are not readable through this credential.",
+    "DEAD-END": "`doctl apps spec validate --spec <file>`: unknown flag. Pass the path positionally.",
+    "GROUND-TRUTH": "As of 2026-09-17T19:12Z, both App Platform apps serve byte-identical to their GCP originals across all 40 swept paths (0 hard divergences), from the pinned commits, and neither carries any customer traffic.",
+    "GROUND-TRUTH": "As of 2026-09-17T19:13Z, smartcityos.io still resolves to Google with TTL=600 and GoDaddy nameservers, and the GCP smartcity-api is receiving real browser, crawler and scanner traffic -- not only its uptime checker.",
+    "OPEN": "The GoDaddy record change. Three record sets (apex A x2, optional apex AAAA x2, www CNAME) need an operator with GoDaddy credentials. DO is already attempting HTTP-01 validation on the apex every few minutes and will keep failing until then; the DOMAIN_FAILED alert rule is armed on this app.",
+    "OPEN": "After the DNS switch, the bake period OPS-25 rule 3 requires, then decommissioning of the three D-5 droplets and the GCP smartcity-api/smartcity-dashboards originals -- explicitly out of scope for this lane.",
+    "OPEN": "smartcity-os origin/main has moved to 92c73e39, which no lane has validated against the live GCP original. If the api is ever rebuilt, that commit needs the same byte-level validation 8bea7fa received."
+  }
+}

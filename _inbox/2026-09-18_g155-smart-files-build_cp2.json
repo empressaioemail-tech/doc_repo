@@ -1,0 +1,65 @@
+{
+  "lane": "g155-smart-files-build",
+  "planRows": ["G-155"],
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "seat": "cente-vsc-g155",
+  "filedAt": "2026-09-18T02:00:00Z",
+  "disclosure": "Filed at close, with CP1 and the close. Same miss, same reason, disclosed in CP1: the gates have no live record of the mid-work state, so this checkpoint reconstructs it from artifacts that were produced WHILE the work was in flight (each finding below carries the measurement that produced it, not a recollection).",
+
+  "theFindingThatShapedTheBuild": {
+    "headline": "The product computed the reason a document was not searchable, said it once in an HTTP response, and threw it away. After the response, the only surviving fact was `search_text IS NULL`, which collapses the design's three named reasons -- three different owners, three different fixes, three different answers to 'can we find it' -- into one state nobody can act on.",
+    "measured": "Before any edit: `smart_file_versions` columns were id, document_id, document_entity_id, version, content_cid, content_type, byte_size, provenance, computed_at, superseded_at, created_at, search_text, search_tsv. No reason column. A JSON upload still ANSWERED `searchIndexReason: content-type-not-indexable`. Production held 29 versions in exactly this state.",
+    "whatItCostToFix": "One additive migration (sql/006) and a read path that returns five states. The expensive half was the refusal inside it: a row with no recorded reason must NOT be inferred from `content_type`, because inferring would print `no-text-layer` for a corrupt PDF. That refusal is now visible in the API AND on the surface."
+  },
+
+  "whatWasBuilt": [
+    "sql/006_search_index_reason.sql: the reason is persisted per version under a CHECK constraint on the closed set (content-type-not-indexable, no-text-layer, extraction-failed:%), NULL meaning 'not recorded'.",
+    "The read path returns five distinct searchIndexState values with a searchIndexBasis naming the evidence, in the folder listing, the document board and search.",
+    "Coverage before results: listings and search carry coverage (inScope / searched / notSearched / byReason / countingRule) counted over the current version of every document in the same scope as the results, plus every row's placements.",
+    "Refusals that name what they wanted: provenance refusals carry code + missingKey + missingKeys + keysSupplied (+ declaredSourceKinds); read refusals carry code: read_outside_scope + scopeRequired + scopesHeld + anonymous.",
+    "The QA surface: the design's columns (Searchable, Placed against -- the placement COUNT is gone), the coverage panel, the document board with versions/provenance/placements, the search board, the named gaps board, and an upload dialog that declares the five keys.",
+    "Instruments: scripts/g155_acceptance_probe.mjs (28 checks), scripts/write_surface_check.mjs (+ --plant), scripts/g155_served_surface_check.mjs (the same predicate over deployed bytes), scripts/g155_tag_verify.mjs (the deploy-time probe), src/fixtures.mjs (byte-accurate PDFs), src/g155_contract.test.mjs."
+  ],
+
+  "foundByDrivingTheRealSurfaceNotByReadingIt": [
+    {
+      "finding": "'Last revised' rendered an em dash for EVERY file row while the column promised a time. The renderer asked for `f.updatedAt || f.createdAt` and the listing payload carried neither field, so a column that exists to be acted on was empty on every row.",
+      "how": "Read the painted DOM (`document.body.innerText`) of a real room in a browser against the local server, instead of trusting that the renderer's fallback chain worked.",
+      "fix": "The listing now returns the current version's timestamp as `revisedAt` (falling back to the document row) and every row prints a time. The acceptance probe asserts it per row, so it cannot silently regress to a dash."
+    },
+    {
+      "finding": "A refused upload CLOSED the dialog and printed the refusal in a panel behind it, discarding the file selection the caller had to make to trigger the refusal. The product would have restated its own promise ('any one missing refuses the write and names the key') and then made the caller start over.",
+      "how": "Drove the upload dialog on the real surface with a synthetic File and an emptied `capturedBy`, then read what the user actually sees.",
+      "fix": "A refusal keeps the dialog open, keeps every typed value, and renders the same refusal body (code, first missing key, keys supplied) inside the dialog, where the fix has to be made. Verified live in both directions: refused with an empty key, then accepted with all five."
+    },
+    {
+      "finding": "The DEPLOYED surface still said 'browse' twice and lacked every substituted term, while the repo files were clean. A file-level vocabulary check and a deploy can disagree, and only the file-level check existed.",
+      "how": "scripts/g155_served_surface_check.mjs, run against https://smart-files-app.vercel.app/ BEFORE this lane's UI deploy: forbidden browse=2; required Searchable=MISSING, Placed against=MISSING, Provenance=MISSING, 'Searchable in this folder'=MISSING, 'What this product does not do yet'=MISSING; exit 1.",
+      "fix": "The Vercel project `smart-files-app` is NOT git-connected (last production deploy 15 days old), so the UI ships by `vercel --prod` from web/. Deployed; the same three URLs now read forbidden browse=0 and 6 of 6 substituted terms present. Both measurements, verbatim in the probe artifact (section 5a before, 5b after)."
+    },
+    {
+      "finding": "The folder listing is one row per DOCUMENT at its current version, and the two 'Council minutes' rows the probe creates are two documents with two DECLARED docSlugs -- the same title with a different slug is a new document on purpose. Read as a version-duplication bug until the database was checked: `minutes-<tag>` was at v2 with 2 versions; `appendix-<tag>` was a distinct document at v1 with 1. No sibling was invented.",
+      "how": "Queried `smart_file_documents` directly rather than concluding from the rendered rows.",
+      "fix": "None needed. Recorded because the visual symptom (two rows, one title, different version numbers) is exactly what a revision/sibling defect looks like, and the next reader will see it too."
+    }
+  ],
+
+  "measuredStateAtCheckpoint": {
+    "unitTests": "74 pass, 5 suites (`npm test`)",
+    "acceptanceProbe": "28/28 against a local server and throwaway Postgres; also 28/28 in CI on the merged commit (first pass 27/28 with 1 NOT RUN, which is the reason-not-recorded leg needing a nulled row; the runner nulls it and the second pass is 28/28)",
+    "ciOnMerge": "Unit pass; HTTP round trip pass (includes schema 001-006, both probes and the surface check)",
+    "designCheck": "5 artboards pass; matched inputs files=5 kind-shaped=3 reason-shaped=6 scope-shaped=13 provenance-key-cells=10; four plants caught",
+    "surfaceCheck": "3 files, 0 of 7 refused terms, 6 of 6 substituted terms; --plant browser caught"
+  },
+
+  "scopeGuardrailsHeld": [
+    "FAN-DEPTH 0: no sub-agents spawned, none resumed. A-181 satisfied.",
+    "G-141 (link ingest) untouched: zero drive/oauth/onedrive/sharepoint/dropbox hits in src/ and package.json on the merged commit, no import affordance added, and the absence is named on the gaps board rather than implied away.",
+    "smartcity-dashboards: not touched. RBAC: not touched. DigitalOcean: not touched.",
+    "Every file edit happened in the lane's own worktree P:/smart-files-worktrees/g155-smart-files-build. The integration checkout P:/doc_repo was READ for the dispatch and never written to."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "leave_behind": []
+}
