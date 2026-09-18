@@ -1,6 +1,6 @@
 ---
 id: 2026-09-18d_HANDOFF_smartcity_planner
-title: Handoff - OPS-17 SmartCity planner (next wave compiled, three lanes in flight, gate green while all four instruments it counted fail)
+title: Handoff - OPS-17 SmartCity planner (next wave compiled, three lanes in flight, gate green while all four instruments it counted fail, g148 closed with 11 unowned findings)
 date: 2026-09-18
 last_updated: 2026-09-18
 status: open
@@ -8,7 +8,7 @@ kind: handoff
 owner: nick
 seat: integration
 programs: [OPS-17, OPS-25]
-snapshot: doc_repo main ed457a78 at open; smartcity-dashboards origin/main 7487d7c0; smartcity-os origin/main 1f0262f1; design gate read 2026-09-18T20:32:13Z, exit 0, and all four instruments it counted fail
+snapshot: doc_repo main 81627cff; smartcity-dashboards origin/main 7487d7c0; smartcity-os origin/main 1f0262f1; design gate read 2026-09-18T20:32:13Z, exit 0, and all four instruments it counted fail; g148 closed 20:43:47Z with 11 findings disclosed as leave_behind
 covers: _sessions/2026-09-18c_smartcity_next_wave_and_design_gate_claude_code.md
 ---
 
@@ -51,12 +51,15 @@ Regenerating `_STATE.md` at the repo root is allowed, because that file is not a
 
 ## Where things are, as of this handoff
 
-**In flight, four lanes.**
+**In flight, three lanes.** `g148-design-instruments` **CLOSED at 20:43:47Z** while this handoff was being
+written; its row is regraded and the tracker passes. It left **11 findings across the four designs it
+instrumented, disclosed by name as `leave_behind` and owned by no row** (OPS-17 `A-158`), which is now the
+first thing on the operator's list below.
 
 | Lane | Row | State |
 |---|---|---|
 | `g153-fleet-police-lens` | G-153 | RUNNING, claimed by `cente-vsc-g153`. First lens build. Also carries **G-135's parcel 2**, the full-shell `bastrop_tx` probe that mounts the map iframe. Artifacts current: fleet and police check and violate runs, a live record refusal, a full-shell probe. |
-| `g148-design-instruments` | G-148 | RUNNING, claimed by `cente-vsc-g148`. **All four instruments delivered**, which took the gate from four R3 lines to none and `exit 0`. **All four FAIL**, which is the finding, not a lane failure. Files UNCOMMITTED in `_design/`, which is correct. |
+| `g148-design-instruments` | G-148 | **CLOSED 2026-09-18**, claim released. All four instruments delivered, the gate reached `exit 0`, and **all four instruments exit 1: 11 findings, 4 + 1 + 4 + 2, re-derived from each instrument's own total line rather than read from the close.** The close is honest, recording that it expected these four RATIFIED designs to be clean and they are not, and naming the 11 as `leave_behind`. **The 11 are real board defects, mostly stale negatives, and NO ROW OWNS THEM.** |
 | `g162-v1-finance-honesty` | G-162 | RUNNING, **UNCLAIMED**. Three production finance defects. |
 | `g160-served-commit-parity` | G-160 | PARCEL 2 handed off. The check is built and proven on two unmerged branches: **nothing triggers it**, **no deploy sets `SERVED_COMMIT`**, and a live run REFUSES at exit 2. |
 
@@ -76,8 +79,7 @@ Azavar reply. G-138 is planner-owned design work.
 
 ## The three things most likely to bite you
 
-**One. The design gate is now GREEN, and all four instruments it counted FAIL. Do not read `exit 0` as "clean".**
-The gate reached `exit 0` / `verdict: FINISHED` at **2026-09-18T20:32:13Z**, reading `20 design folders, with an
+**One. The design gate is now GREEN, and all four instruments it counted FAIL. Do not read `exit 0` as "clean".**The gate reached `exit 0` / `verdict: FINISHED` at **2026-09-18T20:32:13Z**, reading `20 design folders, with an
 instrument: 18` and zero findings under every rule. Its R3 rule tests that an instrument EXISTS, never that it
 passes (`design-completion-gate.mjs:157-163` runs `hasCheck`, reads no exit code), and its own wording is honest
 about that ("carries an instrument"). But the state at that same moment is four designs wrong by their own
@@ -86,8 +88,10 @@ exit 1, `smartcity-map-dock` exit 1, `plan-review-departments` exit 1. **These a
 instrument defects**, and that is proven rather than assumed: each folder's `violate.mjs` exits 0, catching its
 planted violations on a real artboard (`plan-review-departments` 17 of 17) and confirming a repaired copy
 passes. `node scripts/govtech/design-instrument-exits.mjs` reports all of this in one run and derives the
-ownership for you; run it rather than re-deriving it by hand. **No row owns these four repairs**, so they are
-exactly the kind of work that falls between lanes.
+ownership for you; run it rather than re-deriving it by hand. **The lane then CLOSED and disclosed exactly
+this**: 11 findings, 4 + 1 + 4 + 2, listed by name as `leave_behind` and deliberately not fixed, because its
+dispatch was to instrument what exists and not redraw it (OPS-17 `A-158`). **No row owns those 11 repairs**,
+so they are exactly the kind of work that falls between lanes, and naming an owner is the operator's call.
 An operator ruling is owed on whether the gate should run what it counts and whether to card the repairs
 (OPS-17 `A-155`, `A-156`, `A-157`). Do not close G-146 on a green gate; A-152 already ruled that it does not close even
 with all four instruments landed.
@@ -138,9 +142,10 @@ no CP2, and both its rows moved on planner acts.
 - Tell Bastrop staff to use `app.smartcityos.io`, which starts the D-12 bake. Highest leverage on the board.
 - WorkOS org, client id, API key, MFA. Then ratify **G-143**, one signature that unblocks G-127, G-144 and
   G-158.
-- Whether the design gate should RUN the instruments it counts, and whether to card the four design repairs
-  that no row owns (`smartcity-overview-lens`, `smartcity-flood-study`, `smartcity-map-dock`,
-  `plan-review-departments`).
+- Whether the design gate should RUN the instruments it counts, and **an owner for the 11 design findings that
+  no row owns** (`smartcity-overview-lens`, `smartcity-flood-study`, `smartcity-map-dock`,
+  `plan-review-departments`). Recommended: one row for all 11, since the repair and the instrument that proves
+  it are one unit of work.
 - The flood-study rainfall claim, or leave it to G-149.
 - Hand-carry: `g160` parcel 2 now; `g152` and `g163` when their lanes close.
 - The standing queue: the Azavar reply and Khalid's answers (M2 is HELD by the operator), Bastrop's finance

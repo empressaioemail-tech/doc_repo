@@ -9,9 +9,9 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `ed457a78`: 117 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `81627cff`: 117 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 977 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 978 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
@@ -21,7 +21,7 @@ programs: [OPS-17, OPS-25]
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 3 | 3 |
 | M3 Lens builds on Bastrop live data | 9 | 4 | 5 |
 | M4 DigitalOcean migration complete | 6 | 4 | 2 |
-| M5 Design complete, and the controls that keep it honest | 5 | 2 | 3 |
+| M5 Design complete, and the controls that keep it honest | 5 | 3 | 2 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -77,5 +77,5 @@ programs: [OPS-17, OPS-25]
 | G-146 | FINISH THE DESIGN WORK — the completion gate, and the FIRST card. | open | — |
 | G-142 | Citizen lens design. | closed | closed |
 | G-147 | the three designed-nowhere surfaces that had no row at all. | closed, partly | closed-partial |
-| G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | open | — |
+| G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | closed | closed |
 | G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | open | — |

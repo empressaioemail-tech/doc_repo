@@ -285,8 +285,53 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 
 - **Hand-carry owed:** `g160` parcel 2 now; `g152` and `g163` WHEN their lanes close. Both are compiled and
   deliberately held, because sending them early is the collision the serialization exists to prevent.
-- **Operator rulings owed:** whether the design gate RUNS the instruments it counts; and the flood-study
-  rainfall claim (design copy vs the engine's broken-parser citation).
+- **Operator rulings owed:** whether the design gate RUNS the instruments it counts; AND **an owner for the 11
+  design findings G-148 disclosed**, which no row owns (recommended: one row for all 11, since the repair and the
+  instrument proving it are one unit of work); and the flood-study rainfall claim (design copy vs the engine's
+  broken-parser citation).
 - **`g148`'s debug debris** (`.dbg.mjs`, `.check.log`, `.violate.log`) must not be committed.
 - **G-163 is not in any milestone's tracked row list**, so it will never appear in the tracker's counts.
   Deliberate or not, nothing grades it.
+- **`--violate` on `design-instrument-exits.mjs` is BLOCKED until `_design` is clean.** It now refuses a dirty
+  tree by design, and `_design` holds `g148`'s 25 paths until the planner commits them. Run plain mode any time;
+  run `--violate` only on a clean tree, and `git status -- _design` after.
+
+### GROUND-TRUTH (2026-09-18, this pass)
+
+- **`G-148` CLOSED at 20:43:47Z**, claim released, row regraded, tracker passes (`PASS every tracked row agrees
+  with its own close`). Close `_inbox/2026-09-18_g148-design-instruments_close.json`.
+- **The 11 findings were recounted at source, not read from the close:** each `check.mjs` prints its own total as
+  `N violation(s).` (records-search uses `failure(s)`), and the four read 4 + 1 + 4 + 2 = 11. The close's prose
+  says 11 as well. Two independent derivations, agreement, so the number is safe to quote.
+- **G-148's own numbers, verified:** gate zero R3 findings and `exit 0`; self-tests 48/48, 45/45, 47/47, 57/57;
+  violate proofs 17/17, 30/30, 21/21, 41/41; 109 plants, 109 caught.
+- **`_design/smartcity-records-search/Main.dc.html` is CLEAN at HEAD** and `check.mjs` exits 0 on it. Confirmed
+  after the damage below was restored, and 3 of 3 repeat `violate.mjs` runs from the clean tree are clean.
+- **The lane left `_inbox/2026-09-18_g148_surface_probe.log.txt` in UTF-16** (first bytes `FF FE`), the
+  PowerShell redirect artifact again. Excluded from the commit; the `.json` beside it is the artifact.
+
+### LESSON (this pass)
+
+- **A batch sweep of mutate-capable instruments IS a writer over canon, and nothing was verifying restoration.**
+  Running 18 `violate.mjs` in a loop left `_design/smartcity-records-search/Main.dc.html` (tracked, RATIFIED,
+  G-147 CLOSED) with its `data-coverage-rule` element stripped. `git status` found it; the sweep reported it
+  only as one line inside that folder's captured stdout. The fix is mechanical, not a resolution to be careful:
+  refuse a dirty tree, verify restoration per folder, name every file restored, exit 2.
+- **A whole-output `.trim()` on git porcelain deletes the leading status column.** ` M path` becomes `M path`,
+  every path shifts by one character (`_design/x` printed as `design/x`), and a one-character status becomes
+  unparseable. Strip trailing newlines only.
+- **An absolute Windows path is not a valid git pathspec.** git reads backslashes as escapes, matches nothing,
+  and returns an empty list, which is a "clean" answer for a dirty tree. Pass repo-relative pathspecs.
+- **The correcting edit is as unverified as the original.** While fixing one memory-sourced claim in
+  `00_current_state.md` I silently renamed `parsePfdsDepthTable` to `parsePfdsTable`, from memory, in the same
+  paragraph. Caught by grepping both spellings and reading `noaaAtlas14.ts:29`. Re-grep after a correction.
+- **A lane's close can be more honest than the planner expected, so read it before theorising.** `g148`'s close
+  records `contradicted` (it expected four RATIFIED designs to be clean; they are not) and names the 11 findings
+  as `leave_behind`. The correct planner act was to VERIFY the count and regrade, not to treat the close as a
+  lane hiding failures.
+- **The tracker caught a close within minutes of it landing** (`DISAGREE G-148 row=open close=closed`) and refused
+  a verdict. That refusal is the control working, and regrading the row is what makes it pass. Do not widen its
+  vocabulary to make it pass.
+- **A separate instrument from the gate was required, and the gate's wording was already honest.** The gate prints
+  "carries an instrument"; the defect is a reader taking `exit 0` from `design-completion-gate` as "clean". Fix
+  the reading, not the gate's sentence.
