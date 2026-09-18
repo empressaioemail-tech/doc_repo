@@ -4,17 +4,23 @@ You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-factory` and open O
 merge, deploy, or run any job against the production store, and you write to no store. The
 integration seat merges, deploys and runs.
 
-### PRECONDITION — do not start until the P-319 lane has opened its PR
+### Recompiled 2026-09-18: what changed since the first compile
 
-The P-319/P-320/P-321 lane (`_dispatches/2026-09-17_p319-retirement-safety_dispatch.md`) is
-building a SHARED blast-radius threshold in this same repo. If you start before its PR exists you
-will find nothing to read and you will build a second threshold, which is precisely the defect this
-mission tells you to avoid: a threshold copied into a second place survives the removal of the
-first.
+The first compile held this lane behind the P-319 lane's PR. That is done: P-319/P-320/P-321 merged
+as hauska-factory #173 (`a3b2c91`), P-327 as #177 and P-335 as #178 (main is `0f4558a4` at this
+compile). The shared blast-radius threshold lives in `src/lib/destructive-write-guard.mjs`
+(`MAX_DESTRUCTIVE_SHARE`, `assertBlastRadius`, the `DESTRUCTIVE_WRITERS` register). The operator set
+it to **0.05** program-wide on 2026-09-18 (A-220), and P-361 is moving the declaration in a parallel
+lane; read the module, never copy the number. The shared keyspace-overlap rule is
+`src/lib/id-keyspace-overlap.mjs`. P-317's defect is still live at `0f4558a4`: the pinned test
+"an instrument that answers with no row at all is UNMEASURED, not a first bake" is in
+`test/publish-coverage-floor-keyspace.test.mjs` (~line 479).
 
-Its PR being OPEN is enough — you do not need it merged. `git fetch origin` and read its branch.
-**Your first action is to confirm that PR exists and to name its number and head SHA in your CP1.**
-If it does not exist yet, stop and report that rather than proceeding.
+Two parallel factory lanes touch what your checklist must know about: P-330 teaches the county runner
+to continue past a DECLARED scope refusal (Burnet refuses `COUNTY_NOT_IN_SCOPE` at ag-valuation and at
+the depth step, whose scope list does not hold 48053), and P-334 fixes the retired-share watch. If your
+checklist consults either, read their PRs and name them; do not build a parallel list of declared
+refusals.
 
 ### Why these two together
 
@@ -83,15 +89,16 @@ affirmatively.
 - No store writes, no job runs against production, no deploys, no merges. Fixtures only.
 - Do not take, renew or release a live lease belonging to anyone else.
 - **Do not touch county 48491 in any store.** It was restored from a point-in-time branch on
-  2026-09-17 after a publish retired the whole county.
-- A separate lane holds P-319, P-320 and P-321 in this same repo (keyspace-aware retirement, a
-  blast-radius refusal, and a retired-share watch). If your checklist wants a blast-radius threshold,
-  READ what that lane built rather than building a second one, and say which you found. Two
-  thresholds in one repo is the defect.
-- Branch from current `origin/main` (it now carries #171) and declare the SHA you got.
+  2026-09-17 after a publish retired the whole county, and it republishes only under P-350.
+- If your checklist wants a blast-radius threshold, read `src/lib/destructive-write-guard.mjs` and say
+  what you found there. Two thresholds in one repo is the defect.
+- Factory merge order this wave (the seat serializes): P-333, then P-334/P-329/P-330, then P-352 and
+  P-361, then P-300 and P-338's writer half, then P-336's. Yours is off the exit path and merges after
+  those; rebase onto whatever has merged before you open for review.
+- Branch from current `origin/main` and declare the SHA you got.
 
 ### Close
 
 Declare: the start commit, the PR number, the four-cell P-317 verification, the P-286 refusal proof
-in both directions, the three-question gate answers, what you found of the P-319/P-320 lane's work,
-and `leave_behind`.
+in both directions, the three-question gate answers, what you read in the destructive-write guard and
+the P-330/P-334 PRs, and `leave_behind`.

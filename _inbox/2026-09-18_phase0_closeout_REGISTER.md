@@ -2,7 +2,7 @@
 id: 2026-09-18_phase0_closeout_REGISTER
 title: Phase 0 close-out register (living)
 date: 2026-09-18
-last_updated: 2026-09-18 (14:20Z, seat Wave 1 first part; P-352 to P-354)
+last_updated: 2026-09-18 (17:10Z, rest of Wave 2 compiled; P-324 held for a scope ruling)
 status: living. The integration seat updates a row whenever its state changes and records the change in the log at the bottom. This is the durable list; the roadmap carries the live queue and points here.
 kind: register
 owner: nick
@@ -89,21 +89,21 @@ when it starts; a row's own `Depends` in OPS-16 is the authority where they diff
 | P-336 | P-204 A and B cut over: cells written, graded, served | hauska-factory, hauska-engine, doc_repo | 1 | 2 | carded |
 | P-339, P-340, P-341 | Surface agreement: envelope reason, table disagreement, impervious; Waco XD-2 | hauska-map, legacy-design-tools | 2 | 2 (after P-332 merges) | carded |
 | P-300 with P-338 | Jurisdiction-default line, broadly; district-miss refusal names district and city | corpus, hauska-factory, surfaces | 1, 2 | 2 (after P-258's re-run) | carded |
-| P-333 | Genuine join-miss absences restored per population | hauska-factory | off (accuracy) | 2 (after P-335) | carded |
-| P-351 | The bake's retirement arm made keyspace-aware | legacy-design-tools | before P-350 | 2 (after P-335) | carded |
-| P-334, P-329, P-330 | Watch can run; `ldt-sha` check; runner continues past a declared refusal | hauska-factory | off (controls) | 2 | carded |
-| P-331 | A cross-repo drift check that can fail | hauska-map, legacy-design-tools | off (controls) | 2 | carded |
-| P-324 | Pixel attribution deploy | legacy-design-tools | off | 2 (after P-323) | compiled 2026-09-17 |
-| P-286, P-317 | Burnet preconditions | hauska-factory | off (Phase 1 prep) | 2 | compiled 2026-09-17 |
+| P-333 | Genuine join-miss absences restored per population | hauska-factory | off (accuracy) | 2 (after P-335) | **compiled 2026-09-18** `_dispatches/2026-09-18_p333-join-miss-scoped-guard_dispatch.md`; restores absences only in bare-key counties (Hays and Williamson join through crosswalks, and Hays' bare-id overlap of 172,377 of 173,050 is a collision count); threshold value to the operator before merge |
+| P-351 | The bake's retirement arm made keyspace-aware | legacy-design-tools | before P-350 | 2 (after P-335) | **compiled 2026-09-18** `_dispatches/2026-09-18_p351-bake-retirement-keyspace_dispatch.md`; both bake writers, the 1,385 split, the dollar facts on the same bare lookup, and the factory pin move |
+| P-334, P-329, P-330 | Watch can run; `ldt-sha` check; runner continues past a declared refusal | hauska-factory | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p334-p329-p330-factory-controls_dispatch.md` (three PRs) |
+| P-331 | A cross-repo drift check that can fail | hauska-map, legacy-design-tools | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p331-cross-repo-literal-drift_dispatch.md` |
+| P-324 | Pixel attribution deploy | legacy-design-tools | off | 2 (after P-323) | **HELD for an operator scope ruling 2026-09-18:** `_inbox/2026-09-18_HANDOFF_meta_pixel_events_and_scrubbing.md` (untracked) staged the four conversion events, the Conversions API and share-URL scrubbing on top of `369fd77`, which the row names out of scope; the base commit alone ships the static PageView the scrubbing removes |
+| P-286, P-317 | Burnet preconditions | hauska-factory | off (Phase 1 prep) | 2 | **recompiled 2026-09-18** `_dispatches/2026-09-18_p286-p317-burnet-preconditions_dispatch.md` (the P-319 precondition is met; P-317's defect still live at `0f4558a4`) |
 | P-354 | Georgetown's adopted rewrite is served (A-218) and every surface names its adoption and effective dates, never "vintage unknown"; a rule row carries both dates as fields | setback-corpus, legacy-design-tools, hauska-factory, hauska-map | 2 | **now (A-218: compile ahead of Wave 2)** | carded 2026-09-18, re-scoped by A-218 |
-| P-352 | situsState conflict outcome (McLennan `48309:417476`, Hays `48209:88885`); phantom `48491:PRIVATE ROAD` retired and instantiation guarded | hauska-factory | 1 | 2 (after #175 deploys and P-335 merges; factory order after P-333) | carded 2026-09-18 |
+| P-352 | situsState conflict outcome (McLennan `48309:417476`, Hays `48209:88885`); phantom `48491:PRIVATE ROAD` retired and instantiation guarded | hauska-factory | 1 | 2 (after #175 deploys and P-335 merges; factory order after P-333) | **compiled 2026-09-18** `_dispatches/2026-09-18_p352-situs-conflict-phantom-record_dispatch.md` |
 | P-353 | The map's Find box passes the coverage answer through (P-205's map half) | hauska-map | 3 | 2 | carded 2026-09-18 |
 | P-270 address half | The card's address line takes city and ZIP from the ledger (reopened on `48453:445501`: ledger ZIP 78660 and city limits Pflugerville, card shows neither); the X2 grader gains an address predicate | hauska-map, legacy-design-tools, doc_repo | 2 | 2 | reopened 2026-09-18 by P-347; needs a mission |
-| P-358 | The PDF forwards the ETJ determination (report-model, pdf/feasibility hardcode it) | hauska-engine | walk | 2 | carded 2026-09-18 |
-| P-359 | ETJ rings that contain their own city; 24 invalid rings | legacy-design-tools (tx_etj_boundary) | walk | 2 | carded 2026-09-18 |
+| P-358 | The PDF forwards the ETJ determination (report-model, pdf/feasibility hardcode it) | hauska-engine | walk | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p358-pdf-forwards-etj_dispatch.md`; reads the `etjStatus` rail, so its customer grade waits on P-336's apply |
+| P-359 | ETJ rings that contain their own city; 24 invalid rings | legacy-design-tools (tx_etj_boundary) | walk | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p359-etj-rings_dispatch.md`; its re-ingest and P-336's apply must be ordered |
 | P-360 | Probe legs for P-332 (etjStatus) and P-327 (retirement verdict) | doc_repo | 2 | 2 (after P-332 deploys) | carded 2026-09-18 (seat) |
-| P-361 | Threshold 0.05 program-wide (A-220): factory declaration, #474 re-pinned and merged, factory CI reads the engine's copy | hauska-factory, hauska-engine | off (controls) | 2 | carded 2026-09-18, widened by A-220 |
-| P-362 | The LDT shift job's post-shift credential check can never run and reads its failure as a violation | legacy-design-tools | off (controls) | 2 | carded 2026-09-18 |
+| P-361 | Threshold 0.05 program-wide (A-220): factory declaration, #474 re-pinned and merged, factory CI reads the engine's copy | hauska-factory, hauska-engine | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p361-threshold-005_dispatch.md` (#474 updated in place) |
+| P-362 | The LDT shift job's post-shift credential check can never run and reads its failure as a violation | legacy-design-tools | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p362-post-shift-check_dispatch.md` |
 
 **Factory merge order in wave 2**, one at a time, each re-greened against the base it merges into:
 P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writer half.
@@ -187,6 +187,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 17:10 | Rest of Wave 2 compiled from source at factory `0f4558a4`, engine `c41a1482`, LDT `25d1782f`, map `163fde32`: P-333, P-334/P-329/P-330, P-352, P-361, P-351, P-331, P-358, P-359, P-362, and P-286/P-317 recompiled. P-324 held: a staged events-and-CAPI extension conflicts with its row. Found while compiling: Hays' bare-id overlap is a collision count (P-333, P-351); P-358's grade waits on P-336. |
 | 2026-09-18 16:20 | Session close. Wave 2 dispatches compiled and pushed: P-354, P-339/340/341, P-353, P-270 address half, P-336 (operator to fire). Handoff `_inbox/2026-09-18b_HANDOFF_integration_seat.md`. |
 | 2026-09-18 15:55 | A-221: #175 deployed and graded (trigger resumed); P-332 customer-closed on the panel; LDT deployed (cortex-api `00841-jeh`, canary 90/90); the customer leg measured with the MCP signed in (23 PASS / 19 FAIL / 3 UNMEASURED before the LDT deploy; two instrument defects fixed); P-362 carded. |
 | 2026-09-18 15:20 | A-220: threshold 0.05 program-wide (P-361 widened; #474 stays held until it re-pins); P-335's pair authoritative; P-323's tag deletion stands; commit go on the Wave 1 batch. |
