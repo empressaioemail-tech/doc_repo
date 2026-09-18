@@ -10,7 +10,9 @@
  * This gate asks the two questions a count cannot:
  *
  *   R1/R2  Does the declaration agree with the filesystem, both directions?
- *   R3     Does every design past DRAFT carry an adversarial read as a file?
+ *   R3     Does every design past DRAFT carry an adversarial read that PASSES?
+ *          (existence was the old question, and it went green over four designs
+ *          whose own instruments exited 1; see OPS-17 A-155, A-156, A-159)
  *   R4     Is every surface in the SHIPPED nav either designed or excluded by
  *          a dated ruling?
  *
@@ -149,16 +151,37 @@ export function evaluate(input) {
     }
   }
 
-  // R3 — anything past DRAFT carries an instrument.
+  // R3 — anything past DRAFT carries an adversarial read that PASSES.
+  // Existence is not the question. Until A-159 this rule tested `hasCheck`, so it
+  // could go green while four designs whose own instruments exited 1 were counted
+  // as instrumented (A-155, A-156). `checkExit` is supplied by the IO layer, which
+  // runs each instrument; null means it could not be executed to a verdict.
   const needsInstrument = new Set(coverage._instrumentRequiredWhenStatusIn || []);
   for (const f of folders) {
     const e = indexByFolder.get(f.name);
     if (!e || !e.status) continue;
-    if (needsInstrument.has(e.status) && !f.hasCheck) {
+    if (!needsInstrument.has(e.status)) continue;
+    if (!f.hasCheck) {
       findings.push({
         rule: 'R3',
         surface: f.name,
         detail: `status ${e.status} with no check.mjs — shown or ratified without an adversarial read`,
+      });
+      continue;
+    }
+    if (f.checkExit === null || f.checkExit === undefined) {
+      findings.push({
+        rule: 'R3',
+        surface: f.name,
+        detail: `status ${e.status} and check.mjs could not be executed to a verdict — an unrunnable instrument is not a pass`,
+      });
+      continue;
+    }
+    if (f.checkExit !== 0) {
+      findings.push({
+        rule: 'R3',
+        surface: f.name,
+        detail: `status ${e.status} and check.mjs exits ${f.checkExit} on the boards as shipped — the design carries an open finding, not a missing instrument`,
       });
     }
   }
@@ -204,6 +227,7 @@ export function evaluate(input) {
     navSurfaces: navLenses.length + navWork.length,
     folders: folders.length,
     withInstrument: folders.filter((f) => f.hasCheck).length,
+    passingInstrument: folders.filter((f) => f.hasCheck && f.checkExit === 0).length,
     designed: [...navLenses.map((i) => declaredLenses[i]), ...navWork.map((i) => declaredWork[i])].filter(
       (d) => d && d.folder,
     ).length,
@@ -220,6 +244,23 @@ export function evaluate(input) {
 export function isDirectRun(argv1, importMetaUrl) {
   if (!argv1 || !importMetaUrl) return false;
   return pathToFileURL(argv1).href === importMetaUrl;
+}
+
+/**
+ * Run a design folder's instrument and return its exit code, or null when it
+ * could not be executed at all. R3 asks whether the adversarial read PASSES,
+ * not whether a file exists: a gate that only counted instruments let four
+ * designs report live failures while this script exited 0 (A-155, A-156).
+ * Exit 2 is the instrument's own refusal to reach a verdict, and a spawn
+ * failure is null, so a broken instrument is never read as a passing design.
+ */
+function runInstrument(folder) {
+  try {
+    execFileSync(process.execPath, ['check.mjs'], { cwd: folder, stdio: 'pipe' });
+    return 0;
+  } catch (e) {
+    return typeof e.status === 'number' ? e.status : null;
+  }
 }
 
 function main() {
@@ -250,7 +291,14 @@ function main() {
   // the instrument's defect and not a finding.
   const folders = dirs
     .filter((d) => has(d.name, 'gen.mjs'))
-    .map((d) => ({ name: d.name, hasCheck: has(d.name, 'check.mjs') }));
+    .map((d) => {
+      const hasCheck = has(d.name, 'check.mjs');
+      return {
+        name: d.name,
+        hasCheck,
+        checkExit: hasCheck ? runInstrument(path.join(designDir, d.name)) : null,
+      };
+    });
   const derivedFolders = dirs
     .filter((d) => !has(d.name, 'gen.mjs') && has(d.name, 'build.mjs'))
     .map((d) => d.name);
@@ -283,11 +331,11 @@ function main() {
   console.log(`  designed:            ${c.designed}`);
   console.log(`  excluded by ruling:  ${c.excluded}`);
   console.log(`  uncovered:           ${c.navSurfaces - c.designed - c.excluded}`);
-  console.log(`  design folders:      ${c.folders}, with an instrument: ${c.withInstrument}`);
+  console.log(`  design folders:      ${c.folders}, with an instrument: ${c.withInstrument}, of those passing: ${c.passingInstrument}`);
   console.log('');
 
   if (!result.findings.length) {
-    console.log('  verdict: FINISHED — every nav surface is designed or excluded, and every design past DRAFT carries an instrument.');
+    console.log('  verdict: FINISHED — every nav surface is designed or excluded, and every design past DRAFT carries an instrument that exits 0.');
     process.exit(0);
   }
 
@@ -296,7 +344,7 @@ function main() {
   const titles = {
     R1: 'design folders on disk that _design/INDEX.md does not list',
     R2: '_design/INDEX.md entries with no folder on disk',
-    R3: 'designs past DRAFT with NO adversarial read as a file',
+    R3: 'designs past DRAFT whose adversarial read does not pass',
     R4: 'shipped nav surfaces neither designed nor excluded by a dated ruling',
   };
   for (const rule of ['R1', 'R2', 'R3', 'R4']) {

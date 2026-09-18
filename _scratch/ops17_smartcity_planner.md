@@ -335,3 +335,91 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **A separate instrument from the gate was required, and the gate's wording was already honest.** The gate prints
   "carries an instrument"; the defect is a reader taking `exit 0` from `design-completion-gate` as "clean". Fix
   the reading, not the gate's sentence.
+
+---
+
+## 2026-09-18 20:56Z — integration-seat pickup (OPS-17 design gate and queue)
+
+### GROUND-TRUTH (read at source this session)
+
+- **Snapshot:** doc_repo `P:/doc_repo` `main` `a86f2f39`, **integration seat**. `_state/govtech/STATE.md` is
+  OWED to the govtech seat (`P:/seat-worktrees/govtech/doc_repo`, `seat/govtech`): the seat gate refuses any
+  `_state/<ns>/` write from integration, enforced (`namespace_from_integration`), and this seat did not route
+  around it. `_STATE.md` at the root remains regenerable from here.
+- **`smartcity-tracker.mjs` PASS, exit 0**, 26/26 self-tests both directions. M1 2/6, M2 3/6, M3 4/9, M4 4/6, M5 3/5.
+- **`design-completion-gate.mjs` exit 0, `verdict: FINISHED`**, read 20:56:15.915Z: 20 folders, 18 carrying an
+  instrument, 15 nav surfaces, 13 designed, 2 excluded, **0 uncovered**.
+- **`design-instrument-exits.mjs` (plain), 20:56:16.938Z: 18 run, 4 FAILING** — `plan-review-departments`,
+  `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`, exactly the four `g148` delivered.
+  The gate's `exit 0` and the four failures are true at the same instant.
+- **Lane claims: NO live claim for `g153`, `g162` or `g160`.** `lane-claim.mjs status` lists 7 claims, every one
+  STALE, none of them a SmartCity lane. `g148` released on its close. **`g153`'s claim is ABSENT and it filed
+  NO close** (no `*g153*close*.json` exists under `_inbox`), while its artifacts (`_inbox/2026-09-18_g153_*`) and
+  its uncommitted `check.mjs` edits both sit in this tree. **G-152's precondition (a filed g153 close) is NOT met.**
+
+### LESSON
+
+- **`design-instrument-exits.mjs` writes tracked canon in PLAIN mode too, not only under `--violate`.** Each
+  `_design/*/check.mjs` rewrites its own `instrument-report.json` with a fresh `generatedAt`; one plain run swept
+  5 tracked files (`plan-review-reasoner/identifier-extraction.json`, `plan-review-departments`,
+  `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`). The handoff named only `--violate`
+  as the writer. Restored here with `git restore` after confirming the diffs were `generatedAt`-only. **Run
+  `git status -- _design` after ANY instrument run, plain included, and revert timestamp-only churn.**
+- **A lane can work directly in the integration tree with no claim and no close.** `g153` edited
+  `_design/smartcity-fleet-lens/check.mjs` (+85 lines, the `\bOPR-` extractor fix) and
+  `_design/smartcity-police-lens/check.mjs` (+44) in `P:/doc_repo`, holds neither a registry claim nor a close,
+  and there is no dedicated `g153` worktree in `git worktree list`. A second session reading the registry would
+  conclude the lane is not running.
+
+### OPEN
+
+- **11 findings, no owner** (`A-158`) — **RESOLVED this session**: carded as **G-164** (one row, operator-ruled
+  2026-09-18), the flood-study half blocked on G-125 and the other ten unblocked. See A-159.
+- **Gate-vs-exits meaning** (`A-155`, `A-156`) — **RESOLVED this session**: R3 now RUNS each instrument and
+  requires exit 0; the gate exits 1 with the four named. See A-159.
+- **`g153` liveness unresolved**: claim gone, no close, artifacts plus uncommitted `check.mjs` present.
+- **`--violate` stays blocked** while `_design` holds `g153`'s two `check.mjs` edits; they are not this seat's to
+  commit or revert (`A-154`: stop and report an uncommitted tree that is not yours).
+- **`g160` parcel 2 and `g163` compiled and un-handed**; `g163` queues behind `g162`, running unclaimed
+  (worktree `P:/seat-worktrees/g162-v1-finance-honesty/doc_repo` at `3243a171`).
+
+---
+
+## 2026-09-18 21:45Z — integration seat, both operator rulings applied (OPS-17 A-159)
+
+### GROUND-TRUTH (read at source this session)
+
+- **A-159 is written; the plan of record carries both rulings.** `G-164` carded at OPS-17 line 245 (band 5,
+  accept `B`, blockedBy G-125 for the flood-study finding only); `A-159` at line 477, contiguous with A-158.
+  Both checked by cell count rather than by eye: G-164 = 7 cells, A-159 = 5 cells, each matching its table.
+- **Ruling 2 implemented and PROVEN BY VIOLATION.** `scripts/govtech/design-completion-gate.mjs` now runs each
+  folder's `check.mjs` and fails R3 on a non-zero exit, on exit 2 (the instrument's own refusal to reach a
+  verdict), and on a null exit (unrunnable). It exits **1** with exactly four R3 findings naming
+  `plan-review-departments`, `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`.
+  Self-tests 23 -> **27/27**, with fixtures for each new failure mode and a non-vacuous `passingInstrument`.
+- **The enabling change**: five `check.mjs` write their report only when the measured body changed
+  (`smartcity-overview-lens`, `smartcity-flood-study`, `smartcity-map-dock`, `plan-review-departments`,
+  `plan-review-reasoner`). A full gate run now leaves **no** `instrument-report.json` churn (verified:
+  `git status -- _design/*/instrument-report.json` empty).
+- **`smartcity-tracker.mjs` PASS, exit 0, 26/26 self-tests**, 118 OPS-17 rows read, tracking 32 rows.
+- **`_design/INDEX.md`** carries the four replacement lines the `g148` close supplied. `G-149` and `G-157`
+  each carry their instrument-inheritance clause in their status cell.
+
+### LESSON
+
+- **An approved enabler can be wrong on contact; record the deviation rather than smoothing it.** "Make
+  `check.mjs` read-only by default" breaks every `violate.mjs`, each of which refuses when
+  `instrument-report.json` is absent. Write-only-on-change meets the approved intent (a plain measurement must
+  not churn canon) without breaking the proof. Re-check a ruling's premise against the dependency it did not name.
+- **A blank line inserted between table rows silently breaks the markup table.** A-159 first landed with one
+  above it because the insertion anchor was the `## Assumptions` header. After adding any table row, assert its
+  neighbours with a script, not by eye.
+
+### OPEN
+
+- **`g153` liveness still unresolved**: no claim, no close, two uncommitted `check.mjs` edits (`fleet-lens`,
+  `police-lens`) sit in this tree. They block `design-instrument-exits.mjs --violate` and are not this seat's to
+  commit or revert. **G-152's precondition (a filed g153 close) is NOT met.**
+- **`_state/govtech/STATE.md` is OWED to the govtech seat** (`P:/seat-worktrees/govtech/doc_repo`); the content
+  is in this session's report and must be written from that seat, never from integration.
+- **Nothing is committed.** All edits are uncommitted by design; doc_repo commits are planner-owned.

@@ -599,7 +599,32 @@ console.log('product side: ' + S._source.repo + ' @ ' + S._source.ref + ' ' + S.
   ' files scanned; duration ' + SCAN.byTerm.duration + ', returnPeriod ' + SCAN.byTerm.returnPeriod + ', NOAA Atlas 14 ' + SCAN.byTerm['noaa-atlas14'] +
   '), ruling ' + S._source.ruling + ' @ ' + S._source.rulingCommit.slice(0, 12));
 
-fs.writeFileSync(
+/*
+ * A run that changes nothing must not rewrite canon. The design gate and the
+ * exits instrument both run check.mjs, so an unconditional write made a plain
+ * measurement churn a tracked file (OPS-17 A-159). Compare the report with its
+ * generatedAt removed and rewrite only when the measured body actually changed;
+ * violate.mjs still finds the file it needs, because a real change writes one.
+ */
+function writeReportIfChanged(url, serialized) {
+  let prev = null;
+  try { prev = fs.readFileSync(url, 'utf8'); } catch { prev = null; }
+  const strip = (text) => {
+    try {
+      const o = JSON.parse(text);
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return text;
+      delete o.generatedAt;
+      return JSON.stringify(o);
+    } catch { return text; }
+  };
+  if (prev !== null && strip(prev) === strip(serialized)) {
+    console.log('report body unchanged; ' + String(url).split('/').pop() + ' left as written');
+    return;
+  }
+  fs.writeFileSync(url, serialized);
+}
+
+writeReportIfChanged(
   new URL('./instrument-report.json', import.meta.url),
   JSON.stringify(
     {

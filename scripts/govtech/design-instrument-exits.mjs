@@ -294,11 +294,12 @@ console.log(`                        (this scan covers every _design subdir; the
 console.log(`                         "design folders", so 18 there and 18 here are different denominators, not a`);
 console.log(`                         contradiction. The gate exempts SUPERSEDED designs: plan-review, smartcity-place-tab.)`);
 console.log(`\n  design-completion-gate.mjs: exit ${gate.code} — ${gate.verdict}`);
-console.log(`  It tests that a check.mjs EXISTS. It does not read the column above, and this script does not`);
-console.log(`  change it. Both numbers are true at the same instant, which is the finding.`);
-console.log(`\n  This script's exit 0 means THE MEASUREMENT RAN, not that the designs are clean. A failing`);
-console.log(`  instrument is reported above and does not change the exit code, because what a failing design`);
-console.log(`  should block is a policy decision and not this instrument's to make.\n`);
+console.log(`  Since A-159 the gate RUNS each check.mjs and requires exit 0, so its verdict is derived from the`);
+console.log(`  same runs shown above rather than from a check.mjs merely existing; on the current boards both`);
+console.log(`  exit non-zero on the same ${failing} design(s).`);
+console.log(`\n  This script's exit 0 means THE MEASUREMENT RAN, not that the designs are clean. It reports the`);
+console.log(`  instruments and does not gate anything; the gate above is the control, and it now reads the same`);
+console.log(`  exit codes this script does.\n`);
 
 if (leftDirty.length) {
   console.error(`REFUSED: ${leftDirty.length} instrument(s) left TRACKED design files modified. These instruments`);

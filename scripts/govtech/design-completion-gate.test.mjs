@@ -88,9 +88,9 @@ const BASE = {
   navLenses: ['city-manager', 'parks'],
   navWork: ['files', 'review'],
   folders: [
-    { name: 'a', hasCheck: true },
-    { name: 'b', hasCheck: true },
-    { name: 'c', hasCheck: true },
+    { name: 'a', hasCheck: true, checkExit: 0 },
+    { name: 'b', hasCheck: true, checkExit: 0 },
+    { name: 'c', hasCheck: true, checkExit: 0 },
   ],
   index: [
     { folder: 'a', status: 'RATIFIED' },
@@ -109,7 +109,7 @@ t('FINISHED on a complete fixture — the gate CAN go green', () => {
 });
 
 t('R3 fires: a RATIFIED design with no check.mjs', () => {
-  const r = evaluate({ ...BASE, folders: [{ name: 'a', hasCheck: false }, { name: 'b', hasCheck: true }, { name: 'c', hasCheck: true }] });
+  const r = evaluate({ ...BASE, folders: [{ name: 'a', hasCheck: false }, { name: 'b', hasCheck: true, checkExit: 0 }, { name: 'c', hasCheck: true, checkExit: 0 }] });
   assert.equal(r.verdict, 'UNFINISHED');
   assert.equal(r.findings.filter((f) => f.rule === 'R3').length, 1);
 });
@@ -117,11 +117,42 @@ t('R3 fires: a RATIFIED design with no check.mjs', () => {
 t('OPPOSITE: a DRAFT with no check.mjs does NOT fire R3', () => {
   const r = evaluate({
     ...BASE,
-    folders: [{ name: 'a', hasCheck: false }, { name: 'b', hasCheck: true }, { name: 'c', hasCheck: true }],
+    folders: [{ name: 'a', hasCheck: false }, { name: 'b', hasCheck: true, checkExit: 0 }, { name: 'c', hasCheck: true, checkExit: 0 }],
     index: [{ folder: 'a', status: 'DRAFT' }, { folder: 'b', status: 'RATIFIED' }, { folder: 'c', status: 'RATIFIED' }],
   });
   assert.equal(r.findings.filter((f) => f.rule === 'R3').length, 0);
   assert.equal(r.verdict, 'FINISHED');
+});
+
+t('R3 fires when the instrument EXISTS but exits non-zero — a design finding is not an absent instrument', () => {
+  const r = evaluate({
+    ...BASE,
+    folders: [{ name: 'a', hasCheck: true, checkExit: 1 }, { name: 'b', hasCheck: true, checkExit: 0 }, { name: 'c', hasCheck: true, checkExit: 0 }],
+  });
+  const r3 = r.findings.filter((f) => f.rule === 'R3');
+  assert.equal(r3.length, 1);
+  assert.match(r3[0].detail, /exits 1/);
+  assert.equal(r.verdict, 'UNFINISHED');
+});
+
+t('R3 fires when the instrument REFUSES (exit 2) rather than reporting a verdict', () => {
+  const r = evaluate({
+    ...BASE,
+    folders: [{ name: 'a', hasCheck: true, checkExit: 2 }, { name: 'b', hasCheck: true, checkExit: 0 }, { name: 'c', hasCheck: true, checkExit: 0 }],
+  });
+  const r3 = r.findings.filter((f) => f.rule === 'R3');
+  assert.equal(r3.length, 1);
+  assert.match(r3[0].detail, /exits 2/);
+});
+
+t('R3 fires when an instrument could not be executed at all — an unrunnable instrument is not a pass', () => {
+  const r = evaluate({
+    ...BASE,
+    folders: [{ name: 'a', hasCheck: true, checkExit: null }, { name: 'b', hasCheck: true, checkExit: 0 }, { name: 'c', hasCheck: true, checkExit: 0 }],
+  });
+  const r3 = r.findings.filter((f) => f.rule === 'R3');
+  assert.equal(r3.length, 1);
+  assert.match(r3[0].detail, /could not be executed/);
 });
 
 t('R4 fires: a nav surface with no design and no exclusion', () => {
@@ -202,6 +233,7 @@ t('NOT VACUOUS: the passing fixture exercised every rule\'s input', () => {
   const r = evaluate(BASE);
   assert.ok(r.counts.navSurfaces > 0 && r.counts.folders > 0, 'a FINISHED verdict on zero inputs would be worthless');
   assert.equal(r.counts.navSurfaces, r.counts.designed + r.counts.excluded);
+  assert.equal(r.counts.passingInstrument, 3, 'a FINISHED verdict with zero passing instruments would be worthless');
 });
 
 /* ------------------------------------------------- the entry point itself */

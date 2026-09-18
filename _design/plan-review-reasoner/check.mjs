@@ -628,7 +628,32 @@ console.log('\nmatched inputs: ' + Object.entries(totals).map(([k, v]) => k + '=
 
 const unknown = extraction.filter((e) => !e.known);
 const byKind = extraction.reduce((a, e) => ((a[e.kind] = (a[e.kind] || 0) + 1), a), {});
-fs.writeFileSync(
+/*
+ * A run that changes nothing must not rewrite canon. The design gate and the
+ * exits instrument both run check.mjs, so an unconditional write made a plain
+ * measurement churn a tracked file (OPS-17 A-159). Compare the report with its
+ * generatedAt removed and rewrite only when the measured body actually changed;
+ * violate.mjs still finds the file it needs, because a real change writes one.
+ */
+function writeReportIfChanged(url, serialized) {
+  let prev = null;
+  try { prev = fs.readFileSync(url, 'utf8'); } catch { prev = null; }
+  const strip = (text) => {
+    try {
+      const o = JSON.parse(text);
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return text;
+      delete o.generatedAt;
+      return JSON.stringify(o);
+    } catch { return text; }
+  };
+  if (prev !== null && strip(prev) === strip(serialized)) {
+    console.log('report body unchanged; ' + String(url).split('/').pop() + ' left as written');
+    return;
+  }
+  fs.writeFileSync(url, serialized);
+}
+
+writeReportIfChanged(
   new URL('./identifier-extraction.json', import.meta.url),
   JSON.stringify(
     {
