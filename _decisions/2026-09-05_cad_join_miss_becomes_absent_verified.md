@@ -2,7 +2,7 @@
 decision_id: 2026-09-05_cad_join_miss_becomes_absent_verified
 date: 2026-09-05
 owner: operator
-status: active
+status: suspended (2026-09-18, operator; see _decisions/2026-09-18_join_miss_unaccounted_until_scoped_guard.md, restored per population by OPS-16 P-333)
 related_canonical:
   - 90_operations/OPS-19b_ctx_pipeline_wrapup_sprint
   - _inbox/2026-09-05_ledger_serving_audit
