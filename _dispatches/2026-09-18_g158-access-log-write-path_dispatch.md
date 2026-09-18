@@ -81,6 +81,16 @@ You launch no sub-agents (FAN-DEPTH 0). You WRITE in `smartcity-dashboards`. You
 `doc_repo` (hand any doc edit back as a diff, uncommitted), nothing in `smartcity-os`, and nothing in
 `hauska-mcp-server`.
 
+### DO NOT START THE WORK UNTIL THE DASHBOARDS SLOT IS FREE
+
+**This lane writes `smartcity-dashboards`, and that repo tolerates one lane at a time**: every lens
+renders into `web/app.js` and `web/index.html`, and `g153-vendor-mapping` holds that slot as of
+2026-09-18T22:30Z. **Claim your lane and confirm the slot before you write any code.** If
+`g153-vendor-mapping` is still live, wait for it or report back that you are queued; do not start a
+second writer into the same files. This is the one collision the dispatch planner could not resolve by
+sequencing, because the queue was decided after this dispatch was compiled, so it is stated here
+instead.
+
 ### Why this row exists
 
 `_design/smartcity-people-and-access/` drew the audit trail, and the row's own words for why: it is "the
