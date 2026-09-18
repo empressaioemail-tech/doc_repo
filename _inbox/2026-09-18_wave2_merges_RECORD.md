@@ -2,8 +2,8 @@
 id: 2026-09-18_wave2_merges_RECORD
 title: Wave 2 lane PRs reviewed and merged by the integration seat, 2026-09-18 evening
 date: 2026-09-18
-last_updated: 2026-09-18 (20:30Z)
-status: done for the ten PRs below; the rest of the queue waits on lane closes or on the written factory order
+last_updated: 2026-09-18 (23:40Z, the rest of the factory order)
+status: fifteen PRs merged across two rounds (below); what remains waits on the P-300/P-338 writer half and on P-354's factory and corpus halves
 kind: seat record
 owner: nick
 maintained_by: integration seat
@@ -65,14 +65,12 @@ the factory was deployed.
 
 ## Still open in the queue
 
+Updated 23:40Z: #720 merged `2e7ca7c4`; #186, #181, #182, engine #474 and #187 merged (last section).
+
 | Repo | PR | Row | Why it waits |
 |---|---|---|---|
-| legacy-design-tools | #720 | P-354 (LDT half) | reviewed; re-greening on `bb3b5d06` after #721 merged |
-| hauska-factory | #186 | P-333 | lane not closed (CP1 only) |
-| hauska-factory | #181 | P-352 | lane not closed (CP1 only) |
-| hauska-factory | #182 and engine #474 | P-361 | lane not closed |
-| hauska-factory | #180 | P-336 | closed; the written order puts it after the P-300/P-338 writer half, which is not fired |
-| hauska-factory | #179 | P-354 (factory half) | read against P-363 and the P-300 writer before merging; neither has a PR |
+| hauska-factory | #180 | P-336 | closed; the written order puts it after the P-300/P-338 writer half (recompiled 2026-09-18 evening) |
+| hauska-factory | #179 | P-354 (factory half) | read against P-363 (merged `415d3212`) and the P-300/P-338 writer half (recompiled, not yet built) before merging |
 | hauska-setback-corpus | #11 | P-354 (corpus) | publish 1.5.0 and the consumer pin bumps go together, after #179 |
 
 ## The probe patch P-270 handed back
@@ -84,3 +82,46 @@ restored (only in added lines; zero in context lines), it applied strictly again
 blob it names (`4b27d9bd`). `scripts/surface-probe.mjs --self-test`: 285 of 285 before, 310 of 310
 after. Verified by violation: a copy with `addressCarriesLedgerLine` forced to PASS fails 14 checks
 and exits 1; the copy was deleted afterwards.
+
+## Late evening: the rest of the factory order (23:20Z to 23:35Z)
+
+| Repo | PR | Row | Merged head | Base at merge | Merge commit | Merged (UTC) |
+|---|---|---|---|---|---|---|
+| hauska-factory | #186 | P-333 (threshold 0.95, operator A-226) | `11f2d601` | `6f422f6c` | `07a1215b` | 22:28:33 |
+| hauska-factory | #181 | P-352 | `8d3164a6` (seat merge of main) | `07a1215b` | `94fd6d53` | 23:20:09 |
+| hauska-factory | #182 | P-361 | `e8a8f461` (seat verdict line) | `94fd6d53` | `5a3877f9` | 23:28:46 |
+| hauska-engine | #474 | P-328 / P-361 | `dd6ed745` (seat re-pin, then main merged) | `cff8d882` | `7c42e1c8` | 23:32:58 |
+| hauska-factory | #187 | P-363 | `129a5ac6` | `5a3877f9` | `415d3212` | 23:35:29 |
+
+**P-352 met P-333 in `src/jobs/parcel-record-fill.mjs`.** Merged main into the lane branch in a fresh
+clone (`P:/tmp/factory-p352-integrate`, registered under the property seat for the commit and the
+register restored byte-identically afterwards). Four hunks, all additive: `instantiateAndIngest`
+takes both P-352's `geometryCountByProp` and P-333's `joinMissRestore`; the county-wide loop passes
+both; the run returns both lanes' fields; the log line carries both lanes' counters. The sample-mode
+calls pass no `joinMissRestore`, exactly as on main. **The merged tree then failed one P-333 test
+(0 of 30 cells restored):** P-333's fake store did not answer P-352's `GEOMETRY_COUNT_SQL`, so its two
+join-miss parcels read as phantoms and P-352's guard refused to instantiate them. P-352's guard is
+refuse-on-neither by design (its own comment: refusing on either "would refuse every legitimate CAD
+JOIN MISS"), so the fix is the fixture's: one line answering one geometry per parcel. After it: 160 of
+160 on the P-333 and record-fill suites; the full suite's only failures were the walk-decline drift
+test reading a stale local LDT worktree (5 of 5 against LDT main `2e7ca7c4`), and CI was green.
+
+**P-361 met P-352 in `src/lib/destructive-write-guard.mjs`.** After main was merged into #182, two
+checks went red: P-361's G4 test (every unwired destructive writer carries a "RE-READ AT 0.05"
+verdict) failed on P-352's new unwired `retire-phantom-record`, and `engine-declaration-pin` refused
+`FACTORY_CONTENT_NOT_PINNED` because the guard's content changed under engine #474's pin. Fixed in two
+seat commits: the verdict line on P-352's entry (HOLDS: one authorized key is one key at any
+threshold), factory `e8a8f461`; and #474's `PROGRAM_DECLARATION_PIN` re-pinned to that content (blob
+`ad618e46`, 25,091 bytes, normalized sha256 `4b166f56`), engine `09c9600f`. Both directions shown with
+each repo's own check before pushing: the old pin refuses the new content, the new pin passes, and the
+engine's `--factory` re-derivation passes on every leg. The engine push went first so the factory CI's
+fallback read saw it. After both merges the factory check reads the declaration from engine MAIN and
+passes, and the engine check passes against factory main.
+
+**#474 renames the override variable** to `DESTRUCTIVE_WRITE_AUTHORISATION`; the caller-declared
+`share <= maxShare` rule the P-263 apply uses is unchanged, so Williamson (0.848) needs no token.
+
+**P-363's apply inputs** (its six per-county dry runs, all MATCH the prediction: 387,231 re-stamps, 6
+value changes, 24 rail cells, 0 refusals) are copied from `C:/Users/cente/_p363_scratch` to
+`_inbox/2026-09-18_p363_dryrun/`. Its durable record names value changes only; the seat snapshots the
+re-stamp population from the store before the apply, because a count is not a record.
