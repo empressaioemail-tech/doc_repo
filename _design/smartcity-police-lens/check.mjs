@@ -189,6 +189,43 @@ const DECLARED_FORMATS = Object.values(S.axis.formats).map((src) => {
   const m = String(src).match(/^\/(.*)\/([a-z]*)$/);
   return new RegExp(m[1], m[2]);
 });
+
+/**
+ * THE OPERATOR-REFERENCE FIXTURES ARE READ FROM THEIR SOURCES, NOT TYPED.
+ *
+ * Two self-tests below used the literal `OPR-01`: one asking whether a composer
+ * identifier is plate-shaped, one asking whether stripping composer identifiers
+ * from a cell can invent a plate. Operator references are namespaced by domain
+ * now (Police mints `PV-OPR-nn`), so that literal was headed for describing an
+ * identifier this product no longer mints - a self-test that keeps passing while
+ * looking at a string that cannot occur, which is the failure mode this whole
+ * file exists to refuse.
+ *
+ * So the two claims are separated and each fixture comes from its own source:
+ *
+ *   OPERATOR_REF_SAMPLE is MINTED FROM THE DECLARED FORMAT, so a change to the
+ *   format moves the fixture with it and the format claim stays true of the
+ *   format. The self-test below asserts the minted value really is accepted by
+ *   the declared format, so a recapture that namespaces references cannot leave
+ *   this file quietly asserting against the old namespace.
+ *
+ *   COMPOSER_OPERATOR_REF is READ OUT OF THE COMPOSER'S OWN RECORDS, because the
+ *   strip test is a claim about a real identifier, not about a format. Taken
+ *   from the records rather than typed, it also cannot drift.
+ */
+const OPERATOR_REF_SAMPLE = String(S.axis.formats.OPERATOR_REF_FORMAT)
+  .match(/^\/(.*)\/[a-z]*$/)[1]
+  .replace(/^\^/, '')
+  .replace(/\$$/, '')
+  .replace(/\\d\{(\d+)\}/g, (_, n) => '1'.repeat(Number(n)));
+const COMPOSER_OPERATOR_REF = [S.demo.patrol, S.staging.patrol, S.proving.patrol]
+  .flatMap((r) => (r.records || []).map((x) => x.operatorRef))
+  .find((v) => typeof v === 'string');
+if (!COMPOSER_OPERATOR_REF) {
+  console.error('the composer produced no operator reference, so the two plate fixtures below would be');
+  console.error('asserted against a string this file invented. Re-dump before trusting a verdict.');
+  process.exit(2);
+}
 /**
  * THE FIRST SHAPE OF THIS RULE WAS BLINDED BY ITS OWN EXCLUSION SET, and the
  * violation run is what found it. It scanned for a candidate token that could
@@ -433,7 +470,10 @@ const selfTests = [
   ['plate: REFUSES a plate even inside a marked refusal', plateHits(PLATE_IN_REFUSAL).length === 1],
   ['plate: ALLOWS a composer record id', isPlateShaped('FIX-CAM-1007') === false],
   ['plate: ALLOWS a composer site ref', isPlateShaped('SITE-01') === false],
-  ['plate: ALLOWS a composer operator ref', isPlateShaped('OPR-01') === false],
+  ['plate: ALLOWS the composer’s own operator reference', isPlateShaped(COMPOSER_OPERATOR_REF) === false],
+  ['plate: ALLOWS an operator reference minted from the declared format', isPlateShaped(OPERATOR_REF_SAMPLE) === false],
+  ['plate: the operator-reference sample really is accepted by the declared format',
+    DECLARED_FORMATS.some((re) => re.test(OPERATOR_REF_SAMPLE)) === true],
   ['plate: ALLOWS a plan row id', isPlateShaped('G-139') === false],
   ['plate: ALLOWS a programme id', isPlateShaped('OPS-17') === false],
   ['plate: ALLOWS a lowercase commit sha', isPlateShaped('f776b4bf') === false],
@@ -446,7 +486,7 @@ const selfTests = [
   ['plate: a plate in the SAME cell as a record id is still found',
     plateHits(wrap(cell('FIX-CAM-1007 7XYZ123'))).length === 1],
   ['plate: stripping identifiers does not invent one out of a record id',
-    plateHits(wrap(cell('FIX-CAM-1007 SITE-01 OPR-01'))).length === 0],
+    plateHits(wrap(cell('FIX-CAM-1007 SITE-01 ' + COMPOSER_OPERATOR_REF))).length === 0],
   ['plate: the scanner is not vacuous on text that has candidates',
     plateScanned(wrap(cell('OPS-17 ABC1234'))) >= 2],
   ['badges: the NAV is inside the scope, not only the lens body (the second defect)',

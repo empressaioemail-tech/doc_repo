@@ -9,19 +9,19 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `a86f2f39`: 118 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `02c57512`: 118 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 981 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
-**3 row(s) disagree with their own close.** A lane closed the work and the plan of record still says it is not done. Re-grade each row below from its close.
+**Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
 | Milestone | Rows | Done | Open or blocked |
 |---|---|---|---|
 | M1 Staff on v2: the soft launch | 6 | 2 | 4 |
-| M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 3 | 3 |
-| M3 Lens builds on Bastrop live data | 9 | 4 | 5 |
+| M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
+| M3 Lens builds on Bastrop live data | 9 | 5 | 4 |
 | M4 DigitalOcean migration complete | 6 | 4 | 2 |
-| M5 Design complete, and the controls that keep it honest | 5 | 3 | 2 |
+| M5 Design complete, and the controls that keep it honest | 5 | 4 | 1 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -40,7 +40,7 @@ programs: [OPS-17, OPS-25]
 |---|---|---|---|
 | G-156 | BUILD THE FINANCE LENS, once the operator rules whether Finance belongs in the Bastrop package a | closed, partly | CLOSED-PARTIAL |
 | G-159 | THE FINANCE BRIDGE — put Bastrop's live finance data where v2 can read it. | closed, partly | closed-partial |
-| G-162 | v1 FINANCE HONESTY: THREE DEFECTS G-159 FOUND IN THE PRODUCTION FINANCE CODE AND DELIBERATELY DI | open | closed-partial |
+| G-162 | v1 FINANCE HONESTY: THREE DEFECTS G-159 FOUND IN THE PRODUCTION FINANCE CODE AND DELIBERATELY DI | closed, partly | closed-partial |
 | G-138 | the filings design carries two citations to external authorities that trace to nothing, and it i | closed | — |
 | G-137 | the Localgov Filings feed — the hotel occupancy tax integration the customer prioritised and wil | open | — |
 | G-157 | THE CITY MANAGEMENT BOARD — v2 must not remove what the city manager works from in v1. | open | — |
@@ -53,7 +53,7 @@ programs: [OPS-17, OPS-25]
 | G-161 | NEVER DEFAULT A CITY, EVERYWHERE, NOT ONLY ON THE FINANCE ROUTE. | landed, not graded | — |
 | G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | closed, partly | The four corrections are implemented, merged and proven on the live bastrop_tx surface on d12-main-uat - three of the four by direct measurement, and the fourth NAMED AS UNMEASURED because the live feed draws no workload ranking for it to be measured on. Getting there exposed four defects, three of them in the proving tools rather than the product; all three are fixed and each fix is proven in both directions. |
 | G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | open | — |
-| G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | open | closed |
+| G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | closed, partly | closed |
 | G-152 | BUILD THE PUBLIC WORKS AND FIRE AND EMS LENSES. | open | — |
 | G-151 | BUILD THE PARKS LENS, the one lens that does not exist, drawn as not existing. | open | — |
 | G-155 | BUILD THE SMART FILES DESIGN, in its own repo and outside the DigitalOcean gate. | closed | closed |
@@ -78,12 +78,4 @@ programs: [OPS-17, OPS-25]
 | G-142 | Citizen lens design. | closed | closed |
 | G-147 | the three designed-nowhere surfaces that had no row at all. | closed, partly | closed-partial |
 | G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | closed | closed |
-| G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | open | closed-partial |
-
-## Disagreements
-
-| Row | Row says | Close says |
-|---|---|---|
-| G-162 | open | closed-partial (2026-09-18_g162-v1-finance-honesty_close.json) |
-| G-153 | open | closed (2026-09-18_g153-fleet-police-lens_close.json) |
-| G-160 | open | closed-partial (2026-09-18_g160-served-commit-parity_p2_close.json) |
+| G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed, partly | closed-partial |

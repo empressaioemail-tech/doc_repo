@@ -92,6 +92,59 @@ const OPR_FORMAT = new RegExp(S.axis.formats.OPERATOR_REF_FORMAT.replace(/^\/|\/
 const VEHICLE_ID_FORMAT = new RegExp(S.axis.formats.VEHICLE_ID_FORMAT.replace(/^\/|\/$/g, ''));
 
 /**
+ * THE OPERATOR-REFERENCE CANDIDATE EXTRACTOR, THE SAMPLE THE SELF-TESTS USE, AND
+ * WHY THE EXTRACTOR IS WIDER THAN THE FORMAT RATHER THAN EQUAL TO IT.
+ *
+ * The extractor was `/\bOPR-[A-Za-z0-9]+/g`, written by hand beside a format read
+ * from the dump: two implementations of one rule, drifting on exactly the change
+ * they exist to police. It drifted. Operator references are namespaced by domain
+ * now (Fleet mints `FL-OPR-nn`), and in `FL-OPR-01` that pattern still matched,
+ * because `-` is not a word character so `\b` sits happily BEFORE the `OPR`. The
+ * extractor returned the truncated `OPR-01`, the truncation failed the declared
+ * format, and the failure would have read as a defective BOARD rather than as a
+ * bug in this file - an instrument reporting its own defect as the design's.
+ *
+ * The naive repair is to make the extractor exactly as strict as the format, and
+ * it is worse than the bug: a predicate that refuses references outside the
+ * declared format must be able to SEE one, and an extractor as strict as the
+ * format finds nothing to refuse, so `every` returns true over an empty list and
+ * the rule passes on precisely the board it was written to stop - a bare `OPR-01`
+ * after the ruling made bare forms invalid. Both edges are watched by self-tests.
+ *
+ * So the candidate is a whole hyphen-and-alphanumeric TOKEN carrying the stem the
+ * format declares: the maximal run around the stem, never a prefix of it, and
+ * never case-folded. It captures `FL-OPR-01` whole, it still SEES a bare `OPR-01`
+ * so the format can refuse it, and it sees a reference under an undeclared prefix
+ * so that is refused too. The stem is read out of the declared body rather than
+ * typed, and the sample values are minted from the same body, so a fixture cannot
+ * be left behind in an old namespace either.
+ */
+const formatBody = (src) => {
+  const m = String(src).match(/^\/(.*)\/[a-z]*$/);
+  if (!m) throw new Error('a declared format in source-state.json is not a regex literal: ' + src);
+  return m[1].replace(/^\^/, '').replace(/\$$/, '');
+};
+/** The stem the ruling keeps constant across namespaces: `OPR-`. */
+const stemFrom = (body) => body.replace(/^[A-Z]{2}-/, '').replace(/\\d\{(\d+)\}$/, '');
+const sampleFrom = (body) => body.replace(/\\d\{(\d+)\}/g, (_, n) => '3'.repeat(Number(n)));
+const candidateReFor = (body) => {
+  const stem = stemFrom(body).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  /**
+   * The tail is `+`, not `*`: the stem on its own is how a board DESCRIBES the
+   * format in prose ("declared format: OPR- followed by exactly two digits"),
+   * and prose that names the format is not a reference to be refused. A lone stem
+   * has no value in it, so it is not a candidate.
+   */
+  return new RegExp('[A-Za-z0-9-]*' + stem + '[A-Za-z0-9-]+', 'g');
+};
+
+const OPR_BODY = formatBody(S.axis.formats.OPERATOR_REF_FORMAT);
+const OPR_RE = candidateReFor(OPR_BODY);
+const OPR_SAMPLE = sampleFrom(OPR_BODY);
+/** The namespaced form the ruling declares, so the trap is tested against it. */
+const OPR_NAMESPACED = /^FL-OPR-\d{2}$/;
+
+/**
  * The vendors a board may name, and it is the PRODUCT that decides, not this
  * file: the gate this lens is registered under, plus every vendor the live
  * verification record names as answering or declining.
@@ -151,7 +204,6 @@ const CELL_RE = /font:400 13px\/18px var\(--sc-font-(?:data|ui)\); color:var\(--
 /** Assertive labels: column headers, matrix headers, tile keys and fact labels. */
 const LABEL_RE = /letter-spacing:\.0[68]em; text-transform:uppercase; color:var\(--sc-ink-3\);[^"]*">([^<]*)</g;
 const REGION_RE = /<span style="font:(?:620|400) 14px\/20px var\(--sc-font-ui\); color:var\(--sc-ink(?:-2)?\);">([^<]*)</g;
-const OPR_RE = /\bOPR-[A-Za-z0-9]+/g;
 const FL_RE = /\bFIX-FL-[A-Za-z0-9]+/g;
 const NUM_RE = /\d[\d,]*/g;
 
@@ -268,11 +320,34 @@ const selfTests = [
   ['badges: REFUSES an invented state word', badgesOk(badgeCell('Syncing')) === false],
   ['badges: REFUSES a plausible near miss', badgesOk(badgeCell('Connected')) === false],
   ['badges: not vacuous - the extractor found one', badges(badgeCell('Empty')).length === 1],
-  ['operator: accepts the declared format', oprOk(cell('OPR-03')) === true],
-  ['operator: REFUSES a reference outside the declared format', oprOk(cell('OPR-3')) === false],
+  ['operator: accepts the declared format', oprOk(cell(OPR_SAMPLE)) === true],
+  ['operator: the sample used by these self-tests is minted from the declared format', OPR_FORMAT.test(OPR_SAMPLE) === true],
+  ['operator: the extractor finds the sample the declared format accepts', oprRefs(OPR_SAMPLE).join() === OPR_SAMPLE],
+  ['operator: REFUSES a reference outside the declared format', oprOk(cell(OPR_SAMPLE.replace(/\d{2}$/, '3'))) === false],
   ['operator: REFUSES a reference that has become a name', oprOk(cell('OPR-Dwayne')) === false],
-  ['operator: not vacuous - the extractor found two', oprRefs('OPR-01 and OPR-02').length === 2],
+  /**
+   * THE TRAP, WATCHED BOTH WAYS, plus the edge the naive repair would have opened.
+   * The first line asserts that the old hand-written extractor really did truncate
+   * a namespaced reference - the defect is a property of that pattern, not a story.
+   * The second asserts the derived extractor returns it whole. The third asserts
+   * the extractor still SEES a bare reference, because a bare `OPR-01` is exactly
+   * what the format must refuse and an extractor as strict as the format would
+   * pass over it silently. The fourth does the same for an undeclared prefix.
+   */
+  ['operator: the OLD hand-written extractor truncated the namespaced form (the defect is real)',
+    ('FL-OPR-01'.match(/\bOPR-[A-Za-z0-9]+/g) || [])[0] === 'OPR-01'],
+  ['operator: the derived extractor returns the namespaced form whole',
+    ('FL-OPR-01'.match(candidateReFor(formatBody(OPR_NAMESPACED))) || []).join() === 'FL-OPR-01'],
+  ['operator: the derived extractor still SEES a bare reference, so the format can refuse it',
+    ('OPR-01'.match(candidateReFor(formatBody(OPR_NAMESPACED))) || []).join() === 'OPR-01'],
+  ['operator: a reference under an undeclared prefix is seen and refused, not missed',
+    ('FLEET-OPR-01'.match(candidateReFor(formatBody(OPR_NAMESPACED))) || []).join() === 'FLEET-OPR-01'],
+  ['operator: against the NAMESPACED format a bare reference is refused, so the widening cannot weaken it',
+    OPR_NAMESPACED.test('OPR-01') === false && ('OPR-01'.match(candidateReFor(formatBody(OPR_NAMESPACED))) || []).length === 1],
+  ['operator: not vacuous - the extractor found two', oprRefs(OPR_SAMPLE + ' and ' + OPR_SAMPLE).length === 2],
   ['operator: finds none in prose about operators', oprRefs('the operator dimension').length === 0],
+  ['operator: prose that NAMES the format is not a candidate, so describing the rule stays legal',
+    oprRefs('declared format: OPR- followed by exactly two digits').length === 0],
   ['coverage: accepts the composer pairs', exactOk(operatorCoverage(opTable(OPERATORS)).map(String), OPERATORS.map(String))],
   ['coverage: REFUSES a changed count', !exactOk(operatorCoverage(opTable(OPERATORS.map(([r, n], i) => [r, i === 0 ? '9' : n]))).map(String), OPERATORS.map(String))],
   ['coverage: REFUSES a dropped operator', !exactOk(operatorCoverage(opTable(OPERATORS.slice(1))).map(String), OPERATORS.map(String))],
@@ -281,7 +356,7 @@ const selfTests = [
   ['people: REFUSES a titled name', PERSON.test('Mr Whitfield') === true],
   ['people: ALLOWS a unit label', PERSON.test('Street sweeper unit 16') === false],
   ['people: ALLOWS an odometer band', PERSON.test('60k to 120k miles') === false],
-  ['people: ALLOWS an opaque operator reference', PERSON.test('OPR-02') === false],
+  ['people: ALLOWS an opaque operator reference', PERSON.test(OPR_SAMPLE) === false],
   ['people: finds a driver name in a rendered cell', people(cell('R. Alvarado')).length === 1],
   ['people: finds none in a vehicle cell', people(cell('Bucket truck unit 15')).length === 0],
   ['roster: accepts the composer order in full', exactOk(ROSTER, ROSTER) === true],
