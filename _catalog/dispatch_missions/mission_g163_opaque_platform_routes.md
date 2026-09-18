@@ -4,18 +4,20 @@ You launch no sub-agents (FAN-DEPTH 0). You WRITE in `smartcity-os`. You write n
 `smartcity-dashboards` and nothing in `doc_repo` (planner-owned: hand any doc edit back as a diff,
 uncommitted). Hand the close to `_inbox/` in doc_repo without committing it.
 
-### READ THIS FIRST: `smartcity-os` is a single-writer repo, and another lane is in it
+### READ THIS FIRST: `smartcity-os` is a single-writer repo, and the lane that was in it has CLOSED
 
-`g162-v1-finance-honesty` is RUNNING against `smartcity-os` right now, fixing three production finance
-defects. **A product repo has one owning seat (ENFORCEMENT.md).** Do not begin your first write until
-that lane's close is filed.
+`g162-v1-finance-honesty` was RUNNING against `smartcity-os` when this dispatch was first compiled.
+**It has since CLOSED and PR #60 is MERGED, so the wait this section used to impose is over and you may
+start.** Do not take that on trust: read `smartcity-os` `origin/main` and confirm the merge of PR #60 is
+an ancestor of `HEAD` before your first write. If it is not, STOP and report rather than writing into a
+tree that moved under you.
 
 Measured, so you know the real risk rather than a guessed one: the planner checked the file sets and
-the primary files DO NOT overlap. G-162 works in `server/routes/finance.ts`, `server/routes/opengov-bnp.ts`
+the primary files DO NOT overlap. G-162 worked in `server/routes/finance.ts`, `server/routes/opengov-bnp.ts`
 and `server/services/opengov-bnp.ts`; you work in `server/routes/firstdue.ts` and `server/routes/goto.ts`.
 `server/routes/ai-assistant.ts` matches both greps, so read it before you touch it and prefer not to.
-The serialization is a discipline choice, not a hard merge necessity, which is exactly why it is worth
-respecting.
+The serialization was a discipline choice, not a hard merge necessity, which is why it was always safe
+to run these two in parallel and why the close of one does not gate the other.
 
 Claim your lane before your first write.
 
