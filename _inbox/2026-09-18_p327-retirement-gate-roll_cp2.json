@@ -1,0 +1,118 @@
+{
+  "lane": "p327-retirement-gate-roll",
+  "planRows": ["P-327"],
+  "kind": "checkpoint-2 (what was measured, how, and what it changed)",
+  "filedAtNote": "Written after the PR was opened and its checks went green, from the artifacts this lane produced. Every number below names the file it came from and the moment it was read.",
+  "readerAndVintage": {
+    "reader": "cad_property",
+    "constant": "RETIREMENT_READER = \"cad_property\", with RETIREMENT_READER_NOT_USED = \"txgio_parcel\" and a comment naming the coverage floor (P-306) as the one reader that still belongs there",
+    "sql": "SELECT ... FROM cad_property WHERE county_fips = $1 AND tax_year = $2 (rollKeyspaceSql), keyed on `prop_id` with bare string equality -- no trim, no crosswalk -- because that is what the bake's own arm does (`apn = parcelNodeId.split(\":\")[1]` looked up in the roll's byPropId map)",
+    "vintageSource": "src/config/cad-declared-vintages.mjs via tryResolveDeclaredCadVintage -- the factory's existing mirror of LDT lib/cad-ingest/src/vintage.ts, drift-guarded by scripts/check-ldt-vintage-drift.mjs. Reused, not copied.",
+    "undeclared": "PUBLISH_RETIREMENT_VINTAGE_UNDECLARED; never reads as zero",
+    "noTable": "PUBLISH_RETIREMENT_UNMEASURED when the reader's table is absent, via the same TABLE_EXISTS_SQL (to_regclass) the coverage floor uses",
+    "measuredAtThePin": "The bake's arm read at bae48d406f7595af3d47111b558d0ebc3efd9c56: nodeFacetBakeTier1Conformant.ts buildConformantTier1Payload's retirement branch, with cadPropertyRoll built by joinIntegrityGate.ts fetchCountyCadPropertyRoll",
+    "gateBlobAtTheChange": "83eec686db60a78b3be9e13844a0f3d34d939ced (git rev-parse 6bf2a5c:src/lib/publish-retirement-gate.mjs)",
+    "newSharedModuleBlob": "dab9cf9fdf62bf0b19cd5e6ec4fb864427a81b8e (src/lib/id-keyspace-overlap.mjs)"
+  },
+  "theDestructiveRuleAsImplemented": {
+    "rule": "destructive counts NEW retirements only",
+    "derived": "destructive = sum(newRetirements); destructiveShare = destructive / population, where population is the whole served tier-1 population of the county (not the keyspace). Re-retirements are reported per keyspace and on the run_event and never enter either number.",
+    "why": "The writer's loss is the live -> retired transition. Re-stamping an already-retired slice destroys nothing further, and folding it in would let one large previously-retired keyspace mask a genuine new retirement beside it -- and would make a re-run of an old incident look like the incident.",
+    "enforcedBy": "the refusal for PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED now tests unaccountedDestructive (new retirements on a basis the roll cannot hold) rather than every absence on that basis, so an already-retired keyspace with no index of its own keys no longer refuses a county on every publish forever -- which is exactly the state Williamson is in today and would otherwise have been permanently unpublishable"
+  },
+  "verificationByViolation": [
+    {
+      "id": "F1",
+      "claim": "the 2026-09-10 shape (txgio_parcel holds every R id; the declared 2026 roll holds none; 282,569 R nodes live) was measured 0 by the old gate and is refused by the new one",
+      "method": "revert-and-run in ONE process: the same fixtures through the pre-P-327 module (git show HEAD:src/lib/publish-retirement-gate.mjs, held as a scratch copy) and the P-327 module",
+      "result": "pre-P-327: PASS, destructive 0, population 282,569. P-327: REFUSE PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED, unaccountedDestructive 282,569, destructive 0. The DIVERGENCE IS THE EVIDENCE: same county, same store state, opposite verdicts, and the flip is the whole mission.",
+      "artifact": "P:/tmp/p327-revert-run.json"
+    },
+    {
+      "id": "F1-control",
+      "claim": "the fix is not a blanket refusal -- the same comparison in the other direction must flip the OTHER way",
+      "method": "same harness, shape B (numeric served nodes the declared roll holds, beside the retired R keyspace)",
+      "result": "pre-P-327: REFUSE PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED, unaccountedDestructive 319,480 (the FALSE refusal the dispatch names: 'the gate refuses Williamson today because txgio_parcel holds no numeric ids'). P-327: PASS, destructive 0, share 0. Two directions, opposite flips, one harness.",
+      "artifact": "P:/tmp/p327-revert-run.json"
+    },
+    {
+      "id": "F2",
+      "claim": "the 2026-09-17 shape still refuses",
+      "method": "test/p327-retirement-gate-roll.test.mjs P2, plus test/p319-retirement-gate.test.mjs re-pointed to the new reader, plus the full path through runBastropPublish (test/publish.test.mjs) which asserts bakesFn was NEVER CALLED and that a retirement-gate run_event was written",
+      "result": "refuses; the P-319 codes and the full-path refusal survive the re-point",
+      "artifact": "the three test files, and CI run 35349908128 (test job pass)"
+    },
+    {
+      "id": "F3",
+      "claim": "a healthy county passes with a small, stated share",
+      "method": "P-327 suite P3, plus the live census",
+      "result": "passes; the census is the same claim on real data (all six counties pass)",
+      "artifact": "P:/tmp/p327-census-staging-sample.json"
+    },
+    {
+      "id": "F4",
+      "claim": "the six Phase-0 counties, read-only, live, under the heavy-scan lease: what the bake WOULD retire now, new vs re-retirement, and the gate's verdict",
+      "method": "scripts/p327-retirement-census.mjs (new), --target staging, one heavy-scan lease taken and renewed for the run; the instrument refuses to run at all if DESTRUCTIVE_WRITE_AUTHORISATION is set, and every read opens through the coverage floor's read-only reader",
+      "snapshot": {
+        "readAt": "2026-09-18T12:56:20.171Z",
+        "target": "staging",
+        "storeHost": "ep-gentle-star-appmbu2q.c-7.us-east-1.aws.neon.tech",
+        "lease": "bb8fe1a7-f828-4e1f-9f9c-3e8defc1c2be (also used: 75440c27-68e1-4d71-9504-bad1e105a684 for the renew and the provenance pass)",
+        "repoSha": "85d63e8d39f0129ef14267f432b8a555292fd172 with the P-327 change uncommitted in the working tree; the only commit after the read touched test/publish.test.mjs, so the gate code measured here is the code in 6bf2a5c",
+        "artifact": "P:/tmp/p327-census-staging-sample.json"
+      },
+      "result": "ALL SIX PASS -- no false refusal. Per county (served / retired / destructive[new] / reRetirements / verdict): 48021 Bastrop 77,799 / 0 / 0 / 0 / pass (roll 2025). 48055 Caldwell 48,649 / 267 / 0 / 267 / pass (2026). 48209 Hays 173,050 / 58,015 / 0 / 673 / pass (2026). 48309 McLennan 114,255 / 0 / 0 / 0 / pass (2025). 48453 Travis 500,307 / 7,456 / 0 / 7,456 / pass (2026). 48491 Williamson 602,050 / 602,050 / 0 / 282,570 / pass (2026).",
+      "theReadingThisSettles": "Williamson's served NUMERIC ids DO overlap the declared 2026 roll: cad_property at tax_year 2026 holds 319,480 numeric rows and 319,480 served numeric ids are present -- 100 percent. The P-319 lane's R6 reading (that the numeric served ids do not overlap the 2026 roll) is CONTRADICTED by measurement, and the dispatch explicitly said to measure it rather than inherit it. The two are not in conflict about the past: the numeric slice's retirement marks carry a txgio_parcel authority, not a cad_property one, so the row that explains the incident is a different comparison than the one R6 was reading."
+    },
+    {
+      "id": "F5 (found by the census, not pre-registered)",
+      "claim": "the store's own retirement marks name the writer that emptied the numeric slices, and it is not the reader this lane re-pointed",
+      "method": "a second read of the same store, same lease, grouping retired rows by keyspace and by the `authority` string the writer stamped (RETIREMENT_PROVENANCE_SQL); read at 2026-09-18T12:59:19.944Z",
+      "result": "48209 Hays: 56,629 numeric retired under `Hays County GIS published parcel index (txgio_parcel) for county_fips 48209`, 1,386 under the cad_property authority. 48491 Williamson: 319,480 numeric retired under the txgio_parcel authority, 282,569 R-prefixed and 1 other under the cad_property authority.",
+      "whyThisMatters": "The reader this lane re-pointed wrote 1,386 of Hays' 58,015 and 282,570 of Williamson's 602,050. The other marks -- the two populations that ARE the incident -- were written by a comparison that tests membership in the RESOLVED PARCEL TABLE and retires what misses. Confirmed in the pinned source, not inferred: nodeFacetBakeTier1ConformantCli.ts lines 381-417 build txgioPropIds from joinParcelRows over the resolved parcel table, gated on the blocked ledger (effectiveBlockedFips), call partitionAccountKeyedWork, and lines 1051-1124 retire the excluded set through planAccountKeyedRetirements; accountKeyedWork.ts:177 stamps the authority string above.",
+      "artifact": "P:/tmp/p327-census-provenance.json"
+    }
+  ],
+  "falsifierAccounting": {
+    "preRegistered": 4,
+    "run": 4,
+    "held": 4,
+    "addedAfterMeasuring": 1,
+    "notRun": "none",
+    "theOneThatChangedMyConclusion": "F5. F1 was expected to show the gate seeing a whole keyspace go; it did. F5 shows a SECOND writer the gate structurally cannot see from either side, and it was not in the dispatch, not in A-212, and not in P-319's close. It is the difference between 'the gate now measures the writer it can see' and 'the gate now measures the writer it can see' -- which is what this lane claims, and no more."
+  },
+  "censusDoesNotChangeTheHazard": "The fixed gate PASSES Williamson today, and that is correct: the numeric slice is present in the roll, and the R slice is already retired (0 new). It also means a Williamson republish is NOT made safe by this change: if the numeric rows were live, the cad_property reader would still find them present, the gate would pass, and the account-keyed pass would retire them again on the same membership test. This is stated in the PR body and in the close rather than left to a reader to work out from the census.",
+  "fullSuiteResult": {
+    "authoritative": "GitHub CI on the final head 98c7c9d: BOTH runs SUCCESS -- push run 35349902755 (test 1m29s, gate8 6s, ldt-sha-comment-presence 12s) and pull_request run 35349908128 (test 1m38s, gate8 5s, ldt-sha-comment-presence 19s). The whole factory suite, including the new P-327 suite and the re-pointed P-319/P-320 full-path tests.",
+    "localBaselineBeforeTheWork": "1921 tests, 1879 pass, 3 fail, 37 skipped (P:/tmp/p327-baseline-test.txt, captured on this machine before any P-327 edit)",
+    "localAfterTheWork": "1936 tests, 1896 pass, 2 fail, 36 skipped (P:/tmp/p327-final-test2.txt)",
+    "localFailuresRemaining": "both depend on THIS machine's legacy-design-tools checkout, not on the change: check-walk-decline-body-drift.test.mjs ('LDT must still declare record_retired; got not_baked') and ctx-b3-store-census.test.mjs (mirror drift at the pin) -- both also fail on the baseline and both pass in CI, where the pin is checked out cleanly.",
+    "honestNoteOnTheThirdBaselineFailure": "The baseline's third counted failure (p2-juris-57p01.test.mjs, 'interval should fire heartbeat lease renewal more than once') is a timing-sensitive test that PASSED on the re-run. This lane does not claim credit for it: it is a flake, and a lane that reported 3 -> 2 as a fix would be reporting a coincidence as a result.",
+    "affectedFilesSubset": "test/publish.test.mjs + test/p327-retirement-gate-roll.test.mjs + test/p319-retirement-gate.test.mjs: 165 pass, 0 fail, 1 skipped (P:/tmp/p327-subset-test2.txt)"
+  },
+  "commitUnderTest": {
+    "branch": "fix/p327-retirement-gate-roll",
+    "base": "85d63e8d39f0129ef14267f432b8a555292fd172 (origin/main at branch time -- the P-325 merge, i.e. at or after the required a3b2c91b)",
+    "commits": ["6bf2a5c the change", "98c7c9d the full-path fake fix (see deviationsDisclosed)"],
+    "head": "98c7c9d",
+    "pr": {
+      "number": 177,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/177",
+      "state": "open, not merged, not deployed"
+    }
+  },
+  "deviationsDisclosed": [
+    "CI caught a real defect in this lane's own test changes, and it is disclosed rather than rewritten: at 6bf2a5c the `test` job FAILED (runs 35348784370 and 35348829709). The gate now probes its own reader's existence with the coverage floor's `to_regclass`, and the full-path fake stores did not answer for `cad_property`, so every full-path publish test refused one step early with PUBLISH_RETIREMENT_UNMEASURED instead of reaching the code under test. Fixed in 98c7c9d (the fake answers `to_regclass` for `cad_property`, and only when the scenario actually gives the county a roll, because `retirementRoll == null` must still mean 'no cad_property table' and must still refuse).",
+    "HOW IT WAS MISSED, stated precisely because the imprecise version is more flattering than the facts: the defect was NOT invisible locally. BOTH of this lane's local full-suite logs contain it -- P:/tmp/p327-full-tests.txt (the 12:28Z run) and P:/tmp/p327-final-test.txt (the 13:11Z run, the one taken as the final local read) each report 23 failing test locations, 19 of them in test/publish.test.mjs. I read only the P-319/P-320 lines I was looking for (`Select-String -Pattern 'P-319|P-320'`), got five, and reported five. The remaining 14 publish failures were in the log the whole time and are the same single defect. So the honest account is not 'the local run was clean and CI caught something' and not 'local showed five' -- local showed 19 and I read five. A lane that ships a disclosure should ship the one that costs it something; this is it.",
+    "The P-319 full-path run_event test asserted the vintage as a literal 2026 while the county under that run is 48021 (declared 2025) and only the roll COUNTS are Williamson's shape. It now resolves the vintage through the same function the gate uses, so the assertion cannot drift from the mirror.",
+    "The census was read from the working tree before the change was committed. The gate code it measured is the gate code in 6bf2a5c (stated in the snapshot above); the 98c7c9d commit touches only test/publish.test.mjs.",
+    "CP1 was filed after the work rather than before it, and says so in its own `filedAtBasis`.",
+    "This lane's artifacts are filed under P:/doc_repo/_inbox/ because that is the doc_repo checkout this session was handed the dispatch from and no p327 seat worktree is registered (`git worktree list` shows none). P-319's artifacts sit in the same place. Named here rather than left to be discovered."
+  ],
+  "stillOpen": [
+    "The account-keyed pass inside the bake (F5): pre-bake refusals cannot reach it. P-351 must cover it, and the shape is different -- the exclusion's premise, not which roll the gate compares against. The blast radius is exactly the gate-blocked counties with two keyspaces (Hays 48209, Williamson 48491 measured today).",
+    "LDT-side: the bake's own comparison remains bare string equality with no keyspace test. This repo refuses to invoke it on an unaccounted keyspace and cannot make the bake keyspace-scoped.",
+    "The probe carries no P-327 row (predicate debt, P-197), so the customer predicate for this row is not measurable from the surface yet.",
+    "deploy and the live publish are the integration seat's step: nothing here is deployed, and no publish was run."
+  ]
+}

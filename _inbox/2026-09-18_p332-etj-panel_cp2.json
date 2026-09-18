@@ -1,0 +1,123 @@
+{
+  "artifact": "P-332 CP2 — build results, falsifiers in both directions, bypass sweep, and the heavy-scan announcement for item 4",
+  "lane": "p332-etj-panel",
+  "planRows": ["P-332"],
+  "checkpoint": "CP2 (mid-work / pilot)",
+  "seat": "cente-vsc-p332",
+  "writtenAt": "2026-09-18T13:05:00Z",
+  "dispatch": "_dispatches/2026-09-18_p332-etj-panel_dispatch.md",
+
+  "startCommits": {
+    "docRepoWorktree": { "path": "P:/seat-worktrees/p332-etj-panel/doc_repo", "branch": "lane/p332-etj-panel", "head": "6f9188f6988260a11f5e3abe86c320fea81698bb" },
+    "hauskaMapWorktree": { "path": "P:/seat-worktrees/p332-etj-panel/hauska-map", "branch": "lane/p332-etj-panel-map", "head": "cfe23197cb8c80e94fe7fcd9bb4fecd8867c12bd" }
+  },
+
+  "heavyScanAnnouncement": {
+    "reason": "AGENT CONTRACT section 4 requires announcing a heavy scan before starting it, in the progress artifact, with target and expected duration.",
+    "announcedAt": "2026-09-18T13:05:00Z (before the scan; this CP2 is filed in that order)",
+    "target": "cortex-prod (Neon project fancy-fire-06136146), branch br-crimson-feather-aphfmy91 (production), READ-ONLY endpoint ep-restless-hat-api2h3tg — a point-in-polygon co-occurrence join over landing_parcel_jurisdiction x txgio_parcel x tx_etj_boundary for the six Phase 0 counties (48021, 48055, 48209, 48309, 48453, 48491).",
+    "expectedDuration": "1-6 minutes. Sized from measured reconnaissance, not guessed: 610,116 in-city rows in landing_parcel_jurisdiction across the six counties (981,404 rows in the table, 189 MB) joined to 1,568,849 parcels in txgio_parcel for those counties; the inner side is 355 ETJ rings (3.8 MB) whose GeoJSON is parsed once and prefiltered by each ring's own bbox before ST_Contains.",
+    "concurrencyStatement": "No other lane's heavy scan is known to be running against cortex-prod from this seat. This lane holds NO other scan; the reconnaissance reads (aggregate counts and a 2-row sample) are already complete and confirmed.",
+    "writesStatement": "READ-ONLY endpoint. No write is possible through this connection, which is why it was chosen over the read_write endpoint on the same branch. County 48491 (Williamson) is READ (its rows are part of the six-county denominator) and never written; the recover-48491-pre-7b2540c8 branch is not touched at all."
+  },
+
+  "buildState": {
+    "moduleAdded": "apps/property-explorer/api/_lib/pe-etj-determination.ts — the single writer for the served ETJ state (four states, conflict declaration, never-default, idempotent normalisation).",
+    "diffStat": "8 tracked files changed, 541 insertions(+), 37 deletions(-), plus 2 new untracked files (the module and its unit tests).",
+    "testVerdict": "apps/property-explorer full suite: 220 files / 3282 tests passed, 1 todo, at the commit above with the change applied.",
+    "typecheck": "npx tsc --noEmit reports 10 errors, ALL of them `TS2307 Cannot find module '@hauska/map-renderer'` in src/browse/* — a pre-existing unbuilt-workspace-dependency resolution failure, unrelated to this lane. ZERO errors in any file this lane touched. Stated rather than papered over: the workspace package must be built before tsc is a clean verdict on this app."
+  },
+
+  "writeSiteCensusAfterTheChange": {
+    "countingRule": "every non-test occurrence of the token etjStatus in hauska-map after the change, classified by what it does. Read from a whole-repo case-insensitive grep at the working-tree state above.",
+    "writes": [
+      { "file": "api/_lib/pe-etj-determination.ts", "what": "the ONE writer (resolveEtjDetermination / normalizeAdoptedCityLimitsEtj)", "changed": "new" }
+    ],
+    "callsTheOneWriter": [
+      { "file": "api/_lib/pe-record-to-facets.ts", "what": "composeCityLimits / recordUnavailableCityLimits both end in finishCityLimits() -> resolveEtjDetermination; the five W1-W5 literals are gone", "changed": true },
+      { "file": "api/_lib/atom-chain-to-facets.ts", "what": "withCityLimitsFact -> normalizeAdoptedCityLimitsEtj for the adopted cortex-root fact (W6 type + W7 guard)", "changed": true }
+    ],
+    "survivingLiteralsAfterTheChange": [
+      { "file": "api/_lib/pe-etj-determination.ts", "what": "ETJ_STATUSES (the vocabulary) and the `unresolved` emitted at the never-default branch, always WITH etjReason. This is the honest unresolved, not a placeholder." }
+    ],
+    "readOnlyCarriers": [
+      "packages/parcel-fact-sheet/src/index.ts:480 (etjStatus: string)",
+      "apps/property-explorer/src/lib/baked-facets.ts:438 (CityLimitsFactCardInput.etjStatus?: string)",
+      "apps/property-explorer/src/lib/sheet-to-card-model.ts:402 (etjStatus: string)"
+    ],
+    "display": [
+      { "file": "src/lib/fact-sheet-resolver.ts", "line": 1281, "what": "the sixth literal (`?? \"unresolved\"`) is REMOVED, not merely documented; the row now claims an ETJ state only when the wire carried one of the four" }
+    ],
+    "correctionToCP1": "CP1 listed W9 as `changed: true` and described it as already losing its `?? \"unresolved\"` default. At the time CP1 was filed that claim was NOT yet true — the default was still in the code. It is true now. Recorded rather than quietly reconciled: a checkpoint that describes a change it has not made is the defect class DEV_PROCESS exists for."
+  },
+
+  "falsifiersBothDirections": {
+    "method": "The four source files were stashed (git stash push -- <the four tracked source files, NOT the tests>), leaving the new tests in place, and the suite was re-run against PRE-change source; the stash was then popped and the suite re-run against POST-change source. Both directions were measured on the same fixtures, not merely asserted.",
+    "preChangeRun": {
+      "evidence": "_inbox/2026-09-18_p332-etj-panel_revert-and-run.txt (raw vitest verbose output)",
+      "verdict": "3 test files failed, 15 tests failed | 165 passed (180).",
+      "failuresThatMatter": [
+        "'unresolved' to be 'present' — three sites (F1); the real read was replaced by the literal",
+        "'unresolved' to be 'conflicting' — two sites (F3); the conflict was hidden entirely",
+        "'unresolved' to be 'absent' — one site (F2); a verified absence was served as 'we did not look'",
+        "undefined to be 'no ETJ determination was served for this point...' — three sites (F2/F4); the unresolved state carried no reason at all, which is the bare default the dispatch's item 3 names"
+      ],
+      "twoOfTheFifteen": "Two further pre-change failures are the two pre-existing composer tests whose expectations were updated in the same change; they are counted in the 15 and are not independent evidence of the defect."
+    },
+    "postChangeRun": {
+      "verdict": "All 7 targeted files green (503 tests), then the full app suite green (220 files / 3282 tests).",
+      "F1": "PASS — unincorporated city limits + a real `present` read serves `present` with etjId/ringLabel/sourceCitation intact, and asserts `.not.toBe('unresolved')`.",
+      "F2": "PASS — the live 48209:97658 shape (incorporated + absent, 1 ring consulted) serves `absent` with coveredBy intact and no conflict; a payload with no determination serves `unresolved` with a non-empty stated reason (the literal reason string is asserted, not read off the module constant, so emptying it fails the test).",
+      "F3": "PASS — the live 48453:134392 shape serves `conflicting`, with the block naming BOTH sources and BOTH bases; the test asserts `etjStatus !== 'present'`, which is the direction that makes verbatim forwarding fail it.",
+      "F4": "PASS — the source census above shows one writer; the fixture matrix covers all five (city-limits status x raw read) combinations and asserts the served state for each, so a branch reading city-limits status to produce present/absent cannot pass.",
+      "F5": "PASS — every F21 queryPoint test stayed green unchanged, and the end-to-end P-332 test additionally asserts queryPoint survives on the same payload that now carries the conflict."
+    },
+    "extraDefectFoundByTheFalsifiers": "The F4 'refuses a determination with no basis' fixture failed on first run and exposed a real bug in the new code: normalizeAdoptedCityLimitsEtj spread the incoming fact and then overrode only the fields the resolver produced, so a REFUSED etjFact block (and a stale etjConflict/etjReason from an earlier state) leaked through verbatim. Fixed by destructuring the four ETJ fields out before spreading, and pinned by two new tests (a stale conflict must not survive the city-limits reading changing; a stale reason must not survive a determination arriving). Found by test, not by review."
+  },
+
+  "bypassSweep": {
+    "question": "the dispatch's three-question gate: name the second serve paths and say whether each carries the same literal.",
+    "finding": "None of them carries the literal, and none of them is a serve path for this fact. The token `etjStatus` appears in no hauska-map file outside the writer, the type, the three read-only carriers and the display row (verified by whole-repo grep, case-insensitive, tests excluded). The paths the dispatch names were each read and are reported by mechanism:",
+    "paths": [
+      {
+        "path": "MCP depth-`node` response (api/spine-deep.ts)",
+        "verdict": "NOT A BYPASS — it cannot reach this payload at all.",
+        "basis": "spine-deep forwards only paths on _lib/deep-allowlist.ts. The full allowlist (DEEP_GET_EXACT, DEEP_GET_PREFIX, DEEP_POST_EXACT) contains no place/node/*/facets path and no property-atoms path; a request for one is a 403 before any upstream call. Read in full at the working-tree state above."
+      },
+      {
+        "path": "share view / share brief (api/pe-share-view.ts, api/_lib/pe-share-view-compose.ts, pe-share-brief.ts)",
+        "verdict": "NOT A BYPASS TODAY, and worth a follow-on row — it reads CORTEX DIRECTLY and projects no city-limits row.",
+        "basis": "loadShareBrief fetches cortex's own /api/brokerage/v1/place/node/<id>/facets (pe-share-view-compose.ts:77) — NOT the panel's property-atoms BFF, so this lane's writer is not in its path. buildShareBriefPayload then projects exactly four sections (zoning, setbacks-envelope, flood, land-use) and a disclosure block; `cityLimitsFact` is not among them and the strings cityLimits/etj/jurisdiction do not appear in any pe-share-* file. So the share surface serves no ETJ row and cannot disagree with the panel."
+      },
+      {
+        "path": "share dossier (pe-share-view-compose.ts loadShareDossier)",
+        "verdict": "NOT REACHABLE FROM hauska-map — cortex's own /api/property-explorer/v1/internal/share-dossier composes it; whatever it carries is cortex's fact, in another repo."
+      },
+      {
+        "path": "PDF / site-plan report (hauska-engine)",
+        "verdict": "A REAL BYPASS OF A DIFFERENT KIND, in another repo — reported, not fixable here.",
+        "basis": "hauska-map's pe-site-plan-export.ts posts a job carrying `factSheetId`; the PDF body is rendered downstream. P-241's close already names the sites: hauska-engine report-model.ts:966 (`etjStatus: \"unresolved\"`) and pdf/feasibility.ts:210-212. Those hardcode the value rather than forwarding a read — so the PDF is the same defect as the panel's, one repo over, and this PR does not reach it."
+      }
+    ]
+  },
+
+  "mechanismNote": {
+    "status": "A second mechanism is stated in CP1 (M1: landing_parcel_jurisdiction reports the jurisdiction that GOVERNS the point, so an ETJ parcel can read 'incorporated' without being in city limits) and is the leading candidate. It is not settled here — the dispatch says measure, do not pick, and the store read below is the measurement that decides it. NOT settled in code either way: no branch in the writer assumes either read is the wrong one; the conflict is declared and both sides are served."
+  },
+
+  "stillOpen": [
+    "co-occurrence count (item 4) — the heavy scan announced above; result lands in the CLOSE",
+    "the PR has not been opened yet at the time of this checkpoint",
+    "live probe of 48453:134392 / 48209:97658 on the panel route (the integration seat deploys; the exact probe and expected results are named in the CLOSE)"
+  ],
+
+  "constraintsHonored": [
+    "no store writes (the connection is a READ-ONLY Neon endpoint; a write is structurally impossible through it)",
+    "no deploys",
+    "no merges",
+    "county 48491 (Williamson) read only, never written; the recover-48491-pre-7b2540c8 branch untouched",
+    "FAN-DEPTH 0 — no sub-agents launched"
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

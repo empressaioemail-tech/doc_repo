@@ -1,0 +1,146 @@
+{
+  "artifact": "P-332 CP1 — design checkpoint, write-site census and pre-registered falsifiers",
+  "lane": "p332-etj-panel",
+  "planRows": ["P-332"],
+  "checkpoint": "CP1 (design / pre-build)",
+  "seat": "cente-vsc-p332",
+  "writtenAt": "2026-09-18T12:40:00Z",
+  "dispatch": "_dispatches/2026-09-18_p332-etj-panel_dispatch.md",
+
+  "startCommits": {
+    "docRepoWorktree": { "path": "P:/seat-worktrees/p332-etj-panel/doc_repo", "branch": "lane/p332-etj-panel", "head": "6f9188f6988260a11f5e3abe86c320fea81698bb" },
+    "hauskaMapWorktree": { "path": "P:/seat-worktrees/p332-etj-panel/hauska-map", "branch": "lane/p332-etj-panel-map", "head": "cfe23197cb8c80e94fe7fcd9bb4fecd8867c12bd", "note": "matches the dispatch's declared hauska-map main cfe23197 (P-270 PR #418)" }
+  },
+
+  "missionPremise": "P-296 (cortex-api, serving revision cortex-api-00472-web @ image 7219b707) computes and serves a real ETJ determination on the customer-facing cortex route (point-in-polygon against tx_etj_boundary, 355 rings). The Property Explorer BFF GET /api/spine/property-atoms/:id/facets discards it and serves the literal string 'unresolved', because (a) a type guard rejects any cortex cityLimitsFact whose etjStatus is not that literal, and (b) the record-path composer hardcodes the literal in all of its branches. Ruling basis: OPS-24 Law 1 (customer predicate is done) + the P-204 group-B ruling (implemented by P-336 and P-332) in _inbox/2026-09-18_phase0_closeout_REGISTER.md (2026-09-18T11:40Z). Independent of the cutover ruling: the P-204 close names this as a live customer defect, not a bookkeeping choice.",
+
+  "completionPredicate": "The panel route GET /api/spine/property-atoms/<id>/facets serves, for a payload carrying a real ETJ determination, that determination (present / absent) instead of the literal 'unresolved'; serves a declared conflict naming both sources and both bases where city limits say incorporated and the ETJ read says present; serves 'unresolved' with a stated reason when no determination is in hand and never derives ETJ from city limits or the reverse. Falsifiable by revert-and-run on fixtures in the panel's own api/_lib tests, and (post-deploy, integration seat) by live probe of 48453:134392 and 48209:97658 on the panel route with the expected results named in the close.",
+
+  "scopeBasis": "hauska-map only, one PR, FAN-DEPTH 0. In scope: the panel's own compose/serve path for cityLimitsFact.etjStatus (BFF api/_lib + the card resolver display that reads it). Out of scope and named: (1) the cortex-side fact (legacy-design-tools deploys are blocked on P-323; dispatch says do NOT fix the cortex side); (2) the hauska-engine site-plan/feasibility report models, which hardcode etjStatus in a different repo (named as a bypass in the close, reported not fixed); (3) the tx_etj_boundary / tx_etj_source stores — read-only co-occurrence count only, no writes; (4) county 48491 (Williamson) — not touched in any store.",
+
+  "liveReVerificationAtCP1": {
+    "measuredAt": "2026-09-18T12:30Z..12:36Z",
+    "method": "GET https://smartsite.cloud/api/spine/property-atoms/<id>/facets (customer surface) and GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/<id>/facets (the PE spine's own cortex proxy; used because direct TLS to the cortex-api-*.run.app host fails cert-hostname validation from this workstation — see environmentalDeviation)",
+    "rows": [
+      {
+        "parcel": "48453:134392",
+        "panel": { "http": 200, "xPeReadPath": "record", "cityLimitsFact": { "status": "incorporated", "etjStatus": "unresolved", "source": "tx_city_boundary", "basis": "parcel_record cityLimits: incorporated, city 'Austin' (source: landing_parcel_jurisdiction, vintage: 2026-09-17T19:23:36.801Z).", "cityName": "Austin", "queryPointKeyPresent": false } },
+        "cortex": { "http": 200, "bytes": 26437, "cityLimitsFact": { "status": "incorporated", "etjStatus": "present", "source": "tx_city_boundary", "cityName": "Austin", "queryPoint": { "longitude": -97.85514, "latitude": 30.35297 }, "etjFact": { "status": "present", "source": "tx_etj_boundary", "cityKey": "austin-tx", "cityName": "Austin", "ringLabel": "AUSTIN 2 MILE ETJ", "etjId": "austin-tx:39", "sourceCitation": "https://services.arcgis.com/0L95CJ0VTaxqcmED/arcgis/rest/services/BOUNDARIES_jurisdictions/FeatureServer/0", "basis": "point-in-polygon against tx_etj_boundary etj_id=austin-tx:39 (Austin: \"AUSTIN 2 MILE ETJ\", ring 39)" } } },
+        "verdict": "present -> unresolved. Also confirmed: the panel drops the cortex fact's queryPoint entirely (queryPointKeyPresent false), which is the same wholesale-replacement defect F21 named for queryPoint."
+      },
+      {
+        "parcel": "48209:97658",
+        "panel": { "cityLimitsFact": { "etjStatus": "unresolved" } },
+        "cortex": { "http": 200, "bytes": 23959, "cityLimitsFact": { "status": "incorporated", "etjStatus": "absent", "source": "tx_city_boundary", "cityName": "San Marcos", "queryPoint": { "longitude": -97.92589, "latitude": 29.8719 }, "etjFact": { "status": "absent", "source": "tx_etj_boundary", "coveredBy": ["san-marcos-tx"], "ringsConsulted": 1, "basis": "point-in-polygon against 1 published ETJ ring(s) from 1 publisher(s) whose own published extent covers this point (san-marcos-tx); no published ETJ ring contains it, so ETJ is verified absent here" } } },
+        "verdict": "checked absence -> unresolved. A verified absence is served as 'we did not look'."
+      }
+    ],
+    "wireShapeFinding": "The ETJ determination is NOT a root sibling. It lives at cityLimitsFact.etjStatus (top level of the fact) AND at cityLimitsFact.etjFact.{status,source,basis,cityKey,cityName,ringLabel,etjId,sourceCitation,coveredBy,ringsConsulted,queryPoint} (nested). There is no top-level etjFact key on the cortex payload (top-level keys verified: parcelNodeId, adapterKey, source, snapshotAt, facets, tier2, floodHazardFact, landUseFact, specialDistrictFact, pipelineFact, wellFact, buildingFootprintFact, boundaryEdgeFact, ownerFact, structuralFact, cityLimitsFact, utilityServiceFact, overlayDistrictsFact, agValuationFact, schoolDistrictFact, maxImperviousCoverPctFact, valueHistoryFact, setbacksFact, setbackRulesFact, parcelAreaSqFtFact, maxHeightFtFact, maxLotCoveragePctFact, maxFootprintSqFtFact).",
+    "conflictIsLive": "48453:134392 is itself the conflict case: cityLimitsFact.status = incorporated AND etjFact.status = present. The situs of 48453:134392 per the P-204 artifact is '3128 Edgewater Dr, Travis County (unincorporated, inside Austin's 2-mile ETJ; P-241 pre-registered falsifier #1)'. Mechanism NOT settled by this lane (dispatch: 'Measure; do not pick') — see mechanismQuestions below."
+  },
+
+  "writeSiteCensus": {
+    "countingRule": "every occurrence of the token etjStatus in non-test production source of hauska-map at cfe23197 that either WRITES (emits a value onto a payload/type) or SUPPRESSES (rejects/replaces/drops) a determination. Read-only display reads that merely pass a value through are listed separately.",
+    "writeOrSuppressSites": [
+      { "id": "W1", "file": "apps/property-explorer/api/_lib/pe-record-to-facets.ts", "line": 212, "what": "composeCityLimits — refused-cell branch: `etjStatus: \"unresolved\"` literal", "changed": true },
+      { "id": "W2", "file": "apps/property-explorer/api/_lib/pe-record-to-facets.ts", "line": 226, "what": "composeCityLimits — absent-verified branch: `etjStatus: \"unresolved\"` literal", "changed": true },
+      { "id": "W3", "file": "apps/property-explorer/api/_lib/pe-record-to-facets.ts", "line": 232, "what": "composeCityLimits — kind=value but unusable city name: `etjStatus: \"unresolved\"` literal", "changed": true },
+      { "id": "W4", "file": "apps/property-explorer/api/_lib/pe-record-to-facets.ts", "line": 239, "what": "composeCityLimits — incorporated branch: `etjStatus: \"unresolved\"` literal", "changed": true },
+      { "id": "W5", "file": "apps/property-explorer/api/_lib/pe-record-to-facets.ts", "line": 889, "what": "recordUnavailableCityLimits — declared /record outage: `etjStatus: \"unresolved\"` literal", "changed": true },
+      { "id": "W6", "file": "apps/property-explorer/api/_lib/atom-chain-to-facets.ts", "line": 654, "what": "CityLimitsFactWire TYPE: `etjStatus: \"unresolved\"` — a single-member literal type, so no other state is even representable on the wire", "changed": true },
+      { "id": "W7", "file": "apps/property-explorer/api/_lib/atom-chain-to-facets.ts", "line": 1539, "what": "isCityLimitsFactWire guard: `if (o.etjStatus !== \"unresolved\") return false;` — REJECTS any cortex-sourced fact carrying a real determination, so the whole fact (status, cityName, queryPoint, etjFact) never reaches payload.cityLimitsFact", "changed": true, "note": "this is the site that makes the determination unreachable, one layer BEFORE the composers overwrite it. Found by reading, then confirmed by the live queryPointKeyPresent:false measurement" },
+      { "id": "W8", "file": "apps/property-explorer/api/_lib/pe-property-atoms.ts", "lines": "641-646", "what": "withPreservedQueryPoint — applyRecordPatch replaces the WHOLE cityLimitsFact and carries across only queryPoint; the determination and etjFact are dropped", "changed": true },
+      { "id": "W9", "file": "apps/property-explorer/src/lib/fact-sheet-resolver.ts", "line": 1276, "what": "cityLimitsFromInspectWire: `const etjStatus = str(fact.etjStatus) ?? \"unresolved\";` — a SIXTH literal, a defaulting fallback on the consumer side (the dispatch named 'at least five'; this is the one it suspected might exist)", "changed": true },
+      { "id": "W10", "file": "packages/parcel-fact-sheet/src/index.ts", "line": 480, "what": "cityLimits Fact value type: `etjStatus: string` — read-only carrier, no write; left as string (not narrowed) deliberately so a sealed sheet from an older resolver stays valid", "changed": false },
+      { "id": "W11", "file": "apps/property-explorer/src/lib/baked-facets.ts", "line": 438, "what": "CityLimitsFactCardInput.etjStatus?: string — read-only carrier", "changed": false }
+    ],
+    "sitesOutsideThisLane": [
+      { "repo": "hauska-engine", "what": "the site-plan report model and feasibility model hardcode etjStatus (carried from the P-204 close: 'engine site-plan report-model.ts / feasibility-model.ts hardcode etjStatus'). Different repo, not this PR.", "action": "reported in close as a bypass; not fixed here" },
+      { "repo": "legacy-design-tools", "what": "cortex-api loadCityLimitsFactForServe / overlayEtjStatus / loadEtjFact — the authoritative path, which is CORRECT today", "action": "not touched (dispatch: 'you do NOT fix the cortex side')" }
+    ]
+  },
+
+  "designDecision": {
+    "oneWriter": "A single new module, apps/property-explorer/api/_lib/pe-etj-determination.ts, owns the transition from (cityLimits status, raw ETJ determination in hand) to the served four-state etjStatus + carried etjFact + declared etjConflict. Both adoption points call it: (a) atom-chain-to-facets.ts withCityLimitsFact (cortex-root adoption) and (b) pe-record-to-facets.ts composeCityLimits / recordUnavailableCityLimits (record composition and outage). No second implementation of the rule exists, so there is nothing for a divergence test to police (DEV_PROCESS 2.4).",
+    "fourStates": "etjStatus is widened from the single literal 'unresolved' to the union \"present\" | \"absent\" | \"unresolved\" | \"conflicting\".",
+    "idempotency": "The resolver's raw input is cityLimitsFact.etjFact.status when a valid etjFact block is present, else the top-level etjStatus; a served 'conflicting' maps back to raw 'present'. This makes normalisation idempotent across the two adoption points (the cortex-root fact is normalised first, then the record composer re-reads it as its prior) without adding a second field, and it is lossless because 'conflicting' is produced only by incorporated + raw present.",
+    "conflictRule": "conflicting is emitted ONLY for (cityLimitsStatus == incorporated AND raw etj == present). incorporated+absent and unincorporated+present are coherent and serve absent / present respectively. That is exactly the dispatch's rule; anything broader would invent a conflict the dispatch did not ask for.",
+    "neverDerive": "If neither etjFact.status nor a present/absent top-level etjStatus is in hand, the state is unresolved and basis gains an explicit reason. ETJ is never derived from city limits and city limits is never derived from ETJ.",
+    "cardDisplay": "fact-sheet-resolver.ts's etjSuffix gains present / conflicting branches and loses its `?? \"unresolved\"` default, so the row a customer reads reflects the served state instead of a fallback literal."
+  },
+
+  "mechanismQuestions": {
+    "stated": "The dispatch requires a SECOND mechanism to be stated before settling on one for the incorporated+present co-occurrence, and says 'Measure; do not pick.'",
+    "candidates": [
+      "M1 — the city-limits read is the wrong one: landing_parcel_jurisdiction reports the jurisdiction that governs the point (the city, whose ETJ it is), not whether the point is inside city limits; an ETJ parcel would then read 'incorporated' falsely.",
+      "M2 — the ETJ ring is drawn to the city's outer boundary or is a limited-purpose annexation the city treats as not-in-ETJ.",
+      "M3 — the ETJ ring is stale relative to the current city limits.",
+      "M4 — the city-limits read is stale relative to a recent annexation.",
+      "M5 — both reads are correct and the parcel is genuinely both in city limits and in a published ETJ ring (a data defect on the ETJ publisher side)."
+    ],
+    "howMeasured": "M1/M4 are distinguishable from M2/M3/M5 only against the stores (tx_city_boundary / tx_etj_boundary / landing_parcel_jurisdiction). This lane's reachable credential set is being checked at CP2; the dispatch's item 4 (co-occurrence count) is the decisive read and is reported either way. If no store credential is reachable from this seat, the close says so explicitly rather than substituting a guess (P-204's own close has the precedent: its close names the same credential gap)."
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1-revert",
+      "statement": "Pre-fix code serves 'unresolved' for a payload carrying a real determination; post-fix code serves the determination.",
+      "fixture": "a payload whose cityLimitsFact carries etjStatus 'present' (raw present) with cityLimits status unincorporated — the coherent ETJ case",
+      "expectedPostFix": "etjStatus 'present', etjFact carried",
+      "expectedPreFix": "etjStatus 'unresolved'",
+      "method": "run the same fixture against the branch tip and against the parent commit (git stash / git show), both directions shown",
+      "wouldProveItWrong": "post-fix still serving 'unresolved', OR pre-fix already serving 'present' (which would mean the defect is not where the dispatch says)"
+    },
+    {
+      "id": "F2-agreeing-control",
+      "statement": "A payload carrying 'absent' serves 'absent'; a payload carrying no determination serves 'unresolved' WITH its reason.",
+      "fixture": "48453:134392's real shape for the absent case (48209:97658: incorporated + etj absent) and a payload with no etjFact and etjStatus 'unresolved'",
+      "expectedPostFix": "absent -> etjStatus 'absent'; no determination -> etjStatus 'unresolved' and a non-empty reason naming that no determination was in hand",
+      "wouldProveItWrong": "absent being served as 'unresolved' (i.e. the fix only handles present), or an unresolved with an empty/absent reason (a default wearing a declaration)"
+    },
+    {
+      "id": "F3-conflict",
+      "statement": "An incorporated + present payload serves the declared conflict; a fixture that forwards 'present' verbatim FAILS the test.",
+      "fixture": "48453:134392's exact live shape (status incorporated, cityName Austin, etjStatus present, etjFact.status present with ringLabel 'AUSTIN 2 MILE ETJ' and etjId 'austin-tx:39')",
+      "expectedPostFix": "etjStatus 'conflicting', etjConflict block carrying BOTH sources (tx_city_boundary / landing_parcel_jurisdiction and tx_etj_boundary) and BOTH bases",
+      "falsifierShape": "a second, deliberately wrong expectation asserting etjStatus === 'present' for the same fixture must FAIL — proving the test discriminates rather than merely passing",
+      "wouldProveItWrong": "incorporated+present served as a clean 'present', or either side of the conflict silently dropped"
+    },
+    {
+      "id": "F4-never-default",
+      "statement": "No code path invents a determination from city limits (or the reverse), and no path defaults a missing determination into something other than 'unresolved'.",
+      "method": "source census of the token etjStatus in the panel path after the change (expect exactly one writer module + the type + the read-only carrier/display), plus a fixture with cityLimits status incorporated and NO etjFact/etjStatus expecting 'unresolved'",
+      "wouldProveItWrong": "any surviving literal (other than the honest unresolved-with-reason) or any branch reading cityLimits status to produce present/absent"
+    },
+    {
+      "id": "F5-querypoint-not-regressed",
+      "statement": "The F21 queryPoint carry-through still holds, and now the determination survives the same wholesale replacement.",
+      "method": "existing F21 tests must stay green unchanged",
+      "wouldProveItWrong": "any F21 test going red"
+    }
+  ],
+
+  "bypassesKnownAtCP1": [
+    { "path": "the MCP depth-`node` response (apps/property-explorer/api/spine-deep.ts)", "status": "to be read and reported at CP2" },
+    { "path": "the share view (api/pe-share-view.ts + api/_lib/pe-share-view-compose.ts) and the shared dossier/brief (pe-share-dossier.ts / pe-share-brief.ts / pe-dossier-export-core.ts)", "status": "to be read and reported at CP2" },
+    { "path": "the PDF / site-plan report surface (hauska-engine, different repo)", "status": "named from the P-204 close (report-model.ts / feasibility-model.ts hardcode etjStatus); cannot be changed from hauska-map, reported" },
+    { "note": "The token etjStatus appears in NO other hauska-map file outside the write sites, tests and the read-only carriers listed above (verified by case-insensitive token grep over the whole repo at cfe23197). That bounds the bypass search to the share/MCP/dossier paths that consume the SAME facets payload without re-reading the field." }
+  ],
+
+  "environmentalDeviation": "Direct HTTPS to https://cortex-api-tds7av26va-uc.run.app from this workstation fails certificate hostname validation (the presented certificate covers *.a.run.app / *.run.app-regional names but NOT <svc>-<hash>-uc.run.app) under both Invoke-WebRequest and node fetch with --use-system-ca. Evidence for the cortex leg was therefore taken through the customer surface's own cortex proxy, GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/<id>/facets, which is the same upstream the panel reads and returns HTTP 200 with the full cortex body (26,437 / 23,959 bytes). Recorded rather than worked around silently; no credential was rotated and no TLS verification was disabled.",
+
+  "constraintsHonored": [
+    "no store writes",
+    "no deploys",
+    "no merges",
+    "county 48491 (Williamson) untouched",
+    "FAN-DEPTH 0 — no sub-agents launched; this lane does the work itself",
+    "branched from current origin/main (cfe23197) in hauska-map; SHA declared"
+  ],
+
+  "openAtCP1": [
+    "co-occurrence count (item 4) — store reachability not yet established from this seat",
+    "share-view / MCP-depth / dossier bypass sweep not yet read",
+    "card display wording for present/absent/conflicting not yet fixed (deliberately: the wire state is the contract, the display follows it)"
+  ]
+}

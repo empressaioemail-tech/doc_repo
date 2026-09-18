@@ -1,0 +1,59 @@
+{
+  "lane": "p327-retirement-gate-roll",
+  "planRows": ["P-327"],
+  "kind": "checkpoint-1 (pre-registration: the falsifiers and what would prove each wrong)",
+  "filedAt": "2026-09-18T13:22:00Z",
+  "filedAtBasis": "HONEST DEVIATION, declared rather than backdated: P-319's CP1 was filed before its work and this one was not. It is written after the change and after the falsifiers ran, so its value as a PRE-registration does not come from this file's timestamp -- it comes from the dispatch, which pre-registered all four falsifiers in its own text before the lane opened ('Verify by violation'). This file records those four, adds the disproof condition for each (which the dispatch did not state), and marks which of them the lane had to revise once measured. A reader who wants the true pre-registration should read the dispatch, not this file.",
+  "missionPremise": "P-319's own close named this row in both `contradicted` and `leave_behind`: `src/lib/publish-retirement-gate.mjs` computes its retirement set difference against `txgio_parcel` (via the coverage floor's `resolveParcelSource`) while the bake retires against `cad_property` at the county's declared tax_year. The counterexample is in the program's own numbers: `txgio_parcel` holds every Williamson R id, so the gate as built measures 0 R-keyspace retirements, yet the 2026-09-10 bake (run 848afd72) retired all 282,569 R nodes because the declared 2026 roll holds no R ids. Whether that retirement was right is a separate question -- the point is that the gate's number disagreed with the writer's by 282,569, and P-320's blast-radius share inherits the same proxy (dispatch, 'Why this row exists').",
+  "theReaderAndItsVintage": {
+    "whatTheBakeReads": "LDT `nodeFacetBakeTier1Conformant.ts` `buildConformantTier1Payload`: `apn = parcelNodeId.split(\":\")[1]` looked up in `cadPropertyRoll.byPropId`, which `joinIntegrityGate.ts` `fetchCountyCadPropertyRoll` builds with `SELECT ... FROM cad_property WHERE county_fips = $1 AND tax_year = $2` -- ALL rows, bare string equality, no crosswalk, no trim. A miss with the roll consulted is a retirement.",
+    "pinRead": "bae48d406f7595af3d47111b558d0ebc3efd9c56 (the pin `cloudbuild.publish.yaml` built the 2026-09-17 run from)",
+    "vintageSource": "src/config/cad-declared-vintages.mjs, the factory's existing mirror of LDT `lib/cad-ingest/src/vintage.ts`, already drift-guarded by scripts/check-ldt-vintage-drift.mjs. Reused, not copied -- the dispatch forbids copying a vintage table.",
+    "undeclaredBehaviour": "refuse, never zero: PUBLISH_RETIREMENT_VINTAGE_UNDECLARED, the same fail-closed direction as the existing CADROLL_VINTAGE_UNDECLARED path"
+  },
+  "theDestructiveRuleThisLaneChose": "Only NEW retirements are destructive. destructive = sum(newRetirements) over keyspaces. destructiveShare = destructive / population. A row the bake would RE-stamp retired is a re-retirement: it is counted, reported per keyspace and on the run_event, and excluded from destructive and from the share. Reasoning: the writer's loss is the transition live -> retired; re-stamping an already-retired slice destroys nothing further, and letting it into the share would let a county with one large previously-retired keyspace mask a genuine new retirement beside it (and would let a re-run of an old incident look like the incident, which is noise, not signal).",
+  "preRegisteredPredictions": [
+    {
+      "id": "F1",
+      "shape": "the 2026-09-10 shape: txgio_parcel holds every R id, the declared 2026 roll holds none, 282,569 R nodes live",
+      "prediction": "the pre-P-327 gate measures 0 retirements and PASSES; the P-327 gate measures 282,569 NEW retirements on a keyspace the roll cannot hold and REFUSES with PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED",
+      "wouldProveItWrong": "the fixed gate passing the shape (it would mean the reader still cannot see the whole served keyspace go), OR the fixed gate refusing with a measured `destructive` count rather than an `unaccounted` one (it would mean the overlap rule no longer distinguishes 'the roll cannot hold these ids' from 'the roll holds these ids and they are gone')",
+      "method": "revert-and-run: the same fixture through the pre-P-327 module (git show HEAD:src/lib/publish-retirement-gate.mjs) and the P-327 module, one process, same inputs"
+    },
+    {
+      "id": "F2",
+      "shape": "the 2026-09-17 shape: numeric served nodes absent from the roll",
+      "prediction": "refuses as today -- the fix must not lose the refusal P-319 shipped",
+      "wouldProveItWrong": "the shape passing, OR refusing with a different code than P-319's tests assert",
+      "method": "the P-319 suite re-pointed to the new reader, plus the P-327 suite's own fixture"
+    },
+    {
+      "id": "F3",
+      "shape": "a healthy county: served ids present in the roll",
+      "prediction": "passes, with a small stated share, and the per-keyspace numbers on the pass",
+      "wouldProveItWrong": "a refusal, or a pass that reports a share it did not measure, or a `destructive` count that includes re-retirements",
+      "method": "fixture + the six-county census (the census is the same claim on live data)"
+    },
+    {
+      "id": "F4",
+      "shape": "the six Phase-0 counties, read-only, against the live store, under the heavy-scan lease",
+      "prediction": "no county falsely refuses; and Williamson's served numeric ids either DO or DO NOT overlap the declared 2026 roll -- settled by measurement, because the P-319 lane's R6 reading says they do not and this lane may not inherit it",
+      "wouldProveItWrong": "any county refused on a store state that is not a real new retirement (a false refusal is the cost this lane could impose on the program), or a census that cannot say which reader produced its numbers",
+      "method": "scripts/p327-retirement-census.mjs, new in this lane, read-only, refusing to run at all if DESTRUCTIVE_WRITE_AUTHORISATION is set"
+    }
+  ],
+  "thePredictionThisLaneAddedAfterMeasuring": {
+    "id": "F5 (added, not pre-registered)",
+    "what": "The bake has TWO retirement writers and they read DIFFERENT tables. The second -- the P-180 wave-6 account-keyed pass -- tests every work id's membership in the RESOLVED PARCEL TABLE (`partitionAccountKeyedWork(work, txgioPropIds)` over `joinParcelRows(...)`'s `byPropId`, gated on the blocked ledger) and retires the ones that miss, under the authority string `\"<County> County GIS published parcel index (txgio_parcel) for county_fips <fips>\"`.",
+    "whyItWasNotPreRegistered": "The dispatch and A-212 both describe the incident's writer as a set difference against the published parcel index, and P-319's own close corrected that to `cad_property`. Both are true of DIFFERENT comparisons in the same publish path. This lane found the third position -- the index membership test as a WRITER -- only by running the census and asking why 319,480 numeric rows carried a txgio_parcel authority when the gate that was supposed to have measured them read txgio_parcel and reported 0.",
+    "consequence": "It is the reason this lane's close says the hazard is not closed. A pre-bake refusal cannot cover a writer inside the bake."
+  },
+  "whatThisLaneWillNOTDo": [
+    "No store writes, no publishes, no deploys, no merges (dispatch constraint). County 48491 read-only in every store.",
+    "No sub-agents: FAN-DEPTH 0.",
+    "No change to src/jobs/parcel-record-fill.mjs -- another lane (P-335) is in flight on that file.",
+    "No second vintage table, no copy of LDT's vintage list.",
+    "No LDT-side change. The bake's own comparison, and the account-keyed pass, stay exactly as they are at the pin; this lane hands them to P-351 with the measurement that names them."
+  ],
+  "theAdversarialQuestionThisCheckpointAsksOfItself": "The reader is now the right table. Is the NUMBER the right number? A set difference is only as good as its denominator and its keyspace, and this lane's own census is the first thing that could contradict it: if the live store showed a county where the fixed gate reports new retirements that the bake would not actually perform -- or reports none where the bake would empty a keyspace -- then re-pointing the reader has moved the disagreement rather than closed it. The census was run to be able to say which."
+}

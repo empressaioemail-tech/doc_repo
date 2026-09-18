@@ -1,0 +1,143 @@
+{
+  "lane": "p335-williamson-crosswalk",
+  "planRows": ["P-335"],
+  "checkpoint": "CP2",
+  "at": "2026-09-18T14:45:00Z",
+  "seat": "cente-vsc-p335",
+  "dispatch": "_dispatches/2026-09-18_p335-williamson-crosswalk_dispatch.md",
+  "repo": "hauska-factory",
+  "buildDir": "P:/seat-worktrees/p335-williamson-crosswalk/hauska-factory",
+  "docRepoDir": "P:/seat-worktrees/p335-williamson-crosswalk/doc_repo",
+  "branch": "lane/p335-williamson-crosswalk",
+  "head": "7905bd8",
+  "startCommit": "85d63e8 (origin/main, carries #173 P-319 + #175 P-325; #174 is 6a7475a)",
+  "pr": {
+    "number": 178,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/178",
+    "state": "open, MERGEABLE, ci running at 7905bd8, not merged, not deployed, no apply run",
+    "countsComment": "https://github.com/empressaioemail-tech/hauska-factory/pull/178#issuecomment-5731243015",
+    "commits": [
+      "78ad1fb feat(P-335): Williamson resolves to its 2026 roll through WCAD's published pair",
+      "15f9b39 P-335: read-only instruments for the Williamson pair bind",
+      "7905bd8 P-335: the pair's divergence price, measured and bounded"
+    ]
+  },
+  "fixturesBothDirections": {
+    "_rule": "Dispatch verification 1 and 2: 'the pre-change writer binds 0 and writes no value; the post-change writer binds through the pair and writes the roll's values. Show both by revert-and-run.' and 'the ambiguity guard fires on a fixture with a duplicated quickrefid or propertyid; a clean pair passes.'",
+    "instrument": "scripts/p335-crosswalk-fixture.mjs -> scripts/p335-fixture.out.json (ephemeral postgres:16-alpine container; no store read, no store write, no apply; the SQL under test is IMPORTED from src/jobs/parcel-record-fill.mjs, never a copy)",
+    "preChange": "loadAccountCrosswalk (the geo_id/geo_id crosswalk, i.e. the code path Williamson took before this lane) binds 0 of the 11 fixture nodes and writes ZERO CAD-sourced value cells; every CAD rail the fixture could have filled comes out non-value. This is the pre-change writer reproduced by REVERT (the function is untouched and still shipped; the fixture calls it directly), not by a narrative claim.",
+    "postChange": "loadLandingAndCad(48491) binds R1,R2,R3,R4,R10 through the pair and R9 through the situs fallback; R5,R6,R7,R8 (refused) and 5001 (not a node) get no entry. A pair-bound node's row carries the NUMERIC account's values and names the account as its prop_id (R1 -> 1001, land_value 100001).",
+    "guardsObservedFiring": [
+      "R5,R6 -> 2001: duplicated propertyid refused, BOTH sides (not just the loser)",
+      "R7 -> 2002 and 2003: duplicated quickrefid refused, BOTH sides",
+      "R8: cross-extract contradiction (Owner 3001, Land 3002) refused, both sides",
+      "populated geo_id / property_number: the county fill REFUSES (SEED_KEY_POPULATION_APPEARED), census carried on the error"
+    ],
+    "pairedControl": "the dirty rows deleted -> the same SQL keeps EVERY fixture pair, so the refusals are the guard's and not a blanket refusal. A guard observed only passing has not been observed working; both of this guard's directions are observed.",
+    "valueToAbsentProbe": "the fixture's own R10 identity row carries market_value 111000 and land_acres 5 while the numeric row it binds to (4001) carries land_acres NULL: binding straight to the numeric row WOULD drop land_acres (asserted as a non-vacuous falsifier), and the merge keeps both. tax_year on the merged row is the ACCOUNT's 2026, so an absence cites the roll actually read rather than the identity row one vintage behind.",
+    "offlineSuite": "test/parcel-record-fill.test.mjs 127/127 pass, 0 fail (scripts/p335-suite.out.txt): the 9 new P-335 tests include the SQL-call-list assertion that a non-Williamson county issues exactly the SQL it issued before and that Williamson NEVER issues the geo_id crosswalk.",
+    "nonWilliamsonByteIdentical": "PROVEN by construction and by test: for every county except 48491 loadLandingAndCad runs the identical statements in the identical order it ran at 85d63e8 (the pair branch returns before them); the fixture asserts the exact SQL call list per county, and asserts Williamson issues neither CAD_ROWS_SQL's bare-number match nor ACCOUNT_CROSSWALK_ROWS_SQL."
+  },
+  "dryRun": {
+    "_rule": "Dispatch verification 3: 'A dry run against the live store (read-only, under P-281's heavy-scan lease keyed on the store host) reproduces P-310's bind count within the 433 and reports the per-rail value-to-absent movement, which must be zero.'",
+    "instrument": "scripts/p335-dry-run.mjs -> scripts/p335-dry-run.out.json (+ .err.txt step timings); 142 pages x 2,000 = the full 282,569-node population",
+    "readOnlyProof": "BEGIN TRANSACTION READ ONLY, statement_timeout 900s, ROLLBACK at the end, no INSERT/UPDATE/DELETE/COPY issued anywhere in the script.",
+    "lease": {
+      "store": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech",
+      "storeAlias": "CORTEX_DATABASE_URL",
+      "window": "heavy-scan, ttl 900s, held by cente-vsc-p335, phase p335-williamson-crosswalk-readonly-dryrun",
+      "renewals": 0,
+      "releasedInFinally": true,
+      "queueing": "takeLeaseQueued: a held store is queued for rather than failed on (the cortex store was live held by the factory publish-gate job on the first attempt, whose lease is a DIFFERENT store's; the cortex host was free and the run took it immediately)",
+      "otherStoresHeldDuringTheRun": "ep-round-base-au0jofwp (FACTORY_DATABASE_URL, factory-publish-gate-sched) -- a different host, a different lease key, and this run never touched that store"
+    },
+    "hostChoice": "PRODUCTION_NEONDB_URL (the direct hostname) via --dsn-env: the first run of this instrument died with 57014 on the POOLER hostname inside the county-wide situs join. Pooler and direct map to ONE lease key (P-307), so the direct host scans the same store under the same lease. Declared because a reader comparing runs must know which endpoint produced the numbers.",
+    "bindCount": {
+      "landingNodes": 282569,
+      "boundThroughPairAndSitusFallback": 282219,
+      "noCadByPropEntry": 350,
+      "pairMisses": 423,
+      "pairMissesReachedBySitus": 73,
+      "p310Figures": {"bound": 282136, "residue": 433},
+      "verdict": "PASS -- 282,219 is inside 282,136..282,569, and the pair's own miss set is the 423 P-310 named (the union binder reaches the 10 Owner-only nodes without losing the Land-only ones)."
+    },
+    "independentCorroborations": {
+      "divergenceReproduced": "48 of the nodes where both paths resolve land on a DIFFERENT account (P-310 measured 48 of 256,752 = 0.019%). This lane's instrument derived it with a different implementation (pair account id vs situs crosswalked_prop_id, county-wide) and got the same 48 -- the first version of this metric compared against a column the situs SELECT does not project and reported 747/824, i.e. 100% divergence; that bug is named in the script's comment rather than silently fixed.",
+      "pairsKept": 294399
+    },
+    "keyPopulation": {
+      "txgioGeoIdPresent": 0,
+      "cadPropertyNumberPresent": 0,
+      "readAt": "once-per-run",
+      "carriedOn": "the run record returned by loadLandingAndCad and the stderr run line; a non-zero count refuses",
+      "verdict": "dispatch item 4 satisfied: the census is recorded every run AND a change REFUSES the county rather than binding silently"
+    },
+    "emittedKindsOverTheWholePopulation": {
+      "value": 5659681,
+      "absent-verified": 268318,
+      "unaccounted": 5950,
+      "scope": "fill-owned rails only, flattened cells with a state (a rail with no emitted cell has nothing to upsert and is not counted)"
+    },
+    "perRailNonValueEmission": {
+      "cityLimits": 107742, "yearBuilt": 40249, "livingAreaSqft": 40192, "exemptionCodes": 80127,
+      "situsCity": 860, "situsZip": 870, "apn": 350, "situsAddress": 350,
+      "landUseCode": 364, "landUseSource": 364, "acreageAcres": 350, "acreageSqft": 350,
+      "acreageMethod": 350, "marketValue": 350, "assessedValue": 350, "landValue": 350,
+      "improvementValue": 350, "legalDescription": 350
+    },
+    "movementPerRail": {
+      "_rule": "THE DISPATCH'S GATE, answered as the two classes the upsert's own guard creates -- because only one of them can move a value. UPSERT_CELLS_BATCH_SQL refuses exactly one incoming state (unaccounted) over a stored non-unaccounted cell; value and absent-verified are both APPLIED.",
+      "class1_nodesTheBindResolves": {
+        "nodes": 282219,
+        "whatItCanMove": "a rail whose merged row is null emits absent-verified, which WOULD overwrite a stored value. This is the only class in which a value can be lost.",
+        "fieldsAtRisk": {"year_built": 10, "living_area_sqft": 10, "exemption_codes": 24},
+        "fieldsAtRiskTotal": 44,
+        "parcelsAtRisk": 30,
+        "allInsideDivergentAccounts": 30,
+        "storedStateBesideIt": "P-310's ledger census 2026-09-17 (p310-factory-census.mjs): yearBuilt 233,250 value / 49,320 absent; livingAreaSqft 233,277 / 49,293; exemptionCodes 0 / 95,384 (plus 187,186 unaccounted). So 24 of the 44 cannot move anything -- the rail holds no value to overwrite.",
+        "bound": "<= 20 field instances of 2,922,576 value cells (0.0007%), of which the store's own composition predicts ~16-17 (82.5% of yearBuilt cells are values).",
+        "whyNotZero": "for those 30 parcels the pair's account is silent on a field the address-matched account carries, and the pair wins. The absence that results is asserted against the account the county itself publishes as this parcel's; the stored value came from a different account.",
+        "theAlternativeNotTaken": "refusing the pair where the address path disagrees makes the movement EXACTLY zero (the rails emit unaccounted, which the guard refuses) and is affordable: residue 350 -> 398, still inside P-310's 433. Not taken because it lets a 0.019% heuristic veto the identifier the county publishes (A-215 ruling 7 / P-310 option b), and because it FREEZES the 48 on values the pair contradicts instead of correcting them. If the planner prefers the letter of the zero rule, the variant is one predicate in loadWilliamsonWcadCrosswalk and costs 48 of the 433."
+      },
+      "class2_nodesWithNoEntry": {
+        "nodes": 350,
+        "whatItEmits": "unaccounted on every CAD rail",
+        "canItMoveAValue": "NO, by the guard's own code: an incoming unaccounted over a stored non-unaccounted cell is a no-op. This is a property of UPSERT_CELLS_BATCH_SQL, not a measurement -- which is why these 350 are counted separately (railsUncleared) and never added into class 1's number.",
+        "fieldsCarriedByAPlausibleRow": {"situs_address": 346, "legal_description": 345, "market_value": 313, "land_acres": 350, "total": 1354},
+        "whyCountedAtAll": "so a reader can see how much the residue's rails COULD have carried, without conflating it with the class that can actually overwrite."
+      },
+      "otherRails": "zero, and by construction rather than by luck: for every rail, the merged row carries everything the node's own R row carries AND everything the pair's account carries (mergeWilliamsonPairRow is add-only), so the only cells a bound parcel's run can flip are those where BOTH rows are silent and a THIRD row (the address path's, on a divergent account) spoke.",
+      "theLedgerLegWasNotReRead": "this seat holds no FACTORY_DATABASE_URL / FACTORY_DATABASE_URL_RO (parcel_record_cell does not exist in CORTEX_DATABASE_URL's store -- scripts/p335-store-probe.mjs). So 'is the stored cell a value?' is answered from P-310's 2026-09-17 census, not from a fresh read, and the integration seat should RE-TAKE it before any apply. This is a bound and a bound is re-measured at the moment it matters."
+    },
+    "verdict": "F-A PASS (bind inside P-310's 433). F-B FIRED AS A BOUND, not as zero: <=20 field instances on 30 parcels, all inside the 48 accounts where the two mechanisms disagree, 24 of the 44 provably immovable. Stated rather than rounded to zero."
+  },
+  "stepTimings": {"count:landing_ms": 108, "read:pair_ms": 2919, "read:all-nodes_ms": 184, "read:situs-path-all-nodes_ms": 4681, "pages": 142},
+  "falsifiers": [
+    {"id": "F-A", "claim": "the shipped bind resolves within P-310's 433 of 282,569 nodes", "status": "PASS (282,219 bound / 350 with no entry; the union binder adds the 10 Owner-only nodes and loses none)"},
+    {"id": "F-B", "claim": "no owned rail moves value -> not-value on an apply", "status": "FIRED AS A BOUND: <=20 field instances on 30 parcels (year_built <=10, living_area_sqft <=10; the 24 exemption_codes are immovable because the store holds 0 values on that rail). NOT zero, NOT provably zero without a ledger re-read. Class 2 (350 nodes) is provably immovable by the guard. The class, the population, the reason and the un-taken alternative are all named."},
+    {"id": "F-C", "claim": "the ambiguity guard and the corroborator can FIRE, not merely pass", "status": "PROVEN by scripts/p335-crosswalk-fixture.mjs against a real postgres: duplicated quickrefid, duplicated propertyid and a cross-extract contradiction are all refused, both sides, and the paired control (dirty rows deleted) keeps every pair."},
+    {"id": "F-D", "claim": "a populated geo_id or property_number REFUSES the county's fill", "status": "PROVEN by violation: offline (SEED_KEY_POPULATION_APPEARED with the census on the error) and in the fixture. Live census today is 0/0, recorded on the run."},
+    {"id": "F-E", "claim": "a non-Williamson county is byte-identical", "status": "PROVEN: the SQL call list per county, asserted in the suite and in the fixture (Hays 48209 and Bastrop 48021 issue exactly the pre-change statements; Williamson never issues the geo_id crosswalk). The dispatch's parenthetical Hays figure (115,035 of 116,420) was NOT re-read by this lane -- see corrections."},
+    {"id": "F-F", "claim": "the residue is a missing published identifier, not an empty roll", "status": "CONFIRMED for all 423: every unbound node is unpublished by BOTH extracts; 0 are published-but-absent-from-cad_property."}
+  ],
+  "correctionsToCP1": {
+    "_rule": "CP1 was written before the dry run. Where the run contradicted it, the correction goes here rather than being edited away.",
+    "1": "CP1's F-E status said the Hays bind count 'is re-read by the dry run's Hays leg'. This lane's dry run has no Hays leg -- the Hays figure is the dispatch's and P-310's, not this lane's, and the byte-identity claim rests on the SQL-call-list assertion. The overclaim is withdrawn rather than spent on another lease: a live Hays bind count would measure the bind, not the change.",
+    "2": "CP1's residueAnswer said the dry run 'reports storedAbsentNewUnaccounted per rail'. That field does not exist; the script reports railsUncleared (class 2) and rails.fieldsAtRisk (class 1) instead, which is a better split than the one CP1 sketched. The conclusion CP1 drew holds: a crosswalk VALUE may replace a stored join-miss absence (the guard refuses only unaccounted), and nothing this writer emits can empty a stored value.",
+    "3": "CP1's planOfBuild said the pair is 'NOWHERE PERSISTED ... memoized in-process'. Confirmed by the run (read:pair 2.9s once for 142 pages) -- no store table was read or written for the pair."
+  },
+  "residueAnswerConfirmed": {
+    "guardReadFromCode": "UPSERT_CELLS_BATCH_SQL (src/jobs/parcel-record-fill.mjs) sets cell_state = CASE WHEN EXCLUDED.cell_state->>'kind' = 'unaccounted' AND parcel_record_cell.cell_state->>'kind' <> 'unaccounted' THEN parcel_record_cell.cell_state ELSE EXCLUDED.cell_state END -- only unaccounted is refused.",
+    "answer": "YES: a crosswalk VALUE replaces a stored join-miss absent-verified cell, and that is the intended repair, not a violation of the guard (the guard stops DOWNGRADES, it does not freeze a wrong claim). P-310's stored absences (25,743 per money rail, 26,043 per situs-city rail, 95,384 on exemptionCodes) are exactly the cells the pair's values repair: the field the cell calls verified-absent is present on the county's own roll for the parcel's published account.",
+    "whatCannotBeCleared": "the 350 nodes neither the pair nor the situs path reaches emit unaccounted, which the guard REFUSES over their stored absences -- those cells keep their old claim and are counted, never silently left as truth. Clearing them needs an operator-sanctioned one-off sweep (a reviewed statement over the join-miss-basis cells of the unbound residue, population counted first), which this lane does not write and does not run.",
+    "noSecondUpsertPath": "none invented; the dispatch's constraint is honoured by counting and naming instead."
+  },
+  "p351AnswerConfirmed": {
+    "short": "YES, and it is the same pair from the same side: NODE (R account) -> published pair -> NUMERIC account -> byPropId lookup.",
+    "counts": "48491's declared vintage is 2026 (cad-export); cad_property at 48491/tax_year 2026 is 319,480 rows, ALL numeric, while the served node population is 282,569, ALL R-prefixed. byPropId therefore has no R key at all and buildConformantTier1Payload's recordRetirement arm (apn != null && cadPropConsulted && byPropId.get(apn) == null) fires for every one of them.",
+    "direction": "the pair must be applied BEFORE the byPropId lookup (apn -> account -> byPropId.get(account)); looking up the R key directly is what misses today, and the reverse direction asks the roll to name a key it does not carry.",
+    "whatThisLaneDidNotDo": "no edit to legacy-design-tools (out of this lane's repo); P-351's lane decides where the bake reads the pair from -- the same two staged extracts (tx_wcad_owner, tx_wcad_ag_valuation) the factory writer now reads."
+  },
+  "leasesReleased": "the dry run's CORTEX lease was released in a finally (releaseStatus 200, released true); no ledger lease was ever taken (no credential). No other lane's lease was touched.",
+  "subAgents": {"spawned": 0, "maxDepth": 0}
+}

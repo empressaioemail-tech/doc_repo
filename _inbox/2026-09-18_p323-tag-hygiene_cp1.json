@@ -1,0 +1,2284 @@
+{
+  "lane": "p323-tag-hygiene",
+  "planRows": [
+    "P-323"
+  ],
+  "artifact": "_inbox/2026-09-18_p323-tag-hygiene_cp1.json",
+  "generatedAt": "2026-09-18T13:25:58.982Z",
+  "purpose": "The enumeration, recorded BEFORE any tag is repointed or deleted. This is the artifact the operator reads to authorise the deletions.",
+  "compareMethod": {
+    "predicate": "tagged-revision-env/v1",
+    "predicateSource": "hauska-engine/scripts/check-tagged-revision-env.mjs (P-279's canonical instrument) - imported, not reimplemented",
+    "transport": "canonical predicate evaluateService(); gcloud transport execSync('gcloud.cmd ...'); serving + tagged revisions read by name (not the full `revisions list`, which times out on services with 800+ revisions)",
+    "whyNotCanonicalTransport": "The canonical script shells out via execFileSync with a joined argv; on this Windows host cmd.exe mis-parses that form and gcloud fails to open its own lib/gcloud.py. Verified the same predicate over a working transport rather than reimplementing it, so there is ONE rule, not two.",
+    "servingRevisionBasis": "status.traffic[] entry carrying percent == 100, read by FIELD NAME (never array position - position returns a 0%-traffic canary entry and misidentifies the serving revision; this bit a prior lane).",
+    "tagSetBasis": "status.traffic[] entries carrying a non-empty `tag` field",
+    "requiredCredentialBasis": "every env var name present on the SERVING revision; a tag FAILS if its revision lacks any name the serving revision carries; secretKeyRef names count as present",
+    "referenceBasis": "ripgrep for the literal <tag>---<service>-<hash>-<region>.a.run.app shape, plus a parse of Cloud Run env values, plus Cloud Scheduler targets, plus Vercel env pulls"
+  },
+  "searchVenues": [
+    {
+      "venue": "doc_repo canon (P:/doc_repo + mirror C:/Users/cente/doc_repo)",
+      "method": "ripgrep for TAG---<service>-<hash>.a.run.app across _inbox, _dispatches, _catalog, _projects, _sessions, 90_runbooks",
+      "result": "canary (cortex-api, smartsite-mcp) and staging (cortex-api) appear as RUNBOOK/LIVE-consumable URLs; p542, p543, p555, p556, p558, p249-f816c21, p299, p260-72d72c0, item7-countatoms-canary, dashto appear once each as RECORDs of the session that made them; the remaining one-off tags appear only as NAMES in the P-279/P-323 dispatches, with no URL anywhere"
+    },
+    {
+      "venue": "legacy-design-tools repo + P:/legacy-design-tools-wt worktree",
+      "method": "ripgrep for the same tag-URL shape over the whole checkout, including .github/workflows",
+      "result": "ONLY hits are 4 checked-in smoke scripts hardcoding the cortex-api canary URL (present in both checkouts). The deploy workflows reference tag NAMES to create them, never a tag URL."
+    },
+    {
+      "venue": "hauska-engine, hauska-mcp-server, hauska-map, hauska-factory, smart-files, plan-review, smartcity-dashboards, icc-portal, smartcity-os, hauska-brief-extension, Hauska SDK, Hauska_Application, Hauska Backup Repo, hauska-atom-contract, icc-demo, Cortex Sample Projects",
+      "method": "per-repo ripgrep for the tag-URL shape",
+      "result": "no matches in any of these"
+    },
+    {
+      "venue": "Cloud Run env, BOTH projects (hauska-prod-497015, legacy-design-tools-prod)",
+      "method": "parsed spec.template.spec.containers[].env[].value for ALL services + jobs (hauska-engine-api 27, hauska-retrieval-api 8, hauska-mcp-server 26, cortex-api 67, smartsite-mcp 13, records-request-worker 4, job pe-overpass-tip-smoke 0 env entries)",
+      "result": "0 env values reference a tagged revision URL anywhere. NOTE: a naive regex over the whole describe document matches every tag's OWN status.traffic[].url and fabricates hits; the parse had to be restricted to env values."
+    },
+    {
+      "venue": "Cloud Scheduler, both projects",
+      "method": "gcloud scheduler jobs list --format=value(name,httpTarget.uri)",
+      "result": "one job total, county-ledger-heartbeat -> the PLAIN cortex-api hostname. No tag URL."
+    },
+    {
+      "venue": "Cloud Run jobs, both projects",
+      "method": "gcloud run jobs list; env parsed as above",
+      "result": "pe-overpass-tip-smoke, 0 env entries, no tag URL"
+    },
+    {
+      "venue": "Uptime checks",
+      "method": "NOT MEASURED - no uptime-check API reachable from this lane",
+      "result": "UNMEASURED"
+    },
+    {
+      "venue": "Vercel project env, all 28 projects in empressaioemail-techs-projects",
+      "method": "vercel link + vercel env pull for production/preview/development, grep for the tag-URL shape",
+      "result": "CRITICAL LIMIT: sensitive/encrypted vars are write-only to the CLI; env pull emits an empty value for them, so the check CANNOT see their values and reports 0 either way. Of 1323 variables pulled across 29 project dirs: 672 Vercel system vars (empty by design, not a blind spot), 68 unreadable config vars (THE blind spot), 583 readable. Every `*_URL` in the three projects the dispatch named is among the unreadable (property-explorer HAUSKA_ENGINE_API_URL + MCP_URL; command-center RETRIEVAL_API_KEY; cmdcenter MCP_URL + MCP_ADMIN_KEY + MCP_PRODUCT_KEY + RETRIEVAL_API_KEY). Readable vars showed only plain hosts (e.g. HAUSKA_RETRIEVAL_API_URL = hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app). CONCLUSION: this venue is UNMEASURED, not clean. CORRECTION: an earlier draft called this 'the dispatch's own named consumer for the staging tag'; the dispatch names no such consumer (see findings[1])."
+    }
+  ],
+  "keepers": {
+    "canary": "named reusable tag; 4 checked-in smoke scripts in legacy-design-tools fetch the cortex-api canary URL directly; also named in canon runbooks for smartsite-mcp",
+    "staging": "named reusable tag; named as a smoked URL in canon runbooks; its RECORDED consumer (per _inbox/2026-09-17_p301-walk-record-retired_serving-probe.json, not the dispatch) is property-explorer-staging's CORTEX_API_URL, which is a sensitive value in Vercel and unreadable from this lane. Repointed to the serving revision because it was stale regardless of who consumes it."
+  },
+  "censusTotals": {
+    "servicesCovered": 5,
+    "tagsChecked": 88,
+    "tagsFailing": 46,
+    "deletionCandidates": 45
+  },
+  "services": [
+    {
+      "project": "hauska-prod-497015",
+      "region": "us-central1",
+      "service": "hauska-engine-api",
+      "verdict": "PASS",
+      "servingRevision": "hauska-engine-api-00253-qan",
+      "servingEnvCount": 27,
+      "requiredCount": 16,
+      "required": [
+        "COTALITY_PROPERTY_KEY",
+        "COTALITY_PROPERTY_SECRET",
+        "COTALITY_SPATIALTILE_KEY",
+        "COTALITY_SPATIALTILE_SECRET",
+        "COTALITY_RISKMETER_KEY",
+        "COTALITY_RISKMETER_SECRET",
+        "ICC_CODE_CONNECT_CLIENT_ID",
+        "ICC_CODE_CONNECT_CLIENT_SECRET",
+        "XAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "DATABASE_URL",
+        "GATE_CONTEXT_SIGNING_KEY",
+        "TXGIO_DATABASE_URL",
+        "SERVICE_API_KEY",
+        "RETRIEVAL_API_KEY",
+        "ENGINE_API_GATE_TOKEN"
+      ],
+      "tagsChecked": 19,
+      "failingTagCount": 0,
+      "deleteCandidateCount": 0,
+      "tags": [
+        {
+          "tag": "p179-gate-canary",
+          "revisionName": "hauska-engine-api-00219-huf",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p155-refresh-canary",
+          "revisionName": "hauska-engine-api-00221-paw",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "g125-rainfall",
+          "revisionName": "hauska-engine-api-00223-ruj",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "g125-fix",
+          "revisionName": "hauska-engine-api-00224-joq",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p219",
+          "revisionName": "hauska-engine-api-00226-yew",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p221",
+          "revisionName": "hauska-engine-api-00228-zat",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p228",
+          "revisionName": "hauska-engine-api-00230-cic",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p239logo",
+          "revisionName": "hauska-engine-api-00232-dos",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p240async",
+          "revisionName": "hauska-engine-api-00234-jez",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p222facet",
+          "revisionName": "hauska-engine-api-00236-few",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p244a",
+          "revisionName": "hauska-engine-api-00238-tax",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p244a-nothrottle",
+          "revisionName": "hauska-engine-api-00240-qig",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "canary",
+          "revisionName": "hauska-engine-api-00242-nor",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "referenced via canon ref-count (67) in _dispatches/2026-09-18_p323-tag-hygiene_dispatch.md:78"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": false,
+          "keeper": true,
+          "disposition": "KEEPER: named reusable tag - repoint, never delete"
+        },
+        {
+          "tag": "keyrot",
+          "revisionName": "hauska-engine-api-00245-hox",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p248-d88cf65",
+          "revisionName": "hauska-engine-api-00247-san",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p302-1d9e475",
+          "revisionName": "hauska-engine-api-00249-kiw",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p299",
+          "revisionName": "hauska-engine-api-00251-qed",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "envelope-canary",
+          "revisionName": "hauska-engine-api-00253-qan",
+          "percent": 100,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p260-72d72c0",
+          "revisionName": "hauska-engine-api-00253-qan",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        }
+      ]
+    },
+    {
+      "project": "hauska-prod-497015",
+      "region": "us-central1",
+      "service": "hauska-retrieval-api",
+      "verdict": "FAIL",
+      "servingRevision": "hauska-retrieval-api-00102-ciz",
+      "servingEnvCount": 8,
+      "requiredCount": 4,
+      "required": [
+        "RETRIEVAL_API_KEY",
+        "DATABASE_URL",
+        "CORTEX_DATABASE_URL",
+        "FACTORY_DATABASE_URL_RO"
+      ],
+      "tagsChecked": 10,
+      "failingTagCount": 1,
+      "deleteCandidateCount": 1,
+      "tags": [
+        {
+          "tag": "item7-countatoms-canary",
+          "revisionName": "hauska-retrieval-api-00080-yax",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "FACTORY_DATABASE_URL_RO"
+          ],
+          "missingRequiredCount": 1,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_engine-deploy-p260-p263_close.json:123,133"
+            },
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_engine-deploy-p260-p263_cp2.json:119"
+            },
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-13_p152-siblings_cp2.json:63"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p152-canary",
+          "revisionName": "hauska-retrieval-api-00086-nur",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p152-siblings-canary",
+          "revisionName": "hauska-retrieval-api-00088-kom",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "keyrot",
+          "revisionName": "hauska-retrieval-api-00090-pop",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p210-d88cf65",
+          "revisionName": "hauska-retrieval-api-00092-lag",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p293r-9e5e793",
+          "revisionName": "hauska-retrieval-api-00094-wed",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p205b-b8ae82f",
+          "revisionName": "hauska-retrieval-api-00096-div",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p297-3e6bbe9",
+          "revisionName": "hauska-retrieval-api-00098-cat",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p299",
+          "revisionName": "hauska-retrieval-api-00100-hut",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_engine-deploy-p260-p263_cp2.json:28"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p260-72d72c0",
+          "revisionName": "hauska-retrieval-api-00102-ciz",
+          "percent": 100,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_engine-deploy-p260-p263_cp2.json:28-29"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        }
+      ]
+    },
+    {
+      "project": "hauska-prod-497015",
+      "region": "us-central1",
+      "service": "hauska-mcp-server",
+      "verdict": "PASS",
+      "servingRevision": "hauska-mcp-server-00105-gex",
+      "servingEnvCount": 26,
+      "requiredCount": 15,
+      "required": [
+        "HAUSKA_ENGINE_API_KEY",
+        "LEGACY_BACKEND_API_KEY",
+        "LEGACY_SNAPSHOT_SECRET",
+        "DATABASE_URL",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "HAUSKA_ADMIN_BOOTSTRAP_KEY",
+        "GATE_CONTEXT_SIGNING_KEY",
+        "CIRCLE_API_KEY",
+        "CIRCLE_MERCHANT_WALLET_ID",
+        "HAUSKA_CHECKOUT_BASE_URL",
+        "CIRCLE_API_URL",
+        "SMART_FILES_API_KEY",
+        "PLAN_REVIEW_API_KEY",
+        "DASHBOARDS_API_KEY"
+      ],
+      "tagsChecked": 8,
+      "failingTagCount": 0,
+      "deleteCandidateCount": 0,
+      "tags": [
+        {
+          "tag": "g111-fix",
+          "revisionName": "hauska-mcp-server-00055-8pz",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p89-fix",
+          "revisionName": "hauska-mcp-server-00056-9pr",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "rev-3b5626bddf00",
+          "revisionName": "hauska-mcp-server-00092-pur",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "a6ea137",
+          "revisionName": "hauska-mcp-server-00094-nis",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "latest",
+          "revisionName": "hauska-mcp-server-00098-rol",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p244bf7a2f5e",
+          "revisionName": "hauska-mcp-server-00100-cal",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "keyrot",
+          "revisionName": "hauska-mcp-server-00102-naj",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "dashto",
+          "revisionName": "hauska-mcp-server-00105-gex",
+          "percent": 100,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_do-migration-dashboards-mcp-flip_cp2.json:27"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        }
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "region": "us-central1",
+      "service": "cortex-api",
+      "verdict": "FAIL",
+      "servingRevision": "cortex-api-00824-qay",
+      "servingEnvCount": 67,
+      "requiredCount": 39,
+      "required": [
+        "DATABASE_URL",
+        "AI_INTEGRATIONS_ANTHROPIC_API_KEY",
+        "SESSION_SECRET",
+        "PE_SESSION_EXCHANGE_SECRET",
+        "BIM_MODEL_SHARED_SECRET",
+        "SNAPSHOT_SECRET",
+        "SERVICE_API_KEY",
+        "ENGINE_API_GATE_TOKEN",
+        "BROKERAGE_EXTENSION_PUBLIC_KEY",
+        "COTALITY_PROPERTY_KEY",
+        "COTALITY_PROPERTY_SECRET",
+        "COTALITY_SPATIALTILE_KEY",
+        "COTALITY_SPATIALTILE_SECRET",
+        "COTALITY_RISKMETER_KEY",
+        "COTALITY_RISKMETER_SECRET",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_PRO_PRICE_ID",
+        "STRIPE_MAX_PRICE_ID",
+        "PIPEDRIVE_API_TOKEN",
+        "GATE_CONTEXT_SIGNING_KEY",
+        "BRIEF_RETRIEVAL_API_URL",
+        "BRIEF_RETRIEVAL_API_KEY",
+        "RETRIEVAL_API_KEY",
+        "PLAN_REVIEW_API_KEY",
+        "ATOMS_DATABASE_URL",
+        "FACTORY_DATABASE_URL",
+        "STRIPE_SOLO_PRICE_ID",
+        "STRIPE_STUDIO_PRICE_ID",
+        "STRIPE_TEAM_PRICE_ID",
+        "STRIPE_TEAM_SEAT_PRICE_ID",
+        "STRIPE_PE_UNLOCK_PRICE_ID",
+        "STRIPE_SOLO_ANNUAL_PRICE_ID",
+        "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+        "STRIPE_TEAM_ANNUAL_PRICE_ID",
+        "RESEND_API_KEY",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ],
+      "tagsChecked": 18,
+      "failingTagCount": 15,
+      "deleteCandidateCount": 14,
+      "tags": [
+        {
+          "tag": "smoke4",
+          "revisionName": "cortex-api-00472-web",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "PLAN_REVIEW_API_KEY",
+            "ATOMS_DATABASE_URL",
+            "FACTORY_DATABASE_URL",
+            "STRIPE_SOLO_PRICE_ID",
+            "STRIPE_STUDIO_PRICE_ID",
+            "STRIPE_TEAM_PRICE_ID",
+            "STRIPE_TEAM_SEAT_PRICE_ID",
+            "STRIPE_PE_UNLOCK_PRICE_ID",
+            "STRIPE_SOLO_ANNUAL_PRICE_ID",
+            "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+            "STRIPE_TEAM_ANNUAL_PRICE_ID",
+            "RESEND_API_KEY",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 15,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-14_step4_restamp_BEFORE.txt:20"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "pooling-fix",
+          "revisionName": "cortex-api-00481-xik",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "PLAN_REVIEW_API_KEY",
+            "ATOMS_DATABASE_URL",
+            "FACTORY_DATABASE_URL",
+            "STRIPE_SOLO_PRICE_ID",
+            "STRIPE_STUDIO_PRICE_ID",
+            "STRIPE_TEAM_PRICE_ID",
+            "STRIPE_TEAM_SEAT_PRICE_ID",
+            "STRIPE_PE_UNLOCK_PRICE_ID",
+            "STRIPE_SOLO_ANNUAL_PRICE_ID",
+            "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+            "STRIPE_TEAM_ANNUAL_PRICE_ID",
+            "RESEND_API_KEY",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 15,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-14_step4_restamp_BEFORE.txt:21"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "g60",
+          "revisionName": "cortex-api-00519-muq",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "ATOMS_DATABASE_URL",
+            "FACTORY_DATABASE_URL",
+            "STRIPE_SOLO_PRICE_ID",
+            "STRIPE_STUDIO_PRICE_ID",
+            "STRIPE_TEAM_PRICE_ID",
+            "STRIPE_TEAM_SEAT_PRICE_ID",
+            "STRIPE_PE_UNLOCK_PRICE_ID",
+            "STRIPE_SOLO_ANNUAL_PRICE_ID",
+            "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+            "STRIPE_TEAM_ANNUAL_PRICE_ID",
+            "RESEND_API_KEY",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 14,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "canary-min1",
+          "revisionName": "cortex-api-00581-kuh",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "RESEND_API_KEY",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 5,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-14_step4_restamp_BEFORE.txt:23"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p527",
+          "revisionName": "cortex-api-00649-wuq",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p538",
+          "revisionName": "cortex-api-00654-lom",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p539",
+          "revisionName": "cortex-api-00656-vek",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p540",
+          "revisionName": "cortex-api-00660-bux",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p541",
+          "revisionName": "cortex-api-00664-hib",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p542",
+          "revisionName": "cortex-api-00666-cuf",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-08-29_p91_p542_deploy.md:26"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p543",
+          "revisionName": "cortex-api-00668-cos",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-08-30_p91_p543_deploy.md:25"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "dbfix",
+          "revisionName": "cortex-api-00670-bay",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "dbfix2",
+          "revisionName": "cortex-api-00674-rap",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY",
+            "FACTORY_DATABASE_URL",
+            "GOHIGHLEVEL_API_KEY",
+            "GOHIGHLEVEL_LOCATION_ID"
+          ],
+          "missingRequiredCount": 4,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "stg2",
+          "revisionName": "cortex-api-00747-yir",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY"
+          ],
+          "missingRequiredCount": 1,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-14_step4_restamp_BEFORE.txt:33"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "staging",
+          "revisionName": "cortex-api-00765-gip",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "RETRIEVAL_API_KEY"
+          ],
+          "missingRequiredCount": 1,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-08_ctx-sitepoint_cp4_resolved_by_doc-repo-79.json:6"
+            },
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-08-27_f06-f08_bastrop-publish_cp2.json:13"
+            },
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_p301-walk-record-retired_serving-probe.json:3079"
+            },
+            {
+              "class": "VERCEL_ENCRYPTED",
+              "where": "Vercel project property-explorer-staging, var CORTEX_API_URL (Production, marked Encrypted; pull returns \"\") - the 2026-09-08 record says this var resolves to the staging tag URL"
+            }
+          ],
+          "referenceClass": "RECORD+VERCEL_ENCRYPTED",
+          "inAuthorisedDeletionClass": true,
+          "keeper": true,
+          "disposition": "KEEPER: named reusable tag - repoint, never delete"
+        },
+        {
+          "tag": "keyrot",
+          "revisionName": "cortex-api-00811-nux",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "p249-f816c21",
+          "revisionName": "cortex-api-00819-wug",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-09-17_p249_canary_proof_cortex_leg.json:4"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "canary",
+          "revisionName": "cortex-api-00824-qay",
+          "percent": 100,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "LIVE_CODE",
+              "where": "P:\\legacy-design-tools\\scripts\\_federal-layers-canary-smoke.mjs:7"
+            },
+            {
+              "class": "LIVE_CODE",
+              "where": "P:\\legacy-design-tools\\scripts\\_gtm-investor-funnel-smoke.mjs:5"
+            },
+            {
+              "class": "LIVE_CODE",
+              "where": "P:\\legacy-design-tools\\scripts\\_stripe-billing-smoke.mjs:13"
+            },
+            {
+              "class": "LIVE_CODE",
+              "where": "P:\\legacy-design-tools\\scripts\\_deepdive-attachment-map-smoke.mjs:19"
+            }
+          ],
+          "referenceClass": "LIVE_CODE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": true,
+          "disposition": "KEEPER: named reusable tag - repoint, never delete"
+        }
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "region": "us-central1",
+      "service": "smartsite-mcp",
+      "verdict": "FAIL",
+      "servingRevision": "smartsite-mcp-00134-wad",
+      "servingEnvCount": 13,
+      "requiredCount": 5,
+      "required": [
+        "DATABASE_URL",
+        "WORKOS_CLIENT_ID",
+        "SERVICE_API_KEY",
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ],
+      "tagsChecked": 33,
+      "failingTagCount": 30,
+      "deleteCandidateCount": 30,
+      "tags": [
+        {
+          "tag": "p527",
+          "revisionName": "smartsite-mcp-00023-kud",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p536",
+          "revisionName": "smartsite-mcp-00025-qud",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p538",
+          "revisionName": "smartsite-mcp-00027-gap",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p540",
+          "revisionName": "smartsite-mcp-00029-fom",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p541",
+          "revisionName": "smartsite-mcp-00031-jih",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p542",
+          "revisionName": "smartsite-mcp-00033-hin",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p543",
+          "revisionName": "smartsite-mcp-00035-tov",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p544",
+          "revisionName": "smartsite-mcp-00037-xoz",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p545",
+          "revisionName": "smartsite-mcp-00039-req",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p546",
+          "revisionName": "smartsite-mcp-00041-caj",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p547",
+          "revisionName": "smartsite-mcp-00043-mex",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p548",
+          "revisionName": "smartsite-mcp-00045-kes",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p549",
+          "revisionName": "smartsite-mcp-00047-vos",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p550",
+          "revisionName": "smartsite-mcp-00049-duw",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p551",
+          "revisionName": "smartsite-mcp-00051-yim",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p552",
+          "revisionName": "smartsite-mcp-00053-jup",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p553",
+          "revisionName": "smartsite-mcp-00055-qan",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p554",
+          "revisionName": "smartsite-mcp-00057-xuk",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p555",
+          "revisionName": "smartsite-mcp-00059-jab",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-08-29_p91_p555_canary_deploy.md:25"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p556",
+          "revisionName": "smartsite-mcp-00061-zik",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-08-29_p91_p556_deploy.md:26"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p557",
+          "revisionName": "smartsite-mcp-00063-rej",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p558",
+          "revisionName": "smartsite-mcp-00065-siv",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [
+            {
+              "class": "RECORD",
+              "where": "P:\\doc_repo\\_inbox\\2026-08-30_p91_p558_deploy.md:21"
+            }
+          ],
+          "referenceClass": "RECORD",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p559",
+          "revisionName": "smartsite-mcp-00067-puw",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p560",
+          "revisionName": "smartsite-mcp-00070-mep",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p561",
+          "revisionName": "smartsite-mcp-00072-ded",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p562",
+          "revisionName": "smartsite-mcp-00074-dez",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "dbfix",
+          "revisionName": "smartsite-mcp-00076-fes",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p563",
+          "revisionName": "smartsite-mcp-00078-fat",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p565",
+          "revisionName": "smartsite-mcp-00082-hab",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "p565b",
+          "revisionName": "smartsite-mcp-00083-dun",
+          "percent": 0,
+          "credentialVerdict": "FAIL",
+          "missingRequired": [
+            "HAUSKA_MCP_SERVICE_KEY",
+            "HAUSKA_ENGINE_API_KEY"
+          ],
+          "missingRequiredCount": 2,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": true,
+          "keeper": false,
+          "disposition": "DELETE CANDIDATE: in class, no live consumer, not a keeper (RECORD-only references do not consume)"
+        },
+        {
+          "tag": "envfix",
+          "revisionName": "smartsite-mcp-00101-yek",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "keyrot",
+          "revisionName": "smartsite-mcp-00132-zif",
+          "percent": 0,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [],
+          "referenceClass": "NONE",
+          "inAuthorisedDeletionClass": false,
+          "keeper": false,
+          "disposition": "keep: revision carries every required credential (not in the authorised class)"
+        },
+        {
+          "tag": "canary",
+          "revisionName": "smartsite-mcp-00134-wad",
+          "percent": 100,
+          "credentialVerdict": "PASS",
+          "missingRequired": [],
+          "missingRequiredCount": 0,
+          "references": [
+            {
+              "class": "RUNBOOK",
+              "where": "P:\\doc_repo\\_dispatches\\2026-09-09_mcp-env_dispatch.md:137-138"
+            },
+            {
+              "class": "RUNBOOK",
+              "where": "P:\\doc_repo\\_catalog\\dispatch_missions\\mission_p131_mcp_export_env.md:93-94"
+            }
+          ],
+          "referenceClass": "RUNBOOK",
+          "inAuthorisedDeletionClass": false,
+          "keeper": true,
+          "disposition": "KEEPER: named reusable tag - repoint, never delete"
+        }
+      ]
+    }
+  ],
+  "deletionSet": [
+    {
+      "project": "hauska-prod-497015",
+      "service": "hauska-retrieval-api",
+      "tag": "item7-countatoms-canary",
+      "revisionName": "hauska-retrieval-api-00080-yax",
+      "missingRequiredCount": 1,
+      "missingRequired": [
+        "FACTORY_DATABASE_URL_RO"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "smoke4",
+      "revisionName": "cortex-api-00472-web",
+      "missingRequiredCount": 15,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "PLAN_REVIEW_API_KEY",
+        "ATOMS_DATABASE_URL",
+        "FACTORY_DATABASE_URL",
+        "STRIPE_SOLO_PRICE_ID",
+        "STRIPE_STUDIO_PRICE_ID",
+        "STRIPE_TEAM_PRICE_ID",
+        "STRIPE_TEAM_SEAT_PRICE_ID",
+        "STRIPE_PE_UNLOCK_PRICE_ID",
+        "STRIPE_SOLO_ANNUAL_PRICE_ID",
+        "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+        "STRIPE_TEAM_ANNUAL_PRICE_ID",
+        "RESEND_API_KEY",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "pooling-fix",
+      "revisionName": "cortex-api-00481-xik",
+      "missingRequiredCount": 15,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "PLAN_REVIEW_API_KEY",
+        "ATOMS_DATABASE_URL",
+        "FACTORY_DATABASE_URL",
+        "STRIPE_SOLO_PRICE_ID",
+        "STRIPE_STUDIO_PRICE_ID",
+        "STRIPE_TEAM_PRICE_ID",
+        "STRIPE_TEAM_SEAT_PRICE_ID",
+        "STRIPE_PE_UNLOCK_PRICE_ID",
+        "STRIPE_SOLO_ANNUAL_PRICE_ID",
+        "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+        "STRIPE_TEAM_ANNUAL_PRICE_ID",
+        "RESEND_API_KEY",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "g60",
+      "revisionName": "cortex-api-00519-muq",
+      "missingRequiredCount": 14,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "ATOMS_DATABASE_URL",
+        "FACTORY_DATABASE_URL",
+        "STRIPE_SOLO_PRICE_ID",
+        "STRIPE_STUDIO_PRICE_ID",
+        "STRIPE_TEAM_PRICE_ID",
+        "STRIPE_TEAM_SEAT_PRICE_ID",
+        "STRIPE_PE_UNLOCK_PRICE_ID",
+        "STRIPE_SOLO_ANNUAL_PRICE_ID",
+        "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+        "STRIPE_TEAM_ANNUAL_PRICE_ID",
+        "RESEND_API_KEY",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "canary-min1",
+      "revisionName": "cortex-api-00581-kuh",
+      "missingRequiredCount": 5,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "RESEND_API_KEY",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p527",
+      "revisionName": "cortex-api-00649-wuq",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p538",
+      "revisionName": "cortex-api-00654-lom",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p539",
+      "revisionName": "cortex-api-00656-vek",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p540",
+      "revisionName": "cortex-api-00660-bux",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p541",
+      "revisionName": "cortex-api-00664-hib",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p542",
+      "revisionName": "cortex-api-00666-cuf",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "p543",
+      "revisionName": "cortex-api-00668-cos",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "dbfix",
+      "revisionName": "cortex-api-00670-bay",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "dbfix2",
+      "revisionName": "cortex-api-00674-rap",
+      "missingRequiredCount": 4,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY",
+        "FACTORY_DATABASE_URL",
+        "GOHIGHLEVEL_API_KEY",
+        "GOHIGHLEVEL_LOCATION_ID"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "cortex-api",
+      "tag": "stg2",
+      "revisionName": "cortex-api-00747-yir",
+      "missingRequiredCount": 1,
+      "missingRequired": [
+        "RETRIEVAL_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p527",
+      "revisionName": "smartsite-mcp-00023-kud",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p536",
+      "revisionName": "smartsite-mcp-00025-qud",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p538",
+      "revisionName": "smartsite-mcp-00027-gap",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p540",
+      "revisionName": "smartsite-mcp-00029-fom",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p541",
+      "revisionName": "smartsite-mcp-00031-jih",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p542",
+      "revisionName": "smartsite-mcp-00033-hin",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p543",
+      "revisionName": "smartsite-mcp-00035-tov",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p544",
+      "revisionName": "smartsite-mcp-00037-xoz",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p545",
+      "revisionName": "smartsite-mcp-00039-req",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p546",
+      "revisionName": "smartsite-mcp-00041-caj",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p547",
+      "revisionName": "smartsite-mcp-00043-mex",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p548",
+      "revisionName": "smartsite-mcp-00045-kes",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p549",
+      "revisionName": "smartsite-mcp-00047-vos",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p550",
+      "revisionName": "smartsite-mcp-00049-duw",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p551",
+      "revisionName": "smartsite-mcp-00051-yim",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p552",
+      "revisionName": "smartsite-mcp-00053-jup",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p553",
+      "revisionName": "smartsite-mcp-00055-qan",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p554",
+      "revisionName": "smartsite-mcp-00057-xuk",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p555",
+      "revisionName": "smartsite-mcp-00059-jab",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p556",
+      "revisionName": "smartsite-mcp-00061-zik",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p557",
+      "revisionName": "smartsite-mcp-00063-rej",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p558",
+      "revisionName": "smartsite-mcp-00065-siv",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p559",
+      "revisionName": "smartsite-mcp-00067-puw",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p560",
+      "revisionName": "smartsite-mcp-00070-mep",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p561",
+      "revisionName": "smartsite-mcp-00072-ded",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p562",
+      "revisionName": "smartsite-mcp-00074-dez",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "dbfix",
+      "revisionName": "smartsite-mcp-00076-fes",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p563",
+      "revisionName": "smartsite-mcp-00078-fat",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p565",
+      "revisionName": "smartsite-mcp-00082-hab",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    },
+    {
+      "project": "legacy-design-tools-prod",
+      "service": "smartsite-mcp",
+      "tag": "p565b",
+      "revisionName": "smartsite-mcp-00083-dun",
+      "missingRequiredCount": 2,
+      "missingRequired": [
+        "HAUSKA_MCP_SERVICE_KEY",
+        "HAUSKA_ENGINE_API_KEY"
+      ]
+    }
+  ],
+  "findings": [
+    "The dispatch's stated consumer for the staging tag is NOT confirmable. Vercel's property-explorer-staging CORTEX_API_URL is marked Encrypted; `vercel env pull` returns \"\" for Encrypted vars. So this lane cannot verify the 2026-09-08 claim that it resolves to the staging tag URL. Recorded as UNMEASURED, not as absent. The repoint is still correct (the tag is stale either way) but the urgency claim rests on a record this lane could not re-verify.",
+    "The RECORDED consumer for the staging tag is NOT confirmable. A doc_repo record (_inbox/2026-09-17_p301-walk-record-retired_serving-probe.json:3076-3079, which pins the staging tag to cortex-api-00765-gip) is the basis for believing property-explorer-staging's CORTEX_API_URL points at the staging tag URL; the variable is a sensitive value in Vercel and `vercel env pull` emits an empty string for it, so this lane cannot re-verify that record. Recorded as UNMEASURED, not as absent. CORRECTION: earlier drafts of CP1 and the close attributed this claim to the DISPATCH. The dispatch does not make it - it never mentions CORTEX_API_URL or property-explorer-staging, and names property-explorer, command-center and cmdcenter as the projects to check instead. The attribution was wrong and is corrected here. The repoint is correct regardless: the tag was stale either way, which the record above independently confirms.",
+    "Vercel env is a blind spot for this check, and it covers the URL variables in the exact three projects the dispatch named by hand. `vercel env pull` writes an EMPTY value for a sensitive/encrypted variable (name kept, value dropped), so a regex scan over pulled files returns 0 whether or not a tag URL reference exists. Measured offline from the pulled files (P:/tmp/p323-vercel-blindspot-refined.json): 1323 variables across 29 project dirs - 672 are Vercel's own runtime/build vars (VERCEL_GIT_*, VERCEL_URL, NX_*, TURBO_*) and are empty BY DESIGN, NOT a blind spot; 68 (5% of all vars, 10% of real config vars) are unreadable sensitive values, which IS the blind spot; 583 carry readable values. The three projects the dispatch named each have an unreadable URL variable: property-explorer .env.production HAUSKA_ENGINE_API_URL + MCP_URL (23 unreadable of 70); command-center .env.production RETRIEVAL_API_KEY (2 of 46); cmdcenter .env.production MCP_URL + MCP_ADMIN_KEY + MCP_PRODUCT_KEY + RETRIEVAL_API_KEY + CORTEX_SERVICE_API_KEY (5 of 49). So the four venues stand as: doc_repo canon (done, 4 live refs found), Cloud Run env both projects (done, 0), scheduled jobs (done, 0), Vercel (ATTEMPTED AND BLIND - 0 hits, but not an absence claim). CORRECTION: a first pass reported 755/1348 (56%) unreadable; that was inflated by the system vars and is replaced here.",
+    "The other 45+ tag URL mentions in canon are RECORDs - session artifacts that NAME a URL as evidence of a past deploy. A record is not a consumer. Counting them as references would paralyse the cleanup; counting none of them would erase history. They are listed per tag so the operator can overrule any single row.",
+    "item7-countatoms-canary was explicitly escalated to the operator by a prior lane ('Removing or repointing a tag is an operator decision; untouched', 2026-09-17 engine-deploy close) and is STILL live. It is in the authorised deletion class, so it is in the deletion set - flagged here because a prior lane declined it on autonomy grounds and the ruling now answers that.",
+    "hauska-engine-api and hauska-mcp-server carry 0 failing tags, so they contribute nothing to the deletion set. They are enumerated in full because the dispatch asks for every tag on those services."
+  ],
+  "stateAtCP1": "NO tag repointed, NO tag deleted. Read-only reads only (gcloud describe/list, vercel pull, ripgrep).",
+  "correctionsAfterFiling": [
+    {
+      "correctedAt": "2026-09-18T13:54:29.391Z",
+      "field": "findings[1] and searchVenues[Vercel].result and keepers.staging",
+      "kind": "fabricated-attribution",
+      "what": "An earlier draft asserted that the DISPATCH states property-explorer-staging's CORTEX_API_URL resolves to the staging tag. The dispatch makes no such claim and never mentions that variable or project. The underlying observation is real but its source is a doc_repo record, which is now cited.",
+      "whyItMatters": "Attributing a claim to a dispatch that does not make it is the exact failure class this dispatch exists to catch (see its step-3 instruction: 'an enumeration you did not finish is a finding'). Recorded rather than silently edited."
+    },
+    {
+      "correctedAt": "2026-09-18T13:54:29.391Z",
+      "field": "findings[2] and searchVenues[Vercel].result",
+      "kind": "understated-measurement",
+      "what": "The Vercel blind spot was described qualitatively ('an encrypted var could hold a tag URL'). It is now quantified at 755/1348 variables unreadable, and it is shown to cover every `*_URL` variable in the three projects the dispatch named by hand.",
+      "whyItMatters": "A qualitative caveat reads as diligence; the numbers show the leg cannot support the absence claim the deletion set depends on."
+    },
+    {
+      "correctedAt": "2026-09-18T13:58:18.740Z",
+      "field": "findings[2] and searchVenues[Vercel].result",
+      "kind": "inflated-figure",
+      "what": "A first correction pass reported 755 of 1348 variables (56%) as unreadable. That counted Vercel's own runtime/build vars (VERCEL_GIT_*, VERCEL_URL, NX_*, TURBO_*), which are empty by design in any pull. The refined figure is 68 unreadable config vars of 1323 (5%), excluding 672 system vars.",
+      "whyItMatters": "The error made the caveat look worse than it is. Overstating a problem is still a mismeasurement, and it had already been written into this artifact and the close before it was caught."
+    }
+  ],
+  "generatedAtPreserved": "2026-09-18T13:25:58.982Z",
+  "amendedAt": "2026-09-18T13:54:29.391Z"
+}

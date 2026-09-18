@@ -80,12 +80,12 @@ when it starts; a row's own `Depends` in OPS-16 is the authority where they diff
 
 | Row | What | Repo | Exit | Wave | State |
 |---|---|---|---|---|---|
-| P-323 | Tag hygiene; unblocks every LDT deploy | legacy-design-tools, gcloud | 2 | 1 | compiled |
-| P-332 | Panel serves the ETJ determination, declares the conflict | hauska-map | walk | 1 | compiled |
-| P-335 | Williamson WCAD crosswalk loader | hauska-factory | 1, 2 | 1 | compiled |
-| P-327 | P-319's gate measured against the roll the bake retires from | hauska-factory | before P-350 | 1 | compiled |
-| P-342 | P-263's apply writer; the 30,434 withheld | hauska-engine | 2 | 1 | compiled |
-| P-328 | The engine's parcel-node reconcile under the shared threshold | hauska-engine | off (safety) | 1 | compiled |
+| P-323 | Tag hygiene; unblocks every LDT deploy | legacy-design-tools, gcloud | 2 | 1 | **closed partial 2026-09-18:** 45 failing tags deleted, 0 failing after, serving unchanged (Vercel leg unmeasured); generator still live (P-316); LDT deploy unblocked |
+| P-332 | Panel serves the ETJ determination, declares the conflict | hauska-map | walk | 1 | **merged #419 `163fde32`;** Vercel deploy and the lane's named probe owed (seat) |
+| P-335 | Williamson WCAD crosswalk loader | hauska-factory | 1, 2 | 1 | **merged #178 `0f4558a4`;** binds 282,219 of 282,569; movement bound needs a ruling before P-350's apply; record-fill image rebuild to be combined with P-352's |
+| P-327 | P-319's gate measured against the roll the bake retires from | hauska-factory | before P-350 | 1 | **merged #177 `807cbad8`;** publish-lane image rebuild owed (with the bake pin); P-351 scope widened (the account-keyed pass inside the bake) |
+| P-342 | P-263's apply writer; the 30,434 withheld | hauska-engine | 2 | 1 | **merged #475 `c41a1482` (and map #420);** migration 018 then the seat's county-by-county apply (Wave 2) |
+| P-328 | The engine's parcel-node reconcile under the shared threshold | hauska-engine | off (safety) | 1 | **closed; #474 HELD:** it loosens the engine's live 0.05 to the program's 0.5; operator decision owed |
 | P-336 | P-204 A and B cut over: cells written, graded, served | hauska-factory, hauska-engine, doc_repo | 1 | 2 | carded |
 | P-339, P-340, P-341 | Surface agreement: envelope reason, table disagreement, impervious; Waco XD-2 | hauska-map, legacy-design-tools | 2 | 2 (after P-332 merges) | carded |
 | P-300 with P-338 | Jurisdiction-default line, broadly; district-miss refusal names district and city | corpus, hauska-factory, surfaces | 1, 2 | 2 (after P-258's re-run) | carded |
@@ -99,6 +99,10 @@ when it starts; a row's own `Depends` in OPS-16 is the authority where they diff
 | P-352 | situsState conflict outcome (McLennan `48309:417476`, Hays `48209:88885`); phantom `48491:PRIVATE ROAD` retired and instantiation guarded | hauska-factory | 1 | 2 (after #175 deploys and P-335 merges; factory order after P-333) | carded 2026-09-18 |
 | P-353 | The map's Find box passes the coverage answer through (P-205's map half) | hauska-map | 3 | 2 | carded 2026-09-18 |
 | P-270 address half | The card's address line takes city and ZIP from the ledger (reopened on `48453:445501`: ledger ZIP 78660 and city limits Pflugerville, card shows neither); the X2 grader gains an address predicate | hauska-map, legacy-design-tools, doc_repo | 2 | 2 | reopened 2026-09-18 by P-347; needs a mission |
+| P-358 | The PDF forwards the ETJ determination (report-model, pdf/feasibility hardcode it) | hauska-engine | walk | 2 | carded 2026-09-18 |
+| P-359 | ETJ rings that contain their own city; 24 invalid rings | legacy-design-tools (tx_etj_boundary) | walk | 2 | carded 2026-09-18 |
+| P-360 | Probe legs for P-332 (etjStatus) and P-327 (retirement verdict) | doc_repo | 2 | 2 (after P-332 deploys) | carded 2026-09-18 (seat) |
+| P-361 | Threshold 0.05 program-wide (A-220): factory declaration, #474 re-pinned and merged, factory CI reads the engine's copy | hauska-factory, hauska-engine | off (controls) | 2 | carded 2026-09-18, widened by A-220 |
 
 **Factory merge order in wave 2**, one at a time, each re-greened against the base it merges into:
 P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writer half.
@@ -131,6 +135,9 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 | ~~A client identity for the probe's sign-in helper~~ | done 2026-09-18 (A-218) | `client_01M2TETZ4K9N2Z48KBJRD46ABF`, "Smart Site MCP Probe", public, PKCE; the probe's default |
 | Sign in when the probe runs (ruling 9, A-216) | Exit leg 2 | The seat will say when; converts 33 UNMEASURED buckets |
 | ~~Roads (ruling 8)~~ | done 2026-09-18 (A-218) | Accepted for Phase 0 in all six counties |
+| ~~P-328's threshold~~ | done (A-220) | 0.05 program-wide; P-361 carries it |
+| ~~P-335's movement bound~~ | done (A-220) | The pair is authoritative; the 30 parcels are listed in P-350's apply record |
+| ~~P-323's deleted retrieval tag~~ | done (A-220) | The deletion stands |
 | Williamson production publish go (P-350) | Exit legs 1 and 2 | After staging passes |
 | The walk (ruling 18) | Exit leg 5 | After the clean re-run |
 | P-294's first automated production run | off | After its dry cycle |
@@ -179,6 +186,8 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 15:20 | A-220: threshold 0.05 program-wide (P-361 widened; #474 stays held until it re-pins); P-335's pair authoritative; P-323's tag deletion stands; commit go on the Wave 1 batch. |
+| 2026-09-18 15:10 | A-219: Wave 1 integrated. Merged map #420 and #419, engine #475, factory #177 then #178 (each re-greened); engine #474 held for the threshold decision. Probe-close gate ranges brought back in line with the registry (the wave had been ungated). P-354 compiled. P-358 to P-361 carded. Hays: 56,629 retired rows are hollow account nodes (no incident); 1,385 retired served keys go to P-351. |
 | 2026-09-18 14:45 | A-218: ruling 8 taken (roads accepted in all six; road residual artifact written); Georgetown served from its adopted rewrite (P-354 re-scoped, compile now); the probe's OAuth client registered by the operator; commit go. All six Wave 1 lanes landed (operator); integration pending. #175: baseline taken 14:41Z, build started. P-355 to P-357 carded. |
 | 2026-09-18 14:20 | Seat Wave 1, first part. P-348 read (fix carded P-352). P-337 built and run live (open 67 -> 55; Hays false-earned 1 newly measured). P-347 partial (52 PDFs built; probe corrected and re-run; X2 zoning half confirmed, address half reopened; coverage graded, P-205's map half FAIL carded P-353; MCP leg owes a client identity). dblink dropped. #175 in progress (trigger paused 14:01:34Z). P-264 found closed partial at 00:34Z. Georgetown found served from its not-yet-effective rewrite on 35,038 parcels, breaching ruling 19 (P-354). P-258's re-run held behind the San Marcos re-check and P-354. Five lanes' artifacts brought to main from their branches. |
 | 2026-09-18 12:10 | Operator rulings 9 (sign in per run) and 19 (San Marcos served, Georgetown withheld to 2026-11-01) recorded as A-216. |

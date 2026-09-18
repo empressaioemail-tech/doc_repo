@@ -1,0 +1,94 @@
+{
+  "lane": "p328-engine-reconcile-blast-radius",
+  "checkpoint": "CP2 -- pilot/mid-work adversarial checkpoint, written after the pilot (the refusal unification + the road-writer wiring + the drift check) ran green, BEFORE the close",
+  "planRows": ["P-328"],
+  "seat": "cente-vsc-p328",
+  "repo": "hauska-engine",
+  "branch": "lane/p328-engine-reconcile-blast-radius",
+  "startCommit": "72d72c0296510a057ac3f1d0857123c825454084 (P-273 / #472) -- VERIFIED this checkpoint, not carried from CP1: `git fetch origin --prune` then `git rev-parse HEAD origin/main` returned 72d72c02... for BOTH, and `git rev-list --left-right --count origin/main...HEAD` returned 0 0. #471 (50a0ba9) is its parent, so both dispatches named commits are in the base. No rebase, no merge, no force-push.",
+  "fannedSubAgents": 0,
+  "fanDepth": 0,
+
+  "whatThePilotProved": {
+    "oneNumber": "The engine now has exactly ONE share number: MAX_DESTRUCTIVE_SHARE = 0.5, declared once in scripts/destructive-write-declaration.mjs. The two literals CP1 named as the missing half are gone -- MAX_ORPHAN_SHARE (write-parcel-node-county.mjs) and MAX_REACTIVATION_SHARE (retired-reactivation-guard.mjs, now `= MAX_DESTRUCTIVE_SHARE`). The authorisation variable is the factory's DESTRUCTIVE_WRITE_AUTHORISATION, re-exported by the guard as OVERRIDE_ENV_VAR so P-213's call sites and tests did not have to be rewritten to change a name.",
+    "driftCheckFires": "Offline leg, `node scripts/check-destructive-write-share-divergence.mjs`: verdict PASS with declarationConstant 0.5 == pinnedConstant 0.5, declarationEnvVar == pinnedEnvVar, token 'w:48021:1/2', secondThresholds offenders [] and refusalCodes PASS. RE-DERIVATION LEG RUN AGAINST THE REAL FACTORY CLONE, `--factory P:\\hauska-factory`: verdict PASS, factory sha256 165dc955b840af4e1fd75ed3da1e7db1a5077137421b345a4f6cd6bc88411bd1 == the pin, facts MAX_DESTRUCTIVE_SHARE 0.5 / AUTHORISATION_ENV_VAR DESTRUCTIVE_WRITE_AUTHORISATION. So the pin is not an assertion: it re-derives from the private factory through `git show 85d63e8d:src/lib/destructive-write-guard.mjs`, and the two repos' numbers were confirmed equal by reading the factory's own bytes today.",
+    "wiredWriters": "Three writers call evaluateBlastRadius on the ordinary path: write-parcel-node-county.mjs (P-213, unchanged position), write-road-node-county.mjs (NEW THIS ROW -- it had the identical unconditional-orphan-retirement shape and no share check for the whole life of the parcel-node guard), and retired-reactivation-guard.mjs (P-275, opposite direction, now on the same number). A test asserts each `wired: true` register entry's module actually contains a call site, so the claim is a call site and not a comment.",
+    "bastropFixture": "scripts/destructive-write-declaration.test.mjs drives the REAL producer over the incident's shape and then the guard: reconcileCountyParcelNodes() over 62,394 prior-active rows and a plan predicting 4,690 of them returns priorActive 62,394 and orphans.length 57,704, and the guard refuses that measured pair. The pre-change writer retired exactly that `plan.orphans` with nothing between the reconcile and the write, so this is the revert-and-run's `old` direction measured on the current tree rather than narrated."
+  },
+
+  "falsifiers": [
+    { "id": "F1", "verdict": "MET", "evidence": "test P-328 F1 (two tests): the Bastrop share refuses with code BLAST_RADIUS_EXCEEDED, carrying affected 57704, population 62394, share 0.9248 and the exact token, message 'NOTHING WAS WRITTEN', and the simulated writer's writeFn was never called; plus the real-producer fixture above, whose orphan ids are asserted so a fixture that yielded nothing could not pass." },
+    { "id": "F2", "verdict": "MET", "evidence": "test P-328 F2 (three tests): the exact token returns basis override-authorised with the write reached; a token whose population moved by ONE (62394 -> 62395) refuses BLAST_RADIUS_OVERRIDE_MISMATCH; a token naming another writer id or another county refuses the same code." },
+    { "id": "F3", "verdict": "MET", "evidence": "test P-328 F3: Kenedy 1 of 528 returns basis within-threshold, share 0.0019, write reached; a zero-affected run is basis no-change and a first-ever run (population 0) is basis no-population -- neither is a refusal, so the control does not fire on the healthy path or on a county's first load." },
+    { "id": "F4", "verdict": "MET", "evidence": "test P-328 F4: undefined / null / negative / non-numeric affected and population each refuse BLAST_RADIUS_UNMEASURED rather than coercing to 0. Both writers also require the store in --apply (`FATAL: --apply requires DATABASE_URL`), so the destructive path cannot reach the guard with a count it never read; without a store the reconcile is skipped and the retire set stays empty." },
+    { "id": "F5", "verdict": "MET", "evidence": "test P-328 F5: editing MAX_DESTRUCTIVE_SHARE alone to 0.05 refuses ENGINE_CONSTANT_DIVERGED naming the pinned 0.5; editing AUTHORISATION_ENV_VAR alone refuses ENGINE_ENV_VAR_DIVERGED; editing the token function refuses ENGINE_TOKEN_DIVERGED; and the whole check passes on the committed tree." },
+    { "id": "F6", "verdict": "MET, WITH A CORRECTION BELOW", "evidence": "test P-328 F6: every module in packages/ carrying a destructive statement is named by DESTRUCTIVE_WRITERS, and the scan's positive control is asserted non-empty against two modules." },
+    { "id": "F7", "verdict": "MET", "evidence": "tests P-328 F7 (five tests): each wired entry's module contains `evaluateBlastRadius(`; the road writer reads MAX_DESTRUCTIVE_SHARE and declares no share literal; the parcel-node writer declares no share literal; the reactivation guard re-exports MAX_DESTRUCTIVE_SHARE; and the Bastrop share refuses under EACH wired writer's id with a token naming that id (so an authorisation minted for one writer cannot look like a guard on another)." }
+  ],
+
+  "theCorrectionsThisCheckpointForced": [
+    {
+      "what": "The pin recorded four factory facts that nothing checked.",
+      "howFound": "Reading the drift check against its own header: `facts.refusalCode` and `facts.unmeasuredCode` were recorded in PROGRAM_DECLARATION_PIN but no leg compared anything to them, which is the P-320 arrangement ('a second copy is a number that can drift') one layer down.",
+      "fix": "Added REFUSAL_CODES to the declaration and `scanForRefusalCodeDrift` as a drift-check leg, plus a test for each direction. The leg checks that every `refuse(...)` in the guard passes a declared code identifier and that every declared code is thrown somewhere.",
+      "findingThatCameOutOfIt": "The guard's own helper `function refuse(code, message, detail)` matched the throw-site regex as a call, so the first version of the leg refused the committed tree with 'the guard throws undeclared refusal code(s) code'. That is the check working on its first run, and it is recorded because the fix (strip the helper declaration before reading call sites) is the kind of thing that must not be a silent narrowing. The leg now also matches a hand-spelled STRING code at a throw site, which the identifier-only version would have missed."
+    },
+    {
+      "what": "The engine's refusal code NAMES differ from the factory's and that was about to be silently smoothed over.",
+      "detail": "The factory refuses DESTRUCTIVE_BLAST_RADIUS / DESTRUCTIVE_UNMEASURED (recorded in the pin); the engine throws BLAST_RADIUS_EXCEEDED / BLAST_RADIUS_UNMEASURED (P-213, named in live messages and asserted by P-213's and P-275's tests). The dispatch requires the NUMBER and the TOKEN FORMAT to be the program's; it does not require four code names to change. Renaming them to match a string would touch every caller and test for no measured effect on any refusal. STATED in the declaration with the reason, and the single-source half was taken instead: the guard no longer writes a code literal at a throw site."
+    },
+    {
+      "what": "CP1's enumeration plan said 'enumerate ... or wired'. The first scan that implemented it flagged TEN modules, and only two of them were in class.",
+      "detail": "The scan's `UPDATE atoms` pattern matched five in-place field rewrites (SET body = ...) on rows that stay served: backfill-bastrop-zoning-fact-code-refs/-provenance, backfill-property-line-tags-bastrop, restamp-bastrop-downtown-zoning, strip-cad-parcel-roll-owner-fields, backfill-icc-access-policy. They are destructive EDITS, not destructive STATUS changes, and P-328's enumeration asks for writers that set a destructive status on a served record. The pattern was narrowed to a destructive status literal, `DELETE FROM atoms`, or an UPDATE that sets a destructive status -- and the five are named in the declaration as a RECORDED EXCLUSION rather than merely not matched, so a reader can disagree with the judgement instead of it being invisible.",
+      "andTheOtherTwo": "Two flagged modules WERE in class and are now registered: write-building-footprint-county.mjs (a set-valued, county-scoped DELETE of absence atoms superseded by present atoms minted in the same run) and migrate-bastrop-road-legacy-synthetic-ids.mjs (a single named predecessor row, deleted only after its replacement is verified readable). Both keep `wired: false` with a reason in the register."
+    },
+    {
+      "what": "One F6 assertion asserted a module with no destructive statement in it.",
+      "detail": "The positive control claimed the scan finds src/parcel-node/reconcile-county-parcel-nodes.ts. It does not: the producer computes the orphan SET and carries no status literal at all -- the `status: \"retired\"` is in the writer CLI (write-parcel-node-county.mjs:463). A scan that 'found' a module with no destructive statement would have been green for the wrong reason. The control now names two modules that do carry statements, and the correction is written in the test at the assertion."
+    },
+    {
+      "what": "A reader projection was flagged as a writer, and was registered rather than exempted.",
+      "detail": "review-retired-parcel-nodes.mjs carries `status: \"retired\"` at :234 as a READ projection rebuilt from the stored body to plan the review. A literal scan cannot tell a read from a write, so the module is named in the register beside the reactivation guard with the reason. It was NOT put in an exemption list, because an exemption is a hole a future real write into that file could be made through."
+    },
+    {
+      "what": "P-213's own header had two statements that P-328 made false, and they were fixed rather than left.",
+      "detail": "Its bypass list (a) said write-road-node-county.mjs is unguarded (now wired) and the threshold section said the number is 'declared per writer, see write-parcel-node-county.mjs's MAX_ORPHAN_SHARE' (that constant no longer exists). Both were updated, and (c) now points at the reactivation guard's own refusal reading the same declared number. A header that describes a control that has moved is how the next reader concludes the wrong thing."
+    },
+    {
+      "what": "CP1 DECLARED AN EDIT THAT WAS NOT MADE, and it is stated rather than quietly dropped.",
+      "detail": "CP1 listed 'src/parcel-node/reconcile-county-parcel-nodes.ts (EDIT): attach the measured destructive pair to the returned plan'. It was NOT edited. Reading the function showed the pair is ALREADY on the returned plan and always has been -- `priorActive` (the population, :179) and `orphans` / `counts.orphans` (the destructive set, :175/:188) are literally the two numbers the guard call passes at write-parcel-node-county.mjs:429-430. Adding a redundant `share` field would have churned a file covered by a pinned test (re-acquisition-contract.test.ts, which passes unchanged and was not rewritten) for no measurement gain. CP1's promise was that the destructive set cannot be read without its measurement; that property already holds, so the edit was declined with the reason here rather than narrated as done."
+    }
+  ],
+
+  "theProducersBypassAndWhatWasDoneAboutIt": {
+    "cp1Wording": "'The refusal is a CALL-SITE convention, not a property of the producer: reconcileCountyParcelNodes is pure and returns orphans with no measurement attached, so any new caller that imports it and retires what it returns re-opens the hole silently.'",
+    "whatWasDone": "NAMED AND PINNED, not closed, and the reasoning is that closing it in the type system is a different change than this row: the guard's return shape would have to carry an unforgeable authorisation, and the two CLI writers are the only callers today. What the row does instead is make the register's scope explicit (the producers are named as `producer` on each entry) plus a test that refuses an UNREGISTERED module carrying a destructive statement -- so a new writer file that retires anything is caught by the suite even if its author never reads this declaration. A future writer that imports the producer and writes without the guard is caught by that scan, because the retire WRITE is the statement the scan looks for.",
+    "stillOpen": "A module that retires rows through an imported helper whose own file has the statement (as write-road-node-county.mjs does with storage's retireRoadNodeInstance) is caught by the helper's entry, not by the caller's. That is stated in the register entry, and it is why the register names both the CLI and the body builder rather than choosing one."
+  },
+
+  "suiteEvidence": {
+    "targetedSuites": "scripts/destructive-write-declaration.test.mjs (27 tests) + scripts/writer-blast-radius-guard.test.mjs + scripts/__tests__/retired-reactivation-guard.test.mjs + src/parcel-node/__tests__/re-acquisition-contract.test.ts: 90 passed / 4 files green at the checkpoint before the last three test additions, and the declaration file is green at 27/27 after them.",
+    "typecheck": "`npx tsc --noEmit` in packages/engine-core: exit 0, no output.",
+    "fullSuite": "`npx vitest run` in packages/engine-core: 11 failed files / 35 failed tests / 1847 passed / 13 skipped. EVERY failure is in src/site-plan/** (author, feasibility-author, manifest-is-load-bearing, feasibility-narrative-wiring, narrow-parcel-export, pdf/feasibility) and every one is a TIMEOUT at 15s/20s/30s/60s -- PDF/DXF/IFC rendering and narrative-wiring tests, none of which touch scripts/ or the atom-write path this lane changed. The base-vs-head comparison for that set is recorded in the close with its command and its result; the claim is NOT 'pre-existing' until it is measured on the stashed tree.",
+    "notRun": "No store read or write, no reconcile against any store, no deploy, no merge. No test in this lane opens a database."
+  },
+
+  "threeQuestionGateAsBuilt": {
+    "whatExecutesIt": "evaluateBlastRadius, called by write-parcel-node-county.mjs (:426) and write-road-node-county.mjs (:482) BEFORE any retire body is built or written, in dry-run and --apply; and by retired-reactivation-guard.mjs for the opposite direction. The number, the env var and the token grammar come from scripts/destructive-write-declaration.mjs.",
+    "whatTriggersIt": "Every invocation of those writers, with no flag to set: the call is on the ordinary path, before the apply branch that takes the lease, and a dry run refuses too -- so the file's own 'dry run predicts the apply' now predicts the refusal.",
+    "whatFails": "BLAST_RADIUS_EXCEEDED, BLAST_RADIUS_UNMEASURED, BLAST_RADIUS_OVERRIDE_MALFORMED, BLAST_RADIUS_OVERRIDE_MISMATCH, plus the drift check's ENGINE_CONSTANT_DIVERGED / ENGINE_ENV_VAR_DIVERGED / ENGINE_TOKEN_DIVERGED / SECOND_THRESHOLD_DECLARED / REFUSAL_CODE_DRIFT / PIN_HASH_MISMATCH / FACTORY_FACTS_DIVERGED / GUARD_UNREADABLE / FACTORY_UNREADABLE / DECLARATION_UNREADABLE. A refusal writes nothing.",
+    "whatBypassesIt": [
+      "A caller of reconcileCountyParcelNodes / reconcileCountyRoadNodes that retires what it returns without calling the guard -- named, with the register scan as the detector for the shape, not closed.",
+      "Any other engine writer setting a destructive status: enumerated in DESTRUCTIVE_WRITERS with wired:false and a stated reason, enforced by a scan so a new one cannot be missed by omission.",
+      "A raw Postgres connection, or a hand UPDATE atoms SET body = jsonb_set(...).",
+      "The factory's writers -- the two registers are not joined (leave_behind), and the factory's side is the enforceable cross-repo direction because hauska-engine is public and hauska-factory is private.",
+      "Deleting the declaration/guard/drift check, editing the declaration AND the pin's facts in one commit, or catching the guard's throw."
+    ]
+  },
+
+  "openForTheClose": [
+    "Compare the site-plan failure set on the stashed (unmodified) tree and record both sets verbatim. Until that is done, no 'pre-existing' claim is made anywhere.",
+    "Commit, push, open the PR, and record the CI conclusion string; the close cites it rather than a local run.",
+    "The reactivation-direction question and the 0.5-vs-0.05 question stay open for the operator, unchanged from CP1."
+  ]
+}

@@ -101,6 +101,19 @@ Phase 0 is not to be rushed to a close.** Work is sequenced in waves, not held.
   and the effective date, never "vintage unknown" (P-354, re-scoped). San Marcos's half of ruling 19
   is unchanged.
 
+### Wave 1 decisions (A-220, operator, 2026-09-18 about 15:20Z)
+
+- **The program's destructive-write threshold is 5 percent (0.05), program-wide.** P-328's lane wired
+  the engine's parcel-node writer to the program's declared 0.5, a tenfold loosening of the engine's
+  live 0.05 on the writer that retired 92.5 percent of Bastrop. P-327's census counts zero new
+  retirements in all six counties, so 0.05 refuses nothing measured as healthy. The factory's
+  declaration moves to 0.05 and the engine's pinned copy (hauska-engine #474, held) re-pins to it
+  (P-361).
+- **P-335's movement bound: the county's published pair is authoritative** (reading a, consistent
+  with ruling 7). The at most 20 field changes on 30 parcels where the address path and the pair
+  disagree are corrections; the apply record lists the 30 parcels (P-350).
+- **P-323's deletion of retrieval tag `item7-countatoms-canary` stands.**
+
 ### The exit
 
 18. **The operator walks the 45 probe buckets** once the customer re-run is clean.
