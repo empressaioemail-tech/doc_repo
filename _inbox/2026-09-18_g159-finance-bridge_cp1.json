@@ -1,0 +1,113 @@
+{
+  "lane": "g159-finance-bridge",
+  "planRows": ["G-159"],
+  "checkpoint": "CP1",
+  "kind": "pre-build key proof + source mapping",
+  "seat": "cente-vsc-g159",
+  "filedAt": "2026-09-18T11:55:00Z",
+  "disclosure": "Filed BEFORE any product edit, per STEP 0 ('this is your first act and it gates everything else'). STEP 0 PASSED for the Budgeting & Performance leg and FAILED for the v1-REST leg. The failure is reported, not smoothed over, because it changes which routes are worth building (see scopeCorrection).",
+
+  "snapshot": {
+    "docRepo": { "worktree": "P:\\seat-worktrees\\g159-finance-bridge\\doc_repo", "branch": "lane/g159-finance-bridge", "head": "e9a9064aa4be3559dda8bd97be96318679ff843a", "note": "Created new from main for this lane; the integration checkout P:\\doc_repo was NOT used, per the dispatch's own close-section rule." },
+    "smartcityOs": { "worktree": "P:\\agent-worktrees\\g159-finance-bridge-os", "branch": "fix/g159-finance-bridge", "head": "92c73e39c9003d87cde5f9aaac5210d240229d2a", "note": "origin/main. P:\\smartcity-os is on the production pin branch d9-api-8bea7fa and was NOT touched." },
+    "smartcityDashboards": { "originMain": "fd8562c2fdabf9a1839ba0bb473fc4d5835ac8e8", "note": "Read-only so far. STEP 2 must wait for G-154 to merge; not started." },
+    "uatApp": { "name": "d12-main-uat", "id": "7cd6f652-9e7e-4abc-abb4-e2a94623866c", "url": "https://d12-main-uat-gqnjx.ondigitalocean.app", "baselineSourceCommitHash": "3d3ec62abb1f74b01fef561ece11139825be3baa", "baselineDeploymentId": "9db868a8-4bd1-47d5-ab3b-c4ee161c7450", "howObtained": "do-apps MCP, authenticated this session; apps-get-deployment-status read services[0].source_commit_hash. The G-156 lane could NOT do this (its do-apps MCP was stuck loading) and closed with the UAT read-back owed. That blocker does not exist in this session." },
+    "laneClaim": "CLAIMED g159-finance-bridge for cente-vsc-g159 (G-159), exit 0. No other seat held it."
+  },
+
+  "step0": {
+    "falsifierPreRegistered": "If the read is refused, empty, or returns data that is not Bastrop's, STOP and report. Do not build a bridge to a source that does not answer.",
+    "verdict": "PASS on the Budgeting & Performance (BNP) leg. FAIL on the v1 REST leg. The two legs are different products and only one of them carries Bastrop's money.",
+    "credentials": {
+      "source": "GCP Secret Manager, project smartcity-os-prod, via gcloud (account empressaioemail@gmail.com)",
+      "lengthsOnly": { "smartcity-OPENGOV_API_KEY": 64, "smartcity-OPENGOV_BNP_API_KEY": 64, "smartcity-OPENGOV_EMAIL": 23 },
+      "noKeyWasPrinted": true
+    },
+    "theReadThatPassed": [
+      {
+        "endpoint": "GET https://api.bnp.opengov.com/api/v1/budgets?filter[entityId]=3c8981ac-1a8b-463d-b26b-5ef37c66734f",
+        "auth": "Authorization: Token <smartcity-OPENGOV_API_KEY> ; Accept: application/vnd.api+json",
+        "status": 200,
+        "bytes": 3841,
+        "meta": { "totalRecords": 12 },
+        "shape": "JSON:API. data[].type='budget'; data[].id string; data[].attributes = {name:string, entityId:string, coaId:string, budgetPeriods:array, workforceId:null|string, createdAt:string, updatedAt:string}",
+        "oneRecord": { "type": "budget", "id": "130231", "attributes": { "name": "FY2027 Operating Budget (WORKING)", "entityId": "3c8981ac-1a8b-463d-b26b-5ef37c66734f", "coaId": "a9996b7f-17a2-4b25-b521-7ba73ba09f61", "budgetPeriods": [], "workforceId": null, "createdAt": "2026-05-27T08:01:40.959-07:00", "updatedAt": "2026-09-15T23:05:38.814-07:00" } },
+        "isBastrops": "Yes. Every one of the 12 records carries entityId 3c8981ac-1a8b-463d-b26b-5ef37c66734f, the Bastrop entity id hardcoded in server/services/opengov-bnp.ts. Budget names are Bastrop's own: FY2026 Operating Budget, FY2027 Operating Budget (WORKING), FY2026-2030 CIP Budget, FY2027-2031 CIP Budget.",
+        "noPiiInShape": "The endpoint returns no personal data. No field was redacted because none needed to be."
+      },
+      {
+        "endpoint": "GET https://api.bnp.opengov.com/api/v1/budgets/130231/amounts-summary",
+        "status": 200,
+        "bytes": 309,
+        "verbatim": "{\"data\":{\"type\":\"budget-amounts-summary\",\"id\":\"54343c0c-c927-4edf-9a03-e96ad7c4a0dd\",\"attributes\":{\"amountsSummary\":{\"expenses\":{\"baseAmount\":74349204.0,\"adjustmentAmount\":-4769353.0,\"proposedAmount\":69579851.0},\"revenues\":{\"baseAmount\":73425092.0,\"adjustmentAmount\":1143298.0,\"proposedAmount\":74568390.0}}}}}",
+        "whyThisIsTheOneThatMatters": "This is the Finance lens's ADOPTED BUDGET required source, and it reproduces the operator capture's page-1 and page-2 figures exactly, at the digit, from the live source: capture adoptedBudget.expenses = total $69.6M / base $74.3M / adjustments -$4.3M, live = 69,579,851 / 74,349,204 / -4,769,353; capture revenue = total $74.6M / base $73.4M / +$1.1M, live = 74,568,390 / 73,425,092 / +1,143,298. The capture's 'Budget selected: FY2027 Operating Budget (WORKING)' also matches the live budget name.",
+        "consequence": "The design's 'Adopted budget -> MEASURED' is TRUE of the source and was never a screenshot artefact. What does not exist is the v1 platform route and the v2 adapter shape+grant. That gap is exactly G-159."
+      },
+      {
+        "endpoint": "GET https://api.bnp.opengov.com/api/v1/budgets/130231/budget-amounts?page[number]=1&page[size]=5",
+        "status": 200,
+        "bytes": 1482,
+        "shape": "JSON:API. data[].type='budget-amount'; attributes = {fiscalYear:int, amount:number, accountNumberId:string, accountNumber:string}",
+        "oneRecord": { "type": "budget-amount", "id": "59c71292-ba70-4a7b-a219-843debe7edde-2027", "attributes": { "fiscalYear": 2027, "amount": 15948.0, "accountNumberId": "59c71292-ba70-4a7b-a219-843debe7edde", "accountNumber": "101-23-17-5151-000" } },
+        "note": "Paginated; links.next present. The accountNumber is segmented 5 ways, matching the COA's 5 declared segments."
+      },
+      {
+        "endpoint": "GET https://api.bnp.opengov.com/api/v1/chart-of-accounts?filter[entityId]=3c8981ac-...",
+        "status": 200,
+        "bytes": 1803,
+        "shape": "JSON:API. data[].attributes = {name, entityId, accountNumberSeparators:array<string>, segments:array<{attributes:{label,segmentType,enabled,defaultSegmentCode}}>, managed:object}",
+        "oneRecord": { "id": "a9996b7f-17a2-4b25-b521-7ba73ba09f61", "name": "Chart of Accounts - 2024-10-30", "segments": ["Funds", "Departments", "Project", "Division", "Object"] },
+        "note": "Two COAs for Bastrop. The first is the coaId every budget points at."
+      },
+      {
+        "endpoint": "GET https://api.bnp.opengov.com/api/v1/data-exports/resources?filter[entityId]=3c8981ac-...",
+        "status": 200,
+        "bytes": 15345,
+        "shape": "JSON:API. data[].attributes = {name, description, standardType, createdAt, updatedAt, dataUpdatedAt}",
+        "note": "Live: dataUpdatedAt on the COA dimension resources reads 2026-09-18T06:05:31Z, i.e. today. This is the 'true time in the jurisdiction' evidence."
+      }
+    ],
+    "theReadThatFailed": {
+      "endpoint": "GET https://bastrop.opengov.com/api/v1/entities  and  GET https://bastrop.opengov.com/api/v1/reports  (what server/services/opengov.ts calls, and what a v1 platform route built on it would expose)",
+      "status": 200,
+      "result": "Both return HTTP 200 and a 32-record catalog. ZERO of the 32 entities and ZERO of the 32 reports are Bastrop's.",
+      "measured": "entities.subdomain matched against 'bastrop' + name matched /bastrop/i -> 0 of 32. Reports matched against the code's own BASTROP_ENTITY_SLUGS = ['bastrop','bastroptx','bastrop-tx','cityofbastrop'] -> 0 of 32. First entity is '11th Judicial Circuit of Florida' (subdomain 11thjudicialcourtfl, state FL); first report is entity 'bonnercountyid'.",
+      "whyItHappens": "server/services/opengov.ts:119-121 filters reports by those four slugs and returns the filter's result, so getReports() returns an empty array for Bastrop. getEntities() has no Bastrop filter at all and returns the whole 32-row global catalog.",
+      "consequence": "A v1 platform route on this leg would put 32 non-Bastrop entities behind a Bastrop-named bridge, and getReports() would return []. Building it would be the 'silent fallback' defect class (DEV_PROCESS 4.3) with a Bastrop label on it."
+    },
+    "credentialSurprise": {
+      "finding": "The key NAMED for BNP does not answer for Bastrop; the key NAMED for the v1 REST API does.",
+      "measured": "Same /budgets request, two keys, same entityId: smartcity-OPENGOV_API_KEY -> 200, 3841 bytes, meta.totalRecords 12. smartcity-OPENGOV_BNP_API_KEY -> 200, 161 bytes, body {\"data\":[],\"links\":{...},\"meta\":{\"totalRecords\":0}}. A Bearer-scheme control with the BNP key returned 401, confirming the scheme is Token and the key itself is the difference, not the header.",
+      "whyTheDeployedCodeStillWorks": "server/services/opengov-bnp.ts:5-7 getBnpApiKey() returns process.env.OPENGOV_API_KEY || process.env.OPENGOV_BNP_API_KEY - the v1-named variable is read FIRST. So in production, BNP calls are authenticated with the v1 key, which is the one that answers.",
+      "whyItMatters": "This is a latent trap. OPENGOV_BNP_API_KEY looks like the BNP credential and is not. Any future lane that 'tidies' getBnpApiKey() to prefer its own namesake would silently take BNP to zero budgets - and a lens reading that would render UNACCOUNTED for a city whose budget is in fact readable. Reported, NOT fixed: it is a credential-provisioning question for the operator, not a code fix this lane should make on a production service."
+    },
+    "alsoMeasured": {
+      "actualsAreGenuinelyUnavailable": "GET /budgets/130231/actuals-summary -> 500. GET /budgets/130231/actual-amounts?page[size]=5 -> 500. GET /entities/3c8981ac-.../expenditures?fiscalYear=2026 -> 500.",
+      "whyThisRetroExplainsTheCapture": "The capture's 'Actual Spent is the Budget column copied' is what v1 falls back to when the actuals endpoints fail. The design's stance ('actuals are unaccounted') is therefore not a preference; it has a live basis: the source returns 500 for actuals today.",
+      "netPositionIsDerivable": "The capture's netPosition $5.0M is revenues proposed 74,568,390 minus expenses proposed 69,579,851 = 4,988,539, i.e. $5.0M. Derivable, not separately published; the bridge should expose the parts and let the consumer derive, never ship a pre-derived net position as if measured."
+    }
+  },
+  "scopeCorrection": {
+    "whatTheDispatchAssumed": "STEP 1: 'Map the Finance lens design's required sources ... to the v1 OpenGov, budgeting-and-planning and permit-revenue data. Add platform routes only for what the design uses.'",
+    "whatIsTrue": "The design's four required sources map as: adopted budget -> BNP (budgets + amounts-summary + chart-of-accounts), and it ANSWERS. Permit fee revenue -> the DB-backed finance.ts mygov_fees routes, to be verified separately. Fund ledger -> absent everywhere. Department spend -> absent everywhere.",
+    "theDeliberateExclusion": "No v1 platform route will be built on the v1-REST leg (opengov.ts: entities/reports/financial). It returns no Bastrop data, so it serves none of the design's four sources, and exposing 32 non-Bastrop entities under a platform route would be a false bridge. This is a named exclusion, not an omission (DEV_PROCESS 3.3)."
+  },
+  "unmergedBranchFinding": {
+    "branch": "origin/fix/w1-c-3-opengov-bnp-hardening",
+    "tip": "e7f9f16c7c8185878ab33bd62720919e559af5b7, dated 2026-05-10 20:44:54 -0500, author hauskababylon",
+    "commitMessage": "fix(opengov): W1.C.3 BNP endpoint hardening (retries, circuit breaker, structured logging)",
+    "verdict": "REDUNDANT - its content is already on main. There is nothing to build on.",
+    "evidence": [
+      "`git diff origin/main:server/services/opengov-bnp.ts origin/fix/w1-c-3-opengov-bnp-hardening:server/services/opengov-bnp.ts` is EMPTY: the service file is byte-identical between the branch and main.",
+      "The branch's own test file is already on main at the SAME blob: `git ls-tree` returns 57b5f3093d5e3d659989f0c9a72d9f10cbb8d334 tests/api/opengov-bnp.test.ts on both main and the branch.",
+      "The same change landed on main as PR #8, commit 281126a2, identical commit subject; `git merge-base --is-ancestor 281126a2 origin/main` exits 0.",
+      "The branch is ~20 commits behind main (merge-base 01fa14eb)."
+    ],
+    "whatItMeansForThisLane": "Nothing to inherit or rebase. The hardening described in the branch (bnpFetch retries, circuit breaker, structured logging) is the code I read on main and is what STEP 1 will call. Propose deletion of the stale branch; NOT deleted here (DEV_PROCESS 5.4, deletions are operator rulings)."
+  },
+  "subAgents": { "spawned": 0, "maxDepth": 0, "note": "FAN-DEPTH 0. The commit gate refuses a close that declares any." },
+  "nextSteps": [
+    "STEP 1: add v1 platform routes behind requirePlatformInternalKey for the BNP budgets/amounts-summary/chart-of-accounts and the DB-backed permit revenue; prove refusal-without-key and answer-with-key in both directions; merge to main; NOT deployed.",
+    "STEP 2 is gated on G-154 merging (not merged as of this filing: dashboards origin/main 1 PR behind the g154 branch)."
+  ]
+}
