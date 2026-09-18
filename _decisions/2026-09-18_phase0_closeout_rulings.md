@@ -114,6 +114,21 @@ Phase 0 is not to be rushed to a close.** Work is sequenced in waves, not held.
   disagree are corrections; the apply record lists the 30 parcels (P-350).
 - **P-323's deletion of retrieval tag `item7-countatoms-canary` stands.**
 
+### P-324 scope (A-222, operator, 2026-09-18 about 17:15Z)
+
+Off the exit path, recorded here because it was ruled in the same program session.
+
+- **P-324 takes in the staged conversion events, the Conversions API and share-URL scrubbing, and
+  ships them with the pixel base tag and UTM attribution as one change.** The work is staged,
+  uncommitted, on top of `369fd77` in `P:/seat-worktrees/integration/hauska-map-meta-pixel`
+  (`_inbox/2026-09-18_HANDOFF_meta_pixel_events_and_scrubbing.md`). The row had named both as out of
+  scope. The reason to ship them together is that the base commit alone puts a static `PageView` on
+  every route, share links included, which is the capability-identifier leak the row exists to
+  prevent; the staged work removes that static tag, gates the browser leg on identifier-bearing
+  addresses and referrers, and scrubs every server-side URL. Deploys are the seat's.
+  Reversal: if the rebased events work cannot pass its suites or the live checks, ship neither half
+  and re-card rather than shipping the base tag alone.
+
 ### The exit
 
 18. **The operator walks the 45 probe buckets** once the customer re-run is clean.

@@ -2,7 +2,7 @@
 id: 2026-09-18_phase0_closeout_REGISTER
 title: Phase 0 close-out register (living)
 date: 2026-09-18
-last_updated: 2026-09-18 (17:10Z, rest of Wave 2 compiled; P-324 held for a scope ruling)
+last_updated: 2026-09-18 (17:25Z, A-222: P-324 recompiled; San Marcos re-check HOLDS)
 status: living. The integration seat updates a row whenever its state changes and records the change in the log at the bottom. This is the durable list; the roadmap carries the live queue and points here.
 kind: register
 owner: nick
@@ -93,7 +93,7 @@ when it starts; a row's own `Depends` in OPS-16 is the authority where they diff
 | P-351 | The bake's retirement arm made keyspace-aware | legacy-design-tools | before P-350 | 2 (after P-335) | **compiled 2026-09-18** `_dispatches/2026-09-18_p351-bake-retirement-keyspace_dispatch.md`; both bake writers, the 1,385 split, the dollar facts on the same bare lookup, and the factory pin move |
 | P-334, P-329, P-330 | Watch can run; `ldt-sha` check; runner continues past a declared refusal | hauska-factory | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p334-p329-p330-factory-controls_dispatch.md` (three PRs) |
 | P-331 | A cross-repo drift check that can fail | hauska-map, legacy-design-tools | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p331-cross-repo-literal-drift_dispatch.md` |
-| P-324 | Pixel attribution deploy | legacy-design-tools | off | 2 (after P-323) | **HELD for an operator scope ruling 2026-09-18:** `_inbox/2026-09-18_HANDOFF_meta_pixel_events_and_scrubbing.md` (untracked) staged the four conversion events, the Conversions API and share-URL scrubbing on top of `369fd77`, which the row names out of scope; the base commit alone ships the static PageView the scrubbing removes |
+| P-324 | Pixel attribution deploy, with the four conversion events, CAPI and share-URL scrubbing (A-222) | hauska-map, legacy-design-tools | off | 2 (after P-323) | **recompiled 2026-09-18 under A-222** `_dispatches/2026-09-18_p324-pixel-events-attribution_dispatch.md`; both halves ship together; the seat deploys; `META_CAPI_ACCESS_TOKEN` owed by the operator |
 | P-286, P-317 | Burnet preconditions | hauska-factory | off (Phase 1 prep) | 2 | **recompiled 2026-09-18** `_dispatches/2026-09-18_p286-p317-burnet-preconditions_dispatch.md` (the P-319 precondition is met; P-317's defect still live at `0f4558a4`) |
 | P-354 | Georgetown's adopted rewrite is served (A-218) and every surface names its adoption and effective dates, never "vintage unknown"; a rule row carries both dates as fields | setback-corpus, legacy-design-tools, hauska-factory, hauska-map | 2 | **now (A-218: compile ahead of Wave 2)** | carded 2026-09-18, re-scoped by A-218 |
 | P-352 | situsState conflict outcome (McLennan `48309:417476`, Hays `48209:88885`); phantom `48491:PRIVATE ROAD` retired and instantiation guarded | hauska-factory | 1 | 2 (after #175 deploys and P-335 merges; factory order after P-333) | **compiled 2026-09-18** `_dispatches/2026-09-18_p352-situs-conflict-phantom-record_dispatch.md` |
@@ -115,7 +115,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 | P-347 | Probe corrected to ruling 13; `--use-system-ca`; engine key for the PDF leg; PDFs built for the 45 fixture parcels; re-run; P-270 X2 confirmed or reopened; coverage graded | 2, 3 | 1, and again at exit. **PARTIAL 2026-09-18:** all done but the MCP leg (sign-in helper built; needs a client identity, then the operator's sign-in). 52 PDFs served. Record `_inbox/2026-09-18_p347_customer_leg_wave1_record.md` |
 | P-348 | McLennan `situsState` (1 parcel), Williamson `buildingFootprint` (1 parcel) | 1 | 1. **DONE (read) 2026-09-18:** both named and read, plus a third cell the ledger scored as passing; fix carded as P-352. Record `_inbox/2026-09-18_p348_two_open_cells_read.md` |
 | P-337 | `RAIL_POLICY` exclusions for rulings 3 and 4, with couplings and self-tests | 1 | 1. **DONE 2026-09-18:** 47 of 47 self-tests, acceptance tests seen failing before the register entries existed; live run 13:52Z moved both rails to ruled in all six counties (prediction held exactly) |
-| P-258 | Setback writer re-run and census re-grade (precedes P-300) | 1 | 1. **HELD 2026-09-18:** the live writer image carries corpus 1.4.0, so a Hays re-run IS San Marcos's switch (ruling 19's coverage re-check first) and a Williamson re-run widens P-354's breach. Order: the San Marcos coverage re-check, then the six counties (Williamson no longer waits on P-354 after A-218) |
+| P-258 | Setback writer re-run and census re-grade (precedes P-300) | 1 | 1. **HELD 2026-09-18:** the live writer image carries corpus 1.4.0, so a Hays re-run IS San Marcos's switch (ruling 19's coverage re-check first) and a Williamson re-run widens P-354's breach. Order: the San Marcos coverage re-check, then the six counties (Williamson no longer waits on P-354 after A-218). **The re-check HOLDS (2026-09-18 17:16Z): 1.4.0 covers 88.38 percent of San Marcos's zoned area against 50.47 for the 1.1.0 table served today; SF-6 + SF-4.5 reproduce 12.93 exactly. Record `_inbox/2026-09-18_san_marcos_coverage_recheck_RECORD.md`. The re-run may proceed, Hays first, dry run first** |
 | #175 | Deploy `cloudbuild.parcel-record-fill.yaml` under the gate-scheduler procedure (pause the hourly trigger, deploy, grade a cycle, resume); no fill `--apply` before it | 1 | 1. **DONE 2026-09-18:** deployed `7152d3b0`; gate cycle reproduced 390 of 390 verdicts; trigger resumed 15:24:53Z. Record `_inbox/2026-09-18_p325_175_deploy_RECORD.md` |
 | dblink | Confirm no dependents, then drop the extension on production | off | 1. **DONE 2026-09-18 14:00:23Z**, verified from a separate session. Record `_inbox/2026-09-18_dblink_drop_RECORD.md` |
 | LDT deploy | After P-323: carries P-257, P-270 and P-322's LDT halves and P-206's XD-6 fix | 2 | **DONE 2026-09-18 15:54Z:** cortex-api `00841-jeh` (LDT `25d1782f`), canary 90/90 PASS; P-206 was already live; the workflow's post-shift check is broken (P-362). Record `_inbox/2026-09-18_ldt_cortex_api_deploy_RECORD.md` |
@@ -125,7 +125,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 | Austin stamp | Session CLI under a production lease, then the P-255 census | 1 | 2 |
 | Hays join-miss delta | 2,770 cells applied against 1,069 measured, read before P-308's re-vendor | off | 2 |
 | P-350 | Williamson fill applied, staging publish, production on the operator's go, PITR branch deleted | 1, 2 | 3 |
-| P-349 | San Marcos coverage re-check, then served from 1.4.0; Georgetown kept withheld and uncited until 2026-11-01; then the Hays bake; P-260 customer-closed | 2 | 2 to 3 |
+| P-349 | San Marcos coverage re-check (**HOLDS 2026-09-18 17:16Z**), then served from 1.4.0; Georgetown served from its adopted rewrite with both dates named (A-218, P-354); then the Hays bake (after P-351); P-260 customer-closed | 2 | 2 to 3 |
 | Roads | P-264's artifact read; ruling 8 taken; any road work carded | 1, 4 | 3 |
 | Exit re-run | Ledger to COMPLETE, customer to zero open or ruled, coverage graded, then the walk | all | 3 |
 
@@ -187,6 +187,8 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 17:20 | Seat Wave 2, item 1: the San Marcos coverage re-check HOLDS (88.38 percent under 1.4.0 against 50.47 under the 1.1.0 table served today; the 2026-09-07 figure reproduced at 12.93). New instrument `scripts/san-marcos-coverage-recheck.mjs`, self-tested and checked by violation. P-258's re-run may proceed. |
+| 2026-09-18 17:25 | A-222: the operator ruled P-324 ships with its staged events, CAPI and scrubbing; recorded and recompiled. Wave 2 batch pushed `d6ab5e46`. |
 | 2026-09-18 17:10 | Rest of Wave 2 compiled from source at factory `0f4558a4`, engine `c41a1482`, LDT `25d1782f`, map `163fde32`: P-333, P-334/P-329/P-330, P-352, P-361, P-351, P-331, P-358, P-359, P-362, and P-286/P-317 recompiled. P-324 held: a staged events-and-CAPI extension conflicts with its row. Found while compiling: Hays' bare-id overlap is a collision count (P-333, P-351); P-358's grade waits on P-336. |
 | 2026-09-18 16:20 | Session close. Wave 2 dispatches compiled and pushed: P-354, P-339/340/341, P-353, P-270 address half, P-336 (operator to fire). Handoff `_inbox/2026-09-18b_HANDOFF_integration_seat.md`. |
 | 2026-09-18 15:55 | A-221: #175 deployed and graded (trigger resumed); P-332 customer-closed on the panel; LDT deployed (cortex-api `00841-jeh`, canary 90/90); the customer leg measured with the MCP signed in (23 PASS / 19 FAIL / 3 UNMEASURED before the LDT deploy; two instrument defects fixed); P-362 carded. |

@@ -1,121 +1,119 @@
-## Mission — P-324: resolve the share-identifier question, then ship the pixel and campaign attribution
+## Mission — P-324: the pixel, campaign attribution, the four conversion events and share-URL scrubbing, as one change
 
-You launch no sub-agents (FAN-DEPTH 0). You resolve one open question, then you push, deploy and
-verify two repos in a fixed order. You fix your own failed deploys rather than escalating them.
+You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-map` and `legacy-design-tools`, one PR
+per repo. You do not merge or deploy; the integration seat merges, deploys (cortex-api first, then
+Property Explorer) and runs the live checks you name. Any doc_repo change is handed back as a diff in
+your close.
 
-Read `_inbox/2026-09-17_smartsite_meta_pixel_utm_handoff.md` in full before anything else. It is the
-staging seat's own account, it is honest about what it did not verify, and this mission only adds the
-ordering and the two gates.
+**Recompiled 2026-09-18 under OPS-16 A-222.** The operator ruled that P-324 takes in the conversion
+events, the Conversions API and share-URL scrubbing staged on top of the pixel commit, and that both
+halves ship together (`_decisions/2026-09-18_phase0_closeout_rulings.md`, "P-324 scope"). The first
+compile's Gate 1 (probe `dl` before pushing) and its "do not implement conversion events or the
+Conversions API" are superseded by that ruling. Read both handoffs in full before anything else:
 
-### What is already built and NOT pushed
+- `_inbox/2026-09-17_smartsite_meta_pixel_utm_handoff.md`: the base tag and first-touch UTM
+  attribution, and the defect it fixes (`peGhlContact.ts` wrote a hardcoded `source-organic` tag on
+  every new signup, so a paid click was filed as organic, a wrong value asserted as fact).
+- `_inbox/2026-09-18_HANDOFF_meta_pixel_events_and_scrubbing.md`: the events, CAPI and scrubbing,
+  what was verified by violation, what was not, and the deploy prerequisites.
 
-| Repo | Worktree | Branch | Commit |
+### Step 0: bring the work into your own worktrees, byte for byte
+
+None of it is on origin, and part of it is not even committed. It lives in the integration seat's
+worktrees, which you may read and must not write:
+
+| Repo | Integration worktree (read only) | Branch | What is there |
 |---|---|---|---|
-| `hauska-map` | `P:/seat-worktrees/integration/hauska-map-meta-pixel` | `feat/meta-pixel-and-utm-source` | `369fd77` |
-| `legacy-design-tools` | `P:/seat-worktrees/integration/ldt-utm-source` | `feat/utm-source-tag` | `c47b8c7b` |
+| hauska-map | `P:/seat-worktrees/integration/hauska-map-meta-pixel` | `feat/meta-pixel-and-utm-source` | commit `369fd77` (base tag + UTM), plus **uncommitted** changes: 9 modified and 12 untracked files under `apps/property-explorer` (the events work) |
+| legacy-design-tools | `P:/seat-worktrees/integration/ldt-utm-source` | `feat/utm-source-tag` | commit `c47b8c7b` (the source tag resolved from first-touch campaign data), clean |
 
-Both were branched from each repo's `origin/main` at `0489bc8` and `7219b707`. **Both mains have
-moved since** (map through #416 and LDT through #715 and #716). Rebase, re-run the suites, and
-declare what moved. Do not assume a clean replay: #416 changed
-`apps/property-explorer/src/lib/fact-sheet-resolver.ts` and consolidated a rule that used to live in
-four files, and this branch touches `src/lib/auth.ts` and `src/main.tsx` in the same app.
+Create your own registered worktrees. Carry `369fd77` and `c47b8c7b` over as commits
+(`git format-patch` or a fetch from the local clone) and the uncommitted events work as a second
+hauska-map commit, then prove the transfer: the tree of your two hauska-map commits equals the
+integration worktree's working tree for every file under `apps/property-explorer` (a hash comparison,
+not a visual one). Only then rebase: both mains have moved (map `0489bc8` to `163fde32` at compile,
+through #410 to #420; LDT `7219b707` to `25d1782f`). #416 and #419 changed Property Explorer files
+near the ones this touches (`fact-sheet-resolver.ts`, `atom-chain-to-facets.ts`, `pe-record-to-facets.ts`);
+declare what moved and resolve conflicts without changing either side's meaning.
 
-The defect this fixes is real and worth keeping in view: `peGhlContact.ts` wrote a hardcoded
-`source-organic` tag on **every** new signup, so a click from a paid ad was filed as organic. That is
-a wrong value asserted as fact, which is worse than a missing one.
+### What the change is (verify it, do not re-derive it)
 
-### GATE 1 — answer 3a before you push, and answer it locally
+- **No route-scoped secret reaches Meta.** `api/_lib/analytics-url.ts` reports origin plus normalised
+  path, never a query string or fragment; `api/_lib/meta-capi.ts` scrubs every `event_source_url`;
+  `api/pe-meta.ts` scrubs the client URL, the request referrer and the configured origin;
+  `src/lib/meta-events.ts` suppresses the browser leg on an identifier-bearing address or referrer;
+  the static `fbq("track","PageView")` is gone from `index.html` and fires from `src/main.tsx` through
+  the gate; `vercel.json` sets `Referrer-Policy: strict-origin-when-cross-origin`.
+- **Four events, both legs, one dedup id**: `CompleteRegistration` (server only, from cortex's 201 on
+  session-exchange, `isNewAccount`), `ViewContent` (inspect card), `Lead` (records request accepted),
+  `Share` (grant persisted).
+- **Named gap, not built:** `Lead` carries no hashed email from the browser (the session endpoint
+  does not return one). Closing it means the records-run endpoint accepts an event id and fires
+  server-side. Leave it named.
 
-`fbq("track","PageView")` sends the page address as `dl`. This app's deep links put identifiers in
-that address: a share landing is `/share?g=<grantId>` or `/s/<uuid>`, a parcel view carries
-`parcelNodeId`, and `/share#<token>` puts the human token in the fragment.
+### Gate 1, as ruled: prove the leak is closed, locally
 
-**A share grant id is a capability identifier, not an analytics tag.** If it reaches Meta, Meta
-receives something that names an access grant, and learns which browser opened which share. Treat
-that as a data-sharing decision, not a deploy detail.
+Suppression replaced the `dl` question, but "moot" is a claim until observed. On a local `vite dev`
+server (never a preview: a preview fires the live pixel id with preview URLs), with the real
+`fbevents.js` loading, record verbatim what leaves the browser for: `/share?g=<id>`, `/share#<token>`,
+`/s/<uuid>`, a parcel deep link carrying `parcelNodeId`, and a plain map load. For the suppressed
+routes the record is that no Meta request fired; for the others it is the verbatim `dl` value, which
+must carry no identifier. Then the referrer case: land on a share link, act, and show the next event's
+URLs carry no grant. Record requests, not summaries.
 
-The staging seat deliberately shipped no mitigation because it had not verified what `fbevents.js`
-actually puts in `dl`, and shipping a mitigation against unverified behaviour is how confident wrong
-claims get made. That was the right call. Your job is to end the uncertainty.
+### Gate 2: the cortex leg's post-deploy check
 
-**Run the probe on a local `vite dev` server, not on a preview.** The tag loads there too. The
-handoff's original ordering (push, let a preview build, probe the preview) fires PageViews tagged
-with preview URLs into the LIVE pixel id and mixes preview traffic into the ad data the operator
-reads. Probing locally dissolves the dependency between the two decisions entirely, at no cost. If
-you believe a local probe cannot answer it, say why before reaching for a preview.
+The canary job's P-279 tagged-revision check runs and must read clean. The shift job's copy cannot run
+until P-362 lands (no checkout; its failure reads as "violation"). Say whether P-362 has merged when
+you close. If not, the seat checks tagged revisions by hand after the shift, by field, as it did on
+2026-09-18.
 
-The probe: load `/share?g=<a grant id>` with Meta Pixel Helper, read the `dl` value on the PageView
-event, and record it verbatim. Test the fragment form `/share#<token>` separately — query string and
-fragment are different questions and `dl` may carry one and not the other. Also test a parcel deep
-link carrying `parcelNodeId`.
+### Suites
 
-Then decide, and state the decision with its reason: suppress the pixel on identifier-bearing routes,
-strip the identifier from the address bar before the pixel fires, or accept and disclose. If you
-choose accept-and-disclose, the privacy page must say so plainly; it currently does not claim shares
-are withheld, and an earlier draft that did was removed as an overclaim, so do not reintroduce one.
+Re-run after the rebase: hauska-map `pnpm test` in Property Explorer (four node gate scripts, then
+vitest; 3,295 tests passed before the rebase) and `tsc --noEmit` (pre-existing `TS2307` for
+`@hauska/map-renderer` only; name anything new). LDT: the `pe-ghl-contact`, `pe-magic-link` and
+`pe-paywall-stripe` integration suites need Postgres with `pgvector` and `postgis` on the **direct,
+non-pooled** URL (the harness sets `search_path` as a startup parameter; Neon's pooler rejects it).
+Never write that credential into any file.
 
-**Record the verbatim `dl` values in your close.** A summary of what you saw is not evidence.
+### Hand the seat the deploy
 
-### GATE 2 — the cortex leg is blocked until P-323 clears
+The seat deploys cortex-api first (session-exchange must accept `campaign` before the app sends it),
+graded with `scripts/cortex-canary-compare.mjs`, then Property Explorer. Give the seat, exactly:
 
-The handoff's deploy order is cortex first, then the app, and that order is correct: if the app ships
-first, campaign parameters arrive at a `session-exchange` that ignores `campaign`.
-
-But `legacy-design-tools`' deploy workflow now runs P-279's tagged-revision credential check after
-the canary deploy and again after the traffic shift, and it **exits 1 on violation**. `cortex-api`
-carries 15 failing tags today, so both jobs go red for a reason that has nothing to do with your
-change. The deploy still happens; what you lose is the ability to tell YOUR failure from the standing
-one, and a deploy job that is red by default is how a working control gets reclassified as noise.
-
-So: **do not ship the cortex leg through a red gate.** P-323
-(`_dispatches/2026-09-17_p323-tag-hygiene_dispatch.md`) clears the tags. Confirm a clean P-279 run on
-`cortex-api` before you deploy it, and name the run you read. If P-323 has not landed, stop after
-Gate 1 and report; do not work around the check and do not make it advisory.
-
-### Then deploy, in this order
-
-1. **`legacy-design-tools` (cortex-api)**, under its deploy lease. Confirm `POST
-   /auth/session-exchange` still returns 200/201, and that a new signup with no campaign still
-   creates a GHL contact with **no** source tag.
-2. **`hauska-map` (Vercel, Property Explorer)**. `hauska-map` links to whichever project
-   `.vercel/project.json` names and has been linked to `cmdcenter` when the work was for
-   `property-explorer`. The correct ids are `prj_vcZGXbqdffk5C20WzaplEpzFynK3` (project) and
-   `team_4TH5lNnFHcBGx4EKNapJ2MVG` (org); Root Directory is `apps/property-explorer`. Deploy from a
-   fresh clone: `P:/hauska-map` was 370 commits behind, one commit ahead and dirty on 2026-09-17.
-   Judge success by the live alias, never by the CLI exit code, which has returned 255 on a
-   deployment that shipped fine.
-3. Verify on the live site: the tag is in `<head>`; no CSP violation for `connect.facebook.net`;
-   Pixel Helper reports PageView. The CSP allowance is production-only in effect — nothing in CI
-   notices its absence, so this check is the only thing that catches it.
-4. Land with `?utm_source=share&utm_medium=share`, sign in with a new account, read the GHL contact:
-   the tag must be `source-share`.
-5. Repeat with `?utm_source=facebook&utm_medium=paid`: the contact must have **no** source tag and
-   the log must carry the unmapped entry. That is the correct outcome, not a bug — there is no paid
-   member among the four provisioned `source-*` tags, so the fix removes a false label without
-   supplying a true one (3b).
-6. `/privacy` still serves real HTML and shows the 17 September 2026 date.
+1. The Property Explorer env vars, and which are required: `META_CAPI_ACCESS_TOKEN` (the operator
+   supplies it from Events Manager), `META_PIXEL_ID` (`1124306790022968`), `PE_SITE_ORIGIN`
+   (`https://smartsite.cloud`); `META_TEST_EVENT_CODE` never in production except for a timed test.
+   Without the first two the server leg returns `503 capi_not_configured`: a deploy that forgets the
+   token looks like a working pixel with no conversions.
+2. The live checks, each with its expected result: `POST /api/pe-meta` with
+   `{"name":"Lead","eventId":"deploy-probe-1"}` returns 200 with `eventsReceived`, not 503; the tag is
+   in `<head>` on the map and absent from share routes; no CSP violation for `connect.facebook.net`;
+   a signup with no campaign creates a GHL contact with **no** source tag; `?utm_source=share&utm_medium=share`
+   tags `source-share`; `?utm_source=facebook&utm_medium=paid` writes no source tag and logs the
+   unmapped entry; `/privacy` serves and shows the 17 September 2026 date. Mark which checks need the
+   operator (Events Manager's Test Events view, Pixel Helper in a browser).
 
 ### Say this out loud in your close
 
-Organic signup volume **will drop**, because signups arriving with no campaign parameters now get no
-source tag where previously every one was `source-organic`. The bucket becomes a measurement instead
-of a guess, and it shrinks. Someone will read that dashboard and think something broke.
+Organic signup volume **will drop**: signups with no campaign parameters get no source tag where every
+one used to be `source-organic`. And from the events handoff: external free signups run about one a
+week, far below the roughly 50 a week an ad set needs to optimise, so `ViewContent` is the candidate
+optimisation event and `CompleteRegistration` should fire without being tuned on. That is the
+operator's call; report it, do not act on it.
 
 ### What you must not do
 
-- Do not push before Gate 1 is answered.
-- Do not deploy cortex-api through a red P-279 gate, and do not make that check advisory.
-- Do not write the throwaway Postgres credential into any repo file. The staging seat kept it out of
-  every file deliberately; keep it that way. The integration suites (`pe-ghl-contact`,
-  `pe-magic-link`, `pe-paywall-stripe`) need Postgres with `pgvector` and `postgis` and the
-  **direct, non-pooled** URL, because the harness sets `search_path` as a startup parameter and
-  Neon's pooler rejects it.
-- Do not implement named conversion events or the Conversions API. Both are named gaps, not this
-  deploy (gap 1 and 2 in the handoff).
+- Do not deploy, and do not ship the base tag without the events work (A-222's reversal: if the
+  combined change cannot pass, stop and report; neither half ships alone).
+- Do not write in the integration seat's worktrees.
+- Do not build the `Lead` server-side email path, a `source-paid` tag, magic-link source tags or GHL
+  UTM customFields.
 - Do not touch county 48491 in any store.
 
 ### Close
 
-Declare: the rebase result and what moved under you, the verbatim `dl` values for all three link
-shapes, your 3a decision with its reason, the P-279 run you read before the cortex leg, both deploy
-targets with their verification, the GHL contact reads for both campaign cases, and `leave_behind`.
+Declare: the transfer proof, the rebase result and what moved, both PRs and their suite results, the
+verbatim Gate 1 records, whether P-362 has merged, the seat's env var list and live-check list with
+expected results, the organic-volume and optimisation-event notes, and `leave_behind`.

@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-18 (17:10Z, rest of Wave 2 compiled)
+last_updated: 2026-09-18 (17:25Z, A-222)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -308,6 +308,8 @@ Two factory lanes (P-335, P-327) and two engine lanes (P-342, P-328) run on disj
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
 | 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-18 17:20 | **San Marcos coverage re-check HOLDS (ruling 19's precondition).** 1.4.0 covers 88.38 percent of zoned area (1.1.0, served today: 50.47); the 2026-09-07 figure reproduced at 12.93. Record `_inbox/2026-09-18_san_marcos_coverage_recheck_RECORD.md`. Next: P-258's re-run, Hays first (the San Marcos switch), dry run first. |
+| 2026-09-18 17:25 | **A-222: P-324 ships with its staged events, CAPI and share-URL scrubbing (operator); recompiled** as `_dispatches/2026-09-18_p324-pixel-events-attribution_dispatch.md`. The Wave 2 batch is pushed (`d6ab5e46`); eleven Wave 2 dispatches are ready to fire. `META_CAPI_ACCESS_TOKEN` is owed by the operator for the Property Explorer deploy. |
 | 2026-09-18 17:10 | **Rest of Wave 2 compiled (integration seat, new session).** Ten dispatches from source: P-333, P-334/P-329/P-330 (three PRs), P-352, P-361 (#474 updated in place), P-351 (both bake writers and the factory pin), P-331, P-358, P-359, P-362, and P-286/P-317 recompiled. **P-324 held for an operator scope ruling** (a staged events-and-CAPI extension, `_inbox/2026-09-18_HANDOFF_meta_pixel_events_and_scrubbing.md`, conflicts with its row). Queue and states in the register. |
 | 2026-09-18 16:20 | **Session close (integration seat).** Wave 2 compiled so far: P-354, P-339/340/341, P-353, P-270 address half, P-336 (pushed `0e80b351`, operator to fire). Handoff `_inbox/2026-09-18b_HANDOFF_integration_seat.md`; session `_sessions/2026-09-18_seat_wave1_and_wave2_compile_claude_code.md`. |
 | 2026-09-18 15:55 | **A-221: #175 deployed and graded, trigger resumed 15:24:53Z; P-332 live (`m6wqid8u7`); LDT live (cortex-api `00841-jeh`, canary 90/90); customer leg measured with the MCP signed in.** P-362 carded. Next: the signed-in probe re-run on the new surfaces, then Wave 2. |
