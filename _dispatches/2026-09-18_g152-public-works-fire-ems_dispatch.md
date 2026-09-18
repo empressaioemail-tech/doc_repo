@@ -76,19 +76,36 @@ CONTRACT or ENFORCEMENT, those win.
 ## Mission - G-152: build the Public works and Fire and EMS lenses
 
 You launch no sub-agents (FAN-DEPTH 0). You WRITE in `smartcity-dashboards`. You write nothing in
-`doc_repo` (`_design/` is planner-owned and a sibling lane, `g148-design-instruments`, is editing four
-OTHER design folders while you run) and nothing in `smartcity-os`. Hand any `doc_repo` edit back as a
-diff, uncommitted, and the planner commits it.
+`doc_repo` (`_design/` is planner-owned; `g148-design-instruments` has CLOSED and the four folders it
+delivered now carry instruments that FAIL against their own boards, carded as G-164, so a failing
+design instrument is not proof you broke something) and nothing in `smartcity-os`. Hand any `doc_repo`
+edit back as a diff, uncommitted, and the planner commits it.
 
-### READ THIS FIRST: you are the SECOND lane in a serialized queue
+### READ THIS FIRST: the queue in front of you has CLEARED
 
 Every SmartCity lens renders into two monolithic files, `web/app.js` and `web/index.html`, so two
 dashboards lanes in parallel is a merge conflict generator rather than a speedup. That ruling is
-OPS-17 A-144 and it stands.
+OPS-17 A-144 and it stands, and it still means one dashboards lane at a time.
 
-**`g153-fleet-police-lens` is RUNNING in this repo right now.** Do not begin your first write until
-its close is filed. If you find an uncommitted tree in `smartcity-dashboards` that is not yours, that
-is the sibling lane's work: STOP and report rather than cleaning, stashing or committing it.
+**`g153-fleet-police-lens` HAS CLOSED, and the wait this section used to impose is over.** Its close is
+filed at `_inbox/2026-09-18_g153-fleet-police-lens_close.json`, `closedAt 2026-09-18T20:38:32Z`, seat
+`cente-vsc-g153`, and the planner has committed the two `_design/*/check.mjs` it left uncommitted in
+the integration tree. **You are the only dashboards lane. Do not wait for a close that is already on
+disk.** Re-run `node scripts/lane-claim.mjs status` yourself before your first write: every claim in
+the registry is STALE today and none of them is a SmartCity lane, which is the state you should expect.
+
+**Two things g153's close tells you, and both bear on your run.** (1) It closed `CLOSED-PARTIAL` and
+not `CLOSED`, for exactly the clause your own acceptance also ends with: the DO app still serves the
+pre-fix build, because `deploy_on_push` is unset by D-12's deliberate posture. Expect the same shape.
+Prove everything provable in a harness, name the deploy clause you could not reach, and do not claim a
+live pass you did not observe. (2) Its largest `leave_behind` is unowned and is **not yours**: every
+live fleet and patrol record fails its declared shape (102 of 102, including the status enum,
+`operatorRef` and Samsara's `odometerBand`), so once Fleet and Police deploy, those two regions read
+`refused` with the faults named. That is a declared absence and not a blank. Do not let a sibling
+region's declared absence read to you as your own regression.
+
+If you find an uncommitted tree in `smartcity-dashboards` that is not yours, that is a sibling lane's
+work: STOP and report rather than cleaning, stashing or committing it.
 
 Your lane's claim is the record that says you started. Claim it before your first write.
 
