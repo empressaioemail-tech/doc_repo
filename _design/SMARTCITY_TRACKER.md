@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `0e80b351`: 116 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `c5eb6666`: 116 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 963 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -50,7 +50,7 @@ programs: [OPS-17, OPS-25]
 | Row | What | Status | Close on file |
 |---|---|---|---|
 | G-135 | distribute the bastrop_tx tenant key — it exists, it works, and no lane can reach it. | closed, partly | closed-partial, closed-partial |
-| G-161 | NEVER DEFAULT A CITY, EVERYWHERE, NOT ONLY ON THE FINANCE ROUTE. | open | — |
+| G-161 | NEVER DEFAULT A CITY, EVERYWHERE, NOT ONLY ON THE FINANCE ROUTE. | landed, not graded | — |
 | G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | closed, partly | The four corrections are implemented, merged and proven on the live bastrop_tx surface on d12-main-uat - three of the four by direct measurement, and the fourth NAMED AS UNMEASURED because the live feed draws no workload ranking for it to be measured on. Getting there exposed four defects, three of them in the proving tools rather than the product; all three are fixed and each fix is proven in both directions. |
 | G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | open | — |
 | G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | open | — |
@@ -68,7 +68,7 @@ programs: [OPS-17, OPS-25]
 | D-10 | SWITCH THE SCRAPER'S TRIGGER FROM OIDC TO A SHARED SECRET. | closed, partly | closed-partial |
 | D-11 | FLIP hauska-mcp-server'S DASHBOARDS_BACKEND_URL. | closed | closed |
 | D-13 | THE DASHBOARDS STILL READ EVERY BASTROP FEED FROM THE GCP v1. REPOINT THEM AT walrus-app, OR DEC | open | — |
-| D-14 | walrus-app BUILDS FROM A SIDE BRANCH, SO NOTHING MERGED TO v1 main CAN REACH smartcityos.io. | open | — |
+| D-14 | walrus-app BUILDS FROM A SIDE BRANCH, SO NOTHING MERGED TO v1 main CAN REACH smartcityos.io. | landed, not graded | — |
 
 ## M5. Design complete, and the controls that keep it honest
 

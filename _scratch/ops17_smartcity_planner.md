@@ -124,3 +124,31 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **`HAUSKA_ADMIN_BOOTSTRAP_KEY` drift** (`hauska-mcp-server/.env` value != deployed) is still open.
   Note for the next reader: the SECRET MANAGER value is the one that works, which is what this seat's
   revoke instrument read.
+
+### GROUND-TRUTH (2026-09-18, planner reads and one instrument fix)
+
+- **`scripts/govtech/smartcity-tracker.mjs` refused a verdict twice today, for two separate defects,
+  both now fixed and both proven able to fire by violating them.** (1) It split table rows on EVERY
+  pipe, so the G-161 row, whose status cell carries an escaped `\|`, parsed to nine cells and VANISHED
+  from the run; a row that cannot be parsed is now recorded in a non-enumerable `rows.dropped` and the
+  run refuses (proven by adding a stray cell to D-5: refused, then reverted). (2) Its status vocabulary
+  had no `LANDED`, so a landed row read UNREADABLE and a tracked row with an unreadable status word
+  still exited 0; `LANDED` is now its own class, deliberately NOT in `DONE` (landed = the change is
+  present at its target, not that the row's instrument is graded), and an unreadable tracked row now
+  refuses (proven by writing `ZZZ-VIOLATION-PROBE` over D-5's status: refused, then reverted).
+- **`DONE` in the tracker means CLOSED and CLOSED-PARTIAL only.** A row graded `landed` is displayed as
+  `landed, not graded` and is NOT counted done. If a lane close says `closed` while the row says
+  `landed`, the tracker now DISAGREES on purpose: the planner must either grade the row closed against
+  its instrument or fix the close.
+- **D-13 and D-14 read `ADDED` in OPS-25 while the roadmap called both landed.** That is the drift the
+  tracker exists to catch, and it was invisible because nothing filed a close. Re-graded 2026-09-18
+  (OPS-25 A-9): **D-14 LANDED** (repoint read back, `source_commit_hash` = `smartcity-os` main HEAD;
+  its payload-parity and health-probe clauses ungraded), **D-13 OPEN** (the code is on main and proven
+  on `d12-main-uat`; `dolphin-app` carries neither the code nor `SMARTCITY_V1_PLATFORM_BASE`, so
+  production dashboards still read the GCP copy of v1 for every feed). A-150's "D-13 LANDED" was
+  scoped to the code and read as the row; code-done is not customer-done.
+- **Counts after the re-grade, stable and matching the last generated tracker:** M1 2/6, M2 3/6,
+  M3 4/9, M4 4/6, M5 0/5.
+- **A-150 lives in OPS-17's amendment table and describes two OPS-25 rows without moving them.** When
+  an OPS-17 amendment moves an OPS-25 row, the OPS-25 row and an OPS-25 amendment must land in the same
+  pass, or the plan of record disagrees with itself and nothing notices.

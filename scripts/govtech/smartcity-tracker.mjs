@@ -38,7 +38,8 @@ export const MILESTONES = [
 /* ---------- status vocabulary ---------- */
 // Longest first, so CLOSED-PARTIAL is not read as CLOSED and "STILL BLOCKED" not as something shorter.
 const CLASSES = [
-  ['CLOSED-PARTIAL', 'closed-partial'], ['CLOSED', 'closed'], ['MERGED AND DEPLOYED', 'merged'],
+  ['CLOSED-PARTIAL', 'closed-partial'], ['CLOSED', 'closed'], ['LANDED', 'landed'],
+  ['MERGED AND DEPLOYED', 'merged'],
   ['STILL BLOCKED', 'blocked'], ['BLOCKED', 'blocked'], ['OUT OF SCOPE', 'out-of-scope'],
   ['DESIGNED', 'designed'], ['HELD', 'held'], ['SCOPED', 'open'], ['ADDED', 'open'], ['OPEN', 'open'],
 ];
@@ -48,24 +49,36 @@ export function classify(cell) {
   for (const [word, cls] of CLASSES) if (lead.startsWith(word)) return cls;
   return 'unknown';
 }
+/** What counts as done. `landed` is deliberately NOT in it. This program uses "landed" for the state
+    verified today on D-14, D-13 and G-161: the change is present at its target and read back at source,
+    while the row's own instrument still has ungraded clauses and no lane close is filed. Folding that
+    into `done` would count a row complete on a partial read, which is the "code-done is not
+    customer-done" defect pointing the other way. Only CLOSED and CLOSED-PARTIAL mean graded. */
 const DONE = new Set(['closed', 'closed-partial']);
 const normClose = (s) => { const v = String(s || '').trim().toLowerCase(); return v === 'closed-partial' || v === 'closed' ? v : null; };
 
 /* ---------- parse the plans ---------- */
 /** OPS-17: | ID | L | work | serves | instrument | blocked | status |. OPS-25: | Row | Date | Status | scope | depends |. */
 export function parseRows(text, kind) {
-  const rows = {};
+  const rows = {}; const dropped = [];
   for (const line of text.split('\n')) {
     const m = line.match(kind === 'OPS-17' ? /^\| (G-\d+) \|/ : /^\| (D-\d+) \|/);
     if (!m) continue;
-    const c = line.split('|').slice(1, -1);
-    if (kind === 'OPS-17' && c.length !== 7) continue;
-    if (kind === 'OPS-25' && c.length !== 5) continue;
+    // Split on UNESCAPED pipes only. Markdown requires an escaped pipe (`\|`) inside a table cell, and
+    // splitting on every pipe turned such a row into extra cells, so it failed the width check below and
+    // VANISHED from the tracker while the tracker went on reporting PASS. Found 2026-09-18 when G-161's
+    // status gained `\|\|` and G-161 disappeared from the run that gates the roadmap. A row that cannot
+    // be parsed is now RECORDED and the run REFUSES, because a gate that drops a row silently reports
+    // health it did not measure.
+    const c = line.split(/(?<!\\)\|/).slice(1, -1);
+    const want = kind === 'OPS-17' ? 7 : 5;
+    if (c.length !== want) { dropped.push(`${m[1]} (${kind}): ${c.length} cells, expected ${want}`); continue; }
     const status = kind === 'OPS-17' ? c[6] : c[2];
     const titleCell = kind === 'OPS-17' ? c[2] : c[3];
     const title = (titleCell.match(/\*\*(.+?)\*\*/) || [, titleCell])[1].replace(/[`*]/g, '').replace(/\s+/g, ' ').trim().slice(0, 96);
     rows[m[1]] = { id: m[1], plan: kind, status: status.trim(), cls: classify(status), title };
   }
+  Object.defineProperty(rows, 'dropped', { value: dropped, enumerable: false });
   return rows;
 }
 
@@ -119,6 +132,14 @@ const T = [
   ['clean: an OPEN row with no close is simply open', disagreements({ 'G-1': { cls: 'open' } }, {}, ['G-1']).length === 0],
   ['clean: a close with an unrecognised status is not counted as done', disagreements({ 'G-1': { cls: 'open' } }, { 'G-1': [{ status: null, file: 'a' }] }, ['G-1']).length === 0],
   ['parse: an OPS-17 row with the wrong cell count is skipped, not misread', Object.keys(parseRows('| G-9 | 5 | x | y |', 'OPS-17')).length === 0],
+  ['parse: that same skipped row is RECORDED, so the run can refuse on it', parseRows('| G-9 | 5 | x | y |', 'OPS-17').dropped.length === 1],
+  ['parse: an escaped pipe inside a cell does not drop the row (the G-161 case)', parseRows('| G-9 | 5 | **a \\| b** | B | inst | none | **LANDED 2026-09-18** |', 'OPS-17').dropped.length === 0],
+  ['parse: LANDED reads as its own class, not as UNREADABLE (the G-161 status word)', parseRows('| G-9 | 5 | **a \\| b** | B | inst | none | **LANDED 2026-09-18, read at source** |', 'OPS-17')['G-9'].cls === 'landed'],
+  ['classify: LANDED is not read as CLOSED (they are different words and stay different)', classify('**LANDED 2026-09-18**') !== 'closed' && classify('**CLOSED 2026-09-18**') === 'closed'],
+  ['REFUSE: a LANDED row against a close that says closed (landed is not graded; resolve the row)', disagreements({ 'G-1': { cls: 'landed' } }, { 'G-1': [{ status: 'closed', file: 'a' }] }, ['G-1']).length === 1],
+  ['clean: a LANDED row with no close is landed, not a disagreement', disagreements({ 'G-1': { cls: 'landed' } }, {}, ['G-1']).length === 0],
+  ['parse: an OPS-17 row with the wrong cell count is recorded too, not only OPS-25 rows', parseRows('| G-9 | 5 | x |', 'OPS-17').dropped.join().includes('expected 7')],
+  ['parse: escaped pipes do not shift the status column', parseRows('| G-9 | 5 | **a \\| b \\| c** | B | inst | none | OPEN |', 'OPS-17')['G-9'].cls === 'open'],
   ['parse: a well-formed OPS-17 row is read', parseRows('| G-9 | 5 | **Do it** | B | inst | none | OPEN |', 'OPS-17')['G-9'].cls === 'open'],
   ['link: planRows array', rowsOfClose({ planRows: ['G-1'] }).join() === 'G-1'],
   ['link: planRow as a single string (the G-156 case)', rowsOfClose({ planRow: 'G-156' }).join() === 'G-156'],
@@ -139,9 +160,12 @@ const closes = parseCloses(join(ROOT, '_inbox'));
 const tracked = MILESTONES.flatMap((m) => m.rows);
 const unlinked = closes.__unlinked || []; delete closes.__unlinked;
 
+const unparsed = [...ops17.dropped, ...ops25.dropped];
+if (unparsed.length) { console.error('REFUSING A VERDICT: plan rows that could not be parsed (a row the tracker cannot read is not a row that passed): ' + unparsed.join('; ')); process.exit(2); }
 const missing = tracked.filter((id) => !rows[id]);
 if (missing.length) { console.error('REFUSING A VERDICT: tracked rows not found in either plan: ' + missing.join(', ')); process.exit(2); }
 const unknown = tracked.filter((id) => rows[id].cls === 'unknown');
+if (unknown.length) { console.error('REFUSING A VERDICT: tracked row(s) whose status word is not in the vocabulary, so the run cannot say whether they are done: ' + unknown.join(', ')); process.exit(2); }
 if (Object.keys(ops17).length < 20 || Object.keys(ops25).length < 5) { console.error('REFUSING A VERDICT: too few rows parsed; the table shape has changed'); process.exit(2); }
 
 let commit = 'unknown';
@@ -149,7 +173,7 @@ try { commit = execFileSync('git', ['-C', ROOT, 'rev-parse', '--short', 'HEAD'],
 const dis = disagreements(rows, closes, tracked);
 
 /* ---------- render ---------- */
-const LABEL = { closed: 'closed', 'closed-partial': 'closed, partly', merged: 'merged, not closed', designed: 'designed, awaiting ratification', open: 'open', held: 'held', blocked: 'blocked', 'out-of-scope': 'out of scope', unknown: 'UNREADABLE' };
+const LABEL = { closed: 'closed', 'closed-partial': 'closed, partly', landed: 'landed, not graded', merged: 'merged, not closed', designed: 'designed, awaiting ratification', open: 'open', held: 'held', blocked: 'blocked', 'out-of-scope': 'out of scope', unknown: 'UNREADABLE' };
 const count = (ids, pred) => ids.filter((id) => pred(rows[id].cls)).length;
 let md = '---\nid: smartcity_tracker\ntitle: "SmartCity tracker (generated)"\nstatus: generated\nkind: tracker\nowner: nick\nprograms: [OPS-17, OPS-25]\n---\n\n';
 md += '# SmartCity tracker\n\n';

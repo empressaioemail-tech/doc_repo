@@ -44,19 +44,30 @@ Police (Spireon), Public works (Power BI, GoTo) and Fire and EMS (FirstDue). Fin
 path now exists. G-159 proved Bastrop's budget is live and readable, and built the v1 routes that serve
 it. Two DigitalOcean rows, D-14 and D-13, make those routes reachable.
 
-**Nothing merged today is live for customers.** `app.smartcityos.io` serves `3d3ec62`, from before the
-Finance lens, the Development services corrections and the city-default fix. These apps deploy only when
-someone deploys them, and a merge deploys nothing. Read again from outside at 2026-09-18T15:09Z and the
-ship has still not happened: `app.smartcityos.io` answers `unknown lens` on `/api/lenses/finance/sources`
-where `d12-main-uat` answers `city_key_required`, so production still predates even G-159's dashboards
-change. The dashboards' `main` did move, from `7267c3f` to `96fdafb` (PR #72, the G-154 live proof below);
-that is a merge and it deployed nothing.
+**Two DigitalOcean rows moved today, one all the way and one only to UAT.** D-14 and D-13 were
+read at source by the planner at 2026-09-18T16:26Z. **D-14 LANDED:** `walrus-app` now builds from
+`main` and serves `1f0262f`, so the three G-159 routes that used to fall through to the SPA shell now
+answer `401 platform_internal_required` while a fake path still answers the shell. **D-13's code landed
+and its production step did not** (OPS-25 A-9): the dashboards' `main` `7487d7c0` carries
+`src/platform-base.mjs`, which decides the v1 base from ONE variable and refuses when it is unset, with
+the old GCP host gone from `src/` and `web/`, and `d12-main-uat` builds from `main` and serves exactly
+that commit, but `dolphin-app` carries neither the code nor the variable, so the production dashboards
+still read the GCP copy of v1. The dashboards' `main` moved from `96fdafb` to `7487d7c0`, which is
+G-161's fix.
 
-**Production is worse than `main` on one point that matters.** At `3d3ec62` the Development services
+**Production has not moved, and the ship is now a two-part change rather than one.** `app.smartcityos.io`
+still serves `3d3ec62`, from before the Finance lens, the Development services corrections and the
+city-default fix; the finance route answers `unknown lens` there where `d12-main-uat` answers
+`city_key_required`. These apps deploy only when someone deploys them, and a merge deploys nothing.
+**`dolphin-app`'s configured env carries no `SMARTCITY_V1_PLATFORM_BASE`, and at `7487d7c0` an unset base
+is a refusal with a named basis rather than a silent default**, so shipping `main` without setting that
+variable in the same deploy would take every v1 platform feed from serving to refusing.
+
+**Production is also worse than `main` on one point that matters.** At `3d3ec62` the Development services
 work-order table shows the vendor's free-text title, which is where residents write their names and
 phone numbers. `main` no longer does (G-154). The operator RULED on 2026-09-18 that `main` ships to
-`dolphin-app` (OPS-17 A-149); it is the `d14-d13-v1-reach` lane's last step, one deploy that also adds
-the configured platform base the repointed dashboards then require.
+`dolphin-app` (OPS-17 A-149); it is ONE deploy that must also set that variable, and it is the
+`d14-d13-v1-reach` lane's last step.
 
 **The credential that blocked every Bastrop proof is CLEARED, and it cost the program three days.** A tenant-private pack answers 401 to an anonymous read, so no lane could prove anything on `bastrop_tx` on a deployed app. G-135 asked the substrate seat for a verification-scoped key on 2026-09-15; it was never minted, and G-135's own artifacts sat untracked for three days, so nothing surfaced it. **The `g135-mint` lane minted it on 2026-09-18 at 14:44Z.** `key_id 96e40316`, tenant `bastrop_tx`, active, stored at Secret Manager `hauska-prod-497015/hauska-tenant-key-bastrop-tx-lane-verification` version 1 and recorded in `_catalog/credential_access_index.json` with a one-command `howToUse`. The planner verified it at source with its own instrument rather than on report (`_inbox/2026-09-18_planner_g135_credential_probe.mjs`, 8 of 8 declared cells: 200 on `bastrop_tx` with the key, 401 keyless, 401 on a garbage key, 403 on `fixture-city`, 200 keyless on `template-city`, 404 on an unknown city). Any lane can now obtain it from a documented location without asking a human, which is G-135's first parcel and the reason six rows were sitting blocked.
 
@@ -115,37 +126,56 @@ Every lens design built into `smartcity-dashboards` and proven on `bastrop_tx`.
 **The order.** The credential is no longer the gate: `g135-mint` minted it 2026-09-18 and any lane reads
 it from Secret Manager in one command. **G-154 (Development services) is CLOSED-PARTIAL**, proven on the
 live `bastrop_tx` surface on `d12-main-uat` at 14:49Z: three of its four acceptance items PASS and the
-fourth is named unmeasured because the live surface draws no workload ranking to measure it on. G-161 is
-the next in this milestone and has NOT landed -- it removes the remaining places where the product
-silently serves the demo city to a caller who named none, and it is still live: `/api/city-domains`,
-`/api/city-identity` and `/api/shell` all answer 200 keyless on `d12-main-uat`, which is the demo city
-answering a caller who named no city at all.
+fourth is named unmeasured because the live surface draws no workload ranking to measure it on. **G-161
+HAS LANDED** (planner read at source, 2026-09-18T16:26Z): its six `|| "template-city"` fallbacks are
+replaced in `src/server.mjs` at `7487d7c0`, and live on `d12-main-uat` at that commit `/api/city-domains`,
+`/api/city-identity`, `/api/shell` and `/api/lenses/finance/sources` all answer `400 city_key_required`
+keyless, where the 15:09Z read answered 200 with the demo city; naming `template-city` explicitly still
+answers 200. **No close is filed for that lane**, so the row moves on the deployed record and the lane's
+own acceptance items and leave-behind are still owed.
 
-The next lens starts after G-161 and D-13's dashboards change merge. Lens rows run one at a time, because
+**The next lens is therefore UNBLOCKED**, because both things it was waiting on are now true: G-161 has
+landed and D-13's dashboards change is in `main` at `7487d7c0`. Lens rows run one at a time, because
 every lens renders in two shared files (`web/app.js`, `web/index.html`), and G-153 and G-152 also change
-the vendor mappers that D-13 is repointing. After that the queue is G-153 (Fleet and Police), G-152
+the vendor mappers. The queue is G-153 (Fleet and Police, and it carries G-135's parcel 2), G-152
 (Public works, Fire and EMS), G-151 (Parks), then G-149 (the flood study). G-149's row still describes the
-GCP mount and needs re-scoping for DigitalOcean before it is dispatched. G-155 (Smart Files) and G-150
-(plan review) build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
+GCP mount and needs re-scoping for DigitalOcean before it is dispatched, and it also INHERITS its
+`check.mjs` from G-148's lane rather than writing its own. G-155 (Smart Files) and G-150 (plan review)
+build in their own repos and are closed. G-155 still owes a check on Bastrop's own files.
 
-**What blocks it:** G-161, and D-13's dashboards change. The credential is no longer a blocker for any row
-here. **G-135's second parcel now has an owner rather than being an orphan:** the operator folded it on
-2026-09-18 into the next lens BUILD lane (G-153, Fleet and Police, first in the queue below), because a
-full-shell authenticated probe that mounts the map iframe is a browser-driven probe a lens lane already
-does. G-135 closes when that lane reports it, and it is the only thing left unmeasured in that row.
+**What blocks it:** nothing, for the first build lane. G-153 can be compiled and handed over. The
+credential is not a blocker for any row here, and neither G-161 nor D-13 is any longer.
+
+**G-135's second parcel has an owner rather than being an orphan:** the operator folded it on 2026-09-18
+into the next lens BUILD lane (G-153, Fleet and Police, first in the queue above), because a full-shell
+authenticated probe that mounts the map iframe is a browser-driven probe a lens lane already does. G-135
+closes when that lane reports it, and it is the only thing left unmeasured in that row.
 
 ### M4. The DigitalOcean migration complete
 
 Every SmartCity service on DigitalOcean, and the GCP originals decommissioned after a clean bake.
 
 **The order.** D-5, D-9, D-10 and D-11 are closed. D-12 is closed-partial: `app.smartcityos.io` now
-resolves to `dolphin-app`, and the bake starts when staff move. `d14-d13-v1-reach` runs D-14, then D-13.
-After them comes the SmartCity decommission bundle (D-20), then the bakes, then decommissioning. A full
-GCP exit is being planned by another seat, and this milestone is its first phase.
+resolves to `dolphin-app`, and the bake starts when staff move. **D-14 LANDED on 2026-09-18 and D-13's
+code landed without its production step, both read at source by the planner at 16:26Z** (OPS-25 A-9):
+`walrus-app` `e243db0a` now builds from `main` and serves `1f0262f`, with the three G-159 routes
+answering `401 platform_internal_required` where a fake path answers the SPA shell, so D-14's repoint is
+live; `smartcity-dashboards` `main` `7487d7c0` carries `src/platform-base.mjs`, which decides the v1
+base from one variable and REFUSES when it is unset, and the old GCP host is gone from `src/` and `web/`,
+but `dolphin-app` carries neither, so D-13's production step waits on the same deploy that D-12's
+cutover does. After them comes the SmartCity decommission bundle
+(D-20), then the bakes, then decommissioning. A full GCP exit is being planned by another seat, and this
+milestone is its first phase.
 
-**What blocks it:** the GCP `smartcity-api` is not idle. The dashboards read every Bastrop feed from it,
-so decommissioning it before D-13 would cut every live figure. The bake needs staff on
-`app.smartcityos.io`.
+**What blocks it now:** the bake, which needs staff on `app.smartcityos.io`, and the ship. **The ship has
+not happened and it is a two-part change.** Production serves `3d3ec62` from a deployment ACTIVE since
+2026-09-18T00:27Z (the finance route answers `404 unknown lens` there where `d12-main-uat` answers
+`400 city_key_required`), and **`dolphin-app`'s configured env carries no `SMARTCITY_V1_PLATFORM_BASE`**.
+Because an unset base is now a refusal rather than a default, shipping `main` without setting that
+variable in the same deploy would take every v1 platform feed from serving to refusing. The GCP
+`smartcity-api` is no longer what the dashboards read, so it is D-20's bundle rather than this row's
+blocker; what still reads GCP is whichever surface has not been repointed, and that is what D-20
+enumerates.
 
 ### M5. Design complete, and the controls that keep it honest
 
@@ -165,8 +195,10 @@ and G-148 for its four R3 ones.
 
 ## In flight
 
-Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried the first
-four. The three at the bottom were compiled later the same day and are not yet handed over.
+Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried
+`g135-mint`, `g154-dev-services-live`, `d14-d13-v1-reach` and `g161-never-default-a-city`. **The four at
+the bottom are compiled and NOT yet handed over**: `g142-citizen-lens`, `g147-record-search`,
+`g160-served-commit-parity` and `g148-design-instruments`.
 Every status below was read at source by the planner, not taken from a lane's report or from the fact
 that a dispatch was sent.
 
@@ -174,8 +206,8 @@ that a dispatch was sent.
 |---|---|---|---|
 | `g135-mint` | G-135 | **LANDED 2026-09-18T14:44Z.** Its close is collected to `main` and its artifacts are no longer untracked. The row stays CLOSED-PARTIAL because parcel 2 is unmeasured | Secret Manager `hauska-tenant-key-bastrop-tx-lane-verification` version 1 ENABLED; the planner's own probe returns 8 of 8 declared cells on `d12-main-uat` at `53ade8a9`; the index reads `ACTIVE` with a `key_id` |
 | `g154-dev-services-live` | G-154 | **LANDED.** Its branch is merged to `main` and the row is regraded CLOSED-PARTIAL: three of four acceptance items PASS, item 2 named unmeasured | live export at 14:49Z, 250 rendered rows across five queues on `d12-main-uat`, `manifest.auth` recording that a key was used and never its value; close, CP1, CP2 and probe on `main` |
-| `d14-d13-v1-reach` | D-14, D-13 | **NOT LANDED.** In flight in its worktree, nothing pushed | G-159's `/api/platform/opengov/budgets` still returns the SPA shell on `smartcityos.io` while the existing-route control returns 401 JSON, byte-identical to the fake-path control; dashboards `main` still carries the GCP host in six places and mentions `walrus-app` nowhere |
-| `g161-never-default-a-city` | G-161 | **NOT LANDED.** In flight in its worktree, CP1 filed, no close | `/api/city-domains`, `/api/city-identity` and `/api/shell` all answer 200 keyless on `d12-main-uat`; six `cityKey` fallbacks to the literal `template-city` are still in `src/server.mjs`, plus the module-level default |
+| `d14-d13-v1-reach` | D-14, D-13 | **D-14 LANDED AND D-13'S CODE LANDED WITHOUT ITS PRODUCTION STEP, read at source at 2026-09-18T16:26Z (OPS-25 A-9).** No close, CP1 or CP2 is filed; the planner moved the rows on the deployed record, and D-13 stays OPEN because `dolphin-app` carries neither the new base nor the variable | D-14: `walrus-app` `e243db0a` ACTIVE 15:41:52Z, `cause: manual`, now building from branch `main`, `source_commit_hash` `1f0262f` = `smartcity-os` `origin/main` HEAD; live, `/api/opengov/budgets`, `/api/opengov/chart-of-accounts` and `/api/finance/permit-revenue/summary` all answer `401 platform_internal_required` on `smartcityos.io` while `xyz-nonexistent` answers the 200 SPA shell. D-13: `smartcity-dashboards` `origin/main` `7487d7c0` carries `src/platform-base.mjs` (one configured base, per-feed defaults removed, an unset base REFUSES), the GCP host `52ecsl5mvq` is absent from `src/` and `web/`, and `d12-main-uat`'s env sets the base to `walrus-app`; its scope 4 and 5 proofs are ungraded |
+| `g161-never-default-a-city` | G-161 | **LANDED, read at source at 2026-09-18T16:26Z.** CP1 was filed; no close is in this worktree, and the row may own cells beyond the dashboards | `src/server.mjs` at `7487d7c0` carries six `G-161. Was \|\| "template-city"` sites plus the module-level and searchParam defaults; live on `d12-main-uat` at `7487d7c0`, `/api/city-domains`, `/api/city-identity`, `/api/shell` and `/api/lenses/finance/sources` all answer `400 city_key_required` keyless where the 15:09Z read answered 200 with the demo city, while `template-city` named explicitly still answers 200 |
 
 | `g142-citizen-lens` | G-142 | **COMPILED, NOT YET HANDED OVER.** Unblocked (its own blocker column reads `Nothing`) and first in G-146's declared order | the completion gate reports `lens:citizen` at R4; `_design/smartcity-citizen-lens/` does not exist; the shipped surface and the copy that must not regress are read at `smartcity-dashboards` `96fdafbb` |
 | `g147-record-search` | G-147 | **COMPILED, NOT YET HANDED OVER.** Scoped to Records search, the surface the gate is failing on, plus an adjudication of the applicant view. Compass is deferred in the dispatch | the gate reports `work:records` at R4; G-145's lens designs are shipped and G-142 is in flight, which is what Compass was waiting on |
@@ -206,7 +238,7 @@ rather than through `walrus-app` directly.
 | Staff on v2 | ship `main` to `dolphin-app` → operator tells staff the URL → D-12 bake → WorkOS credentials → G-134 live test → G-143 ratified → G-127 |
 | Finance live on Bastrop | D-14 → D-13 → G-159 grant, proven with the G-135 key → G-156 shows measured |
 | Any Bastrop proof on a deployed app | ~~the G-135 verification key minted~~ **CLEARED 2026-09-18T14:44Z.** One `gcloud secrets versions access` command against `hauska-prod-497015/hauska-tenant-key-bastrop-tx-lane-verification`, recorded in `_catalog/credential_access_index.json` |
-| The next lens build | G-161 and D-13's dashboards change merged |
+| The next lens build | ~~G-161 and D-13's dashboards change merged~~ **G-161 AND D-13'S CODE LANDED 2026-09-18.** G-161's fix is in `smartcity-dashboards` `main` `7487d7c0` and live on `d12-main-uat`; D-13's repoint is in the same commit. Nothing blocks compiling G-153, which runs on `d12-main-uat`, where both are live. The production half of D-13 is a separate act (A-9) |
 | Hotel occupancy tax | Azavar reply sent and answers filed → G-137 |
 | City management board | v1 combined-dashboard capture → G-157 |
 | GCP decommissioned | D-13 → a bake in which a lens was actually opened → D-20 |
