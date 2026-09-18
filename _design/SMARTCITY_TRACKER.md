@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `9da9a59c`: 118 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `a1349e3e`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 981 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -19,7 +19,7 @@ programs: [OPS-17, OPS-25]
 |---|---|---|---|
 | M1 Staff on v2: the soft launch | 6 | 2 | 4 |
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
-| M3 Lens builds on Bastrop live data | 9 | 5 | 4 |
+| M3 Lens builds on Bastrop live data | 10 | 5 | 5 |
 | M4 DigitalOcean migration complete | 7 | 4 | 3 |
 | M5 Design complete, and the controls that keep it honest | 6 | 4 | 2 |
 
@@ -58,6 +58,7 @@ programs: [OPS-17, OPS-25]
 | G-151 | BUILD THE PARKS LENS, the one lens that does not exist, drawn as not existing. | open | — |
 | G-155 | BUILD THE SMART FILES DESIGN, in its own repo and outside the DigitalOcean gate. | closed | closed |
 | G-150 | BUILD THE RATIFIED REASONER PATH, the plan review design a city is shown. | closed | closed |
+| G-165 | THE NOAA ATLAS 14 PARSER NEVER MATCHES, SO EVERY NO-PARAMETER STUDY IN EVERY COUNTY SILENTLY USE | open | — |
 
 ## M4. DigitalOcean migration complete
 
