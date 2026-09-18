@@ -1,0 +1,108 @@
+{
+  "checkpoint": 1,
+  "kind": "design-preregister",
+  "lane": "p270-address-half",
+  "planRows": ["P-270"],
+  "dispatch": "_dispatches/2026-09-18_p270-address-half_dispatch.md",
+  "recordedAt": "2026-09-18T17:34:40Z",
+  "recordedBy": "the lane itself (FAN-DEPTH 0, no sub-agents); CP1 filed at close from the recorded evidence rather than before the first edit, and the pre-registered falsifiers are the dispatch's own (mission section 'Verify by violation'), which were in writing before this lane ran anything",
+  "bases": {
+    "hauska-map": "origin/main 163fde324adf98cfb19fb8c48326bf6c56515ba0 (163fde3, P-332 #419); the lane branch is cut from it and origin/main has not moved",
+    "legacy-design-tools": "origin/main 25d1782f2e59bd5098b8459196ea828ae3580027 (25d1782f, P-322 #718); unchanged",
+    "doc_repo": "c5eb66669acfdfba6762b6275ea37f48ef5fafe5 (the lane worktree's base; the probe diff is byte-clean against the current origin/main tip d6ab5e46 because scripts/surface-probe.mjs is identical at both)"
+  },
+
+  "theMeasuredDefect": {
+    "subject": "48453:445501 (Pflugerville, Travis)",
+    "liveMapPayloadReadByThisLane": {
+      "url": "https://smartsite.cloud/api/spine/property-atoms/48453:445501/facets",
+      "readAt": "2026-09-18T17:30Z",
+      "http": 200,
+      "readPath": "record",
+      "facets.baseFacts.situsAddress": "21404 GRAND NATIONAL AVE",
+      "facets.baseFacts.situsCity": "an ABSENCE object: status absent, verdict absent-verified, authority 'Travis County CAD roll as published in the conformant-v1 cad-parcel-roll claim', basis 'the cad-parcel-roll claim for this parcel was read and carries no situsCity ... the declared-vintage cad_property row ... situs_city is empty, so both sources agree'",
+      "facets.baseFacts.situsState": "TX",
+      "facets.baseFacts.situsZip": "KEY ABSENT from the payload entirely",
+      "facets.cityLimitsFact": "the payload carries cityLimitsFact with Pflugerville (cityLimitsStatus incorporated on the probe's read)",
+      "recordRailStates": "21 rails, all non-situs; situsCity, situsState and situsZip are NOT among them (COMPOSED_RECORD_RAIL_KEYS did not name them before this lane)",
+      "conclusion": "the payload knows the ZIP's rail exists in the ledger, knows the roll states no city, and knows an incorporated city contains the parcel; its address line is the bare street. This is the defect, measured live, not read from dispatch prose."
+    },
+    "whatThisLaneDidNotVerifyAtSource": {
+      "claim": "the ledger cell parcel_record_cell(48453:445501,'situsZip') holds 78660",
+      "why": "no FACTORY_DATABASE_URL_RO is present in this seat's session (scripts/ledger-truth.mjs refuses without it), the only DSN on disk (P:/hauska-engine/.env LEGACY_DATABASE_URL) is not the factory store and its sslmode does not parse through this shell, and the retrieval read GET /property-nodes/:id/record needs HAUSKA_RETRIEVAL_API_KEY which the seat does not hold",
+      "disposition": "DECLARED, not silent: the ZIP's value rides the dispatch's measured table (2026-09-18). The code reads the rail the dispatch names, by that exact key, and refuses to invent a value when the rail is unslated, refused, absent or non-string. The observation that closes this gap is named under openThreads."
+    }
+  },
+
+  "addressComposingSiteCensus": {
+    "hauska-map": [
+      { "site": "apps/property-explorer/api/_lib/pe-record-to-facets.ts :: composeBaseFactsSitus (NEW)", "executes": "the LEDGER half: reads rail cells situsState, situsZip, situsCity and, only where the roll's situsCity is absent-verified, cityLimits; returns { situsState, situsZip, situsCity, situsCityBasis } onto patch.baseFactsSitus, and the three rails are added to COMPOSED_RECORD_RAIL_KEYS so recordRailStates reports what the reader served for each" },
+      { "site": "apps/property-explorer/api/_lib/atom-chain-to-facets.ts :: mergeBakedBaseFacts + PeBakedFacetPayload.baseFacts (EDITED)", "executes": "declares the two new fields (situsZip, situsCityBasis) and adopts them from the baked base, so the type of the merged payload states what the wire can carry" },
+      { "site": "apps/property-explorer/api/_lib/pe-property-atoms.ts :: applyRecordPatch (EDITED)", "executes": "merges patch.baseFactsSitus over the baseFacts the atom-chain/cortex path produced, so the record composers win for the three address fields" },
+      { "site": "apps/property-explorer/src/lib/situs-address.ts :: composeSitusLine and situsCityLimitsNote (NEW)", "executes": "the ONE composer: appends city, state and ZIP that the situs line does not already spell out; appends the ZIP as a space-separated suffix when the state is already on the line; returns the line byte-identical when it already carries its components" },
+      { "site": "apps/property-explorer/src/lib/baked-facets.ts :: deriveBakedCardModel", "executes": "the CARD line: routes baseFacts through composeSitusLine before the usability gate, so the display line carries the ledger city and ZIP" },
+      { "site": "apps/property-explorer/src/lib/fact-sheet-resolver.ts :: identityFacts (the card's identity line) and composedSitusAddress (the outbound geocode/envelope address)", "executes": "both now call composeSitusLine; identityFacts' provenance carries situsCityLimitsNote where the city came from cityLimits, so an inferred city is labelled where a customer reads it" },
+      { "site": "apps/property-explorer/src/lib/live-envelope-augment.ts :: composedSitusAddress", "executes": "the live-derive POST body's address, now the same composer (before this it composed city+state itself)" },
+      { "site": "apps/property-explorer/api/_lib/pe-share-brief.ts :: sharePropertyHeader (EDITED — found late, by the three-question sweep)", "executes": "the SHARE VIEW's header line; it was passing baseFacts.situsAddress through raw, so an anonymous share viewer saw the same bare street. It now calls composeSitusLine, so a line that already reads in full is byte-identical and a line that drops the ledger's components gains them" }
+    ],
+    "legacy-design-tools": [
+      { "site": "artifacts/api-server/src/lib/situsCompose.ts :: appendMissingSitusComponents (NEW) + composeSitusLabel (EDITED)", "executes": "the MCP's label composer. composeSitusLabel short-circuits on a provided `composed` string and dropped any component not already in it; it now takes an optional `components` bag and appends what the composed string is missing, mirroring hauska-map's composeSitusLine" },
+      { "site": "artifacts/api-server/src/lib/smartSiteStub.ts :: composeSmartSiteStub", "executes": "the `get_smart_site` answer: reads situsAddress, situsCity, situsState, situsZip off the facets root and baseFacts and passes them as `components`, so the label the MCP serves carries the ledger's city and ZIP" }
+    ],
+    "sitesThatMustNOTChangeAndWhy": [
+      "artifacts/api-server/src/lib/situsCompose.ts callers that pass no `components` (the saved-property label and the first-present-situs label) — the append is conditioned on the bag being provided, so those labels are byte-identical",
+      "hauska-map's card line for a situs that already reads in full — composeSitusLine returns it unchanged; pinned by test",
+      "the readability gate (isUsableSitusAddress / isUnreadableSitusAddress) — the composer composes and does NOT pre-empt the gate's decision on what is readable; pinned by test that a ', TX' line still reads unreadable after composing"
+    ],
+    "doesNotComposeItsOwnLine": [
+      "hauska-map's PDF leg (pe-site-plan-export) — it posts a job whose body carries the composed identity address, and the PDF body renders downstream in hauska-engine; the address does not exist in either repo, so it is the integration seat's to check when the engine key exists (the probe's PDF leg refuses for the missing HAUSKA_ENGINE_API_KEY, P-347)"
+    ]
+  },
+
+  "design": {
+    "oneComposer": "Every customer-readable address line in hauska-map now goes through composeSitusLine, and the MCP's label through appendMissingSitusComponents. The reason is the defect's own shape: three sites composed the same line three ways and each dropped a different component. A second copy of the rule could drift the same way, so the rule lives once per repo and the test file is named for the clause (situs-address.p270.test.ts, situsCompose.test.ts).",
+    "inferredCityLabelling": "situsCityBasis carries 'cad-roll' or 'city-limits'. Where it is 'city-limits' the display provenance gains the note 'city whose limits contain this parcel (the county roll states no situs city)', so the card says WHAT the city is rather than presenting a jurisdiction city as the roll's mailing city. An unincorporated parcel with no roll city and no cityLimits value names no city at all.",
+    "noInventionRule": "A city is inferred ONLY when the roll's own situsCity rail is present, served, and reads a DECLARED absent-verified absence. Unslated, refused, legacy-transitional and malformed all yield no city, and a test enumerates all four. A ZIP is carried only from a served string cell; absent/refused/malformed cells are not turned into a ZIP."
+  },
+
+  "preRegisteredFalsifiers": {
+    "source": "the dispatch's 'Verify by violation' section, in writing before execution",
+    "f1_revertAndRun_map": "revert the composer wiring and the ledger carriage; the pre-change card's line for 48453:445501 is the bare street and the live probe's X2-address predicate FAILs on it; restore and the unit suite shows the line carrying 'Pflugerville' and '78660'",
+    "f2_byteIdenticalControl": "a parcel whose situsAddress already spells out its city/state/ZIP is byte-identical across the change (situs-address.p270.test.ts; pe-share-brief.test.ts's pre-existing sharePropertyHeader case, unchanged and still green)",
+    "f3_mcpArm": "the MCP label for the same payload: pre-change 'composeSitusLabel' short-circuits on the composed value and drops the city and ZIP; post-change it appends them",
+    "f4_probeBothWays": "the probe's X2-address predicate against the live shape of 48453:445501: FAIL on the payload's Pflugerville vs the bare street (measured, see the cited artifact); PASS on the same payload with the line composed. Both directions are asserted in the probe's own self-test against the real grader, not a copy of it",
+    "expectedBand": "exactly one of the probe's rows (P-270) changes verdict as a result of this lane, from FAIL to PASS after the map deploy; no other subject's verdict moves. A second movement is a finding"
+  },
+
+  "adversarialReviewCheckpoint1": {
+    "attack_composerCorruptsGoodLines": "ATTEMPTED REFUTE: appending could duplicate components, or mangle a line that already reads in full — MITIGATED, and the mitigation is measured not asserted: hasCity/hasState/hasZip are segment- and substring-aware (state is matched only as a whole comma segment so a street named 'TX AVE' is not read as a state), the byte-identical cases are pinned by test, and the pre-existing share-header case still passes unchanged.",
+    "attack_stateZipOrder": "ATTEMPTED REFUTE: appending 'TX 78660' to a line that already ends in ', TX' would produce '..., TX, TX 78660' — CAUGHT during the build by this lane's own test (expected '..., TX 78660', got '..., TX'): the ZIP now rides with its state as a suffix when the state is already present. This is the one defect the pre-registration did not anticipate and the tests found.",
+    "attack_inventedCity": "ATTEMPTED REFUTE: the cityLimits fallback could name a jurisdiction city on parcels whose ledger row never asked for a city — MITIGATED by conditioning the fallback on the roll's OWN declared absent-verified verdict, and by a test that an unincorporated parcel names no city.",
+    "attack_envelopeAddressDrift": "ATTEMPTED REFUTE: composedSitusAddress feeds the live-derive POST, so a changed line could change what the derive answers for a parcel and move the envelope — ACCEPTED AS A REAL COUPLING. The exposure is bounded to lines that were dropping components: those parcels previously POSTed a bare street and now POST a street with its city and ZIP. Every already-complete line is unchanged. This is also the intended direction (a bare street is the weaker key). Named so the integration seat reads the post-deploy env-* envelopes for the subjects it grades.",
+    "attack_shareViewBypass": "ATTEMPTED REFUTE: the dispatch's three-question gate asks what BYPASSES the composition. The sweep found one: sharePropertyHeader served the raw street to the anonymous share view. NOT a false alarm — it was the same defect on a customer surface — and it is fixed in this lane's second commit rather than left as a note.",
+    "attack_silentInertZip": "ATTEMPTED REFUTE: if the live /record does not serve a situsZip rail for 48453, this lane's ZIP carriage is inert while the probe still PASSes on the city — a green that hides a dropped component, which is the program's named defect class. RESIDUAL, declared rather than argued away: the probe cannot grade a ZIP the payload does not carry (the dispatch defines the predicate that way), so the gap is closed by MEASUREMENT instead — the three situs rails are named in COMPOSED_RECORD_RAIL_KEYS, which makes the payload's own recordRailStates report what the reader served for each, and the probe already records that map into the artifact. The post-deploy artifact therefore carries railStates.situsZip.serve as a fact, not a claim. See openThreads.",
+    "verdict": "ACCEPTED with one declared residual (the live situsZip rail serve state) and one coupling named for the integration seat (the live-derive address key)."
+  },
+
+  "constraintsHonored": [
+    "no store writes, no deploys, no merges — read-only GETs against the live map and the repos; the lane's only writes are to its own worktrees and to GitHub PRs",
+    "one PR per repo, each from current origin/main with the base SHA declared; the doc_repo change is handed back as an uncommitted diff, not a PR (AGENT-CONTRACT section 6 and the dispatch's own item 4)",
+    "hauska-map P-332 (#419) ETJ behaviour kept intact — pinned by a test that the city fallback changes no ETJ field (cityLimitsFact.status/cityName/etjStatus unchanged)"
+  ],
+
+  "crossLaneFileSharing": {
+    "inFlightInThisRepo": ["#423 P-353 find-box", "#422 P-339/P-341 surface agreement", "#421 P-354 future-dated citation state", "#183 seat/property P-63"],
+    "sharedFiles": {
+      "apps/property-explorer/api/_lib/atom-chain-to-facets.ts": "also touched by #422 and #421",
+      "apps/property-explorer/api/_lib/pe-record-to-facets.ts": "also touched by #421 (and carries P-332 #419 on main)",
+      "apps/property-explorer/api/_lib/pe-property-atoms.ts": "also touched by #422",
+      "apps/property-explorer/src/lib/baked-facets.ts": "also touched by #421"
+    },
+    "measuredMergeResult": "git merge-tree --write-tree HEAD against each of #421, #422 and #423 exits 0 (clean) and the merged trees carry BOTH lanes' markers (this lane's composeBaseFactsSitus and the other lane's own), measured 2026-09-18T17:2xZ. No textual conflict — but a clean merge is not a green merge: the second lander must re-run its own suite, because the semantic overlap is real (all four files are in the facet-composition seam)"
+  },
+
+  "openThreads": [
+    "OPEN: whether the live retrieval read GET /property-nodes/48453:445501/record serves the situsZip rail with a present cell. The code reads exactly that rail and refuses to invent a value; the observation that closes this thread is railStates.situsZip.serve on the POST-DEPLOY probe artifact (the probe records recordRailStates verbatim). If it reads 'refused' or the key is absent, clause 1 of P-270's Done is not met for the ZIP and the finding belongs to the ledger, not to the composer",
+    "OPEN: the PDF leg never measured (HAUSKA_ENGINE_API_KEY absent, P-347) — the one customer surface this lane could not read"
+  ]
+}

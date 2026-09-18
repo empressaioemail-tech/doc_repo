@@ -1,0 +1,56 @@
+{
+  "checkpoint": 2,
+  "kind": "pilot-and-adversarial-review",
+  "lane": "p270-address-half",
+  "planRows": ["P-270"],
+  "recordedAt": "2026-09-18T17:45Z",
+  "pilot": {
+    "whatRan": "the map's card line and the MCP's label for the dispatch's own subject, driven end to end in the unit suites; the live map read of 48453:445501 through the probe; and the probe's own self-test, which drives the real grader rather than a copy of its rule",
+    "preChangeStatement": "the card's line is '21404 GRAND NATIONAL AVE' with situsCity absent-verified on the roll, situsZip absent from the payload, and cityLimits naming Pflugerville",
+    "postChangeStatement": "'21404 GRAND NATIONAL AVE, Pflugerville, TX 78660' on the card line, the identity line, the outbound envelope address, the share header and the MCP label; the city carries basis 'city-limits' and the display provenance gains the note 'city whose limits contain this parcel (the county roll states no situs city)'"
+  },
+
+  "falsifierRevertAndRun": {
+    "method": "the change was reverted in place in each worktree, the suites were run and captured verbatim, then the change was restored and the suites were run again. Captures: _inbox/2026-09-18_p270-address-half_revert-and-run.txt (map) and _inbox/2026-09-18_p270-address-half_revert-and-run-ldt.txt (LDT).",
+    "map": {
+      "countingRule": "`pnpm exec vitest run` over apps/property-explorer, every test file in the repository, one run each direction, counts read off vitest's own 'Test Files'/'Tests' summary lines",
+      "preChange": "Test Files 1 failed | 221 passed (222); Tests 5 failed | 3304 passed | 1 todo (3310)",
+      "preChangeFailures": "exactly the five PASS-branch cases of the new 'composeRecordPatch — P-270 address half (baseFactsSitus)' block: carries situsZip from a record-served cell; names the roll's own city when the situsCity rail is a value; falls back to the city whose LIMITS CONTAIN the parcel when the roll's city is absent-verified; names no city for an unincorporated parcel with no cityLimits value; reports the three address rails in recordRailStates. The three GUARD cases in the same block (no city from an unslated/refused/malformed rail; no ZIP from an absent cell; P-332's ETJ untouched) PASS in both directions, which is what makes them guards rather than assertions of the fix",
+      "postChange": "Test Files 222 passed (222); Tests 3312 passed | 1 todo (3313), 0 failed — measured 2026-09-18T17:33Z after the share-header commit, whose three new cases account for the 3310 -> 3313 increase",
+      "postChangeNarrowed": "the seven files this lane touches (situs-address.p270, pe-share-brief, pe-record-to-facets, pe-property-atoms, baked-facets, fact-sheet-resolver, live-envelope-augment): 7 passed (7), 288 passed | 1 todo (289), 0 failed"
+    },
+    "legacyDesignTools": {
+      "countingRule": "`pnpm exec vitest run src/lib/situsCompose.test.ts src/lib/smartSiteStub.test.ts` in artifacts/api-server, the two files this lane touches, one run each direction",
+      "preChange": "Test Files 2 failed (2); Tests 5 failed | 39 passed (44)",
+      "postChange": "Test Files 2 passed (2); Tests 44 passed (44), 0 failed",
+      "fullSuiteNote": "the full LDT suite is not runnable in this seat (many files need DATABASE_URL, which the seat does not hold) — CI runs it against a provisioned postgres/postgis pair and is authoritative"
+    },
+    "byteIdenticalControl": {
+      "claim": "a situs that already spells out its city/state/ZIP is unchanged by this lane",
+      "evidence": [
+        "src/lib/situs-address.p270.test.ts > the byte-identical case: '1109 PECAN ST , BASTROP, TX 78602' with situsCity Bastrop, situsState TX, situsZip 78602 in baseFacts returns the input string unchanged",
+        "src/lib/pe-share-brief.test.ts's pre-existing sharePropertyHeader case ('104 Main St, Bastrop, TX') was written before this lane and passes unchanged after it — the control is not a test this lane wrote",
+        "api/_lib/pe-record-to-facets.test.ts > 'keeps P-332's ETJ behaviour untouched' — the city fallback moves no ETJ field"
+      ]
+    },
+    "expectedBandCheck": "the pre-registered band was 'the 5 new PASS-branch cases flip FAIL -> PASS and no guard flips'. Measured: 5 flipped, 0 guards flipped, 0 unrelated tests changed status (the map's failure count is 5 before and 0 after, with the passing count rising by exactly the 8 new cases: 5 flips + 3 share-header cases)."
+  },
+
+  "adversarialReviewCheckpoint2": {
+    "attack_theFixIsInert": "ATTEMPTED REFUTE the whole change from the artifact side: if the composed line reached the payload but not the CARD, the probe would pass on a line a customer never sees. CHECKED: the probe reads the card payload itself (`/api/spine/property-atoms/<id>/facets`), which is the same wire the card renders from; the composer is wired into deriveBakedCardModel (the model the card renders) AND into fact-sheet-resolver's identity line, and both the card-model and the identity paths are exercised by tests in this lane's file list.",
+    "attack_theMCPHalfIsUnproven": "ATTEMPTED REFUTE the MCP leg: the MCP's gate refuses this seat (401 missing_bearer, so the probe's MCP leg did not measure and says so). The LDT half is therefore proven by unit tests over the real composer (44 tests, 5 of which fail without the change), NOT by a live MCP call. The predicate says so in its own basis text ('the MCP leg did not measure, so its half is not graded') rather than implying a pass. Named as a residual for the integration seat: the MCP half has no live reading in this lane.",
+    "attack_anUNMEASUREDhidesAFailure": "ATTEMPTED REFUTE the UNMEASURED branch: a predicate that returns UNMEASURED whenever it cannot grade is a way to go green by not looking. CHECKED against the measured subject: the payload DOES carry a ledger city (Pflugerville, via cityLimits with the roll's declared absence), so the predicate cannot take the UNMEASURED branch here and returns FAIL. The self-test asserts the UNMEASURED branch only for a payload carrying neither component, and asserts the FAIL branch fires on the live shape.",
+    "attack_theGuardsAreVacuous": "ATTEMPTED REFUTE the guards by asking what would still pass if the fix were reverted: measured, the guards pass in BOTH directions, so they do not detect this fix — by design, since their job is to catch the neighbouring mistake (an INVENTED city or ZIP). What detects the fix is the five-case block that failed pre-change.",
+    "attack_aCleanMergeIsAGreenMerge": "REFUSED that shortcut in writing: merge-tree says this lane merges cleanly with #421, #422 and #423, and the merged trees carry both lanes' changes, but all four shared files sit in the facet-composition seam, so the SECOND lander must re-run its own suite. Recorded in CP1's crossLaneFileSharing for the integration seat.",
+    "verdict": "ACCEPTED with three residuals declared for the integration seat: the live situsZip rail's serve state, the live MCP leg, and the PDF leg."
+  },
+
+  "stoppedWorkers": {
+    "note": "not applicable: FAN-DEPTH 0, this lane launched no sub-agents (subAgents.spawned 0, maxDepth 0), so section 2's interruption-recovery fields have no worker state to carry"
+  },
+
+  "whatChangedLateAndWhy": [
+    "The share-view header (api/_lib/pe-share-brief.ts) was found AFTER CP1's site census by the three-question gate's own question ('what bypasses it'). It was serving the raw street to an anonymous share viewer — the same defect on a customer surface — so it was fixed rather than filed as a note, and the fix is a separate commit so a reviewer can read it alone.",
+    "The state/ZIP ordering defect (appending 'TX 78660' to a line already ending ', TX') was caught by this lane's own test during the build, before any artifact claimed the behaviour. Recorded in CP1 because the pre-registration did not anticipate it."
+  ]
+}
