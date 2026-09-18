@@ -247,7 +247,20 @@ const cp1 = `_inbox/${today}_${laneLower}_cp1.json`;
 const cp2 = `_inbox/${today}_${laneLower}_cp2.json`;
 const close = `_inbox/${today}_${laneLower}_close.json`;
 
-const dispatch = `CANON-PREAMBLE v${preambleHash}
+// The no-nesting clause must LEAD, not merely appear. dispatch-template-gate.ps1 clause 2 requires
+// it on the FIRST non-empty line, with the gate's own reason: "it must lead, or it gets skimmed
+// past". Until 2026-09-18 this compiler emitted the CANON-PREAMBLE header first and stated the fan
+// rule as "This lane launches NO sub-agents", which the gate's regex does not match either. So the
+// gate refused EVERY dispatch this compiler produced, and the only way past it was the override
+// flag, which is the bypass-teaching failure ENFORCEMENT.md names. The compiler was wrong, not the
+// gate: clause 2 is a ruled precondition of 2026-08-09. Fixed 2026-09-18 (OPS-17 A-172).
+const noNest = fanDepth === 0
+  ? 'Do NOT spawn sub-agents. You are the deepest worker; do the work yourself.'
+  : 'Do NOT nest deeper than one level. You may spawn sub-agents; those sub-agents spawn none.';
+
+const dispatch = `${noNest}
+
+CANON-PREAMBLE v${preambleHash}
 ${sdBody}
 
 AGENT-CONTRACT v${contractHash} — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
@@ -268,8 +281,8 @@ ${m0Block}
 PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
 ${repo ? `repo: ${repo}\n` : ''}FAN-DEPTH: ${fanDepth}
 ${fanDepth === 0
-  ? 'This lane launches NO sub-agents. Do the work yourself. The commit gate refuses a close that declares any (A-181).'
-  : 'This lane may launch sub-agents one level deep; those sub-agents launch none. The commit gate refuses a close that declares a deeper fan (A-181).'}
+  ? 'This lane launches no sub-agents (stated at the top; the commit gate refuses a close that declares any fan, A-181).'
+  : 'This lane may launch sub-agents one level deep and those sub-agents spawn none (stated at the top; the commit gate refuses a close that declares a deeper fan, A-181).'}
 
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
@@ -321,6 +334,26 @@ the commit rather than guessing what you meant):
 `;
 
 mkdirSync(join(root, '_dispatches'), { recursive: true });
+
+// GUARD, and it runs on every compile so it cannot go dormant. dispatch-template-gate.ps1 is a
+// PreToolUse hook over executor briefs and it checks four clauses; clause 2 requires the no-nesting
+// line to be the FIRST non-empty line, with the gate's own reason: "it must lead, or it gets skimmed
+// past". Until 2026-09-18 this compiler could not satisfy clause 2, so the gate refused every
+// dispatch it produced and the only route past was the override flag. The compiler is the thing that
+// was wrong, so the check that it stays fixed belongs here rather than in a test file: this repo has
+// no package.json and no CI workflow, so the scripts/enforcement/*.test.mjs suites are dormant and a
+// guard added there would be dormant too. Refusing the write is correct, because a dispatch the gate
+// will reject is not a dispatch, and the operator hand-carries these by hand.
+const NO_NEST = /(do not (spawn|nest|dispatch|delegate|launch)|no[- ]nesting|never (spawn|nest|dispatch)|you are the deepest)/i;
+const firstNonEmpty = dispatch.split('\n').find((l) => l.trim() !== '') || '';
+if (!NO_NEST.test(firstNonEmpty.trim())) {
+  console.error('REFUSED: the no-nesting clause is not the first non-empty line, so');
+  console.error('dispatch-template-gate.ps1 clause 2 will block this dispatch and the only way past');
+  console.error('it is the override flag. Nothing written.');
+  console.error('  first non-empty line was: ' + JSON.stringify(firstNonEmpty.trim().slice(0, 140)));
+  process.exit(1);
+}
+
 const outPath = join(root, '_dispatches', `${today}_${laneLower}_dispatch.md`);
 writeFileSync(outPath, dispatch, 'utf8');
 console.log(dispatch);

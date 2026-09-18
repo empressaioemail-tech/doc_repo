@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `937c71f9`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `f1005b47`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 985 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -70,7 +70,7 @@ programs: [OPS-17, OPS-25]
 | D-11 | FLIP hauska-mcp-server'S DASHBOARDS_BACKEND_URL. | closed | closed |
 | D-13 | THE DASHBOARDS STILL READ EVERY BASTROP FEED FROM THE GCP v1. REPOINT THEM AT walrus-app, OR DEC | landed, not graded | — |
 | D-14 | walrus-app BUILDS FROM A SIDE BRANCH, SO NOTHING MERGED TO v1 main CAN REACH smartcityos.io. | landed, not graded | — |
-| G-163 | TWO PLATFORM ROUTES FAIL OPAQUELY ON walrus-app, WHERE THE GCP COPY STATED THE REASON. | closed | closed-partial |
+| G-163 | TWO PLATFORM ROUTES FAIL OPAQUELY ON walrus-app, WHERE THE GCP COPY STATED THE REASON. | closed | closed |
 
 ## M5. Design complete, and the controls that keep it honest
 

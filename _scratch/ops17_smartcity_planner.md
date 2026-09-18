@@ -513,3 +513,82 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **PROCESS NOTE: this seat wrote A-168 with its substance in the Reason column and only a headline in Change.**
   It is structurally valid (7 parts) and is left unedited under the append-only rule; `A-169` records that its
   Reason should be read as its Change.
+
+- **GROUND-TRUTH 2026-09-18T23:11Z: the `P:\tmp` credential sweep is DONE, and the count was wrong twice.** A first pass
+  over a narrow extension set reported 19 files; a pass over every top-level file reported **35**; classification
+  separated them into **28 files carrying a REAL credential and 6 matching only the pattern's own prose**. All 28 were
+  overwritten with zeros and unlinked; a re-scan reports 0 remaining. **Distinct hosts: only three.**
+  `ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech` (22 files, plus its `-pooler` variant), the three
+  `g162-spec*.json` on `ep-floral-sound-afocvkct.c-2.us-west-2.aws.neon.tech` (the ones the `g163` close flagged), and
+  `.fdb3` / `p273-ro-url.txt` on `ep-round-base-au0jofwp.c-10.us-east-1.aws.neon.tech`. **The 28, for the record:**
+  `.eldb`, `.eltx`, `.fdb3`, `.phase1-anti-zombie.env`, `clean.env`, `dburl.txt`, `g162-spec.json`, `g162-spec-prefix.json`,
+  `g162-spec-postfix.json`, `l21_f5_db_url.txt`, `p273-ro-url.txt`, `run-coverage-bakes.ps1`, `ss-w12-atoms-url.txt`,
+  `ss-w12-deploy-url.txt`, `ss-w15-dburl.txt`, `ss-w7-dburl.txt`, `ss_w13_dburl.txt`, `txgio_db_url.txt`,
+  `z1_dallas_db_big3.mjs`, `z1_dallas_db_check.cjs`, `z1_dallas_db_check.mjs`, `z1_dallas_db_final.mjs`,
+  `z1_dallas_stage_all.cjs`, `z1_dallas_stage_retry.cjs`, `z1_dallas_stage_retry2.cjs`, `z1_dallas_stream_run.cjs`,
+  `z1_db_url.txt`, `_cu.txt`. **Spared, correctly:** `a169-row.txt`, `a170-row.txt` and `scratch-append.md` (this seat's own
+  records, which contain the pattern as prose), plus `p281-session-e2e.mjs`, `p281-session-e2e2.txt` and
+  `p297-run-tests.ps1` (localhost and `.invalid` fixtures). **Excluded and declared, not silently skipped:** 19 files over
+  the 8MB read cap were not read at all, and none of them is a config. **OUT OF SCOPE and untouched:** every git worktree
+  and clone under `P:\tmp` (roughly nine hundred of them), because a credential inside a working tree is that repo's
+  business. `--use-system-ca` is needed for the DO API from this box.
+- **LESSON (and this is the sharp one): the first version of the sweep would have deleted this session's own records
+  while reporting a credential sweep.** Its predicate was `/postgresql:\/\/user:pass@/`, which matches **the prose
+  description of the pattern**, and this seat had written that description into `a169-row.txt`, `a170-row.txt` and
+  `scratch-append.md` minutes earlier. **A placeholder is not a credential.** The fix was to classify before acting: a
+  match counts only if the host is dotted AND the userinfo is not a placeholder. Six files moved to a spared class and
+  the instrument now reports both classes separately. **A destructive instrument whose predicate is a substring match
+  will delete whatever carries the substring, and the artifacts least likely to be checked are the ones that describe
+  the thing being searched for.**
+- **LESSON (instrument contract): the sweep's exclusion set had to be declared, not implied.** 19 files over the 8MB read
+  cap, and roughly nine hundred worktree directories, are outside what the instrument read. `DEV_PROCESS` says an
+  instrument's exclusion set is part of its contract; a count that silently omits them reads as "0 elsewhere" rather
+  than "not measured here". Both are printed by the script on every run.
+- **LESSON (PowerShell, recurring): `Select-Object -First N` on a streamed command can kill the producer early**, and a
+  `node` script that throws mid-stream surfaces as a PowerShell `NativeCommandError` that looks like a node syntax error.
+  Read the whole output or redirect to a file when the exit code matters. The sweep's first run died on a >500MB file
+  because `buf.toString('latin1')` cannot build a string that large; a size cap with an explicit exclusion list is the
+  fix, not a bigger buffer.
+
+## 2026-09-18 (later) - the four operator calls, and a compiler that had been failing its own gate all along
+
+- **GROUND-TRUTH 2026-09-18T23:12Z: both lane UAT apps are DELETED, each confirmed by a 404 read-back.** `g163-v1-uat`
+  (`1537c202-a444-4cf6-abcc-3178749198ae`, was serving `1135be81`, 48 env keys) and `g162-v1-uat`
+  (`5f160d17-be0b-4b26-b562-90280824079b`, was serving `bb7ca23f`, 47 env keys). Only six apps exist in the account and
+  neither carried a custom domain. The second was the sharper hazard: four boot-time credential keys NON-EMPTY, and
+  `server/app.ts` resets passwords and creates users at boot when they are truthy, on a store G-162 measured as
+  production's. Instrument: `P:\tmp\uat-teardown.mjs`, name-matched (never id alone), refuses an ambiguous name, refuses
+  a custom-domain app, and requires the 404 rather than trusting the delete response.
+- **GROUND-TRUTH 2026-09-18T23:1xZ: G-143 is RATIFIED and BOTH instruments were re-run at source first, not taken from
+  the row's summary.** `check.mjs` exits 0, 26/26 self-tests both directions, five boards against `smartcity-dashboards`
+  `3d3ec62a`, every matched input non-zero (boards 5, roles 28, statuses 24, refusals 7, persons 16, actions 17,
+  latencies 4, enforcedCells 7, auditRegions 1, adminRegions 1). `violate.mjs` catches 20/20 on real boards, including
+  the two that matter most on a government trust surface (a plausible employee name, a real-looking city email), and
+  REFUSES a verdict in three cases rather than passing quietly. Folder committed and clean.
+- **GROUND-TRUTH: G-127's blocker is the operator's WorkOS credentials and nothing else.** Not a ruling, not a design.
+  Its ruling landed 2026-09-14; what blocks it is the absent per-staff identity, which is G-134's job, and G-134 is
+  CLOSED-PARTIAL with exactly one outstanding item: its real-WorkOS violation test P13, UNVERIFIED-LIVE, waiting on
+  those credentials. **One operator input unlocks a chain of three: G-134 P13, then G-127, then G-144.** The same
+  credentials gate G-143's build half. Three rows that look blocked are one blocked input.
+- **LESSON (and this is the one worth keeping): the dispatch compiler had been producing artifacts its own gate
+  unconditionally rejects.** `dispatch-template-gate.ps1` clause 2 requires the no-nesting clause on the FIRST
+  non-empty line, "it must lead, or it gets skimmed past". `scripts/dispatch.mjs` emitted `CANON-PREAMBLE v<hash>`
+  first, and its fan statement read "This lane launches NO sub-agents", which the gate's regex does not match. So the
+  refusal was 100 percent, not an edge case, and the only way past was `DISPATCH_OVERRIDE:`. **The gate was right and
+  the compiler was wrong**, so the compiler was fixed: it now leads with the clause, then the marker. Verified by
+  violation in both directions through the REAL pipeline (`run-gate.mjs` into the unmodified PowerShell gates): DENY
+  pre-fix, ALLOW post-fix.
+- **LESSON: the guard went into the compiler because the test directory is dormant.** This repo has no `package.json`
+  and no CI workflow, so all five `scripts/enforcement/*.test.mjs` suites are run by NOTHING. A guard added there would
+  have been dormant too, and both `DEV_PROCESS.md` and `ENFORCEMENT.md` name a dormant suite as worse than an absent
+  one because it reads as coverage. The compile path executes every time a dispatch is produced, so that is where the
+  check belongs. It refuses the write, names the actual first line, exits 1. Verified by violation. **The five dormant
+  suites remain an open ledger item; this seat did not fix them.**
+- **FINDING worth a ruling, recorded not decided: G-158's clause 3 spans repos and its card names one.** "Reads through
+  the MCP surface are logged the same way", but `_catalog/repo_intents.md` says this product's "MCP tools on
+  hauska-mcp-server PR 70" and its row carries "Not `smartcity-os`". So the MCP leg is a different repo and a different
+  card. Treated exactly as G-134's GAP 2 was ("NOT this row, report only"): HELD and declared in A-172, and the lane
+  reports the surface rather than building it. A held clause needs a carded follow-on or it quietly becomes nothing.
+- **LESSON (small, recurring): a table cell that quotes a regex breaks the table.** A-172 quoted the gate's
+  alternation verbatim, whose `|` characters split the row into 13 cells instead of 7. The row builder refused on the
+  part count, which is exactly why that guard exists. Say what the alternation matches in prose instead of pasting it.
