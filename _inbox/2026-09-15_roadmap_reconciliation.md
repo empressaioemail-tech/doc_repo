@@ -46,8 +46,9 @@ someone deploys them, and a merge deploys nothing.
 
 **Production is worse than `main` on one point that matters.** At `3d3ec62` the Development services
 work-order table shows the vendor's free-text title, which is where residents write their names and
-phone numbers. `main` no longer does (G-154). The planner recommends shipping `main` to production before
-staff are told to use it (OPS-17 A-148).
+phone numbers. `main` no longer does (G-154). The operator RULED on 2026-09-18 that `main` ships to
+`dolphin-app` (OPS-17 A-149); it is the `d14-d13-v1-reach` lane's last step, one deploy that also adds
+the configured platform base the repointed dashboards then require.
 
 **One missing credential blocks every Bastrop proof on a deployed app.** A tenant-private pack answers
 401 to an anonymous read, and the only active `bastrop_tx` key is the operator's own, which G-135 ruled
@@ -64,7 +65,8 @@ disagree about which row belongs where.
 
 Real Bastrop staff sign in to v2 as themselves, and see what their department should see.
 
-**The order.** Ship `main` to `dolphin-app` (the operator's call; recommended). Then the operator tells
+**The order.** Ship `main` to `dolphin-app` (RULED 2026-09-18, OPS-17 A-149; performed by the
+`d14-d13-v1-reach` lane as its last step, with the configured platform base in the same deploy). Then the operator tells
 staff to use `app.smartcityos.io`, which starts the D-12 bake. The WorkOS wiring (G-134) is built and
 waits only on the operator's WorkOS credentials for its live test. The People and access design (G-143)
 needs ratifying before department access (G-127) and the plan-review role gate (G-144) are built. The
@@ -168,8 +170,8 @@ Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator
 
 | Item | Blocks |
 |---|---|
-| **Ship `main` to `dolphin-app`?** Recommended: yes. Production shows residents' free-text work-order titles, and `main` does not | staff moving to v2 on the better surface. It is the D-13 lane's last step, and runs only if an OPS-17 amendment records the ruling |
-| Hand-carry the three dispatches: `g135-mint` to the substrate seat; `d14-d13-v1-reach` and `g161-never-default-a-city` to the govtech seat | everything in M2 and M3 |
+| ~~**Ship `main` to `dolphin-app`?**~~ **RULED YES 2026-09-18 (OPS-17 A-149).** The `d14-d13-v1-reach` lane ships `main` as its last step, adding the configured platform base in the same deploy | staff moving to v2 on the better surface |
+| ~~Hand-carry the three dispatches~~ **DONE 2026-09-18.** Operator: *"i have already sent all three"* | nothing; M2 and M3 now wait on the lanes |
 | G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`. G-135 ruled against handing that key out | G-154's close |
 | Tell Bastrop staff to use `app.smartcityos.io` | the D-12 bake, and everything after it in M1 and M4 |
 | WorkOS org, client id, API key, MFA | G-134's live test, then all of RBAC |
