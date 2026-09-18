@@ -2,7 +2,7 @@
 id: 2026-09-18_phase0_closeout_REGISTER
 title: Phase 0 close-out register (living)
 date: 2026-09-18
-last_updated: 2026-09-18 (18:05Z, A-224: census re-graded; P-300/P-338 compiled; P-364)
+last_updated: 2026-09-18 (18:15Z, P-342 migration 018 applied)
 status: living. The integration seat updates a row whenever its state changes and records the change in the log at the bottom. This is the durable list; the roadmap carries the live queue and points here.
 kind: register
 owner: nick
@@ -120,7 +120,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 | #175 | Deploy `cloudbuild.parcel-record-fill.yaml` under the gate-scheduler procedure (pause the hourly trigger, deploy, grade a cycle, resume); no fill `--apply` before it | 1 | 1. **DONE 2026-09-18:** deployed `7152d3b0`; gate cycle reproduced 390 of 390 verdicts; trigger resumed 15:24:53Z. Record `_inbox/2026-09-18_p325_175_deploy_RECORD.md` |
 | dblink | Confirm no dependents, then drop the extension on production | off | 1. **DONE 2026-09-18 14:00:23Z**, verified from a separate session. Record `_inbox/2026-09-18_dblink_drop_RECORD.md` |
 | LDT deploy | After P-323: carries P-257, P-270 and P-322's LDT halves and P-206's XD-6 fix | 2 | **DONE 2026-09-18 15:54Z:** cortex-api `00841-jeh` (LDT `25d1782f`), canary 90/90 PASS; P-206 was already live; the workflow's post-shift check is broken (P-362). Record `_inbox/2026-09-18_ldt_cortex_api_deploy_RECORD.md` |
-| P-263 apply | Run P-342's writer county by county, dry run first, each capped at its measured share | 2 | 2 |
+| P-263 apply | Run P-342's writer county by county, dry run first, each capped at its measured share | 2 | 2. **Migration 018 APPLIED 2026-09-18 18:12:08Z** and verified by violation (`_inbox/2026-09-18_p342_migration_018_RECORD.md`). The apply needs a Cloud Run Job that does not exist yet: build the engine image at `c41a1482`, create `hauska-engine-p263-apply`, fresh dry runs, then six capped applies (record section 3) |
 | P-321 schedule | After P-334; **hourly** (operator, 2026-09-18) | off | 2 |
 | P-294 | Schedule created disabled, one dry cycle, graded | off | 2 |
 | Austin stamp | Session CLI under a production lease, then the P-255 census | 1 | 2 |
@@ -189,6 +189,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 18:15 | P-342 migration 018 applied to the atoms store and verified by violation (DELETE and illegal UPDATE refused, PT342). P-263's apply needs an engine apply job first. |
 | 2026-09-18 18:05 | P-255 census re-graded (false absences 219,472 to 0; 58,339 unaccounted equal P-326's population). A-224: ruling 5 amended by the operator, so a default line applies only where the city's ordinance sets one; P-300/P-338 compiled in two halves; P-364 carded (Phase 1). |
 | 2026-09-18 17:45 | A-223: P-258's re-run checked before it ran and closed as a no-op (zero cells in all six counties); the handoff's premise that a Hays run switches San Marcos is wrong; P-363 carded and compiled; OPS-24 range extended to 363. |
 | 2026-09-18 17:20 | Seat Wave 2, item 1: the San Marcos coverage re-check HOLDS (88.38 percent under 1.4.0 against 50.47 under the 1.1.0 table served today; the 2026-09-07 figure reproduced at 12.93). New instrument `scripts/san-marcos-coverage-recheck.mjs`, self-tested and checked by violation. P-258's re-run may proceed. |
