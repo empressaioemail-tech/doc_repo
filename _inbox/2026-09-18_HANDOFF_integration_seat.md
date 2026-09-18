@@ -3,7 +3,7 @@ id: 2026-09-18_HANDOFF_integration_seat
 title: Handoff to a fresh integration-seat planner, 2026-09-18 midday
 date: 2026-09-18
 last_updated: 2026-09-18 (12:10Z)
-status: active handoff
+status: CONSUMED 2026-09-18 by the session that wrote _inbox/2026-09-18b_HANDOFF_integration_seat.md (its traps still apply)
 kind: handoff
 owner: nick
 from: integration seat, 2026-09-18 12:10Z (session that merged the nine lane PRs and took the Phase 0 close-out rulings)

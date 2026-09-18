@@ -187,6 +187,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 16:20 | Session close. Wave 2 dispatches compiled and pushed: P-354, P-339/340/341, P-353, P-270 address half, P-336 (operator to fire). Handoff `_inbox/2026-09-18b_HANDOFF_integration_seat.md`. |
 | 2026-09-18 15:55 | A-221: #175 deployed and graded (trigger resumed); P-332 customer-closed on the panel; LDT deployed (cortex-api `00841-jeh`, canary 90/90); the customer leg measured with the MCP signed in (23 PASS / 19 FAIL / 3 UNMEASURED before the LDT deploy; two instrument defects fixed); P-362 carded. |
 | 2026-09-18 15:20 | A-220: threshold 0.05 program-wide (P-361 widened; #474 stays held until it re-pins); P-335's pair authoritative; P-323's tag deletion stands; commit go on the Wave 1 batch. |
 | 2026-09-18 15:10 | A-219: Wave 1 integrated. Merged map #420 and #419, engine #475, factory #177 then #178 (each re-greened); engine #474 held for the threshold decision. Probe-close gate ranges brought back in line with the registry (the wave had been ungated). P-354 compiled. P-358 to P-361 carded. Hays: 56,629 retired rows are hollow account nodes (no incident); 1,385 retired served keys go to P-351. |
