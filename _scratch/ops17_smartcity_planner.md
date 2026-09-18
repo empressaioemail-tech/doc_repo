@@ -449,3 +449,67 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **Committed by this seat: `54e46861`** (14 files: the A-159 batch, the gate R3 change, the five-write-enabler
   change, the INDEX lines, this scratch, `_STATE.md`). **Uncommitted and NOT this seat's: OPS-17's three regrades,
   the other writer's `A-160`, and the three closes.** doc_repo commits by explicit pathspec, never `add -A`.
+
+## 2026-09-18 late session (this seat): G-163 closed on production, plus four instrument lessons
+
+- **GROUND-TRUTH 2026-09-18T22:49Z: G-163 IS CLOSED AND ITS LAST CLAUSE IS MET ON PRODUCTION.** `smartcity-os`
+  PR #61 merged to `main` at merge commit `03cebec5d1eb31ba61185ac1aa365ea52074b586` (base `85a332e`, no drift).
+  Shipped to `walrus-app` (`2a2a3a1a-b441-4296-8628-a82b20ded1b2`, serving `smartcityos.io`) as deployment
+  `2657e628-22fd-4bdf-85ae-9c2daf2f6375`, forced with `force_build: true`. Pre-ship `source_commit_hash`
+  `1f0262f15f8d1898a6c32826ec2e45407518e29e`; post-ship read back `03cebec5...` byte for byte. Three planner
+  legs against `https://smartcityos.io` with the canonical `PLATFORM_INTERNAL_API_KEY` from Secret Manager:
+  pre-ship `--expect pre-fix` **7/7 PASS exit 0**, post-ship `--expect post-fix` **7/7 PASS exit 0**, post-ship
+  `--expect pre-fix` **5 PASS / 2 FAIL exit 1** (the instrument fires in both directions). Logged as OPS-17
+  `A-169` (assignment) and `A-170` (the close and the mechanism correction).
+- **GROUND-TRUTH: the row's own diagnosis was WRONG and it was corrected in place.** The row said "a Cloudflare
+  `504` HTML page" and asserted the defect was "INSIDE the handler and not at the auth path". The lane disproved
+  both. The handler answered a complete structured `503` in 2 to 3ms on the request's own log line, and
+  `x-do-orig-status: 503` proves the edge received it. **The cause is DigitalOcean App Platform's edge, which
+  DISCARDS an application-generated 502, 503 or 504 and substitutes its own 1263-byte HTML gateway page.**
+  Measured against a throwaway `go-httpbin` container with no handler, no vendor and no credential: 200 400 401
+  403 409 424 429 500 501 507 arrive verbatim; 502 503 504 do not. **The fix is a boundary rule, not a route
+  edit:** `server/edge-status.ts`, installed once in `server/app.ts`, re-issues those three codes as `424` with
+  `x-orig-status` preserving the handler's code and the body untouched.
+- **LESSON (platform fact worth a durable home): on DigitalOcean App Platform, 424 is a status the edge carries
+  and 502/503/504 are not.** Any handler whose failure semantics need a 502/503/504 to reach a caller must
+  re-issue it as 424 with the original code on a header. Anything relying on a literal 503 arriving is
+  unachievable on this platform by any means.
+- **LESSON (instrument): a post-write check must not report a pre-write state.** Two of this session's edit
+  scripts ran `writeFileSync` and *then* their verification, and on a failed verification printed
+  "REFUSED: ... Nothing written." while the file had in fact been rewritten. **The message was a false statement
+  about durable state, produced by the very script meant to protect it.** Order matters: check the preconditions,
+  write, re-read, and report the state you actually observed. Where a post-write check can fail, either restore
+  the prior bytes or say plainly that the write happened and the check failed.
+- **LESSON (guard predicates key to the shape, not the substring): `src.includes('A-170')` refused a legitimate
+  append**, because the row written minutes earlier referenced `A-170` in its own text. Match the amendment row
+  (`/^\| A-170 \|/m`), never the bare id. The same class as `ENFORCEMENT.md`'s "do not declare a defect class
+  closed by grepping for a type when the property is semantic."
+- **LESSON (counting): a markdown table row with N columns splits into N+2 parts**, because `split('|')` yields a
+  leading and a trailing empty string. Asserting 5 parts for a 4-column row refused a correct edit twice. Count
+  the columns, or assert on the leading and trailing empties explicitly.
+- **DEAD-END: the lane's own proof surface cannot be re-run by a holder of the canonical secret.** `g163-v1-uat`
+  (`1537c202-a444-4cf6-abcc-3178749198ae`) carries a **lane-generated** `PLATFORM_INTERNAL_API_KEY`, so the
+  canonical key is correctly refused there with `401 platform_internal_required` and the lane's post-fix leg is
+  NOT reproducible by the planner. Its close claims "a stranger ... can re-run it", which is overstated for that
+  app. **The working path is to verify on production after the ship, where the canonical key IS accepted** (the
+  third-route control proved it: same host, same key, `200` with 294 records). Next lane that stands up a UAT
+  app: either source the platform key from the canonical secret, or state in the close that the proof is
+  one-seat-only.
+- **GROUND-TRUTH (confirms the roadmap's existing note, does not supersede it): the raw `*.ondigitalocean.app`
+  hostnames reset from this box.** `https://walrus-app-kzog6.ondigitalocean.app` -> `read ECONNRESET`, 7/7 legs
+  UNMEASURED, exit 2, while `https://smartcityos.io` served the same app normally in the same minute. The
+  instrument reported UNMEASURED rather than passing, which is the correct fail-closed behaviour.
+- **OPEN, PLANNER-OWNED: `g163-v1-uat` is still ACTIVE** on `fix/g163-opaque-platform-routes`, and it **shares
+  production's Neon store** (G-162 measured that `smartcity-DATABASE_URL` and `smartcity-staging-DATABASE_URL`
+  resolve to the same endpoint). It also carries the four boot-time credential keys EMPTY on purpose, because
+  `server/app.ts` resets passwords and creates users at boot when they are truthy. **The lane declared it with
+  the planner as owner and asked for it to be torn down or re-pointed once the ship landed; the ship has landed.**
+  `g162-v1-uat` carries those four keys NON-EMPTY and is the sharper hazard of the two.
+- **OPEN, OWED TO THE OPERATOR, NOT ACTED ON: a plaintext-credential sweep of `P:\tmp` found 19 files carrying a
+  `postgresql://user:pass@host` URI**, including the three the `g163` close named (`g162-spec.json`,
+  `g162-spec-prefix.json`, `g162-spec-postfix.json`) which carry the production Neon connection string. This seat
+  did not delete another lane's material, following the posture that close modelled when it reported them rather
+  than removing them. **Cross-seat scratch is not one seat's to shred; the sweep and its owner are a decision.**
+- **PROCESS NOTE: this seat wrote A-168 with its substance in the Reason column and only a headline in Change.**
+  It is structurally valid (7 parts) and is left unedited under the append-only rule; `A-169` records that its
+  Reason should be read as its Change.
