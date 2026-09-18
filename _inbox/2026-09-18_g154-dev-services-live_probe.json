@@ -1,0 +1,110 @@
+{
+  "instrument": "scripts/export-dev-services-lens.mjs + _design/smartcity-dev-services/check.mjs + scripts/prove-dev-services-corrections.mjs",
+  "instrumentIsNotSurfaceProbe": "This artifact was NOT produced by scripts/surface-probe.mjs. That instrument is OPS-23's completion predicate and gates rows P-151..P-174 and P-186..P-198; G-154 is an OPS-17 row and is not gated by it (scripts/enforcement/probe-close-gate.mjs GATED_ROW is /^P-(\\d+)$/). Stated so no reader mistakes this for the OPS-23 artifact. What it measures is the Development services lens' own built surface on the deployed app.",
+  "lane": "g154-dev-services-live",
+  "planRows": ["G-154"],
+  "kind": "surface read, live",
+
+  "snapshot": {
+    "ranAt": "2026-09-18T14:37:02Z",
+    "base": "https://d12-main-uat-gqnjx.ondigitalocean.app",
+    "cityKey": "bastrop_tx",
+    "app": "d12-main-uat, non-production",
+    "sourceCommitHash": "53ade8a9dbdb649acbe04c721a54fa518779d0b1",
+    "sourceCommitHashBasis": "read back from the deployment object (services[0].source_commit_hash), not from a deploy message. It is a descendant of the G-154 merge 7dda6db035f36fe0a572e350980930b50c531892.",
+    "exportMode": "deployed",
+    "exportAuth": "hauska-key (x-hauska-key, seeded into localStorage)",
+    "tabCount": 7,
+    "docRepoHead": "e9a9064aa4be3559dda8bd97be96318679ff843a",
+    "productRef": "8e6863d (branch g154-live-bastrop-proof, PR #72), on top of origin/main 7267c3f"
+  },
+
+  "theRead": {
+    "command": "node scripts/export-dev-services-lens.mjs <out> bastrop_tx --base <d12-main-uat> --key-file <path>",
+    "result": "50 rows in each of the five Development services queues; 250 rendered rows across the lens' queues; 102521-byte artifact",
+    "whatTheEndpointsActuallyServe": {
+      "note": "read directly with the minted key, so the artifact can be attributed to the data rather than to the exporter",
+      "work-orders": "HTTP 200, 187 records, generated=false, basis in_mygov_active_list=true AND tenant_id=2",
+      "inspections": "HTTP 200, 2041 records, generated=false, basis tenant_id=2",
+      "code-violations": "HTTP 200, 1509 records, generated=false, basis tenant_id=2",
+      "business-licenses": "HTTP 200, 73 records, generated=false, basis tenant_id=2, each carrying expiryLabel + holderRef + nameRefusedBasis",
+      "permits": "HTTP 404 - 'permits is not a registered domain, so this surface is not built'. The Pipeline region is served by /api/lenses/development-services/pipeline, which returns 294 records.",
+      "anonymousControl": "the same domain route WITHOUT the key returns HTTP 401 (24 bytes). The pack is tenant-private and the gate fires; the 200s above are the credential working, not the gate being absent."
+    }
+  },
+
+  "predicates": [
+    {
+      "row": "G-154",
+      "acceptanceItem": "1 - no Place tab",
+      "verdict": "PASS",
+      "measured": "tabLabelsBuilt reads exactly the shipped seven; zero matches for tab-place/place-tab. Planted eighth tab is refused: \"tab strip is [Place, Pipeline, Inspections, Work orders, Code enforcement, Licenses, Plan review, Flood study]\"."
+    },
+    {
+      "row": "G-154",
+      "acceptanceItem": "2 - no named person on a published workload ranking",
+      "verdict": "UNMEASURED",
+      "measured": "The live surface draws NO workload ranking. Measured, not assumed: every loadstrip-head element carries hidden and display:none, and the document holds zero class=\"who\" spans - on bastrop_tx AND on template-city. The real feed carries no load dimension, so the product hides the strip rather than drawing an empty ranking. Nothing can be named on a ranking that is not drawn. The rule itself has teeth (the check's own self-tests refuse 'R. McBain' in the load strip), and the mutation prover names this as unexercised rather than passing it silently. NOT CLAIMED AS A LIVE PROOF."
+    },
+    {
+      "row": "G-154",
+      "acceptanceItem": "3 - licence rows in the design's sort order",
+      "verdict": "PASS",
+      "measured": "19 dated licence rows read off the live feed, in the design's own band-major order: expired (18 rows, offsets -1866..-1262), then active (5, undated), then revoked (1, -1511), then completed (26, undated). That is compareLicenseRoll's order exactly - status severity first, then offset within the band. Reversing the roll is caught: \"licence rows are out of the design's order\"."
+    },
+    {
+      "row": "G-154",
+      "acceptanceItem": "4 - no resident named beside an address",
+      "verdict": "PASS",
+      "measured": "200 refused-column cells read across all four header-keyed columns (Applicant, Inspector, Officer, Subject), none carrying free text. Planting a Title Case resident in the Applicant column is caught: \"a refused column carries free text [Applicant=\\\"Dana Whitfield\\\"]\". The only people-shaped match the shape rule found on live data was the bare situs sentinel 'TX USA' - four permits whose address is nothing but the state and country suffix, naming no person. That was an instrument false positive and is fixed; it is NOT reported as a PII leak."
+    }
+  ],
+
+  "verbatimCheckOutput": {
+    "selfTests": "self-tests: 65/65 passed, both directions",
+    "passLine": "ok   dev-services-lens.dc.html  (150 rows, 0 load cells, in the product's own markup)",
+    "matchedInput": "1 built file(s) pass. matched input: 7 tab label(s), 0 load-strip cell(s), 1070 table cell(s), 200 refused-column cell(s), 150 row(s), 19 dated licence row(s).",
+    "exit": 0,
+    "nonVacuity": "150 rows, 1070 table cells and 19 dated licence rows were READ. The run is not a pass on an empty surface, and the same instrument refuses a verdict at exit 2 when it is pointed at a surface with no rows - which is what it did on the unauthenticated export before the key existed."
+  },
+
+  "verbatimMutationProof": {
+    "command": "node scripts/prove-dev-services-corrections.mjs <export-dir>",
+    "caught": [
+      "CAUGHT  2-a-place-tab",
+      "CAUGHT  3-licence-rows-out-of-order",
+      "CAUGHT  4-a-resident-beside-an-address"
+    ],
+    "control": "control: the unmutated export passes",
+    "tally": "planted 3 defect(s), caught 3",
+    "unexercised": [
+      "1-a-named-person-on-the-workload-ranking (the surface draws no load-strip cell: the real feed carries no load dimension, so the strip is hidden)"
+    ],
+    "whyTheControlMatters": "Caught 3 of 3 means nothing unless the same instrument passes the unmutated surface, which it does."
+  },
+
+  "productTestSuite": {
+    "command": "npm test",
+    "result": "792 tests, 792 pass, 0 fail, 160 suites (pre-PR local run on the branch that became PR #72)."
+  },
+
+  "whatThisArtifactDoesNotProve": [
+    "It does not prove acceptance item 2 on live records - see predicates[1]. The item is UNMEASURED, not passed.",
+    "It is not the OPS-23 surface-probe artifact and must not be cited as one.",
+    "It proves the Development services lens on ONE non-production deployment. It says nothing about the v1 production app, and nothing about any other lens.",
+    "The minted key is scoped to jurisdiction_tenant=bastrop_tx and product=public; it authorises no other pack and no MCP tool namespace beyond that."
+  ],
+
+  "credential": {
+    "keyId": "2510a3ff-0d3c-47f4-8026-eadd6172b000",
+    "tier": "team",
+    "product": "public",
+    "jurisdictionTenant": "bastrop_tx",
+    "ownerName": "G-154 lane verification (machine credential, not a person)",
+    "createdAt": "2026-09-18T14:36:21Z",
+    "status": "active",
+    "rawKeyLocation": "never in this repo, in no commit and in no manifest. Returned once by POST /admin/keys and written to a temp path outside doc_repo.",
+    "whyMinted": "G-135 ruled the operator's bastrop_tx staff-pilot key is the wrong shape for a lane to hold. Revoking this key leaves the operator's own key untouched.",
+    "shouldBeRevokedWhenTheLaneIsDone": true
+  }
+}
