@@ -65,6 +65,42 @@ answer was wrong: every lens design draws its own blocked state as design conten
 Public works, Police and Parks all ship without GoTo, FirstDue, Verkada or a Parks vendor. The
 vendor work is separate and is G-139's row, not theirs.
 
+## The queue, lined up 2026-09-18 (A-144)
+
+**D-12's cutover is live and verified**: `app.smartcityos.io` serves the DigitalOcean app running
+`main`, discriminated from GCP by a response-body marker (`/auth/sign-in` is 500
+`signin_not_configured` on DO and 404 on GCP). **But no staff have moved.** It is a new hostname and
+nothing points anyone at it; staff bookmark the `run.app` address. The bake cannot start until Bastrop
+is told the new URL.
+
+**Why the dashboards rows run one at a time.** Every lens renders in two monolithic files,
+`web/app.js` (131 KB) and `web/index.html` (146 KB). Parallel dashboards lanes would be a six-way
+merge conflict in two files. One govtech lane, one PR per row, planner-verified between rows.
+
+| # | Where | Row | Blocked on |
+|---|---|---|---|
+| **0** | **Operator** | **Tell Bastrop staff to use `app.smartcityos.io`**, which is what actually starts the bake | nothing |
+| 1 | dashboards lane | G-156 Finance lens | nothing |
+| 2 | dashboards lane | G-149 Flood study | G-156 merged |
+| 3 | dashboards lane | G-153 Fleet + Police | G-149 merged |
+| 4 | dashboards lane | G-154 Development services delta | G-153 merged |
+| 5 | dashboards lane | G-152 Public works + Fire and EMS | G-154 merged |
+| 6 | dashboards lane | G-151 Parks | G-152 merged |
+| P1 | `smart-files` | G-155 Smart Files | nothing, parallel |
+| P2 | `plan-review` | G-150 close-out: file the close, GATE 2, a live console probe | nothing, parallel |
+| M1 | planner | G-138 filings design fix, which unblocks G-137 | nothing |
+| M2 | planner | G-143 People and access design, the first leg of RBAC | nothing |
+| M3 | planner | HOT scope card: fix the `AmountPaid` acceptance test | nothing |
+| M4 | planner | Fleet and Police design regeneration | G-153 merged |
+| W1 | waits on operator | G-157 city management board | a v1 capture |
+| W2 | waits on operator | G-137 hotel occupancy tax | the Azavar reply, sent |
+| W3 | waits on operator | G-134 WorkOS, then G-127 and G-144 | WorkOS credentials |
+
+**Every ship is a deliberate act.** Deploy-on-push stays off on `dolphin-app`, so a merge reaches no
+one. Every DigitalOcean ship reads back `services[0].source_commit_hash` (OPS-25 rule 13), and every
+GCP ship on a pinned service uses canary-then-shift. `smart-files`, `plan-review` and the GCP
+dashboards original are all pinned by revision name.
+
 ## The next deliverable, named 2026-09-17 (A-143)
 
 **The Finance and city management package:** the Finance dashboard, the hotel occupancy tax, all the
