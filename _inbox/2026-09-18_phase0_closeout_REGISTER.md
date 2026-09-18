@@ -2,7 +2,7 @@
 id: 2026-09-18_phase0_closeout_REGISTER
 title: Phase 0 close-out register (living)
 date: 2026-09-18
-last_updated: 2026-09-18 (17:25Z, A-222: P-324 recompiled; San Marcos re-check HOLDS)
+last_updated: 2026-09-18 (17:45Z, A-223: P-258 closed as measured; P-363)
 status: living. The integration seat updates a row whenever its state changes and records the change in the log at the bottom. This is the durable list; the roadmap carries the live queue and points here.
 kind: register
 owner: nick
@@ -104,6 +104,7 @@ when it starts; a row's own `Depends` in OPS-16 is the authority where they diff
 | P-360 | Probe legs for P-332 (etjStatus) and P-327 (retirement verdict) | doc_repo | 2 | 2 (after P-332 deploys) | carded 2026-09-18 (seat) |
 | P-361 | Threshold 0.05 program-wide (A-220): factory declaration, #474 re-pinned and merged, factory CI reads the engine's copy | hauska-factory, hauska-engine | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p361-threshold-005_dispatch.md` (#474 updated in place) |
 | P-362 | The LDT shift job's post-shift credential check can never run and reads its failure as a violation | legacy-design-tools | off (controls) | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p362-post-shift-check_dispatch.md` |
+| P-363 | Setback cells written under an older corpus are re-resolved under the pinned one (387,237 citing 1.1.0; 6 San Marcos N-CM parcels on the wrong row) | hauska-factory | 1, 2 | 2 | **compiled 2026-09-18** `_dispatches/2026-09-18_p363-setback-stale-corpus-cells_dispatch.md`; prediction 387,231 re-stamps, 6 value changes |
 
 **Factory merge order in wave 2**, one at a time, each re-greened against the base it merges into:
 P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writer half.
@@ -115,7 +116,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 | P-347 | Probe corrected to ruling 13; `--use-system-ca`; engine key for the PDF leg; PDFs built for the 45 fixture parcels; re-run; P-270 X2 confirmed or reopened; coverage graded | 2, 3 | 1, and again at exit. **PARTIAL 2026-09-18:** all done but the MCP leg (sign-in helper built; needs a client identity, then the operator's sign-in). 52 PDFs served. Record `_inbox/2026-09-18_p347_customer_leg_wave1_record.md` |
 | P-348 | McLennan `situsState` (1 parcel), Williamson `buildingFootprint` (1 parcel) | 1 | 1. **DONE (read) 2026-09-18:** both named and read, plus a third cell the ledger scored as passing; fix carded as P-352. Record `_inbox/2026-09-18_p348_two_open_cells_read.md` |
 | P-337 | `RAIL_POLICY` exclusions for rulings 3 and 4, with couplings and self-tests | 1 | 1. **DONE 2026-09-18:** 47 of 47 self-tests, acceptance tests seen failing before the register entries existed; live run 13:52Z moved both rails to ruled in all six counties (prediction held exactly) |
-| P-258 | Setback writer re-run and census re-grade (precedes P-300) | 1 | 1. **HELD 2026-09-18:** the live writer image carries corpus 1.4.0, so a Hays re-run IS San Marcos's switch (ruling 19's coverage re-check first) and a Williamson re-run widens P-354's breach. Order: the San Marcos coverage re-check, then the six counties (Williamson no longer waits on P-354 after A-218). **The re-check HOLDS (2026-09-18 17:16Z): 1.4.0 covers 88.38 percent of San Marcos's zoned area against 50.47 for the 1.1.0 table served today; SF-6 + SF-4.5 reproduce 12.93 exactly. Record `_inbox/2026-09-18_san_marcos_coverage_recheck_RECORD.md`. The re-run may proceed, Hays first, dry run first** |
+| P-258 | Setback writer re-run and census re-grade (precedes P-300) | 1 | 1. **CLOSED AS MEASURED, NOT RUN (2026-09-18 17:45Z):** the San Marcos re-check HOLDS (88.38 percent under 1.4.0); a re-run would move zero cells in all six counties (dry runs `9pg2r`, `v7xfd` equal the stored counts), because the writer never reopens an earned value. San Marcos's switch is P-363 (387,237 cells still cite 1.1.0; 6 N-CM parcels hold the wrong row) plus P-349's Hays bake. Records `_inbox/2026-09-18_san_marcos_coverage_recheck_RECORD.md`, `_inbox/2026-09-18_p258_rerun_check_RECORD.md`. Next: the P-255 census re-grade, then P-300 with P-338 (needs a dispatch) |
 | #175 | Deploy `cloudbuild.parcel-record-fill.yaml` under the gate-scheduler procedure (pause the hourly trigger, deploy, grade a cycle, resume); no fill `--apply` before it | 1 | 1. **DONE 2026-09-18:** deployed `7152d3b0`; gate cycle reproduced 390 of 390 verdicts; trigger resumed 15:24:53Z. Record `_inbox/2026-09-18_p325_175_deploy_RECORD.md` |
 | dblink | Confirm no dependents, then drop the extension on production | off | 1. **DONE 2026-09-18 14:00:23Z**, verified from a separate session. Record `_inbox/2026-09-18_dblink_drop_RECORD.md` |
 | LDT deploy | After P-323: carries P-257, P-270 and P-322's LDT halves and P-206's XD-6 fix | 2 | **DONE 2026-09-18 15:54Z:** cortex-api `00841-jeh` (LDT `25d1782f`), canary 90/90 PASS; P-206 was already live; the workflow's post-shift check is broken (P-362). Record `_inbox/2026-09-18_ldt_cortex_api_deploy_RECORD.md` |
@@ -187,6 +188,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-18 17:45 | A-223: P-258's re-run checked before it ran and closed as a no-op (zero cells in all six counties); the handoff's premise that a Hays run switches San Marcos is wrong; P-363 carded and compiled; OPS-24 range extended to 363. |
 | 2026-09-18 17:20 | Seat Wave 2, item 1: the San Marcos coverage re-check HOLDS (88.38 percent under 1.4.0 against 50.47 under the 1.1.0 table served today; the 2026-09-07 figure reproduced at 12.93). New instrument `scripts/san-marcos-coverage-recheck.mjs`, self-tested and checked by violation. P-258's re-run may proceed. |
 | 2026-09-18 17:25 | A-222: the operator ruled P-324 ships with its staged events, CAPI and scrubbing; recorded and recompiled. Wave 2 batch pushed `d6ab5e46`. |
 | 2026-09-18 17:10 | Rest of Wave 2 compiled from source at factory `0f4558a4`, engine `c41a1482`, LDT `25d1782f`, map `163fde32`: P-333, P-334/P-329/P-330, P-352, P-361, P-351, P-331, P-358, P-359, P-362, and P-286/P-317 recompiled. P-324 held: a staged events-and-CAPI extension conflicts with its row. Found while compiling: Hays' bare-id overlap is a collision count (P-333, P-351); P-358's grade waits on P-336. |
