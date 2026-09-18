@@ -30,10 +30,11 @@ would not have found it at all if it had not needed to make a live call.
 |---|---|---|
 | 1 | `POST /admin/keys` on `hauska-mcp-server-h7gvu7rgcq-uc.a.run.app` with the `hauska-mcp-server/.env` value | **HTTP 401 `Invalid admin bootstrap key`** |
 | 2 | The same request, same body, with the Secret Manager value | **HTTP 201**, key minted |
-| 3 | Local copies of `HAUSKA_ADMIN_BOOTSTRAP_KEY` across ten known repo roots (`.env*`, depth 2) | **exactly one** (`hauska-mcp-server/.env`, 64 chars) |
+| 3 | Local copies of `HAUSKA_ADMIN_BOOTSTRAP_KEY` — a **full recursive sweep of `P:\`** (`.env*`, depth 4, completed `exit 0` in 477 s), plus a narrower sweep over `hauska-mcp-server` and four worktree/vendor directories (`hauska-mcp-server-worktrees`, `hauska-mcp-worktrees`, `hauska-engine`, `hauska-factory`) | **exactly one copy**, found by both sweeps: `hauska-mcp-server/.env` (64 chars) |
 | 4 | `rg -c "BOOTSTRAP"` over `_inbox/2026-09-17_p305-key-inventory.md`, `…_inventory.json` and `90_runbooks/key_rotation_all_environments.md` | **zero matches in all three** |
 | 5 | `rg -c "BOOTSTRAP"` over `origin/main:90_operations/OPS-16_texas_market_plan_of_record.md` | **zero matches** |
 | 6 | The runbook's Step 1 pair table | carries the **engine/retrieval key** and the **service key**; the admin bootstrap key **is not a row** |
+| 7 | `gcloud config get-value project` on this workstation, then `gcloud secrets list --filter="name:HAUSKA_ADMIN_BOOTSTRAP_KEY"` **with and without** `--project` | default project is **`smartcity-os-prod`**; the secret exists **only** in **`hauska-prod-497015`**. Without `--project` the list call returns **an empty result at exit 0** — no error, no warning that names the project |
 
 No key value was printed, hashed or committed by this lane; measurements 1 and 2 were
 observed as status codes only. The bootstrap value was read from Secret Manager into a
@@ -57,6 +58,16 @@ shell environment variable for the calls and never written to a file.
    variables — "whether those three hold the engine key's old value or a different value
    altogether cannot be told from the names" — and the same sentence is true of this file,
    except here nothing even names it as a question.
+4. **The documented way to look this key up fails silently into the wrong project.**
+   `gcloud` on this workstation defaults to project **`smartcity-os-prod`**. The secret
+   lives in **`hauska-prod-497015`**. A lane that follows the runbook and runs the lookup
+   without `--project` gets **an empty list at `exit 0`** — no error, no line naming the
+   project it actually searched. Under this repo's own rule ("an empty result is NOT an
+   absence", `AGENT_CONTRACT` section 5) that reading is a possible *consumer*, and here it
+   is the expected outcome of the mistake. Measurement 7 is the evidence. The runbook
+   already carries the structurally identical trap for the other toolchain — *"`hauska-map`
+   links to whichever project `.vercel/project.json` names … `vercel env add` silently
+   landed on the wrong project"* — so this is that trap's `gcloud` twin, unrecorded.
 
 **Point 3 is why this is carded rather than fixed.** A lane can observe that the local
 value is refused. It cannot know, from anything in the repo, whether re-pointing
@@ -66,7 +77,7 @@ decision with an owner, not a chore.
 
 ## Proposed row text (ready to paste)
 
-> | P-362 | 2026-09-18 | ADDED (operator ruling _pending_) | **THE ADMIN BOOTSTRAP KEY IS IN NO INVENTORY, AND ITS ONE LOCAL COPY IS DEAD.** Found by G-154, which needed the admin API (`POST /admin/keys`) to mint a lane-scoped `bastrop_tx` key and assumed the value in `hauska-mcp-server/.env` was the credential. It is not: the deployed service answers **401 `Invalid admin bootstrap key`** to it, and answers 201 to the Secret Manager value (`hauska-prod-497015`, secret `HAUSKA_ADMIN_BOOTSTRAP_KEY`), measured 2026-09-18. P-305's inventory enumerates the engine/retrieval key and the service key; `rg -c BOOTSTRAP` returns **zero** across `_inbox/2026-09-17_p305-key-inventory.md`, its `.json` and `90_runbooks/key_rotation_all_environments.md`, and zero across `OPS-16` itself — so this credential has no row, no consumer listing and no pair, while the runbook's own Step 0 already names local `.env` files as a gap it does not close. Worse than the dead value is that its **provenance is undecidable from the artifact**: nothing distinguishes a stale copy of a rotated production value from a deliberate local development value, and those two readings want opposite fixes (re-point it, or find and destroy the production copy). **Done:** (a) the admin bootstrap key is named in the runbook's Step 1 pair table with its consumers, and the inventory predicate is extended to see it, or a written reason it is exempt; (b) the question of what `hauska-mcp-server/.env` *should* hold is decided and recorded, with the chosen value in place and a live `POST /admin/keys` call showing the local environment resolves a working credential — or showing the local environment is deliberately non-authoritative and says so where a lane will read it; (c) the closing check has a leg that fails on a refused admin bootstrap key rather than on a data answer, since the failure mode is a 401 that reads as "no data". **Depends:** none. | Y |
+> | P-362 | 2026-09-18 | ADDED (operator ruling _pending_) | **THE ADMIN BOOTSTRAP KEY IS IN NO INVENTORY, AND ITS ONE LOCAL COPY IS DEAD.** Found by G-154, which needed the admin API (`POST /admin/keys`) to mint a lane-scoped `bastrop_tx` key and assumed the value in `hauska-mcp-server/.env` was the credential. It is not: the deployed service answers **401 `Invalid admin bootstrap key`** to it, and answers 201 to the Secret Manager value (`hauska-prod-497015`, secret `HAUSKA_ADMIN_BOOTSTRAP_KEY`), measured 2026-09-18. P-305's inventory enumerates the engine/retrieval key and the service key; `rg -c BOOTSTRAP` returns **zero** across `_inbox/2026-09-17_p305-key-inventory.md`, its `.json` and `90_runbooks/key_rotation_all_environments.md`, and zero across `OPS-16` itself — so this credential has no row, no consumer listing and no pair, while the runbook's own Step 0 already names local `.env` files as a gap it does not close. A full recursive sweep of `P:\` (`.env*`, depth 4, `exit 0`) finds **exactly one** local copy, the dead one. Worse than the dead value: its **provenance is undecidable from the artifact**, since nothing distinguishes a stale copy of a rotated production value from a deliberate local development value, and those two readings want opposite fixes (re-point it, or find and destroy the production copy). And the **documented lookup fails silently into the wrong project**: `gcloud` defaults to `smartcity-os-prod`, the secret lives in `hauska-prod-497015`, and the same list call without `--project` returns **empty at exit 0** with nothing naming the project it searched — this repo's own "an empty result is NOT an absence" rule, and the `gcloud` twin of the `.vercel/project.json` trap the runbook already carries. **Done:** (a) the admin bootstrap key is named in the runbook's Step 1 pair table with its consumers, and the inventory predicate is extended to see it, or a written reason it is exempt; (b) the question of what `hauska-mcp-server/.env` *should* hold is decided and recorded, with the chosen value in place and a live `POST /admin/keys` call showing the local environment resolves a working credential — or showing the local environment is deliberately non-authoritative and says so where a lane will read it; (c) the lookup path names its project, or refuses rather than returning an empty list, so a wrong-project read cannot read as "no such secret"; (d) the closing check has a leg that fails on a refused admin bootstrap key rather than on a data answer, since the failure mode is a 401 that reads as "no data". **Depends:** none. | Y |
 
 ## What this card does NOT claim
 
@@ -75,14 +86,27 @@ decision with an owner, not a chore.
   What is stale is a *local copy*, and what is missing is a *place in the inventory*.
 - **It does not claim the local value is a stale production value.** That is one of two
   readings and the card's whole point is that the repo cannot currently tell which.
-- **It does not claim the sweep for local copies was exhaustive.** Ten known repo roots
-  were scanned (`hauska-mcp-server`, `smartcity-dashboards`, `legacy-design-tools`,
-  `hauska-map`, `doc_repo`, and five named services of which `cortex-api`, `engine-api`,
-  `retrieval-api`, `smartsite-mcp` and `records-request-worker` **do not exist locally**).
-  One copy was found. Other workstations, other drives and paths outside those roots were
-  not read, and by this repo's own rule an unread listing is a possible consumer.
+- **It does not claim the sweep for local copies was exhaustive.** A full recursive sweep of
+  `P:\` was run (`.env*` filenames, depth 4, `exit 0` after 477 s) and found exactly one
+  copy, which is stronger than a spot-check — but it matched `.env*` **filenames** only, so a
+  copy under some other name, deeper than depth 4, on another drive, on another workstation,
+  or inside a container image or CI secret store was **not** read. By this repo's own rule an
+  unread listing is a possible consumer.
+- **It does not claim `gcloud`'s default project is wrong for anyone else.** It measured this
+  one workstation's default (`smartcity-os-prod`) against the project the secret lives in
+  (`hauska-prod-497015`). A lane that already passes `--project`, or whose shell defaults
+  elsewhere, does not hit this.
 - **It is not a grade on P-305, which is merged and which did what it set out to do.**
   It is a hole *adjacent* to P-305 that P-305's instruments structurally cannot see.
+
+## One adjacent environment observation, recorded because a reader will hit it
+
+`gcloud` on this workstation emits `InsecureRequestWarning: Unverified HTTPS request is being
+made to host 'secretmanager.googleapis.com'` on Secret Manager calls — i.e. it is **not
+verifying TLS** for that host. This is **not** this card's subject and not a claim that any
+value leaked; it is recorded as an environment fact for whoever works P-362, and it is the
+same family as the Node CA trap the runbook already documents
+(`90_runbooks/cc_agent_node_tls_workaround.md`), arriving on the `gcloud` side.
 
 ## For the record: the credential this lane minted
 
