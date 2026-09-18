@@ -51,3 +51,76 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **Two `*_MCP_URL` secrets in `hauska-prod-497015` hold Postgres DSNs with passwords** and a lane printed them to a terminal while looking for an HTTP URL. Rotation is the operator's call; no lane should rotate a production store credential on its own.
 - **`HAUSKA_ADMIN_BOOTSTRAP_KEY` drift:** `hauska-mcp-server/.env`'s value is NOT the deployed one (P-305 class). Reported by the G-154 lane, not fixed.
 - The stale `d12-dashboards-do-cutover` lane claim (seat `cente-vsc-d12`) is still open with no close; D-12 is closed-partial and the bake has not started.
+
+---
+
+## 2026-09-18 (later) - operator items closed at source, three new lanes compiled
+
+### GROUND-TRUTH (read at source, this session)
+
+- **`P:\tmp\g154-hauska-key.txt` is ABSENT** and no other `g154` key material remains in `P:\tmp`.
+  Operator: *"the key 154 hauska key is deleted"*. Verified, not taken on report.
+- **`bastrop_tx` credential census, read at source via `GET /admin/keys`:** four rows exist and the
+  status field is what counts, because that endpoint returns revoked rows too.
+  `96e40316` **active** (the minted verification key, last used 15:16Z by the planner's own probe);
+  `2a26c318` **active** (operator's pilot, never to be handed out);
+  `2510a3ff` **revoked** (G-154 lane key, and it was ALREADY revoked before this seat read it);
+  `acf2cf9f` **revoked** (G-134 dormant lane key, revoked by this seat at the operator's instruction).
+  So the census is now one documented lane key plus the pilot, which is the shape G-135 asked for.
+- **`acf2cf9f` was genuinely dormant**: created 2026-09-15T00:49:35Z, last used
+  2026-09-15T00:49:49Z (14 seconds later, then nothing for three days). Revoking it breaks nothing:
+  the G-135 verification key supersedes it for any future G-134 work.
+  Evidence: `_inbox/2026-09-18_planner_revoke_dormant_g134_key.mjs` and its `.json` artifact.
+- **Design completion gate, run 2026-09-18T15:46Z** against dashboards `96fdafbb`: exits 1, six
+  findings. R3 has four designs past DRAFT with no `check.mjs` (`plan-review-departments`,
+  `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`); R4 has two uncovered nav
+  surfaces (`lens:citizen` = G-142, `work:records` = G-147). Design is NOT done.
+- **Three dispatches compiled 2026-09-18T10:59Z** and NOT yet hand-carried:
+  `_dispatches/2026-09-18_g142-citizen-lens_dispatch.md`,
+  `_dispatches/2026-09-18_g147-record-search_dispatch.md`,
+  `_dispatches/2026-09-18_g160-served-commit-parity_dispatch.md`, with missions in
+  `_catalog/dispatch_missions/`.
+- **No lane claim exists for either lane the operator believes is running.** `lane-claim.mjs status`
+  reports seven open claims and neither `d14-d13-v1-reach` nor `g161-never-default-a-city` is one of
+  them. The claim is what makes a second session stand down on exit 3. This is a control that did not
+  fire, and it is exactly the 2026-09-14 duplicate-dispatch shape.
+
+### LESSON
+
+- **A presence-shaped verdict over a status-bearing list is the wrong predicate.** `GET /admin/keys`
+  returns REVOKED rows as well as active ones, so the first run of the revoke instrument reported
+  "NOT REVOKED" while the very same payload's status field already read `revoked`. The fix was to
+  read `status` from the row after the call. Presence is one input; a state field is the truth. This
+  is the same family as reading `latestReadyRevisionName` instead of the revision on the log line.
+- **`design-completion-gate.mjs` is the cheapest true read of what design work remains.** It names
+  the exact two uncovered surfaces and the exact four missing instruments. Run it before planning
+  design lanes; do not re-derive the inventory by reading folders.
+- **Two design lanes share `_design/INDEX.md`** (`design(G-143)` `c3af32d4` and `design(G-138)`
+  `fb31a343` both edited it). Design lanes therefore serialize on that one file the same way lens
+  BUILD lanes serialize on `web/app.js` and `web/index.html`. The G-147 dispatch is written to append
+  one line and touch nothing else, because G-142 is compiled alongside it.
+- **The plan-of-record row has SEVEN columns**, not six: `| id | band | scope | accept | done-when |
+  blockedBy | status |`. Scanning the wrong index silently matches nothing, which reads as "no open
+  rows" rather than as a bug in the scan.
+
+### OPEN
+
+- **Both in-flight lanes still hold no claim and nothing has been pushed.** `d14-d13-v1-reach` owns
+  the ship (`dolphin-app`) and D-13's dashboards repoint; `g161-never-default-a-city` owns six keyless
+  `template-city` fallbacks in `src/server.mjs`. The stale `d12-dashboards-do-cutover` claim on D-12
+  (seat `cente-vsc-d12`, 17h old) is also still open.
+- **G-135 parcel 2 is unmeasured and now unowned:** a full-shell authenticated probe on `bastrop_tx`
+  that mounts the map iframe. Fold it into the next lens lane rather than a credential lane.
+- **G-148 is HELD** (`_decisions/2026-09-17_design_ratification_all_approved.md`: "G-148 stays HELD
+  for the designs with no build row"). The gate's four R3 findings are `plan-review-departments`,
+  `smartcity-flood-study`, `smartcity-map-dock`, `smartcity-overview-lens`, and all four now HAVE
+  build rows (G-144, G-149, G-128, G-120). Whether the hold's stated exemption now releases them is
+  the operator's call, not this seat's. Ask before dispatching it.
+- **Secrets are NOT rotated, by operator ruling 2026-09-18.** The naming trap stays: `*_MCP_URL`
+  secrets in `hauska-prod-497015` hold Postgres DSNs, and a lane printed one while looking for an
+  HTTP URL. Rename-or-split is the open half.
+- **M2 is HELD by the operator** until Khalid replies. Nothing was dispatched against G-137, G-157 or
+  G-162.
+- **`HAUSKA_ADMIN_BOOTSTRAP_KEY` drift** (`hauska-mcp-server/.env` value != deployed) is still open.
+  Note for the next reader: the SECRET MANAGER value is the one that works, which is what this seat's
+  revoke instrument read.

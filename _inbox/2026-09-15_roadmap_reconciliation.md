@@ -155,9 +155,10 @@ days behind its API.
 
 ## In flight
 
-Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried all four.
-Every status below was read at source by the planner, twice (14:40Z and 15:09Z), and not taken from a
-lane's report or from the fact that a dispatch was sent.
+Compiled 2026-09-18 at `_dispatches/2026-09-18_<lane>_dispatch.md`. The operator hand-carried the first
+four. The three at the bottom were compiled later the same day and are not yet handed over.
+Every status below was read at source by the planner, not taken from a lane's report or from the fact
+that a dispatch was sent.
 
 | Lane | Rows | Status, verified at source | The evidence |
 |---|---|---|---|
@@ -165,6 +166,21 @@ lane's report or from the fact that a dispatch was sent.
 | `g154-dev-services-live` | G-154 | **LANDED.** Its branch is merged to `main` and the row is regraded CLOSED-PARTIAL: three of four acceptance items PASS, item 2 named unmeasured | live export at 14:49Z, 250 rendered rows across five queues on `d12-main-uat`, `manifest.auth` recording that a key was used and never its value; close, CP1, CP2 and probe on `main` |
 | `d14-d13-v1-reach` | D-14, D-13 | **NOT LANDED.** In flight in its worktree, nothing pushed | G-159's `/api/platform/opengov/budgets` still returns the SPA shell on `smartcityos.io` while the existing-route control returns 401 JSON, byte-identical to the fake-path control; dashboards `main` still carries the GCP host in six places and mentions `walrus-app` nowhere |
 | `g161-never-default-a-city` | G-161 | **NOT LANDED.** In flight in its worktree, CP1 filed, no close | `/api/city-domains`, `/api/city-identity` and `/api/shell` all answer 200 keyless on `d12-main-uat`; six `cityKey` fallbacks to the literal `template-city` are still in `src/server.mjs`, plus the module-level default |
+
+| `g142-citizen-lens` | G-142 | **COMPILED, NOT YET HANDED OVER.** Unblocked (its own blocker column reads `Nothing`) and first in G-146's declared order | the completion gate reports `lens:citizen` at R4; `_design/smartcity-citizen-lens/` does not exist; the shipped surface and the copy that must not regress are read at `smartcity-dashboards` `96fdafbb` |
+| `g147-record-search` | G-147 | **COMPILED, NOT YET HANDED OVER.** Scoped to Records search, the surface the gate is failing on, plus an adjudication of the applicant view. Compass is deferred in the dispatch | the gate reports `work:records` at R4; G-145's lens designs are shipped and G-142 is in flight, which is what Compass was waiting on |
+| `g160-served-commit-parity` | G-160 | **COMPILED, NOT YET HANDED OVER.** Unblocked, and it writes only in `plan-review` and `smart-files`, so it collides with nothing above | neither product reports its served commit today (both `GET /` only); both carry `web/vercel.json`; read at `plan-review` `99c156b` and `smart-files` `6d71bf3` |
+
+**A control that did not fire on the two lanes that are actually running.** `node scripts/lane-claim.mjs
+status` reports seven open claims, and **neither `d14-d13-v1-reach` nor `g161-never-default-a-city` is
+among them.** Both were compiled with the claim instruction in them, and the claim is what tells a
+second session to stand down (exit 3) instead of starting the same lane. So on the two lanes the
+operator believes are running, the guard that exists to prevent the 2026-09-14 duplicate-dispatch
+failure reports nothing. This is the shape `ENFORCEMENT.md` names directly: a control that fails to
+fire produces no complaint, and nobody finds the miss from the outside. It is recorded, not fixed here:
+whether those lanes claimed and released, or never ran the claim step, is not knowable from this seat.
+Also stale: `d12-dashboards-do-cutover` holds a claim on D-12 started 2026-09-17T22:46Z, 17 hours old,
+against a row that is already closed-partial.
 
 Both live lanes prove on `d12-main-uat` and re-read its `source_commit_hash` before each probe. Worth
 knowing for the next read: the raw `*.ondigitalocean.app` hostnames for `walrus-app` and `dolphin-app`
@@ -191,9 +207,9 @@ rather than through `walrus-app` directly.
 | ~~**Ship `main` to `dolphin-app`?**~~ **RULED YES 2026-09-18 (OPS-17 A-149).** The `d14-d13-v1-reach` lane ships `main` as its last step, adding the configured platform base in the same deploy | staff moving to v2 on the better surface |
 | ~~Hand-carry the three dispatches~~ **DONE 2026-09-18.** Operator: *"i have already sent all three"* | nothing; M2 and M3 now wait on the lanes |
 | ~~G-154's live proof: wait for the G-135 key rather than placing your own pilot key in `P:\tmp\g154-hauska-key.txt`~~ **DONE 2026-09-18T14:49Z, your key never read.** The G-154 lane minted its OWN credential (`key_id 2510a3ff`) under A-118's precedent rather than using yours, so the pilot key stayed untouched | nothing; G-154 is regraded |
-| **Housekeeping the G-154 proof leaves:** delete `P:\tmp\g154-hauska-key.txt` (51 bytes, created 2026-09-18T14:36:21Z), which holds that lane's key in plaintext, and revoke `key_id 2510a3ff` now the proof is filed. The handoff says the file is never committed and gets deleted after use | nothing yet; a plaintext lane credential is sitting in a temp directory |
-| **Decide the fate of two non-pilot `bastrop_tx` keys the mint's census found:** `acf2cf9f` (a dormant G-134 lane key, 2026-09-15, exercised once 14 seconds after creation) and `2510a3ff` (above). Both are listed in `_catalog/credential_access_index.json` with no Secret Manager location, so where their values live is not recorded. Revoking `2510a3ff` while its lane is mid-flight would break that lane | the credential census being true rather than approximately true |
-| **Two secrets named `*_MCP_URL` in `hauska-prod-497015` hold Postgres DSNs with passwords, and a lane printed them to a terminal** while looking for an HTTP URL by name. The values reached no artifact, commit or message. Separable calls: whether to rotate that DSN, and whether to rename or split the secrets so the next lane following the name does not print a production database credential. No lane should rotate a production store credential on its own initiative | a production database DSN has been written into one lane's harness output file |
+| ~~**Housekeeping the G-154 proof leaves:** delete `P:\tmp\g154-hauska-key.txt` and revoke `key_id 2510a3ff`~~ **BOTH DONE 2026-09-18, verified at source.** `P:\tmp\g154-hauska-key.txt` is ABSENT and no other `g154` key material remains in `P:\tmp`. `2510a3ff` already read `revoked` when the planner read the census, so that lane filed its own key. | nothing; the plaintext credential is gone |
+| ~~**Decide the fate of two non-pilot `bastrop_tx` keys the mint's census found:** `acf2cf9f` and `2510a3ff`~~ **DECIDED AND EXECUTED 2026-09-18.** Operator: *"if we dont need these delete them dormant G-134 lane key"*. The planner revoked `acf2cf9f` with its own instrument (`_inbox/2026-09-18_planner_revoke_dormant_g134_key.mjs`, artifact `_inbox/2026-09-18_planner_revoke_dormant_g134_key.json`), which reads the admin key at point of use and never prints it, and which refuses unless the target is the exact expected `key_id`, is absent from a must-not-touch list (the pilot, the minted key, and the G-154 key), and is genuinely dormant. `acf2cf9f` last ran 2026-09-15T00:49:49Z, three days idle, so the dormancy condition held. `2510a3ff` was already revoked. **The `bastrop_tx` census is now the minted verification key `96e40316` plus the operator's own pilot, and nothing else.** Both keys were safe to remove because the G-135 verification key supersedes them for any future G-134 work, which is why nothing in flight breaks | nothing; the credential census is true rather than approximately true |
+| **Two secrets named `*_MCP_URL` in `hauska-prod-497015` hold Postgres DSNs with passwords, and a lane printed them to a terminal** while looking for an HTTP URL by name. The values reached no artifact, commit or message. **OPERATOR RULING 2026-09-18: do NOT rotate the secrets right now.** The second half stays open and is the cheaper fix: rename or split the secrets so the next lane following a `*_MCP_URL` name does not print a production database credential. No lane should rotate a production store credential on its own initiative | the DSN shape stays as it is by ruling; the naming trap is still armed for the next lane |
 | Tell Bastrop staff to use `app.smartcityos.io` | the D-12 bake, and everything after it in M1 and M4 |
 | WorkOS org, client id, API key, MFA | G-134's live test, then all of RBAC |
 | Ratify G-143, People and access | G-127, G-144, G-158 |
@@ -204,6 +220,15 @@ rather than through `walrus-app` directly.
 | A capture of the v1 combined dashboard | G-157 |
 | Whether to republish the stale design links (filings, reasoner) | the gallery Bastrop reviews |
 | The blending ruling | the applicant precheck |
+
+**Operator instruction, 2026-09-18.** *"go on Ship, staff word, WorkOS creds, ratify G-143 whenever it
+makes sense to do so"* and *"M2 - hold on this - I have the answers out to Khalid"*. Read together with
+the ship ruling: the ship is not a separate operator step, since A-149 already made it the
+`d14-d13-v1-reach` lane's last action; the staff word and the WorkOS credentials are the operator's own
+and move at the operator's timing; and **G-143 is the highest-leverage item on this table**, because it
+is the single ratification that unblocks three rows (G-127, G-144, G-158) and it is a design that is
+already DRAFT with its instrument built. The M2 items are HELD by the operator until Khalid replies, so
+G-137 stays blocked on the operator and nothing was dispatched against it.
 
 ## Promised to Bastrop, against what exists
 
