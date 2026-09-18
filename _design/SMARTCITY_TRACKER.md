@@ -9,9 +9,9 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `cb4c202a`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `9ad6a657`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 981 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 982 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
@@ -21,7 +21,7 @@ programs: [OPS-17, OPS-25]
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
 | M3 Lens builds on Bastrop live data | 10 | 5 | 5 |
 | M4 DigitalOcean migration complete | 7 | 4 | 3 |
-| M5 Design complete, and the controls that keep it honest | 6 | 4 | 2 |
+| M5 Design complete, and the controls that keep it honest | 6 | 5 | 1 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -81,4 +81,4 @@ programs: [OPS-17, OPS-25]
 | G-147 | the three designed-nowhere surfaces that had no row at all. | closed, partly | closed-partial |
 | G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | closed | closed |
 | G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed, partly | closed-partial |
-| G-164 | REPAIR THE 11 FINDINGS G-148 DISCLOSED, WHICH NO ROW OWNED. | open | — |
+| G-164 | REPAIR THE 11 FINDINGS G-148 DISCLOSED, WHICH NO ROW OWNED. | closed, partly | closed-partial |
