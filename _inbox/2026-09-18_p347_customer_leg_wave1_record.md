@@ -2,14 +2,14 @@
 id: 2026-09-18_p347_customer_leg_wave1_record
 title: P-347, the customer leg made gradeable, Wave 1 record
 date: 2026-09-18
-last_updated: 2026-09-18 (14:15Z)
-status: partial. Everything but the MCP leg is done and graded; the MCP leg waits on a client identity for the sign-in helper (operator decision) and then the operator's sign-in (ruling 9)
+last_updated: 2026-09-18 (16:05Z, signed-in runs)
+status: partial. Every clause done and graded except the tier: both signed-in runs left it unrecorded (section 5)
 kind: seat record
 owner: nick
 maintained_by: integration seat
 programs: [OPS-24, OPS-16]
 plan_rows: [P-347, P-205, P-210, P-270, P-353]
-snapshot: probe artifact of record `_inbox/2026-09-18_140516_surface_probe.json` (instrument sha256 a1590f84142526c4..., working-tree revision on doc_repo main e887a8fb, run 14:05:16Z, --use-system-ca, engine key present, MCP refused missing_bearer); PDF build record `_inbox/2026-09-18_p347_pdf_builds.jsonl`
+snapshot: probe artifact of record `_inbox/2026-09-18_155840_surface_probe.json` (instrument sha256 9eb49c5c..., signed in, run 15:58:40Z, after the LDT deploy and P-332); earlier runs of the day 135952 (superseded, false XD-1), 140516 (no MCP), 151732 (signed in, before the deploys); PDF build record `_inbox/2026-09-18_p347_pdf_builds.jsonl`
 related:
   - _decisions/2026-09-18_phase0_closeout_rulings.md (rulings 9, 13, 17)
   - _inbox/2026-09-17_192035_surface_probe.json (the customer leg of record before this run)
@@ -48,7 +48,7 @@ reconciled atom". A route that timed out measured nothing. Fixed: a non-2xx answ
 unmeasured; a 2xx decline is unbacked; an ok with no derive path is unmeasured. The corrected run
 (14:05:16Z) is the artifact of record; on it the same parcel's figure is backed.
 
-## 3. Results, artifact `_inbox/2026-09-18_140516_surface_probe.json`
+## 3. Results before the sign-in, artifact `_inbox/2026-09-18_140516_surface_probe.json` (superseded by section 5 for the headline)
 
 **Buckets (P-254): 0 PASS, 12 FAIL, 33 UNMEASURED** (2026-09-17: 0 / 17 / 28). No bucket can PASS
 until the MCP half is measured, by design.
@@ -83,7 +83,7 @@ miss from an uncovered county or from another state. Code read: `pe-situs-search
 106 rebuild the response as `{ hits }`. P-205 was customer-closed on the MCP only (A-197). Carded as
 **P-353**. The MCP half is unmeasured until the sign-in.
 
-## 4. What P-347 still owes
+## 4. What P-347 owed at 14:15Z (superseded: the client was registered, see section 5)
 
 The MCP leg. It needs a client identity the sign-in helper can present: AuthKit advertises no dynamic
 registration, and the server's own `WORKOS_CLIENT_ID` is not an OAuth application there (`invalid_client:
@@ -91,3 +91,38 @@ Application not found`, measured 2026-09-18). The server checks only the token's
 audience (`https://mcp.smartsite.cloud/mcp`), and WorkOS issues the audience from the requested
 resource, so either a registered public client or a client-ID metadata document works. Which one is the
 operator's decision. Then the operator signs in once per run, and the probe re-runs with `--mcp-sign-in`.
+
+## 5. The signed-in runs (A-218's client, ruling 9)
+
+The operator registered `client_01M2TETZ4K9N2Z48KBJRD46ABF` ("Smart Site MCP Probe", public, PKCE) and
+signed in twice with the Solo test account. Both times the token came back from
+`https://happy-asteroid-26.authkit.app` with audience `https://mcp.smartsite.cloud/mcp`, and the session
+opened on protocol `2025-06-18` with 16 tools. AuthKit tokens live **5 minutes**; the second run asked
+for `offline_access` (a refresh token was issued) and refreshes in memory.
+
+| Run | Surfaces | Buckets (PASS / FAIL / UNMEASURED) | XD/X (OPEN / CLOSED / UNMEASURED) | MCP |
+|---|---|---|---|---|
+| `_inbox/2026-09-18_151732_surface_probe.json` | before the LDT deploy and P-332 | 23 / 19 / 3 | 6 / 10 / 7 | 52 of 52 |
+| **`_inbox/2026-09-18_155840_surface_probe.json` (of record)** | after both | **23 / 15 / 7** | **6 / 10 / 7** | 52 of 52 |
+
+Two instrument defects the first signed-in run exposed, both fixed before the second:
+
+- **The MCP's glossary was scanned as a claim.** Every `get_smart_site` answer carries
+  `smartSiteVocabulary`, a dictionary of reason codes including "Withheld, setbacks unruled"; six
+  Williamson buckets read "says unruled" from it. Their real answer is `record_retired` (XD-6, until
+  P-350 republishes), so they are UNMEASURED on the MCP now, not FAIL. The Martindale contradiction
+  (the parcel's own overlay says unruled beside a ruled table) still fires, correctly.
+- **The tier was not recorded.** `get_smart_site` does not name it. The second run asked
+  `list_screens`, which answered 200 without naming one (this account can list screens). **The tier
+  graded at is therefore NOT recorded on either run**, and ruling 9 requires it. A second read-only
+  source (`list_purchased_records`, whose refusal envelope carries `subscriptionTier`) is now wired
+  for the next run.
+
+**Coverage, now both halves:** P-210 PASS 3 of 3; P-205's **MCP half PASS 4 of 4** (`find_parcel`
+names Milam and Burnet with their state, reads `no-hit` for Austin and out-of-state for Denver); the
+map half FAIL 4 of 4 (P-353).
+
+**What is still open on the customer leg** (violation classes on the run of record): the ruled table
+called unruled on 8 buckets and geometry called withheld beside drawn geometry on 4 (P-339), 7 codified
+districts that do not draw, Waco XD-2 (P-339), 12 subjects with no composed address (XD-7, P-335 and
+P-350), and one undeclared undated citation (Martindale XD-11).

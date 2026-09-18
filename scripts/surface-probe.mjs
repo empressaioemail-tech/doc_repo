@@ -1415,7 +1415,7 @@ export function pdfSurfaceState(pdf) {
  * ONCE per run, records the gate's own refusal verbatim, and only calls `get_smart_site` when the
  * session actually opened. With no token the whole surface is UNMEASURED — never PASS.
  */
-async function runMcpLegs(token, tokenSource) {
+async function runMcpLegs(token, tokenSource, refresher = null) {
   const headers = { accept: "application/json, text/event-stream" };
   if (token) headers.authorization = `Bearer ${token}`;
   const init = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: MCP_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: "surface-probe-p347", version: "1" } } }, OPS24_LEG_TIMEOUT_MS, headers);
@@ -1429,10 +1429,24 @@ async function runMcpLegs(token, tokenSource) {
   // `notifications/initialized` before the server owes it a tool call. The 2026-09-17 version of
   // this leg read the header off an object that never carried headers and skipped the
   // notification, so a token alone would still have measured nothing.
-  const session = { token, sessionId: str(init.headers?.get?.("mcp-session-id")), protocolVersion: str(body.result?.protocolVersion) ?? MCP_PROTOCOL_VERSION, tiers: new Set(), tools: {} };
+  const session = { token, refresher, refreshes: 0, sessionId: str(init.headers?.get?.("mcp-session-id")), protocolVersion: str(body.result?.protocolVersion) ?? MCP_PROTOCOL_VERSION, tiers: new Set(), tools: {} };
   await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", method: "notifications/initialized" }, OPS24_LEG_TIMEOUT_MS, mcpHeaders(session));
   const list = parseMcpBody((await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 2, method: "tools/list" }, OPS24_LEG_TIMEOUT_MS, mcpHeaders(session))).text);
   for (const t of list?.result?.tools ?? []) session.tools[t.name] = Object.keys(rec(t.inputSchema)?.properties ?? {});
+  // Ruling 9: the tier the run grades at, read off the server's own words. `get_smart_site` does not
+  // name it; the screens gate's `upgrade_required` refusal does (smartsite-mcp tool-honesty.ts
+  // mapScreensGateNonOk). `list_screens` is a read with no arguments. A tier the server does not name
+  // stays unrecorded, never assumed.
+  // Measured 2026-09-18 15:58Z: `list_screens` answered 200 for the operator's account without
+  // naming a tier, so a second read-only source follows it: the records gate's refusal envelope
+  // (`refusePurchasedRecordRead`: status/tier/subscriptionTier/message). Both are reads.
+  session.tierProbe = [];
+  for (const tool of ["list_screens", "list_purchased_records"]) {
+    if (!session.tools[tool] || session.tiers.size) continue;
+    const tp = await callRaw("POST", `${MCP_BASE}/mcp`, { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: tool, arguments: {} } }, OPS24_LEG_TIMEOUT_MS, mcpHeaders(session));
+    for (const t of tiersIn(tp.text)) session.tiers.add(t);
+    session.tierProbe.push({ tool, http: tp.http, named: [...session.tiers] });
+  }
   return { measured: true, http: init.http, ms: init.ms, tokenSupplied: true, tokenSource: tokenSource ?? null, serverInfo: body.result?.serverInfo ?? null, protocolVersion: session.protocolVersion, sessionIdPresent: !!session.sessionId, toolArgKeys: session.tools, gateReason: null, gateMessage: null, calls: {}, session };
 }
 
@@ -1449,7 +1463,32 @@ export function tiersIn(text) {
 }
 
 /** One MCP tool call on the opened session. The argument key comes from the tool's own schema. */
+/** Refresh the access token when it has under a minute left. A failed refresh is recorded on the
+ *  session and the next call fails on its own merits: it is never papered over. */
+export function needsMcpRefresh(session, now = Date.now()) {
+  const r = session?.refresher;
+  return !!(r?.refreshToken && r.tokenEndpoint && r.expMs - now <= 60_000);
+}
+/** Pure: fold a token-endpoint answer into the session. A failed refresh is recorded, never hidden. */
+export function applyMcpRefresh(session, j, httpStatus, now = Date.now()) {
+  if (!j?.access_token) { session.refreshError = `refresh failed: http ${httpStatus} ${j?.error ?? ""}`.trim(); return false; }
+  session.token = j.access_token;
+  if (j.refresh_token) session.refresher.refreshToken = j.refresh_token;
+  const exp = tokenFacts(j.access_token)?.exp;
+  session.refresher.expMs = exp ? Date.parse(exp) : now + (Number(j.expires_in) || 300) * 1000;
+  session.refreshes = (session.refreshes ?? 0) + 1;
+  return true;
+}
+export async function ensureFreshMcpToken(session, now = Date.now(), fetchFn = fetch) {
+  if (!needsMcpRefresh(session, now)) return false;
+  const r = session.refresher;
+  const form = new URLSearchParams({ grant_type: "refresh_token", refresh_token: r.refreshToken, client_id: r.clientId, resource: r.resource });
+  const res = await fetchFn(r.tokenEndpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form });
+  return applyMcpRefresh(session, await res.json().catch(() => null), res.status, now);
+}
+
 async function runMcpTool(session, name, candidates, value, extra = {}) {
+  await ensureFreshMcpToken(session);
   const keys = session.tools[name];
   if (!keys) return { measured: false, error: `the server lists no ${name} tool (tools: ${Object.keys(session.tools).join(", ") || "none listed"})` };
   const argKey = candidates.find((k) => keys.includes(k));
@@ -1491,7 +1530,10 @@ export const MCP_REDIRECT_PORT = Number(process.env.SURFACE_PROBE_MCP_REDIRECT_P
  */
 export const MCP_PROBE_CLIENT_ID = "client_01M2TETZ4K9N2Z48KBJRD46ABF";
 /** Standard OIDC scopes from the authorization server's metadata; the server needs only `sub`. */
-export const MCP_PROBE_SCOPE = process.env.SURFACE_PROBE_MCP_SCOPE || "openid profile email";
+/** `offline_access` is asked for because AuthKit's access tokens live 5 minutes (measured 2026-09-18:
+ *  issued 15:17:50Z, expired 15:22:50Z) and a full run takes longer; the refresh token stays in
+ *  memory with the access token and is guarded from the artifact the same way. */
+export const MCP_PROBE_SCOPE = process.env.SURFACE_PROBE_MCP_SCOPE || "openid profile email offline_access";
 const b64url = (buf) => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 export function pkcePair() {
   const verifier = b64url(randomBytes(32));
@@ -1556,7 +1598,7 @@ async function mcpSignIn() {
   if (!tj?.access_token) return { ok: false, error: `token exchange failed: http ${tr.status} ${tj?.error ?? ""} ${tj?.error_description ?? ""}`.trim() };
   const facts = tokenFacts(tj.access_token);
   const audOk = [facts?.aud].flat().includes(prm.resource);
-  return { ok: true, token: tj.access_token, obtainedAt: new Date().toISOString(), facts, resource: prm.resource, audienceMatchesResource: audOk };
+  return { ok: true, token: tj.access_token, obtainedAt: new Date().toISOString(), facts, resource: prm.resource, audienceMatchesResource: audOk, refresher: { refreshToken: tj.refresh_token ?? null, tokenEndpoint: asm.token_endpoint, clientId, resource: prm.resource, expMs: facts?.exp ? Date.parse(facts.exp) : Date.now() + (Number(tj.expires_in) || 300) * 1000 } };
 }
 
 /**
@@ -1709,9 +1751,36 @@ export function surfaceTexts(legs) {
     ["draw.emptyReason", legs.draw?.emptyReasonText],
     ["draw.message", legs.draw?.message],
     ["draw.declineReason", legs.draw?.declineReason],
-    ["mcp.text", legs.mcpCall?.text],
+    ["mcp.text", mcpClaimText(legs.mcpCall)],
     ["pdf.text", legs.pdf?.pdfText],
   ].filter(([, v]) => !!v);
+}
+
+/**
+ * The MCP answer's text with its reason-code GLOSSARY removed. Every `get_smart_site` answer ships
+ * `smartSiteVocabulary`, a dictionary of every reason token and its display text ("Withheld,
+ * setbacks unruled" among them). A dictionary is not a claim about the parcel, and scanning it made
+ * every signed-in bucket read "says unruled" (measured 2026-09-18 15:17Z on six Williamson buckets
+ * whose real answer was `record_retired`). Only that one key is removed; everything the answer says
+ * about the parcel is still scanned.
+ */
+export function mcpClaimText(call) {
+  if (!call?.text) return null;
+  const strip = (o) => {
+    if (Array.isArray(o)) return o.map(strip);
+    if (o && typeof o === "object") return Object.fromEntries(Object.entries(o).filter(([k]) => k !== "smartSiteVocabulary").map(([k, v]) => [k, strip(v)]));
+    return o;
+  };
+  try {
+    const payload = JSON.parse(call.text);
+    const content = Array.isArray(payload?.content) ? payload.content.map((c) => {
+      if (c?.type !== "text") return c;
+      try { return { ...c, text: JSON.stringify(strip(JSON.parse(c.text))) }; } catch { return c; }
+    }) : payload?.content;
+    return JSON.stringify(strip({ ...payload, content }));
+  } catch {
+    return call.text;
+  }
 }
 
 /**
@@ -2716,6 +2785,26 @@ function selfTest() {
   check("P-210 FAILS a not-covered answer naming another county", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ status: "not-covered", countyFips: "48053", countyName: "Burnet County", state: "TX" }))).verdict === "FAIL");
   check("P-210 FAILS when the endpoint calls an uncovered county covered", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ status: "covered" }))).verdict === "FAIL");
   check("P-210 is UNMEASURED on a refused key, never PASS", ROWS["P-210"].evaluate("coverage:cameron", covLegs(null, null, ep({ error: "unauthorized" }, 401))).verdict === "UNMEASURED");
+  // Token refresh (AuthKit tokens live 5 minutes; a run takes longer).
+  const jwt = (claims) => `x.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.y`;
+  const sess = (expMs, refreshToken = "rt-1") => ({ token: "old", refreshes: 0, refresher: { refreshToken, tokenEndpoint: "https://as.example/token", clientId: "c", resource: "r", expMs } });
+  const t0r = Date.parse("2026-09-18T15:20:00Z");
+  check("no refresh while more than a minute is left", needsMcpRefresh(sess(t0r + 120_000), t0r) === false);
+  check("NOT VACUOUS: a refresh is due inside the last minute", needsMcpRefresh(sess(t0r + 30_000), t0r) === true);
+  check("no refresher (an env token) never refreshes", needsMcpRefresh({ token: "x" }, t0r) === false && needsMcpRefresh(sess(t0r, null), t0r) === false);
+  check("a refresh answer replaces the token, rotates the refresh token and moves the expiry",
+    (() => { const s1 = sess(t0r + 10_000); const ok = applyMcpRefresh(s1, { access_token: jwt({ exp: 1789745000 }), refresh_token: "rt-2" }, 200, t0r); return ok && s1.token !== "old" && s1.refresher.refreshToken === "rt-2" && s1.refresher.expMs === 1789745000000 && s1.refreshes === 1; })());
+  check("a failed refresh is recorded and keeps the old token, never a silent pass",
+    (() => { const s1 = sess(t0r + 10_000); const ok = applyMcpRefresh(s1, { error: "invalid_grant" }, 400, t0r); return ok === false && s1.token === "old" && /invalid_grant/.test(s1.refreshError); })());
+  check("the write guard refuses an artifact carrying the refresh token", artifactLeaksToken(JSON.stringify({ x: "rt-secret-value-that-is-long-enough" }), "rt-secret-value-that-is-long-enough") === true);
+  // The MCP glossary is not a claim about the parcel.
+  const vocab = { smartSiteVocabulary: [{ token: "atom_path_pending", displayText: "Withheld, setbacks unruled", meaning: "..." }] };
+  const mcpWith = (inner) => ({ measured: true, text: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(inner) }] }) });
+  check("NOT VACUOUS, the live Williamson shape: a glossary-only mention of 'unruled' is not a contradiction",
+    contradictions({ facets: { ...goodFacets }, draw: goodDraw, mcpCall: mcpWith({ parcels: [], notFound: ["48491:R038268"], reason: "record_retired", ...vocab }) }).length === 0);
+  check("the live Martindale shape still trips: the parcel's own overlay says unruled beside a ruled table",
+    contradictions({ facets: { ...goodFacets }, draw: goodDraw, mcpCall: mcpWith({ overlays: [{ id: "envelope", state: "refused", reason: "atom_path_pending", reasonDisplayText: "Withheld, setbacks unruled" }], ...vocab }) }).some((c) => /mcp/.test(c.where)));
+  check("mcpClaimText keeps everything but the glossary", (() => { const t = mcpClaimText(mcpWith({ a: "keep me", ...vocab })); return t.includes("keep me") && !t.includes("smartSiteVocabulary"); })());
 
   console.log(failures === 0 ? "\nself-test: all checks passed" : `\nself-test: ${failures} check(s) FAILED`);
   return failures;
@@ -2754,6 +2843,7 @@ async function main() {
   let tls = null;
   let mcpRun = null;
   let mcpSession = null;
+  let mcpRefresher = null;
   if (!flag("--fixtures")) {
     // P-347: refuse the whole run, once and by name, on a host whose CA store Node cannot use.
     tls = await tlsPreflight([PE_BASE, ENGINE_BASE, MCP_BASE]);
@@ -2773,11 +2863,11 @@ async function main() {
       if (!token && flag("--mcp-sign-in")) {
         const si = await mcpSignIn();
         mcpRun.signIn = si.ok ? { ok: true, obtainedAt: si.obtainedAt, tokenFacts: si.facts, resource: si.resource, audienceMatchesResource: si.audienceMatchesResource } : { ok: false, error: si.error };
-        if (si.ok) { token = si.token; tokenSource = "sign-in helper (in memory, this run only)"; }
+        if (si.ok) { token = si.token; tokenSource = "sign-in helper (in memory, this run only)"; mcpRefresher = si.refresher; mcpRun.signIn.refreshTokenIssued = !!si.refresher?.refreshToken; }
         console.log(si.ok ? `signed in; token audience ${JSON.stringify(si.facts?.aud)} expires ${si.facts?.exp}` : `sign-in did not complete: ${si.error}`);
       }
       process.stdout.write(`opening the MCP session against ${MCP_BASE} ... `);
-      const opened = await runMcpLegs(token, tokenSource);
+      const opened = await runMcpLegs(token, tokenSource, mcpRefresher);
       mcpSession = opened.session ?? null;
       delete opened.session;
       mcpRun.open = opened;
@@ -2908,6 +2998,8 @@ async function main() {
   }
   // Ruling 9: the run records the tier it graded at, read off the server's own answers.
   if (mcpRun) mcpRun.tiersSeen = mcpSession ? [...mcpSession.tiers] : [];
+  if (mcpRun && mcpSession?.tierProbe) mcpRun.tierProbe = mcpSession.tierProbe;
+  if (mcpRun && mcpSession) { mcpRun.tokenRefreshes = mcpSession.refreshes; if (mcpSession.refreshError) mcpRun.tokenRefreshError = mcpSession.refreshError; }
   if (mcpRun && mcpSession && !mcpRun.tiersSeen.length) mcpRun.tierNote = "no MCP answer in this run named a subscriptionTier, so the tier graded at is NOT recorded; the close must say so";
 
   const results = evaluateRows(legsById, obs ?? (flag("--fixtures") ? loadFixtureLegs().manifest.observations : null), rowFilter, ops24LegsByBucket);
@@ -2935,7 +3027,7 @@ async function main() {
   const instrumentSha256 = createHash("sha256").update(readFileSync(fileURLToPath(import.meta.url))).digest("hex");
   const artifactText = JSON.stringify({ instrument: "scripts/surface-probe.mjs", instrumentSha256, ranAt, docRepoHead: docRepoHead(), source, peBase: PE_BASE, observationsSha256: sha256, tls, mcpRun, rows: rowFilter, legs: legsById, findings: findings(legsById), results, tally, ops24: ops24Report }, null, 2);
   // Ruling 9: nothing new is stored. The token never reaches the artifact; if it would, nothing is written.
-  if (artifactLeaksToken(artifactText, mcpSession?.token)) {
+  if (artifactLeaksToken(artifactText, mcpSession?.token) || artifactLeaksToken(artifactText, mcpSession?.refresher?.refreshToken)) {
     console.error("REFUSED: the artifact would contain the MCP token; nothing was written");
     process.exit(2);
   }
