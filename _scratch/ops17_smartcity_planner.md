@@ -355,7 +355,9 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **Lane claims: NO live claim for `g153`, `g162` or `g160`.** `lane-claim.mjs status` lists 7 claims, every one
   STALE, none of them a SmartCity lane. `g148` released on its close. **`g153`'s claim is ABSENT and it filed
   NO close** (no `*g153*close*.json` exists under `_inbox`), while its artifacts (`_inbox/2026-09-18_g153_*`) and
-  its uncommitted `check.mjs` edits both sit in this tree. **G-152's precondition (a filed g153 close) is NOT met.**
+  its uncommitted `check.mjs` edits both sit in this tree. **G-152's precondition (a filed g153 close) is NOT met**
+  as read at 20:56Z. **CORRECTED at 16:06 local: the close DOES exist and was copied into this tree mid-session
+  (`closedAt 20:38:32Z`); G-152's precondition is MET. See the 21:45Z section.**
 
 ### LESSON
 
@@ -377,7 +379,8 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
   2026-09-18), the flood-study half blocked on G-125 and the other ten unblocked. See A-159.
 - **Gate-vs-exits meaning** (`A-155`, `A-156`) — **RESOLVED this session**: R3 now RUNS each instrument and
   requires exit 0; the gate exits 1 with the four named. See A-159.
-- **`g153` liveness unresolved**: claim gone, no close, artifacts plus uncommitted `check.mjs` present.
+- **`g153` liveness** — read as unresolved at 20:56Z (claim gone, no close, artifacts plus uncommitted
+  `check.mjs` present). **CORRECTED at 16:06 local: the close exists; see the 21:45Z section.**
 - **`--violate` stays blocked** while `_design` holds `g153`'s two `check.mjs` edits; they are not this seat's to
   commit or revert (`A-154`: stop and report an uncommitted tree that is not yours).
 - **`g160` parcel 2 and `g163` compiled and un-handed**; `g163` queues behind `g162`, running unclaimed
@@ -417,9 +420,32 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 
 ### OPEN
 
-- **`g153` liveness still unresolved**: no claim, no close, two uncommitted `check.mjs` edits (`fleet-lens`,
-  `police-lens`) sit in this tree. They block `design-instrument-exits.mjs --violate` and are not this seat's to
-  commit or revert. **G-152's precondition (a filed g153 close) is NOT met.**
+- **`g153` liveness RESOLVED**, and the earlier reading was of a tree that did not yet hold its close. The close
+  **does** exist: `_inbox/2026-09-18_g153-fleet-police-lens_close.json`, `closedAt 2026-09-18T20:38:32Z`, seat
+  `cente-vsc-g153`, `planRows [G-153]`, `status closed`, 5 `leave_behind` items. **G-152's precondition (a filed
+  g153 close) is MET.** The two uncommitted `check.mjs` edits (`fleet-lens`, `police-lens`) are named in that
+  close's own `leave_behind` as uncommitted here, so committing them is the planner's act, and it is what unblocks
+  `design-instrument-exits.mjs --violate`.
+- **THE TRACKER WENT RED AND THEN GREEN AGAIN, AND THE REGRADE WAS NOT THIS SEAT'S — A CONCURRENT WRITER
+  REGRADED THE ROWS WHILE THIS SESSION WAS READ. Timeline, measured:** three closes were copied into this tree
+  mid-session (`CreationTime` 16:06-16:08 local, `LastWriteTime` preserving 15:16-15:49): `g153` (close `closed`,
+  row `G-153`), `g162` (close `closed-partial`, row `G-162`), `g160` parcel 2 (close `closed-partial`, row
+  `G-160`). The tracker then REFUSED, exit 1, `DISAGREE row=open close=closed` on all three. **At 16:12 this seat
+  read those three rows as `OPEN` and drafted their regrade; at 16:13:35 the OPS-17 file was rewritten by another
+  writer to `CLOSED-PARTIAL` for all three with planner-at-source verification text, and the tracker PASSED.**
+  That writer also added its own `A-160`, which is about `smartcity-os`'s repo-intent posture and NOT about the
+  regrade. **This seat's `StrReplace` anchors then failed to match, which is the only reason the concurrent write
+  was caught.** `git log` shows HEAD is still this session's commit `54e46861`, so the other writer's OPS-17 edit
+  and all three closes are UNCOMMITTED and untracked.
+- **STOP AND REPORT; do not commit another writer's tree.** A-154 governs: an uncommitted tree that is not yours
+  is not yours to clean, stash or commit. This seat therefore committed ONLY its own scratch file and did NOT
+  touch OPS-17, the three closes, or the other writer's amendment. **A second writer in the integration tree is
+  the one-bulk-writer-slot law being violated by construction, and it is the second instance of the `g153`
+  lesson above: two agents can be mid-edit in one worktree and neither sees the other until an anchor misses.**
+- **`g162`'s close is malformed** and the concurrent writer's regrade does not fix it: `closedAt` and `seat` are
+  both `undefined` while the sibling closes carry both, so it cannot be sequenced against a sibling.
 - **`_state/govtech/STATE.md` is OWED to the govtech seat** (`P:/seat-worktrees/govtech/doc_repo`); the content
   is in this session's report and must be written from that seat, never from integration.
-- **Nothing is committed.** All edits are uncommitted by design; doc_repo commits are planner-owned.
+- **Committed by this seat: `54e46861`** (14 files: the A-159 batch, the gate R3 change, the five-write-enabler
+  change, the INDEX lines, this scratch, `_STATE.md`). **Uncommitted and NOT this seat's: OPS-17's three regrades,
+  the other writer's `A-160`, and the three closes.** doc_repo commits by explicit pathspec, never `add -A`.
