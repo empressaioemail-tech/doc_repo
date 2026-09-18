@@ -1,0 +1,179 @@
+# G-155 probe artifacts for lane g155-smart-files-build (seat cente-vsc-g155).
+# Every section below is raw command output. Sections 2-6 were captured while the work was in flight on
+# 2026-09-18; section 1 was RE-CAPTURED at close (2026-09-18T02:2xZ) because the version first written here
+# was a misdirected run. That run is kept as 1a rather than deleted, with what it teaches.
+
+## 1. scripts/g155_acceptance_probe.mjs -- local server + throwaway Postgres
+### 1a. THE FIRST CAPTURE IN THIS FILE, KEPT: a misdirected run that was not a local run at all
+# A leftover SMART_FILES_BASE_URL in the shell silently retargeted the probe at PRODUCTION, where its local
+# token is correctly unknown -- hence the 401. Nothing was written (production refuses an unknown token).
+# Kept because the trap is real, and the only reason it is visible is that the probe PRINTS its base URL as
+# its first line: the labelled header above said 'local server + throwaway Postgres' and the body said
+# otherwise. Read the first line of any probe run before trusting its verdict.
+probe base=http://127.0.0.1:8791 tenant=template-city runTag=local4
+FAIL  a room exists to file documents in  status=401 folderId=undefined
+cannot proceed without a folder
+
+### 1b. PASS 1 -- real local run, fresh room, runTag=close1; the legacy leg cannot run yet
+# SMART_FILES_BASE_URL=http://127.0.0.1:8791 PROBE_RUN_TAG=close1 node scripts/g155_acceptance_probe.mjs
+probe base=http://127.0.0.1:8791 tenant=template-city runTag=close1
+
+PASS  a room exists to file documents in  status=201 folderId=folder:tenant:template-city:g-155-acceptance-close1
+PASS  a PDF with a text layer is indexed, and carries no reason  status=201 searchIndexed=true reason=null
+PASS  a JSON record is never attempted: content-type-not-indexable, and the write still lands  status=201 reason=content-type-not-indexable
+PASS  a valid PDF with no text layer is no-text-layer, not a failure and not silent  status=201 reason=no-text-layer
+PASS  a corrupt PDF fails extraction by name, with the detail kept  status=201 reason=extraction-failed: Invalid PDF structure
+PASS  the listing names each document's searchability as its own recorded state  states=["extraction-failed","indexed","content-type-not-indexable","no-text-layer"]
+PASS  ...and the four states are four DIFFERENT values, not one repeated  distinct=4 of 4
+PASS  coverage travels with the listing, over the same population  inScope=4 rows=4 searched=1 byReason={"content-type-not-indexable":1,"no-text-layer":1,"extraction-failed":1,"reason-not-recorded":0}
+PASS  every row carries the time the design's Last revised column promises  revisedAt=2026-09-18T01:35:14 | 2026-09-18T01:35:14 | 2026-09-18T01:35:14 | 2026-09-18T01:35:14
+PASS  coverage states its own counting rule rather than leaving the denominator unexplained  documents with a current version in scope: searched = current version has search
+PASS  all five provenance keys round-trip, with the values that were sent  held={"capturedAt":"2026-09-18T01:35:14.536Z","capturedBy":"template-city/staff","sourceKind":"staff-upload","declaredRole":"Applicant engineer of record","originalFilename":"g155-close1.pdf"}
+PASS  an upload with no capturedBy is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=capturedBy keysSupplied=4
+PASS  an upload with no capturedAt is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=capturedAt keysSupplied=4
+PASS  an upload with no sourceKind is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=sourceKind keysSupplied=4
+PASS  an upload with no originalFilename is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=originalFilename keysSupplied=4
+PASS  an upload with no declaredRole is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=declaredRole keysSupplied=4
+PASS  a sourceKind outside the closed set is refused, naming the set  status=400 code=provenance_source_kind_not_declared kinds=["staff-upload","applicant-upload","feed","instrument-write"]
+PASS  an unparseable capturedAt is its own refusal, not a missing-key refusal  status=400 code=provenance_captured_at_not_iso8601
+PASS  the same docSlug again is a REVISION of the same document  status=201 entityId=smartfile:tenant:template-city:minutes-close1 version=2 revision=true
+PASS  reading it returns two versions under ONE document, not two documents  versions=["v2*","v1"]
+PASS  ...and the room still lists that document exactly once  rows=1 currentVersion=2
+PASS  a DIFFERENT docSlug is a genuinely new document (the other direction: siblings exist, they are just never invented)  status=201 entityId=smartfile:tenant:template-city:appendix-close1 version=1
+PASS  search finds the indexed document by real word content, and returns coverage with it  status=200 hits=2 inScope=5 searched=2
+PASS  the JSON record is NOT in results (it was never indexed) while coverage still counts it  hits=0 inScope=5
+PASS  a read outside the caller's scope is refused, naming the scope required and the scopes held  status=403 code=read_outside_scope required={"scopeType":"tenant","scopeId":"template-city"} held=[{"scopeType":"tenant","scopeId":"acme"}]
+PASS  search is gated exactly as strictly as the listing (same refusal, no partial results)  status=403 code=read_outside_scope results=undefined
+PASS  an anonymous caller is refused and told it holds no identity at all  status=403 anonymous=true identityKnown=false
+NOT RUN  a row with no recorded reason says so and is NOT inferred from its content type  G155_LEGACY_ENTITY is not set; the runner must null search_index_reason on a row first
+
+27/28 checks passed, 1 NOT RUN (named above)
+LEGACY_CANDIDATE=smartfile:tenant:template-city:scan-close1
+
+### 1c. PASS 2 -- runTag=close2, after the runner nulled search_index_reason on pass 1's candidate
+# UPDATE smart_file_versions v SET search_index_reason = NULL FROM smart_file_documents d
+#   WHERE d.id = v.document_id AND d.entity_id = 'smartfile:tenant:template-city:scan-close1';   -- 2 rows (v1, v2)
+# then: G155_LEGACY_ENTITY=smartfile:tenant:template-city:scan-close1 PROBE_RUN_TAG=close2 node scripts/g155_acceptance_probe.mjs
+# NOTE: pass 2 needs a FRESH run tag. The first attempt at pass 2 reused close1, so the probe re-uploaded its
+# own fixtures over the rows pass 1 had created: the same docSlug came back at v4 instead of v2, and the
+# re-uploaded scan fixture carried a fresh recorded reason, undoing the nulling the legacy leg depends on.
+# Those 8 FAILs were this lane misreading the runner, not a product defect. The run below is the corrected one.
+probe base=http://127.0.0.1:8791 tenant=template-city runTag=close2
+
+PASS  a room exists to file documents in  status=201 folderId=folder:tenant:template-city:g-155-acceptance-close2
+PASS  a PDF with a text layer is indexed, and carries no reason  status=201 searchIndexed=true reason=null
+PASS  a JSON record is never attempted: content-type-not-indexable, and the write still lands  status=201 reason=content-type-not-indexable
+PASS  a valid PDF with no text layer is no-text-layer, not a failure and not silent  status=201 reason=no-text-layer
+PASS  a corrupt PDF fails extraction by name, with the detail kept  status=201 reason=extraction-failed: Invalid PDF structure
+PASS  the listing names each document's searchability as its own recorded state  states=["extraction-failed","indexed","content-type-not-indexable","no-text-layer"]
+PASS  ...and the four states are four DIFFERENT values, not one repeated  distinct=4 of 4
+PASS  coverage travels with the listing, over the same population  inScope=4 rows=4 searched=1 byReason={"content-type-not-indexable":1,"no-text-layer":1,"extraction-failed":1,"reason-not-recorded":0}
+PASS  every row carries the time the design's Last revised column promises  revisedAt=2026-09-18T01:35:28 | 2026-09-18T01:35:28 | 2026-09-18T01:35:28 | 2026-09-18T01:35:28
+PASS  coverage states its own counting rule rather than leaving the denominator unexplained  documents with a current version in scope: searched = current version has search
+PASS  all five provenance keys round-trip, with the values that were sent  held={"capturedAt":"2026-09-18T01:35:28.158Z","capturedBy":"template-city/staff","sourceKind":"staff-upload","declaredRole":"Applicant engineer of record","originalFilename":"g155-close2.pdf"}
+PASS  an upload with no capturedBy is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=capturedBy keysSupplied=4
+PASS  an upload with no capturedAt is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=capturedAt keysSupplied=4
+PASS  an upload with no sourceKind is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=sourceKind keysSupplied=4
+PASS  an upload with no originalFilename is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=originalFilename keysSupplied=4
+PASS  an upload with no declaredRole is REFUSED, not defaulted  status=400 code=provenance_incomplete missingKey=declaredRole keysSupplied=4
+PASS  a sourceKind outside the closed set is refused, naming the set  status=400 code=provenance_source_kind_not_declared kinds=["staff-upload","applicant-upload","feed","instrument-write"]
+PASS  an unparseable capturedAt is its own refusal, not a missing-key refusal  status=400 code=provenance_captured_at_not_iso8601
+PASS  the same docSlug again is a REVISION of the same document  status=201 entityId=smartfile:tenant:template-city:minutes-close2 version=2 revision=true
+PASS  reading it returns two versions under ONE document, not two documents  versions=["v2*","v1"]
+PASS  ...and the room still lists that document exactly once  rows=1 currentVersion=2
+PASS  a DIFFERENT docSlug is a genuinely new document (the other direction: siblings exist, they are just never invented)  status=201 entityId=smartfile:tenant:template-city:appendix-close2 version=1
+PASS  search finds the indexed document by real word content, and returns coverage with it  status=200 hits=2 inScope=10 searched=4
+PASS  the JSON record is NOT in results (it was never indexed) while coverage still counts it  hits=0 inScope=10
+PASS  a read outside the caller's scope is refused, naming the scope required and the scopes held  status=403 code=read_outside_scope required={"scopeType":"tenant","scopeId":"template-city"} held=[{"scopeType":"tenant","scopeId":"acme"}]
+PASS  search is gated exactly as strictly as the listing (same refusal, no partial results)  status=403 code=read_outside_scope results=undefined
+PASS  an anonymous caller is refused and told it holds no identity at all  status=403 anonymous=true identityKnown=false
+PASS  a row with no recorded reason says reason-not-recorded and is NOT inferred from content_type  status=200 state=reason-not-recorded contentType=application/pdf
+
+28/28 checks passed
+LEGACY_CANDIDATE=smartfile:tenant:template-city:scan-close2
+
+## 2. scripts/g155_tag_verify.mjs -- CANARY TAG URL, before the traffic shift
+tag verify base=https://g155-search-reason---smart-files-padrd77ava-ue.a.run.app tenant=template-city
+
+PASS  the tag URL answers as the smart-files service  status=200 body={"ok":true,"service":"smart-files"}
+PASS  the tenant's rooms are readable with a granted token  status=200 folders=5
+PASS  a folder listing carries coverage with its counting rule  status=200 inScope=5 rows=5 rule=documents with a current version in scope: searc
+PASS  every listed row reports a closed-set searchability state, a revision time and its placements  5 rows, states=["reason-not-recorded"]
+PASS  a write with no capturedBy is REFUSED by name on this revision  status=400 code=provenance_incomplete missingKey=capturedBy body={"error":"provenance_incomplete","message":"provenance.capturedBy is required","code":"provenance_incomplete","missingKe
+PASS  ...and the refusal wrote nothing (the listing is the same length afterwards)  before=5 after=5
+PASS  a version with no recorded reason reads reason-not-recorded, not an inferred one  status=200 state=reason-not-recorded contentType=application/pdf reason=null basis="the row predates search_index_reason; the reason is not recorded and is not inferred from content_type"
+PASS  the document read returns its version list (revision, not sibling, on this revision)  versions=v1*
+PASS  the read states the basis for its answer, on the evidence the state came from  state=reason-not-recorded basis="the row predates search_index_reason; the reason is not recorded and is not inferred from content_type"
+PASS  search carries coverage above its results, and placements on each result  status=200 hits=0 inScope=10
+PASS  a read outside the caller's scope is refused and names scope required and scopes held  status=403 code=read_outside_scope required={"scopeType":"tenant","scopeId":"template-city"} held=[{"scopeType":"tenant","scopeId":"acme"}]
+PASS  a caller with no identity is refused and told it holds none  status=403 code=read_outside_scope anonymous=true
+
+12/12 checks passed
+
+## 3. scripts/g155_tag_verify.mjs -- PRODUCTION URL, after the traffic shift
+tag verify base=https://smart-files-padrd77ava-ue.a.run.app tenant=template-city
+
+PASS  the tag URL answers as the smart-files service  status=200 body={"ok":true,"service":"smart-files"}
+PASS  the tenant's rooms are readable with a granted token  status=200 folders=5
+PASS  a folder listing carries coverage with its counting rule  status=200 inScope=5 rows=5 rule=documents with a current version in scope: searc
+PASS  every listed row reports a closed-set searchability state, a revision time and its placements  5 rows, states=["reason-not-recorded"]
+PASS  a write with no capturedBy is REFUSED by name on this revision  status=400 code=provenance_incomplete missingKey=capturedBy body={"error":"provenance_incomplete","message":"provenance.capturedBy is required","code":"provenance_incomplete","missingKe
+PASS  ...and the refusal wrote nothing (the listing is the same length afterwards)  before=5 after=5
+PASS  a version with no recorded reason reads reason-not-recorded, not an inferred one  status=200 state=reason-not-recorded contentType=application/pdf reason=null basis="the row predates search_index_reason; the reason is not recorded and is not inferred from content_type"
+PASS  the document read returns its version list (revision, not sibling, on this revision)  versions=v1*
+PASS  the read states the basis for its answer, on the evidence the state came from  state=reason-not-recorded basis="the row predates search_index_reason; the reason is not recorded and is not inferred from content_type"
+PASS  search carries coverage above its results, and placements on each result  status=200 hits=0 inScope=10
+PASS  a read outside the caller's scope is refused and names scope required and scopes held  status=403 code=read_outside_scope required={"scopeType":"tenant","scopeId":"template-city"} held=[{"scopeType":"tenant","scopeId":"acme"}]
+PASS  a caller with no identity is refused and told it holds none  status=403 code=read_outside_scope anonymous=true
+
+12/12 checks passed
+
+## 4. scripts/write_surface_check.mjs -- the BUILT surface, as files, both directions
+self-tests: 11/11 passed, both directions
+surface inputs: files=3 chars=17535 (web/index.html=4588 web/app.js=12945 web/styles.css=0)
+forbidden: browse=0 browser=0 browsing=0 file manager=0 file explorer=0 folder tree=0 directory tree=0  (0 of 7 matched)
+no readable copy in: web/styles.css -- scanned and found nothing to check, which is stated here rather than counted as a pass.
+required: Searchable=present Placed against=present Versions=present Provenance=present Searchable in this folder=present What this product does not do yet=present  (6 of 6 matched)
+
+3 surface files pass: none of the 7 refused terms appear, and all 6 substituted terms do.
+
+## 4b. scripts/write_surface_check.mjs --plant browser (the checker observed catching a violation)
+PLANT "browser" CAUGHT: browser=1
+
+## 5. scripts/g155_served_surface_check.mjs -- the DEPLOYED QA UI bytes
+### 5a. BEFORE this lane's Vercel production deploy (measured 2026-09-18T01:33Z, exit 1)
+forbidden: browse=2 browser=0 browsing=0 file manager=0 file explorer=0 folder tree=0 directory tree=0
+required: Searchable=MISSING Placed against=MISSING Versions=present Provenance=MISSING Searchable in this folder=MISSING What this product does not do yet=MISSING
+FAIL the served surface says "browse" 2 time(s).
+### 5b. AFTER the deploy (same three URLs)
+read   https://smart-files-app.vercel.app/  status=200 kind=html chars=4588 content-type=text/html; charset=utf-8
+read   https://smart-files-app.vercel.app/app.js  status=200 kind=js chars=12945 content-type=application/javascript; charset=utf-8
+
+served inputs: urls=2 readable=2 chars=17534
+forbidden: browse=0 browser=0 browsing=0 file manager=0 file explorer=0 folder tree=0 directory tree=0
+required: Searchable=present Placed against=present Versions=present Provenance=present Searchable in this folder=present What this product does not do yet=present
+
+2 served response(s) pass: none of the 7 refused terms appear, and all 6 substituted terms do.
+
+## 6. _design/smart-files/check.mjs -- matched-input count and plants in both directions
+self-tests: 12/12 passed, both directions
+matched inputs: files=5 kind-shaped=3 reason-shaped=6 scope-shaped=13 provenance-key-cells=10
+ok   Document.dc.html
+ok   Gaps.dc.html
+ok   Main.dc.html
+ok   Refusals.dc.html
+ok   Search.dc.html
+
+5 artboards pass. Vocabularies agree with smart-files 61c84f6.
+self-tests: 12/12 passed, both directions
+PLANT "kind" CAUGHT in Document.dc.html: source kind not declared in the product: vendor-upload
+planted run: 1 of 5 artboards failed, as required.
+self-tests: 12/12 passed, both directions
+PLANT "reason" CAUGHT in Document.dc.html: not-indexed reason not declared in the product: no-text-found
+planted run: 1 of 5 artboards failed, as required.
+self-tests: 12/12 passed, both directions
+PLANT "scope" CAUGHT in Document.dc.html: scope type not declared in the product: parcel
+planted run: 1 of 5 artboards failed, as required.
+self-tests: 12/12 passed, both directions
+PLANT "key" CAUGHT in Document.dc.html: provenance key list is incomplete: capturedBy
+planted run: 1 of 5 artboards failed, as required.

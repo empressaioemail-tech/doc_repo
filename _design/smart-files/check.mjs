@@ -87,31 +87,143 @@ console.log(`self-tests: ${selfTests.length}/${selfTests.length} passed, both di
 
 /* ----------------------------------------------------------- the artboards */
 
-const files = fs.readdirSync(here).filter((f) => f.endsWith('.dc.html')).sort();
+/**
+ * MATCHED-INPUT ACCOUNTING. A vocabulary check that matches nothing anywhere
+ * "passes" every artboard while proving nothing: if no board renders a
+ * not-indexed reason, the reason predicate is satisfied vacuously and the
+ * verdict is worth nothing. So every predicate counts what it actually looked
+ * at, the counts are printed, and a predicate that matched zero inputs makes
+ * the run REFUSE a verdict (exit 2) instead of reporting a clean one.
+ */
+function scan(html) {
+  return {
+    kinds: [...html.matchAll(KIND_SHAPE)].length,
+    reasons: [...html.matchAll(REASON_SHAPE)].length,
+    scopes: [...html.matchAll(SCOPE_SHAPE)].length,
+    keys: renderedKeys(html).length,
+  };
+}
+
+function evaluate(files) {
+  const matched = { files: files.length, kinds: 0, reasons: 0, scopes: 0, keys: 0 };
+  const failures = [];
+  for (const { file, html, planted: plantedHere } of files) {
+    const m = scan(html);
+    matched.kinds += m.kinds;
+    matched.reasons += m.reasons;
+    matched.scopes += m.scopes;
+    matched.keys += m.keys;
+    const problems = [];
+    const k = strays(html, KIND_SHAPE, KINDS);
+    if (k.length) problems.push(`source kind not declared in the product: ${k.join(', ')}`);
+    const r = strays(html, REASON_SHAPE, REASONS);
+    if (r.length) problems.push(`not-indexed reason not declared in the product: ${r.join(', ')}`);
+    const s = strayScopes(html);
+    if (s.length) problems.push(`scope type not declared in the product: ${s.join(', ')}`);
+    if (!keyListOk(html)) {
+      problems.push(`provenance key list is incomplete: ${[...new Set(renderedKeys(html))].join(', ')}`);
+    }
+    failures.push({ file, problems, planted: Boolean(plantedHere) });
+  }
+  return { matched, failures, bad: failures.filter((f) => f.problems.length).length };
+}
+
+const listArtboards = () =>
+  fs.readdirSync(here)
+    .filter((f) => f.endsWith('.dc.html'))
+    .sort()
+    .map((file) => ({ file, html: fs.readFileSync(new URL(`./${file}`, import.meta.url), 'utf8') }));
+
+/* ------------------------------------------------- planted violations, run ---
+ * `node check.mjs`            -> verdict on the real artboards.
+ * `node check.mjs --plant X`  -> injects one planted violation into the FIRST
+ *                                artboard and requires the check to CATCH it.
+ * Exit 0 from a plant means the planted violation was caught; exit 1 means the
+ * instrument let an invented vocabulary through, which is the failure mode the
+ * whole file exists to prevent. A plant is a claim about the checker, not about
+ * the design, so it never touches an artboard on disk. */
+
+const plantArg = process.argv.indexOf('--plant');
+if (plantArg !== -1) {
+  const plant = process.argv[plantArg + 1];
+  // Each plant is a mutation of the FIRST artboard in memory. `append` covers
+  // an invented category (a fifth source kind, a fourth reason, an undeclared
+  // scope type). The key plant cannot be an append -- adding a key cell leaves
+  // the list complete -- so it deletes four of the five declared keys, which is
+  // the violation keyListOk exists to catch.
+  const plantFile = () => {
+    const real = listArtboards();
+    if (!real.length) { console.error('no artboards to plant into.'); process.exit(2); }
+    return real;
+  };
+  const plants = {
+    kind: {
+      describe: 'vendor-upload',
+      mutate: (html) => `${html}\ncaptured by vendor-upload\n`,
+    },
+    reason: {
+      describe: 'no-text-found',
+      mutate: (html) => `${html}\nreason no-text-found today\n`,
+    },
+    scope: {
+      describe: 'parcel',
+      mutate: (html) => `${html}\nparcel / bastrop_tx\n`,
+    },
+    key: {
+      describe: `a provenance key list missing ${PKEYS.slice(1).join(', ')}`,
+      mutate: (html) => {
+        let seen = 0;
+        return html.replace(CELL, (match) => {
+          const isKey = PKEYS.some((k) => match.includes(`>${k}</span>`));
+          if (!isKey) return match;
+          seen += 1;
+          return seen === 1 ? match : '';
+        });
+      },
+    },
+  };
+  const entry = plants[plant];
+  if (!entry) {
+    console.error(`unknown plant "${plant}". Use one of: ${Object.keys(plants).join(', ')}`);
+    process.exit(2);
+  }
+  const real = plantFile();
+  const planted = real.map((a, i) =>
+    i === 0 ? { ...a, html: entry.mutate(a.html), planted: true } : a,
+  );
+  const { bad, failures } = evaluate(planted);
+  const caughtOn = failures.find((f) => f.planted && f.problems.length);
+  if (caughtOn) {
+    console.log(`PLANT "${plant}" CAUGHT in ${caughtOn.file}: ${caughtOn.problems.join('; ')}`);
+    console.log(`planted run: ${bad} of ${planted.length} artboards failed, as required.`);
+    process.exit(0);
+  }
+  console.error(`PLANT "${plant}" NOT CAUGHT. The checker accepted ${entry.describe} into an artboard.`);
+  process.exit(1);
+}
+
+/* --------------------------------------------------------------- the verdict */
+
+const files = listArtboards();
 if (!files.length) { console.error('no artboards. Run `node gen.mjs` first.'); process.exit(2); }
 
-let bad = 0;
-for (const file of files) {
-  const html = fs.readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
-  const problems = [];
+const { matched, failures, bad } = evaluate(files);
 
-  const k = strays(html, KIND_SHAPE, KINDS);
-  if (k.length) problems.push(`source kind not declared in the product: ${k.join(', ')}`);
-  const r = strays(html, REASON_SHAPE, REASONS);
-  if (r.length) problems.push(`not-indexed reason not declared in the product: ${r.join(', ')}`);
-  const s = strayScopes(html);
-  if (s.length) problems.push(`scope type not declared in the product: ${s.join(', ')}`);
-  if (!keyListOk(html)) {
-    problems.push(`provenance key list is incomplete: ${[...new Set(renderedKeys(html))].join(', ')}`);
-  }
+const zero = Object.entries(matched).filter(([k, n]) => k !== 'files' && n === 0).map(([k]) => k);
+console.log(
+  `matched inputs: files=${matched.files} kind-shaped=${matched.kinds} reason-shaped=${matched.reasons} ` +
+    `scope-shaped=${matched.scopes} provenance-key-cells=${matched.keys}`,
+);
+if (zero.length) {
+  console.error(`\nREFUSING A VERDICT: no input matched ${zero.join(', ')}. That predicate passed`);
+  console.error('vacuously, so a clean report would mean nothing. Fix the artboards or the pattern.');
+  process.exit(2);
+}
 
-  if (problems.length) {
-    bad += 1;
-    console.error(`FAIL ${file}`);
-    for (const p of problems) console.error(`     ${p}`);
-  } else {
-    console.log(`ok   ${file}`);
-  }
+for (const f of failures) {
+  if (!f.problems.length) { console.log(`ok   ${f.file}`); continue; }
+  console.error(`FAIL ${f.file}`);
+  for (const p of f.problems) console.error(`     ${p}`);
 }
 
 if (bad) { console.error(`\n${bad} of ${files.length} artboards failed.`); process.exit(1); }
