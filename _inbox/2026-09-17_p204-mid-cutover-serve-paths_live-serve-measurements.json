@@ -1,0 +1,289 @@
+{
+  "artifact": "p204 mid-cutover serve paths — live serve measurements",
+  "lane": "p204-mid-cutover-serve-paths",
+  "planRows": ["P-204"],
+  "measuredAt": "2026-09-17T22:35:00Z..2026-09-17T22:50:00Z",
+  "writtenBy": "seat cente-vsc-p204 (read-only lane; no store writes, no deploys, no serving changes)",
+  "summary": "Per-rail serve paths measured live at three places: the customer surface (smartsite.cloud Property Explorer facets BFF), the authoritative LDT serve path (cortex-api), and the atoms store (hauska_mcp) by SQL. Rail-corridor-fact atoms exist at county parity and reach NO surface. etjStatus is computed correctly at cortex-api (present/verified-absent) and downgraded to the literal 'unresolved' by the PE BFF.",
+
+  "snapshotReadAgainst": {
+    "docRepoSeatWorktreeHead": "df9ced8c264723c69c873ba62ab21e4a5f10b662 (2026-09-17 17:30:14 -0500)",
+    "legacyDesignToolsReconHead": "388ccc5c3575beb67e6b54ed0261f54afef1837d (2026-09-17 16:57:40 -0500)",
+    "hauskaEngineReconHead": "72d72c0296510a057ac3f1d0857123c825454084",
+    "hauskaMapReconHead": "3693d831af368dc84efe18a524bb7fc2dddc0bfd",
+    "servingRevisions": {
+      "cortexApi": {
+        "service": "cortex-api (project legacy-design-tools-prod)",
+        "revision": "cortex-api-00472-web",
+        "imageTag": "7219b707ed88744053bad24f16f63761426fc356",
+        "verified": "git merge-base --is-ancestor e863d3e9 7219b707 -> exit 0, so the serving image CONTAINS P-296 (e863d3e9 'P-296: serve a real etjStatus from the ingested ETJ rings', 2026-09-17 13:22:51 -0500)"
+      },
+      "hauskaEngineApi": {
+        "service": "hauska-engine-api (project hauska-prod-497015)",
+        "revision": "hauska-engine-api-00219-huf",
+        "imageTag": "p260-72d72c0"
+      },
+      "hauskaRetrievalApi": {
+        "service": "hauska-retrieval-api (project hauska-prod-497015)",
+        "revision": "hauska-retrieval-api-00080-yax",
+        "imageTag": "sha256:d4e7d78b7610168984d64e6f143dfa58c4bf9c01bfc928adf1dce6c196861f78"
+      },
+      "customerSurface": {
+        "host": "smartsite.cloud (Vercel; PE facets BFF apps/property-explorer/api/spine.ts -> handlePropertyAtomsFacets)",
+        "servingBuildByAssetExistence": ["/assets/index-gi9ECXVc.js", "/assets/index-CIjuDcNp.css"],
+        "observedResponseHeader": "X-Pe-Read-Path: record (on every parcel fetched below)",
+        "note": "read by asset existence, never by Age:; Vercel x-vercel-id recorded per request in the raw responses"
+      }
+    },
+    "atomsStore": "hauska_mcp (cortex-prod Neon), DSN read from P:/hauska-mcp-server/.env DATABASE_URL; read-only psql; no DSN value printed"
+  },
+
+  "countingRules": {
+    "atomsCounts": "count(*) from public.atoms grouped by (parcel, entity_type); one row per (parcel node id prefix, entity_type); bounds are entity_id >= '<fips>:<prop>' AND entity_id < '<fips>:<prop+1>' so the scan is index-bounded by atoms_entity_composite_unique(entity_type, entity_id). No full-table scan, no PostGIS plan, statement_timeout 60-90s.",
+    "servedRows": "one row per HTTP GET of the customer surface URL named in the row; no retries counted separately; all returned HTTP 200.",
+    "edgeAgreement": "served boundaryEdgeFact.edges.length compared with property-boundary-edge atom count for the same parcel prefix."
+  },
+
+  "atomsCountsFromStore": [
+    { "parcel": "48209:97658", "counts": { "property-boundary-edge": 9, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 1, "parcel-node": 1 } },
+    { "parcel": "48209:97650", "counts": { "property-boundary-edge": 12, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 1 } },
+    { "parcel": "48209:97657", "counts": { "property-boundary-edge": 9, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 1 } },
+    { "parcel": "48021:34049", "counts": { "property-boundary-edge": 5, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 1 } },
+    { "parcel": "48021:8723767", "counts": { "property-boundary-edge": 7, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 1 } },
+    { "parcel": "48209:34137", "counts": { "property-boundary-edge": 0, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 1 } },
+    { "parcel": "48453:113408", "counts": { "property-boundary-edge": 0, "land-use-fact": 1, "rrc-pipeline-fact": 1, "rail-corridor-fact": 1, "building-footprint": 3 } },
+    {
+      "countyTotals": {
+        "48055 Caldwell": { "parcel-node": 25181, "property-boundary-edge": 57180, "land-use-fact": 24988, "rrc-pipeline-fact": 24988, "rail-corridor-fact": 24988 },
+        "48309 McLennan": { "parcel-node": 114369, "land-use-fact": 114254, "rrc-pipeline-fact": 114254, "rail-corridor-fact": 114254, "property-boundary-edge": 0 }
+      },
+      "reading": "rail-corridor-fact is written at 99.2% (Caldwell) and 99.9% (McLennan) of parcel-node parity — the rail has atoms at county scale. In McLennan there are NO property-boundary-edge atoms while land-use/pipeline/rail all sit at parcel parity."
+    }
+  ],
+
+  "atomBodies": {
+    "land-use-fact 48209:97658:2026": { "state": "typed absence", "absenceKind": "join-hold", "absenceReason": "LANDUSE_JOIN_HOLD county 48209 — TxGIO prop_id does not join CAD property_use_code", "sourceAdapter": "cad-property-land-use-v1", "fetchedAt": "2026-08-12T16:29:27.759Z" },
+    "land-use-fact 48453:134392:2026": { "state": "present", "landUseCode": "A1", "sourceAdapter": "cad-property-land-use-v1" },
+    "rrc-pipeline-fact 48209:97658": { "nearPipeline": false, "bufferMeters": 152.4, "sourceAdapter": "tx-rrc-pipeline-staged-v1", "sourceVintage": "UNKNOWN" },
+    "rail-corridor-fact 48209:97658": { "nearRailCorridor": false, "bufferMeters": 152.4, "sourceAdapter": "ntad-narn-proximity-v1", "sourceVintage": "2026-07-21", "atomDid": "railfact_54006227e6518d45" },
+    "property-boundary-edge 48209:97658:boundary:5": { "role": "front", "adjacencyKind": "ROW", "facingRoad": { "roadNodeId": "48209:road:15292464", "provenance": "osm-overpass-v1" }, "propertyLineTags": { "bearing": "N 45°25' E", "distanceFeet": 55.10891449931749, "provenance": { "kind": "gis-approximate" } }, "sourceAdapter": "boundary-primitive-county-batch", "fetchedAt": "2026-09-07T22:33:49.360Z" }
+  },
+
+  "servedRowsCustomerSurface": {
+    "urlTemplate": "GET https://smartsite.cloud/api/spine/property-atoms/<parcelNodeId>/facets",
+    "rows": [
+      {
+        "parcel": "48209:97658", "http": 200, "readPath": "record", "atomsBoundaryEdges": 9,
+        "boundaryEdgeFact": { "state": "present", "edges": 9, "boundAs": "48209:97658:boundary:5", "source": "property-boundary-edge", "serveLayer": "boundary", "provenanceClass": "Derivation" },
+        "pipelineFact": { "state": "present", "nearPipeline": false, "bufferMeters": 152.4, "serveLayer": "rrc-pipelines", "provenanceClass": "Derivation" },
+        "landUseFact": { "state": "absent", "absenceKind": "join-hold", "boundAs": "48209:97658:2026", "serveLayer": "landuse", "provenanceClass": "Record" },
+        "facetsBaseFactsLandUse": { "code": "C1", "description": "Vacant lot or tract", "source": "cad-roll-address-join", "vintage": "tier:cad-export;adapter:orion;drop:hays_20260826_certified" },
+        "cityLimitsFact": { "status": "incorporated", "etjStatus": "unresolved", "cityName": "San Marcos", "source": "tx_city_boundary", "hasEtjFactBlock": false, "basisCarriesEtjSegment": false },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48209:97650", "http": 200, "readPath": "record", "atomsBoundaryEdges": 12,
+        "boundaryEdgeFact": { "state": "present", "edges": 12, "boundAs": "48209:97650:boundary:7" },
+        "pipelineFact": { "state": "present", "nearPipeline": false },
+        "landUseFact": { "state": "absent", "absenceKind": "join-hold" },
+        "facetsBaseFactsLandUse": { "code": "A", "description": "Single-family residential", "source": "cad-roll-address-join" },
+        "cityLimitsFact": { "etjStatus": "unresolved", "hasEtjFactBlock": false },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48021:34049", "http": 200, "readPath": "record", "atomsBoundaryEdges": 5,
+        "boundaryEdgeFact": { "state": "present", "edges": 5, "boundAs": "48021:34049:boundary:2" },
+        "pipelineFact": { "state": "present", "nearPipeline": false },
+        "landUseFact": { "state": "present", "landUseCode": "A1", "boundAs": "48021:34049:2025" },
+        "facetsBaseFactsLandUse": { "code": "A1", "description": "Single-family residential", "source": "cad-roll" },
+        "cityLimitsFact": { "etjStatus": "unresolved", "hasEtjFactBlock": false },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48021:8723767", "http": 200, "readPath": "record", "atomsBoundaryEdges": 7,
+        "boundaryEdgeFact": { "state": "present", "edges": 7, "boundAs": "48021:8723767:boundary:0" },
+        "pipelineFact": { "state": "present", "nearPipeline": false },
+        "landUseFact": { "state": "present", "landUseCode": "C1", "boundAs": "48021:8723767:2025" },
+        "facetsBaseFactsLandUse": { "code": "", "description": "", "source": "" , "reading": "the customer surface serves NO land-use description for this parcel while its land-use-fact atom holds C1" },
+        "cityLimitsFact": { "etjStatus": "unresolved", "hasEtjFactBlock": false },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48209:34137", "http": 200, "readPath": "record", "atomsBoundaryEdges": 0,
+        "boundaryEdgeFact": { "state": "refused", "code": "atom-miss", "edges": 0, "reading": "zero atoms -> typed refusal; no GIS outline is copied" },
+        "pipelineFact": { "state": "present", "nearPipeline": false },
+        "landUseFact": { "state": "absent", "absenceKind": "join-hold" },
+        "facetsBaseFactsLandUse": { "code": "C1", "description": "Vacant lot or tract", "source": "cad-roll-address-join" },
+        "cityLimitsFact": { "etjStatus": "unresolved", "hasEtjFactBlock": false },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48453:113408", "http": 200, "readPath": "record", "atomsBoundaryEdges": 0,
+        "boundaryEdgeFact": { "state": "refused", "code": "atom-miss", "edges": 0 },
+        "pipelineFact": { "state": "present", "nearPipeline": false },
+        "landUseFact": { "state": "present", "landUseCode": "A1" },
+        "facetsBaseFactsLandUse": { "code": "A1", "description": "Single-family residential", "source": "cad-roll" },
+        "cityLimitsFact": { "etjStatus": "unresolved", "hasEtjFactBlock": false },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48021:103289", "http": 200, "readPath": "record",
+        "boundaryEdgeFact": { "state": "refused", "edges": 0 },
+        "pipelineFact": { "state": "present", "nearPipeline": true, "bufferMeters": 152.4, "nearestPipelineDistanceMeters": 12.3, "operatorName": "MPH BASTROP LATERAL, LLC" },
+        "cityLimitsFact": { "etjStatus": "unresolved" },
+        "railCorridorFactKeyPresent": false
+      },
+      {
+        "parcel": "48021:10377", "http": 200, "readPath": "record",
+        "boundaryEdgeFact": { "state": "refused", "edges": 0 },
+        "pipelineFact": { "state": "present", "nearPipeline": true, "bufferMeters": 152.4, "nearestPipelineDistanceMeters": 13.8, "operatorName": "ENERGY TRANSFER COMPANY" },
+        "cityLimitsFact": { "etjStatus": "unresolved" },
+        "railCorridorFactKeyPresent": false
+      }
+    ],
+    "recordRailStatesObservedOn48209_97658": {
+      "cityLimits": { "serve": "record", "atomBacked": false },
+      "flood": { "serve": "record", "atomBacked": false },
+      "specialDistricts": { "serve": "record", "atomBacked": false },
+      "wells": { "serve": "record", "atomBacked": false },
+      "schoolDistrict": { "serve": "record", "atomBacked": false },
+      "utilityService": { "serve": "record", "atomBacked": false },
+      "overlayDistricts": { "serve": "record", "atomBacked": false },
+      "agValuation": { "serve": "legacy-transitional", "atomBacked": false },
+      "maxImperviousCoverPct": { "serve": "legacy-transitional", "atomBacked": false },
+      "acreageAcres": { "serve": "record", "atomBacked": false },
+      "acreageSqft": { "serve": "legacy-transitional", "atomBacked": false },
+      "acreageMethod": { "serve": "legacy-transitional", "atomBacked": false },
+      "livingAreaSqft": { "serve": "record", "atomBacked": false },
+      "yearBuilt": { "serve": "record", "atomBacked": false },
+      "zoningDistrict": { "serve": "record", "atomBacked": false },
+      "zoningJurisdictionKey": { "serve": "record", "atomBacked": false },
+      "zoningProvenance": { "serve": "record", "atomBacked": false },
+      "setbackFrontFt": { "serve": "record", "atomBacked": false },
+      "setbackSideFt": { "serve": "legacy-transitional", "atomBacked": false },
+      "setbackRearFt": { "serve": "legacy-transitional", "atomBacked": false },
+      "setbackCornerFt": { "serve": "legacy-transitional", "atomBacked": false }
+    },
+    "recordRailStatesReading": "The wire's own per-rail serve map carries NONE of the five mid-cutover rails under these names (no parcelGeometry, no pipelines, no railCorridor, no etjStatus, no landUseDescription), and every key it does carry reads atomBacked:false — including the ones served 'record'. The five rails are outside the wire's rail-state vocabulary, in a different vocabulary (the engine's serveLayer names: boundary / rrc-pipelines / rail-corridor / landuse)."
+  },
+
+  "etjDivergenceCustomerVsCortex": {
+    "claim": "P-296's ETJ determination IS computed and served by cortex-api for these parcels, and is discarded by the customer surface's facets BFF, which serves the literal 'unresolved'.",
+    "rows": [
+      {
+        "parcel": "48453:134392",
+        "situs": "3128 Edgewater Dr, Travis County (unincorporated, inside Austin's 2-mile ETJ; P-241 pre-registered falsifier #1, predicts present)",
+        "cortexApi": {
+          "url": "GET https://cortex-api-tds7av26va-uc.run.app/api/brokerage/v1/place/node/48453:134392/facets",
+          "http": 200, "bytes": 26437,
+          "cityLimitsFact": { "status": "incorporated", "etjStatus": "present", "cityName": "Austin", "etjId": "austin-tx:39", "ringLabel": "AUSTIN 2 MILE ETJ", "queryPoint": { "longitude": -97.85514, "latitude": 30.35297 }, "hasEtjFactBlock": true, "basisTail": "ETJ: point-in-polygon against tx_etj_boundary etj_id=austin-tx:39 (Austin: \"AUSTIN 2 MILE ETJ\", ring 39)" }
+        },
+        "customerSurface": {
+          "url": "GET https://smartsite.cloud/api/spine/property-atoms/48453:134392/facets",
+          "http": 200, "readPath": "record",
+          "cityLimitsFact": { "status": "incorporated", "etjStatus": "unresolved", "cityName": "Austin", "hasEtjFactBlock": false, "queryPointKeyPresent": false, "basisCarriesEtjSegment": false, "basis": "parcel_record cityLimits: incorporated, city 'Austin' (source: landing_parcel_jurisdiction, vintage: 2026-09-17T19:23:36.801Z)." }
+        },
+        "verdict": "present -> unresolved. The customer is served the opposite of a determination the authoritative path made."
+      },
+      {
+        "parcel": "48209:97658",
+        "cortexApi": {
+          "url": "GET https://cortex-api-tds7av26va-uc.run.app/api/brokerage/v1/place/node/48209:97658/facets",
+          "http": 200, "bytes": 23959,
+          "cityLimitsFact": { "status": "incorporated", "etjStatus": "absent", "cityName": "San Marcos", "coveredBy": ["san-marcos-tx"], "ringsConsulted": 1, "hasEtjFactBlock": true, "basisTail": "ETJ: point-in-polygon against 1 published ETJ ring(s) from 1 publisher(s) whose own published extent covers this point (san-marcos-tx); no published ETJ ring contains it, so ETJ is verified absent here" }
+        },
+        "customerSurface": { "http": 200, "readPath": "record", "cityLimitsFact": { "etjStatus": "unresolved", "hasEtjFactBlock": false } },
+        "verdict": "absent (a checked absence, with its publishers and ring count) -> unresolved. A verified absence is served as 'we did not look'."
+      }
+    ],
+    "sampleWidth": "9 parcels fetched from the customer surface (48209:97658, 48209:97650, 48021:34049, 48021:8723767, 48209:34137, 48453:113408, 48453:134392, 48453:367134, 48453:474034, 48453:134393, 48453:134394, 48021:103289, 48021:10377): 13 of 13 served etjStatus = 'unresolved', 0 of 13 carried an etjFact block or an 'ETJ:' basis segment.",
+    "codePathThatDoesIt": [
+      "apps/property-explorer/api/_lib/pe-property-atoms.ts applyRecordPatch() -> when the retrieval-api /record says rail cityLimits serves 'record', it replaces the WHOLE cityLimitsFact: `...(patch.cityLimitsFact ? { cityLimitsFact: withPreservedQueryPoint(payload.cityLimitsFact, patch.cityLimitsFact) } : {})` (the cortex fact, its etjStatus and its etjFact are dropped; only queryPoint is carried through).",
+      "apps/property-explorer/api/_lib/pe-record-to-facets.ts composeCityLimits() writes `etjStatus: \"unresolved\"` as a literal in ALL FOUR branches (refused / absent / unusable-value / incorporated) — lines ~200-239.",
+      "Live: recordRailStates.cityLimits = { serve: \"record\", atomBacked: false } on every parcel fetched, so the replacing branch is the one that ran; X-PE-Read-Path: record confirms it."
+    ],
+    "deployedCodeCheck": "At the SERVING cortex commit 7219b707 the overlay is present (overlayEtjStatus, loadEtjFact, `basis: `${fact.basis} ETJ: ${etj.basis}``, `etjFact: etj`) and the facets route passes `snapshot?.queryPoint ?? null`. So neither the cortex code nor its point availability is the cause at the panel: the panel overwrites the field."
+  },
+
+  "violationsProvingServePaths": [
+    {
+      "rail": "parcelGeometry",
+      "claim": "the served ring is the property-boundary-edge atom set, read by prefix-range bind, and nothing else",
+      "broken": "atom presence ablated by subject, not by code change",
+      "observed": [
+        "48209:97658: atoms 9 -> served edges 9 (boundAs :boundary:5, the front edge)",
+        "48209:97650: atoms 12 -> served edges 12",
+        "48021:34049: atoms 5 -> served edges 5",
+        "48021:8723767: atoms 7 -> served edges 7",
+        "48209:34137: atoms 0 -> served boundaryEdgeFact { state: refused, code: atom-miss }, 0 edges",
+        "48453:113408: atoms 0 -> state refused, code atom-miss",
+        "48021:103289 and 48021:10377: state refused, 0 edges (no boundary atoms)",
+        "McLennan 48309: 0 property-boundary-edge atoms county-wide; the read's own refusal text is 'Atom miss, not a GIS parcel outline' and the served rule never copies txgio_parcel / GIS ring"
+      ],
+      "verdict": "LOAD-BEARING, proven by ablation. Removing the atoms removes the ring; the surface refuses instead of falling back."
+    },
+    {
+      "rail": "pipelines",
+      "claim": "pipelineFact is the rrc-pipeline-fact atom read by bare parcelNodeId",
+      "broken": "value ablated by subject across the atom's own boolean",
+      "observed": [
+        "48021:103289: atom nearPipeline=true -> served nearPipeline true, nearestPipelineDistanceMeters 12.3, operatorName 'MPH BASTROP LATERAL, LLC'",
+        "48021:10377: atom nearPipeline=true -> served true, 13.8 m, operatorName 'ENERGY TRANSFER COMPANY'",
+        "48209:97658 / 97650 / 48021:34049 / 8723767 / 48209:34137 / 48453:113408: atom nearPipeline=false -> served false",
+        "bufferMeters 152.4 served on both true and false rows, matching the atom body"
+      ],
+      "verdict": "LOAD-BEARING, proven by ablation. The served boolean, distance and operator track the atom body; no bake or CAD path produces an operator name."
+    },
+    {
+      "rail": "landUseDescription",
+      "claim": "the served description is the bake (facets.baseFacts.landUse), NOT the land-use-fact atom; the atom is a parallel read",
+      "broken": "the two paths are shown to disagree on the same parcel",
+      "observed": [
+        "48209:97658: atom = typed absence join-hold (LANDUSE_JOIN_HOLD county 48209) while the served description is 'Vacant lot or tract' from source cad-roll-address-join — the customer value cannot come from the atom",
+        "48021:8723767: atom = present C1 while the served description is EMPTY — the customer gets nothing where the atom has a value",
+        "48021:34049 and 48453:113408 and 48453:134392: atom present (A1) and bake present (A1) — the two happen to agree",
+        "provenance.landUseSource on the served payload = 'cad-roll-address-join' (48209:97658)"
+      ],
+      "verdict": "the bake is the serve path; the atom read is present on the wire as a separate block that does not control the displayed description. Cutting over would change what the customer reads, in both directions."
+    },
+    {
+      "rail": "etjStatus",
+      "claim": "the named path (tx_etj_boundary via cortex overlay) is NOT the customer's serve path",
+      "broken": "the same parcel read at both ends: present/absent at cortex, 'unresolved' at the customer",
+      "observed": [
+        "cortex 48453:134392 -> present (austin-tx:39) | customer -> unresolved",
+        "cortex 48209:97658 -> absent (san-marcos-tx, 1 ring tested) | customer -> unresolved",
+        "composeCityLimits writes the literal in all four branches and applyRecordPatch replaces the whole fact"
+      ],
+      "verdict": "at the customer surface the value is a literal, not a read — the strongest possible form of 'the ledger path is not load-bearing here'. At cortex-api the path IS load-bearing (two of its three values observed live)."
+    },
+    {
+      "rail": "railCorridor",
+      "claim": "no serve path exists on any surface reached",
+      "broken": "atom present, slot absent — searched for a rail-corridor token on every payload and in every reader",
+      "observed": [
+        "rail-corridor-fact atoms: 48209:97658, 97650, 97657, 48021:34049, 48021:8723767, 48209:34137, 48453:113408 all carry one; Caldwell 24,988 of 25,181 parcel-nodes; McLennan 114,254 of 114,369",
+        "customer surface payload: no railCorridorFact key, and the only 'rail' strings in the whole body are two prose sentences about rail-slate allowlists",
+        "cortex-api payload: no rail field (the only 'rail' strings are the same prose)",
+        "LDT artifacts/api-server/src: no reader names railCorridor / rail-corridor-fact outside registries (instrument-registry/classifications.json, lib/db schema bindings, railScoring/registry.ts)",
+        "hauska-mcp-server/src: 'rail-corridor-fact' appears only in property-entity-types.ts (the registered entity type)"
+      ],
+      "verdict": "written and unserved. The dispatch's premise that all five rails 'serve now' does not hold for railCorridor: it has atoms at county scale and no surface reads them."
+    }
+  ],
+
+  "ledgerCellStateFromTheLedgerLegInstrument": {
+    "instrument": "_inbox/2026-09-17_six_county_completeness_post_apply.json (scripts/six-county-completeness.mjs; factory-store read; NOT re-run by this lane)",
+    "verdict": "INCOMPLETE",
+    "openCells": { "48021": 10, "48055": 12, "48209": 12, "48309": 11, "48453": 9, "48491": 12, "total": 66 },
+    "midCutoverOpen": "5 rails x 6 counties = 30 cells, every one with verdict string excluded-mid-cutover: etjStatus, landUseDescription, parcelGeometry, pipelines, railCorridor",
+    "note": "the dispatch says '30 of the 67 open cells'; this artifact totals 66 open cells. 30/66 = 45.5%, 30/67 = 44.8%. The rail count (30) is confirmed; the 67 is off by one against the artifact the dispatch's own program cites. Reported as a planner-figure divergence, not resolved here."
+  },
+
+  "claimsNotVerifiedByThisLane": [
+    "parcel_gate_verdict / parcel_record_cell rows read directly from the factory store: no factory-store credential in this seat, so the per-rail cell state is quoted from the completeness instrument's artifact, not re-read at source.",
+    "tx_etj_boundary ring count (355) and publisher count (20) as the dispatch states them: NOT re-read. The only deployment-store DSN reachable from this seat (P:/hauska-engine/.env LEGACY_DATABASE_URL) resolves to database 'neondb' on ep-little-base-amyyxjca, which contains none of tx_etj_boundary / tx_etj_source / landing_parcel_jurisdiction / tx_city_boundary, so it is not the deployment store these tables live in; and the value in that file is corrupted by a pasted 'empressaioemail@cloudshell' suffix glued to `?sslmode=require` (psql: invalid sslmode value). What I verified instead is the served determination at both ends (above), which is a stronger witness for this rail's serve path than the table's row count.",
+    "railCorridor's absence on the PDF/report surface (hauska-engine site-plan report) and on a live MCP tool call: source-level search only (engine site-plan report-model.ts / feasibility-model.ts hardcode etjStatus and carry no rail corridor field; hauska-mcp-server registers the entity type and reads it nowhere).",
+    "P-296's own probe artifact (scripts/p296-etj-serve-probe.mts output) was not read; only its source. That probe runs the serve ENTRY POINT in-process with an injected parcel centroid from txgio_parcel and its header declares a parcel-record credential degradation in processes without RETRIEVAL_API_KEY — it is therefore not a customer-surface measurement."
+  ]
+}

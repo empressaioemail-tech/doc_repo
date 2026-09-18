@@ -50,8 +50,14 @@ job or uptime check. Record what you searched; an enumeration you did not finish
    current serving revision of their service. Verify by curling the tag URL and getting the same
    answer as the service URL, not merely that the repoint command exited 0.
 3. **Delete the unreferenced one-off tags.** This is a destructive, outward-facing change: it removes
-   reachable URLs. Present the list and get the operator's go before deleting, then record what was
-   deleted, when, and by what invocation. A count is not a record.
+   reachable URLs. **The operator authorised this class in advance on 2026-09-18 (OPS-16 A-215 ruling
+   10, `_decisions/2026-09-18_phase0_closeout_rulings.md`): every tag on a revision missing a
+   credential its serving revision carries is deleted, except tags the operator names as keepers.**
+   So: record the enumeration (step 1) and the exact deletion set in CP2 before deleting anything;
+   delete only tags that are in that class AND unreferenced AND not named as keepers; anything outside
+   that class (a referenced tag, a tag whose revision carries every credential, a tag you cannot
+   classify) is NOT deleted and is listed for the operator instead. Record what was deleted, when,
+   and by what invocation. A count is not a record.
 4. **Kill the generator, which is the actual row.** A deploy that creates a per-row canary tag
    removes its own tag once the traffic shift has completed and been verified. Without this, the
    population regrows and P-279's check goes red again within days, which is how a correct control
@@ -72,7 +78,8 @@ job or uptime check. Record what you searched; an enumeration you did not finish
   work it was meant to block is not over-broad. Widening it to admit a known-bad value would need a
   detector plus something that fails when the admitted value reaches a consumer, and that is strictly
   more work than fixing the tags.
-- Do not delete a tag before step 1 is recorded and the operator has said go.
+- Do not delete a tag before step 1 and the deletion set are recorded, and never delete one outside
+  the class ruling 10 authorises.
 - Do not deploy `cortex-api` or `smartsite-mcp` as a side effect. Repointing traffic tags is not a
   deploy; if you find yourself needing a deploy to finish this, stop and report.
 - Do not touch county 48491 in any store.

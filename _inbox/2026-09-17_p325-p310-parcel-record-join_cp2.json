@@ -1,0 +1,115 @@
+{
+  "lane": "p325-p310-parcel-record-join",
+  "planRows": ["P-325", "P-310"],
+  "checkpoint": "CP2",
+  "at": "2026-09-17T23:59:00Z",
+  "seat": "cente-vsc-p325",
+  "buildDir": "P:/tmp/p325-factory",
+  "branch": "fix/p325-join-miss-not-absent",
+  "head": "62ec562",
+  "pr": {
+    "number": 175,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/175",
+    "state": "open, not merged, not deployed, no apply run",
+    "commits": [
+      "4d93482 fix(P-325): a join miss is not a verified absence",
+      "62ec562 P-310: read-only instruments for the Williamson join decision"
+    ]
+  },
+  "prPrecondition": {
+    "_rule": "Dispatch PRECONDITION: read the P-319 lane's keyspace work (PR factory #173) before writing any keyspace logic, name its head SHA in CP1, and say what was reused.",
+    "headShaRead": "26e8d2f",
+    "reused": "Nothing was imported: P-325 and P-310 touch the WRITER (parcel-record-fill.mjs), not the publish retirement gate, so no keyspace constant, threshold or classifier was copied. What P-319's branch settled and this lane honoured instead of re-deciding: (i) p325-join-miss-fixture.mjs uses the R-prefixed/numeric keyspace shapes P-306 measured for 48491 (282,569 R accounts, 319,480 numeric accounts), not invented ones; (ii) this lane's P-310 numbers are stated per keyspace rather than per county, which is the same discipline #173 enforces in publish-retirement-gate.mjs; (iii) the P-310 recommendation deliberately reuses ONE crosswalk mechanism (the existing ACCOUNT_CROSSWALK_ROWS_SQL shape) rather than adding a second keyspace rule to the repo, which is the defect the precondition warns about. P-319's own close reported the same Williamson numbers this lane measured independently (319,480 numeric / 282,569 R), so the two lanes agree at the row level.",
+    "divergenceFrom173": "None found; #173's documented roll numbers and this lane's live reads agree. #173's gate reads cad_property at the declared vintage; this lane's read is what that gate would compare against, and it confirms the R slice is tax_year 2025 / the numeric slice is tax_year 2026."
+  },
+  "p310JoinReading": {
+    "_rule": "Dispatch: 'The writer's Williamson join, from code AND rows: which key it joins on, which population it writes, and what the store holds today.'",
+    "codeRead": {
+      "where": "src/jobs/parcel-record-fill.mjs:1441-1472 (loadLandingAndCad), :378-400 (ACCOUNT_CROSSWALK_ROWS_SQL), :428-440 (loadAccountCrosswalk), :480-523 (WILLIAMSON_CROSSWALK_SQL / loadWilliamsonCrosswalk)",
+      "whatItJoinsOn": "For SEED_BLOCKED_FIPS counties (48209 Hays, 48491 Williamson) cadByProp is built ONLY from loadAccountCrosswalk: btrim(txgio_parcel.geo_id) = btrim(cad_property.property_number), with (i) an ambiguity guard dropping any property_number claimed by more than one account and (ii) an app-level corroborator that refuses a bind when quickRefIdNumericStem(quick_ref_id) parses and disagrees with the node prop_id. CAD_ROWS_SQL (the bare prop_id match) is NOT called for these counties.",
+      "thenWhat": "loadWilliamsonCrosswalk is called with [...cadByProp.keys()] -- so the R->numeric situs-address recovery can only fill a key the geo_id bind already produced.",
+      "whichPopulationItWrites": "The landing page's own prop_ids, i.e. the 282,569 R-prefixed accounts, upserted at place_key `${county}:${propId}`."
+    },
+    "rowRead": [
+      {
+        "question": "what does the live bind resolve?",
+        "instrument": "scripts/p310-williamson-bind-read.mjs",
+        "answer": "0 of 282,569 nodes. txgio_parcel.geo_id is NULL on 304,298/304,298 rows for 48491 (staging twin identical), and cad_property.property_number is NULL on 602,049/602,049 rows (both slices). Corroboration-refused 0, corroboration-unparsable 0 -- there is nothing to refuse. loadWilliamsonCrosswalk's $2 is therefore an EMPTY array: the R->numeric recovery in this file is inert, not merely weak. CP1 predicted exactly this; the pre-registered falsifiers F-A (bind >5%) did NOT fire."
+      },
+      {
+        "question": "is the node population numeric or R-keyed? (CP1 falsifier F-B: 'landing prop_id population is R-PREFIXED rather than numeric ... which would make the writer's node population the R-roll and my numeric-nodes-vs-R-roll framing wrong')",
+        "instrument": "scripts/p310-williamson-read.mjs, p310-williamson-bind-read.mjs",
+        "answer": "F-B FIRED. landing_parcel_jurisdiction 48491 = 282,569 rows, 282,569 R-prefixed, 0 numeric, 282,569 distinct. txgio_parcel 48491 = 304,298 rows, 304,162 R-prefixed, 0 numeric, 136 other. The dispatch's 'the county's roll is R-keyed; its served nodes are numeric' is true of the PUBLISH comparison (the numeric 319,480 are the loaded/live served population) but NOT of the node population the writer is served: the writer's nodes are the R-keyed accounts, and the numeric slice is the roll. Every claim in this close is stated per keyspace for that reason.",
+        "verdict": "pre-registered falsifier fired; the framing was corrected by measurement rather than by argument, and CP1 said in advance that this would be read as the correction rather than as a confirmation"
+      },
+      {
+        "question": "what does the roll hold under each key?",
+        "instrument": "scripts/p310-vintage-by-keyspace.mjs, p310-williamson-read.mjs",
+        "answer": "cad_property 48491 = 602,049 rows. Numeric slice: 319,480 rows at tax_year 2026, land_value and improvement_value populated on 319,480/319,480, declared source_vintage on all. R slice: 282,569 rows at tax_year 2025, land_value 0/282,569, improvement_value 0/282,569, assessed_value 0, living_area_sqft 0, year_built 0, property_use_code 0, situs_city 0, situs_zip 0, exemption_codes 0; market_value null on 11,405 (4.04%), legal_description null on 15, owner_name null on 4, situs_address null on 4. So the R slice is an identity-and-address roll one vintage behind, and 9 of the 13 CAD scalars the fill writes are 100% absent on the row the writer reaches."
+      },
+      {
+        "question": "what does the store hold today (the factory ledger)?",
+        "instrument": "scripts/p310-factory-census.mjs",
+        "answer": "parcel_record 48491 = 282,569 R-keyed records + 1 'other', ZERO numeric records. parcel_record_cell, per rail (value / absent-verified): apn 282,570/0; situsAddress 282,565/5; legalDescription 282,554/16; marketValue 277,833/4,737; landValue 256,827/25,743; improvementValue 256,827/25,743; assessedValue 256,827/25,743; situsCity 256,527/26,043; situsZip 256,519/26,051; livingAreaSqft 233,277/49,293; yearBuilt 233,250/49,320; exemptionCodes 0/95,384; acreageAcres 282,570/0; acreageSqft 0/282,570 (all unaccounted). A sampled absent-verified cell carries basis {propId: 'R441517', source: 'cad_property', taxYear: 2025, vintage: '2026-09-02T16:23:02.321Z', countyFips: '48491'} -- i.e. an absence asserted against the identity-only 2025 R row.",
+        "theNumberWorthNaming": "The 256,827 cells now holding a real dollar value equal the situs crosswalk's matched count exactly, and the 25,743 absences equal its residue exactly (25,742 + 1). The store's absences ARE the gate refusals, already written."
+      },
+      {
+        "question": "does a numeric row carrying the value exist for the population the gate refused?",
+        "instrument": "scripts/p310-williamson-residue-read.mjs",
+        "answer": "Yes. The gate's own accounting: 17,896 accounts excluded on shared addresses, 1,240 unique-situs accounts with zero numeric match, 6,606 refused as many-match, 256,827 crosswalked, 25,742 residue total. For that residue, 171,426 numeric rows share the address and every one of them carries land_value, improvement_value and market_value (living_area 19,765, year_built 19,769). So the field the cell calls verified-absent is present on the county's own roll at that address; what failed is attribution, which is exactly the class P-325 exists to keep out of `absent-verified`."
+      }
+    ]
+  },
+  "p310ValueToAbsentMotion": {
+    "_rule": "Dispatch: 'the apply's value-to-absent movement counted per rail. How many cells currently hold a real CAD value that the apply would replace with an absence.'",
+    "perRail_valueCellsThePreFixApplyWouldOverwrite": {
+      "apn": 282570,
+      "situsAddress": 282565,
+      "legalDescription": 282554,
+      "marketValue": 277833,
+      "landValue": 256827,
+      "improvementValue": 256827,
+      "assessedValue": 256827,
+      "situsCity": 256527,
+      "situsZip": 256519,
+      "livingAreaSqft": 233277,
+      "yearBuilt": 233250,
+      "exemptionCodes": 0,
+      "acreageAcres": 282570,
+      "acreageSqft": 0
+    },
+    "total": 2922576,
+    "whyPerRailAndNotATotal": "The rails differ by two orders of magnitude in what they would lose (282,570 apn vs 0 exemptionCodes), the exempt rail's absence is already in the store, and a total would hide which rails are already fabricating absences versus which would start.",
+    "postFixBehaviour": {
+      "joinMiss": "unaccounted, reported as joinMissUnresolved; and because UPSERT_CELLS_BATCH_SQL refuses to downgrade a non-unaccounted cell to unaccounted, the 2,922,576 live values SURVIVE the post-fix apply -- that refusal is now protective rather than a liability.",
+      "secondOrder": "Symmetrically, the post-fix apply cannot clear the 25,743 absences already in the store; the fix is fail-closed at the source, not a repair."
+    }
+  },
+  "p310Recommendation": {
+    "recommendation": "b",
+    "whyB": "A published identifier bridge between the two keyspaces already exists IN THE STORE, twice, published by the county's own authority: WCAD's Land dataset (2ckt-cqwj, already ingested as tx_wcad_ag_valuation) carries quickrefid (prop_id, 100% 'R'+digits) beside its internal propertyid (wcad_property_id, 100% numeric) in the same row, and WCAD's Owner dataset (bbia-wsxs, ingested as tx_wcad_owner) carries the same pair natively (294,565 rows, wcad_property_id populated on 100%). It binds 282,136 of 282,569 nodes (99.85%), is 1:1 with ZERO multiplicity in either direction (287,672 pairs), and every bound node lands on a numeric row with land_value AND improvement_value populated.",
+    "whyNotA": "The situs-address recovery is a fallback, not the primary. It binds 256,827 (90.9%) and refuses 25,742 (9.1%); its error rate -- required before it can be recommended -- measures at 48 of 256,752 accounts where both paths bind, i.e. 0.019%, and the disagreements are the expected class (same street with a different house number; 'MAIN ST' vs 'LOOP 332' aliases) with the situs target often holding land_value 0 where the bridge holds the real value. It also cannot be the primary because it is currently UNREACHABLE in this writer (its $2 is [...cadByProp.keys()] and cadByProp is empty), whereas the bridge needs only a loader.",
+    "whyNotC": "Rejected on measurement, as the dispatch expected: (c) writes 2,922,576 false absences over currently-live values, reaches 0 nodes on the 13 CAD rails, and cannot clear the 25,743-per-money-rail absences already stored. It is the P-325 defect at scale, with the P-325 fix preventing the write but not producing a single value.",
+    "corroboration": {
+      "twoIndependentPublishersAgree": "land-vs-owner pairing: 287,321 accounts in both, 287,321 agree, 0 disagree = 100.000%",
+      "ownerNameAgainstAdjacentIdControl": "bridge owner_name agreement 90.43% (1,257/1,390) vs adjacent-id control 5.81% (75/1,290) on the same sampled accounts -- the bridge carries information its own join could not manufacture. The situs path scores 90.86% on its own bound rows, so owner_name does not discriminate the two paths; coverage does.",
+      "samplingRule": "md5(prop_id)::bit(31) % 200 = 0 over 48491's R-prefixed cad_property rows (1,394 accounts); uniqueness for the situs path computed county-wide restricted to the sampled addresses",
+      "residual": "The bridge misses 433 nodes; those stay unaccounted (fail closed). The bridge's own authority chain is WCAD's published Socrata datasets, cited in-repo at src/jobs/acquire-ag-valuation.mjs:1-13 and src/jobs/acquire-wcad-owner.mjs:1-25 -- read at source, not taken from the mission."
+    },
+    "implementationShapeForThePlanner": "One mechanism, not two: extend the gate-blocked crosswalk loader in parcel-record-fill.mjs to bind the landing prop_id to cad_property's numeric prop_id through the WCAD pair, keeping the existing ambiguity guard (zero multiplicity today, but a future vintage can introduce one) and the existing corroborator pattern; the situs recovery stays as the named fallback for the 433. Selection of a P-number and the ruling belong to the planner/operator; this lane ran no apply and changed no writer behaviour beyond P-325's fail-closed sweep.",
+    "sequencingCaution": "P-325 makes the fill honest but does NOT unblock a Williamson apply: with the fix and no crosswalk, all 13 CAD rails come out unaccounted, and until P-297 is live an unaccounted cell on a slated rail turns the whole county's ledger values back to the bake. The crosswalk (b) is what unblocks the apply; P-325's own program-law declaration says the same."
+  },
+  "falsifier": "Pre-registered in CP1 BEFORE any store read: (F-A) the geo_id bind is materially non-zero, (F-B) the landing node population is R-prefixed rather than numeric, (F-C) cad_property holds no R-prefixed rows, (F-D) parcel_record already holds CAD-sourced values on the join-miss rails. F-A, F-C and F-D did not fire; F-B FIRED and is the correction recorded above -- the writer's nodes are the R-keyed accounts, not the numeric served population, so 'the writer's join misses the numeric nodes' is the wrong sentence: the writer's join misses EVERY node, because the key columns on both sides are empty. F-D's answer is also sharper than predicted: the values already in the store did not come from the join at all, they came from a previous situs-crosswalk apply (256,827 values, matching the gate's matched count exactly).",
+  "contradicted": "Three of this lane's own working claims were contradicted by measurement, and each correction is in the artifacts rather than a footnote. (1) The dispatch's framing 'its served nodes are numeric' does not hold for the population the writer is served (282,569 R accounts, zero numeric) -- true of the publish comparison, wrong for the writer. (2) CP1's expectation that the R->numeric situs crosswalk would be reachable-by-fixing-cadByProp was too generous: the crosswalk is not weak, it is inert, and it can only fill keys the geo_id bind produced, so no amount of tuning (a) inside this file makes it primary. (3) My own bounded-instrument choice was wrong once and is declared: the unbounded owner-corroboration query (scripts/p310-owner-corroboration.mjs) ran from 23:21:44Z past its lease expiry at 23:41:18Z and was killed at ~23:47Z -- roughly six minutes of heavy scan outside the lease window, against AGENT_CONTRACT heavy-scan serialization. It is superseded by the bounded md5-sample version, whose numbers are the ones cited. Two further environment collisions are named in leave_behind: four node processes were stopped by a start-time filter while clearing that overrun (three of them not this lane's), and the p326 lane held the factory-store host until 23:25:38Z, so the factory census waited rather than sharing the host.",
+  "missionPremise": "OPS-24 dispatch 2026-09-17 (P-325, P-310). P-325: parcel-record-fill.mjs writes CAD `absent-verified` when its join finds nothing, so any county whose served keys and roll keys diverge can come out of a dry run with a whole county of confident-looking false absences -- measured on Williamson, all 282,569 parcels. It is the ENFORCEMENT prohibition verbatim: never convert unaccounted to absent-verified to clear a gate. P-310: decide Williamson's join, because P-306 showed the bake reaches its numeric nodes through situs-address recovery, a path this writer does not have, and the 2026-09-17 publish retired all 602,050 of the county's served rows through the same keyspace split.",
+  "completionPredicate": "P-325: the join-miss branch's emission is returned to `unaccounted` before anything can derive from it, the run records the unresolved population per county and per rail, a Williamson-shaped fixture produces 282,569 unaccounted and ZERO absent-verified under the fix against 4,521,104 absent-verified cells under the pre-fix code, a resolved-join-null fixture still writes absent-verified on 13 rails, and the derivation path cannot turn a join-miss absence into a derived one. Met in-repo (test/parcel-record-fill.test.mjs, 118/118; scripts/p325-join-miss-fixture.mjs both directions). P-310: the join reading from code AND rows, the per-rail value-to-absent counts, and a recommendation among (a)/(b)/(c) with its reason and the recovery's error rate. Met and delivered on PR 175. Not graded: the customer surface (no merge, no deploy, no apply) and P-325's effect on a live writer, which is the integration seat's step.",
+  "scopeBasis": "Repo: hauska-factory. Branch fix/p325-join-miss-not-absent from origin/main at 087927b. One PR (#175). No apply, no deploy, no merge, no store write; every store read under a heavy-scan lease inside BEGIN TRANSACTION READ ONLY; county 48491 read but never touched. No sub-agents (FAN-DEPTH 0).",
+  "artifacts": {
+    "fixtures": ["scripts/p325-join-miss-fixture.mjs"],
+    "tests": ["test/parcel-record-fill.test.mjs"],
+    "p310Instruments": "scripts/p310-*.mjs (12 files) + scripts/p310-README.txt, committed at 62ec562",
+    "decisionDelivered": "PR 175 comment https://github.com/empressaioemail-tech/hauska-factory/pull/175#issuecomment-5722792386"
+  },
+  "leasesReleased": "pending at CP2 write time; released in the close",
+  "subAgents": {"spawned": 0, "maxDepth": 0}
+}

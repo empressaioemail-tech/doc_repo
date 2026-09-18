@@ -1,0 +1,88 @@
+{
+  "lane": "p319-retirement-safety",
+  "planRows": ["P-319", "P-320", "P-321"],
+  "kind": "CP1 -- design/pre-build adversarial checkpoint (AGENT-CONTRACT section 6)",
+  "filedAt": "2026-09-17T21:5xZ",
+  "filedAtBasis": "DECLARED DEVIATION, not smoothed: this lane is ONE session and it filed CP1 and CP2 at the same moment, at the end. The PRE-REGISTRATION is genuine and predates every test run -- each falsifier (R1-R6, G1-G5, B1-B4) was written into its test file's header BEFORE that file's first execution, and each was scored against the result it produced -- but the two checkpoints were not separated in time by this session as the contract's shape assumes. Recorded here rather than back-dated.",
+
+  "missionPremise": "OPS-16 rows P-319/P-320/P-321, added by operator ruling A-212 on 2026-09-17. Williamson's production publish (run 7b2540c8, job factory-bastrop-publish-sxv8r, started 19:24:19Z) COMPLETED and retired all 602,050 served node-facets:tier1 rows for 48491: 282,569 R-prefixed rows that were already retired by the CAD roll, and 319,480 NUMERIC rows that were live with the 2026-09-10 bake. One comparison emptied a county. The same class had taken Bastrop 48021 on 2026-09-15 (57,704 of 62,394 parcel-node atoms, 92.5 percent) through a different writer, and ENFORCEMENT.md's paragraph 'a mass state change refuses before it lands' had stood since then with no control behind it.",
+
+  "whereTheSetDifferenceIsComputed": {
+    "answer": "NOT in hauska-factory. The retirement is computed inside LDT's conformant tier-1 bake, which the publish job invokes as a subprocess.",
+    "callChain": [
+      "hauska-factory/src/jobs/bastrop-publish.mjs :: runBastropPublish -> bakeChunkedConformantPages -> invokeLdtBake(\"node-facet-bake-tier1-conformant\", ...)",
+      "the bundle is built by hauska-factory/scripts/build-publish-bake-clis.mjs from LDT artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts, at the image's _LDT_SHA pin",
+      "LDT artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts :: buildConformantTier1Payload(), the retirement arm",
+      "LDT artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts :: buildRecordRetirement() (the payload's authority/scopeSearched/basis text)"
+    ],
+    "theComparisonVerbatim": [
+      "apn = parcelNodeId.split(\":\")[1]                       // the SERVED node's own prop_id",
+      "cadPropRow = input.cadPropertyRoll?.byPropId.get(apn)   // keyed by cad_property.prop_id",
+      "recordRetirement = apn != null && cadPropConsulted && cadPropRow == null ? buildRecordRetirement(...) : null"
+    ],
+    "whatItCompares": "A BARE STRING EQUALITY between the served node's own prop_id and the CAD roll's prop_id keys (cad_property, declared tax_year, ALL rows, not filtered to a use code), supplied to the bake by the CLI's fetchCountyCadPropertyRoll. There is no crosswalk, no keyspace test, and -- the omission this lane is about -- no test that the roll carries any row of the served keyspace at all. The retirement's own basis text names the table it compared: 'prop_id <id> carries no row in the <County> County CAD roll's declared tax_year <N>' (measured verbatim by P-309's census).",
+    "pinRead": "LDT bae48d406f7595af3d47111b558d0ebc3efd9c56, the pin cloudbuild.publish.yaml carries; read with `git show <sha>:<path>` from a checkout that has it, NOT off the P:/legacy-design-tools working tree (that tree's HEAD is 10069854, a stale divergent line where the conformant bake's filenames do not exist -- P-306's CP2 deadEnds recorded the same trap).",
+    "whyTheComparisonEmptiedWilliamson": "48491 is a gate-blocked county by its own registry entry: its TxGIO node identity and its CAD account identity are two published numbering systems that only coincidentally share bare digits. P-306 measured both halves on 2026-09-17: txgio_parcel 48491 is 304,298 rows / 167,064 zoned of which R-prefixed 304,162 / 167,032, 'other' 136 / 32 and numeric ZERO; cad_property 48491 holds 282,569 R accounts with 0 rows at tax_year 2026 against 319,480 numeric accounts with 319,480 rows at 2026. Served 48491 is numeric 319,480 / 147,145 zoned (live) and R 282,569 / 143,184 zoned (already retired). A numeric node id tested against a roll keyed by a different numbering finds nothing, and a miss is written as verdict 'absent-verified'.",
+    "secondPresenceShapedComparisonInTheSamePath": "The bake also excludes node ids whose prop_id is absent from txgio_parcel (P-180's account-keyed exclusion, isAccountKeyedNodeId/partitionAccountKeyedWork) BEFORE any payload is built -- the same presence-shaped comparison in the opposite direction, and this lane does not change it. It is named here because a control that measures one comparison does not protect the one beside it, and because a later row that fixes the retirement will have to decide what to do about this one."
+  },
+
+  "keyspaceRule": {
+    "classifier": "P-306's keyspaceSql, IMPORTED from src/lib/publish-coverage-floor.mjs, never re-derived: '^[Rr][0-9]+$' -> r-prefixed, '^[0-9]+$' -> numeric, else other. A third keyspace is expressible by extending the one classifier; nothing in this lane special-cases a second one.",
+    "indexSide": "The floor's own resolveParcelSource/sourceZonedSql (txgio_parcel / txgio_parcel_staging), so this gate measures the index the bake will resolve and the floor already measures -- one definition of the index, not two.",
+    "servedSide": "place_layer_snapshots, adapter_key='node-facets:tier1', place_key 'node:<fips>:%', split_part(place_key,':',3) classified by the same SQL expression.",
+    "theRule": "A served keyspace may be retired only against an index that holds ITS OWN KEYS. Two bases refuse, and the verdict names which: `no-own-keyspace-index` (the reader has no rows of that keyspace label at all) and `no-id-overlap` (the reader has rows of the label and holds NONE of this keyspace's served ids). Both retires NOTHING and neither is authorisable.",
+    "whyTheLabelIsNotEnough": "Williamson's own roll answers the label question YES for its numeric keyspace -- 319,480 numeric CAD accounts -- while every served numeric node id is still absent from it, because two numeric numbering systems can share a label without sharing keys. A rule that asks the label reads THAT county as accounted and lets the incident through. The account test is therefore the id overlap, which cannot be fooled by a shared label.",
+    "noAuthorisationForACategoryError": "The keyspace refusal carries NO token. There is no measured population to bind one to, and a refusal that offered one would invite an operator to authorise a category error. A genuinely needed whole-keyspace retirement is a change to the keyspace scope or the index, not a token."
+  },
+
+  "preRegisteredPredictions": {
+    "fromTheDispatch": [
+      { "id": "D-P319.4", "quoted": "the current code must retire everything on that fixture, and the fixed code must retire zero and report one unaccounted keyspace. Show both directions in the close." },
+      { "id": "D-P319.5", "quoted": "verify a genuine retirement still fires: served and index in the same keyspace and a key really is gone must still retire that key." },
+      { "id": "D-P320.9", "quoted": "a fixture that crosses the threshold must refuse, exit non-zero, and leave the store byte-identical (prove the store is unchanged, do not assert it). The authorised path must be shown to still complete." },
+      { "id": "D-P321.13", "quoted": "verify by violation against the pre-recovery Williamson state (48491 at 100 percent retired): it must fail the band. A band that the pre-recovery state passes is the wrong band." }
+    ],
+    "owned": [
+      { "id": "R1", "statement": "The Williamson shape refuses PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED naming the numeric keyspace and 319,480 of 319,480; the SAME fixture with the absences confined to the accounted R keyspace PASSES. Would falsify: a gate that refuses the county rather than the comparison." },
+      { "id": "R2", "statement": "An unaccounted keyspace whose absent count is zero passes AND is still named unaccounted on the verdict. Would falsify: a rule that reads 'any unaccounted keyspace' and takes a county out of service for a keyspace it was never going to touch." },
+      { "id": "R3", "statement": "A missing keyspace split refuses PUBLISH_RETIREMENT_UNMEASURED rather than reading as zero numeric rows. Would falsify: a gate that treats an absent answer as a benign one." },
+      { "id": "R4", "statement": "The set-difference SQL carries the id equality AND the keyspace restriction on both sides, so a later widening of the join cannot silently become cross-keyspace. Would falsify: a rule that lives in the evaluator while the query does something else." },
+      { "id": "R5", "statement": "Through the real reader the Williamson store refuses, and the index side is answered by the floor's own reader (marker 'coverage-floor: source'), exactly once. Would falsify: a gate that measures an index of its own invention." },
+      { "id": "R6", "statement": "A keyspace every one of whose served ids is absent from a reader that DOES hold rows of its label refuses `no-id-overlap`; ONE present id turns the same fixture into an accounted absence refused by the SHARE instead. Would falsify: a rule satisfied by a census of labels." },
+      { "id": "G1", "statement": "The Bastrop 2026-09-15 shape (57,704 of 62,394, 92.48 percent) refuses through the shared guard with the token publish-retirement:48021:57704/62394 and a refusal body naming that it wrote nothing. Would falsify: a threshold that lives only in the retirement gate." },
+      { "id": "G2", "statement": "The token is bound to writer, county AND both measured counts: a token for another writer, another county, or other counts refuses, and a token whose populations moved does not carry." },
+      { "id": "G3", "statement": "The threshold and the flag are declared in ONE module and no caller carries a private default. Would falsify: 'a default copied into its callers survives its own removal' (the dispatch's own words)." },
+      { "id": "G4", "statement": "Every src/ module holding a destructive statement is in the register with a reason and a wired flag -- asserted by scanning the repo's own sources, so a new writer cannot appear silently." },
+      { "id": "G5", "statement": "An absent, negative or non-integer count refuses rather than computing a share (Number(null) is 0; that coercion is how a missing destructive count reads as a healthy county)." },
+      { "id": "B1", "statement": "The pre-recovery Williamson state (602,050 of 602,050 served, retired share 1.0) FAILS the band at the ceiling, naming 602050 of 602050. Would falsify: a band the incident passes." },
+      { "id": "B2", "statement": "Both band terms are load-bearing: a county within the ceiling can still fail the MOVE term, and a county at rest can pass. Would falsify: a band with one live term." },
+      { "id": "B3", "statement": "A county that answers with no served rows refuses RETIRED_SHARE_UNMEASURED rather than filing a zero -- an absent store is not a county with nothing retired." },
+      { "id": "B4", "statement": "A dry run writes nothing and says so." }
+    ]
+  },
+
+  "design": {
+    "posture": "READ-ONLY against every target. The gate and the watch open the target's store through the floor's own readers, which set default_transaction_read_only=on before anything else. No store is written by this lane, no job is run against any target, no county is touched in any store (dispatch constraint, which also keeps this lane clear of the integration seat's point-in-time recovery of 48491), and no lease belonging to anyone else is taken, renewed or released. The retired-share watch's observation table is created by a migration that this lane does NOT apply anywhere.",
+    "P-319": "src/lib/publish-retirement-gate.mjs -- requireRetirementGate(neondb, countyFips) called by runBastropPublish AFTER the coverage floor and BEFORE bakesFn, on the same read-only gate client the floor uses. Three preserved reads: the served keyspace census (rows + already_retired per keyspace), the index keyspace split (the floor's sourceZonedSql), and the per-keyspace set difference. The refusal and the PASS are both written as a `retirement-gate` run_event naming the county, every per-keyspace count, the resolved index table and which basis made each keyspace accounted or not.",
+    "P-320": "src/lib/destructive-write-guard.mjs -- MAX_DESTRUCTIVE_SHARE and AUTHORISATION_ENV_VAR declared once; assertBlastRadius({writer, countyFips, population, destructive, authorisation}) refuses DESTRUCTIVE_BLAST_RADIUS or returns a verdict (no-population | no-change | within-threshold | override-authorised). Wired FIRST into the publish retirement (through the gate). The other writers are registered with wired:false and a stated reason each (see the close's enumeration). The token shape is publish-retirement:<county>:<destructive>/<population> -- the same shape the coverage floor's own override uses (COUNTY_COVERAGE_FLOOR_OVERRIDE=<county>:<source>/<served>), so an operator meets one shape, not two.",
+    "P-321": "src/jobs/publish-retired-share-watch.mjs -- a per-county, per-adapter sweep that reads the served rows and their retired count, compares the share against a declared ceiling AND against the previous observation's move, records the observation (served_rows, retired_rows, share, previous share, move, band state, ceiling, max move, snapshot sha, observed_by) and FAILS THE RUN when the band is crossed. Wired as `npm run factory retired-share-watch` and as a Cloud Build job on a schedule.",
+    "divergenceTests": [
+      "P-319 vs the coverage floor on the SAME county: the floor must PROMOTE the Williamson fixture (P-306's scoped retention 1.1666) while the retirement gate REFUSES it -- the full-path test asserts both in one run, which is the whole point of the incident (a control that measured one thing did not protect the thing beside it).",
+      "P-319 no-id-overlap vs accounted: the same fixture with one matching id must be refused by the SHARE instead of by the keyspace, i.e. a different code for a one-digit difference.",
+      "P-320 authorised vs unauthorised: identical populations, the exact token lets it through and any other token does not.",
+      "P-321 within-band vs ceiling vs move: three fixtures, three states, one of which must fail.",
+      "old vs new on the Williamson shape: the lane's own bare-key comparison (what the bake does) retires 319,480 of 319,480; the gate retires zero and names the keyspace."
+    ],
+    "theLdtSideLimit": "The retirement is computed in LDT at the pin, so this repo cannot make the bake keyspace-scoped. What this repo owns is the decision to INVOKE it, and that is the lever this lane pulls: a run whose retirement population it has just measured as unaccounted refuses before the bake, so the bake is never run and nothing is retired. A keyspace-scoped retirement inside the bake is a separate row in a separate repo, named for the close."
+  },
+
+  "whatThisLaneWillNOTDo": [
+    "Write anything to any store, run any job against staging or production, or touch county 48491 in any store.",
+    "Merge, deploy, or claim a live county run.",
+    "Launch a sub-agent (FAN-DEPTH 0, and the commit gate refuses a close that declares any).",
+    "Back-date the checkpoints, or claim the customer surface was graded (it is not: the grade waits on merge, deploy and a run the integration seat owns).",
+    "Present the LDT-side bake as fixed. It is not, and the close says so."
+  ],
+
+  "theAdversarialQuestionThisCheckpointAsksOfItself": "The gate refuses when a served keyspace has no index keys. What if the served keyspace and the index keyspace are the same LABEL and different NUMBERING -- the exact shape of a gate-blocked county? Then the census passes and the bake still empties the county, because the writer compares against a THIRD table (cad_property) that this gate does not read at all. That is why the rule is the id overlap and not the census, and it is ALSO why the honest statement of this control's reach is 'the retirement this run would stamp, measured against the index the floor reads', not 'against the table the retirement's own basis names'. The residual gap is named as a finding, not papered over: a keyspace census of cad_property at the declared vintage would NOT have caught the 2026-09-17 numeric retirements (P-306 measured 319,480 numeric accounts at tax_year 2026), so a reader that trusted that census would have felt protected while the county emptied."
+}

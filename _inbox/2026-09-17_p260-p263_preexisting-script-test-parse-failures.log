@@ -1,0 +1,51 @@
+PRE-EXISTING LOCAL-ONLY TEST FAILURES — filed by lane p260-p263-setbacks-and-envelopes
+Purpose: stop a successor from re-investigating these as a regression from PR 471.
+
+WHERE THIS CAME FROM
+  Local background run, 2026-09-17T20:27:25Z-20:29:39Z, clone P:/tmp/p260-engine:
+    cd P:\tmp\p260-engine; pnpm -r run typecheck *> P:\tmp\p260-typecheck.log
+    cd P:\tmp\p260-engine; pnpm -r run test      *> P:\tmp\p260-test.log
+  Result: TYPECHECK_EXIT=0, TEST_EXIT=1.
+
+  That run PREDATES commit c1d4153 (2026-09-17T20:30Z), which updated exactly the
+  failing assertion it recorded. Re-measured state is below.
+
+WHAT THE 20:27Z TEST RUN REPORTED (5 failed files)
+  1 real assertion, in src — cascade-unzoned-envelope-decline.test.ts:40
+      expected { kind: 'no-buildable-area' } to match { kind: 'not-applicable' }
+      => FIXED by c1d4153 (P-263: an unzoned parcel is not-applicable, not a zero).
+  4 transform-time parse failures, in scripts/__tests__/ — all
+      `SyntaxError: Invalid or unexpected token`
+      detect-placeholder-setback-citation.test.ts
+      preflight-and-report.test.ts
+      retire-road-class-setback-table.test.ts
+      (+1 more suite in the same directory; all four are the same failure)
+
+RE-MEASURED AFTER THE FIX, head 03c09ec (2026-09-17T21:03Z)
+  a) Product code, full suite:  cd packages/engine-core; pnpm exec vitest run src
+       Test Files  204 passed (204)
+       Tests       1705 passed | 13 skipped (1718)
+       SRC_SUITE_EXIT=0
+  b) The four script suites still fail, unchanged:
+       pnpm exec vitest run scripts/__tests__/detect-placeholder-setback-citation.test.ts \
+         scripts/__tests__/preflight-and-report.test.ts \
+         scripts/__tests__/retire-road-class-setback-table.test.ts
+       => Test Files 3 failed (3), Tests no tests, `SyntaxError: Invalid or unexpected token`
+
+WHY THEY ARE NOT THIS LANE'S
+  * `git diff --stat 3809275..HEAD -- packages/engine-core/scripts/` lists ONLY the two files
+    this lane added (p260-wired-city-registry.mts, p263-envelope-outcome-census.mts).
+    `git diff --stat 3809275..HEAD -- scripts/__tests__` is EMPTY.
+  * `git status --porcelain scripts/__tests__` is EMPTY — byte-identical to main.
+  * The files carry no non-ASCII bytes at all and decode as strict UTF-8
+    (`preflight-and-report.test.ts`: 0 bytes >= 0x80, VALID_UTF8=True), and the reported
+    caret column does not line up with the real file, so the printed frame is truncated
+    context, not the offending source.
+  * Root `pnpm test` === `pnpm -r run test` === the exact command CI runs (ci.yml line 110).
+    CI on this same head reports the repo's single check `typecheck + test` = pass.
+    Same command, same head, green on Linux and red on this Windows checkout
+    => local-environment parse issue, not a repo regression.
+
+DISPOSITION
+  Filed as an open thread in the close artifact; no code change made, none is warranted here.
+  A successor who wants it closed should reproduce it on a clean clone at `main` first.

@@ -2,7 +2,7 @@
 id: 2026-09-16_texas_scaleup_ROADMAP
 title: Texas scale-up roadmap, done and left (living)
 date: 2026-09-16
-last_updated: 2026-09-18 (11:00Z, all nine lane PRs merged; #173 deployed as a partial fix, #175 merged and awaiting the gate-scheduler deploy; A-214 rulings recorded)
+last_updated: 2026-09-18 (11:50Z, A-215: eighteen Phase 0 rulings recorded, P-335 to P-351 carded, the close-out register created, Wave 1 compiled)
 status: living. The integration seat updates it whenever a row changes state (dispatched, PR open, merged, deployed, verified, closed) and records the change in the log at the bottom. This page now also carries the live queue (it replaces the ordered queue in the 2026-09-16 handoff).
 kind: roadmap
 owner: nick
@@ -68,8 +68,8 @@ blast-radius refusal on every destructive writer, which ENFORCEMENT.md called fo
 
 | Service | Revision | Built from | Carries | Rollback |
 |---|---|---|---|---|
-| hauska-retrieval-api (us-central1) | `00100-hut` (digest `c0d4648e`) | engine `3809275f` | P-299's re-vendored slate (Hays's six record-overlay rails), P-297 engine half, P-293, P-205, P-210. **This is the PINNED one** (explicit revision at 100 percent, no `latestRevision`), so its next deploy needs an explicit traffic shift | `00098-cat` |
-| hauska-engine-api (us-central1) | `00251-qed` (digest `38469252`) | engine `3809275f` | P-299 (no placeholder height on an atom), P-302, P-248, P-261. **CORRECTED 21:40Z, read by field: traffic is `latestRevision: true` at 100 percent — engine-api FOLLOWS LATEST. A new revision takes all traffic the moment it is ready; deploy with `--no-traffic` or it ships itself.** The earlier "PINNED" record in this file and in the handoff was wrong, and wrong in the dangerous direction | `00249-kiw` |
+| hauska-retrieval-api (us-central1) | `00102-ciz` (tag `p260-72d72c0`) | engine `72d72c02` | P-260's registry fix plus everything below it. **PINNED**: read by field 2026-09-18 11:45Z, explicit revision at 100 percent, so its next deploy needs an explicit traffic shift | `00100-hut` |
+| hauska-engine-api (us-central1) | `00253-qan` | engine `72d72c02` | P-260, P-263's write-side guard. **FOLLOWS LATEST**: read by field 2026-09-18 11:45Z, its only live entry is `latestRevision: true` at 100 percent. The 2026-09-17 deploy lane's close says it pinned the service; the service says otherwise. Deploy with `--no-traffic` or it ships itself | `00251-qed` |
 | cortex-api, LDT (us-central1) | `00824-qay` | LDT `7219b707` | P-296 (ETJ served), P-304, P-259b's parser and schema, P-249 cortex half, P-297 LDT half, P-299, P-258 tables, P-293 | `00822-wef` |
 | smartsite-mcp (us-central1) | `00134-wad` | LDT `ba6a5a69` | Reads cortex over HTTP, so it carries the cortex changes without a deploy | |
 | Property Explorer (smartsite.cloud, Vercel) | **`1qrscbkcf` (asset `index-AcPNl2DB.js`), deployed and verified 2026-09-18 01:20Z** | map `cfe23197` | Everything below plus **P-257 map half (#417) and P-270 map half (#418)**. Graded on the live `/api/spine/property-atoms/<id>/facets` route, not on the deploy result: `48021:70907` declines `pud-ordinance` (was Smithville PD-Z's 20/100/100/100); `48209:49000` names its own district with no `layer 23`; `48021:14899` serves its citation with `citationVintage: unreadable-absent-at-source` and the sentence (was silent) | deployment `3cpnl30o0` (asset `index-gi9ECXVc.js`) |
@@ -186,22 +186,24 @@ created with. Nothing was deleted or repointed: removing or repointing a tag is 
 | P-262 | One edge labeller (merged) | Graded by P-264 |
 | P-254's open defects | 11 OPEN, 5 CLOSED, 7 UNMEASURED of 23 | The instrument is committed; the MCP leg needs `SURFACE_PROBE_MCP_TOKEN` (an OAuth token), which turns 28 UNMEASURED buckets into decided ones |
 
-## Compiled and ready to fire (in priority order; updated 2026-09-18 01:55Z)
+## Compiled and ready to fire: Wave 1 (updated 2026-09-18 11:50Z)
+
+The full list, the rulings and the later waves are in `_inbox/2026-09-18_phase0_closeout_REGISTER.md`. Everything on it gets done; waves only sequence it.
 
 | Dispatch | Rows | Why now |
 |---|---|---|
-| `_dispatches/2026-09-18_p332-etj-panel_dispatch.md` | P-332 | **New, highest customer priority.** The panel serves `unresolved` for ETJ on every parcel while cortex holds the answer (live: `48453:134392` present, `48209:97658` absent). The mission carries the trap: cortex's own fact pairs `incorporated` with ETJ `present` on the Austin parcel, so the fix declares that conflict rather than forwarding it. hauska-map only, so it can reach a customer without P-323 |
-| `_dispatches/2026-09-17_p323-tag-hygiene_dispatch.md` | P-323 | Operator agreed 2026-09-17. **Blocks every LDT deploy, which now holds the merged LDT halves of P-257, P-270 and P-322, plus P-324** |
-| `_dispatches/2026-09-17_p286-p317-burnet-preconditions_dispatch.md` | P-286, P-317 | **UNBLOCKED**: its precondition was P-319's PR being open, and factory #173 is open. Fire it |
-| `_dispatches/2026-09-17_p324-pixel-attribution-deploy_dispatch.md` | P-324 | Gate 1 is a LOCAL probe (no push); Gate 2 is a green P-279 run, so it waits on P-323 |
-| ~~`_dispatches/2026-09-17_p319-retirement-safety_dispatch.md`~~ | P-319, P-320, P-321 | Fired; PR #173 held for the operator (see In flight) |
-| ~~`_dispatches/2026-09-17_p270-citation-effective-date_dispatch.md`~~ | P-270 | Fired, merged, map half live |
-| ~~`_dispatches/2026-09-17_p257-decline-wording-and-pud_dispatch.md`~~ | P-257 | Fired, merged, map half live |
-| ~~`_dispatches/2026-09-17_p322-cotality-declared-absences_dispatch.md`~~ | P-322 | Fired, merged, factory half live |
+| `_dispatches/2026-09-18_p323-tag-hygiene_dispatch.md` | P-323 | Every LDT deploy waits on it, which now includes the merged LDT halves of P-257, P-270 and P-322 and P-206's XD-6 fix. Recompiled with ruling 10's advance authorisation |
+| `_dispatches/2026-09-18_p332-etj-panel_dispatch.md` | P-332 | The panel discards the ETJ answer on every parcel and must declare the city-limits conflict. hauska-map only |
+| `_dispatches/2026-09-18_p335-williamson-crosswalk_dispatch.md` | P-335 | Ruling 7. The only thing that lets Williamson's record fill reach its parcels (D1, XD-7) |
+| `_dispatches/2026-09-18_p327-retirement-gate-roll_dispatch.md` | P-327 | P-319's gate measured against the roll the bake retires from, plus a six-county census proving no false refusals |
+| `_dispatches/2026-09-18_p342-p263-apply-writer_dispatch.md` | P-342 | Rulings 11 and 12. P-263 has no apply path; the 30,434 are withheld |
+| `_dispatches/2026-09-18_p328-engine-reconcile-blast-radius_dispatch.md` | P-328 | The writer that retired 92.5 percent of Bastrop still has no blast-radius refusal |
 
-Carded 2026-09-18 (A-213), not yet compiled: P-327 (re-point P-319's gate; waits on #173), P-328 (engine writer under P-320; waits on #173), P-329 (factory `ldt-sha` check), P-330 (county runner continues past a declared refusal), P-331 (a cross-repo drift check that can fail). Carded 2026-09-18 (A-214): P-333 (restore genuine join-miss absences per population), P-334 (P-321's watch refuses `TARGET_ENV_MISSING` on every run).
+Two factory lanes (P-335, P-327) and two engine lanes (P-342, P-328) run on disjoint files; merge each repo's PRs one at a time, re-greened against the base they merge into. Wave 2 and the seat's own Wave 1 work are in the register.
 
 ## Owed by the operator
+
+**Current list: `_inbox/2026-09-18_phase0_closeout_REGISTER.md` section 3c.** The table below is the 2026-09-17 record; several items on it were ruled on 2026-09-18 (A-215).
 
 | Item | Note |
 |---|---|
@@ -232,25 +234,7 @@ Carded 2026-09-18 (A-213), not yet compiled: P-327 (re-point P-319's gate; waits
 
 ## Left for Phase 0 (the six counties)
 
-| Group | Rows | Blocked on |
-|---|---|---|
-| Finish-line checks | P-254, P-286 | Nothing |
-| Setbacks | P-256 (running), P-257, P-260, P-156, P-300 | P-257 needs P-256; P-260 needs P-258's re-grade |
-| Zoning | P-259b (running), the Austin stamp | The lane |
-| Envelopes | P-303, P-304 (compiled), P-263, P-264 | P-264 needs P-260 |
-| Open rails | P-266, P-268 (running) | The lane |
-| Hays and the ledger | P-211, P-265, P-204 | P-265 needs P-211 |
-| Ag valuation | ~~P-267~~ → P-322 | **Out of Phase 0 (A-212).** The rail ships as a declared absence; the sourced version is Phase 1 |
-| What customers see | P-270, P-271, P-272, P-217, P-209 | Nothing |
-| Walk and republish | P-301 grade, Travis, Williamson | In flight |
-| Controls and cleanup | P-273, P-274, P-275 (running), P-276 venue, P-279, P-282, P-305, R-11 | Nothing |
-| Earlier rows | P-175, P-183, P-184, P-176, site-plan compose timeouts | Nothing |
-| Serving path | P-294 dry cycle, P-295 build | The republish; a P-295 design review |
-| From the reports session | P-296, P-243 and P-244a checks | Dispatch; operator account check |
-| Williamson recovery | P-319, P-320, P-321 | Nothing. P-319 blocks 48491's republish |
-| Cotality-shaped gaps | P-322 | Nothing (A-212) |
-| **The four blocks** | 67 open cells: **30 mid-cutover (P-204), 30 setback (58,339 parcels, P-326/P-300), 12 roads+edgeSignal (P-264), 6 D1 (P-310)**. None was blocked — every dependency was satisfied and all four were undispatched. Only the setback block is customer-visible; the mid-cutover rails all serve today from a non-ledger path | All four fired 2026-09-17 |
-| **Phase 0 exit** | Ledger complete **with Cotality-dependent rails counted as declared absences, not as gaps**, customer checks pass (P-254's OPEN list at zero), coverage, road residual, operator walk, and every county's served population intact after its republish | Everything above. **Cotality is no longer an exit condition (A-212)** |
+**Superseded 2026-09-18 by `_inbox/2026-09-18_phase0_closeout_REGISTER.md`**, which carries the exit's five legs with their measured state, the operator's eighteen rulings (A-215), every row on and off the exit path with its wave, what the operator still owes, and the Phase 1 flags. The table that stood here was stale (it showed P-256 and P-259b running and counted the ledger as four blocks summing to 78).
 
 ## Farm and Burnet (Phase 1)
 
@@ -322,6 +306,8 @@ Carded 2026-09-18 (A-213), not yet compiled: P-327 (re-point P-319's gate; waits
 | 2026-09-17 15:43 | Commit `6735837d` (A-207). Operator fired P-306 and P-307; P-254 compiled. |
 | 2026-09-17 15:58 | **P-303 live and graded** (map `3ee35d5e`, Property Explorer `mfesp954e`; Waco draws with the figure withheld). **P-266/P-268 merged** (factory `1fa850e7`) and five factory jobs rebuilt; the gate scheduler's code is unchanged, and the 16:00Z run is its first on `28066cef`. **P-275 merged** (engine `7b3dda0b`). **P-305** instruments and runbook copied to main; #410 ready. **P-304** #713 in CI. **Hays re-grade `gf8rv` crashed** mid-county (A-208); the retry waits on the dead run's lease. Closes for P-303, P-304, P-305, P-275 and P-266/P-268 copied into `_inbox`. Williamson's parcel-record-fill apply held with P-306. |
 | 2026-09-17 16:03 | Commit `9584d503` (A-208). |
+| 2026-09-18 12:10 | **A-216: the probe signs in per run (the operator, Solo test account, nothing stored); San Marcos is served from corpus 1.4.0 after its coverage re-check, Georgetown stays withheld until 2026-11-01.** P-349 carries both, then the Hays bake. Eighteen cited lane artifacts that were untracked or only in other checkouts (P-263 census and lane close, P-310/P-325, P-319, P-204) are now tracked so every Wave 1 dispatch points at files on `origin/main`. |
+| 2026-09-18 11:50 | **The operator ruled all eighteen Phase 0 decisions as recommended (A-215): everything gets done, properly, in waves.** Recorded in `_decisions/2026-09-18_phase0_closeout_rulings.md`; P-335 to P-351 carded; the durable list is `_inbox/2026-09-18_phase0_closeout_REGISTER.md`, which supersedes this file's stale Phase 0 table. Wave 1 compiled: P-323 (recompiled with ruling 10), P-332, P-335, P-327, P-342, P-328. **Correction, read by field at 11:45Z:** hauska-engine-api still FOLLOWS LATEST (`latestRevision: true` at 100 percent on `00253-qan`); the 2026-09-17 deploy lane's close said it was pinned, and a draft of the register repeated that before the service was read. retrieval-api is the pinned one (`00102-ciz`). |
 | 2026-09-18 11:00 | **Operator rulings (A-214): #173 ships partial, #175 ships blanket, each with a carded proper fix. All nine lane PRs are now merged.** #173 re-greened on `610b0431` (its `ldt-sha` push run now passes, confirming the force-push diagnosis), merged `a3b2c91b`, publish lane deployed on `afbd0bbc`, 0015 applied alone. Tried the P-321 watch in dry run: it refuses `TARGET_ENV_MISSING` because it resolves an mcp URL its template does not mount, so it has never been able to run (P-334). #175 re-greened, merged `85d63e8d`, deploy deferred to the gate-scheduler procedure. The 2026-09-05 join-miss ruling is suspended by `_decisions/2026-09-18_join_miss_unaccounted_until_scoped_guard.md`; P-333 restores it per population. |
 | 2026-09-18 01:55 | **OPS-16 A-213 and P-327 to P-332 carded (operator go); P-332's dispatch compiled.** P-332 was verified before carding, at source (hauska-map `cfe23197`: `composeCityLimits` writes `etjStatus: "unresolved"` in all four branches; `applyRecordPatch` replaces `cityLimitsFact`) and live (cortex `present`/`absent`, panel `unresolved`/`unresolved` on `48453:134392`/`48209:97658`). The live read also found cortex pairing `incorporated` with ETJ `present` on the Austin parcel, written into the mission as the trap. OPS-24's registered range gains 327-332 so the new rows compile with program law; 321-326 are left unclassified. |
 | 2026-09-18 01:30 | **Seven of nine lane PRs reviewed and merged; two held on findings.** Merged, each re-greened against the base it merged into: factory #176 (P-326) `c5bd6e80`, #174 (P-322) `6a7475a3`; map #417 (P-257) `a48a4a66`, #418 (P-270) `cfe23197`; LDT #717 (P-257) `f184afe1`, #719 (P-270) `7f676936`, #718 (P-322) `25d1782f`. Each P-257 and P-270 pair was merged together. **Deployed and graded:** Property Explorer `1qrscbkcf` (rollback `3cpnl30o0`), graded on the served facets route on three measured parcels; ACQUIRE-GIS factory jobs on `360923cc`, graded by violation (`jgxmm` refused Hays). LDT halves wait on P-323. **Held:** factory #173, because P-319's gate measures retirement against `txgio_parcel` while the bake retires against `cad_property` (a proxy; the 2026-09-10 run is the counterexample), and #175, because its blanket reversal conflicts with the 2026-09-05 ruling's population-scoped reversal clause. #173's red `ldt-sha` check is an unreachable force-push `before` SHA, not a finding. Review also found: the map/LDT "cross-repo pins" compare against same-repo literals; P-270 built X11 only; #174 makes the county runner stop stage 6 for five counties. |

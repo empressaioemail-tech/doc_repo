@@ -1,0 +1,95 @@
+{
+  "checkpoint": "CP1 design/pre-build",
+  "lane": "p204-mid-cutover-serve-paths",
+  "planRows": ["P-204"],
+  "dispatch": "_dispatches/2026-09-17_p204-mid-cutover-serve-paths_dispatch.md",
+  "seat": "cente-vsc-p204",
+  "filedBy": "seat cente-vsc-p204",
+  "filedAt": "2026-09-17T22:20:00Z",
+  "honestyNote": "Filed after the first live reads rather than before them (this lane ran as one pass). The falsifiers and the counting rules below were fixed before the measurements that decide them; the two divergence findings moved nothing in this list, they were the pre-registered questions answered.",
+
+  "scope": {
+    "in": [
+      "Establish, per rail (parcelGeometry, pipelines, railCorridor, etjStatus, landUseDescription): the exact serve path today (service, function, store or upstream), the ledger cell state (empty / partially written / written-and-unread), the concrete cutover cost (which writer mints the atoms, population, any vocabulary or contract change), what breaks if it never cuts over, and a recommendation (CUT OVER | STAYS ELSEWHERE | RETIRE) with the serve path named.",
+      "Prove at least two serve paths by violation (a read that fails or a value that disappears when the path is unavailable).",
+      "One ruling table plus one paragraph on which rails are ruled together and which needs its own decision."
+    ],
+    "out": [
+      "No store writes of any kind. No deploys. No serving changes. No edits to RAIL_POLICY (adding an accept list is what IMPLEMENTS a ruling; the ruling has not been made).",
+      "County 48491 not touched in any store (no read, no write).",
+      "No sub-agents (FAN-DEPTH 0). This lane does the work itself.",
+      "No change to six-county-completeness.mjs or any enforcement script."
+    ],
+    "whyTheseBoundaries": "The dispatch's mission is a ruling input, not a build: the five rails are open only because no accept list exists for the class, and every one of them was believed to serve already. So the deliverable is facts plus a recommendation, and any implementation (an accept list, a writer, a panel fix) is downstream of an operator ruling. The exclusions above are the dispatch's own constraints; adding any of them would have turned a $0 read-only lane into a serving change and made the ruling's premise untestable."
+  },
+
+  "premisesCheckedBeforeUse": [
+    { "premise": "The five rails are open in all six counties with verdict excluded-mid-cutover; 30 of the 67 open cells.", "source": "dispatch mission text", "status": "CONFIRMED for the rail count, DIVERGENT for the total", "evidence": "_inbox/2026-09-17_six_county_completeness_post_apply.json: 5 rails x 6 counties = 30 cells, all excluded-mid-cutover, in 66 open cells (dispatch says 67)." },
+    { "premise": "RAIL_POLICY gives the mid-cutover class no accept list at all, deliberately.", "source": "dispatch; scripts/six-county-completeness.mjs", "status": "CONFIRMED", "evidence": "RAIL_POLICY lines 80-85: parcelGeometry / pipelines / railCorridor / etjStatus / landUseDescription each `{ cls: \"mid-cutover\" }` with no accept key; every other class carries one. Self-test check 3 asserts a mid-cutover rail left excluded is OPEN." },
+    { "premise": "All five rails serve now, so a ruling changes no customer outcome either way.", "source": "dispatch mission text", "status": "CONTRADICTED for one rail, DIVERGENT for two", "evidence": "railCorridor serves nowhere (see cp2 and the measurements artifact). etjStatus serves at cortex-api but is downgraded to a literal at the customer surface. landUseDescription serves, but from the bake rather than the atom." },
+    { "premise": "P-296 shipped ETJ to customers 2026-09-17 (355 rings, 20 publishers, cortex 00824-qay, Austin parcel unresolved -> present).", "source": "dispatch mission text", "status": "PARTLY CONFIRMED, PARTLY CONTRADICTED", "evidence": "The P-296 merge IS the serving cortex revision (cortex-api-00472-web, image tag 7219b707 = merge of PR #714 feat/p296-etj-rollout; merge-base --is-ancestor e863d3e9 7219b707 = 0). Cortex serves present for 48453:134392 and absent for 48209:97658. The customer surface serves 'unresolved' for both. The revision suffix the dispatch quotes (00824-qay) does not match the cortex-api revision observed (00472-web) — named here, not resolved; it may name a different service." },
+    { "premise": "The gold parcel 48209:97658 shows a nine-edge boundary ring, a facing road with OSM provenance, pipelineFact, etjStatus unresolved inside cityLimitsFact, and a land-use description.", "source": "dispatch mission text (P-204's own earlier measurement)", "status": "CONFIRMED", "evidence": "Live: 9 edges, front edge boundary:5 with adjacencyKind ROW and facingRoad.provenance osm-overpass-v1 + roadNodeId 48209:road:15292464, pipelineFact present (nearPipeline false), cityLimitsFact.etjStatus unresolved, description 'Vacant lot or tract'." },
+    { "premise": "P-201 shipped the three excluded* verdict strings; the dependency is satisfied.", "source": "dispatch", "status": "CONFIRMED at source", "evidence": "scripts/six-county-completeness.mjs header lines 12-14 and P-201's classifier in ~/hauska-factory src/lib/gate-exclusion-classifier.mjs (MID_CUTOVER_RAIL_KEYS = parcelGeometry, roads, pipelines, railCorridor, etjStatus, landUseDescription)." }
+  ],
+
+  "toolsUsed": [
+    "psql (PostgreSQL 18 client) read-only against the atoms store hauska_mcp, DSN from P:/hauska-mcp-server/.env; every query bounded by an (entity_type, entity_id) range that the composite unique index serves. No full-table scan, no PostGIS plan phase, statement_timeout 60-90s. The heavy-scan lease applies to heavy PostGIS/full-table scans; these are point/prefix lookups on an index, and no lease endpoint credential exists in this seat (FACTORY_CONTROL_API_URL / _KEY absent), which is stated rather than worked around.",
+    "curl GET against the customer surface https://smartsite.cloud/api/spine/property-atoms/<id>/facets (public, no key, no session) and against https://cortex-api-tds7av26va-uc.run.app/api/brokerage/v1/place/node/<id>/facets.",
+    "gcloud run services list (read-only) in legacy-design-tools-prod and hauska-prod-497015 to read serving revisions and image tags.",
+    "git: merge-base --is-ancestor at the serving image tag, git show at the SERVING commit (not HEAD) for every file whose behaviour is claimed, and git log on the reader files.",
+    "reading the deployed reader sources in three repos (legacy-design-tools, hauska-map, hauska-engine) plus hauska-mcp-server, at recorded HEADs (see the measurements artifact snapshotReadAgainst)."
+  ],
+
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1-path-is-load-bearing",
+      "statement": "If the named read is what serves a rail, removing the thing it reads removes the served value (or produces a typed refusal) — and adding it produces the value.",
+      "predicted": "parcelGeometry and pipelines PASS (atom counts will track the served output exactly); any rail whose served value survives with its store empty is NOT served by that read.",
+      "band": "an exact match between atom count and served edge count on every parcel sampled; no tolerated drift.",
+      "howTested": "ablation by subject: parcels chosen to span 0 and n atoms, then both ends read live.",
+      "result": "confirmed for parcelGeometry (9/9, 12/12, 5/5, 7/7, and refused on 0) and pipelines (true/false with distance and operator from the atom body)."
+    },
+    {
+      "id": "F2-the-cell-controls-the-value",
+      "statement": "If the ledger is the serving path for a rail, a served value must be traceable to that rail's cell (atom reference / render key), not to a bake or a serve-time computation.",
+      "predicted": "for these five rails the cell is EMPTY in all six counties and the served value comes from somewhere else; if any rail's served value is atom-backed and cell-less, the cell is accounting-only and the cutover is cheap.",
+      "howTested": "read the served payload's own rail-state map (recordRailStates) and the atomic provenance blocks on each fact (provenanceClass / serveLayer), and read the completeness instrument's cell-facing output.",
+      "result": "recordRailStates carries none of the five rails and reports atomBacked:false on every key it does carry; the fact blocks carry atom provenance (Record/Derivation) while the cells stay excluded-mid-cutover."
+    },
+    {
+      "id": "F3-etj-is-cut-over-or-not",
+      "statement": "If P-296 IS the cutover for etjStatus, a customer reading the card for an ETJ-contained parcel sees present (or a checked absent), because the ledger path is what the customer consumes.",
+      "predicted": "either the card carries the determination (etjFact / an 'ETJ:' basis / etjStatus != 'unresolved') or the cutover is not on the customer path.",
+      "band": "one parcel is enough to falsify; the Austin 2-mile ETJ parcel (48453:134392) is P-241's own pre-registered falsifier #1 predicting present.",
+      "howTested": "the same parcel read at cortex-api and at the customer surface, plus the panel's own composer source at the serving build.",
+      "result": "FALSIFIED at the customer surface: present (cortex) -> unresolved (card); absent (cortex) -> unresolved (card); 13 of 13 parcels sampled served the literal."
+    },
+    {
+      "id": "F4-all-five-serve",
+      "statement": "If all five rails serve today, each must have a slot on some surface (the engine audit's own slot tokens are the contract: geometry, landuse, rrc-pipelines, rail-corridor).",
+      "predicted": "a rail whose atoms exist and whose token appears in no payload is written-and-unserved, contradicting the dispatch premise.",
+      "howTested": "searched every reachable payload for its slot tokens and every reader in four repos for its key.",
+      "result": "railCorridor has no slot anywhere reached; its atoms are at parcel-node parity in two counties checked."
+    }
+  ],
+
+  "expectedBands": {
+    "openCells": "30 mid-cutover cells; total open 65-68 (dispatch says 67, the artifact says 66)",
+    "atomParity": "rail-corridor-fact and rrc-pipeline-fact within 1% of parcel-node parity in a staged county; a county with no boundary atoms is possible (48309)"
+  },
+
+  "constraintsHonored": [
+    "no store writes",
+    "no deploys",
+    "no serving changes",
+    "RAIL_POLICY untouched",
+    "48491 untouched in every store",
+    "no sub-agents launched (FAN-DEPTH 0)",
+    "all reads read-only; no credential printed; no secret echoed"
+  ],
+
+  "leaveBehindAtCp1": [
+    "The customer-surface leg of this lane is a BFF (Vercel), not a Cloud Run revision: read the serving build by asset existence (the fleet's own rule) — /assets/index-gi9ECXVc.js on 2026-09-17.",
+    "cortex-api is directly reachable without a key from this seat, which is what makes a cortex-vs-customer comparison possible without any credential."
+  ]
+}

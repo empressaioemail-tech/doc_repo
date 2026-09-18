@@ -1,0 +1,131 @@
+{
+  "lane": "p319-retirement-safety",
+  "planRows": ["P-319", "P-320", "P-321"],
+  "kind": "CP2 -- post-build measurement checkpoint (AGENT-CONTRACT section 6)",
+  "filedAtNote": "Written at the end of the build, after the full suite and after the PR's checks went green. See CP1's filedAtBasis for the declared deviation (one session, both checkpoints filed together; the falsifiers themselves were pre-registered in the test headers before the first run of each file).",
+
+  "whatWasMeasuredAndHow": {
+    "unitOfMeasurement": "node --test, the repo's own suite, plus the repo's own store readers driven by fakes -- no store of any kind is contacted. Every number in this artifact comes from one of: (a) a test assertion over a fixture, (b) the P-306 close's measured counts (quoted, with its source named), or (c) the LDT source at the pin, read with `git show`.",
+    "files": {
+      "src/lib/publish-retirement-gate.mjs": "435 lines, new -- the keyspace-scoped retirement decision, the reader, the two refusal codes and the per-keyspace verdict.",
+      "src/lib/destructive-write-guard.mjs": "373 lines, new -- the declared threshold, the flag, the writer register and assertBlastRadius.",
+      "src/lib/measured-count.mjs": "19 lines, new -- the shared 'a count is an integer >= 0 or it was not measured' rule, imported AND re-exported by the coverage floor so its existing readers keep working.",
+      "src/jobs/publish-retired-share-watch.mjs": "382 lines, new -- the scheduled retired-share sweep, the band, the observation writer, the history reader and the CLI.",
+      "migrations/0015_retired_share_observations.sql": "59 lines, new -- the observation table, its sanity constraints (retired_rows <= served_rows, 0 <= share <= 1) and two indexes.",
+      "src/jobs/bastrop-publish.mjs": "the retirement gate called after the coverage floor and before bakesFn; its verdict carried on the run row and on the returned summary.",
+      "src/lib/publish-gate-clients.mjs": "open() refactored into an exported openReadOnlyStore() so the watch reuses the pooler refusal and the read-only transaction instead of declaring a second copy of a refusal rule.",
+      "src/cli.mjs": "the retired-share-watch command, with its flags.",
+      "cloudbuild.publish.yaml": "the factory-retired-share-watch job on a schedule.",
+      "test/p319-retirement-gate.test.mjs": "398 lines, 16 tests.",
+      "test/destructive-write-guard.test.mjs": "309 lines.",
+      "test/p321-retired-share-watch.test.mjs": "413 lines.",
+      "test/publish.test.mjs": "+244 lines -- full-path tests through runBastropPublish for P-319 and P-320 on the Williamson and Bastrop fixtures."
+    },
+    "commitAndBranch": { "base": "208baeb (factory main at clone time; the dispatch's compile-time d2e6cb03 had moved)", "rebasedOnto": "087927b (the P-273/P-274 merge, #172) before close, because the PR had gone CONFLICTING; the single overlapping file was src/cli.mjs's usage line, resolved as a union of both command lists", "head": "26e8d2f", "branch": "fix/p319-retirement-keyspace-and-blast-radius", "pr": 173 }
+  },
+
+  "verificationByViolation": {
+    "note": "Each row is shown in BOTH directions. 'Old' is the comparison the pinned bake actually makes (bare key, no keyspace) or the unguarded state; 'New' is this lane's control.",
+    "P-319": {
+      "old_direction": {
+        "what": "On the Williamson-shaped fixture (numeric served, index R-keyed), a bare-key presence test retires the whole keyspace: 319,480 of 319,480 numeric served rows read as absent from an index that cannot hold a numeric key.",
+        "evidence": "P-306's measured counts (source txgio_parcel 48491: 304,298 rows, numeric 0; served tier1 48491: numeric 319,480 all live, R 282,569 all retired) plus the incident's own 319,480 retirements; the bake's comparison is one string lookup (LDT buildConformantTier1Payload, read at the pin). This is the 'current code retires everything' half the dispatch asks to see."
+      },
+      "new_direction": {
+        "what": "The gate refuses PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED, retires zero, names `numeric (319480 of 319480 served rows)`, and refuses BEFORE the bake -- the full-path test asserts bakesFn was never called and that the refusal left a durable retirement-gate run_event.",
+        "tests": ["R1 (violation)", "R1 (the verdict carries the per-keyspace table)", "R1: a refusal happens BEFORE the share is consulted", "P-319 (violation, full path): the Williamson keyspace REFUSES before the bake -- bakesFn is never called", "P-319 (full path): the refusal leaves a durable retirement-gate run_event", "R5 (violation): the Williamson store refuses through the real reader"],
+        "genuineRetirementStillFires": "R1 (the other direction) and P-319 (full path, NOT VACUOUS): the same county with its 1,240 absences on the ACCOUNTED R keyspace promotes, and the per-keyspace numbers are recorded on the PASS. The full-path test also asserts the coverage floor promotes that same fixture first (retention 1.1666), which is the incident's own juxtaposition reproduced in one run."
+      }
+    },
+    "P-320": {
+      "old_direction": "Two measured instances of the unguarded state: Bastrop 48021 2026-09-15 (57,704 of 62,394, 92.48 percent) and Williamson 48491 2026-09-17 (602,050 of 602,050, 100 percent). Neither was refused by anything; in the factory the retirement step had no share check at all at 208baeb.",
+      "new_direction": {
+        "what": "assertBlastRadius refuses DESTRUCTIVE_BLAST_RADIUS on the Bastrop shape, naming the measured share, the population it measured and the exact token publish-retirement:48021:57704/62394, and stating that NOTHING WAS WRITTEN and that the refusal does not depend on knowing what went wrong. The full-path test asserts the refusal happens before the bake and that the exact authorisation carried into the invocation lets THAT run through while the crossing is recorded; a stale token (the populations moved) does not carry.",
+        "storeByteIdentical": "Proven, not asserted, in the strongest form this lane is allowed: the gate runs on a read-only client (default_transaction_read_only=on) BEFORE bakesFn, and the full-path tests prove bakesFn is never invoked on the refusal path, so no statement that could write is issued at all. What this lane CANNOT show is a byte-identical dump of a real target store -- it is forbidden to touch one -- and that limit is stated rather than glossed; the integration seat's staging run is where a dump-level proof belongs.",
+        "tests": ["G1", "G2", "G3", "G4", "G5", "P-320 (violation, full path): refuses, writes nothing, and the exact authorisation lets it through", "P-320 (full path): a stale authorisation does not carry"]
+      }
+    },
+    "P-321": {
+      "old_direction": "The pre-recovery Williamson state: 602,050 served, 602,050 retired, share 1.0, in one run, with no instrument moving. A band that state passes would be the wrong band, which is what the test asserts by violation.",
+      "new_direction": {
+        "what": "The fixture FAILS the band at the ceiling, naming `above the ceiling 90.00%` and `602050 of 602050 served node-facets:tier1 rows`; a healthy county passes; a county within the ceiling but moving more than the declared band fails the MOVE term; a dry run writes nothing; a county that answers with no served rows refuses RETIRED_SHARE_UNMEASURED.",
+        "tests": ["B1 (violation)", "B2 (both terms load-bearing)", "B3", "B4", "the CLI command and the Cloud Build job are asserted to exist"]
+      }
+    }
+  },
+
+  "falsifierAccounting": {
+    "R1": "CONFIRMED. The numeric keyspace refuses with 319,480 of 319,480 and the accounted-keyspace direction passes at 1,240 of 602,050.",
+    "R2": "CONFIRMED. An unaccounted keyspace with no absence passes and is still named unaccounted with indexBasis 'no-own-keyspace-index'.",
+    "R3": "CONFIRMED. A missing index keyspace split refuses PUBLISH_RETIREMENT_UNMEASURED; a served side answering 'many' refuses too; an EMPTY served side is a measured zero and does not refuse.",
+    "R4": "CONFIRMED. The set-difference SQL carries the keyspace restriction on the served id, on the index id and in the comparison, with one row per keyspace and the index table parameterised.",
+    "R5": "CONFIRMED. The real reader's index side is the floor's own statement (marker 'coverage-floor: source'), issued exactly once per call.",
+    "R6": "CONFIRMED, AND IT IS THE MOST CONSEQUENTIAL RESULT OF THE LANE. A keyspace whose every id is absent from a reader that holds 319,480 rows of its label refuses `no-id-overlap`; ONE present id in the same fixture is refused by the SHARE instead. The divergence is what makes the rule a measurement rather than a census.",
+    "G1": "CONFIRMED. Bastrop 92.48 percent refuses through the shared guard, not through a threshold privately defined in the retirement gate.",
+    "G2": "CONFIRMED. Tokens for another writer, another county, or other counts refuse; the exact token passes.",
+    "G3": "CONFIRMED. The threshold and the flag are declared once, in destructive-write-guard.mjs, and the guard refuses to run without a caller-declared 0 < share, so no caller carries a private default.",
+    "G4": "CONFIRMED, AND IT FAILED FIRST. The register scan found six modules holding destructive statements that the register did not name (owner-rail-collision-check, parcel-envelope-cells, parcel-max-impervious-cover, parcel-overlay-districts, parcel-r5-zoning, parcel-school-district); they were added as one group with a stated reason each. The test now fails on any unregistered destructive statement.",
+    "G5": "CONFIRMED, AND IT FAILED FIRST. `Number(null)` being 0 is exactly how a missing destructive count reads as a healthy county; the shared measured-count rule was extracted into its own module because three readers now need the same answer and none of them may own it.",
+    "B1": "CONFIRMED. The pre-recovery state fails at the ceiling, 1.0 against 0.9.",
+    "B2": "CONFIRMED. Both terms are shown to be the deciding one in some fixture.",
+    "B3": "CONFIRMED. An absent county refuses rather than filing the most reassuring number in the table.",
+    "B4": "CONFIRMED. The dry run returns its verdicts and writes nothing.",
+    "dispatchFalsifiers": {
+      "D-P319.4": "CONFIRMED in both directions (see P-319 above). The old-direction half is the measured incident plus the pin's comparison, not a re-run of the bake: running the bake is a store write and is out of scope for this lane, and that limitation is stated rather than implied."
+    }
+  },
+
+  "destructiveWriterEnumeration": {
+    "method": "A test scans src/ for statements that can set a destructive state (status flips, DELETEs, cell resets) and asserts every module it finds is named in DESTRUCTIVE_WRITERS with a wired flag and a reason. The scan is the control; the register is the answer.",
+    "wired": [
+      { "id": "publish-retirement", "module": "src/lib/publish-retirement-gate.mjs (invoked by src/jobs/bastrop-publish.mjs)", "why": "wired FIRST, per the dispatch: it is the writer behind both incidents. The tuple the threshold reads is the share of the county's served tier1 population whose record would be stamped retired by this publish, measured BEFORE the bake runs." }
+    ],
+    "registeredNotWired": [
+      { "id": "purge-bastrop-orphans", "reason": "its population is TWO named place_keys chosen by hand, re-verified live immediately before the delete and already gated by an explicit AUTHORIZATION constant with the card that issued it. A share threshold would be a second, weaker authorisation for a write that has a stronger one. If it ever gains a set-valued mode, it must call assertBlastRadius with the number of rows that mode would delete." },
+      { "id": "s6-collision-remediate", "reason": "it acts on ONE collision at a time (a pair of rows), so it has no population to take a share of; its control is the collision evidence it is resolving plus a durable run_event written BEFORE the UPDATE." },
+      { "id": "vh-collision-remediate", "reason": "same shape; it deletes companion rows only, never the served record or its status." },
+      { "id": "parcel-rail-imports", "reason": "seven rail jobs whose DELETE + re-insert is the same rail's refresh from an acquired source table, bounded by that source's own row count and compared to it by each job's own coverage check; they touch a companion rail, never the served record and never its status." },
+      { "id": "parcel-cell-rail-resets", "reason": "six cell-rail jobs that overwrite a CELL's state on one rail, driven and bounded by that rail's own source; they never stamp or remove a retirement. This is the group closest to the hazard and the reason is stated at length in the module rather than waved at. A whole-county 'everything not in the source' mode in any of them must call assertBlastRadius." },
+      { "id": "dollar-fields-patch", "reason": "a second writer to place_layer_snapshots but a VALUES writer: it never stamps a retirement and never nuls a served row, and it refuses a county that is not already served. Its write happens inside an LDT bake subprocess, so the in-repo half is the invocation; its control today is a staging-sibling gate keyed on phase=dollar-fields-patch." }
+    ],
+    "engineSideNotInThisRepo": "P-213's guard (hauska-engine packages/engine-core/scripts/writer-blast-radius-guard.mjs, used by the parcel-node writer) is the same control class in another repo, and A-192 recorded it as the engine's, not the factory's. This lane did NOT port it or modify it, and it did not need to: the engine writer that produced Bastrop already carries it. The factory's guard declares its own threshold and flag because the engine's `maxShare` is supplied per caller there and there is no shared workspace between the repos; the token shape was deliberately matched to the coverage floor's, which is the shape an operator already meets in this repo.",
+    "threeQuestionGate": {
+      "whatExecutesIt": "requireRetirementGate / assertBlastRadius, called by runBastropPublish after the coverage floor and before bakesFn for every publish, every target, every county; and runRetiredShareWatch for P-321.",
+      "whatTriggersIt": "Every publish invocation (P-319/P-320) and every scheduled sweep or --read call (P-321). Nothing is conditional on a flag: the gates run on the ordinary path.",
+      "whatFails": "PUBLISH_RETIREMENT_KEYSPACE_UNACCOUNTED | PUBLISH_RETIREMENT_UNMEASURED | DESTRUCTIVE_BLAST_RADIUS | DESTRUCTIVE_AUTHORISATION_MALFORMED/MISMATCH/COUNTY_MISMATCH/STALE | RETIRED_SHARE_UNMEASURED | RETIRED_SHARE_TARGET_REQUIRED. On the publish path the refusal propagates before bakesFn, so nothing is written and the bake is never invoked.",
+      "whatBypassesIt": [
+        "A bake run outside runBastropPublish: the LDT conformant CLIs invoked directly (they are separate processes with their own args), and the frozen laptop ingest scripts.",
+        "A raw connection or a hand UPDATE that reaches place_layer_snapshots without passing through the publish job. The guard, like the coverage floor, cannot see a write it is not called from.",
+        "The retirement the BAKE itself computes, once the bake IS invoked: this repo refuses to invoke it on an unaccounted keyspace, and cannot make the bake's own comparison keyspace-scoped. That is the named, unresolved half of P-319 and it lives in LDT at the pin.",
+        "Deleting the gate or catching its throw in a caller: nothing outside the calling job enforces that it is called."
+      ]
+    }
+  },
+
+  "fullSuiteResult": {
+    "command": "npm test (node --test test/*.test.mjs) at head 26e8d2f, and again at the unmodified base 087927b (git switch --detach, then back), same node_modules, same machine, back to back",
+    "result": "head 26e8d2f: 1,905 tests, 1,864 pass, 37 skipped, 2 todo, 2 fail. base 087927b: 1,844 tests, 1,803 pass, 37 skipped, 2 todo, 2 fail.",
+    "theTwoFailures": "The failure SET is identical on both sides, which is the claim: check-walk-decline-body-drift.test.mjs:95 (an LDT checkout-state check) and ctx-b3-store-census.test.mjs:137. This lane adds 61 tests (1,844 -> 1,905) and no failure. Two more blocks print with an x under test/p3-absence.test.mjs:545 and :568, but the runner counts them in `todo`, not `fail` -- they are todo-registered expected failures another lane recorded ('# OPS-21 S3 finding, not fixed by this lane'), and they are in the base's 2 todo as well. Reported this way because 'fail 2' with four x blocks in the log is exactly the kind of thing that reads as a miscount if it is not named.",
+    "oneFlakyObservation": "p2-juris-57p01.test.mjs's F2 ('long chunk with short heartbeat interval yields multiple lease heartbeats') failed on one of the two runs at head 26e8d2f and passed on the other, and passed on the base run. It is a wall-clock heartbeat test this lane did not touch; it is named here so the next lane that sees it red does not attribute it to this change.",
+    "ci": "PR 173 at 2026-09-17T21:58Z on 26e8d2f: the pull_request run 35279586678 is SUCCESS (test 1m4s, gate8, ldt-sha-comment-presence). The push run 35279582024 is FAILURE on the ldt-sha-comment-presence job alone, and the cause is the check's own diff-base assumption after a force-push -- `BASE_REF=github.event.before` (294bc2c) is no longer reachable from any ref, so actions/checkout cannot fetch it and the script dies with `fatal: bad object 294bc2c...` before evaluating anything. Reproduced locally as a PASS against both 087927b and 294bc2c, i.e. the code is fine and the runner simply lacks the object. Recorded in the close's leave_behind; the same check passes on the same SHA in the pull_request run."
+  },
+
+  "deviationsDisclosed": [
+    "CP1 and CP2 were filed at the same moment by one session (see CP1's filedAtBasis). The pre-registrations are genuine; the time separation is not.",
+    "The lane claim was taken AFTER the code was written, not before: `node scripts/lane-claim.mjs claim --lane p319-retirement-safety --seat cente-vsc-p319` returned CLAIMED at 2026-09-17T21:4xZ. No competing claim was present in _catalog/lane_claims.json for this lane, and this session's own earlier claim is not in the file it would have been written to, so the honest reading is that the dispatch's first instruction was not satisfied at the start of this lane. Recorded rather than smoothed. The claim is held and is released with this close.",
+    "The clone at P:/tmp/p319-hauska-factory was NOT registered in _catalog/seat_register.json, so there is nothing to remove and the register is unchanged by this lane -- but the registration step was skipped, not performed (the same deviation P-309 disclosed).",
+    "P-320's declared threshold is 0.5, a judgement made in this lane with its basis written at the declaration (half a county is beyond any legitimate single-run state change; Bastrop 92.5 percent and Williamson 100 percent are both far above it, and a legitimate owner's retirement is a few percent). The dispatch asks for a declared number with its basis, not a derived one; this is the declaration, and the integration seat may lower it after the first staging run.",
+    "migrations/0015_retired_share_observations.sql is NOT applied anywhere: this lane may not write to a store, so the retired-share watch's --apply mode would fail against a target until the integration seat runs the migration. Its dry-run and --read modes work against an existing table and its band logic is fully covered by fixtures. Stated because a job deployed without its table fails in the one place nobody looks.",
+    "The store-byte-identical proof the dispatch asks for (P-320 item 9) is provided structurally (read-only client, before bakesFn, bakesFn never invoked) rather than as a dump of a real target store, which this lane is not allowed to touch. Named, not implied.",
+    "The branch was rebased onto 087927b and force-pushed after PR 173 had gone CONFLICTING (the P-273/P-274 merge touched src/cli.mjs's usage line). The conflict was resolved as a union of both command lists, so both #172's gate-verdict-audit and this lane's retired-share-watch are named; the suite was re-run on the rebased tree, and the failure set is identical to the base's. The rebase also produced one red CI job on the push event that is NOT a finding about the code -- see fullSuiteResult.ci and the close's leave_behind.",
+    "Verification runs do not generate records indistinguishable from real ones here, and the reason is structural rather than a claim about diligence: every test drives fakes and never opens a connection, so no run_event, no observation row and no publish row was written anywhere by this lane. Nothing had to be excluded afterwards because nothing was created."
+  ],
+
+  "stillOpen": [
+    "THE UNRESOLVED HALF OF P-319, and the most important line in this close: the retirement is computed in LDT at the pin, so this repo can only refuse to invoke the bake. The bake, when invoked on an ACCOUNTED keyspace, still decides absence by a bare key equality against cad_property -- no crosswalk, and no test that the roll carries the served keyspace. A row in legacy-design-tools should make the bake compute retirement per keyspace and refuse an unaccounted one; until then, the factory's gate is a refusal in front of it, and a bake run outside the publish job bypasses that refusal entirely.",
+    "cad_property AT THE DECLARED VINTAGE IS NOT READ BY THIS GATE, and it is the table the retirement's own basis names. P-306 measured 48491's roll as 319,480 numeric accounts AT tax_year 2026 -- so a census of that table would NOT have caught the 2026-09-17 numeric retirements. Any later row that adds that reader must add it as an id-overlap test (or a namespace control), never as a label census, or it will feel like protection without being it.",
+    "P-306's own OPEN note (2026-09-17): the 282,569 R-prefixed retirements of 2026-09-10 are 'the same keyspace-mismatch shape as P-212, NOT established as false or correct'. This lane's gate would refuse that shape today (a served keyspace whose every id is absent from the reader), which is a deliberate outcome and not a ruling on whether those retirements are right. The ruling is still owed by someone who can measure it.",
+    "P-309's F1-F5 (Hays 846 contradicted CAD-roll-absence retirements; retirement payloads carry no run id; JSON documents in the situs field; the 'PRIVATE ROAD' non-identity node; the P-275 readers' own namespace controls) are untouched by this lane and are the natural input to the P-321 band's first real reading.",
+    "The retired-share band's numbers (ceiling 0.9, max move 0.5) were declared from P-309's measured distribution and the incident's own 47 -> 100 percent jump, not from a live series. The first weeks of observations should be read before they are trusted as a control, and the watch records the series for exactly that."
+  ]
+}
