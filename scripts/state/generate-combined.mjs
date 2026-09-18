@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSeatRegister } from '../enforcement/seat-register.mjs';
 import { check as scopeCheck, render as renderScope } from '../enforcement/standing-decisions-scope.mjs';
+import { budgetViolations } from './state-budget.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const STATE_DIR = join(ROOT, '_state');
@@ -70,9 +71,22 @@ function main() {
     process.exit(1);
   }
   mkdirSync(STATE_DIR, { recursive: true });
+  const seats = loadSeatRegister().seats;
+  // STATE BUDGET (2026-09-18, R-06 Variant A). _STATE.md is the mandatory first read of every
+  // session in every seat, so a seat growing its file is a cost the whole fleet pays. The pins
+  // are ceilings, not targets, and they live in _state/state_budget.json so lowering one is a
+  // visible commit. Refusing to WRITE is the only place this can stop the growth at source:
+  // a check that only ran in CI would let the fat file reach the next agent's context first.
+  // A missing budget file is a refusal, never an unlimited ceiling.
+  const budget = budgetViolations(ROOT, seats.map((s) => s.namespace));
+  if (budget.violations.length) {
+    for (const v of budget.violations) process.stderr.write(`generate-combined: ${v.kind}: ${v.message}\n`);
+    process.stderr.write('generate-combined: REFUSED to write _STATE.md while a seat exceeds its pin.\n');
+    process.exit(1);
+  }
   const combined = renderCombined();
   writeFileSync(OUT, combined, 'utf8');
-  console.log(JSON.stringify({ generated: '_STATE.md', bytes: combined.length, seats: loadSeatRegister().seats.map((s) => s.name) }));
+  console.log(JSON.stringify({ generated: '_STATE.md', bytes: combined.length, seats: seats.map((s) => s.name) }));
 }
 
 const isMain = process.argv[1] && /generate-combined\.mjs$/i.test(process.argv[1].replace(/\\/g, '/'));

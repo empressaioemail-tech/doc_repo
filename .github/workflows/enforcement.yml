@@ -76,7 +76,46 @@ jobs:
         # invocation, and exited 0. It had never fired, and an operator ruling was made on
         # the assumption it was enforcing a seat boundary. Nothing checked that a registered
         # hook could load. This does. Found by the R-04 control census, 2026-08-21.
+        #
+        # 2026-09-18: extended to audit .cursor/hooks.json as well as .claude/settings.json,
+        # because auditing only the Claude config left the Cursor config unaudited one level
+        # up from the defect it was built for. It also resolves a run-gate.mjs registration to
+        # the gate it names, so a registration pointing at a nonexistent gate is caught here
+        # and not only by harness-parity.
         run: node scripts/enforcement/hooks-loadable.test.mjs
+
+      - name: Harness parity (BLOCKING, violation-verified)
+        # On 2026-09-18 the fleet ran eleven gates on Claude Code and one on Cursor, while
+        # AGENTS.md told every agent that "the canon-gate hook blocks anything missing the
+        # compiled markers". On Cursor that sentence was false. This enumerates both configs
+        # and refuses an unexcused gap, AND refuses a .claude/hooks registration on Cursor
+        # that skips run-gate.mjs, which would produce a gate that loads, runs, decides
+        # nothing, and reports success.
+        run: node scripts/enforcement/harness-parity.mjs
+
+      - name: Cursor payload normalizer and gate adapter (BLOCKING, violation-verified)
+        # The two instruments behind the port. The normalizer suite asserts the recorded
+        # harness payloads translate to the shape the existing gates parse, against fixtures
+        # captured from the live harness. The adapter suite runs the real gate files with
+        # those payloads and asserts both the block and the allow verdict paths. Both were
+        # observed failing on injected defects and passing after byte-identical restores.
+        #
+        # Declared limit: on this runner there is no PowerShell, so the canon-gate and
+        # dispatch-template-gate checks print a DECLARED LIMIT block instead of running. The
+        # adapter suite carries a portable node-gate refusal so a real block is still observed
+        # here rather than dropping deny coverage silently.
+        run: |
+          node .cursor/hooks/normalize-payload.test.mjs
+          node .cursor/hooks/run-gate.test.mjs
+
+      - name: State generated + state budget (BLOCKING, violation-verified)
+        # _STATE.md is the mandatory first read of every session in every seat, and on
+        # 2026-09-18 it was 230,044 bytes, 213,766 of them one seat's file. This checks the
+        # generated file against its generator AND against a per-seat byte ceiling pinned in
+        # _state/state_budget.json. The budget runs here and not only in the writer because a
+        # seat that grows without regenerating leaves _STATE.md matching its own generator
+        # output: the drift comparison passes while the fleet-wide read just got fatter.
+        run: node scripts/state/check-generated.mjs
 
       - name: Enforcement ratchet (all controls, fails on regression)
         # Runs every control in the baseline. Fails on REGRESSED (worse than pinned) and on

@@ -2,7 +2,7 @@
   "_purpose": "Pinned exit code per enforcement control. scripts/enforcement/ci-baseline.mjs fails the job when a control does WORSE than its baseline, or when a control cannot be measured at all. Known debt is permitted and pinned here; new debt is not. This is the ratchet that replaces continue-on-error, which reported success on a failing control.",
   "_howToChange": "Lower a baselineExit when the debt is actually cleared, in the same commit that clears it. Never RAISE a baselineExit to make a red build green — that converts a defect into a specification and makes the eventual fix read as a regression.",
   "_tiers": "BLOCKING means the control has been verified by violation: it was made to fail on an injected defect and observed passing again after a byte-identical restore. REPORTING means it runs and is ratcheted but has not been violation-verified, so its green is weaker evidence.",
-  "snapshot": "2026-08-21 doc_repo 1470560 R-06 armed (fixture clone + ci-baseline inject; no baselineExit raised)",
+  "snapshot": "2026-09-18 doc_repo R-06 cursor harness parity armed (harness-parity, cursor payload normalizer + gate adapter, state budget ratchet); no baselineExit raised",
   "controls": [
     {
       "name": "c-00-vehicle-sync",
@@ -85,8 +85,9 @@
       "script": "scripts/enforcement/tooling-register-schema.mjs",
       "tier": "BLOCKING",
       "baselineExit": 0,
-      "violationVerified": "2026-08-21 GOV-R06: ci-baseline argv. Appended controls[] INJECT-R06-MISS missing consumer: named row REGRESSED actual 1. Byte-identical restore: PASS actual 0. Prior slice --self-test and tmp fixture remain.",
-      "knownScopeLimit": "gates controls[] only, not controlsNotNamedInMission. Empty controls array has zero missing fields and passes."
+      "violationVerified": "2026-08-21 GOV-R06: ci-baseline argv. Appended controls[] INJECT-R06-MISS missing consumer: named row REGRESSED actual 1. Byte-identical restore: PASS actual 0. Prior slice --self-test and tmp fixture remain. 2026-09-18 R-06: added the counts-consistency half. Injected a declared violationVerifiedNonNull of 18 against an actual 34, observed exit 1 naming field violationVerifiedNonNull; byte-identical restore, exit 0. Self-test now carries 13 cases, six of them counts cases pairing a correct declaration with a wrong one.",
+      "knownScopeLimit": "gates controls[] three-question fields AND the five derivable counts keys (byStatus, byDerivationClass, controlsInFile, nonEmptyBypass, violationVerifiedNonNull). productRepoControlsAnnex and gapsFiled are stated but NOT recomputed, and the control prints that it could not derive them rather than reporting them as checked. An empty controls array has zero missing fields and zero mismatches, so it passes.",
+      "whyTheCountsHalfExists": "The declared counts block read violationVerifiedNonNull 18 against an actual 34 and docRepoControls 57 against 46 rows. Nothing recomputed it, so the numbers were read as facts about the register while having drifted. A hand-maintained count with no instrument behind it is the defect class the register itself documents."
     },
     {
       "name": "factory-termination",
@@ -95,6 +96,41 @@
       "baselineExit": 0,
       "violationVerified": "2026-08-21 GOV-R06: ci-baseline argv. Appended kind=factory terminationCondition NONE named inject-r06-factory-none: named row REGRESSED actual 1. Direct script: hit that row only; hauska_mcp.atoms stayed in storeNoneIgnored. Byte-identical restore: PASS actual 0.",
       "knownScopeLimit": "kind===factory only. Stores, services, apps, jobs, instruments, controls with NONE are ignored by contract."
+    },
+    {
+      "name": "harness-parity",
+      "script": "scripts/enforcement/harness-parity.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-09-18 R-06 cursor harness parity. Pointed the canon-gate Cursor registration at .claude/hooks/__nonexistent__.ps1: exit 1, 'GAP: canon-gate'. Byte-identical restore: PARITY, exit 0. --self-test carries 7 checks including two injected violations (a gate missing from Cursor, and a .claude/hooks target registered WITHOUT run-gate.mjs, which is the false-green this control exists to catch). NOTE: the first attempt at this mutation did not land (the replace string carried 14 spaces of indentation against a file using 8) and the control correctly reported PARITY; the mutation was verified before the second run's result was read.",
+      "knownScopeLimit": "compares gate identity (script basename plus argv) across the two harnesses. It does not assert that a gate DECIDES correctly on Cursor, only that it is registered through the translator. That second question is what .cursor/hooks/run-gate.test.mjs covers.",
+      "bypass": "a Cursor registration whose command string does not match the run-gate.mjs relay form and does not name a .claude/hooks path (no script path parsed at all) is skipped rather than flagged."
+    },
+    {
+      "name": "cursor-payload-normalizer",
+      "script": ".cursor/hooks/normalize-payload.test.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-09-18 R-06: mutated tool_name 'Bash' -> 'MutatedShell' in the shell branch, observed 1 of 31 checks FAIL ('shell: tool name is Bash <- MutatedShell') and exit 1. Byte-identical restore: exit 0. The suite also carries an explicit not-vacuous fixture asserting the pre-fix behaviour (a Cursor-shaped payload yielding an empty command) is what the normalizer exists to prevent.",
+      "knownScopeLimit": "asserts the payload translation, not that any gate decides correctly downstream. Fixtures are checked in at _catalog/fixtures/cursor-hook-payloads.json and were captured from the live harness, not written from a schema.",
+      "derivationClass": "external — the fixtures are recorded harness output, and the assertions compare normalized fields against them rather than against the normalizer's own output."
+    },
+    {
+      "name": "cursor-gate-adapter",
+      "script": ".cursor/hooks/run-gate.test.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-09-18 R-06: replaced the deny() body in run-gate.mjs with an allow emit, observed exit 1; byte-identical restore, exit 0. The suite calls the real gates (canon-gate, dispatch-template-gate, authoritative-read) with captured Cursor payloads, so both the block and the allow verdict paths are exercised against the unmodified gate files.",
+      "knownScopeLimit": "the self-declared-failure path (a gate that cannot run must not read as a pass) is asserted against the adapter's own message text, not against a deliberately crashed gate."
+    },
+    {
+      "name": "state-generated",
+      "script": "scripts/state/check-generated.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-09-18 R-06: (a) drift — appended one byte to _STATE.md, observed exit 1 status=drift; byte-identical restore, exit 0. (b) over-budget — lowered the property pin by one byte in _state/state_budget.json, observed exit 1 status=over-budget naming namespace property, bytes 213766 against pin 213765, over 1; byte-identical restore, exit 0. (c) writer path — with the same lowered pin, generate-combined.mjs exited 1 and left _STATE.md byte-identical, verifying the refusal happens BEFORE the write. (d) fail-closed — with _state/state_budget.json absent (its state at the start of this work), the control refused rather than reading a missing ceiling as unlimited. Budget rules and the 13-check fixture-root self-test live in scripts/state/state-budget.mjs, which was exercised on a mkdtemp fixture root and never on another seat's live file.",
+      "knownScopeLimit": "the byte measurement covers each seat's STATE.md as it enters the combined file. It does not bound the size of _state/shared/STANDING_DECISIONS.md or the seat index, which are added to _STATE.md outside any pin.",
+      "why": "read-state-first is the one rule every session in every seat must execute, and on 2026-09-18 it read 230,044 bytes, 213,766 of them one seat's file. The cost is paid by every agent in the fleet, and nothing measured it."
     }
   ]
 }

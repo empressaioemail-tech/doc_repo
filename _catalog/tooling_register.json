@@ -78,25 +78,29 @@
     }
   ],
   "counts": {
+    "_measuredAt": "2026-09-18 R-06 cursor harness parity, recomputed from the controls array after adding REG-CURSOR-RELAY, REG-CURSOR-PARITY, REG-CURSOR-PORT-SET and STATE-BUDGET and flipping state-generated-check to ENFORCED.",
+    "_derivable": "byStatus, byDerivationClass, controlsInFile, nonEmptyBypass and violationVerifiedNonNull are RECOMPUTED from the controls array by scripts/enforcement/tooling-register-schema.mjs, which fails when a declared value disagrees. Before 2026-09-18 nothing recomputed them: violationVerifiedNonNull was declared 18 against an actual 34, and docRepoControls was declared 57 against 46 rows. Set them to the true value or the schema control refuses.",
+    "_notDerivable": "productRepoControlsAnnex is a claim about an artifact this file does not enumerate, so no check can recompute it. It is stated, not verified, and the schema control prints that it could not derive it rather than reporting it as checked. gapsFiled IS derived: it is the length of the top-level gapsFiled array.",
     "byStatus": {
-      "ENFORCED": 38,
-      "UNENFORCED": 8,
-      "DORMANT": 9,
+      "ENFORCED": 30,
+      "UNENFORCED": 9,
+      "DORMANT": 11,
       "STARVED": 0,
       "OVER-SCOPED": 1,
       "FALSE-GREEN": 1
     },
     "byDerivationClass": {
-      "two-independent-sources": 4,
-      "source-vs-our-derivation": 8,
+      "two-independent-sources": 9,
+      "source-vs-our-derivation": 11,
       "internal-consistency": 9,
-      "presence-shaped": 26
+      "presence-shaped": 22,
+      "external": 1
     },
-    "docRepoControls": 57,
+    "controlsInFile": 52,
     "productRepoControlsAnnex": 43,
-    "nonEmptyBypass": 55,
-    "violationVerifiedNonNull": 18,
-    "gapsFiled": 12
+    "nonEmptyBypass": 52,
+    "violationVerifiedNonNull": 35,
+    "gapsFiled": 14
   },
   "controls": [
     {
@@ -634,16 +638,105 @@
     {
       "id": "state-generated-check",
       "scope": "doc_repo",
-      "name": "_STATE.md generated drift check",
-      "location": "scripts/state/check-generated.mjs",
-      "statement": "On-disk _STATE.md must match renderCombined() output.",
-      "consumer": "Manual per _state/README.md",
-      "trigger": "Manual node scripts/state/check-generated.mjs",
-      "failure": "exit 1 status drift",
-      "bypass": "Hand-edit _STATE.md; skip check; not in CI",
+      "name": "_STATE.md generated drift check (+ per-seat byte budget)",
+      "location": "scripts/state/check-generated.mjs, scripts/state/generate-combined.mjs, _state/state_budget.json",
+      "statement": "On-disk _STATE.md must match renderCombined() output, AND each seat's STATE.md must not exceed its pinned byte ceiling.",
+      "consumer": ".github/workflows/enforcement.yml step 'State generated + state budget', scripts/enforcement/ci-baseline.mjs row state-generated, and scripts/state/generate-combined.mjs which refuses to WRITE before the file lands",
+      "trigger": "push/PR via enforcement.yml; every regeneration via generate-combined.mjs main()",
+      "failure": "exit 1 status=drift, or status=over-budget naming the seat, its bytes, its pin and the overage",
+      "bypass": "Hand-edit _STATE.md and never commit (undetectable by construction); raise a pin in _state/state_budget.json in the same commit as the growth (visible in the diff, which is why pins are a tracked file and not code); delete _state/state_budget.json, which is refused rather than read as an unlimited ceiling",
+      "violationVerified": "2026-09-18 R-06: drift path (one byte appended to _STATE.md) exit 1 status=drift, restore exit 0; over-budget path (property pin lowered by one byte) exit 1 naming namespace property, bytes 213766, pin 213765, over 1, restore exit 0; writer path with the same pin exit 1 and _STATE.md left byte-identical, proving the refusal precedes the write; fail-closed path (budget file absent) refused rather than passing. Budget rules and its 13-check fixture-root self-test live in scripts/state/state-budget.mjs.",
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "STATE-BUDGET",
+      "scope": "doc_repo",
+      "name": "Per-seat _STATE.md byte ceiling (ratchet)",
+      "location": "_state/state_budget.json pins; scripts/state/state-budget.mjs",
+      "statement": "A seat's STATE.md may not grow past its pinned ceiling. Pins are measured as the normalized content that renderCombined reads, not the on-disk file length.",
+      "consumer": "scripts/state/generate-combined.mjs (writer), scripts/state/check-generated.mjs (CI), scripts/enforcement/ci-baseline.mjs",
+      "trigger": "regeneration, commit, PR",
+      "failure": "exit 1, and the refusal NAMES the seat, its byte count, its pin and the overage",
+      "bypass": "raise a pin in the same commit as the growth; delete the budget file (refused, not treated as unlimited); a seat with no pin falls back to an explicitly declared defaultPinBytes of 4096 rather than to no ceiling",
+      "violationVerified": "2026-09-18 R-06: fixture-root self-test 13 checks including 7 violation cases (one byte over, unpinned over default, missing budget file, missing defaultPinBytes, non-integer pin, pin for an unknown seat) and non-vacuity checks that 101 bytes does not measure as 100; live-tree arming observed refusing with the budget file absent before it was created.",
+      "derivationClass": "two-independent-sources",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-CURSOR-RELAY",
+      "scope": "doc_repo",
+      "name": "Cursor gate adapter (payload translator)",
+      "location": ".cursor/hooks/run-gate.mjs, .cursor/hooks/normalize-payload.mjs",
+      "statement": "Every Claude gate registered on a Cursor event runs with the Cursor payload normalized into the shape that gate already parses, and the gate's 0-or-2 verdict is translated back into Cursor's permission JSON.",
+      "consumer": ".cursor/hooks.json registrations; .cursor/hooks/run-gate.test.mjs",
+      "trigger": "every registered Cursor hook invocation",
+      "failure": "emits permission=deny carrying the gate's own block message; a gate that cannot run emits permission=allow WITH a declared non-decision message rather than a silent pass",
+      "bypass": "a Cursor event with no registration (harness-parity enumerates the set); a registration naming .claude/hooks without run-gate.mjs (harness-parity refuses it); a payload shape outside the captured set falls through to the generic tool branch",
+      "violationVerified": "2026-09-18 R-06: replaced the deny() body with an allow emit, observed the adapter suite exit 1; byte-identical restore, exit 0. Also verified live end-to-end on the Cursor harness: a real Write was refused (canon-gate, no-touch posture) and a real shell call was refused (probe-close-gate, stage-and-commit-in-one-string), both through this adapter.",
+      "derivationClass": "external",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-CURSOR-PARITY",
+      "scope": "doc_repo",
+      "name": "Harness parity control (Claude vs Cursor registration sets)",
+      "location": "scripts/enforcement/harness-parity.mjs",
+      "statement": "Every gate registered on Claude Code is either registered on Cursor through the translator or carries a written exclusion naming the unreachable state; and no .claude/hooks script is registered on Cursor without the translator.",
+      "consumer": ".github/workflows/enforcement.yml step 'Harness parity', scripts/enforcement/ci-baseline.mjs row harness-parity",
+      "trigger": "push/PR via enforcement.yml",
+      "failure": "exit 1 listing each unexcused GAP and each BYPASS registration",
+      "bypass": "a configuration in which no gate is registered at all (an empty set is trivially at parity, which is why hooks-loadable refuses an empty registration list); a Cursor command string that parses to no script path at all; a harness that does not run CI",
+      "violationVerified": "2026-09-18 R-06: pointed the canon-gate Cursor registration at .claude/hooks/__nonexistent__.ps1, observed exit 1 'GAP: canon-gate'; byte-identical restore, PARITY exit 0. --self-test carries 7 checks including a gate missing from Cursor and a .claude/hooks target registered WITHOUT the translator, which is the false-green a presence-shaped check would pass.",
+      "derivationClass": "two-independent-sources",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-CURSOR-PORT-SET",
+      "scope": "doc_repo",
+      "name": "Cursor registrations of the ported Claude gates (set)",
+      "location": ".cursor/hooks.json; identities enumerated mechanically by scripts/enforcement/harness-parity.mjs",
+      "statement": "The eleven gate identities armed on Claude Code before 2026-09-18 (branch-guard, dirty-tree-close-gate, seat-gate shell, authoritative-read, probe-close-gate, traffic-lease-gate, plan-row-allocation-gate, fan-depth-gate commit, seat-gate write, canon-gate, dispatch-template-gate, fan-depth-gate agent, canon-divergence-run) are registered on Cursor through run-gate.mjs except where an exclusion is written.",
+      "consumer": "scripts/enforcement/harness-parity.mjs (enumerates both configs and fails on an unexcused gap); scripts/enforcement/hooks-loadable.test.mjs (load-checks each registration AND the gate it names)",
+      "trigger": "every Cursor hook invocation on the registered events (beforeShellExecution, preToolUse Write|StrReplace|Delete|Task, preToolUse Task, beforeReadFile)",
+      "failure": "the gate's own block verdict, surfaced as permission=deny by run-gate.mjs",
+      "bypass": "Any Cursor event with no registration; Cursor sessions where the hook host fails to load the config; a registration present but naming a gate that cannot run (caught by hooks-loadable and harness-parity, not by this row).",
+      "violationVerified": "PARTIAL 2026-09-18 R-06. Individually injected and observed blocking on the live Cursor harness: canon-gate (a real Write refused on a no-touch repo posture) and probe-close-gate (a real shell call refused for staging and committing in one string). The other nine are verified as REGISTERED-THROUGH-THE-TRANSLATOR by harness-parity and as LOADABLE by hooks-loadable, and the adapter verdict path is verified by the adapter suite, but each has NOT been individually injected. Treat this row as partial until a per-gate injection pass runs.",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-MATCHER-EDIT-GAP",
+      "scope": "doc_repo",
+      "name": "canon-gate M1 posture check does not cover the file-EDIT tool on either harness",
+      "location": ".claude/settings.json hooks.PreToolUse matcher 'Agent|Write' line 118; .claude/hooks/canon-gate.ps1 line 197; .cursor/hooks.json preToolUse matcher 'Write|StrReplace|Task'",
+      "statement": "Intended: a write or edit that mentions a no-touch repo is refused before it lands. Actual: the check runs only for tool names Agent and Write.",
+      "consumer": "Claude Code PreToolUse and Cursor preToolUse, via run-gate.mjs",
+      "trigger": "tool_name Agent or Write",
+      "failure": "M1 posture refusal; NOT REACHED for an edit",
+      "bypass": "The edit tool on both harnesses. Evidence read from the files, not inferred: (1) .claude/settings.json lists 'Edit' and 'Write' as SEPARATE permission entries (lines 8-9), so a matcher naming only Write does not match Edit; (2) canon-gate.ps1 line 197 is an independent second exclusion, `if ($toolName -notin @('Agent','Write')) { Exit-Open }`, so even a payload that DOES reach the gate with a different tool name exits open. Net effect: on Claude, Edit never reaches the hook; on Cursor, StrReplace reaches the hook and the hook exits open. The StrReplace and Delete tokens in the Cursor matcher are therefore currently INERT and imply coverage the gate does not provide.",
       "violationVerified": null,
       "derivationClass": "internal-consistency",
-      "status": "DORMANT"
+      "status": "UNENFORCED",
+      "falsifier": "Run a Claude Code session, use Edit (not Write) on a file under _dispatches/ whose body names a no-touch repo, and observe whether M1 refuses. If it refuses, this row is wrong and should be removed. The Cursor half is checkable the same way with the StrReplace tool.",
+      "whyFiled": "Found 2026-09-18 by adversarial review of the R-06 harness-parity work. harness-parity does NOT catch this: it compares matcher coverage BETWEEN harnesses, and Claude's Agent|Write is covered by Cursor's Write|StrReplace|Task, so parity holds while the hole sits INSIDE the gate on both sides. Closing it changes Claude-side enforcement behaviour, which the R-06 WDLL explicitly excludes, so it is filed rather than fixed.",
+      "proposedFix": "Add the edit tool name in BOTH places: the Claude matcher (Agent|Write|Edit) and canon-gate.ps1's tool-name guard at line 197, plus whatever the file-path branch needs in order to see the edit's target. Then re-prove by violation on each harness."
+    },
+    {
+      "id": "PROBE-CLOSE-RANGE-DRIFT",
+      "scope": "doc_repo",
+      "name": "probe-close-gate's gated row range is stale, and the detector that catches it runs nowhere",
+      "location": "scripts/enforcement/probe-close-gate.mjs (GATED_RANGES / OPS24_RANGES, max 320); _catalog/plan_registry.json (OPS-24 span declared 327-351 in the working tree on 2026-09-18, and 327-334 at commit e9a9064a — the hook's max of 320 is behind both values, which is why the drift is real either way); .github/enforcement-baseline.json (no probe-close row)",
+      "statement": "Intended: an OPS-23/OPS-24 lane close is refused unless it cites a probe artifact. Actual: the ranges the hook enforces stop at P-320, so closes for P-327..P-351 are not evaluated at all.",
+      "consumer": "Claude Code PreToolUse Bash and Cursor beforeShellExecution, via run-gate.mjs",
+      "trigger": "a git commit or push command string",
+      "failure": "PROBE CLOSE GATE (OPS-23 R-4) refusal; NOT REACHED for P-327..P-351",
+      "bypass": "Any close for a plan row above P-320. The gate also has an in-code drift detector whose entire job is to catch exactly this, `GATED_RANGES equals EVERY registry range for OPS-23 and OPS-24`, and it is DORMANT: it lives inside `probe-close-gate.mjs --self-test`, which no baseline row and no workflow step invokes. Observed 2026-09-18 running the self-test by hand: 32 checks, 1 FAIL, on that check. So the miss is silent twice over: the range is narrow, and the instrument that would have said so is never run.",
+      "violationVerified": "PARTIAL 2026-09-18. The gate's own self-test now FAILS, which is the detector working, but it fails because the DEFECT is live rather than because a defect was injected. The range extension itself has not been applied and therefore not re-proved.",
+      "derivationClass": "two-independent-sources",
+      "status": "UNENFORCED",
+      "falsifier": "Extend the hook's OPS-24 range to cover the registry's declared ranges, add the self-test to `.github/enforcement-baseline.json` at exit 0, and re-run: if the self-test then passes, this row is closed. If instead the registry is WRONG (OPS-24 does not really run to 334), the fix is on the registry side. One of the two sources is stale; the check cannot say which, and a human must.",
+      "whyFiled": "Found 2026-09-18 by the R-06 gate-recon sub-agent and confirmed by running the self-test. NOT fixed here because it changes Claude-side enforcement behaviour (more closes gated) and because adding a currently-red self-test to the CI baseline would turn the build red until the range is corrected. The two changes are coupled and belong in one card. This is the ENFORCEMENT.md shape where a scope defect surfaces through friction and the silent half is the wider problem: the narrow range loses coverage, and the dormant detector is why nobody noticed."
     },
     {
       "id": "hy-proof-by-violation",
@@ -825,6 +918,8 @@
     "Hand-carried Write bypasses M3/M4/M5 canon gate checks",
     "M4 internal-consistency not source-vs-our-derivation",
     "memory-promotion-gate file-level not lesson-level triage",
-    "Product repos smart-files/smartcity-dashboards unprotected merges"
+    "Product repos smart-files/smartcity-dashboards unprotected merges",
+    "canon-gate M1 posture check does not cover the file-EDIT tool on either harness (CANON-MATCHER-EDIT-GAP, found 2026-09-18 by adversarial review of the R-06 harness-parity work; the Cursor matcher's StrReplace and Delete tokens are inert because canon-gate.ps1 line 197 exits open on any tool name other than Agent or Write)",
+    "probe-close-gate's OPS-24 gated range stops at P-320 while the plan registry declares 327-351, and its own range-drift self-test (which observes that drift as a FAIL today) is in no CI baseline row (PROBE-CLOSE-RANGE-DRIFT, found 2026-09-18 by the R-06 gate recon)"
   ]
 }

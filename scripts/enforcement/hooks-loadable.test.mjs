@@ -27,7 +27,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function registeredHooks() {
   const out = [];
-  for (const settings of [".claude/settings.json", ".claude/settings.local.json"]) {
+  for (const settings of [".claude/settings.json", ".claude/settings.local.json", ".cursor/hooks.json"]) {
     const p = join(ROOT, settings);
     if (!existsSync(p)) continue;
     let cfg;
@@ -39,10 +39,17 @@ function registeredHooks() {
       console.error(`REFUSING: ${settings} did not parse. An unauditable config is not a pass.`);
       process.exit(1);
     }
+    // Two registration shapes. Claude nests its handlers one level deeper than Cursor, and the
+    // audited fact is the same in both: a command string that has to be able to run.
+    const isCursor = settings.startsWith(".cursor/");
     for (const groups of Object.values(cfg.hooks ?? {})) {
       for (const g of groups) {
-        for (const h of g.hooks ?? []) {
-          if (h.command) out.push({ settings, command: h.command });
+        if (isCursor) {
+          if (g.command) out.push({ settings, command: g.command, matcher: g.matcher ?? null });
+        } else {
+          for (const h of g.hooks ?? []) {
+            if (h.command) out.push({ settings, command: h.command, matcher: g.matcher ?? null });
+          }
         }
       }
     }
@@ -50,13 +57,29 @@ function registeredHooks() {
   return out;
 }
 
-// Pull the script path out of a hook command, whichever runner it uses.
-function scriptOf(command) {
+// Every script a hook command depends on, whichever runner it uses.
+//
+// A Cursor registration of the form `node .cursor/hooks/run-gate.mjs powershell .claude/hooks/x.ps1`
+// depends on TWO files, and the second one is the gate. Returning only the first would check the
+// adapter and never the gate, so a registration naming a gate that does not exist would audit as
+// loadable. That is not hypothetical: on 2026-09-18 a mutation that pointed a registration at
+// .claude/hooks/__nonexistent__.ps1 left a resolver that read only run-gate.mjs reporting PASS.
+function scriptsOf(command) {
+  const paths = [];
+  const relay = command.match(/run-gate\.mjs\s+(\S+)\s+(\S+)/);
+  if (relay) {
+    const runner = command.match(/\bnode\s+(\S+run-gate\.mjs)/);
+    if (runner) paths.push(runner[1].replace(/^"|"$/g, ""));
+    // The target gate. Only .mjs/ps1 targets are load-checked; a target that is neither is a
+    // registration defect and is reported as unparseable rather than silently skipped.
+    paths.push(relay[2].replace(/^"|"$/g, ""));
+    return paths;
+  }
   const ps = command.match(/-File\s+("[^"]+"|\S+)/i);
-  if (ps) return ps[1].replace(/^"|"$/g, "");
+  if (ps) return [ps[1].replace(/^"|"$/g, "")];
   const node = command.match(/\bnode\s+("[^"]+"|\S+\.mjs)/i);
-  if (node) return node[1].replace(/^"|"$/g, "");
-  return null;
+  if (node) return [node[1].replace(/^"|"$/g, "")];
+  return [];
 }
 
 const hooks = registeredHooks();
@@ -77,30 +100,45 @@ const results = [];
 let failed = 0;
 let notParsed = 0;
 
+// A registration may depend on more than one file (adapter plus gate), so the work list is
+// keyed by absolute path and a path is checked once however many registrations name it. The
+// source prefix keeps Claude's copy and Cursor's copy of the same gate distinguishable in the
+// output, which is the whole point of auditing both harnesses in one run.
+const work = new Map();
 for (const { settings, command } of hooks) {
-  const script = scriptOf(command);
-  const label = (script ?? command).replace(/^.*[\\/]/, "");
-
-  if (!script) {
+  const source = settings.startsWith(".cursor/") ? "cursor" : "claude";
+  const scripts = scriptsOf(command);
+  if (scripts.length === 0) {
+    const label = `${source}:${command.slice(0, 40)}`;
     results.push([false, label, "could not parse a script path out of the command"]);
     failed += 1;
     continue;
   }
-
-  // Hook commands are registered with ABSOLUTE paths from the machine that wrote settings
-  // (P:/doc_repo/.claude/hooks/...). Those do not exist on a Linux CI runner, so a naive
-  // isAbsolute check reported all seven hooks MISSING on the first CI run of this control.
-  // That is this control failing by environment, which is the exact class it was built to
-  // catch. Re-root any absolute path onto the actual repo root by its repo-relative tail.
-  let abs = isAbsolute(script) ? script : join(ROOT, script);
-  if (!existsSync(abs)) {
-    const m = script.replace(/\\/g, "/").match(/(?:^|\/)((?:\.claude|\.cursor|scripts)\/.+)$/);
-    if (m) {
-      const rerooted = join(ROOT, m[1]);
-      if (existsSync(rerooted)) abs = rerooted;
+  // The last script in a relay command is the gate; the first is the adapter. Label the gate
+  // entry distinctly so "the adapter loads" is never read as "the gate exists".
+  scripts.forEach((script, i) => {
+    // Hook commands are registered with ABSOLUTE paths from the machine that wrote settings
+    // (P:/doc_repo/.claude/hooks/...). Those do not exist on a Linux CI runner, so a naive
+    // isAbsolute check reported all seven hooks MISSING on the first CI run of this control.
+    // That is this control failing by environment, which is the exact class it was built to
+    // catch. Re-root any absolute path onto the actual repo root by its repo-relative tail.
+    let abs = isAbsolute(script) ? script : join(ROOT, script);
+    if (!existsSync(abs)) {
+      const m = script.replace(/\\/g, "/").match(/(?:^|\/)((?:\.claude|\.cursor|scripts)\/.+)$/);
+      if (m) {
+        const rerooted = join(ROOT, m[1]);
+        if (existsSync(rerooted)) abs = rerooted;
+      }
     }
-  }
+    const role = scripts.length > 1 ? (i === scripts.length - 1 ? "gate" : "adapter") : "gate";
+    if (!work.has(abs)) work.set(abs, { label: `${source}:${role}:${script.replace(/^.*[\\/]/, "")}`, script });
+  });
+}
+
+for (const [abs, { label, script }] of work) {
   if (!existsSync(abs)) {
+    // Includes the case where the registered target names a script that is not there, which is
+    // a registration pointing at a gate that cannot run.
     results.push([false, label, `registered but file does not exist: ${script}`]);
     failed += 1;
     continue;
@@ -119,7 +157,12 @@ for (const { settings, command } of hooks) {
     const broken = /ERR_MODULE_NOT_FOUND|Cannot find module|SyntaxError/.test(err);
     results.push([!broken, label, broken ? err.split("\n").find((l) => /Error/.test(l)) ?? "load error" : "loads"]);
     if (broken) failed += 1;
-  } else if (!HAS_POWERSHELL) {
+  } else if (!/\.(ps1|js|cjs|mjs)$/i.test(abs)) {
+    // A target that is none of the known hook languages cannot be load-checked at all. Say so
+    // rather than passing it: an unchecked registration is this control's own defect class.
+    results.push([false, label, `not a load-checkable hook language: ${script}`]);
+    failed += 1;
+  } else if (abs.endsWith(".ps1") && !HAS_POWERSHELL) {
     // PowerShell is absent on the Linux CI runner, so a .ps1 cannot be parse-checked there.
     // DO NOT let that read as a pass: unmeasured and passing are different states and this
     // control exists because collapsing them hid a dead hook for weeks. Check what CAN be
@@ -134,7 +177,7 @@ for (const { settings, command } of hooks) {
     results.push([ok, label, ok ? `present ${bytes}B — PARSE NOT RUN (no powershell on ${process.platform})` : "unreadable or empty"]);
     if (!ok) failed += 1;
     notParsed += 1;
-  } else {
+  } else if (abs.endsWith(".ps1")) {
     // PowerShell hooks: parse-only, no execution, so nothing is mutated by the test.
     const r = spawnSync(
       "powershell",
@@ -144,12 +187,21 @@ for (const { settings, command } of hooks) {
     const ok = /OK/.test(r.stdout || "") && r.status === 0;
     results.push([ok, label, ok ? "parses" : "parse error"]);
     if (!ok) failed += 1;
+  } else {
+    // A plain .js/.cjs hook: syntax-check it without executing anything it does.
+    const r = spawnSync(process.execPath, ["--check", abs], { cwd: ROOT, encoding: "utf8", timeout: 20_000 });
+    const ok = !r.error && r.status === 0;
+    results.push([ok, label, ok ? "parses" : (r.stderr || "parse error").split("\n").slice(-2).join(" ")]);
+    if (!ok) failed += 1;
   }
 }
 
 console.log("\nhook loadability — every registered hook must be capable of deciding\n");
-for (const [ok, label, note] of results) console.log(`  ${ok ? "PASS" : "FAIL"}  ${label.padEnd(30)} ${note}`);
-console.log(`\n${hooks.length} registered hooks checked`);
+for (const [ok, label, note] of results) console.log(`  ${ok ? "PASS" : "FAIL"}  ${label.padEnd(42)} ${note}`);
+const sources = [...new Set(hooks.map((h) => (h.settings.startsWith(".cursor/") ? "cursor/.cursor/hooks.json" : "claude/.claude/settings.json")))];
+console.log(`\n${hooks.length} registered hooks across ${sources.length} config file(s) checked`);
+console.log(`  configs: ${sources.join(", ")}`);
+console.log(`  distinct scripts load-checked: ${work.size}`);
 if (notParsed > 0) {
   console.log(`DECLARED LIMIT: ${notParsed} PowerShell hook(s) were checked for presence only.`);
   console.log("PowerShell is unavailable here, so a syntax error in a .ps1 would NOT be caught");

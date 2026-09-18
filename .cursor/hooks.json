@@ -1,5 +1,20 @@
 {
   "version": 1,
+  "_why": [
+    "Read .cursor/hooks/run-gate.mjs before editing this file. The gate command strings below are",
+    "NOT the Claude registrations copied across: every one of them is routed through run-gate.mjs,",
+    "which normalizes the Cursor payload into the shape the unmodified gate already parses. copy the",
+    "raw `powershell -File .claude/hooks/x.ps1` form in here and the gate will load, run, decide",
+    "nothing, and report success, because a Cursor shell payload carries its command at top level",
+    "and the PowerShell gates read tool_input.command.",
+    "",
+    "The four events below mirror the four matchers in .claude/settings.json exactly:",
+    "  Claude Bash          -> beforeShellExecution",
+    "  Claude Agent         -> preToolUse matcher Task",
+    "  Claude Write         -> preToolUse matcher Write|StrReplace|Delete",
+    "  Claude Read          -> beforeReadFile (no matcher; a matcher of \"Read\" does NOT fire)",
+    "scripts/enforcement/harness-parity.mjs enumerates both files and fails on an unexcused gap."
+  ],
   "hooks": {
     "sessionStart": [
       {
@@ -8,13 +23,64 @@
     ],
     "beforeShellExecution": [
       {
-        "command": "node .cursor/hooks/seat-gate.mjs shell"
+        "command": "node .cursor/hooks/seat-gate.mjs shell",
+        "timeout": 15
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs powershell .claude/hooks/branch-guard.ps1",
+        "timeout": 15
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs powershell .claude/hooks/dirty-tree-close-gate.ps1",
+        "timeout": 20
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs node .claude/hooks/authoritative-read.mjs",
+        "timeout": 15
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs node .claude/hooks/probe-close-gate.mjs",
+        "timeout": 20
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs node .claude/hooks/traffic-lease-gate.mjs",
+        "timeout": 20
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs node .claude/hooks/plan-row-allocation-gate.mjs",
+        "timeout": 25
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs node .claude/hooks/fan-depth-gate.mjs commit",
+        "timeout": 25
       }
     ],
     "preToolUse": [
       {
         "command": "node .cursor/hooks/seat-gate.mjs write",
-        "matcher": "Write|StrReplace|Delete"
+        "matcher": "Write|StrReplace|Delete|Task",
+        "timeout": 15
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs powershell .claude/hooks/canon-gate.ps1",
+        "matcher": "Write|StrReplace|Task",
+        "timeout": 15
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs powershell .claude/hooks/dispatch-template-gate.ps1",
+        "matcher": "Write|StrReplace|Task",
+        "timeout": 15
+      },
+      {
+        "command": "node .cursor/hooks/run-gate.mjs node .claude/hooks/fan-depth-gate.mjs agent",
+        "matcher": "Task",
+        "timeout": 20
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "node .cursor/hooks/run-gate.mjs powershell .claude/hooks/canon-divergence-run.ps1",
+        "timeout": 40
       }
     ]
   }
