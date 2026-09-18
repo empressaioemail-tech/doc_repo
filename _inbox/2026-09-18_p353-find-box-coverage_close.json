@@ -1,0 +1,93 @@
+{
+  "lane": "p353-find-box-coverage",
+  "planRows": ["P-353"],
+  "status": "closed-partial",
+  "probe": {
+    "artifact": "_inbox/2026-09-18_171028_surface_probe.json",
+    "command": "node --use-system-ca scripts/surface-probe.mjs --rows P-205",
+    "ranFrom": "P:/seat-worktrees/p353-find-box-coverage/doc_repo (this seat's own worktree, never P:/doc_repo)",
+    "ranAt": "2026-09-18T17:10:28.442Z",
+    "docRepoHead": "c5eb6666",
+    "peBase": "https://smartsite.cloud",
+    "result": "4 P-205 rows, all FAIL on the MAP half ('an empty result with no missClass ... the P-205 collapse'); the MCP half is UNMEASURED in this run because the probe had no MCP session (missing_bearer, ruling 9) — nothing was read as PASS that was not measured.",
+    "corroboratingArtifact": "_inbox/2026-09-18_155840_surface_probe.json",
+    "corroboratingNote": "same four subjects, written 15:58:40 by another lane: map FAIL 4 of 4, MCP PASS 4 of 4. Read as evidence, not produced here.",
+    "whyNotClosed": "this lane does not deploy (dispatch constraint: deploys are planner-owned and the integration seat merges). The map half therefore still measures FAIL on the deployed surface by construction, and 'closed' would be a false claim about a surface nobody re-probed.",
+    "afterDeploy": {
+      "command": "node --use-system-ca scripts/surface-probe.mjs --rows P-205",
+      "expect": "PASS on all four coverage subjects for the map Find box — missClass no-hit (coverage:austin), county_out_of_coverage naming Milam County 48331 TX (coverage:cameron), county_out_of_coverage naming Burnet County 48053 TX (coverage:marble-falls), out_of_coverage CO (coverage:denver)",
+      "note": "add --mcp-sign-in to measure the MCP half as well; the map half's grader fails an empty result with no class, a wrong class, a wrong countyFips, and an uncovered-county answer missing countyName or state (surface-probe.mjs gradeCoverageSurface)."
+    }
+  },
+
+  "falsifier": "Revert-and-run, both directions, on the SAME new test files: with the seven pre-existing sources reverted to 163fde32 (and the new module coverage-miss.ts moved aside, because it did not exist then), 8 of 9 new files went red — 29 of 50 tests failed, plus 2 collection errors — and with the branch tip under them, 77 of 77 passed. The pre-change failures are the defect itself, named: `expected undefined to be 'no-hit'` / `'county_out_of_coverage'` (x2) / `'out_of_coverage'` for the four classes; `expected true to be false` (x2) where the OLD ladder returned ok:true source:'geocoded' — a fuzzy-geocoded PIN for a county we do not cover; `expected [ { kind: 'address' } ] to deeply equal []` (x2) where a geocoded row stood in in the dropdown; `expected 502 to be 200` (x4) where a timeout was a transport error instead of 'we could not check coverage'; `expected undefined to be null` for a snapshot with no channel for a reason; `expected '' to contain 'search-coverage-notice'`. F2 (a hits-carrying body is unchanged) and the F4 negative controls (no-hit and coverage_check_unavailable must NOT stop the ladder) are green in BOTH directions, which is what makes them controls. Restoration verified: `git status --short` empty at b5ae5ce.",
+
+  "contradicted": "The brief's framing of the geocoder question ('find out whether an empty situs answer falls through to a geocoded point') understates where the damage is. There are TWO fall-throughs: the typeahead merge, which offers a Photon address ROW, and — the one that matters — src/lib/parcel-lookup.ts's envelope ladder, whose last rung is a fuzzy geocode and which returns a PARCEL ID and source 'geocoded' for an address in a county we do not cover. A fix scoped to the dropdown (the surface the brief's table shows) would have left the raw-Find path manufacturing a record identity out of a geocoder. Second contradiction: the brief asks whether the BFF's 5s ceiling fits the measured 3.8s coverage path; measured, it did not — ~1.2s of headroom meant slow-but-answering coverage checks were being served to the customer as outages, and at 163fde32 that outage was an HTTP 502, a body the customer-leg probe grades UNMEASURED (surface-probe.mjs) — so the failure mode was invisible to the instrument meant to catch it. Third, smaller: `missClassDisplayText` is not cortex's (it is Smart Site MCP vocabulary, smartsite-mcp/src/tool-honesty.ts), so the map must build its own sentence rather than wait for a string upstream never sends.",
+
+  "filesChanged": {
+    "repo": "hauska-map (only)",
+    "branch": "lane/p353-find-box-coverage-map",
+    "startCommit": "163fde324adf98cfb19fb8c48326bf6c56515ba0",
+    "head": "b5ae5ce2cfa552d6928703bba1bd0a1691ad9bb0",
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/423",
+    "prState": "OPEN, MERGEABLE, not merged (dispatch: no merges)",
+    "ci": "all three checks PASS on b5ae5ce (No double-encoded source, Typecheck, test)",
+    "modified": [
+      "apps/property-explorer/api/_lib/pe-situs-search-core.ts",
+      "apps/property-explorer/api/pe-situs-search.ts",
+      "apps/property-explorer/src/browse/SearchBar.tsx",
+      "apps/property-explorer/src/lib/geocodeClient.ts",
+      "apps/property-explorer/src/lib/parcel-lookup.ts",
+      "apps/property-explorer/src/lib/search-suggest.ts",
+      "apps/property-explorer/src/lib/situs-search-client.ts"
+    ],
+    "added": [
+      "apps/property-explorer/src/lib/coverage-miss.ts",
+      "apps/property-explorer/src/lib/coverage-miss.test.ts",
+      "apps/property-explorer/src/lib/pe-situs-search-coverage.test.ts",
+      "apps/property-explorer/src/lib/parcel-lookup-coverage.test.ts",
+      "apps/property-explorer/src/lib/geocode-coverage.test.ts",
+      "apps/property-explorer/src/lib/geocode-coverage-notice.test.ts",
+      "apps/property-explorer/src/lib/pe-situs-search-route.test.ts",
+      "apps/property-explorer/src/lib/situs-search-client.test.ts",
+      "apps/property-explorer/src/lib/search-suggest-coverage.test.ts",
+      "apps/property-explorer/src/browse/SearchBar-coverage.test.tsx"
+    ],
+    "notTouched": "search-kinds.ts (shared with P-339..P-341 and P-270's address half) and search-landing.ts — the new logic lives in the new module so those lanes see no diff",
+    "suite": "230 files, 3370 passed + 1 todo, `pnpm test` exit 0 (CP1 baseline: 221 / 3293 + 1); tsc --noEmit clean"
+  },
+
+  "geocoderFallThrough": {
+    "whatWasFound": "two, and the brief only implied one. (1) src/lib/parcel-lookup.ts's envelope ladder — the RAW FIND path — ends in a fuzzy geocode and returns a parcel node id with source 'geocoded'; for an address in an uncovered county it produced a parcel id, i.e. a record identity manufactured from a camera hint. (2) src/lib/geocodeClient.ts's merged typeahead offered a Photon address row where the rows should have been empty.",
+    "whatChanged": "the ladder is stopped BEFORE it is called for `county_out_of_coverage` and `out_of_coverage`, and the failure carries the class so the customer reads the county-and-state sentence. The merged typeahead drops the geocode contribution for the same two classes and carries the sentence into the dropdown.",
+    "whatIsDeliberatelyNotStopped": "`no-hit` (a covered miss is a legitimate reason to keep looking down the ladder — a normal address can still resolve) and `coverage_check_unavailable` (we do not know, so refusing to look would be a worse failure than the one being fixed). Both are negative controls, run in both directions. When the ladder also fails under an unavailable check, that class replaces the ladder's own prose rather than being reported as a miss.",
+    "bypassesLeftIntact": "the parcel-id fast path (an identity is never a coverage question), the Photon geocoder itself (suppressed for these two classes, never consulted for a class), recents, and the MCP's find_parcel half."
+  },
+
+  "threeQuestionGate": {
+    "whatExecutesTheMissClassOnTheMap": "one chain, one reader, one writer of words. cortex's `missClass` (+ outOfCoverageCounty / outOfCoverageState / coverageCheckUnavailableReason) is mapped onto the wire by api/_lib/pe-situs-search-core.ts — mapSitusSearchResponse for an answer cortex gave, coverageUnavailableResponse for an answer we could not obtain. The client reads it in exactly one place, src/lib/coverage-miss.ts coverageMissFromWire, and words it in exactly one place, coverageMissSentence. Three surfaces consume that: the typeahead notice rendered as data-testid=search-coverage-notice in the dropdown; the raw-Find error line (parcel-lookup's coverageMissFailure sets `reason` to the sentence, ExplorerMap puts it in setLookupError, SearchBar renders it as parcel-lookup-error); and the fall-through stop itself, via isOutOfCoverage.",
+    "whatTriggersIt": "an empty situs answer whose body carries a missClass — no-hit, county_out_of_coverage (with the county's FIPS, name and state), out_of_coverage (with the state), coverage_check_unavailable (with a reason). Plus three triggers this lane created or honoured on the BFF's own side, all served as coverage_check_unavailable at HTTP 200: the upstream timeout (9s), a non-ok cortex, a non-JSON body, and a transport failure. It is never triggered by hits, and never invented when no class is present.",
+    "whatFailsWhenItIsDroppedAgain": "the revert-and-run, item by item: 29 of 50 new assertions go red across 8 files plus 2 collection errors. Customer-visible, that is four different answers collapsing back into one `{\"hits\":[]}` (the P-205 collapse, reproduced by the 17:10:28 probe on the deployed surface); a fuzzy-geocoded PIN returned as a parcel record for a county we do not cover (`expected true to be false`); a geocoded address row offered in the dropdown for the same address; and a timeout reported as HTTP 502 — which the customer-leg probe grades UNMEASURED, so the failure is not merely wrong, it is unmeasurable.",
+    "whatBypassesIt": "(1) the parcel-id fast path — an id is an identity, never a coverage question, and it makes no network call (asserted); (2) the Photon geocoder — a camera hint, not a coverage source; for the two out-of-coverage classes its rows are suppressed rather than consulted, and it is never asked to answer a coverage question; (3) the MCP's find_parcel half of P-205 — a different repo path, already PASS 4 of 4, untouched; (4) the DROPDOWN-PICK (quiet) path, where a miss shows search-landing.ts's pre-existing OUTSIDE_COVERAGE_CHIP rather than the class's sentence — that file is P-270's and in flight, named in leave_behind; (5) recents and the parcel-id short-circuit in the suggest controller, which cannot produce a coverage answer and are deliberately unmodified; (6) any body that carries hits — the coverage question was never asked, so a class on such a body is ignored by both the BFF and the reader (asserted in both)."
+  },
+
+  "leave_behind": [
+    "AFTER DEPLOY, run `node --use-system-ca scripts/surface-probe.mjs --rows P-205` in doc_repo and re-file this lane as closed on a PASS artifact. Expect the map half PASS on all four subjects; add --mcp-sign-in to measure the MCP half. This lane's own artifact (_inbox/2026-09-18_171028_surface_probe.json) is the FAIL-side control for that comparison.",
+    "DECIDE THE OUTAGE SIGNAL: a cortex outage (timeout, 503, non-JSON body, transport failure) no longer produces a non-200 from /api/pe-situs-search. It now serves HTTP 200 with missClass coverage_check_unavailable and a reason naming the failure ('cortex responded 503', 'cortex timed out after 9000ms'). That reading is what the dispatch asks for, and it is MORE specific than a bare 502 — but anything that pages on this BFF's 5xx stops firing. No monitoring config lives in hauska-map, so this was not verifiable here and is handed over deliberately.",
+    "SEARCH-LANDING'S CHIP: on the dropdown-pick (quiet) path a coverage miss still shows search-landing.ts's OUTSIDE_COVERAGE_CHIP rather than the class's sentence. search-landing.ts is P-270's surface and in flight; the class is already carried on the LookupResult, so wiring it is a small follow-on that belongs to whoever owns that file.",
+    "TYPEAHEAD LATENCY on a full-ladder miss: 250ms debounce plus the coverage path (3.8s measured for Cameron). Not a gate for this row; it is a question about the coverage source's speed, not about this change, and it is recorded so it is not rediscovered.",
+    "`missClassDisplayText`: cortex does not emit it (it is Smart Site MCP vocabulary, smartsite-mcp/src/tool-honesty.ts). The BFF forwards it if a future upstream ever sends one and coverage-miss.ts records it as `displayText`, but the map does NOT prefer it over its own sentence. If upstream starts sending one, preferring it is a decision someone should make explicitly.",
+    "P-210 RECONCILIATION: legacy-design-tools' own comment says county_out_of_coverage is unreachable with the default coverage source (P-210 open) yet the live MCP half answers it for Cameron and Marble Falls (48331, 48053). The deployed source does answer. Whoever closes P-210 should reconcile the comment with the measured behaviour rather than the comment.",
+    "doc_repo: nothing committed, and no tracked diff to hand back — the lane claim was the only tracked write and claim+release is a no-op (`git diff` empty, `git status --short` shows only the four untracked inbox files). Artifacts for the planner in P:/seat-worktrees/p353-find-box-coverage/doc_repo/_inbox/ — cp1, cp2, this close, and the 171028 probe. P:/doc_repo (the integration seat's checkout) was not written to."
+  ],
+
+  "missionPremise": "The coverage answer is computed correctly upstream and destroyed in hauska-map before any customer sees it. Verified at source: legacy-design-tools origin/main 25d1782f2e59bd5098b8459196ea828ae3580027 defines `type SitusSearchMissClass = \"no-hit\" | \"out_of_coverage\" | \"county_out_of_coverage\" | \"coverage_check_unavailable\" | typeof SITUS_SEARCH_BUDGET_ERROR` (artifacts/api-server/src/lib/txgioAddressResolve.ts line 1179) and carries it with outOfCoverageState, outOfCoverageCounty{countyFips,countyName,state} and coverageCheckUnavailableReason (lines 1188-1198); routes/brokeragePlaceSitusSearch.ts serialises all four. At 163fde32 the map's BFF mapped that body to `{ hits }` and nothing else, the client returned the hit array, and the Find box could not see a class at all. Ruling basis: OPS-24 Law 1.",
+
+  "completionPredicate": "Met in code and by falsifier, not yet met on the deployed surface (hence closed-partial). For each of the four coverage subjects the property-explorer BFF now serves the class beside `hits` — no-hit for 99999 ZZYZX RD, AUSTIN, TX 78701; county_out_of_coverage with {48331,'Milam County','TX'} for 99999 ZZYZX RD, CAMERON, TX 76520; county_out_of_coverage with {48053,'Burnet County','TX'} for 99999 ZZYZX RD, MARBLE FALLS, TX 78654; out_of_coverage with 'CO' for 1600 BROADWAY, DENVER, CO 80202 — a hits-carrying query serialises byte for byte as before (asserted by key name, not merely by deep equality), the Find box says which kind of no-result it is in words in the dropdown and on the raw-Find line, neither Find path can turn an out-of-coverage answer into a geocoded pin, and a failure to obtain an answer reads as coverage_check_unavailable rather than as a miss or an unmeasurable 5xx. Falsified by revert-and-run in both directions (29 of 50 red before, 77 of 77 green after); the post-deploy half of the predicate is the probe named above.",
+
+  "scopeBasis": "hauska-map only, one PR (#423), branched from current origin/main 163fde32, FAN-DEPTH 0 with zero sub-agents. In scope and touched: api/_lib/pe-situs-search-core.ts, api/pe-situs-search.ts, src/lib/coverage-miss.ts (new), src/lib/situs-search-client.ts, src/lib/geocodeClient.ts, src/lib/parcel-lookup.ts, src/lib/search-suggest.ts, src/browse/SearchBar.tsx, plus 9 new test files. Out of scope and named: the cortex side (legacy-design-tools, already correct), the MCP find_parcel half of P-205 (measured PASS, untouched), P-210's coverage endpoint (hauska-engine, read as context only), search-kinds.ts (shared with P-339..P-341 / P-270, deliberately untouched), search-landing.ts (P-270's, named in leave_behind), and the typeahead's recents/parcel-id fast paths (deliberately unmodified, named as bypasses).",
+
+  "docRepoDiff": "none — claim+release of lane p353-find-box-coverage leaves _catalog/lane_claims.json byte-identical (verified: git diff empty). The only untracked additions are the four _inbox handoffs (cp1, cp2, close, 171028 probe). P:/doc_repo was not written to.",
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

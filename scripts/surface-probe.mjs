@@ -204,6 +204,18 @@ export const P304_SUBJECTS = [
   { id: "48021:34049", role: "verified-control-must-keep", label: "1109 Pecan St, Bastrop; derivePath ends +atom-reconciled", expectWithheld: false, expectSqFt: 19052, expectPct: 63.5 },
 ];
 
+// P-270 ADDRESS HALF (2026-09-18): the subject measured in the dispatch. Its ledger
+// holds `situsZip` 78660 and names `cityLimits` Pflugerville while the roll's
+// `situsCity` is absent-verified, and the card's line carried neither — so it is the
+// live both-directions subject for `addressCarriesLedgerLine` (read live 2026-09-18,
+// pre-change: the payload names Pflugerville and the line "21404 GRAND NATIONAL AVE"
+// drops it, FAIL; PASS once the ledger's components are carried onto the line).
+// Graded by `--rows P-254`, which is the OPS-24 customer leg the defect ledger is
+// reported under, and by `--rows P-270`.
+export const P270_ADDRESS_SUBJECTS = [
+  { id: "48453:445501", role: "ledger-carries-zip-and-city", label: "21404 Grand National Ave, Pflugerville (Travis 48453): situsZip 78660 and cityLimits Pflugerville on the ledger, situsCity absent-verified on the CAD roll" },
+];
+
 // P-347: the COVERAGE leg of the Phase 0 exit (P-205, P-210), graded at the customer's surfaces.
 // Coverage means the serving path (P-210's ruling). A coverage refusal fires only when the search
 // finds nothing, so each subject is an address that genuinely does not exist in a real locality:
@@ -255,6 +267,19 @@ export const OPS24_DEFECTS = [
   { id: "XD-13", defect: "dollar value reaches an ungranted caller", row: "P-246 (done)", gradedBy: "dollarReachesAnonymous" },
   { id: "XD-14", defect: "\"PUD\"-coded districts resolve Euclidean setbacks", row: "P-257, after the operator's ruling", gradedBy: "pudReadsPudMessage" },
   { id: "X2", defect: "the card names the governing city (map and LDT)", row: "P-270", gradedBy: "jurisdictionNamed" },
+  // P-270's FIRST Done clause (the address half, dispatch 2026-09-18): the card's
+  // address line takes its city and ZIP from the ledger. A sub-clause of X2, kept
+  // as its own row so the zoning half's 37-of-37 grade cannot hide it. Read live on
+  // 48453:445501 on 2026-09-18: the payload's cityLimitsFact names Pflugerville
+  // while the composed line is the bare street, so this row is OPEN there today —
+  // and closes when the ledger's 78660/Pflugerville reach the line.
+  // NOTE for the close's counts: two of this row's FAIL shapes are NOT independent
+  // findings. "the payload carries the component and serves no composed address at
+  // all" is the same parcel X6 counts (a parcel with no address has no line to drop
+  // the city from), and a parcel whose situs itself already reads in full never
+  // reaches here. The overlap is visible in the bases, which is why they are worded
+  // differently.
+  { id: "X2-address", defect: "the composed address drops a ledger ZIP or city the payload carries", row: "P-270", gradedBy: "addressCarriesLedgerLine" },
   { id: "X4", defect: "parcel-specific decline wording everywhere", row: "P-257", gradedBy: "foreignDeclineWording" },
   { id: "X5", defect: "Waco's panel declines an envelope its own live endpoint can draw", row: "hauska-map", gradedBy: "p303PanelDraws" },
   { id: "X6", defect: "Williamson: no MCP baked snapshot and no composed map address", row: "P-271", gradedBy: "composedAddressAbsent" },
@@ -285,13 +310,47 @@ const firstDateIn = (texts) => {
   return null;
 };
 
+/**
+ * The composed address line, as the map composes it for the geocode / envelope
+ * POST: `hauska-map` `apps/property-explorer/src/lib/situs-address.ts`'s
+ * `composeSitusLine`, mirrored here.
+ *
+ * P-270 ADDRESS HALF (2026-09-18): this used to be "street + city + state" and
+ * dropped the ZIP, so a payload carrying `situsZip` had no composed line that
+ * could be asked about it — and the address predicate below had nothing to grade
+ * against. A component already on the street line is never appended twice, so a
+ * roll whose situs already reads "…, BASTROP, TX 78602" yields the identical
+ * string this function yielded before the change.
+ */
 function composeAddress(base) {
   const a = str(base?.situsAddress);
   if (!a) return null;
+  const upper = a.toUpperCase();
+  const segments = upper.split(",").map((s) => s.trim()).filter(Boolean);
+  const hasCity = (v) => upper.includes(v.toUpperCase());
+  // State/ZIP are SEGMENT matches, so a street name like "1 TX AVE" is not read
+  // as a state "TX".
+  const hasState = (v) => segments.some((s) => s === v.toUpperCase() || s.startsWith(`${v.toUpperCase()} `));
+  const hasZip = (v) => upper.includes(v.toUpperCase());
+
   const city = str(base?.situsCity);
   const state = str(base?.situsState) || "TX";
-  if (city && !a.toUpperCase().includes(city.toUpperCase())) return `${a}, ${city}, ${state}`;
-  return a;
+  const zip = str(base?.situsZip);
+  const cityGoes = !!city && !hasCity(city);
+
+  const out = [a];
+  if (cityGoes) out.push(city);
+  if (zip && !hasZip(zip)) {
+    // P-270: the ZIP rides with its state. Before this change the state was only
+    // ever appended as part of the city part, so a payload holding a ZIP against a
+    // bare street had NO composed line carrying it — which is also why the address
+    // predicate had nothing to grade.
+    if (hasState(state)) return `${out.join(", ")} ${zip}`;
+    out.push(`${state} ${zip}`);
+  } else if (cityGoes && !hasState(state)) {
+    out.push(state);
+  }
+  return out.join(", ");
 }
 
 function bboxAround(pt, metres) {
@@ -370,6 +429,14 @@ export function extractFacets(resp) {
     buildableAreaSqFtInPayload: num(env?.buildableAreaSqFt),
     setbacks: sb ? { front: num(sb.front_ft), side: num(sb.side_ft), rear: num(sb.rear_ft), corner: num(sb.side_corner_ft) } : null,
     cityLimitsStatus: str(cl?.status),
+    /** P-270/X2-address: the city the LEDGER names for this parcel. The county roll's own situsCity
+     *  can be absent-verified while the parcel_record cityLimits rail still determines which
+     *  incorporated city's limits contain the point; the fix's second clause is that the address
+     *  line names THAT city (and only as "the city whose limits contain this parcel"). Read as
+     *  served. Gated on `incorporated`, because the requirement is about a city whose LIMITS
+     *  contain the parcel and a `cityName` beside any other status is not that. Null, never a
+     *  default. */
+    cityLimitsCity: str(cl?.status) === "incorporated" ? str(cl?.cityName) : null,
     recordPoint: qp && num(qp.latitude) != null && num(qp.longitude) != null ? { lat: qp.latitude, lng: qp.longitude } : null,
     structuralState: str(rec(j.structuralFact)?.status ?? rec(j.structuralFact)?.state),
     // Present shape carries the two values (LDT structuralFactResolve.ts:18-28); the absent shape
@@ -1116,6 +1183,23 @@ export const ROWS = {
     },
   },
 
+  // ------------------------------------------------------------------ P-270 address half
+  // The FIRST of P-270's three Done clauses (the 2026-09-17 card-truth close named it as not
+  // built): the card's address line takes its city and ZIP from the ledger. Named separately from
+  // P-254 so the clause has its own row and its own subject; the defect ledger carries the same
+  // predicate as `X2-address`, so a `--rows P-254` pass grades it there too.
+  "P-270": {
+    title: "the composed address line carries every ledger ZIP and city the payload holds, on the map and (when the MCP leg measures) the MCP",
+    parcels: P270_ADDRESS_SUBJECTS.map((s) => s.id),
+    optional: true,
+    evaluate(id, legs) {
+      const s = P270_ADDRESS_SUBJECTS.find((x) => x.id === id);
+      if (!s) return { verdict: "UNMEASURED", basis: `${id} is not a P-270 address-half subject` };
+      void s;
+      return OPS24_DEFECT_GRADERS.addressCarriesLedgerLine(id, legs);
+    },
+  },
+
   // P-303. Both halves come from the same live pair, so a panel that declines while its own route
   // draws is caught by comparing the two surfaces of ONE parcel rather than by trusting a wording.
   "P-303": {
@@ -1784,6 +1868,42 @@ export function mcpClaimText(call) {
 }
 
 /**
+ * P-270 ADDRESS HALF (2026-09-18): the address line out of an MCP
+ * `get_smart_site` answer, or null when the MCP leg did not measure. The label is
+ * the stub's own composed line (`composeSmartSiteStub` in legacy-design-tools);
+ * it is read as served and never rebuilt here, because rebuilding it would make
+ * the MCP arm of the address predicate a comparison of this instrument with
+ * itself.
+ *
+ * Shape, measured from `runMcpTool`: `call.text` is the JSON-stringified
+ * `result`, whose `content[0].text` is itself JSON carrying the stub.
+ */
+export function mcpSitusLabel(call) {
+  if (!call?.measured || typeof call.text !== "string") return null;
+  let outer = null;
+  try { outer = JSON.parse(call.text); } catch { return null; }
+  const candidates = [];
+  const direct = rec(outer);
+  if (direct) candidates.push(direct);
+  const structured = rec(direct?.structuredContent);
+  if (structured) candidates.push(structured);
+  const content = Array.isArray(direct?.content) ? direct.content : [];
+  for (const c of content) {
+    const text = rec(c)?.text;
+    if (typeof text !== "string") continue;
+    try {
+      const inner = rec(JSON.parse(text));
+      if (inner) candidates.push(inner);
+    } catch { /* a non-JSON content part carries no label */ }
+  }
+  for (const c of candidates) {
+    const label = str(c.label);
+    if (label) return label;
+  }
+  return null;
+}
+
+/**
  * THE REQUIRED CASE, as two separately-named kinds. The integration seat found a Travis parcel
  * whose own read carries a RULED setback table and whose surface nevertheless tells the customer
  * the envelope path is pending. A contradiction is a surface that names something it is at the
@@ -2094,6 +2214,76 @@ const OPS24_DEFECT_GRADERS = {
     if (fx.measured === false) return { verdict: "UNMEASURED", basis: "the card payload did not answer" };
     if (!fx.zoningDistrict) return { verdict: "UNMEASURED", basis: "no district on the payload" };
     return fx.zoningJurisdictionKey ? { verdict: "PASS", basis: `jurisdictionKey ${fx.zoningJurisdictionKey}` } : { verdict: "FAIL", basis: `district ${fx.zoningDistrict} with no jurisdiction on the payload` };
+  },
+  /**
+   * P-270 ADDRESS HALF (2026-09-18). `jurisdictionNamed` grades the ZONING row.
+   * This grades the ADDRESS LINE: where the payload carries a ledger ZIP or city,
+   * the composed address must contain it.
+   *
+   * Both arms are read from the surfaces, never from this instrument's own
+   * composition:
+   *   - the MAP arm reads `composedAddress`, which `composeAddress` builds with the
+   *     same rule the app's `composedSitusLine` uses (and which the probe already
+   *     posts to the draw route, so it is the line the map really asks about);
+   *   - the MCP arm reads the label out of the `get_smart_site` answer when the MCP
+   *     leg measured. Without an OAuth token it is not driven and contributes
+   *     nothing — this predicate never PASSES a surface it did not read.
+   *
+   * FAIL is the case worth naming: the payload carries the component and the line
+   * drops it. UNMEASURED when the payload carries neither, because an address line
+   * with no city and no ZIP on the payload is not evidence that one was dropped.
+   *
+   * WHICH city is required, and from where (mirrors the fix's own rule, so the
+   * grader and the composer cannot drift): the CAD roll's `situsCity` when the roll
+   * carries one; the payload's `cityLimitsFact.cityName` ONLY where the roll's
+   * situsCity is a DECLARED absence (`absent-verified`) and an incorporated city's
+   * limits contain the parcel. A payload whose roll names the city is never graded
+   * against a different jurisdiction city, so this predicate cannot fail a line that
+   * carries the city its own ledger row gives it.
+   *
+   * Measured live 2026-09-18 on `48453:445501` (pre-change, as served): baseFacts
+   * carries situsAddress "21404 GRAND NATIONAL AVE", situsState "TX", a `situsCity`
+   * declared absent-verified, and NO situsZip; cityLimitsFact carries
+   * cityName "Pflugerville". So the required city is Pflugerville, the line drops it,
+   * and this grader reads FAIL there — the defect, live. Once the record rails are
+   * carried onto baseFacts the same subject's line reads
+   * "21404 GRAND NATIONAL AVE, Pflugerville, TX 78660" and it PASSES.
+   */
+  addressCarriesLedgerLine: (id, legs) => {
+    const fx = legs.facets ?? {};
+    if (fx.measured === false) return { verdict: "UNMEASURED", basis: "the card payload did not answer" };
+    const zip = str(fx.situsZip);
+    const rollCity = str(fx.situsCity);
+    // The city-limits fallback is the fix's second clause, and it is conditioned on the
+    // roll's own DECLARED absence: without that condition a payload would be graded
+    // against a jurisdiction city its ledger row never asked the line to carry.
+    const limitsCity =
+      !rollCity && fx.situsCityAbsenceVerdict === "absent-verified" ? str(fx.cityLimitsCity) : null;
+    const city = rollCity ?? limitsCity;
+    const ledger = [];
+    if (zip) ledger.push(zip);
+    if (city) ledger.push(city);
+    if (!ledger.length) {
+      return { verdict: "UNMEASURED", basis: "the payload carries neither a ledger ZIP nor a ledger city, so a line that drops neither is not measurable here" };
+    }
+    const source = rollCity
+      ? "the CAD roll's own situsCity"
+      : `cityLimits (the roll's situsCity is declared ${fx.situsCityAbsenceVerdict} and this city's limits contain the parcel)`;
+    const line = str(fx.composedAddress);
+    if (!line) return { verdict: "FAIL", basis: `the payload carries ledger ${ledger.join(" and ")} (${source}) and serves no composed address at all` };
+    const missing = ledger.filter((v) => !line.toUpperCase().includes(v.toUpperCase()));
+    const mcpLabel = mcpSitusLabel(legs.mcpCall);
+    const mcpMissing = mcpLabel ? ledger.filter((v) => !mcpLabel.toUpperCase().includes(v.toUpperCase())) : [];
+    if (missing.length || mcpMissing.length) {
+      const parts = [];
+      if (missing.length) parts.push(`the map's composed address "${line}" drops ${missing.join(" and ")}`);
+      if (mcpMissing.length) parts.push(`the MCP's get_smart_site label "${mcpLabel}" drops ${mcpMissing.join(" and ")}`);
+      return { verdict: "FAIL", basis: `the payload carries ledger ${ledger.join(", ")} (${source}) and ${parts.join("; ")}` };
+    }
+    return {
+      verdict: "PASS",
+      basis: `the composed address "${line}" carries every ledger component on the payload (${ledger.join(", ")}, ${source})${mcpLabel ? `; the MCP label "${mcpLabel}" does too` : "; the MCP leg did not measure, so its half is not graded"}`,
+    };
   },
   malformedSitusDraws: (id, legs) => {
     const fx = legs.facets ?? {};
@@ -2737,6 +2927,81 @@ function selfTest() {
   check("the undeclared-absence finding does NOT fire where the absence itself is declared with its basis", ops24Findings({}, { "x:1": { facets: { ...wmsnFacets, situsAddressAbsenceDeclared: true } } }).every((f) => f.kind !== "SITUS-ABSENT-UNDECLARED"));
   check("the undeclared-absence finding does NOT fire where a situs is served", ops24Findings({}, { "x:2": { facets: { ...goodFacets } } }).every((f) => f.kind !== "SITUS-ABSENT-UNDECLARED"));
   check("a declared absence is read as a basis, not thrown away: the same payload reports the sibling's verdict", declared.verdict === "absent-verified");
+
+  // ---- P-270 address half (X2-address) ----
+  // THE LIVE SHAPE, read from production on 2026-09-18 with the change NOT deployed. Field for
+  // field from the response: baseFacts carries the bare street, a situsCity DECLARED
+  // absent-verified, and no situsZip; the city the ledger names arrives on
+  // cityLimitsFact.cityName ("Pflugerville", status "incorporated"). Recorded here rather than
+  // paraphrased so the two directions below run against the real thing.
+  const p270LiveFacets = {
+    measured: true, http: 200,
+    situsAddress: "21404 GRAND NATIONAL AVE",
+    situsCity: null, situsCityAbsenceDeclared: true, situsCityAbsenceVerdict: "absent-verified",
+    situsState: "TX", situsZip: null,
+    cityLimitsStatus: "incorporated", cityLimitsCity: "Pflugerville",
+    readPath: null, bakedAt: "2026-09-10T22:36:30.509Z",
+    composedAddress: composeAddress({ situsAddress: "21404 GRAND NATIONAL AVE", situsState: "TX" }),
+  };
+  // The same payload with the record rails carried onto baseFacts — what the change does. The ZIP
+  // and the city become part of the line the composer builds, which is the whole of the fix.
+  const p270AfterFacets = {
+    ...p270LiveFacets,
+    situsZip: "78660", situsCity: "Pflugerville", situsCityAbsenceDeclared: false, situsCityAbsenceVerdict: null,
+    composedAddress: composeAddress({ situsAddress: "21404 GRAND NATIONAL AVE", situsCity: "Pflugerville", situsState: "TX", situsZip: "78660" }),
+  };
+
+  const x2Addr = (legs) => defectLedger([{ id: "X2-address", gradedBy: "addressCarriesLedgerLine" }], [{ id: "48453:445501", key: "x", legs }]).rows[0];
+  const x2Grade = (legs) => OPS24_DEFECT_GRADERS.addressCarriesLedgerLine("48453:445501", legs);
+
+  // DIRECTION 1, as served today: the line is the bare street, unchanged by this change.
+  check("the 48453:445501 line composes to the bare street, exactly as the card serves it today", p270LiveFacets.composedAddress === "21404 GRAND NATIONAL AVE", String(p270LiveFacets.composedAddress));
+  check("X2-address FIRES on the live 48453:445501 payload as served today: the payload names Pflugerville and the line drops it", (() => { const r = x2Grade({ facets: p270LiveFacets }); return r.verdict === "FAIL" && /drops Pflugerville/.test(r.basis) && /absent-verified/.test(r.basis); })(), x2Grade({ facets: p270LiveFacets }).basis);
+  // DIRECTION 2, the same parcel with the ledger's ZIP and city on the line.
+  check("X2-address PASSES that same parcel once the record rails are carried, with the ZIP on the line too", (() => { const r = x2Grade({ facets: p270AfterFacets }); return r.verdict === "PASS" && /78660, Pflugerville/.test(r.basis); })(), x2Grade({ facets: p270AfterFacets }).basis);
+  check("NOT VACUOUS: the two directions are the same parcel and differ only by the ledger components, so the row is not closing on its own reading", x2Grade({ facets: p270LiveFacets }).verdict === "FAIL" && x2Grade({ facets: p270AfterFacets }).verdict === "PASS");
+  check("the row reports OPEN for the live shape and CLOSED for the changed one", x2Addr({ facets: p270LiveFacets }).verdict === "OPEN" && x2Addr({ facets: p270AfterFacets }).verdict === "CLOSED");
+
+  // The composer itself, both directions. The control is the falsifier's: a situs that already
+  // reads in full must come back BYTE-IDENTICAL, because every component is checked first.
+  check("composeAddress is BYTE-IDENTICAL for a situs that already spells out city/state/ZIP", composeAddress({ situsAddress: "1109 Pecan St, Bastrop, TX 78602", situsCity: "Bastrop", situsState: "TX", situsZip: "78602" }) === "1109 Pecan St, Bastrop, TX 78602" && composeAddress({ situsAddress: "5833 Taylor Draper Cv", situsCity: "Austin", situsState: "TX" }) === "5833 Taylor Draper Cv, Austin, TX", composeAddress({ situsAddress: "5833 Taylor Draper Cv", situsCity: "Austin", situsState: "TX" }));
+  check("composeAddress adds only the ZIP when the line already carries its state", composeAddress({ situsAddress: "1 Main St, AUSTIN, TX", situsCity: "Austin", situsState: "TX", situsZip: "78759" }) === "1 Main St, AUSTIN, TX 78759");
+  check("composeAddress reads a street name as a street name, not as a state", composeAddress({ situsAddress: "1 TX AVE", situsState: "TX", situsZip: "78660" }) === "1 TX AVE, TX 78660");
+
+  // Which city is required, and from where. A payload whose own roll names the city is never
+  // graded against a jurisdiction city, so a roll/CAD-vs-city-limits difference cannot fail a
+  // line that carries the city its own ledger row gives it.
+  check("X2-address requires the ROLL's city where the roll names one, not the city-limits city", (() => { const r = x2Grade({ facets: { ...p270AfterFacets, situsCity: "Pflugerville", cityLimitsCity: "Round Rock", composedAddress: "21404 GRAND NATIONAL AVE, Pflugerville, TX 78660" } }); return r.verdict === "PASS"; })(), x2Grade({ facets: { ...p270AfterFacets, situsCity: "Pflugerville", cityLimitsCity: "Round Rock", composedAddress: "21404 GRAND NATIONAL AVE, Pflugerville, TX 78660" } }).basis);
+  check("...and the city-limits fallback is conditioned on the roll's DECLARED absence, not on a bare null", x2Grade({ facets: { ...p270LiveFacets, situsCityAbsenceVerdict: null } }).verdict === "UNMEASURED");
+  check("X2-address does not read an UNINCORPORATED city-limits answer as a city", x2Grade({ facets: { ...p270LiveFacets, cityLimitsStatus: "unincorporated", cityLimitsCity: null } }).verdict === "UNMEASURED");
+  // The extractor, on the raw response: the fixture above must be what `extractFacets` makes of the
+  // live body, or the two directions are proving something about a paraphrase. The city-limits city
+  // is gated on `incorporated` at the extractor, because the requirement is a city whose LIMITS
+  // contain the parcel and a `cityName` beside any other status is not that.
+  const rawP270 = { http: 200, json: { readPath: null, facets: { bakedAt: "2026-09-10T22:36:30.509Z", baseFacts: { apn: "445501", situsAddress: "21404 GRAND NATIONAL AVE", situsCity: { status: "absent", verdict: "absent-verified" }, situsState: "TX" } }, cityLimitsFact: { status: "incorporated", cityName: "Pflugerville", queryPoint: { latitude: 30.49893, longitude: -97.57404 } } } };
+  const fxLive = extractFacets(rawP270);
+  check("extractFacets reads the live 48453:445501 body into exactly the fixture the two directions use", fxLive.situsAddress === p270LiveFacets.situsAddress && fxLive.situsCity === p270LiveFacets.situsCity && fxLive.situsCityAbsenceVerdict === p270LiveFacets.situsCityAbsenceVerdict && fxLive.situsZip === p270LiveFacets.situsZip && fxLive.cityLimitsCity === p270LiveFacets.cityLimitsCity && fxLive.composedAddress === p270LiveFacets.composedAddress, JSON.stringify(fxLive));
+  check("extractFacets does NOT read a city off an unincorporated city-limits answer", extractFacets({ http: 200, json: { facets: { baseFacts: {} }, cityLimitsFact: { status: "unincorporated", cityName: "Pflugerville" } } }).cityLimitsCity === null);
+
+  // The cases where there is nothing to drop — absence of evidence, not evidence.
+  check("X2-address stays UNMEASURED where the payload carries neither a ledger ZIP nor a ledger city", x2Addr({ facets: { ...p270LiveFacets, cityLimitsStatus: "unincorporated", cityLimitsCity: null } }).verdict === "UNMEASURED");
+  check("X2-address stays UNMEASURED where the card payload did not answer", x2Addr({ facets: { measured: false, http: 503 } }).verdict === "UNMEASURED");
+  check("X2-address FIRES where the payload carries a ledger component and serves no composed address at all", (() => { const r = x2Grade({ facets: { ...p270AfterFacets, composedAddress: null } }); return r.verdict === "FAIL" && /serves no composed address at all/.test(r.basis); })(), x2Grade({ facets: { ...p270AfterFacets, composedAddress: null } }).basis);
+  check("X2-address FIRES where the payload carries the ZIP and the line drops only the ZIP", (() => { const r = x2Grade({ facets: { ...p270AfterFacets, composedAddress: "21404 GRAND NATIONAL AVE, Pflugerville, TX" } }); return r.verdict === "FAIL" && /drops 78660/.test(r.basis) && !/drops 78660 and Pflugerville/.test(r.basis); })(), x2Grade({ facets: { ...p270AfterFacets, composedAddress: "21404 GRAND NATIONAL AVE, Pflugerville, TX" } }).basis);
+
+  // The MCP arm reads the LDT surface's OWN label, never a line rebuilt here. Real transport
+  // shape from runMcpTool: the result's content[0].text is itself JSON carrying the stub.
+  const mcpWith = (inner) => ({ measured: true, text: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(inner) }] }) });
+  const mcpText = (label) => mcpWith({ parcelNodeId: "48453:445501", label, url: "https://smartsite.cloud/p/48453:445501", situs: "present" });
+  check("mcpSitusLabel reads the label out of the get_smart_site answer as the server sends it", mcpSitusLabel(mcpText("21404 GRAND NATIONAL AVE, Pflugerville, TX 78660")) === "21404 GRAND NATIONAL AVE, Pflugerville, TX 78660");
+  check("mcpSitusLabel returns null when the MCP leg did not measure, so the predicate can never pass a surface it did not read", mcpSitusLabel({ measured: false, error: "http 401" }) === null && mcpSitusLabel(null) === null && mcpSitusLabel({ measured: true, text: "<html>" }) === null);
+  check("X2-address FIRES on the LDT short-circuit shape: the map line carries the ledger ZIP and the MCP's own label drops it", (() => { const r = x2Addr({ facets: p270AfterFacets, mcpCall: mcpText("21404 GRAND NATIONAL AVE") }); return r.verdict === "OPEN" && /MCP's get_smart_site label/.test(r.basis); })(), JSON.stringify(x2Addr({ facets: p270AfterFacets, mcpCall: mcpText("21404 GRAND NATIONAL AVE") })));
+  check("X2-address PASSES both surfaces when the MCP label carries them too, and says the MCP half was graded", (() => { const r = x2Grade({ facets: p270AfterFacets, mcpCall: mcpText("21404 GRAND NATIONAL AVE, Pflugerville, TX 78660") }); return r.verdict === "PASS" && /the MCP label/.test(r.basis); })(), x2Grade({ facets: p270AfterFacets, mcpCall: mcpText("21404 GRAND NATIONAL AVE, Pflugerville, TX 78660") }).basis);
+  check("...and when the MCP leg did not measure it grades the map arm alone and SAYS so, rather than implying the MCP passed", (() => { const r = x2Grade({ facets: p270AfterFacets }); return r.verdict === "PASS" && /the MCP leg did not measure/.test(r.basis); })(), x2Grade({ facets: p270AfterFacets }).basis);
+  // The named subject is wired to the row AND to the ledger, so `--rows P-270` and `--rows P-254`
+  // both grade it (the dispatch names P-254 for after the deploy).
+  check("the P-270 address subject is declared and its row grades on the address predicate", P270_ADDRESS_SUBJECTS.some((s) => s.id === "48453:445501") && ROWS["P-270"].evaluate("48453:445501", { facets: p270AfterFacets }).verdict === "PASS");
+  check("the P-270 address subject is NOT graded by a P-270 pass that did not drive its legs (never a free PASS)", ROWS["P-270"].evaluate("48453:999999", { facets: p270AfterFacets }).verdict === "UNMEASURED");
   // A parcel that is both a bucket's graded fixture and a named subject is graded once, so the
   // ledger's denominators do not double-count it.
   check("ops24SubjectList dedupes a parcel that is both a bucket fixture and a named subject", ops24SubjectList({ b: { facets: { ...goodFacets }, ops24: { gradedFixture: { id: "48453:367134" } } } }, { "48453:367134": { facets: { ...goodFacets } } }).length === 1);
@@ -2799,7 +3064,6 @@ function selfTest() {
   check("the write guard refuses an artifact carrying the refresh token", artifactLeaksToken(JSON.stringify({ x: "rt-secret-value-that-is-long-enough" }), "rt-secret-value-that-is-long-enough") === true);
   // The MCP glossary is not a claim about the parcel.
   const vocab = { smartSiteVocabulary: [{ token: "atom_path_pending", displayText: "Withheld, setbacks unruled", meaning: "..." }] };
-  const mcpWith = (inner) => ({ measured: true, text: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(inner) }] }) });
   check("NOT VACUOUS, the live Williamson shape: a glossary-only mention of 'unruled' is not a contradiction",
     contradictions({ facets: { ...goodFacets }, draw: goodDraw, mcpCall: mcpWith({ parcels: [], notFound: ["48491:R038268"], reason: "record_retired", ...vocab }) }).length === 0);
   check("the live Martindale shape still trips: the parcel's own overlay says unruled beside a ruled table",
@@ -2855,7 +3119,7 @@ async function main() {
     // P-347, ruling 9: one MCP session per run, opened only when a row needs the MCP surface. The
     // token comes from the sign-in helper (in memory) or, if the operator passes one, the env; the
     // run records which, and the tier it graded at, and never the token.
-    const needsMcp = rowFilter && rowFilter.some((r) => ["P-254", "P-303", "P-304", "P-205"].includes(r));
+    const needsMcp = rowFilter && rowFilter.some((r) => ["P-254", "P-303", "P-304", "P-205", "P-270"].includes(r));
     if (needsMcp) {
       let token = (process.env.SURFACE_PROBE_MCP_TOKEN || "").trim() || null;
       let tokenSource = token ? "env SURFACE_PROBE_MCP_TOKEN" : null;
@@ -2912,7 +3176,7 @@ async function main() {
   // bucket fixture plus the P-303/P-304 subjects, deduplicating so a fixture two buckets share is
   // probed once. The MCP session opens once per run, because its refusal is a property of the run's
   // credential, not of any parcel.
-  if (!flag("--fixtures") && rowFilter && rowFilter.some((r) => ["P-254", "P-303", "P-304"].includes(r))) {
+  if (!flag("--fixtures") && rowFilter && rowFilter.some((r) => ["P-254", "P-303", "P-304", "P-270"].includes(r))) {
     const all = flag("--ops24-all");
     const subjects = selectOps24Subjects(OPS24_BUCKETS, all);
     ops24Report = {
@@ -2928,7 +3192,7 @@ async function main() {
       ledger: { counts: {}, rows: [] },
     };
     ops24Report.mcp = mcpRun?.open ?? { measured: false, error: "the MCP leg did not run in this pass" };
-    const ids = [...new Set([...subjects.flatMap((s) => s.chosen.map((c) => c.id)), ...P303_SUBJECTS.map((s) => s.id), ...P304_SUBJECTS.map((s) => s.id), UNRULED_SUBJECT])];
+    const ids = [...new Set([...subjects.flatMap((s) => s.chosen.map((c) => c.id)), ...P303_SUBJECTS.map((s) => s.id), ...P304_SUBJECTS.map((s) => s.id), ...P270_ADDRESS_SUBJECTS.map((s) => s.id), UNRULED_SUBJECT])];
     const byId = {};
     for (const id of ids) {
       process.stdout.write(`probing ${id} (map+draw+pdf${mcpSession ? "+mcp" : ""}) ... `);
@@ -2944,6 +3208,11 @@ async function main() {
     for (const s of [...P303_SUBJECTS, ...P304_SUBJECTS]) {
       if (byId[s.id]) legsById[s.id] = byId[s.id];
     }
+    // P-270 address half: the same, so a `--rows P-270` pass can read its own subject.
+    for (const s of P270_ADDRESS_SUBJECTS) {
+      if (byId[s.id]) legsById[s.id] = byId[s.id];
+    }
+    ops24Report.addressSubjects = P270_ADDRESS_SUBJECTS.map((s) => s.id);
     ops24Report.legsById = byId;
     const subjectsDeduped = ops24SubjectList(ops24LegsByBucket, byId);
     ops24Report.subjectsDeduped = subjectsDeduped.length;

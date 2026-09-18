@@ -1,0 +1,43 @@
+diff --git a/scripts/six-county-completeness.mjs b/scripts/six-county-completeness.mjs
+index 6fa973c2..75c54560 100644
+--- a/scripts/six-county-completeness.mjs
++++ b/scripts/six-county-completeness.mjs
+@@ -84,11 +84,6 @@ export const RAIL_POLICY = {
+   // Operator ruling 2026-09-14 (P-209): declared Unavailable in Texas, rail kept. Still carried
+   // on the capability roadmap; the customer-facing declaration is graded by the customer leg.
+   salesHistory: { cls: "ruled-unavailable", accept: ["excluded"], ruling: "P-209" },
+-  // P-204: data exists and serves by another path; the ledger is the serving path, so these cut over
+-  // (A-215 rulings 1 and 2, P-336).
+-  parcelGeometry: { cls: "mid-cutover" },
+-  pipelines: { cls: "mid-cutover" },
+-  etjStatus: { cls: "mid-cutover" },
+   // P-337. A-215 ruling 3: landUseDescription stays on the bake for Phase 0, because cutting over
+   // removes a description a customer reads today; its cutover is P-345. Ruling 4: railCorridor is
+   // deferred, not retired; its first serve path (or a retirement ruling) is P-344. Each is
+@@ -120,6 +115,11 @@ export const RAIL_POLICY = {
+   agValuation: { cls: "vendor-pending", accept: ["excluded", "refuse"], vendor: "cotality", pendingIn: ["48021", "48055", "48209", "48309"], ruling: "A-184" },
+ };
+ for (const k of [
++  // P-336 (A-215 rulings 1 and 2): the three P-204 rails that cut over to the ledger. Their cells are
++  // written from the atoms that serve today (parcelGeometry, pipelines) and from the P-296
++  // determination (etjStatus), so they are must-pass: no accepted non-pass verdict. They were
++  // `mid-cutover` while the ledger had no cells for them; that class is now one rail smaller.
++  "parcelGeometry", "pipelines", "etjStatus",
+   "apn", "situsAddress", "situsCity", "situsZip", "landUseCode", "landUseSource",
+   "acreageAcres", "acreageMethod", "yearBuilt", "marketValue", "assessedValue", "landValue",
+   "improvementValue", "livingAreaSqft", "legalDescription", "exemptionCodes", "countyFips",
+@@ -470,8 +470,12 @@ function selfTest() {
+     (() => { const r = classify(full("48209"), [], one, { ...ctx, closes: null }); return r.verdict === "UNMEASURED" && r.counties["48209"].unmeasured.some((u) => u.rail === "landUseDescription"); })());
+   check("42 the live roadmap register carries both ruled exclusions, paused-by-ruling, on their Phase 1 rows",
+     !!roadmap && Object.entries(RAIL_POLICY).filter(([, p]) => p.coupling === "phase1-row").every(([k, p]) => roadmap.rails?.[k]?.status === "paused-by-ruling" && roadmap.rails?.[k]?.row === p.phase1Row));
+-  check("43 the other three P-204 rails are still open while excluded (P-336 has not cut them over)",
+-    ["parcelGeometry", "pipelines", "etjStatus"].every((rail) => openOn(classify(full("48209", { [rail]: "excluded-mid-cutover" }), [], one, ctx), "48209", rail)));
++  check("43 the three P-336 rails are CUT OVER: a pass counts as a pass, and a lingering excluded-mid-cutover verdict on them is still open",
++    ["parcelGeometry", "pipelines", "etjStatus"].every((rail) => {
++      const passed = classify(full("48209", { [rail]: "pass" }), [], one, ctx);
++      return !openOn(passed, "48209", rail)
++        && openOn(classify(full("48209", { [rail]: "excluded-mid-cutover" }), [], one, ctx), "48209", rail);
++    }));
+   check("44 closeRows reads each field spelling, and never a row named only in prose",
+     JSON.stringify(closeRows('{"planRow":"P-345","note":"see P-344"}')) === JSON.stringify(["P-345"])
+       && JSON.stringify(closeRows('{"plan_rows":["P-1","P-2"]}')) === JSON.stringify(["P-1", "P-2"])

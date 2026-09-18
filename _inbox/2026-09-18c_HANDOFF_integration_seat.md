@@ -3,7 +3,7 @@ id: 2026-09-18c_HANDOFF_integration_seat
 title: Handoff to a fresh integration-seat planner, 2026-09-18 evening
 date: 2026-09-18
 last_updated: 2026-09-18 (18:40Z)
-status: active handoff
+status: consumed (by _sessions/2026-09-18c_p263_apply_wave2_merges_deploys_claude_code.md)
 kind: handoff
 owner: nick
 from: integration seat, 2026-09-18 18:40Z (the session that compiled the rest of Wave 2, ran the seat's first Wave 2 items, and applied migration 018)

@@ -1,0 +1,134 @@
+{
+  "lane": "p362-post-shift-check",
+  "planRows": ["P-362"],
+  "seat": "cente-vsc-p362",
+  "kind": "CP1 - design/pre-build adversarial checkpoint (contract section 1)",
+  "filedAt": "2026-09-18T18:31:00Z",
+  "filedAtBasis": "One UTC clock reading taken in the session that wrote this artifact. THIS CHECKPOINT IS LATE AND SAYS SO: the design below was fixed before any edit, but the offline falsifiers and the Windows reproduction had already been executed when this file was written (offline set 18:19Z and 18:24Z, first Windows live read 18:22Z, PR opened 18:29Z). It is therefore a record of a design checkpoint, not a claim that the predictions below preceded every measurement. What did precede them is the dispatch's own pre-registered falsifier list, quoted verbatim in dispatchFalsifiers, which is what this lane set out to test. Lane claim in _catalog/lane_claims.json is dated 2026-09-18T17:50:20.147Z.",
+
+  "worktrees": {
+    "docRepoRoot": "P:/seat-worktrees/p362-post-shift-check/doc_repo (branch `lane/p362-post-shift-check`, HEAD 61b5b2ed). This is the worktree the session running the lane is rooted in, so CP1/CP2/CLOSE live here. NOT P:/doc_repo (the integration seat's checkout, where the dispatch was compiled).",
+    "legacy-design-tools": "P:/seat-worktrees/p362-post-shift-check/legacy-design-tools (branch `lane/p362-post-shift-check-ldt`, start commit 25d1782f2e59bd5098b8459196ea828ae3580027 == origin/main == the SHA the dispatch declares at compile). Read-WRITE. No other lane's checkout touched.",
+    "note": "Two worktrees only. This lane touches ONE product repo (legacy-design-tools) and opens ONE PR, per the dispatch."
+  },
+
+  "missionPremise": "P-279's tagged-revision credential check is called from four places in legacy-design-tools' deploy workflows, and on 2026-09-18 15:49Z (run 35364723464, cortex-api) the post-shift call site reported a credential violation on a service whose tags were clean. It did not fail to find a credential; it failed to find its own script, because the `shift-traffic` job never checked the repo out. Node exited 1 for a missing module, and the step's shell wrapper mapped exit 1 to `RESULT=violation`. The row exists to make the post-shift check run, and to make a check that did not run structurally unable to read as a violation.",
+  "missionPremiseBasis": "Dispatch `_dispatches/2026-09-18_p362-post-shift-check_dispatch.md` (read at source in this worktree) and the record it cites, `_inbox/2026-09-18_ldt_cortex_api_deploy_RECORD.md`. The failure mode was REPRODUCED rather than accepted from prose: with the check absent, Node exits 1 (observed, offline falsifier F1b); with the check throwing at import, Node exits 1 (observed, F4); and the shipped case statement maps exit 1 to `violation` for both (observed, opposingDirection). The complaint that a check which cannot run reads as the most alarming thing the step can say is therefore a measured statement about this repo, not a reading of the dispatch.",
+
+  "dispatchFalsifiers": [
+    {
+      "quoted": "a job run with the script deliberately absent reads `did-not-run`, never `violation`",
+      "howRun": "Wrapper and raw check copied to a sandbox with the check deleted, then invoked through the wrapper (offline falsifier F1b), and the SAME input run through the case statement that shipped (opposingDirection).",
+      "observed": "shipped case statement: `violation`. wrapper: `RESULT=did-not-run`, exit 2, and the word `violation` does not appear in its output.",
+      "disposition": "PASS. Both directions observed on one input."
+    },
+    {
+      "quoted": "a fixture with a real violation (`--from-fixture`) reads `violation`",
+      "howRun": "`--from-fixture scripts/fixtures/tagged-revision-env/fail` through the wrapper.",
+      "observed": "`RESULT=violation`, exit 1, naming the tag and the missing credential.",
+      "disposition": "PASS."
+    },
+    {
+      "quoted": "a clean fixture reads `clean`",
+      "howRun": "`--from-fixture scripts/fixtures/tagged-revision-env/pass` through the wrapper.",
+      "observed": "`RESULT=clean`, exit 0.",
+      "disposition": "PASS."
+    },
+    {
+      "quoted": "a script that throws reads `did-not-run`",
+      "howRun": "Wrapper and a check stub that throws at import, through the wrapper (F4), and the same input through the shipped case statement.",
+      "observed": "shipped case statement: `violation`. wrapper: `RESULT=did-not-run`, exit 2.",
+      "disposition": "PASS."
+    },
+    {
+      "quoted": "the Windows read against the live service returns a verdict instead of `SERVICE_DESCRIBE_FAILED`",
+      "howRun": "Live on this Windows host against cortex-api, raw check vs wrapper, with P279_GCLOUD unset and with P279_GCLOUD set to the real spaced install path.",
+      "observed": "raw check + spaced path: `REFUSE` / `SERVICE_DESCRIBE_FAILED` / detail `unsafe argument refused (shell metacharacter or quote): \"C:\\\\Users\\\\cente\\\\AppData\\\\Local\\\\Google\\\\Cloud SDK\\\\google-cloud-sdk\\\\bin\\\\gcloud.cmd\"`. wrapper, same env: `RESULT=clean`, exit 0, with the discarded value and the substitute named on stderr. wrapper, unset: `RESULT=clean`, exit 0.",
+      "disposition": "PASS. The refusal is reproduced with its actual detail string, and the wrapper returns a verdict in the same environment."
+    },
+    {
+      "quoted": "the live-workflow proof is the seat's: name the exact dispatch the seat runs on the next cortex-api shift and the result it should print",
+      "howRun": "Not runnable here: this lane may not dispatch the production workflow.",
+      "observed": "Not observed inside a dispatched workflow at any point. Named in CP2: dispatch `cloud-run-deploy` with `action: shift-traffic` for cortex-api (the shift the dispatch says is next, P-324), and the post-shift step must print `p279-tagged-revision-env: RESULT=clean`.",
+      "disposition": "OPEN by construction. Everything in this lane is offline or a hand invocation; the live-workflow direction is the integration seat's."
+    }
+  ],
+
+  "design": {
+    "repo": "legacy-design-tools only, one PR from origin/main (start 25d1782f). No doc_repo commit (planner-owned); doc_repo edits are left uncommitted and listed in the close.",
+    "oneWrapper": "scripts/p279-tagged-revision-check.mjs (new) is the single entry point all four LIVE call sites run: deploy-canary and post-shift, in cloud-run-deploy.yml and cloud-run-deploy-smartsite-mcp.yml. The four copies of the exit-code case statement are deleted. DEV_PROCESS 2.4's rule is the reason: four hand-maintained copies of one rule are four rules waiting to disagree, and this row IS that disagreement (the case statement said `violation` where the check said `nothing`).",
+    "theMarker": "Positive, not negative: the wrapper requires a result object that carries a `service` AND a `verdict`. Requiring `service` as well as `verdict` is deliberate and load-bearing - the check's `--check-divergence` report ALSO carries `predicateVersion` and `verdict` (over a byte compare, with no service), so a marker of `verdict` alone would read a byte-compare as a service verdict. Observed by falsifier F9 (a stub printing the divergence shape reads `did-not-run`).",
+    "twoReportShapes": "The check has two report shapes and the wrapper accepts both: the live path prints `{ predicateVersion, results: [ ... ] }` under `--json`, and the `--from-fixture` path prints ONE result object, always. An earlier draft of the wrapper required the live shape only and read every fixture verdict as `did-not-run` - the same defect class in the other direction. The falsifier harness caught it on its first run (F1 clean fixture reported `did-not-run` against a child that had printed `verdict: PASS` and exited 0). Recorded rather than quietly fixed: a marker that is too tight is as wrong as one that is too loose, and only the both-directions run shows which.",
+    "exitTable": "0 clean / 1 violation / 2 did-not-run. 1 and 2 both fail the calling step (GitHub's default `bash -e`); they are distinct because the class being live and the check not having run are different problems and must not read alike. The step-level comment at every call site now names this table instead of the check's own 0/1/2/3, which was the stale mapping that caused the incident.",
+    "checkoutRef": "`actions/checkout@v4` with `ref: ${{ github.sha }}` added to `shift-traffic` in BOTH deploy workflows, stated explicitly rather than left to the default. On a workflow_dispatch run github.sha is the head of the ref the run was dispatched against, and the workflow file itself is read from that commit, so workflow and script are one revision by construction. It is NOT the image's commit: `image_tag` is an operator input defaulting to `latest`, so the workflow cannot know the deployed image's commit from inside the run. The guarantee bought is workflow<->script, which is the one this check needs; the dispatch's phrase 'the deployed commit' is answered precisely rather than assumed, and the gap is named.",
+    "windowsCauseCaptured": "The cause is not `shell: true`. check-tagged-revision-env.mjs builds a quoted command string and refuses any argument failing its SHELL_SAFE guard; the standard Windows gcloud install path contains a space (`Google Cloud SDK`), so pointing P279_GCLOUD at the real binary makes the guard refuse the binary's own path and the read returns SERVICE_DESCRIBE_FAILED. Reproduced with the real detail string; the raw CHECK's stderr is the thrown guard message quoted in the refusal's `detail`.",
+    "windowsFix": "The wrapper resolves the binary itself before invoking the check: `gcloud.cmd` on win32 (the shim cmd.exe, which is what shell:true uses, can execute; the extensionless Git Bash `gcloud` it cannot), `gcloud` elsewhere. A configured P279_GCLOUD the check would refuse is discarded and NAMED ON STDERR along with the substitute - overriding a deliberate configuration silently would be its own defect.",
+    "enumeration": "Every workflow in .github/workflows parsed as YAML and every job that runs a repo `node` script checked for a checkout: six files, zero jobs without one after this change. Four steps still map a script's exit codes by number and are NAMED, NOT FIXED, in CP2 (pr-checks.yml's ss-w18 boot-graph and boot-smoke steps, and its P-279 selftest and divergence steps)."
+  },
+
+  "predictionsOwned": [
+    {
+      "id": "P1-owned",
+      "statement": "The marker must accept the fixture shape as well as the live shape, and the harness's own first run would have missed it. Prediction, made before the fix was written: an earlier draft fails F1 by reporting `did-not-run` for a child that printed `verdict: PASS` and exited 0.",
+      "observed": "Confirmed on the first harness run, exactly as predicted, and fixed by accepting both shapes."
+    },
+    {
+      "id": "P2-owned",
+      "statement": "The Windows symptom is a configuration-dependent refusal, not a blanket break. Prediction: with P279_GCLOUD unset, the raw check PASSES on this host, because `gcloud` reaches cmd.exe's PATHEXT resolution and the guard never sees a space; the refusal requires an operator to have set P279_GCLOUD to the real path.",
+      "observed": "Confirmed: raw check with P279_GCLOUD unset returned verdict PASS, exit 0; the same binary path passed explicitly returned REFUSE/SERVICE_DESCRIBE_FAILED. This matters for the close because it means the dispatch's 'on a Windows host the script refuses' is condition-dependent, and a fix that only changed the default would not have fixed the seat's case."
+    },
+    {
+      "id": "P3-owned",
+      "statement": "A check that fails to RUN and a check that finds a VIOLATION must be separable from the step's own output alone, without reading the log for a module error. Prediction: the wrapper's two failure codes print different RESULT text, so an operator reading only the failing step's title/summary can tell them apart.",
+      "observed": "Holds: `RESULT=violation - a tag points at a revision missing a credential...` versus `RESULT=did-not-run` plus the child's exit and the last lines of its stderr."
+    },
+    {
+      "id": "P4-owned",
+      "statement": "The wrapper cannot fix a call site that does not check the repo out. Prediction: deleting the wrapper from the runner reproduces the original ambiguity exactly - a missing module exits 1 and the wrapper reports did-not-run, but the step still fails, so the fix is only half a fix without the checkout.",
+      "observed": "The wrapper treats its own absence as did-not-run (by construction; not separately falsified, since the sandbox always contained it). Stated as an unbounded edge rather than claimed as tested."
+    }
+  ],
+
+  "adversarialQuestionsAskedOfMyOwnDesign": [
+    {
+      "q": "A1 - is the wrapper a second copy of the rule, i.e. exactly the drift DEV_PROCESS 2.4 forbids?",
+      "disposition": "It is one copy where there were four, and it holds NO predicate: it never decides whether an env var is required. It reads the check's own verdict and only classifies the failure to produce one. The classification vocabulary is three words and lives in one file. Residual stated: `--selftest` and `--check-divergence` still map by number in pr-checks.yml, so the repo is not yet at one table for every script invocation - named in CP2 rather than blurred."
+    },
+    {
+      "q": "A2 - could `did-not-run` become the new thing nobody reads, i.e. a permanently-red gate by another name?",
+      "disposition": "It fails the step, which is the required behaviour (a check that could not read must never read as green), and DEV_PROCESS 2.0's rule is about a gate scoped where it cannot fire. This gate can fire in both directions and both were observed. The honest limit: if `did-not-run` becomes routine the step is still ignored, so the difference between the two codes only has value if an operator reads them - which is why they print different text and why the false `violation` of 2026-09-18 is corrected rather than relabelled."
+    },
+    {
+      "q": "A3 - does requiring `service` in the marker make the wrapper fragile to a legitimate report change?",
+      "disposition": "Yes, by design, and the failure is safe: a shape the wrapper does not recognise reads `did-not-run` and fails loudly rather than passing. A wrapper that guessed would reintroduce the defect. Named as the cost."
+    },
+    {
+      "q": "A4 - the dispatch asks for the gcloud fix in `check-tagged-revision-env.mjs`. Is resolving it in the wrapper instead a dodge?",
+      "disposition": "Stated plainly in CP2 as a conflict with the dispatch, not smoothed over. The check's bytes are pinned by pr-checks.yml's canonical divergence compare against hauska-engine's copy, so an edit here is RED until a coupled engine PR lands, and the dispatch's own scope line says legacy-design-tools only and one PR. The wrapper's resolution fixes the entry point the lane documents and was observed working on the live service; the check's own `gcloudBinary()` remains win32-naive and that is reported as an OPEN item rather than claimed as done."
+    },
+    {
+      "q": "A5 - is `clean` on cortex-api proof the check works, or proof the check found nothing?",
+      "disposition": "It is neither on its own. A `clean` from a check that cannot fire proves nothing, which is why the both-directions set includes the fail fixture and the refusal fixtures. The live `clean` is cited only as the value an operator should see, and the live-workflow direction stays open."
+    }
+  ],
+
+  "probeStance": {
+    "notApplicable": "CI configuration in legacy-design-tools, not a customer-surface change: the artifact is a deploy-workflow step, and scripts/surface-probe.mjs carries no row that reads a workflow's own failure classification. Nothing this lane can execute reaches a customer. Precedent: P-318 filed the same class as `probe.notApplicable` ('CI configuration; graded by #410 merging without a bypass').",
+    "whyNotAStoreInstrument": "A store-reading instrument is explicitly not the customer predicate (A-183). Citing the check's own live read as this lane's probe would be the failure mode the rule exists for.",
+    "theRealPredicate": "The live predicate is a dispatched workflow run: `cloud-run-deploy` with `action: shift-traffic`, whose post-shift step must print `RESULT=clean`. That is the integration seat's, and it is why the close status is closed-partial rather than closed."
+  },
+
+  "constraintsHonored": [
+    "FAN-DEPTH 0: no sub-agent launched by this lane at any point.",
+    "Lane claimed before any work (seat cente-vsc-p362, 2026-09-18T17:50:20.147Z); released when the close is filed.",
+    "No deploy, no workflow dispatch against production, no merge.",
+    "legacy-design-tools only; one PR. No change to check-tagged-revision-env.mjs, whose bytes are pinned by the canonical divergence compare.",
+    "doc_repo edits left uncommitted (planner-owned commits) and listed in the close."
+  ],
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-18_p362-post-shift-check_cp1.json (this file)",
+    "_inbox/2026-09-18_p362-post-shift-check_cp2.json",
+    "_inbox/2026-09-18_p362-post-shift-check_close.json"
+  ]
+}

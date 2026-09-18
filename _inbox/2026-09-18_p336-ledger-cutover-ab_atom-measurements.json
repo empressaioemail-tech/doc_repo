@@ -1,0 +1,57 @@
+{
+  "artifact": "atom-side measurements for P-336, read independently of the writer",
+  "lane": "p336-ledger-cutover-ab",
+  "filedBy": "seat cente-vsc-p336",
+  "filedAt": "2026-09-18T17:41:00Z",
+  "why": "The dispatch's close asks for 'the per-county dry-run counts beside the independent atom counts (not by the writer)'. The writer's own job is not built in this lane, so what is measured here is the WRITER'S INPUT at source: the atom populations each rail's cells would be planned from. Read with psql directly, never through any factory code.",
+
+  "method": {
+    "store": "the atoms store reachable as DATABASE_URL in P:/hauska-mcp-server/.env (never echoed). This is the store P-204 verified the boundary-edge and rrc-pipeline-fact atoms in.",
+    "bind": "each county bounded to the entity_id prefix range `{fips}:` .. `{fips};` (':' 0x3A, ';' 0x3B closes the half-open range), which is the SAME range shape the live readers use -- not a bare-parcel equality, which cannot see the `:boundary:{n}` suffix at all. Served by the (entity_type, entity_id) index; no PostGIS, no full-table scan.",
+    "parcelKey": "for parcelGeometry, `split_part(entity_id, ':boundary:', 1)` with a trailing `.00000000` normalised away, so the integer and padded grammars count as ONE parcel (their disagreement is the reader's bind-conflict case, and this is a count of parcels, not of grammars).",
+    "safety": "`set default_transaction_read_only = on`, statement_timeout 90s, one announced serialized scan (AGENT_CONTRACT section 4). No heavy-scan lease credential exists in this seat; stated, not worked around.",
+    "negativeOfThisMeasurement": "This measures ONE store under the readers' own bind. If boundary atoms for a county exist under another entity_type, another database, or another tenant, this measurement would not see them. That possibility is named as open and NOT resolved (see openQuestion)."
+  },
+
+  "parcelGeometry": {
+    "entityType": "property-boundary-edge",
+    "county":                       { "48021": "Bastrop", "48055": "Caldwell", "48209": "Hays", "48309": "McLennan", "48453": "Travis", "48491": "Williamson" },
+    "atomRows":                     { "48021": 26846, "48055": 57180, "48209": 509928, "48309": 0, "48453": 0, "48491": 0 },
+    "distinctParcelsWithAtom":      { "48021": 3732,  "48055": 6482,  "48209": 48611,  "48309": 0, "48453": 0, "48491": 0 },
+    "distinctParcelsServing":       { "48021": 3732,  "48055": 6482,  "48209": 48611,  "48309": 0, "48453": 0, "48491": 0 },
+    "retiredAtomRows":              { "48021": 723,   "48055": 0,     "48209": 0,      "48309": 0, "48453": 0, "48491": 0 },
+    "positiveControl": "parcel 48209:97658 (P-204's gold parcel, an independent lane's measurement) returns exactly 9 boundary atoms under the same bind, matching P-204's 'a nine-edge boundary ring'. The bind finds what it should find, so a zero is a zero and not a broken predicate.",
+    "reading": "The cells the writer would plan: a `value` (row-shaped, one companion row per serving edge) for every parcel in 48021/48055/48209 that has a non-retired edge; a `refused` `atom-miss` for every other parcel in the six counties."
+  },
+
+  "pipelines": {
+    "entityType": "rrc-pipeline-fact",
+    "county":                       { "48021": "Bastrop", "48055": "Caldwell", "48209": "Hays", "48309": "McLennan", "48453": "Travis", "48491": "Williamson" },
+    "atomRows":                     { "48021": 62256, "48055": 24988, "48209": 116420, "48309": 114254, "48453": 380917, "48491": 282569 },
+    "distinctParcelsWithAtom":      { "48021": 62256, "48055": 24988, "48209": 116420, "48309": 114254, "48453": 380917, "48491": 282569 },
+    "parcelsWithBooleanFinding":    { "48021": 62256, "48055": 24988, "48209": 116420, "48309": 114254, "48453": 380917, "48491": 282569 },
+    "parcelsWithTypedAbsence":      { "48021": 0, "48055": 0, "48209": 0, "48309": 0, "48453": 0, "48491": 0 },
+    "reading": "Every pipeline atom in all six counties carries a boolean `nearPipeline` finding and none carries the typed absence the reader can also handle, so every parcel with an atom plans a `value` cell. NOTE the column reuse: for pipelines the last column is the TYPED ABSENCE count, not retired rows.",
+    "unaffectedByTheOpenQuestion": "This rail is complete in all six counties; it is not part of the finding below."
+  },
+
+  "etjStatus": {
+    "measured": false,
+    "why": "The P-296 determination is not an atom in this store: it is resolved at serve time from tx_etj_boundary + tx_etj_source in the DEPLOYMENT store (LDT's reader). This seat holds no DSN for that store and read nothing from it. UNMEASURED rather than restated from the dispatch -- an unread count is not a fact."
+  },
+
+  "THE_FINDING": {
+    "statement": "Only THREE of the six counties hold property-boundary-edge atoms: Bastrop (48021), Caldwell (48055) and Hays (48209). McLennan (48309), Travis (48453) and Williamson (48491) hold ZERO -- under the live readers' own bind, in the store those readers serve from, corroborated by a positive control.",
+    "divergenceFromTheDispatch": "The dispatch's trap list names ONE such county: 'McLennan has 0 boundary atoms county-wide'. Travis and Williamson are not named there, and Travis is a primary county. So the dispatch's own context block is DIVERGENT from the store, or the Travis/Williamson atoms live somewhere this bind cannot see.",
+    "whyItMattersForThisCutover": "Because `refused` is an EARNED cell kind, a county whose parcelGeometry cells are all `refused` `atom-miss` still produces a rail verdict of `pass` (no unaccounted cells, at least one earned). Cutting the rail over to must-pass would therefore let three counties read COMPLETE on a rail for which they hold no boundary geometry at all -- the silent-completion shape P-252 closed one level up (a fully unaccounted county reading as clean). The writer is not wrong to refuse: A-214 says a join miss is not an absence, and mirroring the reader's own `atom-miss` refusal is the only honest cell. The POLICY move is what is now unsafe for those three counties.",
+    "whatWasNotDone": "No store was written and no policy was committed. The RAIL_POLICY diff is handed back VERIFIED MACHINE-CORRECT (SELF-TEST OK (47)) and CONDITIONAL: do not commit it for parcelGeometry until the three counties' atoms are written, or a ruling says a refused-on-miss rail does not count toward county completion.",
+    "openQuestion_named_not_answered": "Do Travis and Williamson have boundary atoms in another store, database or tenant that this DSN and bind cannot see? Resolving it needs either the writer that mints them (boundary-primitive-county-batch, the producer the P-204 table names) or a lookup against every store that batch could have written to. Unresolved here rather than guessed."
+  },
+
+  "constraintsHonored": [
+    "read-only: default_transaction_read_only = on for every statement; no INSERT/UPDATE/DELETE executed",
+    "48491 (Williamson) read READ-ONLY only, which this dispatch's constraint sentence allows ('the writer may dry-run it read-only, never write it'); nothing about it was written anywhere",
+    "no credential printed; the DSN was read from the file into a local variable and passed to psql without being echoed",
+    "one announced serialized scan, its announcement in CP1 before it ran"
+  ]
+}

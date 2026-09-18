@@ -1,0 +1,180 @@
+{
+  "lane": "p334-p329-p330-factory-controls",
+  "planRows": ["P-334", "P-329", "P-330"],
+  "status": "closed",
+  "statusReason": "All three rows are met in-repo and enforced by the repo's own suite and CI, and each is shown FAILING on the pre-change code before being shown passing (the six falsifier directions are quoted verbatim in CP2). Three PRs are open, one per row, all MERGEABLE/CLEAN with every check green on both the push and the pull_request events: 183 (P-334), 184 (P-329), 185 (P-330). Nothing is merged, deployed, scheduled or written to any store by this lane -- the integration seat does all four, and for P-334 the deploy is not free: a cloudbuild.publish.yaml rebuild redeploys one digest to seven jobs and would carry three other merged-but-undeployed rows (P-325, P-327, P-335) with it, which is measured in this close rather than left for the seat to discover. There is no customer-surface claim in this close and none is possible: a factory watch job's resolver, a CI check and the county runner's control flow are not values a customer reads.",
+
+  "probe": {
+    "notApplicable": "None of the three rows is a customer-surface change, so no surface-probe predicate exists for them (OPS-24 Law 1 predicate debt, which the gate prints rather than hides). P-334 changes a factory watch job's resolver (no serving write, no mcp read); P-329 changes a CI check on a pin comment; P-330 changes the county runner's control flow on a child failure. Completion here is a set of behaviours proven BY VIOLATION in the repo's own suites and in the falsifier scripts under P:/seat-worktrees/p334-p329-p330-factory-controls/_falsifiers/, each re-derivable by a stranger from the cited commands. The customer predicate for these rows, if the program wants one, is a probe of the surface AFTER the seat merges and deploys -- which is the integration seat's step, not this lane's.",
+    "measuredBy": [
+      "test/p334-watch-secret-mount.test.mjs (4 tests) -- the deployed environment read FROM cloudbuild.publish.yaml and handed to the watch",
+      "test/p329-ldt-sha-comment-adjacency.test.mjs (11 tests) -- self-contained git fixture repos for the force-push base and the adjacency boundary",
+      "test/p330-declared-scope-refusals.test.mjs (10 tests) -- the four named cases plus the declaration's validity, the exit-code table and the transport's parsing",
+      "_falsifiers/p334-watch-env.mjs, _falsifiers/p329-base-and-adjacency.mjs, _falsifiers/p330-runner-continues.mjs -- the three falsifier scripts, run against 0f4558a and against the lane branch (outputs in CP2)",
+      "CI runs 35380525866 / 35380610499 (PR 183), 35380555162 / 35380749016 (PR 184), 35380567404 / 35380807514 (PR 185): conclusion `success` on all six, jobs `test`, `gate8`, `ldt-sha-comment-presence`",
+      "_inbox/2026-09-18_p334-p329-p330-factory-controls_cp1.json",
+      "_inbox/2026-09-18_p334-p329-p330-factory-controls_cp2.json"
+    ],
+    "whyNoStoreEvidence": "This lane was under a no-store-write constraint and never opened a store: the watch's read path is driven through injected connect/open functions in the test, the runner through injected Cloud Run dependencies, and the 'nothing was written' direction is structural (the watch's dry path records nothing and the runner's step record is a factory-store write this lane never executed). Read-only `gcloud` reads (run jobs describe, builds describe, artifacts tags list) were used to answer the P-334 rebuild question with measurements."
+  },
+
+  "missionPremise": "Three controls that each cannot run or pass on the wrong input (dispatch PLAN-ROW P-334, P-329, P-330 at 0f4558a; OPS-24 Law 2). (1) factory-retired-share-watch refused TARGET_ENV_MISSING on its first deployed execution (factory-retired-share-watch-m7cv7, 2026-09-18) because its resolver asked for a credential its own deploy case deliberately does not mount. (2) The _LDT_SHA comment-presence check (P-124/CTX-PIN4, hauska-factory #173 / 294bc2c) skipped or crashed on exactly the force-push it exists to see, and accepted any comment anywhere in the file. (3) Since #174, factory-parcel-ag-valuation's declared absences (P-322/A-184) stop the county runner at stage 6, so factory-dollar-fields-patch and stages 7-12 never run for those counties through the runner.",
+
+  "completionPredicate": "P-334: `runRetiredShareWatch` resolves the target's DATABASE url through a database-only resolver whose target discipline is the pair resolver's (the target's OWN variable, no ?? chain, TARGET_UNKNOWN / TARGET_ENV_MISSING preserved), the secret mount is unchanged, and a test that reads the factory-retired-share-watch SECRETS list OUT OF cloudbuild.publish.yaml runs the watch against exactly that environment -- red on the pre-change code. P-329: on a push whose `before` is unreachable (or the null sha) the check diffs against the merge-base with a declared ref, refuses with a reason (exit 2) when no base can be resolved at all, and passes a pin bump only when the same diff added a comment line within PIN_COMMENT_ADJACENCY_LINES (3) of the added pin line -- each of the four cases carried by a test in a self-contained fixture repo, and the two named cases shown failing on the pre-change code. P-330: the plan declares, per job, which refusal codes are scope refusals (each pointing at the file+constant that owns the scope, validated), the CLI exits with a declared code (60-79) for those refusals, the runner reads the child's own task-attempt exit code, continues past a failure only when the readable code is declared FOR THAT JOB, and stops on an undeclared code, a code declared for another job, and an unreadable code -- all four cases tested, and the continue direction shown failing on the pre-change code.",
+
+  "scopeBasis": "No store read or write, no job execution against any target, no deploy, no schedule, no merge, no force-push, no rebase, no sub-agent (FAN-DEPTH 0). The only non-repo acts were read-only `gcloud` describe/list calls in hauska-prod-497015. The boundaries are the dispatch's: P-334's fix must NOT widen the secret mount (a job holding a credential it never uses is the wider control) and must not touch P-321's band or A-220's 0.05 threshold; P-329 must not touch ldt-pin-staleness or move the pin; P-330 must reference another job's scope list rather than copy it, and must not widen the set of absences a county can be walked past beyond a short declared table. Two things are deliberately NOT fixed and are named instead: factory-verify-walk's mount-vs-resolver mismatch (a different job's contract) and the fact that a scope refusal leaves no store row, so the exit status is the only channel the runner can read.",
+
+  "startCommit": "0f4558a4a4c89c72275744f580d7ba5765d95674 (P-335 / #178, origin/main tip). Verified at claim with `git fetch origin --prune` then `git rev-parse HEAD origin/main` (both 0f4558a4...) and `git rev-list --left-right --count origin/main...HEAD` = 0 0. No rebase and no merge during the lane. P-333 (the dispatch's first-in-wave) is NOT merged at this base -- it is not among the open PRs (179-185) and not in origin/main's log -- so the dispatch's 'rebase onto whatever has merged before you open for review' has nothing to rebase onto yet; the seat serializes at merge time, and the three rows touch no file any other open row touches (verified against the open PRs' file lists).",
+  "laneBranch": "lane/p334-p329-p330-factory-controls (local, unpushed: the lane's own three commits 1afb18d / 0aa4600 / 7c9cf6d, kept as the single-tree record; the three PRs are separate branches off the same base so each can be merged and deployed on its own evidence).",
+
+  "rows": [
+    {
+      "row": "P-334",
+      "branch": "lane/p334-retired-share-watch-db-resolver",
+      "head": "45cb2e94ec49612b3c2d90a88c486771a1468771",
+      "files": ["src/lib/publish-target-env.mjs", "src/jobs/publish-retired-share-watch.mjs", "test/p334-watch-secret-mount.test.mjs"],
+      "pr": {
+        "number": 183,
+        "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/183",
+        "state": "open, not merged, not deployed; mergeable=MERGEABLE, mergeStateStatus=CLEAN",
+        "checks": "run 35380525866 (push) and 35380610499 (pull_request) at 45cb2e9, both conclusion `success`: job `test` pass (1m23s / 1m30s), `gate8` pass, `ldt-sha-comment-presence` pass"
+      }
+    },
+    {
+      "row": "P-329",
+      "branch": "lane/p329-ldt-pin-comment-force-push",
+      "head": "09dd3dcb097b271789cf1c8ab21d041d8ddaf4b8",
+      "files": [".github/workflows/ci.yml", "scripts/check-ldt-sha-comment-presence.mjs", "test/p329-ldt-sha-comment-adjacency.test.mjs"],
+      "pr": {
+        "number": 184,
+        "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/184",
+        "state": "open, not merged, not deployed; mergeable=MERGEABLE, mergeStateStatus=CLEAN",
+        "checks": "run 35380555162 (push) and 35380749016 (pull_request) at 09dd3dc, both conclusion `success`: `test` pass (1m28s / 2m7s), `gate8` pass, `ldt-sha-comment-presence` pass -- the last one now also runs this row's 11 fixture tests"
+      }
+    },
+    {
+      "row": "P-330",
+      "branch": "lane/p330-county-runner-declared-scope-refusals",
+      "head": "b0eac5f29ddb5edf9dc0d83560e5c398e6b1a2c1",
+      "files": ["src/lib/scope-refusal-exits.mjs", "src/lib/county-runner-plan.mjs", "src/jobs/county-runner.mjs", "src/control/cloudrun-jobs.mjs", "src/cli.mjs", "test/p330-declared-scope-refusals.test.mjs"],
+      "pr": {
+        "number": 185,
+        "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/185",
+        "state": "open, not merged, not deployed; mergeable=MERGEABLE, mergeStateStatus=CLEAN",
+        "checks": "run 35380567404 (push) and 35380807514 (pull_request) at b0eac5f, both conclusion `success`: `test` pass (1m36s / 1m42s), `gate8` pass, `ldt-sha-comment-presence` pass"
+      }
+    }
+  ],
+
+  "falsifier": "Three scripts, six directions, all quoted verbatim in CP2 under falsifierEvidence, and each row's own regression suite green in CI. P-334: `_falsifiers/p334-watch-env.mjs` reads the deployed job's SECRETS out of cloudbuild.publish.yaml and hands that environment to runRetiredShareWatch -- at 0f4558a it throws `TARGET_ENV_MISSING: target production is missing PRODUCTION_HAUSKA_MCP_URL`, at the row's head it runs (counties=1, opened the mounted PRODUCTION_NEONDB_URL, one observation recorded). P-329: `_falsifiers/p329-base-and-adjacency.mjs` builds its own fixture repos and runs the repo's script -- unreachable --base exits 2 pre-change and exit 1 (merge-base fallback, FAIL) post-change; a bump whose only added comment is 4 lines from the pin exits 0 pre-change and exit 1 post-change. P-330: `_falsifiers/p330-runner-continues.mjs` drives the real runner for Hays 48021 with a child that exits 60 -- pre-change stage 6 stops at factory-parcel-ag-valuation (10 of 11 jobs requested, outcome=failed, JOB_FAILED, INSTRUMENT_FAILED, steps reached 6), post-change factory-dollar-fields-patch is requested, the step record is outcome=refused with SCOPE_REFUSED:factory-parcel-ag-valuation=COUNTY_NO_SOURCE_PENDING, and the walk reaches stage 7. Plus three FAKE-VS-REAL corrections the tests forced, in CP2 (a real bookkeeping defect in the runner's failure path; the short-vs-full execution name; and a case-4 fixture that had been pointed at a job declaring nothing at all).",
+
+  "contradicted": "Three readings in the dispatch did not survive contact with the repo, each stated in CP1 and repeated here rather than quietly built around. (1) P-334's dispatch says the rebuild 'would also ship P-327's merged gate'; it would ship THREE merged-but-undeployed rows. Measured, not asserted: the last publish build is Cloud Build e301a363-5a76-4315-adab-75ec6d5f3a68 (create 2026-09-18T10:40:58Z, finish 10:49:21Z) and all seven deployed jobs run its digest sha256:afbd0bbc914d7b9547751581aac61e2b5a231b88e03c3f93d71e769a0c0ea2a3 (read live with `gcloud run jobs describe`; the watch job's creationTimestamp 2026-09-18T10:49:16Z and generation 1 confirm that build created it); the commits merged after it are #175 P-325 (85d63e8), #177 P-327 (807cbad) and #178 P-335 (0f4558a), all touching src/ which Dockerfile.publish copies into the image. (2) P-330's dispatch offers 'its run event or a declared exit code' as two channels; there is only one, because P-322's own header requires the refusal to happen BEFORE any store is opened, so no run row and no run event exists -- the exit status is the only durable trace a store-less refusal can leave. (3) P-330's dispatch calls the depth step's existing `precondition` entry 'the same shape'; at 0f4558a that entry was a declaration the runner only RECORDED (county-runner.mjs:468 wrote it onto the stage record as a note) and a failed child still stopped the run -- what P-330 reuses is the declaration's fields, not its (absent) effect. Nothing in the dispatch's premises about the three defects themselves was contradicted: all three were reproduced on the pre-change code exactly as described.",
+
+  "threeQuestionGate": {
+    "P-334": {
+      "whatExecutesIt": "resolveTargetDatabase, called by runRetiredShareWatch (src/jobs/publish-retired-share-watch.mjs) on every execution of the Cloud Run job factory-retired-share-watch, whose template args are `retired-share-watch,--target=production,--apply` and whose template mounts FACTORY_DATABASE_URL and PRODUCTION_NEONDB_URL.",
+      "whatTriggersIt": "Every execution, with nothing to set: the resolver runs before any store is opened, and a missing variable refuses before the first connection.",
+      "whatFails": "TARGET_ENV_MISSING naming the missing variable and never its value; TARGET_UNKNOWN for an unknown target. The execution exits non-zero (the band violation is a separate non-zero exit raised by P-321's own logic, unchanged).",
+      "doesThatRunInProductionToday": "It runs, but has never once succeeded: the deployed job's first execution refused (factory-retired-share-watch-m7cv7, 2026-09-18). After this row is deployed it resolves the serving store it was built to read.",
+      "whatBypassesIt": "A variable set to a value the store rejects (presence, not reachability); running with the other --target deliberately; a widened mount (wasteful, not caught here); and the mismatch in the MIRRORED direction on another job (factory-verify-walk), which is named and asserted, not fixed."
+    },
+    "P-329": {
+      "whatExecutesIt": "scripts/check-ldt-sha-comment-presence.mjs, run by the ci.yml job ldt-sha-comment-presence on every push to any branch and every pull_request -- unconditionally since this row removed the `if:`.",
+      "whatTriggersIt": "Every push and PR; the script is a no-op PASS unless the diff to cloudbuild.publish.yaml changes the _LDT_SHA VALUE.",
+      "whatFails": "Exit 1 with the JSON report (the pinned value changed with no comment line added within 3 lines of it); exit 2 with a reason when the base cannot be resolved with either the declared ref or the fallback.",
+      "doesThatRunInProductionToday": "It runs on every push and PR today; its failure mode before this row was that on a force-push it either could not run (exit 2 on every re-run) or was skipped by the job's own `if:` -- so the case it exists for was the case it never judged.",
+      "whatBypassesIt": "Editing the pin and its comment rather than ADDING a comment line (the check requires an added adjacent line); committing the change in a way that produces no diff against the resolved base (e.g. amending an unreleased commit); `_LDT_SHA` changed in a commit already reachable from the fallback ref; disabling the job or deleting the step; and -- named -- a commit made where the workflow never runs (no push)."
+    },
+    "P-330": {
+      "whatExecutesIt": "src/jobs/county-runner.mjs on each child failure (declaredScopeRefusalFor, reading the child execution's task-attempt exit code through src/control/cloudrun-jobs.mjs and comparing it to the plan's per-job declaration), with src/cli.mjs exiting with the declared code so that the child's own status carries it.",
+      "whatTriggersIt": "A child execution that did not succeed. Nothing is read for a job that declares no scope refusals (measured: zero reads) and nothing for a child that succeeded.",
+      "whatFails": "validatePlan refuses a malformed declaration (RUNNER_PLAN_INVALID) before a walk starts; the exit-code table refuses an out-of-range or duplicated entry (SCOPE_REFUSAL_EXIT_TABLE_INVALID); a walk stops with INSTRUMENT_FAILED naming the child and the reason when the code is undeclared, declared for another job, or unreadable.",
+      "doesThatRunInProductionToday": "The runner exists and stops today; it is the behaviour this row changes. The failing direction (an undeclared/unreadable code still stopping the walk) is the pre-change behaviour and is preserved.",
+      "whatBypassesIt": "A child exiting a declared code WITHOUT having declined the county (the code is the child's claim; nothing verifies the reason -- which is why each declaration names the file and constant that owns the scope, and why the table is two codes); a child that declines and exits 0; a new county-scoped refusal code that nobody declares (it stops the walk: safe, but unrecorded); and a store-less 60-79 exit raised for something that is not scope at all."
+    }
+  },
+
+  "whatTheRebuildWouldCarryForP334": {
+    "theBuild": "`gcloud builds submit --config=cloudbuild.publish.yaml --project=hauska-prod-497015` builds ONE image and, in the deploy loop, redeploys SEVEN jobs to that digest: factory-publish-migrate, factory-staging-reset, factory-bastrop-publish, factory-republish-on-change, factory-verify-walk, factory-dollar-fields-patch, factory-retired-share-watch.",
+    "theLastPublishBuild": "Cloud Build e301a363-5a76-4315-adab-75ec6d5f3a68, create 2026-09-18T10:40:58Z, finish 10:49:21Z, SUCCESS, image tag publish-e301a363-5a76-4315-adab-75ec6d5f3a68. All seven jobs run its digest sha256:afbd0bbc914d7b9547751581aac61e2b5a231b88e03c3f93d71e769a0c0ea2a3 (IMAGE_DIGEST env var on each). (A later build, c37f98ed-50f4-4401-8568-8c600b67469b at 14:42Z, is a DIFFERENT config -- _IMAGE_TAG=parcel-record-fill, _LDT_SHA=46e1a5a1 -- and did not touch these jobs.)",
+    "mergedButUndeployedRowsTheRebuildWouldCarry": [
+      "#175 P-325 (85d63e8, committed 2026-09-18T10:52:42Z) -- src/jobs/parcel-record-fill.mjs, test updates",
+      "#177 P-327 (807cbad, 15:03:08Z) -- src/jobs/bastrop-publish.mjs, src/lib/publish-retirement-gate.mjs, src/lib/id-keyspace-overlap.mjs, tests",
+      "#178 P-335 (0f4558a, 15:06:37Z) -- src/jobs/parcel-record-fill.mjs, test"
+    ],
+    "whatItWouldNotChange": "The bake. _LDT_SHA stays bae48d40... (the stale pin ldt-pin-staleness reports; P-351's row), so no LDT/bake content changes in this rebuild. P-334's own change reaches the image through COPY src ./src (entrypoint `node src/cli.mjs`).",
+    "theHandBackDryRun": "After the deploy the seat runs the watch dry (the template's --apply is overridden out by replacing --args), one county first: `gcloud run jobs execute factory-retired-share-watch --project=hauska-prod-497015 --region=us-east4 --wait --args=retired-share-watch,--target=production,--county=48491` and then without --county for every served county. PREDICTION: ok:true, no store write (no --apply), Williamson 48491 read at its restored share (about 0.4694 per the row) and every served county classified against P-321's band (0.90 ceiling / 0.50 move); before this row the same execution refuses TARGET_ENV_MISSING naming PRODUCTION_HAUSKA_MCP_URL."
+  },
+
+  "leave_behind": [
+    "THE THREE PRs ARE OPEN AND UNMERGED, and nothing was deployed, scheduled or merged by this lane. The integration seat merges them in the wave's order (P-333 first, then these, then P-352/P-361, then P-300/P-338's writer half, then P-336's) -- P-333 was NOT merged at 0f4558a, so there is nothing to rebase onto yet; the three rows' file sets are disjoint from every open PR's file list (179-185) as read 2026-09-18, so the serialization is about deploy order, not about conflicts.",
+    "P-334 CANNOT SHIP ALONE: its deploy is a cloudbuild.publish.yaml rebuild, which redeploys one digest to SEVEN jobs and carries P-325 + P-327 + P-335 (measured; see whatTheRebuildWouldCarryForP334). The seat should decide that knowingly -- if those three need to be verified before they reach production, the rebuild is the act that puts them there.",
+    "FACTORY ROW (P-334's audit, unfixed by design): factory-verify-walk mounts FACTORY_DATABASE_URL only while src/jobs/verify-walk.mjs's loadCountyJurisdictions resolves the target PAIR -- so a walk on the deployed job has neither STAGING_NEONDB_URL nor STAGING_HAUSKA_MCP_URL. Same shape as P-334, one step worse (the walk needs a target database and the template mounts none). Whether that job narrows its resolver or widens its mount is a decision about a different job's contract; test/p334-watch-secret-mount.test.mjs asserts the mismatch as a fact about today's template so a later fixer sees it.",
+    "P-330 ROW: the transport is NOT exercised live. executionTaskExitCode is proven against Cloud Run's documented task-attempt shape and through the same injected dependency the runner uses, but no real failed execution's task list was read. The first deployed walk that continues past a declared refusal is the live proof, and the seat should read that step's record (outcome=refused, verdict SCOPE_REFUSED:<job>=<code>) when it happens.",
+    "P-330 ROW: the declaration is OPT-IN per job. A new county-scoped job that refuses a scope code and is not declared stops the walk -- safe, but unrecorded. If that becomes a pattern, the plan should grow a default.",
+    "P-330 ROW: the 60-79 band is a CLI contract. Nothing else in src/cli.mjs uses 60-79 at 0f4558a (checked: 1, 2, 3, 4, 128+n), but if another lane later claims a status in that range, the table needs renumbering BEFORE any child depends on its code.",
+    "P-329 ROW: ldt-pin-staleness is untouched and still fails on main because the bake pin bae48d40 is behind LDT main -- correct behaviour, P-351's row. This lane's change does not alter what that workflow sees (the pin's value is identical in base and head, and the staleness workflow file is not in the diff).",
+    "PROCESS DEBT, declared rather than hidden: CP1 and CP2 were FILED LATE (after the build and after the PRs). The plan and the falsifier directions were fixed before the first edit, but the checkpoints were not written when the contract says they should be, so a reader cannot treat the filed documents as pre-registered by timestamp. Both files say so in their own `filedLate` field.",
+    "SEAT WORKTREE SCRATCH: _falsifiers/ (three scripts, the PR bodies, the three commit-message files, the captured suite outputs suite-pre.txt / suite-post.txt and the per-job `gcloud describe` JSON dumps) lives in P:/seat-worktrees/p334-p329-p330-factory-controls/, outside both repos, and is NOT part of any PR. It is the evidence for the falsifier sections above; keep or discard it as the seat prefers.",
+    "DOC_REPO: the three checkpoint artifacts and this close are written at the dispatch's exact paths in THIS LANE'S doc_repo worktree and are left UNCOMMITTED (contract section 6: doc_repo commits are planner-owned), together with the lane-claim record the claim tool wrote into _catalog/lane_claims.json. No file outside the lane's own worktrees was modified. Note the dispatch's own warning: this lane was rooted in its own seat worktree, NOT P:/doc_repo."
+  ],
+  "leaveBehind": [
+    "ALIAS, spelled both ways on purpose (the sibling closes in _inbox carry `leaveBehind` while the dispatch's skeleton spells the field `leave_behind`): the identical array. If a gate requires one spelling only, prefer `leave_behind`.",
+    "The three PRs are open and unmerged; the integration seat merges and deploys (183 P-334, 184 P-329, 185 P-330).",
+    "P-334 cannot ship alone -- its rebuild carries P-325, P-327 and P-335 to production on the same digest (see leave_behind and whatTheRebuildWouldCarryForP334).",
+    "FACTORY ROW: factory-verify-walk's mount does not carry the pair its resolver asks for (same shape as P-334, unfixed by design).",
+    "P-330: the Cloud Run task-attempt transport is not exercised live; the first deployed walk that continues past a declared refusal is the live proof.",
+    "P-330: the scope-refusal declaration is opt-in; a new undeclared refusal code stops a walk and is not recorded as an absence.",
+    "P-330: the 60-79 exit band is a CLI contract that another lane could collide with.",
+    "P-329: ldt-pin-staleness still red until P-351 moves the pin -- unchanged by this lane.",
+    "PROCESS: CP1 and CP2 were filed late (declared in each artifact).",
+    "doc_repo changes (three checkpoints + lane_claims) are left uncommitted in the lane's own doc_repo worktree, per contract section 6."
+  ],
+
+  "verificationByViolation": [
+    {
+      "row": "P-334",
+      "oldDirection": "The deployed watch could not start AT ALL: the template's own mount (FACTORY_DATABASE_URL + PRODUCTION_NEONDB_URL) does not include PRODUCTION_HAUSKA_MCP_URL, while resolveTargetStores demands it -- refused TARGET_ENV_MISSING on factory-retired-share-watch-m7cv7 (2026-09-18), the job's first execution, and every execution since. Every unit test passed because every unit test handed the resolver a full environment.",
+      "newDirection": "The same call against the environment the template produces runs: counties=1, the serving store opened through the mounted PRODUCTION_NEONDB_URL (label 'NEONDB url'), one observation recorded with band_state 'first-observation' for 48491. The test that pins this reads the SECRETS list out of cloudbuild.publish.yaml, so the mount and the resolver cannot disagree silently in either direction again."
+    },
+    {
+      "row": "P-329",
+      "oldDirection": "On a force-push the check could not run at all: `git diff <unreachable-before> HEAD` fails and the script exits 2 with `fatal: bad object`; and the CI job's own `if:` skipped the whole step when `before` was the null sha. Separately, a pin bump whose only added comment described another substitution, or sat 200 lines away, PASSED.",
+      "newDirection": "The unreachable base resolves to the merge-base with origin/main (baseFrom=merge-base) and the branch's own value-only bump FAILS with exit 1; a bump whose only added comment is 4 lines from the pin FAILS ('outside the declared 3-line adjacency') while one at exactly 3 lines PASSES; a bare `#` spacer does not count; and a base that cannot be resolved with either ref REFUSES (exit 2) with a reason instead of passing. The workflow at head has no null-sha skip line."
+    },
+    {
+      "row": "P-330",
+      "oldDirection": "Hays 48021's walk through the runner stopped at stage 6's tenth job: factory-parcel-ag-valuation's declared COUNTY_NO_SOURCE_PENDING (P-322/A-184) was read as the step's failure, so the step record said outcome=failed / JOB_FAILED, stoppedBecause was INSTRUMENT_FAILED, factory-dollar-fields-patch was never requested, and stages 7-12 never ran -- for 48021, 48055, 48209, 48309 and (via COUNTY_NOT_IN_SCOPE) 48053.",
+      "newDirection": "The same walk requests factory-dollar-fields-patch, records the step as outcome=refused with verdict SCOPE_REFUSED:factory-parcel-ag-valuation=COUNTY_NO_SOURCE_PENDING (1 of 11 jobs declined by declaration; the step continued), spends exactly ONE exit-code read, and reaches stage 7. The three stopping directions are tested against it: an undeclared code (70, and 42 out of range), an unreadable code, and a code declared for a different job each still stop the walk."
+    }
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-18_p334-p329-p330-factory-controls_cp1.json",
+    "_inbox/2026-09-18_p334-p329-p330-factory-controls_cp2.json",
+    "_inbox/2026-09-18_p334-p329-p330-factory-controls_close.json"
+  ],
+
+  "fleetMemory": {
+    "LESSON": "A TEST THAT HAND-BUILDS THE INPUT CANNOT SEE THE DEPLOYED INPUT. P-334's defect was invisible to a full green suite because every test gave the resolver a complete environment -- the tests asserted behaviour on inputs the deployed job never has, and the job refused on its first execution instead. The fix that makes this class of defect visible is not more assertions but reading the INPUT from the artifact that defines it: the test parses the job's SECRETS list out of cloudbuild.publish.yaml and hands the watch exactly that. Worth generalising: for any deployed job, the environment/config under test should be READ from the deploy template, never assembled by the test.",
+    "LESSON": "A CONTROL THAT CANNOT RESOLVE ITS OWN BASE MUST REFUSE, NOT SKIP. The pin-comment check was skipped (or crashed) on exactly the force-push it exists to see, because the workflow passed an unreachable sha and had an `if:` that skipped the null case. Two separate mechanisms, both silently turning 'cannot see' into 'no finding'. The rule worth keeping: a check that cannot see its input fails (exit 2 with a reason); a check that needs a fallback derives it from the ONE base that shows the branch's own changes (the merge-base with the declared ref), never from a branch tip.",
+    "LESSON": "A STORE-LESS REFUSAL LEAVES NO ROW, SO THE EXIT STATUS IS THE ONLY CHANNEL -- and that is an argument for making the code a property of the REFUSAL, not of the caller. P-322 requires parcel-ag-valuation to refuse before opening a store, so no runs row and no run event exists; a parent could only have scraped stderr (rejected: it makes the decision depend on log text, and a scrape that matched nothing looks exactly like a crash). Putting the mapping in ONE module (src/lib/scope-refusal-exits.mjs) and making src/cli.mjs exit with it means the same refusal carries the same status in the county runner, in the Cloud Run job, and under an operator's hand invocation.",
+    "LESSON": "A TEST'S FAKE MUST KEY THE IDENTIFIERS THE CODE ACTUALLY USES. P-330's fake Cloud Run keyed executions by the full resource name while the runner waits on the SHORT execution name, and every 'the run must stop' case looked like a pass until that was fixed. A fake that answers a different question than the code asks is green for the wrong reason -- the same failure shape as the test that hand-builds the environment.",
+    "LESSON": "WHEN A TEST FAILS, DECIDE WHETHER THE TEST OR THE CODE IS WRONG, AND SAY WHICH. P-330's first red run was BOTH: two assertions were wrong (a job count and the case-4 fixture pointed at a job that declares nothing) and one was a real defect (the runner set its lastExecution/lastJob bookkeeping on the failure path, so a stopped step was recorded as succeeded/refused). Recording that distinction in the close is what stops a later reader from assuming the tests were simply bent to fit.",
+    "DEAD-END": "Do not read a local full-suite run on node 24 as the repo's verdict. Locally (node v24.11.1) `node --test` at base reports 4 failures and at head 2 (ctx-b3-store-census's LDT-checkout subtests and p3-absence's two non-vacuity tests, the latter carrying the repo's own out-of-scope marker), while ci.yml's `test` job pins node 20 and is GREEN on all three PRs. Two node versions, two verdicts. The regression statement that means something is base-vs-head on the SAME node; the authority is CI.",
+    "DEAD-END": "Do not infer 'what is deployed' from the newest Cloud Build with this image name. Build c37f98ed-50f4-4401-8568-8c600b67469b at 14:42Z builds the same repository and the same image name but a DIFFERENT config (_IMAGE_TAG=parcel-record-fill, _LDT_SHA=46e1a5a1), and it does not touch the publish jobs. The publish jobs' deployed state is readable directly (the IMAGE_DIGEST env var and the digest on the container), and that is the fact; the newest build is not.",
+    "GROUND-TRUTH": "hauska-factory origin/main at 0f4558a4a4c89c72275744f580d7ba5765d95674 (P-335 / #178) at 2026-09-18T18:2xZ, no rebase since; P-333 is neither merged nor open. The lane branch lane/p334-p329-p330-factory-controls carries 1afb18d (P-334), 0aa4600 (P-329), 7c9cf6d (P-330) on top of it; the three PR heads are 45cb2e9 (PR 183), 09dd3dc (PR 184), b0eac5f (PR 185), all MERGEABLE/CLEAN.",
+    "GROUND-TRUTH": "All six CI runs are conclusion `success` (read 2026-09-18T18:5xZ): 35380525866 + 35380610499 (PR 183), 35380555162 + 35380749016 (PR 184), 35380567404 + 35380807514 (PR 185), each running `test`, `gate8` and `ldt-sha-comment-presence`.",
+    "GROUND-TRUTH": "The seven publish jobs in hauska-prod-497015/us-east4 all run digest sha256:afbd0bbc914d7b9547751581aac61e2b5a231b88e03c3f93d71e769a0c0ea2a3, set by Cloud Build e301a363-5a76-4315-adab-75ec6d5f3a68 (create 2026-09-18T10:40:58Z, finish 10:49:21Z); factory-retired-share-watch has generation 1 and creationTimestamp 2026-09-18T10:49:16Z. cloudbuild.publish.yaml pins _LDT_SHA bae48d40... and _CONTRACT_VERSION 1.30.0.",
+    "GROUND-TRUTH": "Local suite, same machine/node: 0f4558a -> 1948 tests / 1905 pass / 4 fail / 37 skipped; lane head -> 1973 / 1932 / 2 / 37. The 25 new tests are 4 (P-334) + 11 (P-329) + 10 (P-330).",
+    "OPEN": "Seat decision: P-334's deploy carries P-325 + P-327 + P-335 to the same digest -- sequence it knowingly.",
+    "OPEN": "FACTORY ROW: factory-verify-walk's mount does not carry the pair its resolver asks for (asserted in the P-334 test file, unfixed).",
+    "OPEN": "P-330's transport is unexercised live; the first deployed continuation is the proof, and its step record should be read then.",
+    "OPEN": "The 60-79 exit band is a CLI contract; renumber before any other lane claims a status in it.",
+    "OPEN": "PROCESS: CP1/CP2 were filed late in this lane; the dispatch's own order (claim -> CP1 -> build) is the thing to keep."
+  },
+
+  "docRepoChangesNotCommitted": "This lane commits nothing to doc_repo (contract section 6: doc_repo commits are planner-owned) and does NOT write into P:/doc_repo (the integration seat's checkout). The three artifacts stand at the dispatch's exact paths inside THIS LANE'S doc_repo worktree -- P:/seat-worktrees/p334-p329-p330-factory-controls/doc_repo/_inbox/2026-09-18_p334-p329-p330-factory-controls_{cp1,cp2,close}.json -- and they are the ONLY uncommitted changes there (`git status --porcelain` in that worktree lists exactly those three as untracked). The lane was claimed (seat p334-lane, 2026-09-18T17:41:42.300Z, exit 0) and RELEASED at close (`node scripts/lane-claim.mjs release --lane p334-p329-p330-factory-controls --seat p334-lane`, exit 0), which restored _catalog/lane_claims.json to its committed content -- so that file shows no diff. The staged-set form of this close was graded by the repo's own gate before filing: `node P:/doc_repo/scripts/enforcement/git-commit-gates.mjs pre-commit` over the three artifacts returned exit 0 with only the PREDICATE DEBT note (P-334/P-329/P-330 closed on probe.notApplicable; OPS-24 Law 1, no surface predicate exists for these rows), which is the gate's documented path for these rows. No file outside the lane's own worktrees was modified."
+}

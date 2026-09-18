@@ -1,0 +1,192 @@
+{
+  "artifact": "P-353 CP1 — design checkpoint: the four missed classes, the two drop sites, the fall-through census and the pre-registered falsifiers",
+  "lane": "p353-find-box-coverage",
+  "planRows": ["P-353"],
+  "checkpoint": "CP1 (design / pre-build)",
+  "seat": "cente-vsc-p353",
+  "writtenAt": "2026-09-18T17:05:00Z",
+  "dispatch": "_dispatches/2026-09-18_p353-find-box-coverage_dispatch.md",
+
+  "startCommits": {
+    "docRepoWorktree": {
+      "path": "P:/seat-worktrees/p353-find-box-coverage/doc_repo",
+      "branch": "lane/p353-find-box-coverage",
+      "head": "c5eb66669acfdfba6762b6275ea37f48ef5fafe5",
+      "note": "= origin/main of doc_repo at claim time. P:/doc_repo is the integration seat's checkout and was NOT used for artifacts (dispatch, lines 268-271)."
+    },
+    "hauskaMapWorktree": {
+      "path": "P:/seat-worktrees/p353-find-box-coverage/hauska-map",
+      "branch": "lane/p353-find-box-coverage-map",
+      "head": "163fde324adf98cfb19fb8c48326bf6c56515ba0",
+      "note": "= current origin/main of hauska-map, and exactly the SHA the dispatch declares it read at ('Where it is lost, read at hauska-map 163fde32'). P-332 (#419) is in this SHA."
+    }
+  },
+
+  "laneClaim": {
+    "command": "node scripts/lane-claim.mjs claim --lane p353-find-box-coverage --seat cente-vsc-p353 --plan-row P-353 --dispatch _dispatches/2026-09-18_p353-find-box-coverage_dispatch.md",
+    "exit": 0,
+    "where": "P:/seat-worktrees/p353-find-box-coverage/doc_repo (not P:/doc_repo)",
+    "result": "CLAIMED p353-find-box-coverage for cente-vsc-p353 (P-353). Proceed."
+  },
+
+  "missionPremise": "The coverage answer is computed correctly upstream and is destroyed in hauska-map before any customer sees it. Verified at source rather than taken from the brief: legacy-design-tools `artifacts/api-server/src/lib/txgioAddressResolve.ts` on origin/main 25d1782f defines `type SitusSearchMissClass = \"no-hit\" | \"out_of_coverage\" | \"county_out_of_coverage\" | \"coverage_check_unavailable\" | typeof SITUS_SEARCH_BUDGET_ERROR` (line 1179) and returns it with `outOfCoverageState?: string` (line 1194), `outOfCoverageCounty?: {countyFips; countyName; state}` (line 1196) and `coverageCheckUnavailableReason?: string` (line 1198); the route `artifacts/api-server/src/routes/brokeragePlaceSitusSearch.ts` serialises all four (`...(result.outOfCoverageState ? {...} : {})`, `...(result.outOfCoverageCounty ? {...} : {})`, `...(result.coverageCheckUnavailableReason ? {...} : {})`). The map's BFF maps that body to `{ hits }` and nothing else, and the client returns the hit array only, so no class reaches the customer. Ruling basis: OPS-24 Law 1 (the customer predicate is the definition of done) and the mission statement in `_dispatches/2026-09-18_p353-find-box-coverage_dispatch.md`; the owed-answer table there is the same four subjects the customer-leg probe already drives for P-205.",
+
+  "completionPredicate": "For each of the four coverage subjects, the property-explorer BFF `GET /api/pe-situs-search` serves `missClass` beside `hits` — `no-hit` for 99999 ZZYZX RD, AUSTIN, TX 78701; `county_out_of_coverage` with outOfCoverageCounty {countyFips 48331, countyName 'Milam County', state 'TX'} for 99999 ZZYZX RD, CAMERON, TX 76520; `county_out_of_coverage` with {48053, 'Burnet County', 'TX'} for 99999 ZZYZX RD, MARBLE FALLS, TX 78654; `out_of_coverage` with outOfCoverageState 'CO' for 1600 BROADWAY, DENVER, CO 80202 — and a query that finds hits serialises byte-for-byte as it did before. The Find box tells the customer which kind of no-result it is in words, and neither Find path can turn an out-of-coverage answer into a geocoded pin. Falsifiable by revert-and-run on fixtures built from those live wire shapes (pre-change drops missClass, post-change carries all four), and after deploy by `node --use-system-ca scripts/surface-probe.mjs --rows P-205` in doc_repo with the map half PASS on all four subjects.",
+
+  "scopeBasis": "hauska-map only, one PR, FAN-DEPTH 0 (this lane launched no sub-agents). In scope: the two Find-box data paths and the sentence the customer reads — the BFF core + route (api/_lib/pe-situs-search-core.ts, api/pe-situs-search.ts), the client (src/lib/situs-search-client.ts, src/lib/geocodeClient.ts), the raw-Find identity resolver (src/lib/parcel-lookup.ts), the suggest state machine (src/lib/search-suggest.ts) and the Find bar renderer (src/browse/SearchBar.tsx). Out of scope and named: (1) the cortex-api side, which is already correct and is not touched (legacy-design-tools, a different repo); (2) the MCP's `find_parcel` half of P-205, measured PASS 4 of 4 on 2026-09-18 and not touched; (3) the coverage endpoint `/parcel-record-gate-verdict/coverage/check` (hauska-engine, P-210) — read only as context, not touched; (4) the typeahead's recents/parcel-id fast paths, which cannot produce a coverage answer and are deliberately left as they are (they are named as bypasses in the close, not modified). Files shared with lanes in flight are named in `contestedFiles` below.",
+
+  "contestedFiles": [
+    {
+      "file": "apps/property-explorer/src/lib/search-kinds.ts",
+      "why": "P-339..P-341 (surface agreement) and P-270's address half are in flight in this repo (dispatch constraints). This file is the shared kinds/identity module.",
+      "decision": "NOT modified. The new coverage-sentence logic goes in a NEW module (src/lib/coverage-miss.ts) and the miss-class wire types go in api/_lib/pe-situs-search-core.ts, so the in-flight lanes see no diff in search-kinds.ts."
+    },
+    {
+      "file": "apps/property-explorer/src/lib/parcel-lookup.ts",
+      "why": "the raw-Find identity path; touched by this lane for the fall-through stop only",
+      "decision": "touched; the change is additive (an optional miss class on the failure result and an early return), and the existing exported behaviour and test expectations are preserved."
+    },
+    {
+      "file": "apps/property-explorer/src/lib/geocodeClient.ts",
+      "why": "the merged typeahead fetcher; the out-of-coverage stop lives here",
+      "decision": "touched additively: a new result-returning export, with the existing `fetchMergedSearchSuggestions` kept as a delegating wrapper so no other call site changes."
+    }
+  ],
+
+  "upstreamContractVerifiedAtSource": {
+    "measuredAt": "2026-09-18T16:52Z..16:58Z",
+    "method": "git show origin/main:<path> over legacy-design-tools (fetched; origin/main = 25d1782f2e59bd5098b8459196ea828ae3580027) — read at source, not from the brief.",
+    "missClasses": ["no-hit", "out_of_coverage", "county_out_of_coverage", "coverage_check_unavailable", "situs-search-budget-exceeded"],
+    "wireFields": {
+      "hits": "PlaceSearchHit[]",
+      "missClass": "present only when the search produced no hits",
+      "outOfCoverageState": "string, e.g. 'CO' — present only on out_of_coverage",
+      "outOfCoverageCounty": "{ countyFips: string; countyName: string; state: string } — present only on county_out_of_coverage",
+      "coverageCheckUnavailableReason": "string — present only on coverage_check_unavailable"
+    },
+    "finding": "`missClassDisplayText` is NOT emitted by cortex. It is MCP-side vocabulary enrichment (artifacts/smartsite-mcp/src/tool-honesty.ts missClassDisplayText(), fed by vocabulary.ts). The map must therefore NOT wait for a display string from upstream — the map's own sentence is built client-side, which is what the mission asks for. `missClassDisplayText` is nevertheless passed through unchanged if a future upstream sends it, so the BFF never becomes the thing that drops it.",
+    "liveCheckRun": "Direct GET https://cortex-api-tds7av26va-uc.run.app/api/brokerage/v1/place/situs-search?... from this workstation returns HTTP 503 (the brokerage service gate refuses an unauthenticated caller). Recorded rather than worked around; no credential was read, rotated or echoed. The live evidence for the deployed path is the probe artifact below, whose MCP half is the same cortex body."
+  },
+
+  "liveReVerificationAtCP1": {
+    "artifact": "_inbox/2026-09-18_155840_surface_probe.json",
+    "artifactWrittenBy": "another lane (P-254/P-205 context), read here as evidence, not produced here",
+    "countingRule": "4 of 4 P-205 rows in that artifact: map half FAIL (empty result, missClass null), MCP half PASS",
+    "rows": [
+      { "key": "coverage:austin", "query": "99999 ZZYZX RD, AUSTIN, TX 78701", "owed": "no-hit", "findBox": { "hits": 0, "missClass": null, "http": 200 }, "mcpFind": { "hits": 0, "missClass": "no-hit", "http": 200 } },
+      { "key": "coverage:cameron", "query": "99999 ZZYZX RD, CAMERON, TX 76520", "owed": "county_out_of_coverage", "owedCounty": { "countyFips": "48331", "countyName": "Milam County", "state": "TX" }, "findBox": { "hits": 0, "missClass": null, "http": 200 }, "mcpFind": { "hits": 0, "missClass": "county_out_of_coverage", "countyFips": "48331", "countyName": "Milam County", "http": 200 } },
+      { "key": "coverage:marble-falls", "query": "99999 ZZYZX RD, MARBLE FALLS, TX 78654", "owed": "county_out_of_coverage", "owedCounty": { "countyFips": "48053", "countyName": "Burnet County", "state": "TX" }, "findBox": { "hits": 0, "missClass": null, "http": 200 }, "mcpFind": { "hits": 0, "missClass": "county_out_of_coverage", "countyFips": "48053", "countyName": "Burnet County", "http": 200 } },
+      { "key": "coverage:denver", "query": "1600 BROADWAY, DENVER, CO 80202", "owed": "out_of_coverage", "owedState": "CO", "findBox": { "hits": 0, "missClass": null, "http": 200 }, "mcpFind": { "hits": 0, "missClass": "out_of_coverage", "state": "CO", "displayText": "Outside Smart Site coverage", "http": 200 } }
+    ],
+    "graderReadAtSource": "doc_repo scripts/surface-probe.mjs: extractSearchCoverage(obj) reads j.missClass, j.outOfCoverageCounty.{countyFips,countyName,state}, j.outOfCoverageState, j.coverageCheckUnavailableReason, j.missClassDisplayText (line 1657); gradeCoverageSurface(subject, read, surface) FAILS an empty result with no missClass (line 1680), FAILS a wrong missClass (1681), FAILS a wrong countyFips (1682), and FAILS an uncovered-county answer missing countyName or state (1683). It treats a body carrying `error` as UNMEASURED, not FAIL (line 1652).",
+    "consequenceForTheBFF": "The wire field names above are not a design preference — they are read verbatim by the probe that will grade this row after the deploy. The BFF must emit them with exactly these names."
+  },
+
+  "writeSiteCensus": {
+    "countingRule": "every site in the hauska-map Find-box path at 163fde32 that either DROPS a miss class the upstream sent, or DECIDES what the customer reads in place of one. Line numbers are from the lane worktree at 163fde32.",
+    "dropSites": [
+      { "id": "D1", "file": "apps/property-explorer/api/_lib/pe-situs-search-core.ts", "lines": "18-20", "what": "`interface SitusSearchWireResponse { hits: SitusSearchHit[] }` — the wire TYPE has no slot for a miss class, so nothing downstream can even represent one", "changed": true },
+      { "id": "D2", "file": "apps/property-explorer/api/_lib/pe-situs-search-core.ts", "line": 106, "what": "`return { hits }` in mapSitusSearchResponse — the single line where the upstream's four fields are discarded", "changed": true },
+      { "id": "D3", "file": "apps/property-explorer/api/pe-situs-search.ts", "line": 77, "what": "`res.status(200).json(mapSitusSearchResponse(json))` — serves D2's body verbatim", "changed": false, "note": "unchanged by design: it becomes correct the moment D2 stops dropping. Changing it would put a second implementation of the mapping in the route." },
+      { "id": "D4", "file": "apps/property-explorer/src/lib/situs-search-client.ts", "lines": "28-51", "what": "reads json.hits and returns the hit array; the response object is discarded after the `.hits` read", "changed": true },
+      { "id": "D5", "file": "apps/property-explorer/src/lib/geocodeClient.ts", "lines": "73-77", "what": "the situs leg's `.catch(() => [] as Suggestion[])` — a situs failure is indistinguishable from a situs empty, and the geocode batches are merged unconditionally either way", "changed": true }
+    ],
+    "fallThroughSites": [
+      { "id": "F1", "file": "apps/property-explorer/src/lib/parcel-lookup.ts", "lines": "292-326", "what": "fetchUniqueSitusPin: `if (!res.ok) return []` (305) and `catch { return null }` (314) — every non-answer becomes 'no pin', which is what arms the fall-through", "changed": true },
+      { "id": "F2", "file": "apps/property-explorer/src/lib/parcel-lookup.ts", "lines": "213-249", "what": "with no pin, the resolver builds an address-only `envInput` and calls fetchBuildableEnvelope — the ladder whose last rung is a fuzzy geocode (documented at lines 273-283, `source: usedExplicitPoint ? 'situs' : 'geocoded'`)", "changed": true, "note": "this is the geocoder fall-through the mission's item 3 asks about, and it is in the FIND path (the raw-submit path), not only in the typeahead" }
+    ],
+    "customerReadingSites": [
+      { "id": "R1", "file": "apps/property-explorer/src/browse/SearchBar.tsx", "lines": "607-616", "what": "the two lines under the bar: `error` (data-testid parcel-lookup-error) and `advisory` (parcel-lookup-advisory). Today a coverage answer reaches neither." },
+      { "id": "R2", "file": "apps/property-explorer/src/browse/SearchBar.tsx", "lines": "348-353", "what": "the typeahead dropdown's honest-empty state, `No matches, try a fuller address` — the sentence an out-of-coverage address currently gets" },
+      { "id": "R3", "file": "apps/property-explorer/src/lib/search-suggest.ts", "lines": "121-151", "what": "startFetch: the only place a fetch result is turned into customer-visible state; `empty` is derived from `items.length === 0` with no channel for a reason" }
+    ],
+    "bypassesOfTheFindBoxPath": [
+      { "path": "the parcel-id fast path (search-kinds.ts parcelIdSuggestion, search-suggest.ts `looksLikeParcelId` short-circuit)", "why": "a parcel id is an identity, never a coverage question; it cannot produce a coverage answer and is deliberately untouched" },
+      { "path": "Photon/geocoder suggestions (api/pe-geocode.ts, fetchGeocodeSuggestions)", "why": "the geocoder is a camera hint, not a coverage source (search-kinds.ts SuggestionSource comment). Its rows are what item 3 stops from standing in for a coverage answer; the geocoder itself is not a miss-class producer and is not modified." },
+      { "path": "the MCP `find_parcel` half of P-205", "why": "already PASS 4 of 4; different repo path, untouched" },
+      { "path": "the coverage endpoint /parcel-record-gate-verdict/coverage/check (hauska-engine, P-210)", "why": "the source the answer is computed FROM, one layer upstream of the map; untouched" }
+    ]
+  },
+
+  "designDecision": {
+    "oneWriterOfTheWireShape": "api/_lib/pe-situs-search-core.ts stays the single place the upstream body is mapped to the wire, and mapSitusSearchResponse stays its single writer. The route does not re-map (D3 marked unchanged), so there is no second implementation for DEV_PROCESS 2.4 to police.",
+    "neverFabricate": "When the upstream sends no missClass, the BFF emits `{ hits }` exactly as before — an absent class is never invented. When hits are non-empty the body is `{ hits }` byte-for-byte, which is the falsifier's 'a query that finds hits is unchanged'. This is the DECLARED-ABSENCE discipline applied to a miss class: a class we do not have is not written.",
+    "timeoutIsNotAMiss": "A timeout (and any other failure to obtain an answer) is served as `{ hits: [], missClass: 'coverage_check_unavailable', coverageCheckUnavailableReason: '...' }` at HTTP 200, because 'we could not check coverage' IS the fourth owed class and is the honest opposite of a miss. The 5s ceiling is raised because it is too close to the measured path: 3.8s end to end for Cameron on 2026-09-18 (dispatch) leaves ~1.2s of headroom, so a slow-but-answering coverage check was being turned into an outage. The new ceiling is 9000ms, chosen under the probe's own 12s budget for this leg (surface-probe.mjs:1216 `12_000`) so a BFF timeout is still measurable rather than being graded as a dead surface. The unauthenticated/misconfigured case keeps its existing 503 `proxy_not_configured`, which is a deployment fact, not a coverage answer.",
+    "stopRule": "The fall-through stops on exactly the two classes that mean 'this place is outside the coverage area': `county_out_of_coverage` and `out_of_coverage`. It does NOT stop on `no-hit` (a covered miss is a legitimate reason to keep looking down the envelope ladder), nor on `coverage_check_unavailable` (we do not know, so refusing to look would be a worse failure), nor on the budget class. This is the narrowest rule that satisfies 'a geocoded pin must not stand in for we do not cover this county' without changing behaviour where the class carries no coverage claim.",
+    "whichVariantWins": "fetchUniqueSitusPin and the client both fan out over situsQueryVariants. For the miss class the PRIMARY variant (the query as typed) wins when it carries one, else the first variant that does; otherwise there is no class. This mirrors the existing identity rule (the situs index is the identity writer, the caller's own query is the authority) and avoids inventing a precedence table over derived variants that the upstream never ranked. Hits keep their existing union behaviour unchanged — this rule governs only the empty-class answer.",
+    "oneSentencePerClass": "A single pure module (src/lib/coverage-miss.ts) owns (a) reading the class out of a wire body and (b) the sentence the customer reads, so both Find paths and the typeahead say the same words about the same class. `no-hit` reads as a covered miss; `county_out_of_coverage` names county and state; `out_of_coverage` names the state; `coverage_check_unavailable` says the check is unavailable and explicitly refuses to read as 'no results'; an unrecognised class (e.g. upstream's budget refuse) gets a generic 'could not answer' sentence rather than being silently rendered as a miss.",
+    "typeaheadCorrection": "fetchMergedSearchSuggestions currently merges Photon rows unconditionally, so an out-of-coverage address still shows geocoded address rows in the dropdown — a geocoded pin standing in for 'we do not cover this county', which is item 3 in its most-used form. The merged fetcher now drops the geocode contribution when the situs leg reports an out-of-coverage class, and carries the sentence into the dropdown so the reason is visible where the rows are missing."
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1-revert-carries-all-four",
+      "statement": "Pre-change code drops missClass; post-change code carries it, for all four classes, from fixtures built out of the live upstream shapes.",
+      "fixtures": "four api/_lib fixtures replicating what cortex returns for the four probe subjects (missClass alone; missClass + outOfCoverageCounty{48331,'Milam County','TX'}; missClass + outOfCoverageCounty{48053,'Burnet County','TX'}; missClass + outOfCoverageState 'CO')",
+      "expectedPreFix": "every fixture maps to `{ hits: [] }` — no missClass in the body for any of the four",
+      "expectedPostFix": "each maps to its own class and county/state",
+      "method": "run the same fixture file against the branch tip and against 163fde32 (the pre-change parent), both directions shown, with the pre-change run recorded as a real run rather than asserted from the diff",
+      "wouldProveItWrong": "post-fix dropping any of the four, OR pre-fix already carrying one (which would mean the defect is not where the dispatch says)"
+    },
+    {
+      "id": "F2-hits-unchanged-byte-for-byte",
+      "statement": "A query that finds hits is unchanged byte for byte.",
+      "fixture": "a body with two well-formed hits and no miss fields (the live happy path)",
+      "expectedBothPreAndPostFix": "`JSON.stringify(mapSitusSearchResponse(fixture))` === `JSON.stringify({ hits: [...same mapping...] })` and contains no `missClass` / `outOfCoverage` / `coverageCheckUnavailableReason` keys at all",
+      "method": "assert deep-equality AND assert absence of the new keys by name (a deep-equal against an object that happens to include `missClass: undefined` would not prove absence; the assertion names the keys)",
+      "wouldProveItWrong": "any miss field appearing on a hits-carrying body, or the hit mapping itself changing"
+    },
+    {
+      "id": "F3-not-vacuous-classes",
+      "statement": "The client's sentence differs per class and an unrecognised class does not read as a miss.",
+      "fixtures": "one fixture per class plus the upstream budget class",
+      "expected": "four distinct sentences; county_out_of_coverage's sentence contains the county name AND the state; out_of_coverage's contains the state; coverage_check_unavailable's contains neither 'no results' nor 'No matches'; the budget class yields the generic could-not-answer sentence and is NOT rendered as a covered miss",
+      "method": "assert the sentences pairwise-distinct, then assert the two naming cases by content",
+      "wouldProveItWrong": "one sentence for several classes (a control that cannot discriminate), or a class silently falling back to 'no results'"
+    },
+    {
+      "id": "F4-fallthrough-stops-only-where-it-should",
+      "statement": "An out-of-coverage class stops the geocoder fall-through; a no-hit and an unavailable class do not.",
+      "fixture": "resolveLookupToParcelNodeId with fetchImpl that (a) answers the situs leg with county_out_of_coverage and an onEnvelope that THROWS if reached; (b) answers with no-hit and an envelope that resolves a parcel; (c) answers with coverage_check_unavailable and an envelope that resolves a parcel",
+      "expected": "(a) not ok, no envelope call at all, failure carries the class; (b) still resolves ok via the envelope ladder; (c) still resolves ok via the envelope ladder",
+      "method": "both directions in one test file: the throwing envelope is the positive case, the resolving envelope is the negative case",
+      "wouldProveItWrong": "(a) reaching the envelope (the defect survives), or (b)/(c) refusing to look (an over-broad stop that would break real addresses)"
+    },
+    {
+      "id": "F5-typeahead-suppression",
+      "statement": "The merged typeahead does not offer geocoder rows for an out-of-coverage answer, and still merges them for a no-hit.",
+      "fixture": "fetchMergedSearchSuggestions with a situs leg returning county_out_of_coverage and a geocode leg returning an address row; and the same with a situs leg returning no-hit",
+      "expected": "out-of-coverage: zero suggestions, the class carried out; no-hit: the geocode row is still offered (unchanged from today's merge behaviour)",
+      "wouldProveItWrong": "a geocoded address row surviving for the uncovered county, or a covered miss losing its geocoder rows"
+    },
+    {
+      "id": "F6-throughput-not-collateral",
+      "statement": "The BFF's ordinary paths are untouched: parcel-id, populated prefix, invalid params, missing key.",
+      "method": "the existing pe-situs-search-bff tests stay green UNCHANGED (no edits to their assertions), plus the full property-explorer vitest suite at 3293 passed / 1 todo as the CP1 baseline",
+      "wouldProveItWrong": "any baseline test edited to go green, or any baseline test going red"
+    }
+  ],
+
+  "baselineMeasuredAtCP1": {
+    "command": "pnpm --filter property-explorer exec vitest run  (in P:/seat-worktrees/p353-find-box-coverage/hauska-map/apps/property-explorer)",
+    "at": "2026-09-18T16:57:21Z",
+    "result": "221 test files passed; 3293 tests passed, 1 todo (3294). Exit 0.",
+    "whyItMatters": "This is the before number F6 compares against, taken before a single line changed, in the lane's own worktree at 163fde32 with a clean pnpm install."
+  },
+
+  "constraintsHonored": [
+    "no store writes",
+    "no deploys",
+    "no merges",
+    "hauska-map only (no doc_repo commit; doc_repo artifacts left uncommitted for the planner, per AGENT-CONTRACT section 6)",
+    "FAN-DEPTH 0 — zero sub-agents launched, maxDepth 0",
+    "branched from current origin/main (163fde32 in hauska-map, c5eb6666 in doc_repo); both SHAs declared",
+    "lane claimed from this seat's own doc_repo worktree, not P:/doc_repo"
+  ],
+
+  "openAtCP1": [
+    "whether the DEPLOYED cortex-api revision carries all four fields — the live MCP half of the 2026-09-18 15:58:40 probe says it does (4 of 4), but the deployed image digest was not read; if the deployed cortex is older than 25d1782f the BFF passes through what it is given and the map half still cannot PASS, and that is a finding for the close, not something this lane can fix (legacy-design-tools deploy, different repo)",
+    "whether the typeahead's 250ms debounce + 4 parallel variants makes the coverage path (3.8s measured for a full ladder miss) unusable in practice — the dropdown will simply be slow for a miss; not a gate for this row, recorded for the close",
+    "the exact wording of the four sentences is not yet frozen; frozen at CP2 before the tests that assert them are written"
+  ]
+}

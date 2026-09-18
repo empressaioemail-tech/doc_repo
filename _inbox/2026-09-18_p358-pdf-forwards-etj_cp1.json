@@ -1,0 +1,191 @@
+{
+  "artifact": "P-358 CP1 — design checkpoint, ETJ write-site census, shared literals and pre-registered falsifiers",
+  "lane": "p358-pdf-forwards-etj",
+  "planRows": ["P-358"],
+  "checkpoint": "CP1 (design / pre-build)",
+  "seat": "cente-vsc-p358",
+  "writtenAt": "2026-09-18T18:05:00Z",
+  "dispatch": "_dispatches/2026-09-18_p358-pdf-forwards-etj_dispatch.md",
+
+  "startCommits": {
+    "docRepoWorktree": {
+      "path": "P:/seat-worktrees/p358-pdf-forwards-etj/doc_repo",
+      "branch": "lane/p358-pdf-forwards-etj",
+      "head": "61b5b2eda7f11e274245952d905fe8e0c5671f64"
+    },
+    "hauskaEngineWorktree": {
+      "path": "P:/seat-worktrees/p358-pdf-forwards-etj/hauska-engine",
+      "branch": "lane/p358-pdf-forwards-etj-engine",
+      "head": "c41a1482284eb8624c3ef2b9c2ba96ccb8ac1bc2",
+      "note": "equals the dispatch's declared compile SHA c41a1482 AND equals `git rev-parse origin/main` in this worktree, read rather than assumed. One PR from this branch; no merge, no deploy."
+    }
+  },
+
+  "missionPremise": "Since P-332 (hauska-map #419, live on Property Explorer m6wqid8u7 from 2026-09-18 15:28Z) the PANEL serves a four-state ETJ determination: `present` / `absent` / `unresolved` / `conflicting`, where `conflicting` is emitted only when city limits say `incorporated` and the ETJ read says `present` (a Texas ETJ is by definition unincorporated land outside a city's limits, so the two independently derived reads disagree and the panel names both). The hauska-engine feasibility PDF still says `unresolved` for every parcel on every surface, because the engine writes the answer as a literal rather than forwarding a read: `feasibility-model.ts:209` types the field as the single-member literal, `report-model.ts:1304` assigns it, and the PDF/narrative sentences assert it. Authority: OPS-24 (the one goal: `the card, the MCP and the PDF agree`) plus the P-204 close, which files `etjStatus` as a live serve-path defect and hands the engine half to P-358; the ruling that makes it a cutover is A-215 ruling 2 in `_decisions/2026-09-18_phase0_closeout_rulings.md` (P-336 writes the ledger cells; P-358 forwards them to the PDF). The rail already EXISTS on both sides — `services/retrieval-api/src/parcel-record-rail-registry.ts:54` and `packages/engine-core/src/parcel-record/rail-keys.ts:43` both declare `etjStatus` as a scalar jurisdiction rail — it simply reads `excluded-mid-cutover` today. Premise re-read at source in this worktree at c41a1482 (not taken from the dispatch's prose): the six production sites are enumerated in writeSiteCensus below, and `etjStatus` appears in NO other non-test engine source file (case-insensitive token grep over the whole tree, node_modules excluded).",
+
+  "completionPredicate": "For a parcel whose `etjStatus` rail serves `record`: (1) a `present` determination renders the state, naming the city and the ring, with the determination's own source/basis carried; (2) an `absent` determination renders a checked absence (\"no ETJ reaches this parcel on the rings consulted\"); (3) an `incorporated` city-limits reading together with an `etjStatus` reading of `present` renders `conflicting`, naming BOTH readings and BOTH sources on the page and saying which authority to confirm with — it must NOT render a clean `present` and must NOT render `unresolved`; (4) an `unresolved` state (or an unslated rail, or a refusal, or a failed fetch) keeps today's honest sentence and carries the REAL reason rather than a bare default; (5) ETJ is never derived from city limits and city limits is never derived from ETJ; (6) the same state reaches the deterministic narrative skeleton, the open-item action sentence and the narrative payload. Falsifiable here and now by revert-and-run over fixtures for the rail's four states plus an unslated rail and a failed fetch (pre-change renders `unresolved` for all six), and two locally built PDFs whose extracted text is reported in the close. The DEPLOYED half (P-336 applies its cells, the integration seat deploys, the PDF leg reads what the panel reads) is not this lane's to execute, which is why the close will declare probe.notApplicable with the exact probe named in leave_behind — the same form P-332 used, and the honest state per OPS-24 Law 1.",
+
+  "scopeBasis": "Dispatch `_dispatches/2026-09-18_p358-pdf-forwards-etj_dispatch.md`, PLAN-ROW P-358, repo hauska-engine, FAN-DEPTH 0, one PR branched from c41a1482. IN SCOPE and delivered: the engine's consumption of the `etjStatus` rail and its five downstream surfaces — the four-state type on `JurisdictionFacts`, the rail reader beside `recordCityLimitsAnswer`, the composition in `report-model.ts`, the PDF rows in `pdf/feasibility.ts`, and the narrative/summary sentences in `report-model.ts` and `narrative-section-client.ts`. DELIBERATE EXCLUSIONS, each named: (a) NO schema or value is invented for the ledger cell — the reader accepts the shapes enumerated in railCellContract below and fails closed to a declared refusal on anything else; P-336 owns what its writer emits; (b) hauska-map and legacy-design-tools are NOT touched — the shared rule is mirrored, not imported, and the mirror is named for P-331's drift table; (c) no production PDF is built and `scripts/p347-build-fixture-pdfs.mjs` (a production-write instrument) is NOT run; the PDFs are built in-process from fixtures and written only into this seat worktree; (d) no taxonomy, no new rail, no derivation of ETJ from city limits or the reverse (P-332's rule 3); (e) `packages/engine-core/scripts/destructive-write-*` untouched per the dispatch (P-361 is re-pinning hauska-engine #474 in this wave).",
+
+  "writeSiteCensus": {
+    "countingRule": "every non-test occurrence of the token `etjStatus` in hauska-engine at c41a1482 (case-insensitive, node_modules excluded) that WRITES a served value, SUPPRESSES one, or CARRIES it in a type that must admit the widened states. Found by whole-repo token grep; every hit classified by reading it. Two of the hits are the rail's own declaration (this repo's `rail-keys.ts` and the retrieval-api's vendored registry mirror) and are not write sites — the registry declares a rail; it does not write a value.",
+    "writeOrSuppressSites": [
+      { "id": "W1", "file": "packages/engine-core/src/site-plan/feasibility-model.ts", "line": 209, "what": "`JurisdictionFacts.etjStatus: \"unresolved\"` — a SINGLE-MEMBER literal type, so no other state is even representable in the engine's report model. Its doc comment above (line 192) asserts \"No engine ETJ source exists\" and \"stays the literal 'unresolved' always\".", "changed": true },
+      { "id": "W2", "file": "packages/engine-core/src/site-plan/report-model.ts", "line": 1304, "what": "`etjStatus: \"unresolved\"` — the assignment in `composeParcelReportFacts`, the one site that turns the rail into the model's state. This is the site that makes the rail unread.", "changed": true },
+      { "id": "W3", "file": "packages/engine-core/src/site-plan/report-model.ts", "line": 270, "what": "`JURISDICTION_ACTION_SENTENCE = \"Confirm city-limits and ETJ status with the county before proceeding.\"` — the open-items review-path sentence, pushed whenever `cityLimitsStatus === \"unresolved\"`, and it asserts the ETJ status is unresolved even when the rail has answered.", "changed": true },
+      { "id": "W4", "file": "packages/engine-core/src/site-plan/report-model.ts", "line": 392, "what": "the deterministic narrative skeleton's `\"City-limits and ETJ status are not yet resolved for this jurisdiction. \"` — emitted for every parcel in every county regardless of the rail's answer.", "changed": true },
+      { "id": "W5", "file": "packages/engine-core/src/site-plan/pdf/feasibility.ts", "line": 255, "what": "the ETJ row of the Location-and-jurisdiction section: `factOrChip(\"ETJ\", undefined, { absentReason: \"No ETJ boundary source is wired for this county yet, so extraterritorial-jurisdiction status is unverified.\" })` — an unconditional absent chip. Its sibling consequence row (lines 258-261) is likewise hardcoded to the two unresolved-city-limits branches.", "changed": true },
+      { "id": "W6", "file": "packages/engine-core/src/site-plan/narrative-section-client.ts", "line": 103, "what": "the doc comment on `buildNarrativeFacts`: \"`cityLimitsStatus` and `etjStatus` ride along as the literal `\\\"unresolved\\\"` they are\". A comment, not code — but it is the statement of the assumption W1-W5 were written under, and it is falsified by this change (the jurisdiction object is SPREAD into the LDT narrative payload, so the real state rides along once W2 composes it).", "changed": true }
+    ],
+    "carriersThatMustAdmitTheWidenedStates": [
+      { "id": "W7", "file": "packages/engine-core/src/site-plan/feasibility-model.ts", "line": 209, "what": "same field as W1, seen as a carrier: widening it from the literal to the four-state union is what lets the PDF and narrative read a state at all. W1 and W7 are the same line and are counted once in countsWithCountingRules." },
+      { "id": "W8", "file": "packages/engine-core/src/site-plan/report-model.ts", "line": 1382, "what": "`jurisdiction: { status: \"present\", ...model.facts.jurisdiction }` in `buildLdtNarrativeFacts` (narrative-section-client.ts) SPREADS the jurisdiction object into the LDT payload, so the new fields ride along with no payload-shape edit — deliberately not widened by hand, because the LDT contract's own comment forbids changing that request's shape. Classified as a carrier, not a write site; not changed." }
+    ],
+    "railDeclarationsNotWriteSites": [
+      { "id": "N1", "repo": "hauska-engine", "file": "packages/engine-core/src/parcel-record/rail-keys.ts", "line": 43, "what": "`{ key: \"etjStatus\", grain: \"scalar\", group: \"jurisdiction\", access: PUBLIC_RAIL_ACCESS }` — the rail already exists and already carries public access. Not changed.", "changed": false },
+      { "id": "N2", "repo": "hauska-engine", "file": "services/retrieval-api/src/parcel-record-rail-registry.ts", "line": 54, "what": "the retrieval-api's vendored mirror of hauska-factory's rail registry; same row. Not changed.", "changed": false }
+    ],
+    "sitesOutsideThisLane": [
+      { "repo": "hauska-map", "file": "apps/property-explorer/api/_lib/pe-etj-determination.ts", "what": "the PANEL's writer for the same rule (P-332). It is the shared-literal source this lane mirrors; it cannot be imported from hauska-engine (different repo), so the literals are duplicated with the source named and are listed in sharedLiterals for P-331's drift table.", "action": "read, mirrored, named; not changed" },
+      { "repo": "hauska-factory / P-336", "file": "the etaStatus cell writer (in flight)", "what": "writes the ledger cells with the four states and makes the retrieval reader serve them. Its writer is the producer of the payload this lane's reader consumes.", "action": "not touched; the cell contract this lane accepts is enumerated in railCellContract so the two lanes can be checked against each other" },
+      { "repo": "hauska-engine", "file": "services/retrieval-api/src/parcel-record-reader.ts", "what": "the generic cell reader. It serves a slated rail's cell for ANY rail key; it needs no rail-specific change for etjStatus and none was made.", "action": "read; verified no rail-specific change is required" }
+    ]
+  },
+
+  "sharedLiterals": {
+    "why": "Dispatch item 5: the four-state wording and the `conflicting` rule are shared with hauska-map's `pe-etj-determination.ts`, and P-331 is building the cross-repo drift check for shared literals. These are the literals this lane duplicates, with the exact source symbol and the exact mirrored spelling. Every one is exported from `packages/engine-core/src/site-plan/etj-determination.ts` so a checker can import it.",
+    "table": [
+      { "engineSymbol": "ETJ_STATUSES", "engineValue": ["present", "absent", "unresolved", "conflicting"], "hauskaMapSymbol": "ETJ_STATUSES", "hauskaMapFile": "apps/property-explorer/api/_lib/pe-etj-determination.ts" },
+      { "engineSymbol": "RawEtjStatus", "engineValue": ["present", "absent", "unresolved"], "hauskaMapSymbol": "RawEtjStatus", "hauskaMapFile": "same" },
+      { "engineSymbol": "EtjFactWire", "engineValue": "the carried determination: status, source, basis + optional cityKey, cityName, ringLabel, etjId, sourceCitation, coveredBy, ringsConsulted, queryPoint", "hauskaMapSymbol": "EtjFactWire", "hauskaMapFile": "same" },
+      { "engineSymbol": "EtjConflictWire", "engineValue": "state 'conflicting' + cityLimits {state, source, basis, cityName} + etj {state, source, basis, ringLabel, etjId} + note", "hauskaMapSymbol": "EtjConflictWire", "hauskaMapFile": "same" },
+      { "engineSymbol": "EtjDetermination", "engineValue": "etjStatus + etjFact|null + etjConflict|null + etjReason|null", "hauskaMapSymbol": "EtjDetermination", "hauskaMapFile": "same" },
+      { "engineSymbol": "NO_DETERMINATION_REASON", "engineValue": "no ETJ determination was served for this point; P-332: ETJ is never derived from city limits, nor city limits from ETJ.", "hauskaMapSymbol": "NO_DETERMINATION_REASON", "hauskaMapFile": "same", "note": "BYTE-IDENTICAL, including P-332's provenance, so P-331's drift table sees one literal rather than two variants. Verified by reading both files at source (hauska-map's pe-etj-determination.ts:204-205 vs engine etj-determination.ts), and pinned by an assertion in __tests__/etj-determination.test.ts. NO DIVERGENCE." },
+      { "engineSymbol": "the `conflicting` rule", "engineValue": "conflicting is emitted ONLY when cityLimitsStatus === 'incorporated' AND the raw ETJ read === 'present'; incorporated+absent and unincorporated+present are coherent and serve absent / present respectively", "hauskaMapSymbol": "resolveEtjDetermination", "hauskaMapFile": "same", "note": "a rule, not a string; mirrored as `resolveEtjDetermination` in the engine. A drift check for this one must be a behaviour matrix (the five city-limits x raw-read combinations), not a string compare." },
+      { "engineSymbol": "UNSLATED_ETJ_REASON", "engineValue": "the engine-only honest default for an unslated rail, byte-identical to the sentence the PDF already prints for every parcel today", "hauskaMapSymbol": "n/a — the panel has no unslated case (it reads cortex's fact, not a cell)", "hauskaMapFile": "n/a", "note": "engine-only literal, declared so it is not mistaken for a shared one" }
+    ],
+    "thePreExistingDuplicatePrecedent": "`pdf/feasibility.ts` already duplicates `countyDisplayName` from `pdf/format.ts` with a written reason (the composition layer must not depend on the presentation layer). The ETJ mirror has the same shape of reason (a repo boundary) and is documented the same way."
+  },
+
+  "railCellContract": {
+    "why": "P-336's writer is in flight and this lane consumes its output. The reader is written to accept a bounded, enumerated set of payload shapes and to FAIL CLOSED on anything else (a declared refusal, never a guessed state). Enumerated at CP1 so the two lanes can be checked against each other rather than against prose.",
+    "acceptedValueCellShapes": [
+      { "id": "C1", "shape": "cell.value is one of the four state strings (\"present\" | \"absent\" | \"unresolved\" | \"conflicting\")", "reading": "a bare state with no basis. A bare `conflicting` carries no readings, so it is NORMALISED BACK TO RAW `present` — the only raw that can produce `conflicting`, the mirror of hauska-map's `rawEtjStatusInHand` — and the shared rule then decides: beside an `incorporated` city-limits read the report serves `conflicting` with the block composed from the composed city-limits reading + whatever the cell carried, and beside anything else it serves the coherent `present` rather than a conflict the rule cannot produce. This is what keeps the engine's five-cell (city-limits x raw) matrix equal to the panel's, so P-331's behaviour matrix can compare them cell for cell." },
+      { "id": "C2", "shape": "cell.value is an object carrying `status` plus `source` and `basis` (the P-332 `EtjFactWire` shape)", "reading": "the determination, carried through with its optional cityKey/cityName/ringLabel/etjId/sourceCitation/coveredBy/ringsConsulted. A determination with NO basis is refused (`readEtjFact` requires source AND basis), matching P-332's `readEtjFact`: an unfounded determination is not one." },
+      { "id": "C3", "shape": "cell.value is an object carrying `state: \"conflicting\"` plus `cityLimits` and `etj` sub-readings (the P-332 `EtjConflictWire` shape)", "reading": "the ledger's OWN conflict declaration; both readings and both sources are carried through verbatim, and the shared rule is not re-derived (there is nothing to derive — the ledger already declared it)" }
+    ],
+    "acceptedNonValueCellKinds": [
+      { "id": "C4", "kind": "absent-verified", "reading": "PROMOTED to ETJ `absent` — a cell that says \"verified: this point is not inside any published ETJ ring\" IS the rail's answer to the ETJ question, exactly as `recordCityLimitsAnswer` promotes an `absent-verified` cityLimits cell to `unincorporated`. The cell's own `basis.finding` (or `reason`) is carried as the basis and is what the PDF prints beside it. This is the shape P-336's dispatch names for \"a determination that looked and found nothing\"." },
+      { "id": "C5", "kind": "not-applicable", "reading": "NOT promoted. It is a stated absence with its own reason, but it is not the checked finding \"no ring reaches this point on the rings consulted\", and printing that sentence on a not-applicable cell would claim a check that did not happen. Read as `unresolved` carrying the cell's own reason — fail-closed, nothing fabricated, nothing lost. DECLARED as a decision because the alternative (promoting it to `absent`) is the plausible-looking wrong answer." },
+      { "id": "C6", "kind": "refused / no cell / malformed cell", "reading": "`unresolved` carrying the ledger's refusal code and reason, with the existing `recordRailRefusalReason` wording so a refusal is never silent — the P-302 posture, unchanged." },
+      { "id": "C7", "kind": "legacy-transitional (UNSLATED) or no recordReader or a failed fetch", "reading": "`unresolved` carrying UNSLATED_ETJ_REASON, which is today's sentence byte for byte, so an unslated county's PDF is UNCHANGED by this lane. This is the state every county is in until P-336 applies." }
+    ]
+  },
+
+  "designDecision": {
+    "oneWriter": "A single new module, `packages/engine-core/src/site-plan/etj-determination.ts`, owns the transition from (city-limits status, rail answer) to the served four-state determination + carried fact + declared conflict + reason. `report-model.ts` calls it once; the PDF and the narrative read the composed model and never re-derive. One implementation of the rule in this repo, so there is nothing for a divergence test to police (DEV_PROCESS 2.4) — and the mirror's own drift risk is against hauska-map, which is P-331's table, not a second engine writer.",
+    "fourStates": "`JurisdictionFacts.etjStatus` is widened from the single literal `\"unresolved\"` to `\"present\" | \"absent\" | \"unresolved\" | \"conflicting\"`, with `etjFact?`, `etjConflict?` and `etjReason?` carried beside it — the `cityLimitsLedgerAnswer` pattern the dispatch names. The widening is backward compatible: every existing assignment of the literal and every existing fixture still type-checks, and no-rail behaviour is unchanged (unresolved, with the same sentence).",
+    "readerPlacement": "The rail reader lives beside `recordCityLimitsAnswer` in `parcel-record-reader-client.ts` (`recordEtjStatusAnswer`), because that file is the ONE place a rail answer becomes an engine field and is where the P-302 three-way rule already lives. It reuses `recordRailAnswer` rather than re-deriving the kind-switch.",
+    "conflictRule": "`conflicting` is emitted ONLY for (cityLimitsStatus === incorporated AND raw ETJ === present). incorporated+absent and unincorporated+present are coherent and serve absent / present. `conflicting` arriving from the ledger is carried through with the ledger's own readings; `present` arriving beside an incorporated city-limits read is upgraded to `conflicting` by the shared rule and the conflict block is composed from the city-limits reading and the ETJ fact.",
+    "neverDerive": "If neither an etjFact status nor a recognised top-level state is in hand the state is `unresolved` and a non-empty reason is carried. No branch reads cityLimitsStatus to produce present/absent, and no branch reads ETJ to produce a city-limits status.",
+    "absentIsACheckedFinding": "`absent` is only ever reached from (a) a determination whose own status is `absent` with its basis, or (b) an `absent-verified` cell with its basis. An unreadable or absent payload can never produce it.",
+    "narrativeContractNotWidened": "The jurisdiction object is already SPREAD into the LDT narrative payload, and that payload's shape is explicitly not this lane's to widen (the client's own comment records that widening it broke the production path on 2026-09-08). The four new fields therefore ride along inside an object that is already sent; no key is added to the request's top level."
+  },
+
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1-present",
+      "statement": "Pre-change code renders `unresolved` for a parcel whose rail serves a `present` determination; post-change code renders the state, naming the city and the ring.",
+      "fixture": "unincorporated city limits + an etjStatus rail value cell `{status:'present', source:'tx_etj_boundary', basis:'point-in-polygon against tx_etj_boundary etj_id=austin-tx:39', cityKey:'austin-tx', cityName:'Austin', ringLabel:'AUSTIN 2 MILE ETJ', etjId:'austin-tx:39'}`",
+      "expectedPostFix": "PDF text contains the present sentence naming Austin and the ring; `etjStatus === 'present'`; no conflict block",
+      "expectedPreFix": "PDF text contains today's absent chip sentence; `etjStatus === 'unresolved'`",
+      "wouldProveItWrong": "post-change still rendering today's absent sentence, OR pre-change already rendering a state (which would mean the defect is not where the dispatch says)"
+    },
+    {
+      "id": "F2-conflicting",
+      "statement": "`incorporated` city limits + a `present` ETJ read renders the DECLARED CONFLICT naming BOTH readings and BOTH sources; a fixture that forwards `present` verbatim FAILS.",
+      "fixture": "48453:134392's live shape, per P-332's close: cityLimits incorporated (Austin), etjStatus rail `present` on ring `austin-tx:39` / `AUSTIN 2 MILE ETJ`, source `tx_etj_boundary`, and the city-limits source `parcel_record (landing_parcel_jurisdiction)`",
+      "expectedPostFix": "`etjStatus === 'conflicting'`; the page names BOTH readings (incorporated + inside a ring) and BOTH sources; a second, deliberately wrong expectation asserting `'present'` for the same fixture must FAIL — that is the direction that makes verbatim forwarding fail rather than merely pass",
+      "expectedPreFix": "`unresolved`, no conflict named anywhere",
+      "wouldProveItWrong": "incorporated+present rendered as a clean `present`, or either side of the conflict silently dropped"
+    },
+    {
+      "id": "F3-absent",
+      "statement": "An `absent` determination renders a checked absence with its ring count; it is never served as `unresolved` (\"we did not look\") and never as a present state.",
+      "fixture": "48209:97658's live shape: cityLimits incorporated (San Marcos) + etjStatus rail `{status:'absent', source:'tx_etj_boundary', basis:'point-in-polygon against 1 published ETJ ring(s) from 1 publisher(s) ... no published ETJ ring contains it, so ETJ is verified absent here', coveredBy:['san-marcos-tx'], ringsConsulted:1}`",
+      "expectedPostFix": "`etjStatus === 'absent'`; the page says no ETJ reaches the parcel on the rings consulted and prints the ring count; NO conflict; and the `incorporated + absent` pair does NOT produce `conflicting`",
+      "expectedPreFix": "`unresolved` with today's absent sentence",
+      "wouldProveItWrong": "absent served as `unresolved` (the fix only handling present), or absent+incorporated mis-served as a conflict (the rule firing on the wrong pair)"
+    },
+    {
+      "id": "F4-unresolved-reason",
+      "statement": "A determination that is itself `unresolved` renders `unresolved` WITH its own reason; an `not-applicable` cell renders `unresolved` with the cell's reason and NOT the checked-absence sentence; a bare default with an empty reason fails.",
+      "method": "two fixtures — a determination `{status:'unresolved', source, basis:'the publisher published no ring covering this point'}` and a `not-applicable` cell — asserting the rendered reason text and asserting the checked-absence sentence does NOT appear for the not-applicable case",
+      "wouldProveItWrong": "an unresolved with an empty/absent reason (a default wearing a declaration), or a not-applicable cell printing the checked-absence sentence (claiming a check that never ran)"
+    },
+    {
+      "id": "F5-unslated-and-failed-fetch",
+      "statement": "An unslated rail (`legacy-transitional`), no `recordReader` at all, and a failed fetch ALL render today's sentence byte for byte, so no county changes before P-336 applies.",
+      "method": "three fixtures: a record whose `etjStatus` rail is `legacy-transitional`; no recordReader option; a recordReader whose fetchRecord returns `{ok:false}`. All three must render the SAME string the pre-change code renders, and `etjStatus === 'unresolved'` with a non-empty reason.",
+      "wouldProveItWrong": "any of the three rendering a state, OR rendering a different unresolved sentence than the pre-change code (a silent copy change to every county's PDF)"
+    },
+    {
+      "id": "F6-refusal-is-not-silence",
+      "statement": "A `refused` rail renders `unresolved` carrying the ledger's code and reason (the P-302 posture), never a substituted state and never a bare default.",
+      "fixture": "the rail as P-336's dispatch says it reads TODAY: `serve:'refused'`, `refusal:{code:'excluded-mid-cutover', reason:...}`",
+      "wouldProveItWrong": "the refusal silently rendering today's unslated sentence, which would make a declared refusal indistinguishable from an unslated rail"
+    },
+    {
+      "id": "F7-never-derive-both-directions",
+      "statement": "No path derives ETJ from city limits or city limits from ETJ, and no path invents a determination.",
+      "method": "the five-combination matrix (incorporated|unincorporated|unresolved) x (present|absent|none) with the served state asserted for each, PLUS a source census of the token after the change expecting exactly one write site (the composer call) and one rule implementation (the new module)",
+      "wouldProveItWrong": "any branch reading city-limits status to produce present/absent, or any surviving second implementation of the rule"
+    }
+  ],
+
+  "fixturePlan": {
+    "namedByDispatch": [
+      { "parcel": "48453:134392", "shape": "conflicting — city limits incorporated (Austin), ETJ present on ring austin-tx:39 / 'AUSTIN 2 MILE ETJ', source tx_etj_boundary, city-limits source landing_parcel_jurisdiction", "source": "P-332 close's live measurement (cp1.liveReVerificationAtCP1 in _inbox/2026-09-18_p332-etj-panel_cp1.json), re-used rather than re-fetched because this lane must not read production stores to build a fixture" },
+      { "parcel": "48209:97658", "shape": "absent — san-marcos-tx, 1 ring consulted, coveredBy ['san-marcos-tx']", "source": "same" }
+    ],
+    "how": "Built IN PROCESS through the real composition path (`composeParcelReportFacts` with a fake storage port and a fake recordReader serving the rail payload), then `emitPdfFeasibility(model)` and `decodeAllContentStreams(result.bytes)`. No network, no production store, no production PDF build. The two PDFs are additionally written to this seat worktree (outside both repos) with their extracted text, and that text is reported in the close.",
+    "whyNotSurfaceProbe": "scripts/p347-build-fixture-pdfs.mjs is a PRODUCTION-WRITE instrument (it POSTs a refresh that rebuilds the shared export cache, which is what a customer's download serves). The dispatch forbids production PDF builds and this lane holds no such mandate; the local instrument is the correct one and its exclusion set is the fixtures above, nothing else."
+  },
+
+  "probeAndPredicate": {
+    "status": "notApplicable — build lane whose customer predicate is a post-P-336, post-deploy live read",
+    "why": "`scripts/surface-probe.mjs` carries no P-358 row and no etjStatus leg of any kind: its only ETJ legs are P-241's, which drive legacy-design-tools' own acquisition instrument (`lib/cad-ingest/src/boundary/etjCli.ts --verify --json`) against the acquisition register and never read a served surface. So no artifact under `_inbox/` produced by `surface-probe.mjs` can carry P-358 today. `scripts/enforcement/probe-close-gate.mjs` OPS24_RANGES now include [358,363], so P-358 IS gated and IS in PREDICATE_DEBT; the gate ACCEPTS `probe.notApplicable` for a PREDICATE_DEBT row and prints the debt (read at source this session: line 139, `notApplicable && gated.every(r => PREDICATE_DEBT.has(r))` -> allow + debt note). This declaration is made because the law and the dispatch require it, not because the gate forces the shape.",
+    "theProbeForAfterP336": "`node --use-system-ca scripts/surface-probe.mjs` in doc_repo, the PDF leg on 48453:134392 and 48209:97658, reading the state the panel reads. Expected results are named verbatim in leave_behind."
+  },
+
+  "bypassesKnownAtCP1": [
+    { "path": "the MCP / card surfaces (hauska-map)", "status": "P-332 shipped the panel's four states; P-336 makes the ledger cells serve. Neither is this lane's, and both must agree with the PDF after the deploy — the probe in leave_behind is what checks the agreement." },
+    { "path": "the share view and share dossier (hauska-map)", "status": "read by P-332 and reported as NON-bypasses (the share brief projects no city-limits/ETJ row; the dossier is cortex's own composition). Re-stated here so it is not re-investigated." },
+    { "path": "any OTHER engine surface that renders jurisdiction", "status": "bounded by the census: the token appears in exactly the six production sites listed, and `pdf/feasibility.ts`'s section is the only PDF row that prints ETJ. The dossier-author and feasibility-author test fixtures assign the literal and do not assert a state, so they are carriers of the old default rather than bypasses." }
+  ],
+
+  "countsWithCountingRules": {
+    "productionWriteSites": { "value": "6 (W1-W6), all changed", "countingRule": "whole-tree case-insensitive token grep for `etjStatus` at c41a1482 with node_modules excluded, every hit classified by reading it; the two rail declarations and the test fixtures are excluded and named separately" },
+    "newModule": { "value": "1 new file (etj-determination.ts) + 4 edited production files (feasibility-model.ts, report-model.ts, pdf/feasibility.ts, narrative-section-client.ts) + 1 edited client file (parcel-record-reader-client.ts)", "countingRule": "the files this lane edits, counted from `git status --porcelain` at CP2" },
+    "testFilesLikelyToNeedUpdating": { "value": "1 assertion site (parcel-record-reader-integration.test.ts:80), 3 fixture sites that keep type-checking (narrative-section-client.test.ts:31,115; dossier-author.test.ts:257,348)", "countingRule": "the same token grep over `__tests__`" }
+  },
+
+  "constraintsHonored": [
+    "NO MERGES, NO DEPLOYS: one PR from c41a1482, left OPEN; no deploy command of any kind.",
+    "NO PRODUCTION PDF BUILDS: the two fixture PDFs are built in-process from fixtures and written only into this seat worktree; scripts/p347-build-fixture-pdfs.mjs was read and NOT run.",
+    "NO STORE WRITES: no database was contacted by this lane at all.",
+    "destructive-write-* UNTOUCHED per the dispatch (P-361 re-pins hauska-engine #474 this wave; the P-328 branch is a different lane's tree).",
+    "FAN-DEPTH 0: no sub-agents launched by this lane — spawned 0, maxDepth 0.",
+    "ISOLATED WORKTREE: all work in P:/seat-worktrees/p358-pdf-forwards-etj/{doc_repo,hauska-engine}; the falsifier's stash/pop happens in THIS lane's own engine worktree only, never in another lane's tree.",
+    "BRANCHED FROM CURRENT origin/main WITH THE SHA DECLARED: c41a1482, verified equal to origin/main in the worktree at branch cut.",
+    "NO DOC_REPO COMMIT: CP1/CP2/CLOSE are untracked files; the only other doc_repo edit is this lane's own claim in _catalog/lane_claims.json, released at close."
+  ],
+
+  "openAtCP1": [
+    "P-336's exact cell payload for the four states is not yet written (its worktree is at c41a148 at CP1). railCellContract enumerates what this lane accepts; if P-336 emits a shape outside that set the reader will refuse it rather than guess, and the interface must be reconciled before the probe is graded.",
+    "The narrative payload's handling of the new fields is a spread of an existing object; whether cortex-api's narrative path tolerates the extra keys is NOT measured by this lane (no deploy, no live call). Named rather than assumed.",
+    "The `not-applicable` -> `unresolved` mapping (C5) is a decision, not a measurement: it is the fail-closed reading, and it is declared so a reviewer can disagree with it explicitly."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

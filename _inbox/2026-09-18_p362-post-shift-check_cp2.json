@@ -1,0 +1,161 @@
+{
+  "lane": "p362-post-shift-check",
+  "planRows": ["P-362"],
+  "seat": "cente-vsc-p362",
+  "kind": "CP2 - pilot/mid-work adversarial checkpoint (contract section 1)",
+  "filedAt": "2026-09-18T18:36:00Z",
+  "filedAtBasis": "One UTC clock reading taken in this session. Everything cited here had already been executed when this file was written; the timestamps of the evidence files are in `_inbox` beside it.",
+
+  "whatLanded": {
+    "repo": "legacy-design-tools",
+    "branch": "lane/p362-post-shift-check-ldt",
+    "startCommit": "25d1782f2e59bd5098b8459196ea828ae3580027 (== origin/main, == the SHA the dispatch declares at compile)",
+    "head": "0116b3c6a47083d0775fe7d1b159664dc22c6819",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/722",
+    "files": [
+      "scripts/p279-tagged-revision-check.mjs (NEW, 204 lines, blob 28ee85755be692024d47e205b6eafb4bded6d133, sha256 of the committed bytes 5aa27b93c4ba77a8a1ea8a2924e5749dbb29de78bc76c8ad807d71bde84ce3b1)",
+      ".github/workflows/cloud-run-deploy.yml (MODIFIED: checkout added to shift-traffic; both P-279 steps run the wrapper; the stale 'Exit codes 0 pass / 1 FAIL / 2 REFUSE' sentence at both call sites replaced with the wrapper's own table)",
+      ".github/workflows/cloud-run-deploy-smartsite-mcp.yml (MODIFIED: the same three edits)"
+    ],
+    "notTouched": "scripts/check-tagged-revision-env.mjs - see theConflict below. pr-checks.yml - see theEnumeration below."
+  },
+
+  "theEnumeration": {
+    "requirement": "P-362 requirement 4: enumerate every other workflow step in LDT that calls a repo script from a job without a checkout, or maps a script's exit codes by number; fix the ones in this workflow, list any others.",
+    "method": "All six files in .github/workflows parsed as YAML (python yaml.safe_load) and every job's steps walked for `actions/checkout` and for a `run:` naming `node scripts/`, `node tools/` or `node artifacts/`. NOT a grep over the raw text: a grep cannot tell which job a step belongs to, which is the entire question.",
+    "noCheckoutFound": "Exactly ONE job in the repo had this defect: cloud-run-deploy.yml's `shift-traffic` (the incident's job). FIXED here. After the change, the walk returns zero jobs that run a repo script without a checkout. cloud-run-deploy-smartsite-mcp.yml's `shift-traffic` did not have the defect yet (its P-279 step was added later and had never run) but carried the same shape and got the same checkout, because the next dispatch of it would have failed identically.",
+    "stillMapByNumber": [
+      {
+        "workflow": "pr-checks.yml",
+        "job": "ss-w18-api-server-boot",
+        "step": "ci-boot-graph-no-cli-import (artifacts/api-server/scripts/checkBootGraphNoCliImports.mjs)",
+        "lines": "~489-498",
+        "defect": "0 clean / 1 violation / 2 did-not-run / * did-not-run, with Node's own crash exit also 1. A missing module or a syntax error in the gate reads as a violation.",
+        "whyNotFixed": "PR-time gate, not a traffic gate. A false violation blocks a PR and is read by a human who can see the step's own log; the incident this row exists for was an OPERATOR mid-shift reading a false violation on a clean service. Fixing it is the same wrapper pattern applied to a second script, which is a separate change with a separate blast radius and belongs in a row that names it."
+      },
+      {
+        "workflow": "pr-checks.yml",
+        "job": "ss-w18-api-server-boot",
+        "step": "ci-api-server-boot-smoke (artifacts/api-server/scripts/bootSmokeTest.mjs)",
+        "lines": "~514-523",
+        "defect": "same shape as above."
+      },
+      {
+        "workflow": "pr-checks.yml",
+        "job": "p279-tagged-revision-env-predicate",
+        "step": "the OFFLINE half, `--selftest`",
+        "lines": "~642-650",
+        "defect": "same shape. Note this is the repo's own control that keeps the P-279 RULE from rotting, and its `1` is documented as 'the shipped fixture set did not pass' - which a Node crash also produces.",
+        "whyNotFixedHere": "It is the same script this row is about, but it is not a service verdict: it prints `{ passed, cases }`, a THIRD report shape, and routing it through the service-verdict wrapper would be wrong. Its own marker would have to be `passed`."
+      },
+      {
+        "workflow": "pr-checks.yml",
+        "job": "p279-tagged-revision-env-divergence",
+        "step": "the canonical byte-compare, `--check-divergence`",
+        "lines": "~673-680",
+        "defect": "maps 0 and 2 explicitly and everything else to did-not-run, so it is the closest of the four to correct; the residual is that a crash and a genuine hashes-differ REFUSE both print `unexpected exit` text.",
+        "whyNotFixedHere": "Same reason as above. NOTE: this report shape is why the wrapper's positive marker requires `service` as well as `verdict` - this step's JSON carries both `predicateVersion` and `verdict`, so a marker of `verdict` alone would read a byte-compare as a service verdict. Falsifier F9 pins that."
+      }
+    ],
+    "oneSentence": "One no-checkout job existed and is fixed; four numeric exit-code mappings remain, all in pr-checks.yml, all PR-time gates rather than traffic gates, all named above and none fixed in this row."
+  },
+
+  "theConflict": {
+    "whatTheDispatchAsks": "P-362 requirement 3: 'The script resolves `gcloud` on Windows (and on Linux still), with the fix stated' - reading, with the preceding sentence, as a change to scripts/check-tagged-revision-env.mjs.",
+    "whyThatIsNotWhatWasDone": "That file's bytes are LOAD-BEARING AND PINNED. pr-checks.yml's `p279-tagged-revision-env-divergence` job requires it to be byte-identical to hauska-engine's tools/check-tagged-revision-env.mjs and REFUSES on any difference; its own header says so and its canonical record names the engine path. So an edit to this file in this repo alone turns that gate RED until a coupled engine PR lands with the same bytes. The dispatch's own scope line is 'You build in legacy-design-tools only and open one PR', and the file's header warns that the two copies must not drift. The two instructions cannot both be satisfied in one PR, so this lane did not silently pick one.",
+    "whatWasDoneInstead": "The resolution was put in the wrapper, which is LDT-only and unpinned: it decides the gcloud NAME and hands it to the check through P279_GCLOUD. `gcloud.cmd` on win32, `gcloud` elsewhere; a configured P279_GCLOUD the check's SHELL_SAFE guard would refuse is discarded and named on stderr with the substitute. This was OBSERVED WORKING ON THE LIVE SERVICE (see liveWindows below), which is what the requirement's own verification asks for.",
+    "whatThatDoesNotFix": "The check's own `gcloudBinary()` still returns `process.env.P279_GCLOUD || \"gcloud\"` with no win32 branch, so any caller that invokes check-tagged-revision-env.mjs DIRECTLY with a spaced P279_GCLOUD still gets SERVICE_DESCRIBE_FAILED. Named as an OPEN item, not claimed as closed.",
+    "theRulingRequested": "Either (a) accept the wrapper-level resolution as satisfying requirement 3 for the entry point this row documents, and that is already the shipped state; or (b) rule that the check itself must carry the win32 branch, in which case this row needs a SECOND PR against hauska-engine with byte-identical content and the LDT PR re-pinned to it - the two MUST merge in an order that never leaves the divergence gate red across a night. The exact patch for (b) is three lines in `gcloudBinary()` (a win32 branch returning `gcloud.cmd`) plus the same bytes in the engine copy, and it is deliberately NOT written here because writing it without the coupled PR is the drift the gate exists to catch."
+  },
+
+  "theThreeQuestionGate": [
+    {
+      "q": "What executes the check after a shift?",
+      "a": "The `shift-traffic` job of the workflow for that service (cloud-run-deploy.yml for cortex-api, cloud-run-deploy-smartsite-mcp.yml for smartsite-mcp), as its last step, named `Tagged-revision credential check (P-279) [after traffic shift]`. It runs `node scripts/p279-tagged-revision-check.mjs --project <GCP_PROJECT_ID> --region us-central1 --service <CLOUD_RUN_SERVICE>`, which spawns `scripts/check-tagged-revision-env.mjs --json <same flags>` and reads its report. The same wrapper also runs from `deploy-canary` in both workflows as the first check."
+    },
+    {
+      "q": "What triggers it?",
+      "a": "A `workflow_dispatch` with `inputs.action = shift-traffic` (the job's own `if:`). Nothing on `push` reaches it: the deploy workflows' traffic jobs are unreachable from a push event by construction, which is this repo's stated hard constraint."
+    },
+    {
+      "q": "What fails when a tag points at a revision missing a credential?",
+      "a": "The predicate returns FAIL for that service; the wrapper prints `p279-tagged-revision-env: RESULT=violation - a tag points at a revision missing a credential the serving revision carries`, names the tag, the revision and the missing names, and exits 1. The step fails under GitHub's default `bash -e`, so the job fails. Nothing is mutated: removing or repointing a tag is an operator decision and the check says so in its own output."
+    },
+    {
+      "q": "Is that failure distinguishable from the check not running?",
+      "a": "Yes, and it is the whole point of the change. `did-not-run` is a different word, a different exit code (2 vs 1), different text (`RESULT=did-not-run` plus the child's exit code and the last lines of its stderr) and it is produced by the absence of a service verdict rather than by a verdict. The 2026-09-18 run is the measured proof that this was NOT true before: a missing module produced the string `RESULT=violation - a tag points at a revision missing a credential the serving revision carries` on a clean service."
+    },
+    {
+      "q": "What bypasses it?",
+      "a": "(1) A hand `gcloud run deploy --tag` or `gcloud run services update-traffic` outside the workflow - no step runs at all, and a tag can be created or repointed with nothing watching. (2) A shift performed by the `rollback` action, which changes traffic to a named revision and has no P-279 step: it can leave the pre-existing tag set pointing at whatever it pointed at, unexamined. (3) A workflow that calls check-tagged-revision-env.mjs directly instead of the wrapper - pr-checks.yml does this for its two OFFLINE jobs, which is fine (no service to read), but a future live call site that copies that pattern would reintroduce the numeric mapping. (4) A `run:` step that discards the exit code, or a `continue-on-error: true` added to the step. (5) Editing or deleting the wrapper in the same PR that changes a tag policy - it is a repo file, so whoever can change the workflow can change the check. All five are named in the wrapper's own header under WHAT BYPASSES IT, because the answer is never 'nothing'."
+    }
+  ],
+
+  "liveWindows": {
+    "host": "win32, node v24.11.1, `where gcloud` resolves to C:\\Users\\cente\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud",
+    "theCauseReproduced": "Raw check with P279_GCLOUD set to the real spaced install path returned `verdict: REFUSE`, `reason: SERVICE_DESCRIBE_FAILED`, `detail: unsafe argument refused (shell metacharacter or quote): \"C:\\\\Users\\\\cente\\\\AppData\\\\Local\\\\Google\\\\Cloud SDK\\\\google-cloud-sdk\\\\bin\\\\gcloud.cmd\"`. That is the check's OWN guard refusing the binary's path, not a shell-quoting accident in execFileSync - the distinction the dispatch asked to capture rather than guess.",
+    "theFixObserved": "The wrapper in the SAME environment returned `RESULT=clean`, exit 0, with stderr naming both the discarded value and the substitute: `P279_GCLOUD=\"C:\\\\...\\\\Google Cloud SDK\\\\...\" contains a space or a quote and the check refuses such an argument; using gcloud.cmd from PATH instead`.",
+    "liveVerdictToday": "cortex-api's tags read CLEAN at 2026-09-18T18:25Z from this lane, which is consistent with the hand check recorded in the incident record and is the value an operator should see on the next shift.",
+    "conditionDependence": "With P279_GCLOUD UNSET the raw check also passed on this host - cmd.exe resolves `gcloud` through PATHEXT and the guard never sees a space. So the dispatch's 'on a Windows host the script refuses' is condition-dependent: it requires an operator to have pointed P279_GCLOUD at the real path, which is the natural thing to do and which produces the failure. A fix that only changed the default would have missed the seat's case."
+  },
+
+  "liveProofOwed": {
+    "dispatch": "cloud-run-deploy, `action: shift-traffic`, service cortex-api (the dispatch says P-324 is the next shift and that this change should land before it).",
+    "expected": "The `shift-traffic` job checks out; the step named `Tagged-revision credential check (P-279) [after traffic shift]` prints `p279-tagged-revision-env: RESULT=clean` and the job's exit is success. If the check cannot run, it must print `RESULT=did-not-run` and fail - it must never print `violation` on this service again.",
+    "whyNotRunHere": "This lane may not dispatch a production workflow, and the step is inside one. Nothing in this lane has been observed running inside a dispatched workflow at any point; every result above is a hand invocation or an offline fixture."
+  },
+
+  "adversarialQuestionsAskedOfMyOwnDeliverable": [
+    {
+      "q": "A6 - the shim `gcloud.cmd` is pinned by NAME. What if a Windows runner has gcloud installed somewhere not on PATH?",
+      "disposition": "Then the check REFUSES with a describe failure and the wrapper reads `did-not-run`, which is the safe direction. But it is a real limit: this fix improves the operator case on a Windows host where the SDK is on PATH, which is the case the seat hit. The alternative (accepting a spaced path and quoting it correctly inside the check) is the (b) branch of theConflict."
+    },
+    {
+      "q": "A7 - does the wrapper make the step depend on one new file that could itself be missing?",
+      "disposition": "Yes - and a missing wrapper reads `did-not-run` only if Node gets far enough to run it, which it cannot. If the wrapper is absent the step fails with Node's own `Cannot find module` and exit 1, and no RESULT line is printed at all. That is not a false violation (nothing claims one), but it is a bare failure, and it is why the checkout is half the fix and both halves are in this PR."
+    },
+    {
+      "q": "A8 - is `clean` returned by the wrapper ever produced without a PASS verdict from the predicate?",
+      "disposition": "No. `clean` requires every result to have a string `service` and `verdict`, at least one result, no FAIL anywhere, no REFUSE anywhere, exactly one distinct verdict and that verdict PASS. Falsifier F9 shows an unrecognised-but-verdict-shaped report does NOT produce clean. The residual: the wrapper trusts the child's JSON as the report, so a child that printed a fabricated PASS would be believed - that is the check's own integrity problem and is what pr-checks.yml's canonical divergence compare covers."
+    },
+    {
+      "q": "A9 - could this change make a real violation harder to see?",
+      "disposition": "Only by adding the word did-not-run to the vocabulary, and only for failures to run, which previously produced the word violation - so a real violation is now the ONLY thing that produces `violation`. The step still fails in every non-clean case."
+    },
+    {
+      "q": "A10 - the wrapper's own docstring says an earlier draft mis-handled the fixture shape. Why record a self-inflicted bug in the shipped file?",
+      "disposition": "Because the next person to tighten that marker needs to know a too-tight marker was already tried and what it did. It is one sentence and it is the difference between a comment and a record."
+    }
+  ],
+
+  "ciConditionFound": {
+    "what": "The `Test` job of PR 722 is RED on three consecutive attempts, and it is the Postgres infrastructure condition this fleet has already written down, not this diff.",
+    "signature": "severity ERROR, code 53200, `out of shared memory`, hint `You might need to increase max_locks_per_transaction.`, routine `LockAcquireExtended`, thrown at `dropTestSchema` in `lib/db/src/testing/index.ts:167` (`DROP SCHEMA IF EXISTS ... CASCADE`).",
+    "attempts": [
+      "run 35380040980 job 105713783277 (18:27Z): lib/submission-classifier src/__tests__/upsert.test.ts",
+      "run 35380040980 job 105714713401 (18:30Z): lib/cad-ingest, lib/codes, lib/submission-classifier (a DIFFERENT test in the same file)",
+      "run 35380040980 job 105716144940 (18:34Z): lib/codes src/orchestrator.test.ts"
+    ],
+    "whyItIsNotThisDiff": "(1) The failing suites create and drop Postgres schemas; this diff is two workflow YAML files and one standalone .mjs that adds no test, no schema and no DB call. (2) The failing workspace and the failing test MOVE between attempts, which a diff-dependent failure does not do. (3) The .mjs lives in the `scripts` workspace, whose vitest include glob is `*.test.*`/`*.spec.*`; the file is neither, so it is not collected. (4) Decisive: the START COMMIT of this branch is origin/main 25d1782f, and PR Checks on main at that exact SHA concluded `success` at 2026-09-18T01:27:47Z (run 35295406166) - the identical job, the identical code, green 17 hours earlier.",
+    "theFleetAlreadyKnows": "The mechanism is written down in `_inbox/2026-09-16_p297-cell-serve-ldt_close.json`: 'a local pgvector/pgvector:pg14 container on :55481 with postgis installed and 2 GB of shared memory was used (a 64 MB-shm container fails these suites in bulk with out of shared memory during schema creation, which reads like hundreds of code failures and is not)'. pr-checks.yml's `test` job starts its postgres service container with no `--shm-size` and no lock-table bump, and `pnpm -r run test` runs the workspaces' DB suites concurrently against that one container.",
+    "theRuleThisLaneStoppedOn": "`_queue/cards/ldt-576-retry/card.json`, written for this exact signature on 2026-09-01: 'ONE retry is authorised. If Test fails a second time it is not a flake, and the card stops rather than retrying a third time: anything that has failed its own test twice needs authorisation, not another attempt.' This lane retried once, saw a second failure, and STOPPED. No fourth attempt was made and none is in flight.",
+    "disposition": "NOT bypassed, NOT dismissed, and NOT fixed here: the check is left red with its three run URLs, and the ruling is handed back. It is not this row's to fix - it is a repo-wide CI infrastructure defect on a job this row does not own, and the two candidate fixes (a `--shm-size` / `max_locks_per_transaction` bump on the service container, or serializing the DB suites instead of running them concurrently) change every PR's CI and belong to whoever owns pr-checks.yml. Named in leave_behind."
+  },
+
+  "residualsAndLeaveBehind": [
+    "The live-workflow direction is UNMEASURED by this lane and is the completion predicate. The close is closed-partial for that reason alone; nothing else in the row is unfinished.",
+    "The check's own gcloudBinary() is still win32-naive. Any direct caller (not this wrapper) with a spaced P279_GCLOUD gets SERVICE_DESCRIBE_FAILED. See theConflict for the two ways to close it.",
+    "Four pr-checks.yml steps still map exit codes by number (named above). Three of them can read a Node crash as a violation; the fourth reads it as `unexpected exit` did-not-run.",
+    "The `rollback` action has no P-279 step, so a rollback changes traffic without any tag examination. Not in this row's scope and not measured.",
+    "`.github/workflows/neon-pooler-canary.yml` calls scripts/_neon-pooler-readonly-canary.mjs and DOES check out; its own exit mapping was not part of requirement 4's two categories and was not audited beyond the checkout question.",
+    "The machine this lane ran on was carrying another lane's heavy job (a P-285 county-runner process and 70+ node processes) during the live reads, and one `gcloud run revisions list` call blocked for over six minutes and had to be killed. Every live number above was re-taken on a bounded timeout after that; the deferred run is a DEAD-END for anyone re-measuring here (see the close's fleetMemory)."
+  ],
+
+  "artifacts": [
+    "_inbox/2026-09-18_p362-post-shift-check_cp1.json",
+    "_inbox/2026-09-18_p362-post-shift-check_cp2.json (this file)",
+    "_inbox/2026-09-18_p362-post-shift-check_falsifiers-offline.json (10 evidence rows + the 2 opposing-direction rows)",
+    "_inbox/2026-09-18_p362-post-shift-check_falsifiers-live-cortex-api.json",
+    "_inbox/2026-09-18_p362-post-shift-check_close.json"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "checkpoint": "CP2 build/measurement",
+  "lane": "p336-ledger-cutover-ab",
+  "planRows": ["P-336"],
+  "dispatch": "_dispatches/2026-09-18_p336-ledger-cutover-ab_dispatch.md",
+  "seat": "cente-vsc-p336",
+  "filedBy": "seat cente-vsc-p336",
+  "filedAt": "2026-09-18T18:05:00Z",
+
+  "built": [
+    { "repo": "hauska-factory", "branch": "feat/p336-ledger-cutover-ab", "startCommit": "0f4558a4a4c89c72275744f580d7ba5765d95674 (origin/main at claim)", "commit": "cf5b45c78c6b3738ced7f4eb40b881ab51c26b4c", "pr": 180, "prUrl": "https://github.com/empressaioemail-tech/hauska-factory/pull/180", "mergeable": "MERGEABLE", "ciAtFiling": "pending (gate8, test, ldt-sha-comment-presence)", "merged": false, "files": ["src/lib/ledger-cutover-ab-cells.mjs", "test/ledger-cutover-ab-cells.test.mjs"] },
+    { "repo": "hauska-engine", "branch": "feat/p336-ledger-cutover-ab (created, nothing landed)", "pr": null, "merged": false, "note": "not applicable: the reader leg is blocked at source, premise P6 in CP1. No empty PR was opened to look like a second repo was touched." },
+    { "repo": "doc_repo", "branch": "lane/p336-ledger-cutover-ab", "pr": null, "merged": false, "note": "not applicable: doc_repo commits are planner-owned. The RAIL_POLICY change is handed back as a verified patch, not committed (AGENT_CONTRACT section 6: 'leave repo edits uncommitted and list them in the close')." }
+  ],
+
+  "measured": [
+    {
+      "what": "the decision core's falsifiers",
+      "how": "node --test test/ledger-cutover-ab-cells.test.mjs",
+      "countingRule": "one test = one assertion group; 25 tests, 25 pass, 0 fail",
+      "result": "25/25 pass",
+      "scoredIn": ["F1", "F2", "F3", "F4", "F5"]
+    },
+    {
+      "what": "regression against the repo's own suite",
+      "how": "node --test --test-reporter=tap 'test/*.test.mjs', run twice: once with this lane's files present, once with them MOVED OUT (baseline), so every failure in the with-change run is attributed by measurement and not by hope",
+      "countingRule": "failures compared set-for-set between the two runs; a failure present in both runs is pre-existing",
+      "result": "with change: 1970 tests / 3 fail. baseline: 2 fail. The 2 shared failures are environment-dependent (the LDT checkout acceptance-set walk, and the CTX-B3 leaf list read from the bake's pin) and are NOT this lane's. The third, test/p2-juris-57p01.test.mjs 'F2: long chunk with short heartbeat interval yields multiple lease heartbeats', is a load-sensitive wall-clock test (a sleep against a >=3-heartbeat assertion at line 261): it passes 3/3 in isolation and passed in the baseline full-suite run, and is named as an instrument defect rather than attributed to this change or explained away.",
+      "open": "the heartbeat flake is unowned; reported, not fixed (not this lane's file)"
+    },
+    {
+      "what": "the doc_repo policy diff",
+      "how": "applied to the lane worktree copy, then `node scripts/six-county-completeness.mjs --self-test`, then reverted; the patch was regenerated with `git diff --output` and `git apply --check` run against it",
+      "countingRule": "the script's own check count, 47",
+      "result": "SELF-TEST OK (47); git apply --check passes clean",
+      "artifact": "_inbox/2026-09-18_p336-ledger-cutover-ab_rail-policy.diff (+ _rail-policy_note.md for the condition on applying it)"
+    },
+    {
+      "what": "the writer's input, read independently of the writer (the dispatch's 'independent atom counts')",
+      "how": "one announced read-only psql scan, COUNTY-BOUNDED to the readers' own entity_id prefix range, on the atoms store the live readers serve from",
+      "countingRule": "atom_rows = raw rows; parcels = DISTINCT normalised parcel keys (`:boundary:` split, `.00000000` normalised away) so both grammars count as one parcel, which is a count of parcels and not of grammars; for pipelines the last column is TYPED ABSENCE rows, not retired rows",
+      "result": "parcelGeometry: 48021 26,846 rows / 3,732 parcels (723 retired), 48055 57,180 / 6,482, 48209 509,928 / 48,611, 48309 0, 48453 0, 48491 0. pipelines: 48021 62,256, 48055 24,988, 48209 116,420, 48309 114,254, 48453 380,917, 48491 282,569 -- all with a boolean finding, none with a typed absence. etjStatus: UNMEASURED (not an atom in this store).",
+      "positiveControl": "parcel 48209:97658 returns exactly 9 boundary atoms under the same bind, matching an independent lane's (P-204's) 'nine-edge boundary ring'. A zero from this bind is a zero, not a broken predicate.",
+      "artifact": "_inbox/2026-09-18_p336-ledger-cutover-ab_atom-measurements.json"
+    },
+    {
+      "what": "the engine slate's before-state",
+      "how": "read-only JSON read of services/retrieval-api/src/parcel-record-slate.json",
+      "countingRule": "pairs of the form `{countyFips}:{railKey}` present in the 158-entry slate",
+      "result": "0 of 18 (3 rails x 6 counties) slated; sourceCommit 8e7218f7c81cc8a8225386558ef22ec38383650a"
+    }
+  ],
+
+  "F6_result": "The counts are not merely independent of the writer -- they contradict the dispatch's own context block for TWO counties it does not name (Travis 48453 and Williamson 48491 hold zero property-boundary-edge atoms, as does McLennan 48309). See THE_FINDING in the measurements artifact and leaveBehindAtCp1 item 1. This is the single most consequential thing this lane produced, and it is a STOP-AND-REPORT rather than a fix: the writer's behaviour is right, the policy move is what is premature for parcelGeometry.",
+
+  "constraintsHonored": [
+    "no store writes, no deploys, no merges, no applies",
+    "doc_repo script reverted; the policy change handed back as a patch",
+    "48491 read-only; never written anywhere",
+    "no sub-agents launched (FAN-DEPTH 0)",
+    "npm ci only in the lane worktree; no dependency added, changed or upgraded"
+  ]
+}
