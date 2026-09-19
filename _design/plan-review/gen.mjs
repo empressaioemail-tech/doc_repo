@@ -72,7 +72,7 @@ const mxRow = (r) => {
       ? '                  <span style="display:inline-flex; align-items:center; gap:6px; align-self:flex-start; font:400 12px/16px var(--sc-font-data); color:var(--sc-restricted); background:var(--sc-restricted-wash); border-radius:var(--sc-r-control); padding:2px 8px;">' + LOCK + ' Body withheld — licensed corpus, cited not quoted</span>\n'
       : (r.analysis ? '                  <span style="font:400 13px/19px var(--sc-font-ui); color:var(--sc-ink-2); max-width:78ch;">' + r.analysis + '</span>\n' : '')) +
     '                  <span style="display:flex; align-items:center; gap:var(--sc-3); font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);">\n' +
-    '                    <span>' + r.atom + '</span><span>' + r.conf + '</span>' +
+    '                    <span>' + r.cite + '</span><span>' + r.conf + '</span>' +
     (r.deep ? '<span style="display:inline-flex; align-items:center; gap:4px; color:var(--sc-accent);">' + LINK + ' ICC</span>' : '') + '\n                  </span>\n                </div>\n' +
     '                ' + pill(r.det, d.pc, d.pw) + '\n              </div>';
 };
@@ -127,8 +127,7 @@ const queueBody =
 '      <div style="display:flex; align-items:center; gap:var(--sc-2);">\n' +
 '        <span style="display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 var(--sc-4); border-radius:var(--sc-r-control); background:var(--sc-accent); color:var(--sc-on-accent); font:500 13px/18px var(--sc-font-ui);">Start a review</span>\n' +
 '        <span style="font:400 12px/16px var(--sc-font-ui); color:var(--sc-ink-3);">Project type plus place. No upload required to start.</span>\n' +
-'        <div style="flex:1;"></div>\n' +
-'        <span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);">icc-demo is the QA tenant, not a city pack</span>\n      </div>\n' +
+'        <div style="flex:1;"></div>\n      </div>\n' +
 '      <section style="flex:1; min-height:0; border:1px solid var(--sc-line); border-radius:var(--sc-r); background:var(--sc-surface); overflow:hidden; box-shadow:var(--sc-e1); display:flex; flex-direction:column;">\n' +
 '        <div style="display:grid; grid-template-columns:3px 108px minmax(0,1fr) 150px 132px 118px 78px; gap:var(--sc-3); padding:7px var(--sc-4); background:var(--sc-surface-2); border-bottom:1px solid var(--sc-line);">\n' +
 ['', 'Id', 'Place', 'Type', 'Edition', 'Open findings', 'Age'].map((h) =>
@@ -175,25 +174,25 @@ spine(
 '        ' + chip('Unresolved only', true) + '\n        ' + chip('All', false) + '\n' +
 '        <span style="font:400 12px/16px var(--sc-font-ui); color:var(--sc-ink-3);">9 shown · 14 passing rows hidden</span>\n' +
 '        <div style="flex:1;"></div>\n' +
-'        <span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);">atom-chain resolved · bodyVerbatim=false</span>\n      </div>\n' +
+'        <span style="font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);">Traced to source &middot; full code text not reproduced</span>\n      </div>\n' +
 '      <section style="flex:1; min-height:0; border:1px solid var(--sc-line); border-radius:var(--sc-r); background:var(--sc-surface); overflow:hidden; box-shadow:var(--sc-e1);">\n' +
 [
   { title: 'City of Bastrop Building Block B3 (2026 adopted)', sub: '2 fail · 1 uncertain', rows: [
     { corpus: 'BASTROP-UDC', sec: '14-02-003', heading: 'Dimensional standards, SF-1', det: 'Fail',
       analysis: 'Proposed front setback 22 ft is less than the 30 ft required for SF-1 on the most current schedule. Layer 83 supersedes layer 23; the two city schedules disagree.',
-      atom: 'atom bastrop_tx-bdc-2026-adopted/14-02-003', conf: 'confidence: high' },
+      cite: 'Bastrop 2026 code &sect;&nbsp;14.02.003', conf: 'confidence: high' },
     { corpus: 'BASTROP-UDC', sec: '14-02-008', heading: 'Permitted use, residential districts', det: 'Uncertain',
       analysis: 'Use is permitted. Whether the addition triggers the Old Town overlay standards could not be resolved from the submitted scope.',
-      atom: 'atom bastrop_tx-bdc-2026-adopted/14-02-008', conf: 'confidence: medium' },
+      cite: 'Bastrop 2026 code &sect;&nbsp;14.02.008', conf: 'confidence: medium' },
     { corpus: 'BASTROP-UDC', sec: '14-02-005', heading: 'Lot coverage and impervious cover', det: 'Unchecked',
       analysis: 'Not wired on this manifest. The section exists in the store and is not in this edition manifest.',
-      atom: 'atom bastrop_tx-bdc-2026-adopted/14-02-005', conf: 'confidence: not earned' },
+      cite: 'Bastrop 2026 code &sect;&nbsp;14.02.005', conf: 'confidence: not earned' },
   ]},
   { title: '2018 International Building Code', sub: '1 fail · 5 unchecked', rows: [
     { corpus: 'IBC-2018', sec: '1001.1', heading: 'General', det: 'Fail', licensed: true, deep: true,
-      atom: 'atom IBC-2018/1001.1', conf: 'confidence: high' },
+      cite: 'IBC 2018 &sect;&nbsp;1001.1', conf: 'confidence: high' },
     { corpus: 'IBC-2018', sec: '1207.2', heading: 'Sound transmission, air-borne', det: 'Unchecked', licensed: true, deep: true,
-      atom: 'atom IBC-2018/1207.2', conf: 'confidence: not earned' },
+      cite: 'IBC 2018 &sect;&nbsp;1207.2', conf: 'confidence: not earned' },
   ]},
 ].map(mxGroup).join('\n') + '\n      </section>';
 

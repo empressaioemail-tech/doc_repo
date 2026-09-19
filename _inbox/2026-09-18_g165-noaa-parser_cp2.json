@@ -1,0 +1,194 @@
+{
+  "artifact": "G-165 CP2 — post-fix measurement against the live endpoint, verdict by verdict, on the final commit",
+  "lane": "g165-noaa-parser",
+  "planRows": ["G-165"],
+  "checkpoint": "CP2 (post-fix)",
+  "seat": "cente-vsc-g165",
+  "writtenAt": "2026-09-18T22:40:00Z",
+  "dispatch": "_dispatches/2026-09-18_g165-noaa-parser_dispatch.md",
+
+  "snapshot": {
+    "repo": "hauska-engine",
+    "worktree": "P:/seat-worktrees/g165-noaa-parser/hauska-engine",
+    "branch": "lane/g165-noaa-parser",
+    "base": "cff8d882f1d46040093cfc6f8ef612b99ee0c1ff (origin/main at lane start)",
+    "commits": [
+      { "sha": "4b15b7f34bf5af1361ec106f195ecfb7a50bb127", "subject": "G-165 (OPS-17): the NOAA Atlas 14 parser reads the live payload, and refuses what it cannot read" },
+      { "sha": "f01a198122d707625aa573ff5724cb3952088c39", "subject": "G-165 (OPS-17): pin the study path's NAMED fallback (follow-up to 4b15b7f)" }
+    ],
+    "tip": "f01a198122d707625aa573ff5724cb3952088c39",
+    "workingTreeCleanAtMeasurement": true,
+    "probeRanAt": "f01a198122d707625aa573ff5724cb3952088c39",
+    "prOpened": false,
+    "merged": false,
+    "note": "the probe artifact's own snapshot.commit records f01a198; 4b15b7f..f01a198 changes ONLY the added engine-core test file, so the production source measured is byte-identical to 4b15b7f"
+  },
+
+  "liveEndpointShapeAtCP2": {
+    "readAt": "2026-09-18T22:28:56.272Z",
+    "httpStatus": 200,
+    "bytes": 5074,
+    "rawBodySha256ThisFetchOnly": "7fc4f72da74708ac652203f37fdbd4b3c7446582a66d54eb3e44cb6e8d1dfb9e",
+    "quantilesLiteralSha256": "d77aa09cf31342c5ac84da81b8c0e47ba50da5c3c277d8eec61e68b4d2222dc5",
+    "payloadHeadVerbatim": "\nresult = 'values';\nquantiles = [['0.458', '0.538', '0.670', '0.779', '0.927', '1.04', '1.16', '1.27', '1.43', '1.56'], ['0.727', '0.856', '1.07', '1.24', '1.48', '1.67', '1.85', '2.03', '2.27', '2.44'], ['0.921', '1.08', '1.34', '1.56', '1.85', '2.07', '2.30', '2.53', '2.84', '3.08'], ['1.31', '1.53', '1.89', '2.19', '2.59', '2.89', '3.20', '3.52', '3.98', '4.34'], ['1.70', '2.00', '2.50', '2.90', ...",
+    "endpointHasChangedAgainSinceCP1": false,
+    "fixtureMatchesLiveMatrix": "the committed fixture's quantiles literal hashes to d77aa09cf31342c5ac84da81b8c0e47ba50da5c3c277d8eec61e68b4d2222dc5 — the SAME hash the probe read live at the tip, so a clone tests the captured bytes and not a paraphrase of them"
+  },
+
+  "acceptanceClauseVerdicts": [
+    {
+      "clause": "parsePfdsDepthTable parses the live HDSC payload shape",
+      "verdict": "PASS",
+      "measurement": "shippedParser on the live payload: outcome value, mapSize 10, depth100yr 12.6 (Bastrop) / 4.7 (El Paso). Pre-fix on the same payloads: mapSize 0, depth100yr null — the parser matched nothing, measured not assumed.",
+      "artifact": "_inbox/2026-09-18_g165-noaa-parser_postfix_probe.json#points"
+    },
+    {
+      "clause": "…and returns a depth that VARIES WITH LOCATION, proven by two points whose Atlas 14 depths genuinely differ",
+      "verdict": "PASS",
+      "measurement": {
+        "shippedDepths": [12.6, 4.7],
+        "distinctValues": 2,
+        "rule": "2 points; PASS requires 2 distinct 100-yr 24-hr depths",
+        "independentCrossCheck": "both values are value-identical to the LABELED sibling endpoint's 24-hr row at the 100-yr column (Bastrop 12.6, El Paso 4.70), read 2026-09-18 — so the numbers are NOAA's, not an artifact of the row index this parser chose"
+      },
+      "artifact": "_inbox/2026-09-18_g165-noaa-parser_postfix_probe.json#verdicts.depthVariesWithLocation"
+    },
+    {
+      "clause": "a parse failure REFUSES rather than falling through, so rainfallSource can never read noaa-atlas14 on a number the parser did not produce",
+      "verdict": "PASS",
+      "measurement": {
+        "perturbationsTotal": 13,
+        "refusedWhenRequired": "12/12",
+        "parsedWhenRequired": "1/1",
+        "allExpectationsMet": true,
+        "control": "a whitespace-only reformat still PARSES (mapSize 10) — the refusal is specific, not indiscriminate, which is the divergence test the harness needed before it could grade anything",
+        "routePathBefore": "kind noaa-atlas-14, depthInches 4 (a literal), designStormCount 0, classified NOT degraded -> okCoverage",
+        "routePathAfter": "kind noaa-atlas-14, depthInches 12.6 / 4.7, from the parsed matrix; the literal 4 is gone (grep for `?? 4` in the diff: removed)",
+        "studyPathBefore": "source default, depthInches 9.5, no 100-yr storm reachable",
+        "studyPathAfter": "source noaa-atlas14, depthInches 12.6 / 4.7"
+      },
+      "artifact": "_inbox/2026-09-18_g165-noaa-parser_postfix_probe.json#perturbations"
+    },
+    {
+      "clause": "any surviving fallback is named, counted and marked on read rather than presented as a measured value",
+      "verdict": "PASS",
+      "measurement": {
+        "named": "ResolvedRainfall gains `fallback: { reason, detail, errorMsg? }` with reason in {noaa-not-covered, noaa-payload-refused, noaa-unreachable, noaa-fetch-failed}. The study's own `detail` string carries the reason. Pinned by packages/engine-core/src/site-plan/__tests__/g165-rainfall-fallback.test.ts, which drives the REAL client (wire stubbed with the captured payloads) through the REAL resolveStudyRainfall.",
+        "counted": "pfdsRefusalTally() { total, byCode, lastDetail }, incremented at the single throw site `refuse()` so the tally cannot drift from the throws. Pinned by a counting test in the adapters suite.",
+        "marked": "source stays \"default\" (never noaa-atlas14) and `curve` stays honest-absent on every fallback path; only a parsed matrix produces designStorms.",
+        "principled-absenceDistinguished": "a point NOAA genuinely does not cover (result = 'null' | 'none') sets notCovered true and reason noaa-not-covered with NOAA's own ErrorMsg verbatim — so \"we asked and there is no Atlas 14 value here\" is distinguishable on the read from \"our parser could not read the answer\", which was the whole point of the clause"
+      },
+      "artifact": "packages/engine-core/src/site-plan/__tests__/g165-rainfall-fallback.test.ts (committed at f01a198)"
+    }
+  ],
+
+  "falsifierResults": [
+    {
+      "id": "F1-location-divergence",
+      "result": "PASS",
+      "detail": "12.6 vs 4.70, both matching the labeled endpoint. Pre-fix the same measurement gave null/null."
+    },
+    {
+      "id": "F2-perturbed-payload-refusal",
+      "result": "PASS",
+      "detail": "12/12 required refusals fired with distinct typed codes (quantiles_missing, matrix_shape, duration_not_increasing, return_period_not_increasing, echo_mismatch, location_mismatch, echo_missing, result_missing) and the whitespace control still parsed. Pre-fix: 0/12 refused, 0/1 control parsed (the parser answered NOTHING in any shape, including the one it was written for — see the HTML row below).",
+      "note": "the frozen pre-G-165 parser is still in the probe and still answers the retired HTML table (mapSize 1) while returning empty on all 12 live-shape perturbations. That asymmetry IS the defect, kept reproducible from the post-fix tree."
+    },
+    {
+      "id": "F3-no-citation-over-an-unparsed-number",
+      "result": "PASS",
+      "detail": "post-fix the route kind noaa-atlas-14 carries 12.6/4.7; the study source reads noaa-atlas14 with 12.6/4.7. No literal depth survives on either path.",
+      "notClosedHere": "the PDF's default-path provenance cell (packages/engine-core/src/site-plan/pdf/flood-drainage.ts:1113) still reads 'NOAA Atlas 14 Volume 11 (Texas) regional default' at 'asserted · regional default'. That string is TRUE of the 9.5's provenance (it is a published Atlas 14 Volume 11 regional figure) and the sheet separately says 'documented regional default, live estimate unavailable', so this lane left it. Named here as a deliberate exclusion, not an oversight — see scopeDecisions."
+    },
+    {
+      "id": "F4-fixture-matches-live-shape",
+      "result": "PASS",
+      "detail": "the retired `<tr><td>` fixture is now a REFUSAL case (`result_missing`), and three captured live payloads replace it. The old fixture's expectation (parsed.get(100) === 6.2) can no longer pass, which is exactly the red the row asked for."
+    },
+    {
+      "id": "F5-baseline-not-regressed",
+      "result": "PASS",
+      "detail": "see testLedger"
+    }
+  ],
+
+  "testLedger": {
+    "countingRule": "vitest run per package, on the same machine, same tree; counts are (test files checked | failed) and (tests run | failed | passed | skipped) exactly as vitest printed them",
+    "adapters": {
+      "before": { "readAt": "2026-09-18T22:10:51Z", "testFiles": "36 passed (36)", "tests": "461 passed (461)", "failures": "none" },
+      "after": { "readAt": "2026-09-18T22:30:20Z", "testFiles": "37 passed (37)", "tests": "483 passed (483)", "failures": "none" },
+      "delta": "+1 file, +22 tests (noaaAtlas14.test.ts 2 -> 18 replacing the wrong fixture with the live one; rainfallForcing.test.ts 0 -> 6 new). All green both sides.",
+      "artifact": "_inbox/2026-09-18_g165-noaa-parser_adapters_after.txt"
+    },
+    "engineCore": {
+      "baselineRun1": { "readAt": "2026-09-18T22:12:26Z", "testFiles": "6 failed | 222 passed | 1 skipped (229)", "tests": "3 failed | 1925 passed | 22 skipped (1950)" },
+      "baselineRun2": { "readAt": "2026-09-18T22:14:27Z", "testFiles": "7 failed | 221 passed | 1 skipped (229)", "tests": "5 failed | 1923 passed | 22 skipped (1950)" },
+      "after": { "readAt": "2026-09-18T22:30:24Z", "testFiles": "4 failed | 225 passed | 1 skipped (230)", "tests": "0 failed | 1934 passed | 22 skipped (1956)" },
+      "inheritedFailures": {
+        "count": 4,
+        "allFourAreSuiteLevelModuleErrors": true,
+        "names": [
+          "scripts/__tests__/cert-grade-and-report.test.ts",
+          "scripts/__tests__/detect-placeholder-setback-citation.test.ts",
+          "scripts/__tests__/preflight-and-report.test.ts",
+          "scripts/__tests__/retire-road-class-setback-table.test.ts"
+        ],
+        "presentInBothBaselines": true,
+        "presentAfter": true,
+        "verdict": "INHERITED, not a regression from this lane. The dispatch said 'four pre-existing failures'; the stable inherited set measures as exactly these four suite-level module errors."
+      },
+      "inheritedButNotReproducedAfter": {
+        "names": [
+          "src/registry/__tests__/preflight-probes.test.ts (2 assertions)",
+          "src/site-plan/__tests__/manifest-is-load-bearing.test.ts (1 assertion)",
+          "src/site-plan/__tests__/author.test.ts (20 s timeouts, different test names in each run)"
+        ],
+        "why": "they failed in BOTH baselines but PASSED in the after run on a quieter machine. Two vitest processes were sharing this workstation during the baselines. Recorded as load-flaky rather than claimed as fixed by this lane — this lane's diff does not touch the registry, the manifest, or the author path."
+      },
+      "delta": "+1 test file (the new g165-rainfall-fallback.test.ts), +6 tests, 0 failed tests after vs 3-5 failed tests in the two baselines.",
+      "artifacts": ["_inbox/2026-09-18_g165-noaa-parser_engine-core_baseline.txt", "_inbox/2026-09-18_g165-noaa-parser_engine-core_after.txt"]
+    },
+    "engineApi": {
+      "after": { "readAt": "2026-09-18T22:23:03Z", "testFiles": "19 passed (19)", "tests": "121 passed (121)", "includes": "POST /v1/hydrology/rainfall-forcing envelope contract" },
+      "baselineNotCaptured": "the engine-api suite was not run on the untouched tree, so no before/after pair exists for it. Its route has an existing catch that returns status 'empty' with degradedCoverage, which the throw now reaches; the suite passing after the change is the evidence available, and the missing baseline is named rather than implied."
+    },
+    "typecheck": {
+      "adapters": "pnpm --filter @hauska-engine/adapters typecheck — clean",
+      "engineCore": "pnpm --filter @hauska-engine/engine-core typecheck — clean",
+      "engineApi": "pnpm --filter @hauska-engine/engine-api typecheck — clean",
+      "probe": "pnpm exec tsc -p scripts/audit/tsconfig.json — clean (root tsconfig.json includes nothing, so scripts/ is outside `pnpm -r typecheck`; a project file was added so this instrument is verifiable rather than trust-me)"
+    }
+  },
+
+  "scopeDecisions": [
+    "DID NOT change the PDF provenance cell for the default path. Reason: the cell's text is a true statement of where the 9.5 comes from, the sheet already discloses 'documented regional default, live estimate unavailable', and restyling provenance cells is a different surface with its own snapshot tests. Named so a successor can tell exclusion from oversight.",
+    "DID NOT touch _design/smartcity-flood-study/ (doc_repo, G-164's deliberately-failing design) — the dispatch forbids it, and this fix is what makes that design repairable rather than something to repair here.",
+    "DID NOT chase the inherited engine-core failures, and DID NOT report them as new.",
+    "DID NOT change the matrix axis convention beyond what the labeled endpoint cross-validates. The row order (durations) is anchored to fe_text.csv's labels; the two monotonicity laws are the guardrail that fails closed if NOAA ever reorders the unlabeled matrix.",
+    "DID NOT open a PR or merge. Two commits on lane/g165-noaa-parser in the lane worktree; doc_repo edits are left uncommitted for the planner seat."
+  ],
+
+  "constraintsHonored": [
+    "FAN-DEPTH 0 — no sub-agents launched; subAgents {spawned: 0, maxDepth: 0}",
+    "no design documents touched",
+    "no writes in smartcity-dashboards or smartcity-os",
+    "no deploy, no merge, no PR",
+    "no check loosened: the parser refuses MORE than before, and the only code removed is an invented default (`?? 4`)",
+    "no credential used, rotated or printed; every measurement from public endpoints",
+    "doc_repo edits left uncommitted"
+  ],
+
+  "bypassesRecheckedAtCP2": [
+    "grep for `?? 4` and for `depthInches ??` in packages/adapters/src/hydrology: no surviving literal depth.",
+    "grep for `parsePfdsDepthTable` across the repo: exactly one caller (fetchNoaaAtlas14PointEstimate), so there is no second reader of the raw payload to fix.",
+    "grep for `noaa-atlas-14` / `noaa-atlas14` across non-test source: services/engine-api/src/routes/hydrology.ts (classification, now correct because the kind can no longer be produced without parsed numbers), packages/engine-core/src/site-plan/pdf/flood-drainage.ts (the named exclusion above), packages/atoms/src/property-instances.ts (read-only carrier), packages/engine-core/src/site-plan/flood-drainage-study.ts (the fix).",
+    "idempotency: parsePfdsDepthTable is pure and the refusals are thrown before any Map is returned, so a refused call cannot leave a partial map reachable by a caller."
+  ],
+
+  "openAtCP2": [
+    "no PR was opened, so no CI conclusion string exists for this lane; the evidence is the two commits plus the artifacts named above.",
+    "the engine-api suite has no captured baseline (named above).",
+    "the PDF default-path provenance cell is a named exclusion (above).",
+    "the two mutation-shaped invariants (return-period and duration monotonicity) were validated on 9 covered points x 190 cells on 2026-09-18; they are a physical law, not a payload guarantee, so they are the guardrail that would fire first if NOAA reordered the matrix — but that specific event has not been observed, so the guardrail has been shown to fire only on synthetic reorderings."
+  ]
+}

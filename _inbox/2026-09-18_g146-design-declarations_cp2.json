@@ -1,0 +1,171 @@
+{
+  "lane": "g146-design-declarations",
+  "planRows": ["G-146"],
+  "checkpoint": "CP2 — both fixes landed, measured against HEAD and against the filesystem, UNCOMMITTED",
+  "filedAt": "2026-09-18T22:20Z",
+  "seat": "g146-lane",
+  "dispatch": "_dispatches/2026-09-18_g146-design-declarations_dispatch.md",
+  "rootedIn": "P:/seat-worktrees/g146-design-declarations/doc_repo @ main cb4c202a + uncommitted lane edits",
+  "missionPremise": "G-146's row body (OPS-17) names two remaining defects in the design declarations: (1) `_design/all-canvas/build.mjs` declares 72 boards across 17 surfaces while three designs that exist on disk are declared nowhere on it, and (2) the vocabulary defect in `_design/plan-review/gen.mjs` is translated at build time by the review-artefact build script rather than fixed at source.",
+  "completionPredicate": "The canvas declares every design folder that exists on disk, so the operator can reach the People and access DRAFT they are being asked to ratify; and `_design/plan-review/gen.mjs` emits the customer-facing citation and trace wording itself, so the wrong strings no longer survive in the source for a consumer who does not run `_design/bastrop-review/build.mjs`. BOTH REACHED. NOT reachable in this lane: `design-completion-gate.mjs` exit 0, because the four R3 findings belong to G-164.",
+
+  "FIX_1_declarations": {
+    "filesWritten": ["_design/all-canvas/build.mjs", "_design/INDEX.md"],
+    "measurement": {
+      "instrument": "P:/tmp/g146/g146-declarations-recon.mjs",
+      "exactCommand": "node P:/tmp/g146/g146-declarations-recon.mjs P:/seat-worktrees/g146-design-declarations/doc_repo",
+      "readAtAfterFix": "2026-09-18T22:08:43.206Z",
+      "before": { "designFoldersOnDisk": 20, "declaredSurfaces": 17, "declaredArtboards": 72, "undeclared": ["smartcity-citizen-lens", "smartcity-people-and-access", "smartcity-records-search"] },
+      "after": { "designFoldersOnDisk": 20, "declaredSurfaces": 20, "declaredArtboards": 83, "undeclaredGenPredicate": 0, "undeclaredRowPredicate": 0, "declaredButNotOnDisk": 0, "coverage": "100.0% of design folders are declared", "idempotence": "rows read = 20, unique rows = 20" }
+    },
+    "reconciledWithTheBuild": {
+      "exactCommand": "cd _design/all-canvas && node build.mjs",
+      "exit": 0,
+      "stdout": "wrote 83 artboards + canvas.json — 20 rows, extent 17260 x 27910px",
+      "note": "The row's after-state was pre-registered in CP1 as { boards: 83, surfaces: 20 } and the build produced exactly that. The derived canvas.json carries 83 artboards; both the duplicate-stem assertion and the entry-artboard assertion are inside build.mjs and passed."
+    },
+    "whatWasWritten": "Three rows added at the HEAD OF THE DRAFT BAND (after `plan-review-reasoner`, before `plan-review-departments`), one per design, 11 artboards total. The position is the one judgement in this fix and it is stated in the file: the band is the canvas's own word for 'new', these three are its newest rows (2026-09-18) and the ones a ratification pass opens, and the applicant precheck is already placed above everything for that same reason. The `ROWS` header comment now records the intra-band rule rather than leaving it implicit.",
+    "captionsTakenNotInvented": "Every board caption in the three new rows is copied verbatim from each folder's OWN `canvas.json` `title`, not paraphrased by this lane.",
+    "aDefectOfMineTheBuildCaught": {
+      "what": "The first draft of the People and access row named its entry board `Main.dc.html`. That file does not exist: the folder's boards are Access, WhoLooked, Admin, Offboarding, Refusals.",
+      "howFound": "`node build.mjs` threw ENOENT on `_design/smartcity-people-and-access/Main.dc.html` and exited 1. The canvas refused to build rather than silently dropping a row.",
+      "whyThePreFlightMissedIt": "The CP1 pre-flight measured the right eleven boards and their root dimensions (it read each folder's `canvas.json`), so the boards were verified. The defect was in the transcription step between that measurement and the row — `Main.dc.html` was carried over from the two sibling folders, which do use it. A pre-flight on dimensions is not a pre-flight on filenames.",
+      "fix": "Both the file name and every caption now come from the folder's own canvas.json, so the row cannot disagree with the board it names."
+    },
+    "indexMd": {
+      "finding": "`_design/INDEX.md` already carried one line per design for all three folders (21 entries; `genFolderMissingFromIndexMd` was empty at HEAD). Only the ALL DESIGNS ON ONE CANVAS line was stale.",
+      "change": "72 artboards across 17 surfaces -> 83 artboards across 20 surfaces, plus the note that the three 2026-09-18 designs lead the draft band.",
+      "honestyAddition": "The line now states that the PUBLISHED canvas artifact is version 11, 2026-09-17 and does NOT carry those three rows, because this lane rebuilds the canvas but does not run `seed-canvas.mjs` and so cannot claim a new published version."
+    }
+  },
+
+  "FIX_2_vocabulary": {
+    "fileWritten": ["_design/plan-review/gen.mjs"],
+    "theTranslationItCompensatedFor": {
+      "file": "_design/bastrop-review/build.mjs",
+      "lines": "24-36 (the RELABEL array); the plan-review entries are lines 28-33",
+      "guardThatMakesItLoadBearing": "`BANNED` at lines 40-41 — the build refuses to write the customer document if any internal term survives composition.",
+      "statusAfterMyFix": "PRESENT AND INERT. It is outside this lane's four-file write set, so it was not edited. Every plan-review pattern it carries now matches nothing, which is measured below rather than asserted."
+    },
+    "theStringsInTheSource": {
+      "fileAtHead": "16 engine-vocabulary occurrences in `_design/plan-review/gen.mjs` — the `atom:` field values in the two matrix groups, the `r.atom` reference that renders them, the `atom-chain resolved · bodyVerbatim=false` trace line, and the `icc-demo is the QA tenant, not a city pack` note.",
+      "fixChosen": "The generator now emits exactly what the customer document already rendered: the QA note is removed (the translation emptied it, so the document showed nothing) and the field is renamed `atom` -> `cite` carrying the already-translated wording. The source therefore contains no engine vocabulary at all, which makes the fix falsifiable by one grep instead of by reading.",
+      "consequentialWrites": "Running the in-scope generator rewrote `_design/plan-review/{Main,Review,Embedded}.dc.html`. Those are the generator's own tracked outputs, and leaving them un-regenerated would have left the defect visible on the boards — the one thing the mission says must not survive."
+    },
+    "measurement": {
+      "instrument": "P:/tmp/g146/g146-vocab-evidence.mjs",
+      "exactCommand": "node P:/tmp/g146/g146-vocab-evidence.mjs P:/seat-worktrees/g146-design-declarations/doc_repo",
+      "exit": 0,
+      "verdict": "ALL 11 PASS",
+      "translationMatchCounts": [
+        { "pattern": "RELABEL[2] /icc-demo is the QA tenant, not a city pack/", "before": 1, "after": 0 },
+        { "pattern": "RELABEL[3] /atom IBC-2018\\/([\\d.]+)/", "before": 4, "after": 0 },
+        { "pattern": "RELABEL[4] /atom bastrop_tx-bdc-2026-adopted\\/(\\d+)-(\\d+)-(\\d+)/", "before": 6, "after": 0 },
+        { "pattern": "RELABEL[5] /atom-chain resolved[^<]*/", "before": 2, "after": 0 }
+      ],
+      "generatorOccurrences": { "before": 16, "after": 0 },
+      "bannedListAgainstTheBoards": [ { "pattern": "/(^|[^-])\\batom\\b/i", "before": 4, "after": 0 }, { "pattern": "/bodyVerbatim/i", "before": 2, "after": 0 }, { "pattern": "/icc-demo/i", "before": 1, "after": 0 }, { "pattern": "/QA tenant/i", "before": 1, "after": 0 }, { "pattern": "/city pack/i", "before": 1, "after": 0 } ],
+      "theOneThingStillMatchingAtom": "`--sc-atom`, the colour token, 12 occurrences. `BANNED`'s own comment excludes it ('`--sc-atom` is a colour token, not content'), so it is named here rather than counted as a leak."
+    },
+    "correctionToTheDispatch": "A-152 states the review-artefact build script's home is not in `doc_repo` so the write path cannot be read from there. That is false: it is `_design/bastrop-review/build.mjs`, tracked, in doc_repo, carrying the translation verbatim. It is the reason this dispatch's write list is one file short of its own mission. Reported, not acted on, per the dispatch's instruction to stop rather than widen the write set — with the consequence that the evidence's 'gone after' half is produced as a MATCH COUNT OF ZERO rather than as the translation being deleted."
+  },
+
+  "surface_coverage_json_deliberatelyUnchanged": {
+    "file": "_design/surface_coverage.json",
+    "change": "none",
+    "reason": "It already maps `citizen`, `records` and `people` to these three folders (planRow G-143). The gate's R4 refuses a DECLARED surface the product does not ship, and all three are DRAFTs outside the shipped nav, so ADDING them would have created findings rather than removing any. R4 is zero before and after, which is the falsifier: had I been wrong, R4 would now be non-zero."
+  },
+
+  "gateAfter": {
+    "exactCommand": "$env:DOC_REPO_PATH='P:/seat-worktrees/g146-design-declarations/doc_repo'; node scripts/govtech/design-completion-gate.mjs",
+    "exit": 1,
+    "verbatim": [
+      "design-completion-gate  (OPS-17 G-146)",
+      "  nav snapshot:    smartcity-dashboards origin/main 423450c0 :: src/staff-review.mjs",
+      "  design snapshot: P:\\seat-worktrees\\g146-design-declarations\\doc_repo\\_design",
+      "  read at:         2026-09-18T22:09:29.806Z",
+      "",
+      "  nav surfaces:        15",
+      "  designed:            13",
+      "  excluded by ruling:  2",
+      "  uncovered:           0",
+      "  design folders:      20, with an instrument: 18, of those passing: 14",
+      "",
+      "  R3 — designs past DRAFT whose adversarial read does not pass (4)",
+      "      plan-review-departments        status RATIFIED and check.mjs exits 1 on the boards as shipped — the design carries an open finding, not a missing instrument",
+      "      smartcity-flood-study          status RATIFIED and check.mjs exits 1 on the boards as shipped — the design carries an open finding, not a missing instrument",
+      "      smartcity-map-dock             status APPROVED and check.mjs exits 1 on the boards as shipped — the design carries an open finding, not a missing instrument",
+      "      smartcity-overview-lens        status RATIFIED and check.mjs exits 1 on the boards as shipped — the design carries an open finding, not a missing instrument",
+      "",
+      "  verdict: UNFINISHED — 4 findings. Design is not done."
+    ],
+    "beforePacket": "exit 1; navSurfaces 15, designed 13, excluded 2, uncovered 0, designFolders 20, withInstrument 18, passingInstrument 14; the SAME four R3 findings; R1, R2 and R4 zero.",
+    "comparison": "IDENTICAL to the before run in every line except the timestamp. This was pre-registered in CP1 and it is not a failed fix: the gate's declaration inputs are `_design/INDEX.md` and `_design/surface_coverage.json`, and it does not read `_design/all-canvas/build.mjs` at all. The canvas's surface list is therefore a FOURTH declaration surface that no control watches — which is why the omission sat there unnoticed, and why fixing it cannot move this gate.",
+    "ownership": "All four R3 findings are owned by the sibling lane `g164-design-repairs`, which is running now. Not this lane's to close, and this lane did not open a single file in those four folders.",
+    "whyNotExitZero": "Per the dispatch's own instruction, the honest state is CLOSED-PARTIAL: R3 emptying is necessary and not sufficient, and a close claiming green here would assert a gate a sibling lane owns."
+  },
+
+  "instrumentExits": {
+    "exactCommand": "node scripts/govtech/design-instrument-exits.mjs --violate",
+    "runIn": "P:/tmp/g146/tree (a throwaway `git clone` of this lane's worktree, with the lane's six changed files committed there so `_design` is CLEAN)",
+    "exit": 0,
+    "whyACloneAndNotTheLaneWorktree": "Two constraints leave no other compliant route. (1) The script refuses to start unless `_design` is clean, and this lane's tree is dirty by design because doc_repo commits are planner-owned and the edits must stay uncommitted. (2) `--violate` runs EVERY folder's violate.mjs, which PLANTS defects into tracked boards — including the four folders `g164` owns, which this dispatch forbids me to open or write. A clone gives a clean tree whose run cannot touch a sibling lane's files. Nothing in the lane worktree was written by this run.",
+    "result": { "instrumentsRun": 18, "instrumentsFailing": 4, "failingSet": ["plan-review-departments", "smartcity-flood-study", "smartcity-map-dock", "smartcity-overview-lens"], "ownershipAttributed": "DESIGN (violate exit 0 in each) — the same four designs the gate's R3 names, so the two controls agree on the population", "withNoCheckMjs": "8 of 26 _design subdirs (all-canvas, bastrop-review, demo, exports, handoffs, plan-review, report-chrome, smartcity-place-tab)" },
+    "theThreeDesignsThisLaneDeclared": {
+      "smartcity-citizen-lens": "check exit 0, violate exit 0",
+      "smartcity-people-and-access": "check exit 0, violate exit 0",
+      "smartcity-records-search": "check exit 0, violate exit 0"
+    },
+    "recordSearchBoard": "`_design/smartcity-records-search/Main.dc.html` — the tracked RATIFIED board the dispatch names as having been damaged by a batch sweep — was exercised by its own violate.mjs (24 plants) and came back unmodified.",
+    "restorationCheck": { "clone_git_status_short_design_after_the_run": "(empty — no instrument left anything behind, so the script's own per-folder guard never had to restore anything)", "lane_worktree_git_status_short_design": ["M _design/INDEX.md", "M _design/all-canvas/build.mjs", "M _design/plan-review/Embedded.dc.html", "M _design/plan-review/Main.dc.html", "M _design/plan-review/Review.dc.html", "M _design/plan-review/gen.mjs"], "note": "The lane worktree shows exactly this lane's six intended paths and nothing else under _design." }
+  },
+
+  "compositionComparison": {
+    "question": "Does fixing the defect at source change the document the City of Bastrop already reads?",
+    "method": "The customer document was composed TWICE by the out-of-scope `_design/bastrop-review/build.mjs`, in two scratch copies of `_design` (P:/tmp/g146/pre and P:/tmp/g146/post2, both excluding `exports`), so nothing was written into the repo by this measurement. The `pre` copy's three plan-review boards were replaced with the HEAD versions via `git show`, so `pre` composes the PRE-FIX document and `post2` the POST-FIX one.",
+    "instrument": "P:/tmp/g146/g146-compose-compare.mjs",
+    "exactCommand": "node g146-compose-compare.mjs P:/tmp/g146/pre/bastrop-review/SmartCity-design-review-Bastrop.html P:/tmp/g146/post2/bastrop-review/SmartCity-design-review-Bastrop.html",
+    "results": {
+      "byteIdentical": "FAIL — 93 bytes fewer (358,879 -> 358,786)",
+      "visibleTextIdentical": "PASS — 24,964 characters, equal after stripping style/script bodies, tags and decoding entities",
+      "oneContiguousEditRegion": "PASS — at char 218,897",
+      "editIsAPureDeletion": "PASS — nothing inserted",
+      "everyDeletedByteAccountedFor": "PASS — the 93 bytes are exactly `  <span style=\"font:400 12px/16px var(--sc-font-data); color:var(--sc-ink-3);\"></span>\\n      `, i.e. the empty span the build-time translation left behind when it emptied the QA note",
+      "sha256": { "pre": "F2EF8DBD530ABF437969DF2E5A4FEE626E838A0417AF6006B1BFDD327666B552", "post": "04690A8C55B1023D976DBF5C0DE2A3522CF0A90B86392E579AC459E10383ACD3" }
+    },
+    "myPreRegisteredClaimWasFalsified": "CP1's challenge #6 pre-registered 'byte-identical, including the entities'. It is NOT byte-identical and that claim is withdrawn rather than quietly dropped. The first run differed by 99 bytes and a second difference was mine, not the translation's: I had emitted a literal `·` where the translation emits `&middot;`. That was corrected in the generator, which reduced the delta to the irreducible 93 bytes of the emptied span. No recorded hash or size of the composed document exists anywhere in the repo, so no claim elsewhere depends on the old hash.",
+    "whatTheDifferenceIsNot": "It is not text, not a figure, and not a citation. The pre-fix document already rendered that span empty. The span was a flex item in a `display:flex` row with `gap`, and removing it lets the adjacent `flex:1` spacer absorb the freed gap, so the visible row is laid out identically. The stated claim is now the measured one: the reader's document is unchanged in every rendered character, and the byte difference is one empty element with zero rendered size.",
+    "guardStillHolds": "`_design/bastrop-review/build.mjs` composes both copies with exit 0, so its own `BANNED` refusal list still passes on the fixed boards — the translation being inert does not break the send-safety guard."
+  },
+
+  "adversarialSelfChallenges": [
+    { "challenge": "Is a canvas row an adequate 'declaration', or does the row want something machine-readable?", "test": "The row's own evidence sentence is a folder-versus-declaration comparison, and the mission's completion predicate is that the operator can REACH the People and access DRAFT. The canvas ROWS array is the artifact the row names by path, and the recon instrument that measures it is the one the row's history points at (A-152).", "result": "PASS — same object the row names." },
+    { "challenge": "Does adding three rows break the canvas?", "test": "`node build.mjs` exit 0, 83 artboards, both internal assertions (unique stems, entry artboard) pass; 11 new boards all parse on readBoard's root pattern.", "result": "PASS — and it failed loudly first on a real transcription error of mine, see FIX_1." },
+    { "challenge": "Is 'fix at source' satisfied by editing gen.mjs without regenerating the boards?", "test": "The boards are what every consumer reads and what the build script translates. Leaving them stale would leave the translation firing and the defect visible.", "result": "No — regeneration was required and was done by running the in-scope generator." },
+    { "challenge": "Is the translation now dead code, and does that matter?", "test": "Measured: 13 matches before, 0 after, across all four plan-review RELABEL entries.", "result": "It IS dead code, and it is left in place because it is out of the write set. Recorded as the residual it is." },
+    { "challenge": "Could the gate's unchanged output mean my declaration fix did nothing?", "test": "The gate never reads all-canvas/build.mjs; its inputs are INDEX.md and surface_coverage.json, both already correct at HEAD. The recon instrument, which does read build.mjs, went from 3 undeclared to 0.", "result": "PASS — an unchanged gate was pre-registered for exactly this reason, and a second instrument shows the change." },
+    { "challenge": "Did the --violate run leave a tracked board modified?", "test": "Post-run `git status --short -- _design` in the clone: empty. In the lane worktree: only the six intended paths.", "result": "PASS — and the run was deliberately placed in a clone so it could not touch g164's four folders at all." }
+  ],
+
+  "pathsHandedBackUncommitted": [
+    "_design/all-canvas/build.mjs",
+    "_design/plan-review/gen.mjs",
+    "_design/INDEX.md",
+    "_design/plan-review/Main.dc.html",
+    "_design/plan-review/Review.dc.html",
+    "_design/plan-review/Embedded.dc.html"
+  ],
+  "pathsHandedBackNote": "The first three are the source edits; the last three are those edits' own regenerated outputs, tracked because the .dc.html artboards are design content. `_catalog/lane_claims.json` is also modified and is the lane claim, released at close. Nothing was committed.",
+
+  "outOfScopeResidualsFound": [
+    { "file": "_design/bastrop-review/build.mjs", "lines": "17-23 (the NOTE FOR THE DESIGN OWNERS comment) and 28-33 (the plan-review RELABEL entries)", "issue": "The four plan-review entries are now dead code, and the comment above them says the defect 'should be fixed at source so the next person who shows those screens does not have to know this file exists' — which is now true, so the comment is stale in its ask. Outside the four-file write set; not edited." },
+    { "file": "_design/all-canvas/README.md", "lines": "5, 7 and the per-row table at 12-30", "issue": "Still states 72 artboards across 17 surfaces and carries a per-row table. My fix makes that count wrong in a second place. `_design/INDEX.md` was in the write set and is updated; this file is not." },
+    { "file": "_design/smartcity-citizen-lens/README.md", "lines": "194-199", "issue": "A section headed 'Not registered in all-canvas' stating these boards 'do not appear on the combined canvas yet'. My fix falsifies that sentence, so the repo now holds a claim that contradicts its own artifact. Not in the write set." },
+    { "file": "_design/smartcity-applicant-precheck/README.md", "line": "3", "issue": "Cites the canvas artifact as 'version 11, 2026-09-17'. Still true — I rebuilt the canvas locally but did not run `seed-canvas.mjs` and cannot claim a new published version. INDEX.md now says this explicitly." },
+    { "file": "the published canvas artifact (version 11)", "issue": "Carries 72 artboards; the three rows exist only in the local rebuild until someone re-seeds. Republishing is not this lane's, and no dispatch gave me a publish path." },
+    { "file": "_dispatches/2026-09-18_g146-design-declarations_dispatch.md / OPS-17 A-152", "issue": "Claims the review-artefact build script's home is not in doc_repo. False; it is `_design/bastrop-review/build.mjs`. This is why the write set cannot produce the 'gone after' half of the evidence. Not edited (dispatches are the planner's)." }
+  ],
+
+  "leaveBehind": ["The four R3 findings above, owned by G-164, untouched.", "The dead plan-review entries in _design/bastrop-review/build.mjs, inert but present."],
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

@@ -592,3 +592,42 @@ Read this before re-deriving anything. Entries are Tier 2 (cheap, can be wrong);
 - **LESSON (small, recurring): a table cell that quotes a regex breaks the table.** A-172 quoted the gate's
   alternation verbatim, whose `|` characters split the row into 13 cells instead of 7. The row builder refused on the
   part count, which is exactly why that guard exists. Say what the alternation matches in prose instead of pasting it.
+
+
+---
+
+## 2026-09-18/19 (UTC) - the three lanes reported as landed that had not landed, and the claim registry's real defect
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- 2026-09-19T00:0xZ, doc_repo main `00db93c9`: of the wave reported landed, THREE had not reached `main`.
+  - `g165-noaa-parser` graded `closed`, evidence complete at 22:28Z, and `git ls-remote --heads origin lane/g165-noaa-parser` returned EMPTY. Its commits `4b15b7f` and `f01a198` were reachable from no remote branch. Fixed: pushed, PR #478, head updated against a moved main (clean ort), CI green, merged as `650540c`.
+  - `g146-design-declarations` graded `closed-partial` and left all SIX delivered files UNCOMMITTED in its worktree. All six base blobs were byte-identical between the worktree HEAD and main HEAD, so they transplanted cleanly. Falsifier re-run against MAIN: exit 0, UNDECLARED empty on both predicates, coverage 100.0%.
+  - `g153-vendor-mapping` filed NO close and PR #77 was open, MERGEABLE, CLEAN, unmerged. Read the diff before merging: it REMOVES invented fallbacks rather than widening. Merged to `ee9c5d5`.
+- design-completion-gate on main at 2026-09-19T00:03Z: 15 nav surfaces (13 designed, 2 excluded, 0 uncovered), 20 design folders, 18 instrumented, 17 passing, ONE R3: `smartcity-flood-study`.
+- `scripts/govtech/smartcity-tracker.mjs:57`: `const DONE = new Set(['closed', 'closed-partial'])`. The milestone column headed "Done" is therefore a GRADING count. M5 prints 6/6 with 4 of its 6 rows partial.
+- `scripts/lane-claim.mjs:45`: `const CLAIMS = path.join(REPO, "_catalog", "lane_claims.json")`, where REPO is the checkout the command ran in. `_catalog/lane_claims.json` is TRACKED, so each worktree has its own working copy.
+
+### LESSON - a lane's `closed` is not evidence the work is reachable
+
+Three lanes, three different failure modes, one shape: the closing path does not connect a seat worktree to `main`. A lane can grade itself `closed` with complete, honest evidence while its work sits on a disk nobody else can read. **The verification that catches this is not reading the close; it is `git ls-remote` for the branch, `git status --porcelain` in the worktree, and `gh pr list` for the repo.** Do all three before believing any "landed" report, including one from a seat I supervise. Corollary: "all five landed" is not usually a false report, it is an UNVERIFIABLE one.
+
+### LESSON - the claim guard is starved by construction, and that is the answer to A-161/A-168
+
+`lane-claim.mjs` writes to a tracked file resolved relative to the current checkout. A claim made from a seat worktree is real, well-formed, and invisible everywhere else. `g158` claimed CORRECTLY at 2026-09-18T23:59:18.412Z and main's copy has no `g158` entry. Lanes are told to leave doc_repo edits uncommitted, so the claim entry is exactly the class of edit that never travels. **This is not lanes forgetting to claim; it is a control whose gating input is not shared.** No amount of lane diligence fixes it. Fix: resolve via `git rev-parse --git-common-dir` or to an untracked shared path.
+
+### LESSON - an instrument's own positional check can be the thing that is wrong
+
+`ops17-apply.mjs` verified its writes by comparing `after[i]` to `before[i]`. Inserting three rows shifts every later index, so it reported 33 changed lines against an expected 6 and declared VERIFY FAILED on a file that was written correctly. This is the same family as reading multi-field CLI output positionally: the comparison assumed a stable index that the write itself invalidated. Fixed by comparing against HEAD with the inserted rows removed, which is index-insensitive.
+
+### LESSON - check whether a metric's label matches its predicate before quoting it
+
+The milestone table's column is "Done" and its set includes `closed-partial`. A milestone can read fully complete with every row partial, and this reconciliation moved M5 from 5/6 to 6/6 by DOWN-grading one row from OPEN to CLOSED-PARTIAL. A count that improves when work does not happen is not measuring completion. Proposed, not applied: split into Done/Partial/Open, or rename the column to "Graded".
+
+### OPEN
+
+- **A second writer is active in `P:/doc_repo`.** While this reconciliation was running, `_inbox/2026-09-15_roadmap_reconciliation.md` gained an edit to the `g158` hand-carry row that is NOT mine and that cites `A-174` (written minutes earlier) plus `ee9c5d5` and `23:59:18Z`, neither of which I wrote. The tree also carries non-mine changes in `OPS-20`, `_smartsite_masters/*`, `_smartsite_gtm/*`, `_inbox/2026-09-15_smartsite_mcp_surface_card.md` and `_inbox/2026-09-18_planner_three_lane_verify.json`. Commit by explicit pathspec; never `-A`. Whoever else is here is coherent, so bundling the one roadmap line is acceptable, but it is declared rather than claimed.
+- `g158-access-log-write-path` holds a worktree at `00db93c9` and has done nothing but claim. Its precondition is now discharged (PR #77 merged), so it may proceed.
+- G-153's last clause is a planner-owned deploy of a build carrying `ee9c5d5` to `dolphin-app`, deliberately deferred until `g158` lands because `g158` will move `main` again.
+- The gate's ONE remaining R3, `smartcity-flood-study`, is now repairable honestly because G-165 merged. That repair is what closes G-146 and G-148 together.
+- G-158's clause 3 (the MCP leg) is HELD and still needs its own card, or it quietly becomes nothing.

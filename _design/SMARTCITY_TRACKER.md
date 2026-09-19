@@ -9,9 +9,9 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `10a5bec7`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `31f74990`: 119 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 985 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 989 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
@@ -19,9 +19,9 @@ programs: [OPS-17, OPS-25]
 |---|---|---|---|
 | M1 Staff on v2: the soft launch | 6 | 2 | 4 |
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
-| M3 Lens builds on Bastrop live data | 10 | 5 | 5 |
+| M3 Lens builds on Bastrop live data | 10 | 6 | 4 |
 | M4 DigitalOcean migration complete | 7 | 5 | 2 |
-| M5 Design complete, and the controls that keep it honest | 6 | 5 | 1 |
+| M5 Design complete, and the controls that keep it honest | 6 | 6 | 0 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -58,7 +58,7 @@ programs: [OPS-17, OPS-25]
 | G-151 | BUILD THE PARKS LENS, the one lens that does not exist, drawn as not existing. | open | — |
 | G-155 | BUILD THE SMART FILES DESIGN, in its own repo and outside the DigitalOcean gate. | closed | closed |
 | G-150 | BUILD THE RATIFIED REASONER PATH, the plan review design a city is shown. | closed | closed |
-| G-165 | THE NOAA ATLAS 14 PARSER NEVER MATCHES, SO EVERY NO-PARAMETER STUDY IN EVERY COUNTY SILENTLY USE | open | — |
+| G-165 | THE NOAA ATLAS 14 PARSER NEVER MATCHES, SO EVERY NO-PARAMETER STUDY IN EVERY COUNTY SILENTLY USE | closed | closed |
 
 ## M4. DigitalOcean migration complete
 
@@ -76,7 +76,7 @@ programs: [OPS-17, OPS-25]
 
 | Row | What | Status | Close on file |
 |---|---|---|---|
-| G-146 | FINISH THE DESIGN WORK — the completion gate, and the FIRST card. | open | — |
+| G-146 | FINISH THE DESIGN WORK — the completion gate, and the FIRST card. | closed, partly | closed-partial |
 | G-142 | Citizen lens design. | closed | closed |
 | G-147 | the three designed-nowhere surfaces that had no row at all. | closed, partly | closed-partial |
 | G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | closed | closed |
