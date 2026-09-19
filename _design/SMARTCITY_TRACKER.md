@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `ce0caef4`: 129 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `e4a6c1a0`: 130 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 1021 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -87,4 +87,4 @@ programs: [OPS-17, OPS-25]
 | G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed | closed-partial, closed-partial |
 | G-164 | REPAIR THE 11 FINDINGS G-148 DISCLOSED, WHICH NO ROW OWNED. | closed | closed-partial, closed |
 | G-166 | smartcity-dashboards main IS RED, AND THE CAUSE IS AN INSTRUMENT WHOSE FIXTURE IS ANCHORED TO TH | closed | — |
-| G-169 | scripts/deploy.mjs CANNOT RUN ON THE FLEET'S OWN WINDOWS MACHINE, SO THE DEPLOY PATH IS NOT EXER | closed, partly | closed |
+| G-169 | scripts/deploy.mjs CANNOT RUN ON THE FLEET'S OWN WINDOWS MACHINE, SO THE DEPLOY PATH IS NOT EXER | closed | closed |
