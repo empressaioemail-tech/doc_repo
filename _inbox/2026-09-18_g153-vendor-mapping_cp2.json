@@ -1,0 +1,112 @@
+{
+  "lane": "g153-vendor-mapping",
+  "planRows": ["G-153"],
+  "checkpoint": "CP2",
+  "kind": "build/measurement",
+  "seat": "cente-vsc-g153-vendor",
+  "filedAt": "2026-09-18T22:52:00Z",
+  "productHead": "19e459a2e0eee8ff2ced86e382ba3d2ced29a849 (this lane's own commit febc8a17b3edbfcd02df3b904d42326623f696eb)",
+  "pr": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/77",
+
+  "whatTheThreeVerdictsBecame": [
+    {
+      "fault": "status",
+      "verdict": "TRANSLATION, whose table is empty as a finding",
+      "mechanism": "src/adapters.mjs declares LIVE_STATUS_TRANSLATIONS = { samsara: {}, spireon: {} } and LIVE_STATUS_TRANSLATION_BASIS; RECORD_SHAPES.{samsara,spireon}.status gains a `live` arm (kind 'vendor-state', the not-a-state tokens, the basis field, the translation table) and a `liveDeclaredAbsence`. src/vendor-live.mjs gains NOT_A_STATE and vendorStateOrNull().",
+      "behaviourNow": "A real vendor state is carried VERBATIM (Spireon Stopped 20 / Idle 3 / Moving 2). A not-a-state token is refused AS A STATE and must instead be a declared absence. A feed record asserting one of the four readiness bands is refused by name, because no row of the table maps it.",
+      "sourceCitationsAdded": ["smartcity-os server/routes/samsara.ts:1213 (engineStates stat)", "smartcity-os server/routes/spireon.ts:176-177 (NSpire status)", "smartcity-os server/routes/spireon.ts:159-165 (the v1 page's own mapStatus -> an ACTIVITY vocabulary, not a readiness one)"]
+    },
+    {
+      "fault": "operatorRef",
+      "verdict": "THE DECLARED SHAPE IS WRONG AND THE DATA IS RIGHT",
+      "mechanism": "a conditional `liveDeclaredAbsence { basisField: 'operatorBasis', why }` on both shapes, plus a declared `operatorBasis` text field on each. src/vendor-live.mjs sets operatorBasis on every live record and never mints a reference it cannot bind.",
+      "behaviourNow": "A FEED record may omit operatorRef ONLY by carrying a non-empty operatorBasis; a FIXTURE record may never omit it; a feed record with a bare null is refused, and the fault says which of the two it is. Strictly MORE refusal than `required: true` alone, which could not tell 'the read does not carry it' from 'the mapper forgot'.",
+      "sourceCitationsAdded": ["smartcity-os server/routes/samsara.ts:1133-1137 (driver assignment is per-vehicle on this vendor and not bulk-fetchable, so not included)", "smartcity-os server/routes/spireon.ts:182 (`officer: \"\"`)"]
+    },
+    {
+      "fault": "odometerBand",
+      "verdict": "NEITHER OVER-DECLARED NOR MISSING UPSTREAM -- the mapping was never done",
+      "mechanism": "src/domains/fleet-vehicles.mjs declares ODOMETER_BANDS and odometerBandFor(miles) (four buckets, null for an absent or non-finite or negative reading); mapRealFleetVehicleRecord derives the band from odometerMiles.",
+      "behaviourNow": "the field stays required: true with NO declared-absence escape, so the 3 of 75 rows whose reading never arrived are refused and the guard says which field refused them. odometerMiles is no longer over-declared on the Samsara shape.",
+      "measuredDerivation": "odometerMiles present on 72 of 75; band derived on all 72 with a real reading."
+    }
+  ],
+
+  "surfaceChanges": {
+    "web/app.js": [
+      "statusCell: an ABSENT status paints 'Not reported' with a quiet pill and carries statusBasis as the pill's title, instead of a state word the vendor never sent.",
+      "renderRealStatusTiles(strip, counts, noteText, extras): takes the read's own `extras` so one call renders the served counts, the not-reported count and the refused count together.",
+      "renderRefusedTile(tiles, refused, faults, readTotal): a refusal is NAMED on the surface -- a tile titled with the guard's own fault string, deliberately WITHOUT the has-value class, so a refusal cannot be mistaken for a measurement."
+    ],
+    "src/vendor-live.mjs": [
+      "guardedRead carries refusalFaults on the PARTIAL refusal too, not only on the total one: on this pack the partial case is the live one (72 of 75 fleet rows served, 3 refused, and the fault string is the only place the surface can say WHY three real vehicles are missing from a region that otherwise reads '72 records').",
+      "refusalFaults(rows) extracted so the total and the partial refusal derive their list from ONE helper and cannot drift into two different lists.",
+      "statusNotReported counted and carried in extras; realStatusCounts only counts a status that was actually carried."
+    ]
+  },
+
+  "measurements": {
+    "theRefusalReproducedOverTheLivePayloads": {
+      "artifact": "_inbox/2026-09-18_g153-vendor-mapping_reproduce.txt",
+      "liveRecordsRead": 102,
+      "refusedByTheBranchesOwnRecordShapeFaults": 102,
+      "faultCountsBeforeTheChange": "75x status must be one of out-of-service, inspection-due, in-shop, in-service (Samsara, value `unknown`) + 2x the same for Spireon's `Unknown`; 75x fleet-vehicle requires operatorRef + 27x patrol-vehicle requires operatorRef (0 of 102 populated); 75x fleet-vehicle requires odometerBand",
+      "faultCountsAfterTheChange": "unchanged in verdict, reworded where the guard's message changed: 75x status carries \"unknown\" (the absence of a vendor state); 75x fleet-vehicle requires operatorRef, or operatorBasis stating why; 75x fleet-vehicle requires odometerBand; 27x patrol-vehicle requires operatorRef, or operatorBasis; 2x status carries \"Unknown\"",
+      "whyBothAreQuoted": "The code changed and the guard's wording changed with it, so the PRE-change count was re-taken from a DEPLOYED build of main rather than from a memory of the harness (see the next entry). The verdict did not move: 102 of 102, both times."
+    },
+    "theRefusalObservedOnADeployedNonProductionApp": {
+      "artifact": "_inbox/2026-09-18_g153-vendor-mapping_prefix-deployed-reads.json and ..._full-shell-probe-prefix.json",
+      "vantage": "https://app.smartcityos.io, source_commit_hash ea27024f55223a51f6ab43d88bc26504ba53c7f9 (main, deployed 2026-09-18T22:37:49Z), read 2026-09-18T22:39-22:44Z from seat cente-vsc-g153-vendor",
+      "fleet": "HTTP 200, status=refused, recordCount=0, refusalCount=75; basis names the three faults",
+      "police": "HTTP 200, status=refused, recordCount=0, refusalCount=27",
+      "rendered": "full shell, authenticated, in Chromium: Fleet lens reached with chip 'Not read' and 0 roster rows painted; Police lens reached with chip 'Empty' and 0 rows painted; map iframe mounted and rendered; the map page's own search reached the wire",
+      "refusalDirections": "keyless 401, bogus key 401, unknown pack 404, no cityKey 400, keyed control 200"
+    },
+    "beforeAndAfterRendersOfTheTwoRegions": {
+      "artifact": "_inbox/2026-09-18_g153-vendor-mapping_before-after-renders.txt",
+      "vantage1DeployedPreFix": "app.smartcityos.io @ ea27024: Fleet refused, 0 records, 0 rows painted; Police refused, 0 records, 0 rows painted",
+      "vantage2DeployedPreGuard": "d12-main-uat @ 7487d7c0: Fleet ok, 75 records, 75 rows, realStatusCounts [unknown: 75], odometerBand absent on 75 of 75, operatorRef absent on 102 of 102; Police ok, 27 records, 27 rows",
+      "vantage3ThisBranchOverLoopback": "http://127.0.0.1:8091, mode=external-loopback: Fleet ok, 72 records, 72 rows painted, refusalCount 3, statusNotReported 72, odometerBand derived; Police ok, 27 records, 27 rows painted, statusNotReported 2, realStatusCounts [Stopped 20, Idle 3, Moving 2]",
+      "whyTheLoopbackRowsAreTheTrueLiveRows": "the branch read the stub holding the exact rows the deployed d12-main-uat product served on 2026-09-18, so the after render is driven by the true payload with no further reads and no deploy."
+    },
+    "bothInstrumentsOnTheBuiltSurfaces": {
+      "fleet": "_inbox/2026-09-18_g153-vendor-mapping_fleet-check.txt -- exit 0, 79/79 self-tests both directions, 2 artboards pass, matched inputs: pairs=3 recordTypes=2 regions=2 badges=34 chips=14 cells=108 labels=35 numbers=123 vehicleIds=14 operatorRefs=22 vendors=4 verbatim 11 of 11 distinct source sentences",
+      "police": "_inbox/2026-09-18_g153-vendor-mapping_police-check.txt -- exit 0, 87/87 self-tests both directions, 4 artboards pass, matched inputs: pairs=14 gates=14 badges=79 cells=142 states=7 camIds=18 pvIds=10 refusals=10 figures=25 bigFigures=18 occupancies=18 bands=4 matrixCells=8 vendorMentions=2 plateScanTokens=11 packRefs=5 verbatim 16 of 16 templates 2 of 2",
+      "zeroCountAxes": "none on either instrument"
+    },
+    "plantedViolationsBothDirections": {
+      "fleet": "_inbox/2026-09-18_g153-vendor-mapping_fleet-violate.txt and _fleet-violate.mjs -- 6 of 6 planted defects caught (a status band the product does not declare; an invented state word in a nav badge; an operator reference the composer never produced; two roster rows swapped out of composer order; an uncatalogued fleet vendor in prose; a money token on a generated-record surface), artboard hashes identical after restoration, baseline re-run exit 0",
+      "police": "_inbox/2026-09-18_g153-vendor-mapping_police-violate.txt -- 17 of 17 planted defects caught, 4 artboard hashes identical after restoration, final baseline exit 0",
+      "noteOnTheFleetDirections": "The fleet design folder shipped NO violate.mjs, so this lane WROTE one. Two A-139-style directions are covered by embedded self-tests in the instrument itself rather than by a plant (79 and 87 self-tests respectively, each run BOTH directions). A first attempt to plant a money token inside an HTML attribute was MISSED, correctly: check.mjs scans text with tags stripped, so the plant was moved into visible text and caught."
+    },
+    "productSuite": {
+      "artifact": "_inbox/2026-09-18_g153-vendor-mapping_product-tests.txt",
+      "onTheMergedTree": "847 tests, 847 pass, 0 fail, 168 suites, 3254.85ms",
+      "note": "347 tests go green on the branch alone; merging origin/main (which brings g152's 5 tests) gives 847 and the run was re-taken AT the branch head 19e459a so the artifact and the head are the same object."
+    },
+    "doAppReachability": {
+      "artifact": "_inbox/2026-09-18_g153-vendor-mapping_do-reachability.txt",
+      "servingRevisionsReadByField": {
+        "dolphin-app": "ea27024f55223a51f6ab43d88bc26504ba53c7f9",
+        "d12-main-uat": "7487d7c0a55deeefc286c4a1047545757b802c5b",
+        "walrus-app": "NOT PROBED, NOT TOUCHED"
+      },
+      "branchIsOnNoApp": true,
+      "imageDigest": "UNMEASURED and named as such: the do-apps MCP tools return the spec and source_commit_hash but no built-image digest, and doctl is unauthenticated in this session (`doctl account get` -> 'access token is required'), the per-session doctl condition the CANON preamble warns about."
+    },
+    "surfaceProbe": {
+      "artifact": "_inbox/2026-09-18_224109_surface_probe.json",
+      "verdict": "PASS 6  FAIL 1  UNMEASURED 33",
+      "runFrom": "P:/seat-worktrees/dispatch-planner/doc_repo, node --use-system-ca scripts/surface-probe.mjs, 2026-09-18T22:41Z",
+      "whatItMeasuresAboutThisLane": "Nothing. G-153 is a dashboards build row and is not in the probe's registry (P-151..P-175, P-241, P-304, G-150); it has no parcel legs, so no row here can carry a G-153 verdict. The FAIL row (P-154, parcel 48021:33223 -- the panel and the endpoint disagree on a setback) belongs to that row. Cited because the close schema requires an _inbox artifact this script produced."
+    }
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "leave_behind": [
+    "THE DO-APP CLAUSE FOR THIS BUILD STILL NEEDS A MERGE AND A PLANNER-OWNED REDEPLOY. The pre-fix half is measured on a deployed app; the post-fix half is measured on loopback only.",
+    "A11Y WAS STILL RUNNING at the moment of this checkpoint (test: PASS 17s; a11y: pending). This lane does not claim it green.",
+    "THE STUB ENV VARS LEAKED INTO THE SUITE ONCE AND THE FAILURE LOOKED LIKE A PRODUCT DEFECT. Clearing them and re-running gave 847/847."
+  ]
+}

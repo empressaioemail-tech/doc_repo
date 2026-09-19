@@ -654,3 +654,35 @@ I verified the new G-164 dispatch by feeding it to `.claude/hooks/dispatch-templ
 - `_dispatches/2026-09-19_g164-flood-basis_dispatch.md` is COMPILED and gate-verified, ready to hand-carry. Row G-164, lane `g164-flood-basis`, FAN-DEPTH 0, holds no dashboards slot so it fires alongside `g158` instead of queuing behind it.
 - Wave ordering after `g158`: G-151 Parks lens, the `EDGE-REPLACES-5XX` remedy, and the `ee9c5d5` dolphin-app ship all queue behind the single dashboards slot.
 - D-13's end-to-end `bastrop_tx` leg is still blocked on the minted verification key (g135-mint, substrate seat) and the GCP bake window.
+
+---
+
+## 2026-09-19 (UTC), later - the six-lane wave: two row grades wrong in OPPOSITE directions, and the control that cannot see one of them
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- doc_repo `main` `40ed909d`, then this reconciliation. Six lanes reported landed; read at source by `gh pr list`, `git ls-remote`, `gh run list` and a census over ALL 15 worktree roots (`P:/tmp/stranded-sweep.mjs`).
+- **`g158-access-log-write-path` is MERGED** - `smartcity-dashboards` PR #78, `2026-09-19T01:31:34Z`, merge commit `cbdfaeb`. **THE DASHBOARDS SLOT IS FREE.** Its close grades `closed`; **the row is graded CLOSED-PARTIAL** because the row's acceptance clause 3 ("reads through the MCP surface are logged the same way") is undelivered and the close's own `leave_behind` says so.
+- **`main` IS RED.** Three consecutive CI failures on `smartcity-dashboards`: `03e11b0b`, `ee9c5d5`, `cbdfaeb6`; last green `ea27024` at 2026-09-18T21:58:44Z. Failing case `src/dev-services-naming.test.mjs:202` ("sorts a shuffled read into the roll's order and states the expiry the order was taken on"), AssertionError at line 213. Read the log myself, did not take the close's word for it.
+- `g150-reasoner-path-build` (close `closed`), `g152-public-works-fire-ems` (`closed-partial`) and `g153-vendor-mapping` (`closed-partial`) `g158`'s seven`: **51 artifacts filed** into `_inbox` by lane prefix from two seat worktrees (`P:/tmp/file-ops17-closes.mjs`). The `g150`/`g152`/`g153` set sat in the `dispatch-planner` SEAT worktree, not a lane worktree.
+- Tracker after regrading: 121 OPS-17 rows, 381 closes, **PASS every tracked row agrees with its own close.** M1 3/7, M2 4/6, M3 8/10, M4 7/7, **M5 6/7**.
+
+### LESSON - the tracker's disagreement check is ONE-DIRECTIONAL, so the dangerous direction is unguarded
+
+`smartcity-tracker.mjs:113` reads `if (done.length && !DONE.has(r.cls) ...)`. It fires ONLY when a close reads done and the row does not. **A row graded MORE STRICTLY than its close raises nothing at all.** G-158 is exactly that case: close `closed`, row `CLOSED-PARTIAL`, and the gate exits 0. The direction the check guards (row over-claims completion) is the one a planner is watching for anyway; the direction it cannot see (close over-claims, planner downgrades the row) is where a lane's own overclaim hides. Fix would be the second predicate: fire when `DONE.has(r.cls)` and the close is absent or non-done. Not applied - carded here.
+
+### LESSON - a fixture anchored to the calendar is a bomb, and "flaky" is the wrong word for it
+
+`dev-services-naming.test.mjs` builds fixture dates from a FIXED anchor `Date.UTC(2026, 8, 18)` while the shipped comparator computes `expiryOffsetDays` against the LIVE clock. The assertion `[-40, 12, 200]` was true on exactly one calendar day. From the 2026-09-19 UTC roll it reads `[-41, 11, 199]`. **It is deterministic, not flaky: it will never heal and it fails every future day.** The tell is that it broke at 00:00Z on a date boundary with no code change. Any instrument that writes a literal date and compares it to a computed offset from `new Date()` has this shape. The repair must derive both sides from ONE clock - moving the anchor to today just re-arms the bomb.
+
+### LESSON - a census over ALL worktree roots costs one script and finds a fleet-wide defect
+
+The wave census I wrote last time scanned 17 hardcoded program lanes. Generalising it to every `*worktree*` directory under `P:/` found **121 unfiled artifacts across 25 worktrees**, including three other seats' programs. The narrower instrument would have found only what I already suspected. **Scope the instrument to the question, not to the lanes you happen to remember** - but do NOT then act outside your own program: those other closes are reported, not filed.
+
+### OPEN
+
+- **`main` is red** (G-166). It is a time bomb, so every lane that merges into `smartcity-dashboards` lands onto red until it is fixed. Not blocking merges (the check is not required, per G-150's close) but it destroys the signal.
+- **G-167** (the MCP identity leg) is carded in OPS-17 but the work belongs to the OPS-19/OPS-23 planner; target `hauska-mcp-server` PR #70. Left uncarded it would have become nothing.
+- **The tracker cannot see a row graded more strictly than its close.** G-158 is the live instance; the second predicate is unwritten.
+- The closing path is STILL not fixed: this is the third consecutive wave with stranded closes. A-177's guard is still owed.
+- The four OPS-17 dispatches unchanged from earlier in this file still stand: `g164-flood-basis` compiled and gate-verified; G-151, the `EDGE-REPLACES-5XX` remedy and the `ee9c5d5` ship now unblocked because the dashboards slot is free.

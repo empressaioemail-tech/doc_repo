@@ -1,0 +1,112 @@
+{
+  "lane": "g150-reasoner-path-build",
+  "planRows": ["G-150"],
+  "kind": "CP2 -- mid-work/pilot adversarial checkpoint (AGENT-CONTRACT section 1)",
+
+  "filedAtNote": "Filed with CP1 at the close. Unlike CP1, whose content is pre-build, this one is a record of measurements taken during the work: every number below is printed by a command whose artifact is named beside it, and the two live reads are two different artifacts at two different timestamps.",
+
+  "unitOfMeasurement": "Node test runners and a live HTTPS surface. Nothing below is estimated: (a) node --test for the product suite and for the instrument's self-tests, (b) node violate.mjs / node check.mjs printing matched-input counts, (c) gcloud + the deployed service read over HTTPS with the staff token, (d) SQL against the plan_review database read-only through the lane's own probe script. No write of any kind was made to the plan_review database by this lane.",
+
+  "midWorkFindings": [
+    {
+      "finding": "A contract violation surfaced as a bare 500 with prose and no code, which is indistinguishable from the service breaking.",
+      "howItWasFound": "the shape read across the queue against the FIRST canary revision (2026-09-17T22:40:46Z, g150-shape.mjs, revision plan-review-00027-luk): three engagements answered 200 and three answered 500 with {\"error\":\"internal\",\"message\":...} -- prose and no code. Nothing in the response said which of the two things a reader was looking at, which is why the fix was made before the second canary went out (2026-09-17T22:43:51Z) and why the tag-URL verification of that second revision (2026-09-17T22:44:10Z, g150-tag-verify.mjs, artifact _inbox/2026-09-17_g150-reasoner-path-build_tag-url-verify.json) is the read that first shows the same three refusals carrying NAMED codes.",
+      "whyItIsAFinding": "the design's own words are that a violation surfaces as a 500 with a named code, and the code is the part a reader can act on. The G-150 surface read that produced this dispatch had already found three of six demo engagements sitting unreadable because nobody could classify their 500s.",
+      "whatChanged": "contractRefusal() in src/reasoner.mjs returns {error:'reasoner_contract', code, message} for a ReasonerContractError and null for anything else; server.mjs maps it and leaves every other fault with its own shape. Commit bca8839. Wrong-way test added at g150-reasoner.test.mjs:407 -- an error carrying the SAME code name but not being a ReasonerContractError must NOT be relabelled a refusal.",
+      "verifiedAfter": "the post-shift read (2026-09-17T22:49:02Z) shows the three refusals carrying codes uncertain_not_machine_derived, absence_required and uncertain_requires_named_reviewer_and_reason, and the probe's own predicate FAILS on an unnamed 5xx."
+    },
+    {
+      "finding": "Three of the seven demo engagements CANNOT serve the path, and that is the product working, not a defect.",
+      "howItWasFound": "a read-only SQL read of plan_review_findings for the refusing engagements, after the schema was read from information_schema.columns rather than assumed.",
+      "whatItIs": "those rows were seeded before the reasoner contract existed: they carry Uncertain determinations with no named reviewer override and no written reason, and Unchecked determinations with no typed absence. The composed path refuses them rather than rendering a determination nothing supports.",
+      "whatDidNOTChange": "no repair migration was written and no row was edited. A repair is a decision about what those engagements should say, and the honest options (re-seed from the current matrix, or annotate them as pre-contract rows) belong to the product owner, not to this lane. Recorded as a leave_behind with the refusal codes it produces."
+    },
+    {
+      "finding": "The design's fidelity claim was tracing to the WRONG COMMIT.",
+      "howItWasFound": "after the refusal-code commit, check.mjs still printed 'every claim traced to commit 578ac3567156' while the branch head was bca8839 -- i.e. the artboards were being compared against source-state dumped from an earlier commit than the one that would ship.",
+      "whatChanged": "source-state re-dumped at the shipped head (dump-source-state.mjs --repo <lane worktree> --ref bca8839), artboards regenerated, both directions re-run. Same counts; the PASS line now names bca8839's tree.",
+      "lesson": "a design that says 'traced to commit X' is making a claim about a moment, and the dump must be re-taken after the last code commit or the claim silently ages."
+    },
+    {
+      "finding": "Eight defects in this lane's OWN instrument, found by running it in both directions rather than by reading it.",
+      "defects": [
+        "plainText() read data attributes as if they were visible text, so a citation check fired on the attribute that carried the citation (false positive). Fixed by reconstructing the row's opening tag before text extraction.",
+        "the bare-dotted-identifier regex matched UDC sections written with dashes in source (false positive). Narrowed to the dot-separated forms the defect class actually used (14.02.005) and to model-code shapes (705.5).",
+        "KNOWN_SECTIONS held only UDC manifest sections, so model-code sections the product legitimately cites were reported as invented (false positive). Now built from the product's own composed output.",
+        "the paraphrase predicate accepted a modal that named neither a section nor a book title, which both over-caught and made the predicate's own vacuity invisible (false positive + vacuity). Now requires the identifier or the book title in the same sentence.",
+        "DECLARED did not say the Cycle board carries badges, so its badges were never read (false negative) -- the p319 'a control that cannot fire' class. Fixed by declaring badges for cycle and by rendering the tag attributes in c2Row.",
+        "violate.mjs planted in-row violations with a whole-file swap and could not find its anchors after unrelated HTML edits (3 PLANT FAILED cases, a harness defect that would have read as a passing suite). Replaced with an inRow() anchor scoped to the rule's own row.",
+        "check.mjs reported vacuity before violations, so an abort could mask a real finding (ordering defect). Violations now take precedence: a board that fails closed is reported as the violation it is.",
+        "one predicate path compared the artboard against ITSELF instead of against the product's output -- exactly the defect class the design is about, reproduced inside the check written to catch it. Every predicate now reports matched-input counts and compares rendered value to source-state value."
+      ],
+      "whyThisIsTheMostTransferableResult": "the instrument was wrong in both directions (three false positives, one false negative, one vacuity, one harness non-event, one ordering error) and NONE of it was visible by reading the code. The self-tests inside check.mjs (72) and the both-directions run are what surfaced it."
+    }
+  ],
+
+  "gate2SecondAdjudicatorResult": {
+    "question": "Does the badge disappear for a rule once a second adjudicator exists, or is the badge a property of the drawing?",
+    "result": "CONFIRMED, in-process and in the drawing. g150-reasoner.test.mjs:88 installs a second adjudicator fixture and asserts the badge for THAT rule disappears while the front-setback row keeps LIVE CHECK. violate.mjs plants the same shape on the real artboard (GATE 2 a second adjudicator changes the badge) and requires check.mjs to catch it; it does.",
+    "theOtherDirection": "g150-reasoner.test.mjs:150 -- Pass and Fail are still genuinely reachable for the one adjudicated rule, so the fixture is not demonstrated by breaking the only real adjudicator.",
+    "theWrongWayThroughTheContract": "violate.mjs 'GATE 2 the wrong way through the contract must throw for the stated reason' -- a machine Uncertain carrying the wrong code name is caught by name (uncertain_not_machine_derived), not merely caught."
+  },
+
+  "falsifierAccounting": {
+    "A1": "CONFIRMED both directions (badge where none is; badge withheld where one exists; badge disagreeing with the product for the same rule).",
+    "A2": "CONFIRMED both directions (adjudicated:null renders Unchecked; the real matrix's permitted-use row is never Pass).",
+    "A3": "CONFIRMED both directions (no machine path emits Uncertain; the name-removed and reason-removed halves each refuse; a named reviewer with a written reason renders and the surface names them).",
+    "A4": "CONFIRMED both directions (14-02-005 in prose; dots where source uses dashes; a book title nobody holds, cited and uncited).",
+    "A5": "CONFIRMED both directions (an IBC paraphrase refused; the letter refuses or does not cite the code at all).",
+    "A6": "CONFIRMED both directions (a fabricated rung; the top rung claimed built).",
+    "theSurvivingMoves": "CONFIRMED (notice counts that drift; counts that no longer sum; a corpus count that drifts; the whole-chain collapse; a console chip that says Pass where the product says Unchecked).",
+    "GATE3": "CONFIRMED as a file: 16 entries extracted from every built surface (citation=9, title-shaped=3, citation-shaped-title=3, bare-identifier=1), 0 absent from source.",
+    "abortConditions": "CONFIRMED: a board whose marker was removed is not read (exit 2); an undeclared board is not read (exit 2); a missing source-state refuses a verdict (exit 2); a board that fails closed is caught as the violation it is (exit 1); a predicate matching nothing on every board refuses a verdict (exit 2).",
+    "counts": "27/27 violations caught on a real artboard with the unmodified boards passing, in both directions; 72/72 self-tests inside check.mjs; 29/29 product unit tests.",
+    "artifacts": [
+      "_inbox/2026-09-17_g150-reasoner-path-build_violate.txt (full both-directions log)",
+      "_inbox/2026-09-17_g150-reasoner-path-build_check.txt (full check log with matched-input counts)"
+    ]
+  },
+
+  "liveVerdict": {
+    "artifact": "_inbox/2026-09-17_224902_surface_probe.json",
+    "command": "node --use-system-ca scripts/surface-probe.mjs --rows G-150 (run from the planner seat worktree, inside the traffic lease, against the serving URL)",
+    "verdict": "PASS",
+    "basis": "4 of 7 probed engagement(s) served the reasoner path (queue total 7), 3 refused with a named contract code (uncertain_not_machine_derived, absence_required, uncertain_requires_named_reviewer_and_reason); 16 finding(s) read: badges NO ADJUDICATOR/LIVE CHECK; determinations Unchecked/Pass; sources typed-absence/adjudicator; 16 badge(s) checked against the registry the same response carried; 15 typed absence(s) not rendered Pass; 0 named-reviewer Uncertain(s); 4/4 notice(s) tie; 4/4 carry both axes; 16 row(s) before collapse",
+    "selfTest": "node scripts/surface-probe.mjs --self-test -- all checks passed, including ten G-150 wrong-way cases (a flattened queue, a dropped named field, a badge not derived from the served registry, a typed absence rendered Pass, a machine Uncertain with no reviewer, a notice that does not tie, an UNNAMED 5xx, a 5xx carrying a foreign code, a LIVE CHECK badge with an empty registry, and the mixed case of some engagements served with others refused by name)."
+  },
+
+  "theQueueDenominator": {
+    "rule": "the denominator is the engagements the queue returns, counted, not a claimed number",
+    "before": "6 engagements (read 2026-09-17T22:46:25Z): 3 served, 3 refused with named codes -- but none of the three served engagements carried a submitted dimension, so no served row reached the adjudicator and the design's headline item (one adjudicator exists) was NOT demonstrable live.",
+    "whatWasDone": "one engagement was created through the product's OWN path -- POST /api/plan-review/engagements, then POST .../edition with proposedSetbackFrontFt=25, then GET .../matrix -- rather than by an UPDATE. Engagement 49c21ee3-d43c-4b9e-a2ff-983cd09fbac8, parcelNodeId 48021:34049, projectType new-single-family, orgId icc-demo.",
+    "after": "7 engagements (read 2026-09-17T22:49:02Z): 4 served, 3 refused. The new engagement serves the front-setback row as LIVE CHECK / Pass / source adjudicator / cited / provenance rung form-assertion, with the other three rows NO ADJUDICATOR / Unchecked / typed-absence, notice 4 tying, axis 1 = 2 unchecked, axis 2 = 1, noAdjudicator = 3.",
+    "disclosure": "this lane ADDED a demo engagement to the icc-demo queue. It is a demo row, created through the product's own intake, and it is named here and in the close so the demo owner can remove it if the queue must stay at six. Nothing existing was mutated: the three refusing engagements were left exactly as found."
+  },
+
+  "deployments": [
+    {
+      "revision": "plan-review-00027-luk",
+      "created": "2026-09-17T22:31:04Z",
+      "why": "the reasoner path as built before the refusal carried a named code -- the FIRST canary",
+      "path": "deploy with --no-traffic --tag g150-reasoner, then the tag URL verified (g150-tag-probe.mjs written 2026-09-17T22:31:20Z), then update-traffic",
+      "artifact": "the tag-URL output of this revision was not filed as an _inbox artifact; it is the read whose result is CP2's first midWorkFinding, and the revision is named here so the omission is visible rather than silent"
+    },
+    {
+      "revision": "plan-review-00029-gom",
+      "created": "2026-09-17T22:43:51Z",
+      "why": "the same path with contractRefusal, so a refusal carries its named code -- the revision that serves",
+      "path": "deploy with --no-traffic --tag g150-reasoner, tag URL verified at 2026-09-17T22:44:10Z (artifact _inbox/2026-09-17_g150-reasoner-path-build_tag-url-verify.json: 3 served, 3 refused with named codes), then update-traffic",
+      "trafficReads": {
+        "before": "_inbox/2026-09-17_g150-reasoner-path-build_traffic-before.json -- serving plan-review-00027-luk at 100 percent, latestCreated plan-review-00029-gom, g150-reasoner tagged to 00029-gom",
+        "after": "_inbox/2026-09-17_g150-reasoner-path-build_traffic-after.json -- serving plan-review-00029-gom at 100 percent"
+      }
+    }
+  ],
+
+  "deviations": [
+    "CP1 and CP2 were filed together at the close (one session, one close); see CP1's filedAtNote. The stages they describe happened at the times their cited artifacts carry.",
+    "One demo engagement was created in the icc-demo queue (see theQueueDenominator.disclosure).",
+    "TWO traffic shifts were made by this lane (00025-ley-or-what-served -> 00027-luk at ~22:31Z, then 00027-luk -> 00029-gom at ~22:46Z) and the traffic lease was self-granted under the AGENT-CONTRACT section 3 uncontended clause for the SECOND shift only. The lease FILE was written after that shift rather than before it: the directory held no lease for plan-review in either seat worktree when it was checked, the two conditions that protect the serving surface were met in order for the second shift (tag URL verified at 22:44:10Z before the update-traffic; serving revision read by field name at 22:48:55Z and the probe run at 22:49:02Z before release), and the lease was released. The FIRST shift had NO lease file at all -- not late, absent. Both are disclosed in the close under leaseSelfGranted with this ordering stated, not smoothed.",
+    "The serving revision was deployed from the lane worktree (Cloud Run source deploys; the revisions were created 2026-09-17T22:31:04Z and 22:43:51Z). A source deploy records no git SHA, so the mapping of the serving revision 00029-gom to commit bca8839 is behavioural -- the served refusal codes are that commit's -- and it is stated that way rather than asserted as a SHA."
+  ]
+}

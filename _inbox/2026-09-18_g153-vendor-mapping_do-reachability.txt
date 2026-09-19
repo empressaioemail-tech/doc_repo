@@ -1,0 +1,72 @@
+G-153 parcel 2 -- DO-app reachability, measured 2026-09-18T22:39-22:44Z
+vantage: seat cente-vsc-g153, over the public internet, node --use-system-ca (P-347: without the
+system CA store these reads fail as `fetch failed`, which reads like a refused request).
+
+SERVING REVISIONS, read per side from each app's ACTIVE DEPLOYMENT by field -- never from the tag
+requested, and never from a merge:
+  dolphin-app   app.smartcityos.io        source_commit_hash ea27024f55223a51f6ab43d88bc26504ba53c7f9
+                                          deployed 2026-09-18T22:37:49Z, cause=manual, phase ACTIVE
+  d12-main-uat  d12-main-uat-gqnjx...     source_commit_hash 7487d7c0a55deeefc286c4a1047545757b802c5b
+                                          deployed 2026-09-18T16:04:10Z, cause=manual, phase ACTIVE
+  walrus-app    smartcityos.io            NOT PROBED, NOT TOUCHED -- v1 production (A-146 rule 4)
+  (d5-capability-probe, g162-v1-uat, g163-v1-uat are other lanes' and were not read)
+
+THE IMAGE DIGEST FIELD IS UNMEASURED HERE, and is named rather than substituted: the DO tooling
+this lane holds (the do-apps MCP tools) returns the app spec and `source_commit_hash` on the
+active deployment and exposes no built-image digest, and `doctl` is unauthenticated in this
+session (`doctl account get` -> "access token is required"), which is the per-session doctl
+condition the CANON preamble warns about. The field read above IS the serving revision and is
+not the branch requested; the digest column is a gap in the instrument, not in the evidence.
+
+THE BRANCH ITSELF IS ON NO APP. Its head is 19e459a2e0eee8ff2ced86e382ba3d2ced29a849 (this lane's
+own commit febc8a17b3edbfcd02df3b904d42326623f696eb, branched from origin/main ea27024f55223a...).
+deploy_on_push is unset on both apps, so a merge ships nothing on its own.
+
+--- 1. app.smartcityos.io @ ea27024 (main: carries the refusal guard, NOT this mapping) ---
+GET /api/domains/fleet-vehicles?cityKey=bastrop_tx    HTTP 200  status=refused  recordCount=0  refusalCount=75
+GET /api/domains/patrol-vehicles?cityKey=bastrop_tx   HTTP 200  status=refused  recordCount=0  refusalCount=27
+basis: "samsara answered and every one of the 75 fleet-vehicle records it returned was refused by
+        the record-shape guard: status must be one of out-of-service, inspection-due, in-shop,
+        in-service; fleet-vehicle requires operatorRef; ..."
+  => THE GUARD IS SHOWN ABLE TO FIRE ON A DEPLOYED NON-PRODUCTION SURFACE, before this branch
+     changes what it sees. This is the dispatch's "prove the refusal first, on the pre-fix commit".
+  => full shell, authenticated, in a browser: Fleet lens reached, chip "Not read", 0 roster rows
+     painted; Police lens reached, chip "Empty", 0 rows painted. Map iframe mounted and rendered.
+
+REFUSAL DIRECTIONS (the half that needs no key), all measured against this app:
+  keyless         /api/domains/fleet-vehicles?cityKey=bastrop_tx   401
+  bogus key       same, a key that is not one                       401
+  unknown pack    ?cityKey=no_such_city                             404
+  missing cityKey /api/domains/fleet-vehicles  (no cityKey at all)   400   (A-146 rule 3: never default a city)
+  keyed control   same, the real verification key                   200
+
+--- 2. d12-main-uat @ 7487d7c0 (two merges behind main: no guard) ---
+GET /api/domains/fleet-vehicles?cityKey=bastrop_tx    HTTP 200  status=ok  recordCount=75
+     realStatusCounts=[{"status":"unknown","count":75}]   odometerBand absent on 75 of 75
+GET /api/domains/patrol-vehicles?cityKey=bastrop_tx   HTTP 200  status=ok  recordCount=27
+     realStatusCounts=[Stopped 20, Moving 3, Unknown 2, Idle 2]   operatorRef absent on 27 of 27
+  => THE PRE-GUARD SURFACE: what these two regions served before the parcel, and the reason the
+     parcel exists. 75 rows that LOOK measured carrying the mapper's own fallback word.
+  => full shell, authenticated, in a browser: Fleet chip "Live records", 75 rows painted;
+     Police chip "Live records", 27 rows painted.
+
+--- 3. this branch, over loopback (NOT a DigitalOcean app, and declared as such) ---
+http://127.0.0.1:8091  mode=external-loopback, city=bastrop_tx
+GET /api/domains/fleet-vehicles?cityKey=bastrop_tx    HTTP 200  status=ok  recordCount=72
+     refusalCount=3  statusNotReported=72  odometerBand derived (e.g. "under 20k miles")
+GET /api/domains/patrol-vehicles?cityKey=bastrop_tx   HTTP 200  status=ok  recordCount=27
+     statusNotReported=2  realStatusCounts=[Stopped 20, Idle 3, Moving 2]
+  => full shell, authenticated, in a browser: Fleet lens reached, chip "Live records",
+     72 roster rows painted; Police lens reached, chip "Live records", 27 rows painted.
+  => the rows the branch reads are the stub rows the deployed d12-main-uat product served on
+     2026-09-18, so this run is over the true live payload with no further reads and no deploy.
+
+THE CLAUSE THAT STILL NEEDS A DEPLOY. The acceptance line "the Live Fleet and Police regions
+render records rather than `refused` ... and both are reached on the DO app per D-12" is measured
+ON THE DEPLOYED APP for the PRE-FIX side only (section 1 above: both regions reached, both
+refused, 0 rows). This branch's mapping has been observed on NO DigitalOcean app, because this
+dispatch does not name this lane as the deployer and the Boundaries section forbids a deploy
+without that naming. A merge plus a planner-owned redeploy of a non-production app closes it, and
+the re-probe is a one-command rerun:
+  node --use-system-ca scripts/full-shell-probe.mjs --base <app> --city bastrop_tx
+No deploy, merge or publish was performed by this lane.
