@@ -44,7 +44,7 @@ export const OPS23_RANGES = [[151, 174]];
 // check below compares EVERY range, not rows[0], after that check was found vacuous by violation.
 // Extended 2026-09-16 (A-183) to 252-291, then to 252-299 (A-185), then to 252-320 (A-199, 2026-09-17). A fourth span 327-356 added 2026-09-18 (A-215, A-218): the registry had carried 327-351 since A-215 while this literal stopped at 320, so this gate's own self-test failed and the whole Wave 1 was ungated (found by the P-332 and P-342 lanes). 251 is deliberately NOT in it: the reports lane carded it
 // for the engine key rotation, which is not a county-to-serving row.
-export const OPS24_RANGES = [[186, 198], [200, 250], [252, 320], [327, 356], [358, 367]];
+export const OPS24_RANGES = [[186, 198], [200, 250], [252, 320], [327, 356], [358, 371]];
 export const GATED_RANGES = [...OPS23_RANGES, ...OPS24_RANGES];
 export const GATED_ROW = { test: (r) => { const m = /^P-(\d+)$/.exec(String(r).trim()); if (!m) return false; const n = Number(m[1]); return GATED_RANGES.some(([a, b]) => n >= a && n <= b); } };
 // OPS-24 rows carry a PREDICATE DEBT (OPS-24 Law 1): no ROWS entry in surface-probe.mjs yet. A close for one

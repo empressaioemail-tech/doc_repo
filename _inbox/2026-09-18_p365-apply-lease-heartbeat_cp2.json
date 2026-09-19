@@ -1,0 +1,108 @@
+{
+  "lane": "p365-apply-lease-heartbeat",
+  "planRows": ["P-365"],
+  "seat": "p365-lane",
+  "kind": "CP2 — falsifiers, measured; the fixture store and the full engine-core suite",
+  "filedAt": "2026-09-18T22:38:00Z",
+  "worktree": "P:/seat-worktrees/p365-apply-lease-heartbeat/hauska-engine (branch `fix/p365-apply-lease-heartbeat`, start cff8d882f1d46040093cfc6f8ef612b99ee0c1ff == origin/main, HEAD 3a38074)",
+  "prs": [
+    { "repo": "hauska-engine", "number": 477, "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/477", "headSha": "3a38074", "base": "main @ cff8d882f1d46040093cfc6f8ef612b99ee0c1ff", "state": "OPEN", "merged": false, "mergeSha": null, "note": "one PR, as the dispatch requires. Not merged: the dispatch forbids merges and the integration seat owns them." }
+  ],
+
+  "storeWindow": {
+    "held": "NONE — this lane touched NO store, took no heavy-scan lease, and used no store credential. It is forbidden to apply and it did not need to read: the row is about when a lease is asserted, and that is measured on a local fixture with the real `atoms_writer_lease_v2` table and the real storage functions.",
+    "fixtureStore": "P342_IT_DATABASE_URL -> a LOCAL Postgres (postgres://postgres:postgres@localhost:5432/postgres). The suite creates and drops its own schema `p342_apply_it` per run and REFUSES a neon.tech host loudly, so a fixture run cannot reach the operator's store even by accident.",
+    "liveNetwork": "One live surface probe (`scripts/surface-probe.mjs`, read-only HTTPS against https://smartsite.cloud), cited as `probe.artifact`. No credentials, no writes, no store."
+  },
+
+  "changeUnderTest": {
+    "files": [
+      "packages/engine-core/scripts/p263-envelope-outcome-apply.mts — the heartbeat, the reversal's scope, the lease report, the refused-run artifact",
+      "packages/engine-core/scripts/__tests__/p263-envelope-outcome-apply.integration.test.mts — the five P-365 falsifiers"
+    ],
+    "diffstat": "2 files changed, 941 insertions(+), 74 deletions(-)",
+    "notTouched": "the census, the shared classifier (`envelope-outcome-movement.ts`), the blast-radius cap (`writer-blast-radius-guard.mjs`), the census digest, the county set (`p263-phase0-counties.mjs`) and the journal shape (migration 018). `git diff --name-only` names exactly the two files above.",
+    "whereTheHeartbeatSits": "the FIRST statement of every batch transaction, on that transaction, before the journal INSERT and before the body UPDATE; one clock reading per batch serves both `applied_at` and the heartbeat.",
+    "reversalLeaseRule": "the same `(write, buildable-envelope, <fips>)` scope, per batch, released before the next scope is taken; without `--county`, one scope per county the JOURNAL names."
+  },
+
+  "falsifierResults": [
+    {
+      "id": "P-365 F1 — lease EXPIRED between batches",
+      "verdict": "PASS (with the change) / PROVEN VIOLATION (pre-change)",
+      "withTheChange": "The second batch refuses with `P263_LEASE_LOST`; the moved-atom set is exactly `${COUNTY}:1` and the journal holds exactly one row — the refused batch wrote and recorded NOTHING, and batch 1 stays journalled and reversible.",
+      "preChange": "`refusedWith: null`, `movedAtoms: [48021:1, 48021:2, 48021:3, 48021:4]`, `journalRows: 4`. The old code wrote ALL FOUR batches and journalled all four after the lease had expired. This is the dispatch's defect, reproduced in the old code's own writing.",
+      "howTheClockIsDriven": "an injected `now` (never a sleep): the take, then each batch, reads it in order."
+    },
+    {
+      "id": "P-365 F2 — lease STOLEN by another holder between batches",
+      "verdict": "PASS (with the change) / PROVEN VIOLATION (pre-change)",
+      "withTheChange": "The later batch refuses with `P263_LEASE_LOST` and writes nothing; the batches already written stay journalled.",
+      "preChange": "`refusedWith: \"ATOMS_WRITER_LEASE_NOT_HELD\"`, `movedAtoms: [48021:1..4]`, `journalRows: 4` — all four batches written, and the theft surfaced only from the run's own RELEASE, after the writes it should have prevented.",
+      "howTheftIsSimulated": "a temporary BEFORE UPDATE trigger on the fixture's `atoms` table that steals the scope on the batch boundary the test controls — so the theft happens at a point in the run rather than at a time the test hopes for."
+    },
+    {
+      "id": "P-365 F3 — a run whose batches OUTLAST the TTL (the inverse falsifier)",
+      "verdict": "PASS (with the change) / PROVEN UNMEASURABLE (pre-change)",
+      "withTheChange": "The run COMPLETES: `heartbeats` equals the batch count and `lastExpires` is after the last write, so the renewal is a measurement rather than an assurance. This is the falsifier against the opposite error — a fix that refuses long runs instead of extending them.",
+      "preChange": "`result.lease` is `undefined`: the old code returned `{moved, journalRows, batches}` and reported nothing about the lease, so even a healthy run's renewal cannot be read off the artifact.",
+      "clock": "driven (`STEP_MS` per batch, with `2 * STEP_MS >= TTL_MS` asserted so the run provably outlasts the TTL); nothing sleeps."
+    },
+    {
+      "id": "P-365 F4a — a REVERSAL while another holder holds the county's scope",
+      "verdict": "PASS (with the change) / PROVEN VIOLATION (pre-change)",
+      "withTheChange": "The reversal refuses with `ATOMS_WRITER_LEASE_HELD_BY_OTHER` (from the take, since it now takes one), the stored state is unchanged, and all four journal rows remain unreversed — nothing was restored and nothing was marked.",
+      "preChange": "`refusedWith: null`, `storedStateUnchanged: false`, `unreversedRows: 0` — the reversal restored every atom and marked every row while another holder held `buildable-envelope:48021`."
+    },
+    {
+      "id": "P-365 F5 — a two-county reversal, one scope per county the journal names",
+      "verdict": "PASS (with the change) / PROVEN ABSENT (pre-change)",
+      "withTheChange": "`reversed: 5`, `batches: 5`, and `leases` names exactly `buildable-envelope:48021` and `buildable-envelope:48209` — one scope per county the journal names, each with its own heartbeat count and last expiry; the fixture is restored byte-identically.",
+      "preChange": "`result.leases` is empty/absent: the old reversal took no scope and reported none."
+    },
+    {
+      "id": "O1-owned — the heartbeat is on the BATCH's transaction",
+      "verdict": "READ AT SOURCE (not falsifiable by a driven clock)",
+      "evidence": "`lockAndHeartbeatLease(txn, lease, {now})` is called inside `sql.begin(async (txn) => ...)`, before the journal INSERT and before the body UPDATE, on both the apply and the reversal path. A driven clock cannot distinguish 'same transaction' from 'separate connection', so this is stated as a reading rather than dressed as a measurement."
+    },
+    {
+      "id": "O3-owned — a refused run ACCOUNTS for what it wrote",
+      "verdict": "PASS, structural + artefactual",
+      "evidence": "The refusal carries `batchesWritten`, `atomsWrittenBeforeRefusal` and `journalRowsBeforeRefusal`, and the CLI catches `P263_LEASE_LOST` and writes an artifact with mode `APPLY-REFUSED-LEASE-LOST` / `REVERSE-REFUSED-LEASE-LOST` and exit 1. Gap named honestly: the CLI's refused-artifact path is NOT covered by a test in this lane — the fixture tests call the exported core, which returns the report rather than writing a file."
+    },
+    {
+      "id": "O4-owned — this row changes WHEN, not WHAT",
+      "verdict": "PASS",
+      "evidence": "`git diff --stat` names two files, neither of them the census, the classifier, the cap, the digest, the county set or migration 018. The dry-run digest is computed from the census buckets and none of that arithmetic is in the diff, which is what lets the dispatch's expectation stand: Williamson's fresh dry run must still reproduce `e53c197f…67f`."
+    }
+  ],
+
+  "measurements": {
+    "typecheck": "`pnpm typecheck` (the CI step, `pnpm -r run typecheck`) — exit 0, every package Done. Note: engine-core's tsconfig includes `src` only, so the script itself is not covered by the repo's typecheck; an ad-hoc `tsc` over the script reports pre-existing implicit-any errors in untouched parts of it and in `packages/adapters`, which is why this lane leans on the repo's own gate plus the test suites rather than claiming a clean ad-hoc run.",
+    "engineCoreSuite": "`pnpm test` for engine-core: Test Files 6 failed | 223 passed (229); Tests 3 failed | 1939 passed | 13 skipped (1955).",
+    "engineCoreSuiteAtBase": "The SAME command with BOTH changed files stashed at cff8d88: the same 6 files fail — 4 collection errors (`SyntaxError: Invalid or unexpected token` importing `scripts/*.mjs`), `preflight-probes`'s 2 network-dependent assertions (`probeServePathHealth` reachability, `geometryParitySample` DECLINE) and `manifest-is-load-bearing`. The last of those is FLAKY IN BOTH DIRECTIONS: it passed at base in isolation and failed in the full run on a 13-byte PDF length difference (605405 vs 605418). Stated as measured: 5 of the 6 fail identically at base, and the 6th is nondeterminism in the PDF renderer. NOTHING in the failure set touches either file this lane changed, and this lane's claim is the comparison, not the absolute count.",
+    "p263Hermetic": "`scripts/p263-envelope-outcome-apply.test.mts` — 36 tests, green, both before and after this change (the hermetic suite does not exercise the lease).",
+    "p263Integration": "`scripts/__tests__/p263-envelope-outcome-apply.integration.test.mts` — 14 tests, green with the change (9 pre-existing P-342 fixture-store tests + the 5 P-365 falsifiers).",
+    "rawEvidence": "_inbox/2026-09-18_p365-lease-falsifiers-both-directions.md carries both directions' vitest output, including the pre-change diff blocks quoted above."
+  },
+
+  "artifactShapeAfterThisChange": {
+    "apply": "`lease: {taken, runId, holderLabel, scope:{scopeType,scopeId}, heartbeats, lastExpires, released, releaseReason, releaseFailure, refusal}` — `refusal` is null on a clean run and carries the code, the storage cause, the message and the counts written before it on a refused one. `taken: false` when there was nothing to write.",
+    "reverse": "`leases: [ ...same shape, one per county scope... ]`, plus `reversed` and `batches` as before.",
+    "refusedRuns": "`mode: \"APPLY-REFUSED-LEASE-LOST\" | \"REVERSE-REFUSED-LEASE-LOST\"` with `writes.refused: true` and the counts; exit 1; the artifact is still written so a refused job leaves a record.",
+    "whyThisIsTheMeasurement": "`heartbeats` and `lastExpires` are what turn 'the lease was held for the whole run' into something a record can show: a run that took a lease and never renewed it reports `heartbeats: 0` and a `lastExpires` that predates its own last write, whatever its prose says. For Williamson's apply the integration seat should expect `heartbeats >= batches` and `lastExpires` after the last write."
+  },
+
+  "changesThisCheckpoint": [
+    "packages/engine-core/scripts/p263-envelope-outcome-apply.mts — `lockAndHeartbeatLease` as the first statement of every batch transaction in `applyCountyMovement`; the same for each county scope in `reverseMovementRun`; `LeaseRunReport` + `leaseReportOf` + `releaseAfterRun` + `leaseRefusalRecord`; the `lease`/`leases` artifact fields; the two REFUSED-LEASE-LOST artifact modes; the docstring's new 'THE LEASE, HELD FOR AS LONG AS IT WRITES (P-365)' section and the reversal's lease rule.",
+    "packages/engine-core/scripts/__tests__/p263-envelope-outcome-apply.integration.test.mts — the five P-365 falsifiers and the helpers that drive them (an injected clock, a lease-stealing trigger, a multi-county journal)."
+  ],
+
+  "whatIsNotDone": [
+    "No store write, no `--apply`, no deploy, no merge: this lane is forbidden all four, and the fix's behaviour on a 32-minute county is therefore unmeasured WALL-CLOCK. What is measured is the mechanism (refusal on a lost lease, renewal on every batch, one scope per county on a reversal) against a real Postgres.",
+    "The CLI's refused-artifact path (the `APPLY-REFUSED-LEASE-LOST` / `REVERSE-REFUSED-LEASE-LOST` branches in `main()`) has no test in this lane. The CORE's refusal is tested; the file-writing wrapper around it is read-at-source.",
+    "Williamson 48491 remains held. This lane does not apply it; the integration seat rebuilds the image and reproduces dry run `dvt87` / digest `e53c197f…67f` before its apply.",
+    "`reverseMovementRun`'s multi-county path is exercised with two counties in the fixture; a real run-wide reversal of a five-county journal has not been performed (and must not be until the integration seat owns it).",
+    "The customer predicate cannot grade this row yet: `scripts/surface-probe.mjs` carries no P-365 row (`rows` and `ops24` come back null), which is P-197/P-254's work and is declared as predicate debt in the close rather than dressed up."
+  ]
+}

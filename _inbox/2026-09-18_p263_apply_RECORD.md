@@ -2,8 +2,8 @@
 id: 2026-09-18_p263_apply_RECORD
 title: P-263's envelope-outcome movement applied county by county under ruling 11
 date: 2026-09-18
-last_updated: 2026-09-18 (21:50Z, five counties applied; Williamson held for P-365)
-status: five counties applied and verified; Williamson held by the operator for P-365 (A-225).
+last_updated: 2026-09-19 (03:20Z, Williamson applied after P-365; all six counties done)
+status: all six counties applied and verified from the store; Williamson applied 2026-09-19 on the P-365 image (the A-225 hold lifted by the fix merging).
 kind: production-write record
 owner: nick
 maintained_by: integration seat
@@ -149,3 +149,55 @@ The heavy-scan window was released by capability token at 21:35:13Z and read bac
 | Held | Williamson 48491, 239,491 atoms, for P-365 |
 | Job | `hauska-engine-p263-apply` stays, pinned to `c41a1482`'s digest; P-365's rebuild replaces the image |
 | Customer grade | the probe carries no P-342/P-263 row yet (P-197 predicate debt); the store reads above are the grade of record for the movement, and the surfaces withhold the moved states' predecessors already |
+
+## 6. Williamson 48491, applied 2026-09-19 after P-365
+
+**The hold lifted by its fix, not by a waiver.** P-365 merged as hauska-engine `21375ef9` (#477,
+green against current main `650540ca`), and the apply image was rebuilt from a fresh clone at that
+commit: `atoms-writer@sha256:f5d0691e4ca1f403b21c415e6ef892f9fff202a3b4ad2bfec8ac9a763eca46a7`
+(Cloud Build `b7aebfa2`). The job `hauska-engine-p263-apply` was updated to it (generation 2) and
+read back by field. The cap is unchanged by P-361: a caller-declared exact share, with the token
+needed only above it.
+
+**Inside heavy-scan lease `7eab8f39`** on the atoms store host (taken 02:25:58Z, renewed to
+04:09:35Z, released 03:18:54Z).
+
+**Fresh dry run** `r577x` (02:27:14Z to 02:31:28Z, args `--county=48491 --blast-radius-max-share=0.99`
+read back): census digest `e53c197fd82d61dbfa3b58990b542bec326e6b1bf93b85d301eab147aa8cf67f`, the
+same as `dvt87`'s. Population 239,491 (157,937 to not-applicable, 81,554 to pending, all Tier-1
+status), 0 promoted, 0 computed zero, share 0.8479478536730445. Two identical population
+fingerprints, so it wrote nothing.
+
+**Apply** `4hr57` (02:34:04Z to 03:16:48Z), args read back: `--county=48491 --apply
+--run-id=p263-apply-48491-20260919 --expect-digest=e53c197f...cf67f
+--blast-radius-max-share=0.8479478536730445`. The artifact: moved 239,491, journal rows 239,491,
+2,395 batches, `blastRadius.basis within-threshold`; post-apply guard population 0, `ok`. **The
+lease report P-365 added:** `heartbeats 2395` (equal to the batches, as P-365's close predicted),
+`lastExpires 03:30:13Z` (after the last write), released `normal`, no refusal.
+
+**Read back from the store**, independently of the job's report:
+
+| Check | Result |
+|---|---|
+| Journal rows for the run | 239,491, distinct atoms 239,491, ids 220,263 to 459,753 |
+| Buckets | unzoned to not-applicable 157,937; Tier-1 status to pending 81,554 (the dry run's) |
+| Stored `content_hash` equals `after_content_hash` | 239,491 of 239,491, 0 mismatched, 0 missing |
+| Write lease `buildable-envelope:48491` | one holder (`4hr57`), taken 02:34:49Z, released 03:15:14Z, **2,424.5 s**, reason `normal` |
+| Whole journal | 459,751 rows, ids 3 to 459,753, 0 reversed: every id accounted for |
+
+The write lease was held for 40 minutes against a 15-minute TTL. Before P-365 this run would have
+written its last 25 minutes unleased. After it, the lease was re-asserted in each of 2,395 batch
+transactions.
+
+**Reversal:** `tsx scripts/p263-envelope-outcome-apply.mts --reverse
+--journal-run-id=p263-apply-48491-20260919 --county=48491` (P-365: the reversal also takes and
+heartbeats the county's scope).
+
+## 7. State after section 6
+
+| | |
+|---|---|
+| Applied | all 6 counties, 459,751 atoms, equal to the lane's census; journal ids 3 to 459,753 |
+| Withheld, untouched (ruling 12) | 30,434 (Caldwell 2,886, Bastrop 3,836, Hays 23,712) |
+| Job | `hauska-engine-p263-apply` on the P-365 image `f5d0691e` |
+| Customer grade | unchanged: the probe carries no P-342/P-263 row (P-197 predicate debt); the store reads are the grade of record |

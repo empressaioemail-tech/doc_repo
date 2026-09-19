@@ -1,0 +1,138 @@
+{
+  "lane": "p351-bake-retirement-keyspace",
+  "planRows": ["P-351"],
+  "checkpoint": "CP2 -- mid-work, filed AFTER both retirement writers were built and every pre-registered falsifier ran in both directions, and BEFORE the close. The in-process adversarial pass over this lane's own work is the two defects section below; the two reads that need a store window are still outstanding and are named rather than smoothed.",
+  "seat": "cente-vsc-p351",
+  "filedAt": "2026-09-18T21:10:00Z",
+  "repos": ["legacy-design-tools", "hauska-factory"],
+  "status": "mid-work",
+
+  "whatChangedSinceCP1": {
+    "legacyDesignTools": {
+      "branch": "p351-bake-retirement-keyspace",
+      "commit": "03f194697a3b4b58d8f32e5cd6b921b9024cce1c (one commit, 7 files, 2,439 insertions)",
+      "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/723 (OPEN, not draft, base main)",
+      "ci": "success -- 13 checks; `Test` 13m03s, `Typecheck` 2m23s, all others pass. `gh pr checks` printed `pass`; the conclusion STRING was read with `gh pr view --json` and is `SUCCESS` on the run, not inferred from the word pass.",
+      "files": [
+        "artifacts/api-server/src/lib/retirementAccountResolution.ts (NEW, 639 lines -- the one resolution)",
+        "artifacts/api-server/src/lib/retirementAccountResolution.test.ts (NEW, 793 lines -- the falsifiers)",
+        "artifacts/api-server/src/lib/__tests__/__fixtures__/p351RetirementKeyspace.ts (NEW, 212 lines -- production-shape Hays and Williamson fixtures)",
+        "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts (EDIT, +211 -- writer (a)'s arm and the dollar facts ride one resolution)",
+        "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts (EDIT, +298 -- builds the resolutions, threads them, calls writer (b)'s instrument)",
+        "artifacts/api-server/src/lib/accountKeyedWork.ts (EDIT, +133 -- writer (b)'s blast-radius instrument)",
+        "artifacts/api-server/src/lib/joinIntegrityGate.ts (EDIT, +177 -- the prior-vintage register read and the published-pair extract read)"
+      ],
+      "suite": "`npx vitest run src/lib/retirementAccountResolution.test.ts` -> 30 passed. `npx tsc --noEmit` -> clean. CI agrees on both."
+    },
+    "hauskaFactory": {
+      "branch": "p351-bake-retirement-keyspace",
+      "commit": "df608e7 (rebased onto origin/main 6f422f6, P-330 / #185)",
+      "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/188 (DRAFT, as the dispatch requires)",
+      "pinMove": "_LDT_SHA bae48d406f7595af3d47111b558d0ebc3efd9c56 -> 03f194697a3b4b58d8f32e5cd6b921b9024cce1c",
+      "p329AdjacencyRuleOnMainWhenOpened": "YES -- dec5493 (`P-329: the LDT pin comment check can run on a force-push, and needs an adjacent comment`, #184) is in origin/main at 6f422f6, and this lane ran the check against it rather than assuming: `node scripts/check-ldt-sha-comment-presence.mjs --base origin/main --head HEAD` -> PASS, pin line 451, adjacent added comment lines 448-450, `adjacencyLines` 3.",
+      "staleness": "`ldt-pin-staleness.yml` is a SCHEDULED job (cron every six hours), deliberately not in `ci.yml`, so no PR gate rides on it. Measured at both pins and recorded in the adjacent comment: FAIL at bae48d40 (83 commits in range, 260 changed files, 59 inside the bake's module graph -- the bump's own reason to exist); FAIL at 03f19469 only because that commit is unmerged (commitsInRange 0, but the guard compares trees and the whole difference IS this change); PASS at the re-point to LDT #723's merge commit, which is what the dispatch names and what every forward bump in that file has done."
+    },
+    "docRepo": "No doc_repo edits are made by this lane. CP1, CP2 and the close are the lane's own artifacts at the dispatch's exact paths; everything else is handed back in the close."
+  },
+
+  "theTwoDefectsCP2CaughtInTHISLANESOWNWORK": [
+    {
+      "defect": "THE KEYING TRAP THE FIX ITSELF INTRODUCED, caught by the F1 fixture rather than by review. P-351 made the builder look the declared roll up by the RESOLVED ACCOUNT (`cadLookupKey` is `resolution.accountKey`) instead of by the node's bare prop_id, but the CLI was still handing it `effectiveCadPropertyRoll`, the P-177 REMAPPED view keyed by the SERVED NODE. On a two-keyspace county those are different strings, so the builder's lookup missed every time and the arm retired the county -- the same failure mode as the defect being fixed, arriving through the fix.",
+      "howItShowedUp": "`F1 Hays collision` asserted `recordRetirement` is null and got `{ status: 'retired', ... }`. The assertion was written before the code, which is the whole reason it caught anything.",
+      "theFix": "Two maps over the SAME rows, declared with why: `effectiveCadPropertyRoll` stays keyed by the served node for the CLI's own situs/ring/geometry reads, and a second `builderCadPropertyRoll` keyed by the resolved ACCOUNT is what `buildConformantTier1Payload` is handed. The test builds the builder's view the way the CLI builds it (`accountKeyedBuilderView`), so it cannot prove a keying its caller does not implement.",
+      "whyItIsRecordedHere": "A defect found by a pre-registered falsifier in the same change that fixed the original defect is the single most useful thing this checkpoint can carry: it is evidence the falsifiers are load-bearing, and it is a warning to the integration seat that the two-map shape is not redundant."
+    },
+    {
+      "defect": "THE GOLDEN HASH WAS A PLACEHOLDER. F5's byte-identity check (a single-keyspace county must serialise exactly as before) shipped first with the string `PLACEHOLDER` in `PRE_P351_GOLDEN_HASH` -- a test that could not fail, which is the 'a control that cannot fire' shape this program hunts.",
+      "howItShowedUp": "The assertion failed loudly on the placeholder, which is the only reason it was not shipped.",
+      "theFix": "The hash was MEASURED, not asserted: the four changed source files were stashed, a temporary test built the same payload with the same fixture on the pre-change builder, and the SHA-256 of `contentHashForPayload` was recorded (`eba16ad66a51ca86d94e440dd909f00eb095d082da1d46d210f4fc267ea1391b`). The temporary test was then deleted so it cannot be mistaken for the shipped one.",
+      "residualRiskStated": "The golden hash is a hash of a FIXTURE-built payload, not of a real county payload. It proves the builder's serialisation is unchanged for the shapes the fixture carries; it is not a Bastrop byte census. The dispatch asked for 'Bastrop's payloads are byte-identical', and the honest statement of what was proven is the fixture-level one."
+    }
+  ],
+
+  "whatIsAlreadyMeasuredFromProduction": {
+    "readAt": "2026-09-18, production cortex store ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech, under this lane's own heavy-scan lease, every statement under `set default_transaction_read_only = on`.",
+    "haysThe1386Split": {
+      "false_live_810": "the node's own published R account is on the declared 2026 roll and the node carries no geo_id to contradict it",
+      "false_live_but_contradicted_232": "the node's own R account is on the declared roll but the node's own published geo_id names a different property_number -- two published identifiers, refused rather than won",
+      "genuine_0": "not one of the 1,386 is a parcel whose account left the roll",
+      "no_resolvable_account_344": "no published identifier names an account at either vintage (78 carry no geo_id at all; 266 carry a geo_id no account publishes)",
+      "crossCheck": "the 1,042 the register reaches is the same 1,042 joinNormalize.ts:279-286 DECLINES to bind for geometry; this lane does not reverse that trade -- it uses the register to decide LIVE-or-not and takes the account's facts only for the 810 the node's own geo_id does not contradict"
+    },
+    "williamsonTheSplit": {
+      "reachedByThePublishedPair": 282146,
+      "accountOnTheDeclaredRoll": "282,146 of 282,146 -- EVERY R node the pair reaches has its numeric account on the declared 2026 roll, so every retirement the 2026-09-17 run wrote for Williamson was FALSE and zero were genuine",
+      "no_resolvable_account": 424,
+      "namedUnreachableExamples": ["PRIVATE ROAD", "R005578", "R006142", "R007323", "R007325"]
+    },
+    "theDollarCollisionAnswer": {
+      "question": "does a Hays map-id node that collides with an unrelated account get that account's dollars today?",
+      "collisionPopulation": "134,907 of Hays' 173,050 served nodes carry a bare key that is also a declared-2026 `cad_property` prop_id; 77,565 of them serve a market value",
+      "answer": "NO -- served `baseFacts.cadRoll.marketValue.v` equals the colliding account's own `market_value` on only 12 rows, and on all 12 the node's OWN R account carries the identical figure, so it is a value coincidence and not a wrong-parcel read",
+      "namedExamples": [
+        {"node": "48209:100013", "collidingAccount": "P120302 (prop_id 100013)", "collidingMarketValue": 9382, "servedMarketValue": 425000},
+        {"node": "48209:100014", "collidingAccount": "P120303 (prop_id 100014)", "collidingMarketValue": 7399, "servedMarketValue": 451800},
+        {"node": "48209:100022", "collidingAccount": "R130637 (prop_id 100022)", "collidingMarketValue": 496280, "servedMarketValue": 476980}
+      ],
+      "caveat": "the 12 are named in CP1 with both values and both accounts, so the coincidence is checkable and not asserted"
+    },
+    "theDispatchPremiseCorrections": [
+      "The dispatch's two-writer table credits writer (b) with '319,480 (Williamson)'. Measured: FALSE. Those 319,480 are NUMERIC-keyed rows on the PREVIOUS run id 848afd72 with `recordRetirement: null`; the 282,570 R-keyed rows are all writer (a)'s on run 7b2540c8. ZERO Williamson rows carry writer (b)'s txgio_parcel authority. Writer (b) never saw those numbers.",
+      "The dispatch says 1,385; the count is 1,386 at 2026-09-18 (P-327 read 1,385 a few hours earlier). Every count in this lane is stated with the instant it was read."
+    ]
+  },
+
+  "theReadsStillOutstanding": {
+    "why": "Both needs a heavy-scan window on the production store, and section 4 of the agent contract allows ONE at a time. Between 20:23Z and the time of this checkpoint the store was held by another lane continuously (`seat:local:DESKTOP-BSPT78H:44136` on `parcel-setback-cells`, then `integration-p263` on the P-342 apply lane, which has renewed its window more than once). This lane does NOT read the store without the window, and does NOT hold a window it cannot release: `P:/tmp/p351/db-phase.mjs` is the supervised pass that takes the lease, runs both reads, and releases WHATEVER happens.",
+    "read1": "THE COMMITTED ARTIFACT for the 1,386 Hays served keys (`P:/tmp/p351/artifact1386.sql` -> one JSON row per key, then `P:/tmp/p351/build-artifact.mjs` computes every header count FROM the rows). Destination: `artifacts/api-server/src/lib/__fixtures__/p351-hays-served-keys-retirement-split.json` in the LDT PR, with `p351RetirementSplit.test.ts` re-deriving the header on every run so a header can never disagree with the file it describes. The test has been dry-run against a synthetic artifact built by the same builder (6 assertions pass) and the synthetic file was DELETED, so the committed artifact cannot be mistaken for it.",
+    "read2": "THE READ-ONLY DRY RUN for 48209 and 48491 (`P:/tmp/p351/dryrun.sql` parts 1-4, plus the two whole-vintage Hays exports that part 5 writes), with the decisions then taken by the SHIPPED resolution through `P:/tmp/p351/dryrun-decide.ts` rather than by a second SQL re-statement of the same rules. The harness reproduces the CLI's own index construction (crosswalk, stem, register and prior register, including the CLI's refusal of a published account number the roll carries twice) and reports the decisions per path and per reason beside the SQL's independent per-key verdict, with any DISAGREEMENT listed as a finding rather than a footnote. It has been smoke-tested end to end on synthetic rows: 1 retired, 1 live, 1 undetermined, 0 disagreements.",
+    "whatTheseReadsDecideForTheClose": "Whether the close can say `closed` with the artifact and the dry run in hand, or must say `closed-partial` with the artifact's rows still unexported. The MEASUREMENT itself is already made and recorded above and in CP1; what is outstanding is the PER-KEY export that makes it re-derivable, and the independent dry run."
+  },
+
+  "theWriterBDecisionRestated": {
+    "ruled": "Writer (b) STAYS IN THE BAKE'S CONTRACT and gets its own instrument.",
+    "why": [
+      "It cannot belong to the gate: it runs INSIDE the bake, after promotion, on the work list the bake built and the run stamp the bake minted, and `requireRetirementGate` runs before the bake exists and cannot see a single excluded node. Moving it is not a refactor, it is a different program.",
+      "It must not be dropped either: a node dropped from the work list keeps the PREVIOUS run's publishRunId forever, and the factory's verify-walk requires the CURRENT run id on every row it sweeps, an earned retirement included -- dropping the pass re-opens BP-PUBLISH-RUN-01 on every Hays republish.",
+      "So the pass stays, and the guard is the thing it lacked, which is the guard every destructive write in this program lacks (the program trap: 'No writer in this program refuses on blast radius yet (P-320)')."
+    ],
+    "theInstrument": "Before the pass, `accountKeyedBlastRadius(excluded, buildServedKeyspaces(workIds))` measures the excluded set against the served keyspaces this run holds, split by key shape, and `assertAccountKeyedBlastRadius` REFUSES the run when a keyspace has at least one served member and EVERY one of them was excluded. Set equality, not a tuned percentage. `workIds` is read BEFORE the partition, so the measurement is of the population and not of what survived it. The refusal names the keyspace, the excluded count and the served count, and it fires BEFORE `work` is mutated.",
+    "honestLimit": "This instrument guards writer (b) ONLY. It would NOT have caught the Williamson emptying, which was writer (a) -- the excluded set there was empty, because every removed node was in the parcel table. Writer (a)'s guard is the resolution itself. Claiming one instrument covers both would be the 'a control that measures one thing does not protect the thing beside it' failure the program trap names.",
+    "blastRadiusToday": "Exactly 48209 and 48491 have two served keyspaces."
+  },
+
+  "theThreeQuestionGate": {
+    "whatExecutesEachWriter": "(a) `buildConformantTier1Payload`'s retirement arm, called once per work item by `nodeFacetBakeTier1ConformantCli.ts`'s per-atom loop, reading `cadPropertyRoll`. (b) `planAccountKeyedRetirements` via `partitionAccountKeyedWork`, called on the CLI's work list for a gate-blocked county.",
+    "whatTriggersThem": "(a) a declared-vintage `cad_property` read plus a node whose RESOLVED account the roll does not carry; `joinGateBlocked` decides which counties take the resolution path at all, and a non-blocked county keeps the legacy own-prop-id path byte-identically. (b) `joinGateBlocked && parcelTable` -- the account-keyed prepass, for every gate-blocked county, on every run.",
+    "whatFailsWhenAWriterRetiresAcrossKeyspaces": "The county's published nodes are emptied: Williamson's 2026-09-17 run retired 282,570 of 282,570 published R nodes while 319,480 live numeric rows sat untouched beside them, and Hays still serves 1,042 live parcels with a false retirement (810 admissible, 232 contradicted) plus 344 it cannot name. The retirement is written as an earned absence with an authority, so it reads as a fact about the parcel, not as a failed lookup.",
+    "whatBypassesIt": [
+      "A direct invocation of the bake CLI -- any run outside `runBastropPublish` -- which is exactly why writer (b)'s guard lives in the bake and not in the gate.",
+      "The frozen laptop ingest scripts.",
+      "A raw write to `place_layer_snapshots`.",
+      "Writer (b)'s pass is bypassed structurally for a county whose work list already excludes the nodes before the pass could see them."
+    ]
+  },
+
+  "whatWouldFalsifyThisLane": [
+    "If the committed artifact's per-key rows disagree with the split CP1 measured (810/232/344/0), then one of the two is wrong and BOTH are suspect; the artifact's header is re-derived from its rows by a test precisely so this cannot pass unnoticed.",
+    "If the dry run's shipped-resolution decisions disagree with the independent SQL verdict on even one key, that is a finding to reconcile, not to round off -- the harness lists the disagreements instead of asserting zero.",
+    "If `ldt-pin-staleness` does not PASS at the re-point to LDT #723's merge commit, the pin reasoning in the factory PR is wrong and must be corrected before merge.",
+    "If LDT #723's CI conclusion is not `SUCCESS` at the merged commit, the pin must not move.",
+    "If a non-blocked county's payload is NOT byte-identical on the merged tree, F5 was measured on a fixture that does not represent that county, and the guard is weaker than the PR claims."
+  ],
+
+  "honestLimits": [
+    "Nothing in this lane is a customer-surface result. Nothing is deployed, baked, published or merged; `probe.notApplicable` is declared WITH its reason rather than an artifact being filed that measured nothing.",
+    "The 810 node question (should the un-retired Hays nodes take their dollars from the R account the register names?) is answered YES by this lane and stated as a change of served values on 810 rows rather than folded into the retirement fix without a word. It is the integration seat's to accept.",
+    "The 232 contradicted nodes are left DECLARED, not resolved: two published identifiers disagree about which parcel they name and this lane will not pick a winner.",
+    "The pin PR is a DRAFT and the pin value in it is a placeholder by design: it re-points to LDT #723's merge commit after merge, which is the only state in which `ldt-pin-staleness` can pass."
+  ],
+
+  "leaveBehindPreview": [
+    "The store window: `P:/tmp/p351/db-phase.mjs` holds the lease only for the duration of its two reads and releases it in a `finally`-shaped path, including when a read fails. If this lane ends before the reads run, the checkpoint says so and the reads are the successor's first act, not a mystery.",
+    "The 810/232/344 build decision (dollars from the register-named account for the 810) is stated in CP1 and here, and is deliberately NOT applied to any store by this lane."
+  ],
+
+  "postscriptFiledAt": "2026-09-18T22:30:00Z",
+  "postscript": "Written after this checkpoint, and kept as a postscript rather than edited into the fields above so the mid-work record stays the record it was. (1) THE WINDOW OPENED: taken 21:35:20Z under this lane's own lease, and RELEASED 22:27:49Z -- not leaked. (2) THE ARTIFACT IS COMMITTED: `artifacts/api-server/src/lib/__fixtures__/p351-hays-served-keys-retirement-split.json` (1,386 rows, one per line) plus `p351RetirementSplit.test.ts`, at 5c93997f, with the header re-derived from the rows; 6 + 30 tests pass and the LDT head is 13/13 CI `success`. (3) THE DRY RUN RAN: parts 1, 2, 3 and 5 measured (per-writer counts for BOTH counties, the keyspace shape, writer (b)'s population decided by the register, the two whole-vintage exports and the independent prior-vintage query), and the SHIPPED resolution decided the same 1,386 keys with ZERO disagreements against the SQL. PART 4 did NOT complete -- it hit its 2100s statement timeout after 34.5 minutes (the CTE is referenced three times and PostgreSQL inlines it; `materialized` is the fix) -- so the Williamson pair-coverage split stays the earlier read-only measurement from the same day. (4) THE PIN FOLLOWS THE PR HEAD: 5c93997f, with the carried-commit count corrected to 85/267/40 and the checker's red-at-an-unmerged-pin behaviour named in the comment. The close carries all of it."
+}

@@ -1,0 +1,124 @@
+{
+  "lane": "p365-apply-lease-heartbeat",
+  "planRows": ["P-365"],
+  "seat": "p365-lane",
+  "kind": "CP1 — design/pre-build adversarial checkpoint (contract §1)",
+  "filedAt": "2026-09-18T22:31:00Z",
+  "filedAtBasis": "One UTC clock reading taken in the session that wrote this artifact, rounded to the minute. THIS FILE IS LATE and says so rather than back-dating itself: the lane was claimed at 2026-09-18T22:07:14.012Z and the code, the falsifiers and the PR all existed before it was written. What that costs is stated plainly: the pre-registered predictions below are the ones this lane ACTUALLY used (they are the tests that ran, at 22:18Z, in both directions), but a reader cannot check them against a timestamp that predates the work, so they should be read as a design record rather than as a pre-registration. Nothing in this lane is a store measurement, so no store-facing prediction is retro-fitted; the one measurement it does rest on (7.8-8.4 ms/atom, and Williamson's run being ~32 minutes) is the integration seat's record, cited, not re-derived here.",
+
+  "worktrees": {
+    "docRepoRoot": "P:/seat-worktrees/p365-apply-lease-heartbeat/doc_repo (branch `lane/p365-apply-lease-heartbeat`, HEAD 1d7df8af)",
+    "hauska-engine": "P:/seat-worktrees/p365-apply-lease-heartbeat/hauska-engine (branch `fix/p365-apply-lease-heartbeat`, declared start commit cff8d882f1d46040093cfc6f8ef612b99ee0c1ff == origin/main, verified as fetched at 22:20Z)",
+    "note": "One product worktree, one branch, as the dispatch requires (`FAN-DEPTH 0`, no sub-agents, hauska-engine only). No other lane's checkout is touched."
+  },
+
+  "missionPremise": "`applyCountyMovement` in `packages/engine-core/scripts/p263-envelope-outcome-apply.mts` took its `(write, buildable-envelope, <fips>)` scope ONCE and released it once: it never renewed it and never re-checked it, so the file's own claim — 'a write without a held lease fails closed' — was true for the first batch only. The TTL is `DEFAULT_LEASE_TTL_MS`, 15 minutes (`packages/storage/src/atoms-writer-lease.ts`), and a county's run is not: the measured write rate is 7.8-8.4 ms/atom (journal `applied_at`, first to last, on the five counties applied 2026-09-18), so Williamson's 239,491 moves are about 32 minutes and its second half would have written after its lease expired. `reverseMovementRun` took NO lease at all and UPDATEs `atoms`. `lockAndHeartbeatLease` already existed in storage, already selected by holder token with `expires > now` FOR UPDATE, already threw `LeaseExpiredError` when the row was gone or expired, and already extended `expires` — nothing on this path called it. The operator held Williamson 48491 for this row (A-225) rather than resting the safety of 239,491 writes on a detector (the lease history read afterwards) instead of the refusal Ruling 11 relied on.",
+  "missionPremiseBasis": "Dispatch `_dispatches/2026-09-18_p365-apply-lease-heartbeat_dispatch.md` read at source in this lane's doc_repo worktree, plus `_inbox/2026-09-18_p263_apply_RECORD.md` (§4, the integration seat's record: five counties applied, 220,260 atoms, journal ids 3 to 220,262, write lease held 121.1 s to 458.0 s per county, 7.8-8.4 ms/atom, Williamson held for this row). The claim-defect itself was re-read at source in `c41a1482`, not taken from the dispatch's line numbers.",
+
+  "preRegisteredPredictions": [
+    {
+      "id": "P-365 F1",
+      "statement": "A run whose lease EXPIRES between two batches refuses the later batch, writes NOTHING for it, and names the refusal; the batches already written stay journalled and reversible.",
+      "whatWouldProveItWrong": "A batch committing after the injected clock has stepped past the expiry, or a refusal code other than `P263_LEASE_LOST`, or a reversal that cannot restore what the refused run did write. Measured by state, not by prose: the moved atoms and the journal row count are read back out of the fixture after the run.",
+      "directionOnTheOldCode": "PREDICTED TO FAIL BEFORE IT WAS RUN, and it did: `refusedWith: null` with all four batches moved and journalled — the old code wrote the second, third and fourth batches with no lease at all."
+    },
+    {
+      "id": "P-365 F2",
+      "statement": "The same refusal when another holder TAKES the scope between batches (expiry is not the only way to lose it).",
+      "whatWouldProveItWrong": "Writes landing after the theft, or a refusal that reports a code the operator cannot act on. Implemented with a temporary trigger on the fixture's `atoms` table that steals the lease between batches, so the theft happens at a point the test controls rather than at a time it hopes for.",
+      "directionOnTheOldCode": "PREDICTED TO FAIL, and it did — but in a shape worth recording: `ATOMS_WRITER_LEASE_NOT_HELD`, raised out of the run's own RELEASE, after all four batches were written. The old code had no lease call between the take and the release, so a stolen scope could only ever surface at the end, after the writes it should have prevented."
+    },
+    {
+      "id": "P-365 F3",
+      "statement": "A run whose batches outlast the TTL COMPLETES, because every batch renews the lease — the inverse falsifier, so the fix cannot pass by refusing long runs.",
+      "whatWouldProveItWrong": "Refusing a run whose lease is continuously live, or a `heartbeats` count that does not correspond to the batches written, or a `lastExpires` that predates the last write. The clock is DRIVEN, never slept.",
+      "directionOnTheOldCode": "PREDICTED TO FAIL, and it did: `result.lease` is `undefined` on the old code, so the renewal is not merely wrong — it is unmeasurable. Reported as a failure of the MEASUREMENT rather than of the run, because the run itself completes on the old code too (its lease is still live for this shorter fixture)."
+    },
+    {
+      "id": "P-365 F4a",
+      "statement": "A reversal REFUSES while another holder holds the county's scope, and writes nothing.",
+      "whatWouldProveItWrong": "Any atom restored, or any journal row marked reversed, while the scope is held by someone else. Read back from the store, not inferred from the return value.",
+      "directionOnTheOldCode": "PREDICTED TO FAIL, and it did in the sharpest direction available: `refusedWith: null`, `storedStateUnchanged: false`, `unreversedRows: 0` — the reversal restored every atom and marked every row under another holder's scope."
+    },
+    {
+      "id": "P-365 F5",
+      "statement": "A reversal spanning two counties takes and heartbeats ONE SCOPE PER COUNTY the journal names, and restores byte-identically.",
+      "whatWouldProveItWrong": "A scope id that does not match a county in the journal, a missing county, or a restoration that does not return the fixture's stored bytes to their pre-apply value.",
+      "directionOnTheOldCode": "PREDICTED TO FAIL, and it did: no lease report at all (`[]`), because the old reversal took no scope."
+    },
+    {
+      "id": "O1-owned",
+      "statement": "The heartbeat must be the FIRST statement of the batch's OWN transaction, not of a neighbouring one. Prediction: an extension committed on a SEPARATE connection can commit while the batch aborts (claiming a window the run never used), and a batch can commit while its extension rolls back (writing under an expiry nobody advanced). A fixture that drives the clock cannot tell those apart, so the property is asserted structurally — by reading the code — and the falsifiers are written to fail if the heartbeat is moved out of the batch transaction.",
+      "whatWouldProveItWrong": "A heartbeat issued before `sql.begin(...)` or after the journal insert, or on the outer `sql` handle rather than on `txn`."
+    },
+    {
+      "id": "O2-owned",
+      "statement": "The lease must be taken ONCE and never re-taken. Prediction: re-taking would let this code steal a scope from a live holder mid-run, which is a worse defect than the one being fixed. `lockAndHeartbeatLease` extends THIS holder token's row and never re-takes, so the fix cannot introduce a second take.",
+      "whatWouldProveItWrong": "A second `takeScopedLease` call on the run path, or a catch that re-takes after a refusal."
+    },
+    {
+      "id": "O3-owned",
+      "statement": "A refused run must ACCOUNT for what it wrote before the refusal. Prediction: those batches are journalled and reversible, and a job that exits 1 saying only 'lease lost' leaves an operator unable to decide whether to reverse or continue. The refusal record therefore carries batchesWritten, atomsWrittenBeforeRefusal and journalRowsBeforeRefusal, and the artifact is still written when the run refuses.",
+      "whatWouldProveItWrong": "An exit path that prints the refusal but writes no artifact, or a refusal record with no counts."
+    },
+    {
+      "id": "O4-owned",
+      "statement": "This row must not change WHAT is written, only WHEN the lease is asserted. Prediction: the census, the classifier, the cap, the digest and the journal shape are untouched, so Williamson's fresh dry run still reproduces `e53c197f…67f` after the rebuilt image. The diff is two files and neither is the classifier, the census, the migration or the guard.",
+      "whatWouldProveItWrong": "A `git diff` touching `envelope-outcome-movement.ts`, `p263-envelope-outcome-census.mts`, `writer-blast-radius-guard.mjs`, `p263-phase0-counties.mjs` or `018_*.sql`; or a changed dry-run digest."
+    }
+  ],
+
+  "design": {
+    "repo": "hauska-engine only, one branch from `origin/main` cff8d882, one PR. No store write, no apply, no deploy, no merge.",
+    "whereTheHeartbeatSits": "The FIRST statement of every batch's transaction, on that transaction (`txn`), BEFORE the journal INSERT and BEFORE the body UPDATE. Reasons, in order: (a) before the record and the write, so a lease that is gone aborts the batch before a row of it is journalled — journal-then-write is the 'no record, no write' order and the heartbeat sits ahead of both, so a lost lease cannot leave a journal row describing a batch that was then refused; (b) on the batch's own transaction, so the extension commits with the batch's writes and rolls back with them; (c) the batch's single clock reading serves both `applied_at` and the heartbeat, so the journal's timestamps and the lease's window cannot disagree about when the batch ran.",
+    "whatTriggersIt": "Every batch, unconditionally. There is no 'check every N batches' and no staleness threshold: the batch boundary is the only unit at which this file can both write and refuse, so it is the unit at which the lease is asserted.",
+    "reversalLeaseRule": "`reverseMovementRun` takes the SAME `(write, buildable-envelope, <fips>)` scope the apply took and heartbeats it per batch in the same place, then releases it. WITHOUT `--county` it takes ONE SCOPE PER COUNTY THE JOURNAL NAMES, in turn, releasing each before taking the next. CHOSEN OVER refusing a run-wide reversal because the journal is the record that selects the rows and it may legitimately span counties (the five applied counties are separate runs today, but nothing in migration 018 forbids a run spanning two), and because refusing would force an operator to hand-split a reversal that the journal already describes exactly. A run-wide reversal therefore never holds more than the one county it is writing, and each county's report is a separate entry in the artifact's `leases` array.",
+    "artifactFields": "{runId, holderLabel, scope:{scopeType,scopeId}, heartbeats, lastExpires, released, releaseReason, releaseFailure} — the apply emits it as `lease`, the reversal as `leases` (one per county scope). A run with nothing to write still reports `taken: false`, so `heartbeats: 0` cannot be read as a renewal that did not happen in a run that did nothing.",
+    "refusalShape": "`P263_LEASE_LOST`, carrying the storage cause (`LEASE_EXPIRED` / `SCOPE_MISMATCH` / null), the batch number, and the batches/atoms/journal rows already committed. The CLI catches it and writes an artifact with mode `APPLY-REFUSED-LEASE-LOST` / `REVERSE-REFUSED-LEASE-LOST` and exit 1, so a refused job still leaves a record of what it did.",
+    "release": "One helper for both paths (`releaseAfterRun`). A scope that is no longer ours is RECORDED as `released: false` with the reason rather than rethrown — every write this run made committed under a held lease, so the anomaly is lease bookkeeping's business, not the data's, and on a lease-lost run the original refusal must not be masked by a release error. Any OTHER release failure on a run with nothing else to report still propagates exactly as before this change.",
+    "untouched": "the census, the shared classifier, the blast-radius cap, the census digest, and the journal shape (migration 018's DDL and triggers). Confirmed by `git diff --stat`: two files, `p263-envelope-outcome-apply.mts` and its integration test."
+  },
+
+  "adversarialQuestionsAskedOfMyOwnDesign": [
+    {
+      "q": "A1 — the dispatch says 'on the same connection or transaction the batch writes with'. Does a separate connection actually break anything, or is the same-transaction requirement just tidiness?",
+      "disposition": "It breaks atomicity in both directions, and that is why the requirement is in the dispatch: an extension on its own connection commits independently, so it can persist a window for a batch whose writes rolled back (the lease then looks healthy for work that never happened), and a batch can commit while its extension is rolled back (writes landing under an expiry nobody advanced — the exact defect class this row exists to close). Put on the batch's transaction, the extension and the writes share one fate. The falsifiers cannot detect this difference by driving a clock, so O1 is asserted structurally and honestly labelled as a reading."
+    },
+    {
+      "q": "A2 — could the heartbeat itself become the thing that fails a healthy run?",
+      "disposition": "Only by extending the window, which is the point. `lockAndHeartbeatLease` selects with `expires > now` FOR UPDATE and updates `heartbeat` and `expires` — it does not re-take, does not change the holder token, and does not read any table the batch does not already write. The one new failure mode it introduces is contention: a concurrent `takeScopedLease` on the same scope serializes behind the batch's row lock, which is the correct order of operations rather than a new hazard. F3 is the falsifier against the opposite error — a fix that refuses long runs instead of extending them."
+    },
+    {
+      "q": "A3 — does the fix make Williamson's run safe, or only make it refuse later?",
+      "disposition": "It makes it safe, and the distinction matters: the lease is extended BEFORE each batch writes, so a batch either writes with a lease that is live at the time of its own write or does not write at all. What the fix does NOT do is make the run interruptible or resumable — a refusal at batch 700 of 1,000 leaves 700 journalled batches that must be reversed before a re-run, and the artifact says so with counts. That is the honest limit and it is the same limit the pre-change code had at batch 1."
+    },
+    {
+      "q": "A4 — is the reversal's per-county scope rule a real answer, or a dodge of the dispatch's 'refuse or one scope per county'?",
+      "disposition": "It is the second option, taken deliberately and for a reason that can be checked: the county set comes from the JOURNAL, which is the only record that knows which counties a run touched, so the reversal's scope set cannot disagree with the rows it is about to restore. Taking a run-wide scope is not available — the scope IS `(entity_type, county_fips)`, so there is no such thing as a scope for two counties. And refusing would push a mechanical split onto an operator for the case where the journal already names the counties exactly."
+    },
+    {
+      "q": "A5 — what would make this PR unsafe to merge?",
+      "disposition": "If the heartbeat could be skipped on a batch (it cannot — it is the first statement of the batch's transaction and every write in the batch is inside it), if a refusal could leave an artifact claiming success (the refusal sets `mode` to the REFUSED-LEASE-LOST variant and exit 1), if taking the lease a second time were possible (there is exactly one `takeScopedLease` call on the run path and `lockAndHeartbeatLease` never re-takes), or if the release could delete a scope another holder had already taken (it deletes by OUR holder token, so a stolen scope's new owner is untouched — read at source in `releaseScopedLease`, whose DELETE is `WHERE holder_token = ${lease.holder_token}`). Honest about the evidence: the FIRST is exercised by the falsifiers (a skippable heartbeat is exactly what F1 and F2 detect, since both would then write their batches). The other three are read-at-source structural properties, NOT tests — the CLI's refusal-artifact path in particular has no test in this lane, and that gap is named in the close's `whatRemainsOpen` rather than left for a reader to find."
+    },
+    {
+      "q": "A6 — the falsifiers run on a local fixture with an injected clock. Is that the dispatch's 'drive the clock, do not sleep', or is it a substitute for the real thing?",
+      "disposition": "It is exactly what the dispatch asks for, and its limit is stated: a driven clock proves the REFUSAL and the RENEWAL logic against a real Postgres with the real `atoms_writer_lease_v2` table and the real storage functions (nothing about the lease is mocked — test B drives the table through the same SQL the production path uses), but it does not prove anything about a 32-minute run's wall-clock behaviour, and no test here runs for 15 minutes. The county that actually exercises that is Williamson, and it is the integration seat's apply — which is why this lane's close cites a real customer-probe artifact and declares the predicate debt rather than calling the row customer-graded."
+    }
+  ],
+
+  "constraintsHonored": [
+    "FAN-DEPTH 0: no sub-agent launched at any point (see `subAgents` in the close).",
+    "Lane claimed before work: `lane-claim.mjs claim --lane p365-apply-lease-heartbeat --seat p365-lane --plan-row P-365` at 2026-09-18T22:07:14.012Z; released when the close is filed.",
+    "NO STORE WRITES, NO APPLY, NO DEPLOY, NO MERGE: no store credential was used and no store was contacted. Every falsifier runs against a local Postgres that creates and drops its own schema; a `neon.tech` host is refused loudly by the suite.",
+    "ONE PR, branched from `origin/main` cff8d882 (verified ancestor of HEAD).",
+    "The census, the classifier, the cap, the digest and the journal shape are untouched (`git diff --stat`: two files).",
+    "doc_repo edits are left UNCOMMITTED and listed in the close (planner-owned commits)."
+  ],
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-18_p365-apply-lease-heartbeat_cp1.json (this file)",
+    "_inbox/2026-09-18_p365-apply-lease-heartbeat_cp2.json",
+    "_inbox/2026-09-18_p365-apply-lease-heartbeat_close.json",
+    "_inbox/2026-09-18_p365-lease-falsifiers-both-directions.md (the falsifier evidence, both directions)"
+  ]
+}

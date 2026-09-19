@@ -1,0 +1,90 @@
+{
+  "artifact": "P-359 CP1 — design / pre-build checkpoint, pre-registered falsifiers, and the derivation contract fixed before any code is written",
+  "lane": "p359-etj-rings",
+  "planRows": ["P-359"],
+  "checkpoint": "CP1 (design / pre-build)",
+  "seat": "cente-vsc-p359",
+  "writtenAt": "2026-09-18T17:55:00Z",
+  "dispatch": "_dispatches/2026-09-18_p359-etj-rings_dispatch.md",
+  "missionRow": "90_operations/OPS-16_texas_market_plan_of_record.md (P-359, added 2026-09-18 by the integration seat; found by P-332)",
+
+  "startCommits": {
+    "legacyDesignToolsWorktree": { "path": "P:/legacy-design-tools-worktrees/p359-etj-rings", "branch": "lane/p359-etj-rings", "head": "25d1782f2e59bd5098b8459196ea828ae3580027" },
+    "docRepoWorktree": { "path": "C:/Users/cente/doc_repo", "branch": "main", "head": "41e37310", "note": "the worktree this session is rooted in; it is BEHIND origin/main 61b5b2ed, so every doc_repo input for this lane was read from origin/main by path (git show / git checkout origin/main -- <path>) rather than from the stale working tree. The lane's own artifacts are NEW files under _inbox/ and do not collide." }
+  },
+
+  "claim": {
+    "command": "node scripts/lane-claim.mjs claim --lane p359-etj-rings --seat cente-vsc-p359 --plan-row P-359 --dispatch _dispatches/2026-09-18_p359-etj-rings_dispatch.md",
+    "exit": 0,
+    "result": "CLAIMED p359-etj-rings for cente-vsc-p359 (P-359). Proceed."
+  },
+
+  "thePremiseAndWhatItRestsOn": {
+    "premise": "An ETJ is by definition OUTSIDE city limits. Exactly three published rings in the six Phase 0 counties contain their own city's representative point, so for those publishers the geometry is a single shape drawn for 'city plus ETJ', and the serve path answers `present` for parcels that are inside the city limits.",
+    "sourceOfTheMeasuredBase": "_inbox/2026-09-18_p332-etj-panel_close.json (validated run) plus its raw output P:/seat-worktrees/p332-etj-panel/_p332_etj_final_results.txt and its own SQL _p332_cooccurrence_final.sql, both read at source in this session.",
+    "rawResultQuoted": "georgetown-tx 39015 full / 125 strip-only; leander-tx 31755 / 111; dripping-springs-tx 4015 / 173. Sum of the three full-ring counts = 74,785 of the 77,459 (12.67 percent of 611,116 in-city parcels) that read incorporated-plus-ETJ-present.",
+    "notIndependentlyVerifiedByThisLane": "I hold NO connection to any deployment store in this session (no DATABASE_URL / TEST_DATABASE_URL / PG* env, no pg_service.conf, no .pgpass, no psql on PATH outside the PostgreSQL 18 install, no local proxy listening on a store port). The 611,116 / 77,459 / 74,785 / 24 figures are therefore the PLANNER'S and P-332's, cited as such, not re-measured by me. Every figure I produce MYSELF is labelled with its instrument in the close; the live six-county re-count is proposed at the exact SQL in CP2 and is the one item this plan cannot complete without a store connection. Reported rather than papered over (AGENT CONTRACT 5: verify at source; DEV-PROCESS 3.2: the brief's numbers are the planner's)."
+  },
+
+  "design": {
+    "whereTheDefectIs": "resolveEtjAtPoint (lib/cad-ingest/src/boundary/containment.ts:487) tests every ring whose publisher's extent covers the query point and returns `present` on the first hit, BEFORE the containing-city logic runs. A ring that contains its own city therefore wins the present branch for an in-city parcel, and the containing-city logic never gets to speak. The city-limits fact and the ETJ fact are two independent reads, and this row is where they contradict each other.",
+    "twoHalves": {
+      "ingestHalf": "A PostGIS derivation pass, run by the ETJ ingest for exactly the publishers being (re-)acquired, writes a SERVED geometry and a derivation record onto each ring row. The publisher's geometry is kept VERBATIM in `geometry`; the derived geometry lands in a new column and is never a replacement of the source.",
+      "serveHalf": "The reader indexes the served geometry when one exists and refuses to index a ring that has none and was not proven valid. Excluded and withheld rings are carried into the determination as a DECLARATION, and a miss while a ring was withheld is `unresolved`, never `absent`."
+    },
+    "theThreeStatesOfAServedRing": {
+      "verbatim": "ST_IsValid true, ring does not contain its own city -> geometry served unchanged.",
+      "derived": "ring contains its own city (decisive test: ST_Contains(ring, ST_PointOnSurface(city_limits))) -> served = ST_CollectionExtract(ST_MakeValid(ST_Difference(ring, city_limits)), 3), with the subtraction recorded (which city boundary, its vintage, area published, area served, area removed).",
+      "repaired": "ST_IsValid false -> ST_MakeValid, and the repair is recorded (ST_IsValidReason, validity after, area before and after). A repair that moves the area beyond the declared tolerance is EXCLUDED and declared, not served.",
+      "excludedOrWithheld": "No served geometry exists. The reader must not test the raw polygon: ST_Contains against an invalid polygon is undefined in GEOS, which is the whole reason the refusal is in the READER and not a hope about the store."
+    },
+    "declaredTolerance": "REPAIR_RELATIVE_AREA_TOLERANCE = 0.001 (0.1 percent of the published area). Chosen, not derived: it is far below the area a mis-repair of a real ring would move and far above floating-point noise at these coordinate magnitudes. A repair outside it is excluded and declared. The constant is exported so the instrument's own contract (DEV-PROCESS 2.1) travels with its use.",
+    "theRawInsertBypassClosedByDefault": "The new status column defaults to 'underived', NOT 'verbatim'. A ring that reaches the table without passing the derivation pass is refused by the reader and declared, rather than being silently served as if it had been proven valid. The named bypass that remains is a writer that sets the status AND the served geometry by hand, which is stated in the close's three-question gate rather than pretended away.",
+    "theJoin": "Ring to city limits is joined on the ring's OWN `city_name` (lowercased, non-alphanumerics stripped), per the dispatch's instruction: P-332's normalized `city_key` join silently dropped Bastrop. `city_geo_id` is deliberately NOT the join key: it is nullable and informational by the table's own doc.",
+    "noBufferPath": "Nothing here computes a ring. The derivation only ever SUBTRACTS an already-published city-limits polygon from an already-published ring. The §42.021 statutory-buffer path stays retired (P-241 close, DEAD-END)."
+  },
+
+  "preRegisteredFalsifiers": {
+    "method": "Each falsifier is a fixture with a KNOWN answer, asserted in both directions: the assertion must FAIL on the pre-change code (proving it tests the defect) and PASS on the post-change code. The pre-change run is produced by stashing the tracked source changes with the new tests left in place, exactly as P-332 did.",
+    "F1_selfContainingRing": "Fixture: a ring polygon that contains its own city's limits. Pre-change: a parcel at the city's representative point reads `present` (the defect). Post-change: the same parcel reads `absent` for that ring; a parcel in the strip (inside the ring, outside the city) still reads `present`; and the present fact names the derivation.",
+    "F2_genuineStripRing_control": "Fixture: a ring that does NOT contain its city. Both directions must read IDENTICALLY before and after. A control that moves is the change failing, not the fixture.",
+    "F3_invalidRing": "Fixture: a self-intersecting bowtie ring (ST_IsValid false). Pre-change: the reader runs containment against it (undefined in GEOS) and can answer from it. Post-change: the reader never runs containment against it; the repair is recorded, or, past the tolerance, it is excluded and the determination declares it.",
+    "F4_repairPastTheTolerance": "Fixture: a geometry whose ST_MakeValid moves the area by more than 0.1 percent. It must be EXCLUDED and declared, never served.",
+    "F5_theRecountPrediction": "Predicted, before running: the three self-containing publishers fall from 74,785 to about their strip-only counts (Georgetown 125, Leander 111, Dripping Springs 173); every OTHER city's full-ring count is unchanged because their rings do not contain their city; the same-city co-occurrence total falls from 77,459 by about 74,785 to about 2,674. Cross-city co-occurrence, unmeasured by P-332, is measured for the first time and its number is NOT predicted (no basis to predict it).",
+    "F6_independentQuery": "The re-count is accompanied by a query written independently of the derivation code — P-332's own validated method (materialized CTEs, ST_MakeValid, ring's own city_name join), re-run rather than re-implemented — so the instrument and the derivation cannot agree merely because they share a bug."
+  },
+
+  "whatWillBeBuilt": [
+    "lib/db/drizzle/0103_tx_etj_served_geometry.sql — served_geometry + served_status + derivation + area columns; default served_status 'underived' (fail closed); guarded backfill for pre-existing rows.",
+    "lib/db/src/schema/txEtjBoundary.ts — the same columns on the drizzle table.",
+    "lib/cad-ingest/src/boundary/etjDerive.ts — the PostGIS derivation/validity pass, run per publisher by the ingest.",
+    "lib/cad-ingest/src/boundary/containment.ts — the reader indexes only served geometry; excluded/withheld rings are carried as a declaration; a miss while a ring was withheld is unresolved, never absent.",
+    "artifacts/api-server/src/lib/etjFactRead.ts — selects the new columns and refuses an un-derived or invalid ring in the reader.",
+    "tests in lib/cad-ingest/src/__tests__/etj.test.ts and artifacts/api-server/src/lib/etjFactRead.test.ts, both directions."
+  ],
+
+  "constraintsHonoredSoFar": [
+    "no store writes, no re-ingest, no deploys, no merges",
+    "FAN-DEPTH 0 — no sub-agents launched, and none will be",
+    "built in this lane's own registered worktree, never another lane's checkout",
+    "read-only reads of other lanes' artifacts (P-332's seat worktree, P-241/P-296 closes)"
+  ],
+
+  "sharedFilesToName": [
+    "lib/cad-ingest/src/boundary/containment.ts — also read by containment/city-limits consumers; the change is additive (new optional fields), existing callers keep their behaviour",
+    "lib/db/src/schema/index.ts — re-export only, no behaviour",
+    "artifacts/api-server/src/lib/etjFactRead.ts — P-336 reads the SAME determination (see item 4); this lane does not touch P-336's cells",
+    "lib/db/drizzle/ — P-354 (Georgetown dates) and P-351 (bake retirement) also in flight this wave; no file overlap expected, 0103 is a new file"
+  ],
+
+  "blockersNamed": [
+    {
+      "item": "the live six-county re-count (dispatch item 3) and any store read at all",
+      "blocker": "no connection to any deployment store is available to this session",
+      "theWorkIWillStillDo": "the derivation, the refusal, and the re-count SQL are verified against a LOCAL PostGIS container (real PostGIS, fixture rings with known answers), so the mechanism is proven by execution, not asserted",
+      "whatIsOwed": "a read-only connection string for the six-county store, or the integration seat runs the re-count SQL recorded in the CP2/close"
+    }
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

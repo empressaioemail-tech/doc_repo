@@ -1,0 +1,239 @@
+{
+  "artifact": "P-359 CP2 — what was built, what the shipped derivation pass does to the production store read-only, and the re-count against the pre-registered prediction",
+  "lane": "p359-etj-rings",
+  "planRows": ["P-359"],
+  "checkpoint": "CP2 (post-build, pre-close)",
+  "seat": "cente-vsc-p359",
+  "writtenAt": "2026-09-18T21:20:00Z",
+  "dispatch": "_dispatches/2026-09-18_p359-etj-rings_dispatch.md",
+  "cp1": "_inbox/2026-09-18_p359-etj-rings_cp1.json",
+
+  "startCommitAndPR": {
+    "repo": "legacy-design-tools",
+    "baseSha": "25d1782f2e59bd5098b8459196ea828ae3580027 (origin/main at compile)",
+    "worktree": "P:/legacy-design-tools-worktrees/p359-etj-rings",
+    "branch": "lane/p359-etj-rings",
+    "head": "60c7c273 (rebased onto origin/main, pushed)",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/724",
+    "commits": 1,
+    "files": 16,
+    "insertions": 2073,
+    "deletions": 117
+  },
+
+  "whatWasBuilt": [
+    {
+      "file": "lib/db/drizzle/0104_tx_etj_served_geometry.sql (new)",
+      "what": "served_geometry jsonb, served_status text NOT NULL DEFAULT 'underived', derivation jsonb, area_published/served double precision, derived_at timestamptz, plus an index on served_status. The default is the fail-closed switch: a row that reaches the table through any path that is not the derivation pass is refused by the reader."
+    },
+    {
+      "file": "lib/db/src/schema/txEtjBoundary.ts",
+      "what": "the same columns as drizzle types, plus `EtjServedStatus` (verbatim | derived | repaired | excluded | withheld | underived) and `EtjRingDerivation`. Which statuses are SERVABLE is deliberately NOT declared here: that is the reader's contract and it lives in containment.ts, so there is one list rather than two that can disagree."
+    },
+    {
+      "file": "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+      "what": "the test fixture schema, kept in step with the migration so the integration tests run against the real shape."
+    },
+    {
+      "file": "lib/cad-ingest/src/boundary/etjDerive.ts (new)",
+      "what": "the PostGIS derivation/validity pass. One statement: cities (normalized-name -> ST_MakeValid limits), targets (rings for the named published keys), joined (containment of the city's own representative point), shaped (ST_MakeValid, ST_Difference, ST_CollectionExtract), scored (areas in EPSG:3081, the repair delta fraction against the tolerance), verdict (excluded | withheld | derived | repaired | verbatim), then one UPDATE that writes status, served geometry, the two areas, the derivation record and derived_at. The publisher's `geometry` is never assigned to."
+    },
+    {
+      "file": "lib/cad-ingest/src/boundary/etjIngest.ts",
+      "what": "after the batch flush, one call to deriveEtjServedGeometry for exactly the city keys just written, in the same function, so nothing leaves the ingest servable only by accident. Rows are inserted with the fail-closed default first."
+    },
+    {
+      "file": "lib/cad-ingest/src/boundary/etjCli.ts",
+      "what": "reports the derivation per publisher: counts by status, and a line per excluded/withheld ring with its note. An operator running an ingest sees the decisions the ingest made about a publisher's drawing."
+    },
+    {
+      "file": "lib/cad-ingest/src/boundary/containment.ts",
+      "what": "`EtjBoundaryIndex` {rings, refusals}; `ETJ_SERVABLE_STATUSES` + `statusIsServable` as a type guard; `buildEtjBoundaryIndex` partitions rows (non-servable status, or a servable status with no testable Polygon/MultiPolygon, or no bbox -> a refusal with its reason); `resolveEtjAtPoint` takes the index, and a miss with a refusal in reach is `unresolved`, never `absent`. The refusal is narrowed by the refused ring's published envelope so it can only subtract an answer where the ring could have held the point."
+    },
+    {
+      "file": "lib/cad-ingest/src/txgio/geo.ts",
+      "what": "`bboxOfGeometry` accepts `unknown`: the ETJ reader computes an envelope from a row whose geometry it has not accepted yet, and must not assert the thing it is about to check."
+    },
+    {
+      "file": "lib/cad-ingest/src/boundary/etjFact.ts",
+      "what": "EtjFact gains `servedStatus`, `derivationNote` (omitted, not null, when empty) and `refusedRings` [{etjId, servedStatus, reason}]."
+    },
+    {
+      "file": "artifacts/api-server/src/lib/etjFactRead.ts",
+      "what": "selects served_geometry / served_status / derivation, builds the reader's index (every candidate row, not only the servable ones), and resolves through it."
+    },
+    {
+      "file": "lib/cad-ingest/src/index.ts",
+      "what": "exports the new types and functions."
+    },
+    {
+      "file": "tests: lib/cad-ingest/src/__tests__/etjDerive.integration.test.ts (new), etj.test.ts, artifacts/api-server/src/lib/etjFactRead.test.ts, cityLimitsFactServeCutover.test.ts",
+      "what": "fixtures in both directions, including a real PostGIS container that seeds rings of every class and asserts status, served geometry, recorded areas, idempotency, and that `geometry` is never overwritten."
+    }
+  ],
+
+  "theDerivationRecordShape": {
+    "where": "tx_etj_boundary.derivation, one JSON object per row, written by the same statement that wrote the served geometry",
+    "example": "georgetown-tx:9644, verbatim from the shipped pass's own dry run against the production store (P:/tmp/p359-evidence/dryrun_derive_final.txt)",
+    "record": {
+      "at": "2026-09-18T21:07:41Z",
+      "kind": "invalid_repair",
+      "repaired": true,
+      "isValidPublished": false,
+      "isValidReason": "Hole lies outside shell[-97.7987783807418 30.7250811816348]",
+      "isValidServed": true,
+      "subtracted": { "table": "tx_city_boundary", "matchedBy": "city_name_normalized", "cityName": "Georgetown", "cityGeoId": "4829336", "boundaryVintage": "txgio_city_boundaries_202508" },
+      "areaPublished": 446305187.3389608,
+      "areaServed": 284729088.7797964,
+      "areaRemoved": 161576098.5591644,
+      "repairAreaDeltaFraction": 1.0901927415790007e-11,
+      "toleranceFraction": 0.001,
+      "note": "ST_IsValid false; served geometry is ST_CollectionExtract(ST_MakeValid(...), 3), then minus Georgetown's limits"
+    },
+    "whyTheseFields": "A reader can ask `why` and get the pass's own answer rather than an inference: which city boundary and which vintage were subtracted, what ST_IsValid objected to, whether the served geometry validated, how much area the repair moved, what tolerance it was compared against, and how much area the subtraction removed. `areaRemoved` is the larger of the two edits to a publisher's drawing for the three self-containing rings (Georgetown's is 161.6 km2, 36 percent of the published ring).",
+    "theNoteIsOneExpression": "The note is a CASE inside the same jsonb_build_object, so it cannot say something the record's own fields contradict. The dry run prints it by EXTRACTING that expression from the shipped UPDATE (see contradicted.instrumentDefectFoundByMe) rather than retyping it."
+  },
+
+  "thePerRingTable": {
+    "artifact": "P:/tmp/p359-evidence/per_ring_table.csv (generated from the shipped pass's own dry run; every ring that was NOT served verbatim, over the whole 355-ring store)",
+    "counts": { "rings": 355, "verbatim": 330, "derived": 2, "repaired": 8, "excluded": 15 },
+    "derived": [
+      { "etj_id": "georgetown-tx:9644", "city": "Georgetown", "published_valid": false, "reason": "Hole lies outside shell", "contains_own_city": true, "area_published_m2": 446305187.3, "area_served_m2": 284729088.8, "area_removed_m2": 161576098.6 },
+      { "etj_id": "leander-tx:7305", "city": "Leander", "published_valid": true, "contains_own_city": true, "area_published_m2": 211042847.4, "area_served_m2": 108423502.8, "area_removed_m2": 102619344.6 }
+    ],
+    "repaired": [
+      { "etj_id": "austin-tx:27", "area_published_m2": 17079348.2, "area_served_m2": 17079348.2, "reason": "Ring Self-intersection" },
+      { "etj_id": "austin-tx:300", "area_published_m2": 10633039.1, "area_served_m2": 10633039.1, "reason": "Ring Self-intersection" },
+      { "etj_id": "austin-tx:305", "area_published_m2": 4936200.2, "area_served_m2": 4936200.2, "reason": "Ring Self-intersection" },
+      { "etj_id": "killeen-tx:3", "area_published_m2": 597906606.4, "area_served_m2": 597906409.0, "area_removed_m2": 197.4, "reason": "Ring Self-intersection" },
+      { "etj_id": "new-braunfels-tx:450", "area_published_m2": 371570172.2, "area_served_m2": 371570172.2, "reason": "Ring Self-intersection" },
+      { "etj_id": "san-marcos-tx:1617", "area_published_m2": 281987952.7, "area_served_m2": 281987952.7, "reason": "Ring Self-intersection" },
+      { "etj_id": "taylor-tx:58", "area_published_m2": 84293001.8, "area_served_m2": 84293001.8, "reason": "Ring Self-intersection" },
+      { "etj_id": "waco-tx:4", "area_published_m2": 899843154.0, "area_served_m2": 899843154.0, "reason": "Ring Self-intersection" }
+    ],
+    "excluded": [
+      { "etj_id": "austin-tx:288", "area_published_m2": 41163244.8, "reason": "Nested shells" },
+      { "etj_id": "austin-tx:290", "area_published_m2": 37204576.7, "reason": "Nested shells" },
+      { "etj_id": "austin-tx:291", "area_published_m2": 21929985.9, "reason": "Ring Self-intersection" },
+      { "etj_id": "austin-tx:302", "area_published_m2": 12353905.8, "reason": "Nested shells" },
+      { "etj_id": "austin-tx:367", "area_published_m2": 44363785.9, "reason": "Nested shells" },
+      { "etj_id": "austin-tx:370", "area_published_m2": 194439161.8, "reason": "Nested shells" },
+      { "etj_id": "belton-tx:1", "area_published_m2": 59312531.7, "reason": "Nested shells" },
+      { "etj_id": "buda-tx:1", "area_published_m2": 29439391.8, "reason": "Nested shells" },
+      { "etj_id": "cibolo-tx:13", "area_published_m2": 33607963.2, "reason": "Nested shells" },
+      { "etj_id": "dripping-springs-tx:1", "area_published_m2": 320258986.3, "reason": "Ring Self-intersection", "contains_own_city": true },
+      { "etj_id": "elgin-tx:3", "area_published_m2": 37052297.3, "reason": "Nested shells" },
+      { "etj_id": "hutto-tx:1", "area_published_m2": 102630043.5, "reason": "Nested shells" },
+      { "etj_id": "kyle-tx:1", "area_published_m2": 55373934.8, "reason": "Nested shells" },
+      { "etj_id": "liberty-hill-tx:1", "area_published_m2": 91909510.2, "reason": "Ring Self-intersection" },
+      { "etj_id": "san-antonio-tx:1", "area_published_m2": 1626363494.5, "reason": "Nested shells" }
+    ],
+    "everyExcludedRingValidatesAfterRepair": "valid_served = true for all 15: the refusal is never `ST_MakeValid could not fix it`, it is always `the repair moved the area further than the declared tolerance allows`. The areas moved are large and one-directional (austin-tx:370 published 194.4 km2, repaired 168.3 km2; liberty-hill-tx:1 91.9 -> 86.4; dripping-springs-tx:1 320.3 -> 288.6), which is the signature of a published ring whose self-intersection is not a numerical artifact: repairing it changes where the jurisdiction is, and that is a store-ownership question (P-332's own framing), not this lane's to decide by picking a winner.",
+    "theThreeSelfContainingRings": "georgetown-tx:9644 (derived), leander-tx:7305 (derived), dripping-springs-tx:1 (excluded: invalid AND self-containing, and the repair moves 9.9 percent of the area). All three confirm P-332's decisive test exactly.",
+    "noRingWasWithheld": "0. The withheld branch (the subtraction left no usable polygon) did not fire on any published ring in the store; it is exercised by fixture in the integration test, so it is proven able to fire rather than assumed dead."
+  },
+
+  "theRecount": {
+    "instrument": "P-332's validated method, re-run rather than re-implemented: materialized CTEs, ST_MakeValid on both sides, the ring's OWN city_name normalized for the join (not city_key, which silently dropped Bastrop), parcel identity DISTINCT ON (prop_id) ordered by feature_index.",
+    "secondInstrument": "the shipped derivation pass's own SQL, extracted from etjDerive.ts by C:/Users/cente/AppData/Local/Temp/p359-scratch/gen_dryrun.mjs and run as a SELECT (no write statement in the file). The two agree ring for ring on every ring that covers an in-city parcel: the per-ring table below and the per-ring verdicts in the dry run name the same 19 rings with the same statuses.",
+    "readOnlyEvidence": "P:/tmp/p359-evidence/det_<county>.txt (six), strip_<county>.txt, cross_<county>.txt, r1_rings.txt, per_ring_table.csv, dryrun_derive_final.txt",
+    "endpoint": "ep-restless-hat-api2h3tg, type read_only, unpooled, branch br-crimson-feather-aphfmy91 (Neon cortex-prod). Read-only: default_transaction_read_only=on, head of file. No write statement was executed in this lane.",
+    "countyTable": [
+      { "county_fips": "48021", "in_city_parcels": 11992, "pre_present": 308, "post_present": 269, "to_absent": 0, "to_unresolved": 39, "p332_strip": 105 },
+      { "county_fips": "48055", "in_city_parcels": 10627, "pre_present": 8, "post_present": 8, "to_absent": 0, "to_unresolved": 0, "p332_strip": 8 },
+      { "county_fips": "48209", "in_city_parcels": 54835, "pre_present": 5373, "post_present": 1086, "to_absent": 0, "to_unresolved": 4287, "p332_strip": 852 },
+      { "county_fips": "48309", "in_city_parcels": 81832, "pre_present": 212, "post_present": 212, "to_absent": 0, "to_unresolved": 0, "p332_strip": 205 },
+      { "county_fips": "48453", "in_city_parcels": 277003, "pre_present": 5846, "post_present": 420, "to_absent": 5152, "to_unresolved": 274, "p332_strip": 670 },
+      { "county_fips": "48491", "in_city_parcels": 174827, "pre_present": 65715, "post_present": 255, "to_absent": 65382, "to_unresolved": 78, "p332_strip": 322 },
+      { "county_fips": "TOTAL", "in_city_parcels": 611116, "pre_present": 77462, "post_present": 2250, "to_absent": 70534, "to_unresolved": 4678, "p332_strip": 2162 }
+    ],
+    "totalsRowCorrected": "As first written this TOTAL row said 77,463 / 2,251, one more than the six rows above it sum to (77,462 / 2,250) and one more than any instrument in this lane printed. Corrected here and in the close; recorded in contradicted.myOwnTotalsRow.",
+    "denominatorCheck": "611,116 in-city parcels, exactly P-332's denominator. That the recount reproduces P-332's own denominator exactly is the strongest available evidence that the two instruments count the same parcels.",
+    "predictionAccounted": {
+      "georgetown": "predicted 125, measured 125",
+      "leander": "predicted 111, measured 111 province-wide (26,567 Williamson + 5,188 Travis in-city parcels; its own city's limits are in both counties)",
+      "drippingSprings": "predicted 173, measured 0 — the ring is invalid AND self-containing, the repair moves 9.9 percent of the area, so it is excluded and the 173 genuine strip parcels read `unresolved` rather than `present`. This is the class the dispatch is about: an excluded ring does not degrade to a smaller answer, it stops answering.",
+      "theTotal": "CP1 predicted 2,674 = 77,459 - 74,785 while ALSO predicting the three publishers keep their 409 strip parcels. Those two statements disagree by 409; the internally consistent prediction was 3,083 (= 77,459 minus the three publishers' full-ring counts 38,890 + 31,644 + 3,842). Measured 2,250 = 3,083 - 173 (Dripping Springs refused, not derived) - 662 (= the 4,678 parcels a refused ring covers, minus the 4,016 Dripping Springs' own ring covers, i.e. the parcels held by the other 14 excluded rings, which the prediction assumed would go on answering) + 2 (this instrument's own dedup residue against P-332: strip 2,162 vs 2,160, which is also why the pre column is 77,462 vs 77,459). Correction: as first written this sentence said 'Measured 2,251 ... 4 higher than P-332's, 77,463'; no instrument printed either figure. See contradicted.myOwnTotalsRow.",
+      "theHonestReading": "the prediction was right about both rings that could be derived and wrong about every parcel whose ring would be REFUSED, because the prediction was made before the decision that a refusal stops answering was written into the reader."
+    },
+    "theGenuineStripStaysTrueFor": {
+      "instrument": "P:/tmp/p359-evidence/strip_<county>.txt — the same A-section machinery, measuring P-332's genuine strip population after the change: still present / now unresolved / now absent.",
+      "perCounty": "48021: 105 -> 69 still present, 36 now unresolved, 0 now absent. 48055: 8 -> 8, 0, 0. 48209: 852 -> 465, 387, 0. 48309: 205 -> 205, 0, 0. 48453: 670 -> 399, 271, 0. 48491: 322 -> 253, 69, 0. TOTAL 2,162 -> 1,399 still present, 763 now unresolved, 0 now absent.",
+      "whyZeroAbsentIsTheResult": "The change had exactly one way to hurt this population — turning a genuine disagreement into a confident absence — and in all six counties it did that to zero parcels. Every strip parcel that moved (763 of 2,162, 35 percent) moved to `unresolved`, and every one of them moved because its own city's ring is one of the 15 excluded rings. `unresolved` is the honest reading there: the published ring is not testable and the reader will not pretend otherwise.",
+      "crossChecks": "The strip_pre column here equals the A-section's `pre_p332_blind_strip_col` in all six counties (105/8/852/205/670/322), computed by two separately written sections of the same instrument, and both reproduce P-332's own 2,160 to within 2 parcels.",
+      "whatItShows": "The genuine strip parcels are NOT moved into `absent`: not one parcel, in any county, becomes a verified absence as a side effect of the refusals. Where a strip parcel does move it moves to `unresolved`. That is the honest decomposition of P-332's 2,160: the population this lane must not touch is not touched in the direction that would matter (a false absence); where it is touched at all it is made honestly unresolved, which is the cost of refusing to serve an unvalidatable ring."
+    },
+    "crossCity": {
+      "instrument": "P:/tmp/p359-evidence/cross_<county>.txt (six, all landed; measured 21:19Z to 22:33Z) and cross_j_<county>.txt (six, 23:23Z to 23:25Z) — cross-city co-occurrence: a parcel whose jurisdiction row names city A sitting inside city B's ring, A != B, PRE = published geometry ST_MakeValid'd, POST = served geometry with refusals declared. P-332 excluded these pairs by its join and named them unmeasured; CP1 declared no basis to predict the number and this lane did not predict it.",
+      "result": {"48021": "11,992 in-city parcels, 0 rings hold a cross-city parcel, 0 pre / 0 post / 0 refused", "48055": "10,627, 1 ring (san-marcos-tx:1617, repaired), 1 / 1 / 0", "48209": "54,835, 5 rings, 57 / 32 / 25", "48309": "81,832, 1 ring (waco-tx:4, repaired), 85 / 85 / 0", "48453": "277,003, 12 rings (all Austin's), 87 / 44 / 43", "48491": "174,827, 7 rings, 64 / 56 / 8", "TOTAL": "294 before, 218 after, 76 refused — PARCEL counts, not ring-memberships: see parcelLevel"},
+      "parcelLevel": "P:/tmp/p359-evidence/cross_j_<county>.txt + cross_j_dedup.json — a second instrument (J) that answers the identical question at PARCEL level, so the totals above are not a ring-level sum standing in for one. J is the same file's E section rewritten as `unnest(ARRAY(SELECT p.pt_key FROM pts p WHERE ...))` instead of a count: it keeps the correlated-scalar-subquery plan that the E section already ran to completion on this compute (44.7s for Travis) and emits one row per ring x parcel for local dedup. Every ring's pre/post/refused count in J equals the E section's own counter for the same ring, in all six counties, 26 rings, zero mismatches; and after deduplication the parcel sets are EXACTLY the ring sums — dedup_effect_vs_ring_level is {0,0,0} in all six counties, and 0 parcels sit in more than one ring in any phase. So the ring-level figures and the parcel-level figures are the same numbers, and the 294/218/76 above are parcel counts.",
+      "theIdentity": "cross_pre = cross_post + cross_now_refused exactly in all six counties, at parcel level as well as ring level (57 = 32 + 25; 87 = 44 + 43; 64 = 56 + 8; 85 = 85 + 0; 1 = 1 + 0; 0 = 0 + 0). Cross-city parcels move only out of `present` into `unresolved` via a refused ring; none becomes an absence, none gains presence.",
+      "theDerivedRingsKeepTheirs": "georgetown-tx:9644 (19) and leander-tx:7305 (4) both hold cross-city parcels and both are unchanged, because the subtraction removes the city's own limits and those parcels are in the declared strip. Every ring whose cross count falls is an EXCLUDED ring.",
+      "reading": "cross-city co-occurrence is a SMALL population — 294 parcels across 611,116 in-city parcels — and the change moves 76 of them, all in the one direction that cannot invent a jurisdiction (into `unresolved`), which is why the same-city population's 2,160 genuine disagreements are the whole of the store-ownership question and this population is not a second one of comparable size."
+    }
+  },
+
+  "downstreamP336": {
+    "why": "P-336 (in flight) writes the etjStatus ledger cell from the same determination this lane changes, and its own mission row says the cell carries the four states the panel serves.",
+    "cellsThatMove": { "present_to_absent": 70534, "present_to_unresolved": 4678, "absent_to_present": 0, "perCounty": { "48021": 39, "48055": 0, "48209": 4287, "48309": 0, "48453": 5426, "48491": 65460 } },
+    "ordering": "the re-ingest must land before P-336's apply. If the ledger is written from the pre-change determination, 75,212 cells are written from answers this change is about to move, and the cell and the panel then disagree — which is the disagreement P-336's own three-question gate asks about.",
+    "denominatorAndWhatItDoesNotCover": "This is the same-city, in-city population P-332 measured (611,116 parcels). Two populations lie outside it and were NOT enumerated: (a) parcels outside city limits inside a refused ring — the ledger rail covers every parcel, not only in-city ones; (b) the parcels where the LIVE read (raw published geometry) differs from the validated read this recount uses. Population (b) is measured in part: P-332's own raw counts for the four invalid-ring cities (Liberty Hill 527, Kyle 828, Elgin 65, Hutto 51) exceed its post-ST_MakeValid counts (47, 816, 42, 31) by 535 parcels, and this lane's live probe parcel 48021:11920 reads `absent` on the customer surface today while the repaired geometry contains it. Every such cell moves to `unresolved`; none moves to `present`."
+  },
+
+  "liveProbeBeforeHalf": {
+    "method": "GET https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/<id>/facets (the cortex leg this lane changes, taken through the customer surface's own proxy, the same route P-332 used) and GET https://smartsite.cloud/api/spine/property-atoms/<id>/facets (the panel).",
+    "parcels": "selected read-only from the production store (P:/tmp/p359-evidence/probe_parcels.txt), one per class: 48209:100010 (Dripping Springs, in city limits), 48491:R000009 (Georgetown, in city limits), 48491:R004931 (Georgetown, in the genuine strip), 48491:R002117 (Leander, in city limits), 48021:11920 (Elgin, in city limits, inside an invalid ring).",
+    "measured": [
+      { "node": "48209:100010", "cortex": { "cityLimitsStatus": "incorporated", "etjStatus": "present", "etjId": "dripping-springs-tx:1" }, "panel": { "etjStatus": "conflicting" }, "expectedAfterThisChangeLands": "unresolved, with the exclusion and the tolerance named — the ring is excluded, so nothing is served" },
+      { "node": "48021:11920", "cortex": { "cityLimitsStatus": "incorporated", "etjStatus": "absent" }, "panel": { "etjStatus": "absent" }, "expectedAfterThisChangeLands": "unresolved with the refusal named", "whyItMatters": "the live read answers a CONFIDENT ABSENCE from the invalid polygon today, while the repaired geometry contains the point. This is the second face of the defect and it is measured, not argued: falsifier E is the fixture version of it." },
+      { "node": "48491:R000009 / R004931 / R002117", "cortex": "HTTP 404", "expectedAfterThisChangeLands": "unmeasurable until 48491 serves nodes again", "whyItMatters": "every Williamson (48491) node answers 404 on both legs. That is the state P-336's own mission row records (48491 was restored from a point-in-time branch on 2026-09-17 and republishes only under P-350) — reported, not worked around, and not this lane's to fix." }
+    ],
+    "rawEvidence": "P:/tmp/p359-evidence/probe_before/ (10 raw JSON bodies) and probe_before_summary.json"
+  },
+
+  "falsifiersBothDirections": {
+    "method": "the pre-change side is taken by REVERT-AND-RUN: the probe test file is left in place in the baseline worktree at 25d1782f with the pre-change source, so the same assertions run against the old code.",
+    "preChange": "P:/tmp/p359-evidence/probe_PRE_change_baseline_25d1782f.log — 5 failed (5)",
+    "postChange": "5 passed (5) in the lane worktree",
+    "detail": [
+      { "id": "A", "fixture": "a ring that contains its own city", "pre": "the parcel at the city's representative point reads `present` (the defect)", "post": "reads `absent`" },
+      { "id": "B", "fixture": "a parcel in that ring's genuine strip", "pre": "`present`, and the fact carries no servedStatus at all — the reader cannot say how the geometry came to be", "post": "`present`, servedStatus=derived, derivationNote names the subtraction" },
+      { "id": "C", "fixture": "an untouched strip ring (control)", "pre": "`present`, no servedStatus", "post": "`present`, servedStatus=verbatim" },
+      { "id": "D", "fixture": "an invalid ring", "pre": "`present` from an unvalidated polygon, no repair recorded", "post": "`present`, servedStatus=repaired, note names ST_MakeValid" },
+      { "id": "E", "fixture": "a ring whose repair moves the area past the tolerance", "pre": "`absent` — a confident answer off the invalid polygon's own hole structure", "post": "`unresolved`, refusedRings names the ring and the status" },
+      { "id": "F", "fixture": "a refused ring whose own envelope cannot reach the query point (the divergence control)", "pre": "n/a — the narrowing does not exist before this change, so there is no pre-change side to fail", "post": "the determination is unchanged — the refusal does not subtract an answer it could not have given. Added because a refusal that over-reaches is the failure mode the narrowing exists to prevent. NOT in the probe file (which holds exactly five cases, A–E): F lives in the SHIPPED suite at artifacts/api-server/src/lib/etjFactRead.test.ts (the REMOTE fixture, a ring 40 km south of the point). Listed here with its location because the probe's 5-failed/5-passed count and this control are two different instruments." }
+    ],
+    "suite": "lib/cad-ingest: 483 passed (28 files), including the PostGIS integration test; artifacts/api-server: etjFactRead.test.ts + cityLimitsFactServeCutover.test.ts green; both typechecks clean. Raw logs in P:/tmp/p359-evidence/."
+  },
+
+  "threeQuestionGate": {
+    "whatExecutes": "The derivation: deriveEtjServedGeometry (lib/cad-ingest/src/boundary/etjDerive.ts), called by upsertEtjBoundaries at the end of the ingest for exactly the city keys just written. The validity refusal: buildEtjBoundaryIndex + resolveEtjAtPoint (containment.ts), called by artifacts/api-server/src/lib/etjFactRead.ts on every ETJ determination and by the ingest's own verify instrument. The api-server and the ingest go through the same two functions; there is no second implementation of the rule.",
+    "whatTriggers": "An ingest run (etjCli.ts / upsertEtjBoundaries) for a publisher, and every ETJ determination on the customer surface. A ring published AFTER this change: the ingest writes it with the column default `underived`, derives it in the same call, and returns — so it is never servable by accident. If the derivation statement itself throws, the ingest call fails and any flushed rows stay `underived`, which the reader refuses and declares; the fail-closed default is what makes that a declaration rather than a silent serve.",
+    "whatFails": "A ring that reaches the reader as `underived`, `excluded` or `withheld` cannot be tested: it becomes a refusal, and a point that a refusal could have covered is `unresolved` with the refusal's own reason, never `present` and never `absent`. A row that CLAIMS a servable status but carries no testable Polygon/MultiPolygon is refused for that reason instead. The reader cannot re-run ST_IsValid (no PostGIS in the TypeScript path), and it does not pretend to: it trusts `served_status` to mean the pass ran, which is why the column defaults to the one value that means it did not.",
+    "whatBypassesIt": "(1) A writer that hand-sets both `served_status` and `served_geometry` — a raw INSERT/UPDATE into tx_etj_boundary. Named, not papered over: the default makes the honest path fail closed, but a writer that lies in two columns at once is outside the derivation's reach. (2) A consumer that does not go through buildEtjBoundaryIndex: every LDT reader of tx_etj_boundary was swept (grep over the repo) and they are etjFactRead.ts and containment.ts, both changed; etjVerify.ts reads the live publishers, not the table. (3) Another repo: P-332's close records that hauska-engine's PDF/report path HARDCODES the ETJ value rather than forwarding a read (report-model.ts:966, pdf/feasibility.ts:210-212). That bypass is real, is in another repo, and is reported here rather than claimed fixed."
+  },
+
+  "contradicted": {
+    "instrumentDefectFoundByMe": "The first version of the dry-run generator (gen_dryrun.mjs) — the instrument this lane's re-count leans on — retyped the derivation note by hand instead of extracting it, and after the shipped note grew a branch naming the subtraction beside the repair, the generator went on printing the older sentence. Found by comparing the generator's output against the shipped source rather than by trusting an earlier green run. Fixed: the generator now lifts both the note CASE and the whole derivation jsonb_build_object out of the shipped UPDATE's own text, so the dry run cannot print a sentence the pass does not write. This is the same failure mode P-332 recorded about a per-ring batch that finished, exited 0 and was wrong.",
+    "p332sRingIds": "P-332's close names the three self-containing rings as georgetown-tx:9644, leander-tx:1 and dripping-springs-tx:1. Two of those ids are right; `leander-tx:1` does not exist in tx_etj_boundary (355 rows, 355 distinct ids, verified read-only). The row that actually contains Leander's own city is `leander-tx:7305` (label LEANDER, 211.0 km2, valid, contains its own city). P-332 measured by geometry, not by id, so its counts stand; a reader following the id would have found nothing.",
+    "p332sInvalidCount": "P-332 says 24 of 355 rings are invalid. This lane's read of the same store agrees EXACTLY: the dry run's own identity query prints 355 rings and 24 invalid under ST_IsValid, and the per-ring verdicts sum to the same 24 (1 derived ring whose published geometry is invalid + 8 repaired + 15 excluded). Recorded because this lane first wrote '23' from its own arithmetic (2 derived + 8 + 15 while forgetting that only one of the two derived rings was invalid) and caught it by reading the instrument's own count instead of its own sum. An agreement with P-332 is worth as much in the record as a disagreement.",
+    "theDispatchsNumber": "the dispatch's whatToBuild item 3 predicted the three publishers fall to Georgetown 125 / Leander 111 / Dripping Springs 173. The first two are exactly right; Dripping Springs falls to 0 and the reason is stated above.",
+    "myOwnTotalsRow": "the TOTAL row of this document's own recount table, as first written, said 77,463 / 2,251 and 4 parcels above P-332 on the pre column. The six per-county rows above it sum to 77,462 / 2,250 and P-332's published figure is 77,459, so the correct deltas are 3 and 2. No instrument printed 77,463 or 2,251 — grepping every artifact in P:/tmp/p359-evidence and every file in the scratch directory finds that string only in this draft. The cross-county aggregate queries that could have produced an independent total both died on the read-only compute (recount_a_totals.txt: statement timeout at 900s; recount_c_independent.txt: 'Disk quota exceeded'), so the total was never independently computed and was written by hand. Caught by summing this table's own rows while cross-checking the strip references; corrected here and in the close, and the accounting built on it (3,083 - 173 - 662 + 2 = 2,250) is re-derived from the corrected figures."
+  },
+
+  "leaveBehind": [
+    "P:/tmp/p359-evidence/ — every read-only artifact this lane produced (six county recounts, strip, cross, r1 identity/census, the per-ring table, the dry run of the shipped pass, the live probe bodies, the pre-change falsifier log).",
+    "C:/Users/cente/AppData/Local/Temp/p359-scratch/ — the scripts and SQL: gen_dryrun.mjs (extracts the shipped CTEs and the shipped derivation expression), the county templates, run_readonly.ps1 (unpooled read-only endpoint runner), probe_before.ps1, make_table.ps1.",
+    "the lane's own claim in _catalog/lane_claims.json (released at close)"
+  ],
+
+  "constraintsHonored": [
+    "no store writes (default_transaction_read_only=on on the endpoint, no write statement in any file this lane ran)",
+    "no re-ingest, no deploy, no merge",
+    "FAN-DEPTH 0 — no sub-agents launched",
+    "built in this lane's own registered worktree; other lanes' worktrees read only",
+    "the 2,160 genuine disagreements were not resolved by this lane, only re-measured"
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

@@ -1,0 +1,146 @@
+{
+  "lane": "p351-bake-retirement-keyspace",
+  "checkpoint": "CP1 -- the design, the measured population, and the pre-registered falsifiers, written BEFORE any LDT or factory file was edited",
+  "planRows": ["P-351"],
+  "seat": "cente-vsc-p351",
+  "repos": ["legacy-design-tools", "hauska-factory"],
+  "branches": {
+    "legacy-design-tools": "lane/p351-bake-retirement-keyspace",
+    "hauska-factory": "lane/p351-bake-retirement-keyspace"
+  },
+  "baseShas": {
+    "legacy-design-tools": "25d1782f2e59bd5098b8459196ea828ae3580027 (P-322 / #718)",
+    "hauska-factory": "0f4558a4a4c89c72275744f580d7ba5765d95674 (P-335 / #178)",
+    "doc_repo": "61b5b2ed (seat worktree P:/seat-worktrees/p351-bake-retirement-keyspace/doc_repo, branch lane/p351-bake-retirement-keyspace)"
+  },
+  "factoryPinAtBase": "bae48d406f7595af3d47111b558d0ebc3efd9c56",
+  "fannedSubAgents": 0,
+  "fanDepth": 0,
+
+  "theMechanismFoundInTheCode": {
+    "whereTheWrongRetirementIsBorn": "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts:1336-1358. `cadPropRow = input.cadPropertyRoll.byPropId.get(apn)`, then `recordRetirement = apn != null && cadPropConsulted && cadPropRow == null`. The roll the builder is handed is NOT the raw declared-vintage roll: nodeFacetBakeTier1ConformantCli.ts:544-591 (P-177, 2026-09-13) replaces it with `effectiveCadPropertyRoll`, a REMAPPED view keyed by the node's own bare prop_id whose entry is the CAD account the node's own published geo_id names (or NO ENTRY when the crosswalk cannot name one).",
+    "theConflation": "After P-177 there are TWO different statements that both arrive at the builder as `cadPropRow == null`: (1) the node's account WAS named and is genuinely absent from the declared roll -- a real retirement; and (2) the node's account could NOT BE NAMED AT ALL, so nothing was looked up. The retirement predicate reads both as (1). That is the defect this row exists to fix, and it is one sentence: a lookup that did not happen is not a lookup that came back empty.",
+    "theBuildersOwnComment": "nodeFacetBakeTier1Conformant.ts:1131-1135 says '48209 and 48491 are clear on that join' for the CAD-to-CAD prop_id join. Measured against production 2026-09-18, that sentence is FALSE for both counties, for the reason the decision doc already gives: Hays' node ids are the county's R-account numbers and the roll is keyed by its PropertyID; Williamson's node ids are the R-account form and the roll is keyed by the six-digit account. Resolved below, at source, from the counts.",
+    "whereWriterBIs": "nodeFacetBakeTier1ConformantCli.ts:391-414 (`partitionAccountKeyedWork`) + src/lib/accountKeyedWork.ts. It runs INSIDE the bake, after promotion, on the run stamp, and nothing in the factory's pre-bake gate can reach it."
+  },
+
+  "dispatchPremiseCorrectionsMeasuredOnProduction2026_09_18": {
+    "writerBsWilliamsonNumber": {
+      "dispatchSays": "The dispatch's two-writer table credits writer (b) with 'the other 56,629 (Hays) and 319,480 (Williamson)'.",
+      "measured": "FALSE for Williamson. Served `place_layer_snapshots` for 48491, adapter_key='node-facets:tier1', splits 602,050 rows into exactly two populations by key shape: 319,480 NUMERIC-keyed rows whose payload carries `recordRetirement: null` (JSON null, never an object) and whose `publishRunId` is 848afd72-dbbb-41e0-a48d-b0518e421238 -- the PREVIOUS run, untouched; and 282,570 R-keyed rows, every one of them an object retirement, all on publishRunId 7b2540c8-91da-4747-8342-ff8747820826 (the 2026-09-17 run). ZERO rows for 48491 carry writer (b)'s txgio_parcel authority string. Writer (b) did not retire a single Williamson row; it never saw those numbers, because the numeric-keyed rows were not in that run's work list.",
+      "whyItMatters": "It changes the size of writer (a)'s blast radius: the 2026-09-17 Williamson publish retired 282,570 of the county's 282,570 published R nodes -- ALL of them -- and left 319,480 numeric rows alone. The program trap's 'retired all 602,050 served tier-1 rows ... including 319,480 numeric rows that were live' is loose about which 602,050 and which writer. The county was emptied of its PUBLISHED keyspace, not of its served rows."
+    },
+    "the1385Is1386Today": {
+      "dispatchSays": "Hays' 1,385 cad_property-authority retired rows.",
+      "measured": "1,386 at 2026-09-18 (P-327's close read 1,385 a few hours earlier). Every count in this lane is stated with the instant it was read; the one-row drift is keyspace churn, not a disagreement."
+    }
+  },
+
+  "theMeasuredPopulation": {
+    "readAt": "2026-09-18, production cortex store ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech, heavy-scan lease held by cente-vsc-p351, every statement under `set default_transaction_read_only = on`.",
+    "hays48209ServedTier1": {
+      "totalRows": 173050,
+      "notRetired": 115035,
+      "retiredByWriterB": 56629,
+      "retiredByWriterA": 1386,
+      "all": "one numeric keyspace, one run id (086fa515-b3e8-45b0-88bf-84be6c318bf3); 115035 + 56629 + 1386 = 173050 exactly"
+    },
+    "williamson48491ServedTier1": {
+      "totalRows": 602050,
+      "rKeyedRetiredByWriterA": 282570,
+      "numericKeyedNotRetiredUntouchedRun848afd72": 319480
+    },
+    "haysThe1386Split": {
+      "method": "For each of the 1,386 keys: (i) the node's own key matched against the declared-vintage roll's published R account number (`upper(btrim(quick_ref_id)) = 'R' || node_key`, the county's own R-account register -- the node id IS that account's number with the prefix the source already stripped, per joinNormalize.ts:48-60); (ii) the node's own `txgio_parcel.geo_id` matched against the prior vintage's published `property_number`; (iii) the node's `txgio_parcel.geo_id` blank.",
+      "false_live_810": "The node's own R account is on the declared 2026 roll AND the node carries no geo_id to contradict it. These are live parcels serving a false retirement today.",
+      "false_live_but_contradicted_232": "The node's own R account is on the declared 2026 roll, but the node's own published geo_id names a DIFFERENT property_number. Two published identifiers naming different parcels: the account may not be taken and the node may not be retired. 232.",
+      "genuine_0": "ZERO. Not one of the 1,386 is a parcel whose account fell off the roll: no key resolves to an account that exists at the prior vintage (2025) and is absent at 2026, and no node's geo_id is published at 2025 but not 2026.",
+      "no_resolvable_account_344": "344 -- no published identifier names an account at all (78 of them carry no `txgio_parcel.geo_id` whatsoever; the other 266 carry a geo_id that no account publishes at either vintage).",
+      "crossCheck": "The 1,042 that the R-account register reaches is the same 1,042 joinNormalize.ts:279-286 declines to bind for GEOMETRY ('Restricting it to R accounts is collision-free and would add 1,042 further binds, and that trade is DECLINED'). This lane does not reverse that trade: it uses the register to decide LIVE-or-not, and takes the account's facts only for the 810 whose bind the node's own geo_id does not contradict.",
+      "whatTheNextBakeApplies": "810 nodes: no retirement, and their dollars come from the R account the register names. 576 nodes: NOT retired -- a declared `retirementResolution` saying the account could not be determined and why. 0 nodes: retired."
+    },
+    "williamsonTheSplit": {
+      "method": "The county's published pair, read from the two staged WCAD extracts the factory already reads: `tx_wcad_owner` and `tx_wcad_ag_valuation`, each carrying (prop_id = the R-account the parcel index publishes, wcad_property_id = the numeric account the CAD roll is keyed by).",
+      "pairCoverage": "282,146 of the served 282,570 R keys are reached (99.85%). Both extracts carry the same pair on all 287,321 keys they share and DISAGREE on zero of them.",
+      "accountOnTheDeclaredRoll": 282146,
+      "false": "282,146. EVERY R node the pair reaches has its numeric account on the declared 2026 roll. So every retirement the 2026-09-17 run wrote for Williamson was FALSE. Zero were genuine.",
+      "no_resolvable_account": 424,
+      "named_unreachable_examples": ["PRIVATE ROAD (a junk key the parcel index publishes)", "R005578", "R006142", "R007323", "R007325"],
+      "whatTheNextBakeApplies": "282,146 nodes: no retirement, dollars from the numeric account the pair names. 424 nodes: NOT retired, declared undetermined."
+    },
+    "theDollarCollisionQuestionAnswered": {
+      "question": "does a Hays map-id node that collides with an unrelated account get that account's dollars today?",
+      "measured": "134,907 of Hays' 173,050 served nodes carry a bare key that IS also a `cad_property` prop_id at the declared 2026 vintage (P-177's collision population). 77,565 of those serve a market value.",
+      "answer": "NO -- not for 77,553 of them. Served `baseFacts.cadRoll.marketValue.v` equals the colliding account's own `market_value` on only 12 rows, and on all 12 the node's OWN R account carries the identical figure, so the agreement is a value coincidence and not a wrong-parcel read. P-177's account-attribute crosswalk already covers this; what it does not cover is the retirement predicate, which is this row.",
+      "namedExamples": [
+        {"node": "48209:100013", "collidingAccount": "P120302 (prop_id 100013)", "collidingMarketValue": 9382, "servedMarketValue": 425000},
+        {"node": "48209:100014", "collidingAccount": "P120303 (prop_id 100014)", "collidingMarketValue": 7399, "servedMarketValue": 451800},
+        {"node": "48209:100022", "collidingAccount": "R130637 (prop_id 100022)", "collidingMarketValue": 496280, "servedMarketValue": 476980}
+      ],
+      "the12CoincidencesNamed": [
+        {"node": "48209:44646", "collidingAccount": "R30913", "bothValues": 800000, "nodesOwnRAccount": "R44646"},
+        {"node": "48209:105077", "collidingAccount": "R135148", "bothValues": 275220, "nodesOwnRAccount": "R105077"},
+        {"node": "48209:104940", "collidingAccount": "R135018", "bothValues": 82600, "nodesOwnRAccount": "R104940"}
+      ]
+    }
+  },
+
+  "whatIWillBuild": {
+    "legacyDesignTools": [
+      "src/lib/retirementAccountResolution.ts (NEW). The one resolution, pure and dependency-free like joinNormalize.ts. A node's retirement resolution is one of: `own-prop-id` (a non-blocked county, where the bare key IS the account -- the legacy path, unchanged); `crosswalk-geo-id-bind` (the node's own published geo_id names the account's property_number, corroborated by the account's own account-number stem -- the SAME `accountCrosswalkForNode` P-177 already uses, reused and not re-derived); `r-account-register` (the node's own key IS the county's published R-account number, matched as the exact published identifier `R<key>`, and admissible ONLY when the node's own geo_id is absent or names the same property_number); `published-account-pair` (an injected map of published node key -> account key, built by the CLI from the county's own staged extracts); or `unresolved` with a named reason (no-published-identifier / no-account-publishes-it / ambiguous-property-number / corroboration-refused / contradiction).",
+      "src/lib/nodeFacetBakeTier1Conformant.ts (EDIT). `ConformantTier1BuildInput` gains one OPTIONAL field, `retirementResolution`. When it is absent the builder computes exactly what it computes today (key = apn, path = own-prop-id) -- which is what keeps a non-blocked county byte-identical. When it is present: `cadPropRow` is looked up by the resolution's accountKey (so the DOLLARS ride the same resolution, as the dispatch requires), the retirement is earned ONLY for a resolved account that is absent from the roll, and a resolution that is `unresolved` writes `recordRetirement: null` PLUS a declared `retirementResolution` (verdict, path, the served key, the account key, the served keyspace, the roll keyspace, the roll's tax year, the reason, an authority, a scope, an asOf and a per-parcel basis) so the payload says the retirement could not be determined and why. `recordRetirement` is emitted only when `isEarnedRecordRetirement` still accepts it; the retirement's own authority/basis name the ACCOUNT the arm compared, not the node's bare key.",
+      "src/lib/retirementAccountResolution.test.ts (NEW) + src/lib/__tests__/fixtures (NEW). The pre-registered fixtures below.",
+      "src/lib/accountKeyedWork.ts (EDIT). The blast-radius instrument for writer (b): a pure `accountKeyedBlastRadius` that takes the excluded set and the served keyspaces the caller measured, and refuses when the excluded set IS a whole served keyspace (P-327's suggested shape). With a test that proves the refusal fires and names the keyspace.",
+      "src/nodeFacetBakeTier1ConformantCli.ts (EDIT). Builds the per-node resolution for a gate-blocked county from the reads it ALREADY does (crosswalkKeyByPropId / accountStemByPropId / accountCrosswalkForNode) plus ONE new indexed read: the declared-vintage `quick_ref_id` register, and -- only to name an account the declared vintage no longer carries -- the prior vintage's register. Threads the resolution into the builder. Calls the writer-(b) instrument before the pass and REFUSES the run when it fires. Prints one counter per resolution path, so a run that resolves nothing is visible in the log.",
+      "artifacts/api-server/src/lib/__fixtures__/p351-hays-served-keys-retirement-split.json (NEW, committed). The 1,386 keys with the published identifier that names each one and the verdict this lane measured, so the next bake applies the answer and a later reader can re-derive it."
+    ],
+    "hauskaFactory": [
+      "cloudbuild.publish.yaml (EDIT, draft PR): `_LDT_SHA` moves from bae48d406f7595af3d47111b558d0ebc3efd9c56 to the LDT commit carrying this change, with the adjacent comment the file's own check requires (`scripts/check-ldt-sha-comment-presence.mjs`), and a comment listing every LDT commit between bae48d40 and the new pin that touches the bake path."
+    ],
+    "whatIWillNotDo": "No store write, no bake, no publish, no deploy, no merge, no sub-agent. The dry run below is read-only under the lease. The LDT PR is opened against origin/main; the factory PR is a DRAFT opened against the LDT PR's head, to be re-pointed after the LDT PR merges. Any doc_repo change is handed back as a diff in the close."
+  },
+
+  "theWriterBDecision": {
+    "ruled": "Writer (b) STAYS IN THE BAKE'S CONTRACT, and gets its own instrument.",
+    "why": [
+      "It cannot belong to the gate. It runs INSIDE the bake, after promotion, on the work list the bake built and the run stamp the bake minted; the factory's pre-bake gate (`requireRetirementGate` in runBastropPublish) runs before the bake exists and cannot see a single excluded node. Moving it to the gate is not a refactor, it is a different program.",
+      "It must not be DROPPED either: a node dropped from the work list keeps the previous run's publishRunId forever, and the factory's verify-walk requires the CURRENT run id on every row it sweeps, an earned retirement included (accountKeyedWork.ts:22-50). Dropping the pass re-opens BP-PUBLISH-RUN-01 on every Hays republish.",
+      "So the pass stays, and the thing it lacks is the guard every other destructive write in this program lacks (the program trap: 'No writer in this program refuses on blast radius yet (P-320)'). That guard is writer (b)'s instrument.",
+      "HONEST LIMIT, stated now rather than discovered later: this instrument guards writer (b) ONLY. It would NOT have caught the Williamson emptying, which was writer (a) -- the excluded set there was empty, because every removed node was in the parcel table. Writer (a)'s guard is the resolution itself (a node whose account cannot be named is not retired), and that is a different instrument in a different file. Claiming the blast-radius guard covers both would be exactly the 'a control that measures one thing does not protect the thing beside it' failure the program trap names."
+    ],
+    "theInstrument": "Before the retirement pass, the CLI measures the excluded set against the served keyspaces it read (the county's served tier-1 keys, grouped into keyspaces by the caller's own classifier) and REFUSES the run when the excluded set IS a whole served keyspace -- i.e. when a keyspace has at least one served member and every one of them was excluded. The refusal names the keyspace, the excluded count and the served count. Proven by a fixture in both directions: the whole-keyspace case refuses and writes nothing; the Hays case (a hollow subset of one keyspace) passes.",
+    "blastRadiusToday": "Exactly 48209 and 48491 have two keyspaces."
+  },
+
+  "preRegisteredFalsifiers": [
+    "F1 HAYS COLLISION: a node whose bare key equals an unrelated account number. On the PRE-change code the fixture node earns a `recordRetirement` (the colliding account's absence/mismatch reads as this node's retirement) and its `baseFacts.cadRoll` is the wrong parcel's or empty. On the fixed code it resolves through the R-account register, retires NOTHING, and carries the account its own published identifier names. Revert-and-run: the test is run against `git stash`ed pre-change source and must FAIL there.",
+    "F2 WILLIAMSON PAIR: an R node the pair reaches (must resolve to the numeric account, no retirement, and the account's facts) and one the pair does NOT reach (must NOT retire; must carry a declared retirementResolution naming the pair as the reason). Proven on the pre-change code in the first direction: the reached node retires wrongly.",
+    "F3 A GENUINE ACCOUNT RETIREMENT STILL RETIRES. A node whose ACCOUNT resolves and is absent from the declared roll must still earn an earned `recordRetirement` (the predicate is not weakened), and the retirement's authority must name the account it compared.",
+    "F4 AN UNRESOLVABLE KEY IS DECLARED, NOT RETIRED. `recordRetirement` must be null and the declared `retirementResolution` must carry a non-empty reason and a per-parcel basis (two parcels may not share a character-identical basis -- the same discipline every earned absence in this bake follows).",
+    "F5 BASTROP (AND EVERY NON-BLOCKED COUNTY) IS BYTE-IDENTICAL. A single-keyspace county's payload, built with no `retirementResolution`, must serialise to the same bytes as the pre-change builder. Proven by hashing the serialised payload before and after.",
+    "F6 THE WRITER-(B) INSTRUMENT FIRES ON A WHOLE KEYSPACE AND NOT OTHERWISE. A fixture whose excluded set is a whole served keyspace must refuse and name it; the measured Hays shape (a hollow subset) must pass. Would falsify: an instrument that refuses healthy churn, which is how a control gets disabled by its first real caller.",
+    "F7 THE KEYS-THAT-CANNOT-BE-NAMED ARE COUNTED, NOT ABSORBED. A run that resolves zero accounts must be visible: every resolution path has its own counter and the run prints them."
+  ],
+
+  "theThreeQuestionGateAsDesigned": {
+    "whatExecutesEachWriter": "(a) `buildConformantTier1Payload`'s retirement arm, called once per work item by `nodeFacetBakeTier1ConformantCli.ts`'s per-atom loop, reading `cadPropertyRoll`. (b) `planAccountKeyedRetirements` via `partitionAccountKeyedWork`, called on the CLI's work list for a gate-blocked county.",
+    "whatTriggersThem": "(a) a declared-vintage `cad_property` read plus a node whose resolved account the roll does not carry. (b) `joinGateBlocked && parcelTable` -- the account-keyed prepass, for every gate-blocked county, on every run.",
+    "whatFailsWhenAWriterRetiresAcrossKeyspaces": "The county's published nodes are emptied: Williamson's 2026-09-17 run retired 282,570 of 282,570 R nodes while 319,480 live numeric rows sat untouched beside them, and Hays still serves 1,042 live parcels with a false retirement (810 admissible, 232 contradicted) plus 344 it cannot name.",
+    "whatBypassesIt": [
+      "A direct invocation of the bake CLI (any run outside `runBastropPublish`) -- which is why writer (b)'s guard must live in the bake and not in the gate.",
+      "The frozen laptop ingest scripts.",
+      "A raw write to `place_layer_snapshots`.",
+      "Writer (b)'s pass is bypassed structurally for any county whose work list already excludes the nodes before the pass could see them."
+    ]
+  },
+
+  "scopeAndLimits": {
+    "sharedFilesNamed": "legacy-design-tools `artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts`, `.../src/lib/joinNormalize.ts` (read, not edited), `.../src/lib/accountKeyedWork.ts` (edited), `.../src/nodeFacetBakeTier1ConformantCli.ts` (edited). P-354, P-339 to P-341 may be in flight in other LDT worktrees; none of them touches the retirement arm, the account-keyed pass, or the key resolution, and this lane does not touch the setback or situs-conflict paths.",
+    "customerSurface": "Not reachable from this lane: nothing is deployed, nothing is baked, nothing is published. The completion predicate is a set of refusals and resolutions proven by violation in the LDT suite plus a read-only dry run, and it will be declared with probe.notApplicable and its reason rather than filed as a surface-probe artifact."
+  },
+
+  "openQuestionsForTheIntegrationSeat": [
+    "Whether the 810 Hays nodes that this lane un-retires should take their dollars from the R account the register names. This lane says yes (they are live parcels; the register is the county's own published account number and the node's own id IS that number), and it is stated as a change of served values on 810 rows rather than folded into the retirement fix without a word.",
+    "Whether the 232 contradicted nodes should be escalated to the county or left as declared absences. This lane leaves them declared; a bind that two published identifiers disagree about is not this lane's to resolve."
+  ]
+}
