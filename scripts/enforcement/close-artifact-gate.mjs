@@ -238,9 +238,28 @@ export const NON_ASSERTING_LINE = [
 ];
 
 /** True when this LINE names an `_inbox/` path without asserting the artifact is available. */
+/**
+ * A FIELD whose value NAMES a deliverable that does not exist yet BY CONSTRUCTION.
+ *
+ * A checkpoint's `completionPredicate` states what completion REQUIRES, so the paths inside it are
+ * the thing to be produced rather than a claim that they are available. It is the same relationship
+ * a dispatch has to its lane's close, one level down, which is why it is keyed on a named FIELD
+ * rather than on prose: a bare mention must never become an escape.
+ */
+export const FORWARD_LOOKING_FIELD = [/["']completionPredicate["']\s*:/i];
+
+export function isForwardLookingLine(line) {
+  const s = String(line ?? "");
+  return FORWARD_LOOKING_FIELD.some((re) => re.test(s));
+}
+
 export function isNonAssertingCitationLine(line) {
   const s = String(line ?? "");
-  return NON_ASSERTING_LINE.some((re) => re.test(s)) || isRecordOfAbsenceLine(s);
+  return (
+    NON_ASSERTING_LINE.some((re) => re.test(s)) ||
+    isRecordOfAbsenceLine(s) ||
+    isForwardLookingLine(s)
+  );
 }
 
 /**
@@ -264,6 +283,11 @@ export const RECORD_OF_ABSENCE_MARKER = [
   /\bdoes not exist\b|\bdid not exist\b|\bno close artifact\b|\bnever existed\b/i,
   /\bunreachable\b|\bis absent\b|\bare absent\b|\babsent from\b/i,
   /\bsuperseded\b|\bBROKEN EVIDENCE CHAIN\b/i,
+  // A close that RECORDS a removal has to name what it removed. `DELETED` uppercase is the
+  // convention these closes use; the passive forms are matched case-insensitively but only with
+  // an auxiliary verb, so a bare lowercase `deleted` in unrelated prose cannot launder a pointer.
+  /\bDELETED\b/,
+  /\b(?:was|were|has been|have been)\s+deleted\b|\bdeleted at close\b/i,
   // These are matched as camelCase FIELD NAMES (stem + closing quote + colon), not as bare prose
   // words. `disagree` on its own was the first attempt and it suppressed a plan-of-record row that
   // merely contained the word, which the reject case caught: the marker has to key on the field
@@ -817,6 +841,17 @@ function selfTest() {
   check("REJECT: a session pointer IS graded", isNonAssertingCitationLine("**Canonical inbox:** [`_inbox/2026-05-25_x_session_close.md`](../_inbox/2026-05-25_x_session_close.md)") === false);
   check("REJECT: a design handoff pointer IS graded", isNonAssertingCitationLine("- Executor: probe harness (design: `_inbox/2026-08-19_systems_c00b_runtime_probe_design.md`)") === false);
   check("REJECT: the word `absent` in a real row does not launder a live pointer", isNonAssertingCitationLine("| G-9 | `_inbox/2026-09-18_g9_close.json` | the absent column is a different finding |") === false);
+
+  console.log(" H2. a field that names what completion REQUIRES is forward-looking, not a claim");
+  check("ACCEPT: a completionPredicate names the close it requires", isNonAssertingCitationLine('"completionPredicate": "Pipelines->Ector->wells->footprint pilot->flood from-plan->roads->Tarrant/Dallas tail->G2b re-promote all closed as _inbox/2026-08-14_l16b_leg*_close.json; master close _inbox/2026-08-14_l16b_close.json; lease released in _inbox/"') === true);
+  check("REJECT: the SAME path in a nextSteps field IS graded", isNonAssertingCitationLine('"nextSteps": ["file the master close _inbox/2026-08-14_l16b_close.json"]') === false);
+  check("REJECT: a completionPredicate field name alone does not exempt a bare mention", isNonAssertingCitationLine("- see the completionPredicate and `_inbox/2026-08-14_l16b_close.json`") === false);
+
+  console.log(" H3. a close that RECORDS a removal must name what it removed");
+  check("ACCEPT: DELETED at close names both probes it removed", isNonAssertingCitationLine('"_inbox/2026-09-17_191352_surface_probe.json and _inbox/2026-09-17_191644_surface_probe.json - DELETED at close. Both were written by intermediate revisions of the instrument."') === true);
+  check("ACCEPT: a passive removal record names it", isNonAssertingCitationLine('"note": "_inbox/2026-09-01_x_probe.json was deleted after the basis fix"') === true);
+  check("REJECT: lowercase `deleted` in unrelated prose does NOT launder a live pointer", isNonAssertingCitationLine("| G-9 | `_inbox/2026-09-18_g9_close.json` | CLOSED | the deleted rows were re-imported from it |") === false);
+  check("REJECT: a rawOutput field naming a probe IS graded", isNonAssertingCitationLine('"rawOutput": "_inbox/2026-09-18_171246_surface_probe.log.txt"') === false);
 
   console.log(" I. prose about a path is not a citation of one");
   check("REJECT: `_inbox/x.md`/`.json` joined by prose is not a path", isConcreteInboxArtifact("_inbox/2026-08-31_p85_block_job_audit.md/.json") === false);
