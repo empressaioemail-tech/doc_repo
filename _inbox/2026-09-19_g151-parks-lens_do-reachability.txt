@@ -1,0 +1,123 @@
+G-151 Parks lens — DO-app reachability, measured 2026-09-19T12:56:05Z…12:56:08Z
+instrument: that repo's scripts/probe-parks-lens.mjs (run with --use-system-ca), plus the do-apps MCP for the
+deployment reads. The raw row-by-row table with the edge headers pasted for every request is this file's
+sibling: _inbox/2026-09-19_g151-parks-lens_do-probe.txt (JSON beside it at _do-probe.json).
+
+== WHAT IS DEPLOYED, read from the ACTIVE DEPLOYMENTS (not from a tag) ==
+
+dolphin-app        id 95691c40-27ca-4afb-b9b4-a37e079c5e69   https://app.smartcityos.io
+                   deployment ba9acf62-6662-408b-8c78-5615415b06d7  phase ACTIVE  cause manual
+                   source_commit_hash ea27024f55223a51f6ab43d88bc26504ba53c7f9
+                   created 2026-09-18T22:36:41Z, updated 2026-09-18T22:37:49Z, health HEALTHY
+                   domain binding: app.smartcityos.io is this app's PRIMARY domain (from its own spec)
+d12-main-uat       id 7cd6f652-9e7e-4abc-abb4-e2a94623866c   https://d12-main-uat-gqnjx.ondigitalocean.app
+                   deployment 605515ef-69e7-41a7-bac3-33a79ee45387  phase ACTIVE  cause manual
+                   source_commit_hash 7487d7c0a55deeefc286c4a1047545757b802c5b
+                   created 2026-09-18T16:03:09Z, updated 2026-09-18T16:04:10Z, health HEALTHY
+both apps          services[0].github = { repo: empressaioemail-tech/smartcity-dashboards, branch: main }
+                   NO deploy_on_push property on either, which is D-12 step 4's posture by design, so a merge
+                   to main ships nothing by itself. Both were deployed by hand, by the operator account
+                   (cause_details.digitalocean_user_action = CREATE_DEPLOYMENT).
+this lane's branch g151-parks-lens is NOT merged and NOT on either app. Its base is dashboards origin/main
+                   e99e5646e1d6741566f272d2b543211ac0f0a52b, which is ahead of BOTH serving commits.
+
+== THE EDGE HEADER, PASTED (the reach is proven to be an App Platform app, not a proxy) ==
+
+https://app.smartcityos.io/   HTTP 200
+  server: cloudflare
+  x-do-app-origin: 14fa04ef-ca6c-4f9b-aa78-fc972cf5fffc
+  x-do-orig-status: 200
+  cf-ray: a3d8b680be7ce088-DFW
+  cf-cache-status: BYPASS
+  content-type: text/html; charset=utf-8
+
+https://d12-main-uat-gqnjx.ondigitalocean.app/   HTTP 200
+  server: cloudflare
+  x-do-app-origin: 08b5b556-b6c2-4f9d-985b-e91fb21dec90
+  x-do-orig-status: 200
+  cf-cache-status: BYPASS
+
+WHAT THE HEADER PROVES AND WHAT IT DOES NOT. It proves an App Platform app issued the status (x-do-app-origin
+present, x-do-orig-status 200/404 mirroring the app's own status, Cloudflare in front, cache BYPASS). It does
+NOT name which app: 14fa04ef-ca6c-4f9b-aa78-fc972cf5fffc and 08b5b556-b6c2-4f9d-985b-e91fb21dec90 match none of
+the four app ids apps-list returns (dolphin 95691c40, d12-main-uat 7cd6f652, walrus 2a2a3a1a, probe c69bacc5).
+Which app answered is therefore read from each app's DOMAIN BINDING in its own spec, and the two facts together
+are the reach. The header alone is a stronger claim than it can carry; this line exists so the close does not
+make it.
+
+== PRE-CHANGE: what the deployed app serves for Parks, pasted (4 Parks routes read on each app) ==
+
+GET https://app.smartcityos.io/?lens=parks -> HTTP 200, 160426 bytes, sha256_16 cd12e582effd0dd7
+GET https://app.smartcityos.io/           -> HTTP 200, 160426 bytes, same hash (identical document)
+GET https://app.smartcityos.io/lens/parks                        -> HTTP 404  body {"error":"not found"}
+GET https://app.smartcityos.io/lens/parks?cityKey=template-city  -> HTTP 404  body {"error":"not found"}
+GET https://d12-main-uat-gqnjx.ondigitalocean.app/               -> HTTP 200, 160426 bytes, same hash
+GET https://d12-main-uat-gqnjx.ondigitalocean.app/lens/parks     -> HTTP 404  body {"error":"not found"}
+Every 404 carries x-do-orig-status: 404, so the app itself answered "not found" and no proxy invented it.
+
+The Parks section AS SERVED, verbatim, out of the 200 document:
+
+<section class="lens roster-lens" id="lens-parks">
+              <header class="pagehead">
+                <div class="crumb"><b data-pack-name>This city</b> <span>/</span> Parks</div>
+                <div class="titlerow"><h1>Parks</h1><span class="pill p-quiet">Not built</span></div>
+              </header>
+              <div class="shell-regions solo">
+                <div class="panel">
+                  <div class="state">
+                    <span class="st-k">Lens on the roster</span>
+                    <h2>Parks is named, and not built.</h2>
+                    <p>Parks is a department page on the live city roster. It is named here so the roster stays honest about coverage rather than hiding behind an overflow menu.</p>
+                    <span class="basis">Basis: no view designed for this lens. Municipal court is ruled long-tail and stays on Connections.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+No route existed for the lens, and the shell carried a one-paragraph placeholder. Read at 2026-09-19T12:56:06Z
+(app.smartcityos.io) and 12:56:08Z (d12-main-uat).
+
+== POST-CHANGE: what THIS BUILD serves, pasted (its own src/server.mjs, memory pack store) ==
+
+GET http://127.0.0.1:8791/                                       -> HTTP 200, 176026B, sha256_16 f70fd68694b18c3c
+GET http://127.0.0.1:8791/?lens=parks                            -> HTTP 200, 176026B, same document
+GET http://127.0.0.1:8791/lens/parks                             -> HTTP 400
+    {"error":"city_key_required","message":"this route takes a cityKey and refuses without one; serving the
+     Parks page to a caller who named no city would answer a question about their city with a page that says
+     nothing about any city"}
+GET http://127.0.0.1:8791/lens/parks?cityKey=template-city       -> HTTP 200, 16853B, sha256_16 359abae3915eb7e8
+GET http://127.0.0.1:8791/lens/parks?cityKey=bastrop_tx          -> HTTP 401
+    <!doctype html><title>Not authorized</title><p>not authorized for this pack
+GET http://127.0.0.1:8791/lens/parks?cityKey=fixture-city        -> HTTP 401  (same body)
+GET http://127.0.0.1:8791/lens/parks?cityKey=nope-city           -> HTTP 404
+    <!doctype html><title>Unknown city pack</title><p>unknown city pack
+
+The served lens document opens with:
+  <!doctype html>
+  <html lang="en" data-surface="lens-parks">
+  <head><meta charset="utf-8"><title>Parks · Template city</title>
+  ... <main class="shell-main" data-lens-body="parks"><section class="lens roster-lens" id="lens-parks"> ...
+
+and its body is byte-identical on all four packs (readings 3adbe75ac916ce15 on each), because a state that does
+not vary by city is a statement about the product. The full section is in
+_inbox/2026-09-19_g151-parks-lens_parks-check.txt section 3's export, and the shipped shell copy of it is
+scanned as a file in the same artifact.
+
+== VERDICTS (from the probe, which exits 0) ==
+
+edgeHeaderProvesAnAppPlatformAppAnswered ............ PASS
+deployedSurfaceIsThePreChangeBuild .................. PASS (neither app carries this lane's markers)
+thisBuildShellShipsTheSectionAndNotTheInstrumentsMarker PASS
+thisBuildRouteRefusesWithoutACity ................... PASS (400 city_key_required)
+thisBuildRouteServesTheLensForAPublicCity ........... PASS (200, all three markers)
+thisBuildRouteRefusesAPrivateCityAndAnUnknownOne .... PASS (401 / 404)
+
+== OWED, and it is the row's acceptance clause 3 ==
+
+"The surface is reached on the DO app per D-12" is FAIL — not reached, because the reach needs two planner-owned
+acts and this lane can issue neither: (1) merge g151-parks-lens into main, and (2) a manual CREATE_DEPLOYMENT of
+dolphin-app (and of d12-main-uat) after it, because deploy_on_push is absent by D-12 step 4 so the merge alone is
+inert. Both apps also serve commits that predate this branch, so no post-change reading exists to record.
+Re-run this file's instrument after the deploy:
+  node --use-system-ca scripts/probe-parks-lens.mjs <out.json> "https://app.smartcityos.io,https://d12-main-uat-gqnjx.ondigitalocean.app"
+and expect lensRoute on both bases to move from HTTP 404 to HTTP 200 with the three markers present.

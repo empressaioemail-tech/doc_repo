@@ -1,0 +1,90 @@
+{
+  "lane": "g151-parks-lens",
+  "planRows": ["G-151"],
+  "checkpoint": "CP2",
+  "kind": "post-build / acceptance conformance",
+  "seat": "cente-vsc-g151",
+  "filedAt": "2026-09-19T13:05:00Z",
+  "headUnderTest": "732c41e30e3d8c5d83c2f926a2e7ccd05bcd2ad1",
+  "pr": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/80",
+
+  "acceptanceVerbatim": [
+    {
+      "clause": "`node _design/smartcity-parks-lens/check.mjs` passes ON THE BUILT SURFACE with a NON-ZERO matched-input count, and fails against a planted violation in both directions",
+      "verdict": "PASS",
+      "evidence": "_inbox/2026-09-19_g151-parks-lens_parks-check.txt sections 1-4. On the built surfaces: 4 exported surface files plus the design folder's contrast board pass, matched inputs bodies=5 badges=6 cells=134 fonts=258 roster=20 builtOnContrast=8, with bridge self-tests 20/20 in both directions on top of the design's own 32/32. The design boards are printed separately in section 1 and labelled as evidence about the folder rather than about the surface, because they passed before this change.",
+      "thePlantRun": "11 planted violations, 11 REFUSED, 0 missed, 0 unexercised: a headline in the built-surface voice; a 24px data-font figure; a vendor gate ('gatedBy parks'); an invented state word ('Coming soon'); a badge reading 'Not read'; a roster count for parks (1, registry says 0); a roster count for public works (3, registry says 2); a person in a cell (S. Carrillo); the composer sentence paraphrased; the scope marker renamed to data-lens-scope; and the contrast board dropping the composer. The unmutated export passes as the control and the real design folder and exports are asserted unchanged after the run.",
+      "howTheBridgeWorks": "The instrument gained an ADDITIVE `--dir <path>` reader that reads the product's own markup. Its predicates, its MUST_BE_CLEAN / MUST_CONTRAST two-sided rule and its artboard readers are untouched. New bridge self-tests assert in both directions that neither reader can see the other's form (the artboard reader matches nothing in built markup and vice versa), so a surface can never be scored by the wrong extractor."
+    },
+    {
+      "clause": "The shipped Parks surface renders no metric tile, no empty table and no built-surface vocabulary, checked as a file rather than by eye",
+      "verdict": "PASS",
+      "evidence": "_inbox/2026-09-19_g151-parks-lens_parks-check.txt section 5. The shipped Parks section of web/index.html is 16620 bytes with tableOrTile=0, vocabTerms=0/9, composer=verbatim, rosterRow=present; the four exported surfaces agree at 16588 bytes each (the shipped copy differs by CRLF, which the bake preserves). Section 5b shows the SCAN ITSELF FAILING on three planted copies (a table, a data-metric tile, a vocabulary term), so the green above is a measurement and not a scan that cannot return false.",
+      "whyItIsNotAnEyeball": "Two independent file-level checks: scripts/bake-parks-lens.mjs refuses to write the section unless it carries no <table>, no data-metric and none of the built-surface vocabulary and does carry the composer sentence verbatim, and src/parks-lens.test.mjs asserts the same six predicates over the same bytes in the suite that CI runs."
+    },
+    {
+      "clause": "The surface is reached on the DO app per D-12, verified by the edge header, with the reach recorded",
+      "verdict": "FAIL (not reached)",
+      "evidence": "_inbox/2026-09-19_g151-parks-lens_do-reachability.txt and _do-probe.txt (JSON beside it). Read 2026-09-19T12:56:05Z-12:56:08Z: /lens/parks is HTTP 404 on BOTH app.smartcityos.io and d12-main-uat-gqnjx.ondigitalocean.app, each carrying x-do-orig-status: 404, so the app itself issued the refusal. Every 200 carries server=cloudflare, x-do-app-origin and cf-cache-status=BYPASS.",
+      "whatTheEdgeHeaderDoesAndDoesNotProve": "It proves an App Platform app answered: x-do-app-origin is present, x-do-orig-status mirrors the app's own status, and Cloudflare is in front with cache BYPASS. It does NOT name which app, and this is stated rather than glossed: the two origin ids (14fa04ef-ca6c-4f9b-aa78-fc972cf5fffc and 08b5b556-b6c2-4f9d-985b-e91fb21dec90) match none of the four app ids apps-list returns, so the app is identified by its DOMAIN BINDING in its own spec and the two facts together are the reach.",
+      "theClauseThatNeedsADeploy": "A merge of PR #80 into main plus a manual CREATE_DEPLOYMENT on dolphin-app (and on d12-main-uat). deploy_on_push is absent from services[0].github on both apps by D-12 step 4, so the merge alone ships nothing; both acts are planner-owned and this dispatch does not name this lane as the deployer. Stated rather than claimed: no post-change reach was observed."
+    },
+    {
+      "clause": "`node --test` for the repo exits 0, and `src/department-domains.test.mjs` still refuses all three `parks-facilities` probes",
+      "verdict": "PASS",
+      "evidence": "_inbox/2026-09-19_g151-parks-lens_product-tests.txt: npm test at head 732c41e -> tests 895, suites 179, pass 895, fail 0, exit 0. Section 6 of _inbox/2026-09-19_g151-parks-lens_parks-check.txt: src/department-domains.test.mjs alone is 22/22 pass, including 'G-92 the vendorless finding: Parks and Court are not expressible'.",
+      "theThreeProbesQuoted": [
+        "assertDomainShape -> 'domain parks-facilities is gated by parks, which is not a catalogued adapter kind'",
+        "assertCityPackShape -> 'fixtureGrants names parks, which is not a catalogued adapter kind'",
+        "composeDomain -> 'domain parks-facilities returned a samsara record but is gated by mygov'"
+      ],
+      "andTheLensDoesNotJustQuoteThem": "src/parks-lens.mjs RE-FIRES all three at module load, so the wording on the page cannot drift from the wording the product throws; if a guard stops refusing, the module throws at import and the page cannot render its own excuses."
+    }
+  ],
+
+  "whatWasAttacked": [
+    "The instrument itself: 11 plants into copies of the built surface, including the two that would make a vacuous green (the renamed scope marker, which must REFUSE a verdict, and the contrast board going quiet, which must fail the two-sided rule). 11 of 11 refused.",
+    "The bake: scripts/bake-parks-lens.mjs refuses to write a section carrying a table, a metric tile or a vocabulary term, or missing the composer sentence; the suite asserts web/index.html is a FIXED POINT of the bake, so a hand edit to the shipped section is caught.",
+    "Pack-invariance: the exported reading is asserted byte-identical across bundled, template-city, empty-city and bastrop_tx (reading 3adbe75ac916ce15 on all four), because a state that does not vary by city is a statement about the product.",
+    "The route's refusals, all three directions, on the built server: no cityKey -> 400 city_key_required; a tenant-private pack -> 401; an unknown pack -> 404; a public-free pack -> 200 with the three markers.",
+    "The line endings: web/index.html is CRLF and the bake preserves it rather than flattening the file."
+  ],
+
+  "productTests": {
+    "command": "npm test, in P:/seat-worktrees/g151-parks-lens/smartcity-dashboards at head 732c41e",
+    "result": "895 tests, 179 suites, 895 pass, 0 fail, exit 0",
+    "including": "src/parks-lens.test.mjs (28 / 28), src/department-domains.test.mjs (22 / 22), src/city-identity.test.mjs, src/shell-parity.test.mjs",
+    "capturedIn": "_inbox/2026-09-19_g151-parks-lens_product-tests.txt"
+  },
+
+  "a11y": {
+    "localRun": "npm run test:a11y PASSED: 0 unwaived conformance node(s), 0 waived, 124 UNRESOLVED nodes adjudicated by a human, over 96/96 scans = 24 surfaces x 2 themes x 2 viewports, 0 title findings, 0 focus findings over 1308 keyboard stops. lens-parks is one of the 24 surfaces and measured 0 violations in all four theme/viewport combinations.",
+    "environment": "INDICATIVE, NOT THE FIGURE OF RECORD. The local run says so itself (win32 chromium 143.0.7499.4, axe 4.13.0). The figure of record is the a11y job of .github/workflows/ci.yml on ubuntu-latest; its result on PR #80 is read in the close and not assumed here.",
+    "whichTreeTheLocalRunMeasured": "The run could not say, and printed 'TREE MEASURED: not recorded' about itself - the exact defect G-101 added that line to catch. It is answered here from the filesystem instead of left as an unknown: WORKING TREE ONLY (no commit existed yet), every file the scan can reach frozen before the run started. Measured with LastWriteTimeUtc: src/parks-lens.mjs, src/parks-lens.test.mjs, src/server.mjs and web/index.html all 2026-09-19T12:40:21Z; web/shell.css 2026-09-19T12:23:46Z; the run window was 2026-09-19T12:43:30Z to 12:51:19Z. The only file written after the run started was scripts/probe-parks-lens.mjs, which is not a scanned surface. The commit that froze that tree is 732c41e at 2026-09-19T12:57:15Z. So the local figure describes the same product bytes CI measured, and the residual difference between the two numbers is the renderer, not the tree."
+  },
+
+  "scopeLedger": {
+    "productFilesChanged": [
+      "src/parks-lens.mjs (new) -- the lens body, the full-page surface, the model, the three re-fired refusals, the roster counted off DOMAIN_REGISTRY",
+      "src/parks-lens.test.mjs (new) -- 28 tests",
+      "src/server.mjs -- GET /lens/parks beside its public-works and fire-ems siblings",
+      "web/index.html -- the Parks shell section replaced by the baked lens section",
+      "scripts/bake-parks-lens.mjs (new)",
+      "scripts/export-parks-lens.mjs (new)",
+      "scripts/probe-parks-lens.mjs (new) -- the DO reach probe",
+      "scripts/prove-parks-lens-refusals.mjs (new) -- the 11-plant run"
+    ],
+    "notWritten": [
+      "src/domains.mjs -- DOMAIN_REGISTRY is NOT touched. This is the row's central prohibition and it is asserted in the suite two ways (the registry carries no parks entry, and no parks-ish adapter kind was added).",
+      "src/adapters.mjs -- no eleventh catalogued kind.",
+      "The six other lenses' modules, and every data-lens-* attribute name.",
+      "web/app.js -- the shell's client painter is untouched; the Parks section is reached by the shell's own lens switch through the baked section and by route at /lens/parks."
+    ],
+    "docRepoWritesUncommitted": [
+      "_design/smartcity-parks-lens/check.mjs (the --dir reader + built-form extractors + bridge self-tests)"
+    ],
+    "commitsMadeInDocRepo": 0
+  },
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}
