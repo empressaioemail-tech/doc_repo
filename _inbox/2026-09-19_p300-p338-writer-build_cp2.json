@@ -1,0 +1,150 @@
+{
+  "checkpoint": "CP2",
+  "kind": "p300-p338-writer-build-cp2",
+  "lane": "p300-p338-writer-build",
+  "planRows": ["P-300", "P-338"],
+  "at": "2026-09-19T13:05Z",
+  "prs": {
+    "corpus": {
+      "repo": "hauska-setback-corpus",
+      "number": 12,
+      "url": "https://github.com/empressaioemail-tech/hauska-setback-corpus/pull/12",
+      "branch": "lane/p300-p338-writer-build",
+      "base": "f43cf4b",
+      "head": "9ba13d9",
+      "checkRunConclusions": ["success", "success", "success"],
+      "checks": "lint + typecheck + test (18.x, 20.x, 22.x) -- all completed/success",
+      "ownerInstruction": "NOT merged and NOT published by this lane (the dispatch forbids both). The version bump to 1.5.0 is on the branch and untagged."
+    },
+    "factory": {
+      "repo": "hauska-factory",
+      "number": 192,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/192",
+      "branch": "lane/p300-p338-writer-build",
+      "base": "ab7618c (origin/main at close)",
+      "head": "c693945",
+      "checkRunConclusions": { "test": "failure", "gate8": "success", "engine-declaration-pin": "success", "ldt-sha-comment-presence": "success" },
+      "failureIsTheKnownSequencingConstraint": "npm install -> E404 Not Found for @empressaio/setback-corpus@1.5.0.tgz at registry.npmjs.org. The version is not published and this lane may not publish it. Every other check is success. After the corpus PR merges and publishes, CI should go green; if the published tarball differs byte-wise from the packed one whose integrity is in the lock, the failure becomes EINTEGRITY and the fix is `npm install @empressaio/setback-corpus@1.5.0` in the factory checkout."
+    }
+  },
+  "corpusVersion": "1.5.0 (not published)",
+  "theShortCircuitFix": {
+    "before": "processCityPage: `if (!city.ruled) return buildNoRuledTableCells(...)` ran before any read of the zoningDistrict rail.",
+    "after": "the branch reads the rail first; `districtOnFile` then selects the router's two entry points, and `!city.ruled` only selects which set of answers the city's classification licenses.",
+    "evidence": {
+      "preChangeTranscript": "_inbox/2026-09-19_p300-short-circuit-probe_pre-change.json",
+      "postChangeTranscript": "_inbox/2026-09-19_p300-short-circuit-probe_post-change.json",
+      "preChange": { "corpusVersion": "1.4.0", "zoningRailReads": [0, 0], "bothParcelsGotTheSameAnswer": [true, true], "shortCircuitPresent": true, "fixedWhereItMatters": false },
+      "postChange": { "corpusVersion": "1.5.0", "zoningRailReads": [1, 1], "bothParcelsGotTheSameAnswer": [true, false], "shortCircuitPresent": false, "fixedWhereItMatters": true },
+      "howPreChangeWasProduced": "git stash push -- src/jobs/parcel-setback-cells.mjs src/lib/setback-writer/setback-table-router.mjs, run the probe, git stash pop (the corpus package stayed at 1.5.0 on both sides; the pre-change writer simply does not import the new corpus exports)",
+      "whatTheTwoParcelsGetPostChange": {
+        "withDistrictOnFile": "district \"SF-1\" is on file for this parcel in Lago Vista, but Lago Vista has no setback table on file for any district, so no setback line for this district is on file; verify the district line with the city",
+        "withoutDistrictOnFile": "Lago Vista zones land by district, but the zoning district layer this parcel's setback line would come from is not on file for it, so that line cannot be resolved; zoning district not acquired; verify with the city"
+      }
+    }
+  },
+  "theFourCellShapes": {
+    "classA": { "districts": null, "kind": "refused", "basisMethod": "A-224 class (a) zoning-not-acquired", "names": "the city + the layer to acquire (P-364)", "countExpected": 44112 },
+    "classB": { "districts": null, "kind": "value", "basisMethod": "OT-10 jurisdiction default", "serves": "the corpus row's four lines + its plat disclosure, marked as not-a-district in the cell", "countExpected": 840 },
+    "classBUncoded": { "city": "thrall-tx", "kind": "unaccounted", "reason": "the class is right and the row is not coded yet; counted in its own bucket", "countExpected": 487 },
+    "classC": { "districts": null, "kind": "absent-verified", "basisMethod": "A-224 class (c) checked absence", "carries": "the ordinance section read", "countExpected": 195 },
+    "unclassified": { "kind": "unaccounted", "countExpected": 3195, "rule": "never guessed into a class" },
+    "districtCarryingInANoTableCity": { "kind": "refused", "basisMethod": "ruling-6 district miss", "countExpected": 1026, "whyThisIsNew": "pre-fix these took the city's no-table answer" }
+  },
+  "falsifiers": {
+    "file": "hauska-factory test/p300-writer-build.test.mjs",
+    "result": "17 tests, 17 pass, 0 fail (node --test, run at the rebased head c693945)",
+    "bothDirections": {
+      "behavioral": "each falsifier names the pre-change answer it contradicts; the pre-change transcript above is the measured form of that claim for the headline defect",
+      "crossRepoLiteral": "test 16 reads doc_repo's ledger policy when DOC_REPO_PATH is set and demands the two literal copies are byte-identical. Observed FAILING against a deliberately reworded copy: 16 pass / 1 fail, AssertionError 'the ledger policy's district-miss signature is not this constant; the two copies have drifted' (_inbox/2026-09-19_p300-cross-repo-signature-instrument_transcript.txt). With DOC_REPO_PATH unset it reports UNMEASURED, never a vacuous agreement.",
+      "censusDivergence": "test/setback-residual-composition.test.mjs pins the other direction: the P-326 census still classifies the LEGACY fingerprint and reports P-300's new refusal fingerprint as unclassified. The gap is asserted, not discovered."
+    }
+  },
+  "ledgerPolicyDiff": {
+    "file": "doc_repo scripts/six-county-completeness.mjs (uncommitted: doc_repo commits are planner-owned)",
+    "classes": {
+      "district-miss": { "signature": "no setback line for this district is on file; verify the district line with the city", "phase1Row": "P-346", "ruling": "phase 0 closeout ruling 6 (2026-09-18)" },
+      "zoning-not-acquired": { "signature": "zoning district not acquired; verify with the city", "phase1Row": "P-364", "ruling": "A-224 ruling 5 amended (2026-09-18)" }
+    },
+    "policy": "the five setback rails keep cls must-pass; `refuse` is accepted ONLY through one of the two signatures, and only while that class's Phase 1 row has no tracked close; anything else fails closed (opens the rail or reads UNMEASURED)",
+    "newSurface": [
+      "refusalClassForSignature (exact) and refusalClassFromReason (containment of the signature inside a cell reason) -- two functions because a signature column and a prose reason are matched differently",
+      "gradeRefusalClasses(verdict, ctx) integrated into classify()",
+      "a reason census in measure(): distinct refusal signatures and unmatched-refusal counts per county/rail, read from parcel_record_cell",
+      "rowCouplingState + closeFor, so a close naming P-346/P-364 opens its class"
+    ],
+    "selfTest": {
+      "command": "node scripts/six-county-completeness.mjs --self-test",
+      "result": "SELF-TEST OK (60) -- 47 pre-existing checks plus 13 new (48-60)",
+      "failClosedDirections": [
+        "48/49 each class accepted on its exact signature",
+        "50 both classes on one rail, both named",
+        "51 a differently worded refusal OPENS the rail",
+        "52 a refusal with no readable signature is UNMEASURED, not accepted",
+        "53 an accepted class does not launder an unmatched refusal on the same rail",
+        "54 a close on P-346 opens the district miss",
+        "55 a close on P-364 opens zoning-not-acquired",
+        "56 unreadable closes make every refusal class UNMEASURED",
+        "57 matching is on the exact clause, not a prefix",
+        "58 a refusal on a non-setback must-pass rail is still open",
+        "59 every class names a Phase 1 row and a ruling",
+        "60 the signatures are not the verdict string and not substrings of one another"
+      ]
+    }
+  },
+  "perCountyDryRun": {
+    "status": "UNMEASURED",
+    "reason": "no read-only store handle reaches this session: FACTORY_DATABASE_URL_RO and PRODUCTION_NEONDB_URL unset (checked 2026-09-19), no .env in either checkout, hauska-cortex MCP namespace in an error state. The heavy-scan lease is gated on the same store, so the run could not be taken under it.",
+    "predictionsArtifact": "_inbox/2026-09-19_p300-p338-writer-build_dry-run-predictions.json",
+    "countsBesidePredictions": "every measured cell is UNMEASURED with the reason; the prediction rows are populated from P-326's own store measurement (2026-09-17T23:02Z), restated and never re-measured here",
+    "perCountyExpectedDistrictMiss": { "48021": 1295, "48055": 402, "48209": 2643, "48309": 109, "48453": 1743, "48491": 2292 },
+    "whatTheRunWouldBe": "node scripts/p326/setback-residual-composition.mjs --counties 48021,48055,48209,48309,48453,48491 (takes and releases the heavy-scan lease itself, read-only session, SET default_transaction_read_only=on read back via SHOW) then the writer's own dry run per county (`node src/cli.mjs parcel-setback-cells --county <fips> --dry-run`), whose counts buckets are named in this lane's artifact. 48491 is dry-run only under P-350.",
+    "constraintHonored": "no store write, no corpus publish, no deploy, no merge; no --apply was run anywhere"
+  },
+  "determinismChecks": {
+    "classificationTable": "node scripts/build-p300-city-classification.mjs --check -> no drift (the committed JSON is reproducible from its three inputs byte for byte)",
+    "corpusSelfTest": "npm run typecheck clean; npm test -> 9 files, 135 tests, all pass",
+    "notSpecifiedTable": "regenerated for corpus 1.5.0 (envelope-corpus-lookup pins CORPUS_VERSION 1.5.0), and the gholson-tx entries move the SENTINEL_UNIFORM counts the table's own test asserts"
+  },
+  "fullSuite": {
+    "command": "node --test --test-reporter=tap test/*.test.mjs (at c693945, DOC_REPO_PATH set)",
+    "totals": { "tests": 2112, "pass": 2065, "fail": 2, "todo": 2, "skipped": 43 },
+    "failuresArePreExisting": [
+      { "test": "the real LDT checkout agrees with the walk's acceptance set (no skip when absent)", "file": "test/check-walk-decline-body-drift.test.mjs", "evidence": "identical 13 pass / 2 fail at e6ca09d with this branch stashed; message 'LDT must still declare record_retired; got not_baked'" },
+      { "test": "CTX-B3 leaf list: read from the bake's own pin, not the walk, with a divergence guard", "file": "test/ctx-b3-store-census.test.mjs", "evidence": "identical at HEAD; a bake pin's actual leaf list differs from the test's expectation" }
+    ],
+    "todo": "p3-absence non-vacuity pair, filed as the OPS-21 S3 finding (out of scope for this lane)",
+    "knownFlake": "test/p2-juris-57p01.test.mjs 'F2: long chunk with short heartbeat interval yields multiple lease heartbeats' -- failed 1 of 3 consecutive runs of that file alone at the same head; timing-sensitive, unrelated to setbacks, recorded rather than silenced"
+  },
+  "contradictionsAndDeadEnds": [
+    "The dispatch restates `district-miss refusals 9,510`. That number is EXACT and it already includes the 1,026 parcels that carry a district in a city with no table at all: 49,855 no-table-city parcels + 8,484 table-city parcels = 58,339 = P-326's denominator, and P-326's measured districtOnFile per county sums to 9,510. Reading it as 9,510 + 1,026 double-counts the 1,026. A live run will still MOVE counts between buckets against the pre-fix store, because pre-fix those 1,026 were written the city's no-table `unaccounted` answer; the total does not change.",
+    "The 40-city roll-up's class (a) 45,138 and P-300's class (a) 44,112 differ by exactly 1,026 for the same reason: the roll-up counts every parcel in a class (a) city, P-300 counts only the district-less ones.",
+    "class (b) is two cities, not one. Gholson (840) is coded; Thrall (487) is not, so the class (b) value expectation is 840 today and 1,327 only after Thrall's row is coded. Thrall's 487 stay `unaccounted` and are counted as `defaultRowMissing` -- they are not a value and not a refusal.",
+    "DEAD-END: running the falsifier suite against the pre-change writer to get the pre-change evidence does not work -- it imports constants this lane adds, so it fails to LOAD (SyntaxError: does not provide an export named 'CLASS_UNZONED_CITY_WIDE_LINE'). A separate probe importing only shared APIs is the instrument that can actually show both directions.",
+    "DEAD-END: `git stash push -- src test scripts` does not make the tree pre-change -- package.json/package-lock.json are outside those paths, so the stash aborts and the probe silently runs against the NEW code. The pre-change transcript was produced by stashing the two src files by name, and the transcription is only trusted because the corpus version printed in it reads 1.4.0.",
+    "DEAD-END: PowerShell writes UTF-16 with a BOM through `>` and Out-File, which makes JSON artifacts unreadable to node's JSON.parse. Artifacts were written with [System.IO.File]::WriteAllText(..., UTF8Encoding(false))."
+  ],
+  "threeQuestionGate": {
+    "whatExecutes": "the classification is DATA (city-setback-classification.json, built by scripts/build-p300-city-classification.mjs) read by citySetbackClassificationFor; the default is DATA (the corpus's jurisdiction-default row) reached only through resolveJurisdictionDefault; the writer branch (processCityPage) executes both.",
+    "whatTriggers": "the city's row in the table plus the parcel's own zoningDistrict cell. A district on file triggers the district path (ruling 6); no district on file triggers the city's class.",
+    "whatFails": "(1) A zoned city's parcel receiving a default VALUE: class (a) parcels get a refusal, never a value, and FALSIFIER 2a asserts it. (2) A district-miss parcel receiving an unnamed refusal: the refusal names the district code AND the city AND says to verify with the city, asserted both in the factory test and in the ledger policy's signature match. (3) A city the tables leave unclassified receiving a guessed class: FALSIFIER 2null. (4) An absence with no instrument behind it: assertNoFalseAbsence admits only the class (c) shape, with its basis, on the allowlisted rails.",
+    "whatBypasses": [
+      "a hand UPDATE against parcel_record_cell: outside this code entirely; the ledger policy's reason census would see an unmatched refusal as an open rail, which is the only available signal",
+      "a city added to the corpus without a classification row: the generator THROWS ('no classification row for <key>') rather than defaulting; a city added to the store's roster but not to the 40 gets no class, so it stays `unaccounted`",
+      "a zoning layer acquired later for a class (a) city: the class (a) refusal is sticky. The moment the layer exists, the parcels have districts and are district-carried, so the refusal is the correct terminal state for what was on file when it was written; releasing it is P-364's job (the class's own acquisition row, which opens the class in the ledger policy)",
+      "a corpus version bump that renames a signature: the reason text would stop matching and the rail would OPEN (loud), not silently pass"
+    ]
+  },
+  "writeProof": {
+    "storeWrites": 0,
+    "corpusPublishes": 0,
+    "deploys": 0,
+    "merges": 0,
+    "applyRuns": 0,
+    "evidence": "all tests use mocked stores (the falsifier suite's factory mock throws on an unexpected query, so an unplanned read or write fails the test); the two doc_repo scripts that touch a store (six-county-completeness.mjs, ledger-truth.mjs) were run only in --self-test mode, which takes no DSN"
+  },
+  "supersededBy": {
+    "at": "2026-09-19T13:1xZ, after this checkpoint was written",
+    "why": "This checkpoint is a snapshot and is left as written, but three of its statements are no longer the current state. Corpus 1.5.0 is no longer 'not published': corpus#12 merged as 1448586, v1.5.0 was tagged and published by publish.yml run 35445063796, and the registry serves it with dist-tags { latest: '1.5.0' }. The line at startCommitsAndPRs.factory.failureIsTheKnownSequencingConstraint called the EINTEGRITY path correctly and it came true: the lock carried a locally-packed integrity, so publishing alone would not have gone green. Factory head is now 43cbaa5 (the one-line lock re-resolve), all 8 check runs on it are `success`, and the PR is still OPEN. See _inbox/2026-09-19_p300-p338-writer-build_close.json (releasePerformed) and _inbox/2026-09-19_p300-corpus-publish-and-pin_transcript.txt."
+  }
+}

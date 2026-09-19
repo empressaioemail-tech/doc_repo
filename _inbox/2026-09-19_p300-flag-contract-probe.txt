@@ -1,0 +1,89 @@
+FLAG-CONTRACT PROBE — parcel-setback-cells (hauska-factory)
+run 2026-09-19 against merged main (be29575), no store opened, read-only
+
+WHY THIS EXISTS
+The dry-run artifacts (close + predictions) carried the invocation
+`node src/cli.mjs parcel-setback-cells --county <fips> --dry-run`. That form cannot run:
+`--dry-run` is not a flag this job knows, and since P-229 the job REFUSES an unrecognized
+argument before it opens a store. Dry run is the DEFAULT for this job (absence of --apply), so
+the correct form has no flag for it at all.
+
+HOW TO REPRODUCE (no DSN needed; flag parsing precedes any store work)
+The job exports its parser, so the contract can be read without running the job:
+
+  cd <hauska-factory worktree at be29575>
+  cat > /tmp/probe.mjs <<'EOF'
+  import { parseParcelSetbackCellsFlags, KNOWN_FLAGS } from "<abs path>/src/jobs/parcel-setback-cells.mjs";
+  console.log(JSON.stringify(KNOWN_FLAGS));
+  for (const argv of [
+    ["--county=48209"],
+    ["--county", "48209"],
+    ["--county=48209", "--dry-run"],
+    ["--county=48491", "--apply"],
+    ["--county=48999"],
+    ["--county=48021", "--county=48209"],
+    [],
+  ]) {
+    try { console.log("OK    ", JSON.stringify(argv), JSON.stringify(parseParcelSetbackCellsFlags(argv))); }
+    catch (e) { console.log("REFUSE", JSON.stringify(argv), e.code, e.message); }
+  }
+  EOF
+  node /tmp/probe.mjs
+
+Note the argv shape: the CLI passes `process.argv.slice(3)`, i.e. the tokens AFTER the verb.
+Including the verb token itself refuses with `unrecognized argument: parcel-setback-cells`.
+
+OBSERVED OUTPUT (verbatim)
+
+  KNOWN_FLAGS: [{"name":"--city","takesValue":true},{"name":"--county","takesValue":true},
+                {"name":"--page-size","takesValue":true},{"name":"--apply","takesValue":false}]
+
+  OK     ["--county=48209"]
+         -> {"cityFilter":null,"countyScope":["48209"],"apply":false,"pageSize":2000,"nowIso":null}
+  OK     ["--county","48209"]
+         -> {"cityFilter":null,"countyScope":["48209"],"apply":false,"pageSize":2000,"nowIso":null}
+  OK     ["--county=48021","--page-size=50"]
+         -> {"cityFilter":null,"countyScope":["48021"],"apply":false,"pageSize":50,"nowIso":null}
+  OK     []
+         -> {"cityFilter":null,"countyScope":["48021","48055","48209","48309","48453","48491"],
+             "apply":false,"pageSize":2000,"nowIso":null}
+  OK     ["--city=Bastrop"]
+         -> {"cityFilter":["Bastrop"],"countyScope":["48021","48055","48209","48309","48453","48491"],
+             "apply":false,"pageSize":2000,"nowIso":null}
+  REFUSE ["--county=48209","--dry-run"]
+         -> code=UNKNOWN_ARGUMENT :: unrecognized argument: --dry-run
+  OK     ["--county=48491","--apply"]
+         -> {"cityFilter":null,"countyScope":["48491"],"apply":true,"pageSize":2000,"nowIso":null}
+         (parses; --apply is then refused off Cloud Run by LAPTOP_WRITE_FROZEN, line ~1730)
+  REFUSE ["--county=48999"]
+         -> code=COUNTY_UNKNOWN :: county 48999 is not a Texas county FIPS
+  OK     ["--county=48021","--county=48209"]
+         -> {"cityFilter":null,"countyScope":["48021","48209"],"apply":false,"pageSize":2000,"nowIso":null}
+  REFUSE ["parcel-setback-cells","--county=48209"]
+         -> code=UNKNOWN_ARGUMENT :: unrecognized argument: parcel-setback-cells
+
+WHAT THE NEXT SESSION SHOULD USE
+
+  # per county, DRY RUN (no --apply), one scope at a time
+  node src/cli.mjs parcel-setback-cells --county=48209
+
+  # or all six in-scope counties in one pass (the template default)
+  node src/cli.mjs parcel-setback-cells
+
+  # per city, the other supported scope
+  node src/cli.mjs parcel-setback-cells --city=Bastrop
+
+TWO SIDE FINDINGS WORTH CARRYING FORWARD
+
+1. `--county` is validated against IN_SCOPE_COUNTIES, which the merged source hardcodes to all six
+   program counties including Hays (48209): "there is no county-specific carve-out left"
+   (P-200, 2026-09-14, P-145 closed 2026-09-13). The cloudbuild YAML's header comment still says
+   "Hays (48209) is structurally excluded (P-145 gate) -- there is no flag that can reach it",
+   and that YAML still pins `_CONTRACT_VERSION: 1.30.0` with older engine/LDT SHAs. The COMMENT
+   is stale relative to the source it ships with; the deployed generator is not something this
+   lane can inspect. Read the source, not that comment, when deciding what can be scoped.
+
+2. An unrecognized flag REFUSES rather than being ignored, which is P-229's fix and the reason the
+   wrong `--dry-run` in these artifacts was caught by reading rather than by a silent no-op run.
+   A silent version of this same mistake is what P-229 was: `--county=48209` was accepted and
+   discarded on a production apply, so the run covered everything instead of the county asked for.

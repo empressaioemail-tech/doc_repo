@@ -3,7 +3,7 @@ id: 2026-09-19_p363_apply_RECORD
 title: P-363 applied county by county - setback cells written under corpus 1.1.0 re-resolved under the pin 1.4.0, record
 date: 2026-09-19
 last_updated: 2026-09-19
-status: in progress. Image deployed; fresh dry run MATCHES yesterday's per county; snapshot of the re-stamp population next, then the applies
+status: APPLIED in five counties 13:40Z to 14:31Z, all graded PASS from the store; 257,027 parcels and 1,285,135 cells re-stamped to 1.4.0, six value fixes confirmed; Williamson dry-run only (P-350)
 kind: production-write record
 owner: nick
 maintained_by: integration seat
@@ -74,7 +74,7 @@ failed query stops the run and releases the window.
 | 48453 Travis | 172,243 | 172,243 | 861,215 | `8b47722ff66ed903` |
 
 1,285,135 cells named before any write, five per parcel. Files:
-`_inbox/2026-09-19_p363_apply/<fips>.restamp_population.csv` (place_key, rail_key, from_version, state md5).
+`_inbox/2026-09-19_p363_apply/<fips>.restamp_population.csv.gz` (gzip; place_key, rail_key, from_version, state md5; the sha256 values above are of the uncompressed CSV, and `gzip -dc | sha256sum` reproduces them).
 
 ## 5. The applies
 
@@ -97,3 +97,32 @@ unaccounted). Nothing outside the snapshot changed value, kind or corpus.
 
 The state query's first version labelled a cell with no `source` "above-pin" (a NULL fell through the
 CASE); it now reads "no-source". The grade never read that label.
+
+### Bastrop, Hays, McLennan, Travis: PASS (one chain, stop-at-first-failure)
+
+| County | Execution | Parcels | Cells to the pin (value, at-pin before to after) | Below pin after | Kind moves |
+|---|---|---|---|---|---|
+| 48021 Bastrop | `lmdt5` | 6,421 | 10,845 to 42,950 (+32,105) | 0 | none |
+| 48209 Hays | `f45lq` | 35,365 | 20,615 to 197,440 (+176,825) | 0 | none |
+| 48309 McLennan | `jgj74` | 37,513 | 66,380 to 253,945 (+187,565) | 0 | none |
+| 48453 Travis | `pjbtl` | 172,243 | 227,070 to 1,088,285 (+861,215) | 0 | none |
+
+Grades: `_inbox/2026-09-19_p363_apply/<fips>.grade.json`; states `<fips>.state_before.csv` and
+`<fips>.state_after.csv`. Travis's after-state read waited about 29 minutes for the factory window
+(the 14:00Z hourly gate held it), as the script's take loop is built to.
+
+**The six value changes, read at the store** (`48209:11795`, `12013`, `134844`, `174073`, `174074`,
+`98186`): all 24 rail cells read front 5 / side 0 / rear 0 / corner 5, kind value, district N-CM,
+source `@empressaio/setback-corpus@1.4.0:san-marcos-tx`. The San Marcos N-CM row fix is in the store.
+
+## 6. Result
+
+**P-363 applied in five counties: 257,027 parcels, 1,285,135 cells re-stamped from 1.1.0 to the pin
+1.4.0, every one named before the write, six parcels' values corrected, graded PASS from the store in
+every county.** Williamson 48491 (130,210 parcels) is not applied (P-350).
+
+**What moved since, and why this is not the end state.** While the chain ran, factory main moved to
+`be295755` (P-300/P-338 #192, merged on an explicit instruction the writer lane received), which pins
+`CORPUS_VERSION = "1.5.0"` (corpus #12, published 13:13:49Z). The next setback-cells or envelope-cells
+image built from main will treat every 1.4.0 cell as stale and re-stamp it to 1.5.0. That is P-363's
+mechanism working as designed on the next pin, and it is sequenced with the writer build's dry run.

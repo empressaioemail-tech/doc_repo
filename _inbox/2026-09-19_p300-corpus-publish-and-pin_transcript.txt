@@ -1,0 +1,170 @@
+LANE p300-p338-writer-build -- RELEASE TRANSCRIPT
+corpus#12 merge, v1.5.0 tag+publish, factory#192 lock re-pin, and the CI that went green
+recorded 2026-09-19, on the seat's explicit instruction ("merge + publish corpus 1.5.0, then re-run factory #192's checks")
+
+Everything below was observed in this session. Nothing is inferred from a dashboard or from a prior lane's report.
+
+--------------------------------------------------------------------------------
+1. PRE-CONDITION (measured, before touching anything)
+--------------------------------------------------------------------------------
+hauska-setback-corpus PR #12
+  head           9ba13d9
+  mergeable      MERGEABLE / CLEAN
+  checks         lint + typecheck + test (18.x)  success  31s
+                 lint + typecheck + test (20.x)  success  26s
+                 lint + typecheck + test (22.x)  success  28s
+
+hauska-factory PR #192
+  head           c693945
+  mergeable      MERGEABLE / UNSTABLE
+  checks         test                        failure (44s)  <-- npm install
+                 gate8                       success
+                 engine-declaration-pin      success
+                 ldt-sha-comment-presence    success
+
+The repo's release procedure was read off the repo, not assumed:
+  - .github/workflows/publish.yml triggers on `push: tags: v*.*.*` (and on workflow_dispatch),
+    runs npm publish as-is, and SKIPS if `npm view name@version` already resolves
+    ("so re-tagging after a partial or manual publish never 409s").
+  - git tags in this repo are LIGHTWEIGHT (`git cat-file -t v1.4.0` -> commit), and prior
+    releases (v1.1.0, v1.2.0, v1.3.0, v1.4.0) each publish from a tag push.
+  - merged PRs land as a merge commit ("Merge pull request #N from ..."), and branches are NOT
+    deleted after merge (fix/p299-height-flag-and-state is still on origin). So: merge commit,
+    no branch deletion -- matching the house convention rather than tidying it away.
+
+--------------------------------------------------------------------------------
+2. MERGE (corpus)
+--------------------------------------------------------------------------------
+$ gh pr merge 12 --merge
+  -> mergedAt 2026-09-19T13:12:06Z, mergeCommit 1448586dcd9566ff716a2aeced20c63477cd85f3
+  -> gh pr view 12: state MERGED
+
+Post-merge verification of the merged tree, not of the branch:
+  git log --oneline -3 origin/main
+    1448586 Merge pull request #12 from empressaioemail-tech/lane/p300-p338-writer-build
+    9ba13d9 feat(p300): a jurisdiction-default row, and gholson-tx as its first case
+    f43cf4b Merge pull request #10 from empressaioemail-tech/fix/p299-height-flag-and-state
+  version on origin/main           1.5.0
+  src/setbacks/gholson-tx.json     jurisdictionKey gholson-tx, row_kind jurisdiction-default, front_ft 25
+
+--------------------------------------------------------------------------------
+3. TAG + PUBLISH
+--------------------------------------------------------------------------------
+$ git tag v1.5.0 1448586   (lightweight, matching v1.0.0..v1.4.0)
+$ git push origin v1.5.0
+  -> refs/tags/v1.5.0 = 1448586dcd9566ff716a2aeced20c63477cd85f3
+
+publish.yml run 35445063796 (event push, ref v1.5.0)
+  status/conclusion        completed / success
+  the workflow's own guard did NOT fire, so this was a real publish, not a re-tag no-op:
+    npm notice version: 1.5.0
+    npm notice filename: empressaio-setback-corpus-1.5.0.tgz
+    npm notice package size: 393.0 kB / unpacked 4.2 MB / total files: 112
+    npm notice shasum:   a9907417613b42cec8b041b4b986fc70ac78fac6
+    npm notice integrity: sha512-2pC//aVsS3uMp[...]9UB6+Xmrf6r5A==
+    npm notice Publishing to https://registry.npmjs.org/ with tag latest and public access
+
+Registry propagation was polled rather than assumed (the log says the package "may take a few
+minutes to become available"), and the first two checks 404'd:
+  13:13:05Z  npm view @empressaio/setback-corpus@1.5.0  -> E404
+  13:14:16Z  npm view @empressaio/setback-corpus@1.5.0  -> 1.5.0        (REGISTRY-HAS-1.5.0)
+             npm view @empressaio/setback-corpus dist-tags -> { latest: '1.5.0' }
+
+--------------------------------------------------------------------------------
+4. THE SECOND FAILURE -- why "publish, then re-run" was NOT enough
+--------------------------------------------------------------------------------
+The published tarball and the tarball packed in this worktree are not byte-identical, and the
+factory lock had recorded the LOCAL one:
+
+  published       integrity sha512-2pC//aVsS3uMpZlbPKZo8idt54Ne/osna8PPxIYp6cHhTbxYZTFO1YoXfGWjgCNOF1voMj8VD9UB6+Xmrf6r5A==
+                  shasum    a9907417613b42cec8b041b4b986fc70ac78fac6
+                  tarball   https://registry.npmjs.org/@empressaio/setback-corpus/-/setback-corpus-1.5.0.tgz
+  factory lock    integrity sha512-1pJpT2quJlGN7qgRqX8gsN4kzZMdrmcfmtMzJykqqpQ8Y7M4AtU7TSkXJeV2fbMNSY+a9Jo6dqs7ycjdtAtnQg==
+
+npm ci compares the lock's integrity against the tarball it fetched, so the `test` job's failure
+would have MOVED from E404 to EINTEGRITY instead of clearing. Fix, one line:
+
+$ npm install @empressaio/setback-corpus@1.5.0 --save-exact --no-audit --no-fund
+  changed 1 package in 1s
+  git diff --stat  ->  package-lock.json | 2 +-   (1 insertion, 1 deletion)
+
+Local proof that the pin now resolves from the registry (this is the exact CI step):
+$ npm ci --no-audit --no-fund
+  added 126 packages in 6s
+  node -e "require('./node_modules/@empressaio/setback-corpus/package.json').version"  -> 1.5.0
+  node -e "import('@empressaio/setback-corpus/setbacks').then(m=>m.getJurisdictionDefaultRow('gholson-tx'))"
+    -> jurisdiction-default / front 25
+
+Committed as 43cbaa5 ("P-300/P-338: the corpus pin resolves from the registry, not from a local
+pack") and pushed to lane/p300-p338-writer-build. package-lock.json is the only file it touches.
+
+--------------------------------------------------------------------------------
+5. CI ON THE NEW HEAD (43cbaa5) -- both runs, all checks
+--------------------------------------------------------------------------------
+run 35445197100 (pull_request, 43cbaa5)          run 35445194260 (push, 43cbaa5)
+  test                      pass  1m45s            test                      pass  1m48s
+  engine-declaration-pin    pass  16s              engine-declaration-pin    pass  15s
+  gate8                     pass  8s               gate8                     pass  8s
+  ldt-sha-comment-presence  pass  12s              ldt-sha-comment-presence  pass  14s
+
+gh pr view 192 -> state OPEN, mergeable MERGEABLE, mergeStateStatus CLEAN (was UNSTABLE while the
+push run was still pending; it cleared when that run finished).
+
+Before/after, same PR:
+  before (c693945)  test failure at npm install    -- E404, dependency unpublished
+  after  (43cbaa5)  test success 1m45s/1m48s       -- dependency published AND pin re-resolved
+  every other check was already green and stayed green.
+
+--------------------------------------------------------------------------------
+6. WHAT WAS NOT DONE, ON PURPOSE
+--------------------------------------------------------------------------------
+  - The per-county dry run is still owed: FACTORY_DATABASE_URL_RO / PRODUCTION_NEONDB_URL are unset
+    in this session, so no store read happened and no count is claimed anywhere in this lane.
+  - No product code changed in this step. The only code-adjacent line touched is the lockfile
+    integrity in 43cbaa5.
+  - hauska-factory#192 was NOT merged in this step -- it was left for the seat, and section 7
+    records the separate merge that the seat then authorised.
+
+--------------------------------------------------------------------------------
+7. FACTORY MERGE (separate seat instruction, after the transcript above was written)
+--------------------------------------------------------------------------------
+Convention read off the repo rather than assumed:
+  gh api .../hauska-factory -> { allow_merge_commit: true, allow_squash_merge: true,
+                                 allow_rebase_merge: true, delete_branch_on_merge: false }
+  PR #190's merge commit ab7618c has ONE parent (e6ca09d) -> the house style is SQUASH,
+  and main's subjects carry the "P-NNN: ... (#NNN)" shape. Branches are retained.
+
+$ gh pr merge 192 --squash --body-file <body summarizing both commits>
+  -> mergedAt 2026-09-19T13:32:27Z, mergeCommit be2957556f366a5532e08d868b28c1be680e19b4
+
+The body was supplied explicitly so the squashed commit carries BOTH changes -- the writer/router
+work and the one-line lock re-resolve -- instead of quietly dropping the second.
+
+Content check (a squash must not change what was reviewed):
+  git rev-parse '43cbaa5^{tree}'      -> ef5526d980655d5c4bf3c68f1f4169ba695b9f69
+  git rev-parse 'origin/main^{tree}'  -> ef5526d980655d5c4bf3c68f1f4169ba695b9f69   IDENTICAL
+  git diff --stat 43cbaa5 origin/main -> (empty)
+  package-lock.json on main: 1.5.0, sha512-2pC//aVsS3uMp... (the registry integrity)
+
+CI on main at be29575:
+  ci                       run 35446070983  success   (test, gate8, ldt-sha-comment-presence,
+                                                       engine-declaration-pin -- all four pass)
+  ldt-pin-staleness        run 35446070978  failure
+
+  The failure was checked against the parent rather than assumed to be ours:
+    be29575 (this merge)   run 35446070978  failure
+    ab7618c (the parent)   run 35442687258  failure
+  Same step ("fail only if a commit between the pin and LDT main touches the bake's module
+  graph"), same reason ("a commit between the pin and target touches a file inside the bake's
+  module graph"), same pin 03bb424acb08e05a13178cbbf351aa2b7d5253ab. Its hit list is LDT-side
+  (artifacts/api-server/src/lib/buildableEnvelope/districtMapping.ts, lib/cad-ingest/**,
+  lib/db/src/schema/txEtjBoundary.ts) -- no factory file, nothing from P-300/P-338.
+  Pre-existing LDT drift, unchanged by this merge, and not adopted or papered over here.
+
+--------------------------------------------------------------------------------
+8. END STATE
+--------------------------------------------------------------------------------
+  hauska-setback-corpus   main 1448586 (corpus 1.5.0), tagged v1.5.0, published to npm
+  hauska-factory          main be29575 (squash of the reviewed tree ef5526d), ci success
+  owed                    the per-county dry run against the filed predictions -- no store handle
+

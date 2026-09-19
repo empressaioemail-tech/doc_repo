@@ -66,8 +66,19 @@ export function intendedClass(d, subject, route) {
   if (/citationvintage|vintage|\.citationeffectivedate$/.test(p) || /vintage unknown|takes effect|date unreadable/.test(text)) return "p270-vintage";
   if (route === "draw" && subject.district && PUD_RE.test(subject.district)) return "p257-pud";
   if (route === "node" && /agvaluation/.test(p) && AG_COUNTIES.includes(subject.id.split(":")[0])) return "p322-ag";
+  // 2026-09-19 LDT deploy (824bd21e..ad99acaa), classes pre-registered BEFORE the canary existed
+  // (_inbox/2026-09-19_a231_merges_etj_deploys_RECORD.md section 4). P-359: the reader serves a
+  // ring only through its derived status, so an ETJ determination may change on any subject, but
+  // only on a path that names the ETJ. P-340: the route's setback resolution and conflict row move
+  // for its seven measured subjects; any draw-route difference on them is its change. A P-340
+  // difference on any OTHER subject is not admitted here: it is read against the code by hand.
+  if (/etj/.test(p)) return "p359-etj";
+  if (route === "draw" && P340_SUBJECTS.has(subject.id)) return "p340-subject";
   return null;
 }
+
+/** P-340's seven measured subjects (its close, `_inbox/2026-09-19_p340-card-route-table_close.json`). */
+export const P340_SUBJECTS = new Set(["48209:145880", "48209:166141", "48209:140047", "48209:142415", "48209:97658", "48453:239852", "48453:367134"]);
 
 /** Pure: grade one subject's pair of answers on one route. */
 export function gradePair(subject, route, prod, canary) {
@@ -118,6 +129,11 @@ function selfTest() {
   check("agValuation in a no-source county is intended (P-322)", gradePair({ id: "48021:5", district: null }, "node", ok({ agValuationFact: { state: "x" } }), ok({ agValuationFact: { state: "absent" } })).verdict === "PASS");
   check("agValuation in Travis FAILS (not in P-322's four)", gradePair({ id: "48453:5", district: null }, "node", ok({ agValuationFact: { state: "x" } }), ok({ agValuationFact: { state: "absent" } })).verdict === "FAIL");
   check("a side that did not answer is UNMEASURED, never PASS", gradePair(s, "draw", ok({ a: 1 }), { ok: false, http: 0 }).verdict === "UNMEASURED");
+  check("an ETJ determination change is intended (P-359)", gradePair({ id: "48491:7", district: null }, "node", ok({ etjStatusFact: { state: "present" } }), ok({ etjStatusFact: { state: "unresolved" } })).verdict === "PASS");
+  check("a non-ETJ node change on the same subject FAILS", gradePair({ id: "48491:7", district: null }, "node", ok({ cityLimitsFact: { state: "present" } }), ok({ cityLimitsFact: { state: "absent" } })).verdict === "FAIL");
+  check("a draw change on a P-340 subject is intended", gradePair({ id: "48209:97658", district: "R-1" }, "draw", ok({ setbacks: { front: 25 } }), ok({ setbacks: { front: 20 } })).verdict === "PASS");
+  check("the same draw change on a non-P-340 subject FAILS", gradePair({ id: "48209:97659", district: "R-1" }, "draw", ok({ setbacks: { front: 25 } }), ok({ setbacks: { front: 20 } })).verdict === "FAIL");
+  check("a P-340 subject's NODE change is not admitted by the draw class", gradePair({ id: "48209:97658", district: "R-1" }, "node", ok({ ownerFact: { state: "x" } }), ok({ ownerFact: { state: "y" } })).verdict === "FAIL");
   check("subjectsFromProbe rebuilds the draw body the probe used", JSON.stringify(subjectsFromProbe({ ops24: { legsById: { "48453:9": { facets: { composedAddress: "1 A ST, AUSTIN, TX", zoningDistrict: "SF-2" }, draw: { drawKey: "composed-address" } } } } })[0].drawBody) === JSON.stringify({ address: "1 A ST, AUSTIN, TX" }));
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.n}`);
   const bad = results.filter((r) => !r.ok).length;
