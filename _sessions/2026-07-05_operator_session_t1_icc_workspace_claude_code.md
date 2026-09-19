@@ -3,7 +3,7 @@ id: sessions/2026-07-05_operator_session_t1_icc_workspace
 title: Operator session — T1 flip, ICC live end to end, workspace parity, O&G activation
 status: active
 date: 2026-07-05
-related: [_inbox/2026-07-04_convergence-program_STATUS.md, _sessions/2026-07-05_convergence_autonomous_run_claude_code.md, _inbox/2026-07-05_draft_adr_025_og_atom_ontology.md, _inbox/2026-07-05_draft_og_activation_decision.md]
+related: [_inbox/2026-07-04_convergence-program_STATUS.md, _sessions/2026-07-05_convergence_autonomous_run_claude_code.md, 80_adrs/adr_025_og_atom_ontology.md, _inbox/2026-07-05_draft_og_activation_decision.md]
 ---
 
 # Operator session: T1 flip, ICC end to end, workspace parity, O&G activation

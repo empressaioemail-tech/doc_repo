@@ -3,7 +3,7 @@ id: sessions/2026-07-06_session_close_and_handoff
 title: Session close + comprehensive handoff — deploy chain, T1, ICC, workspace parity, O&G activation
 status: active
 date: 2026-07-06
-related: [_inbox/2026-07-04_convergence-program_STATUS.md, _inbox/2026-07-05_consolidated_todo_and_drift_steer.md, _sessions/2026-07-05_convergence_autonomous_run_claude_code.md, _sessions/2026-07-05_operator_session_t1_icc_workspace_claude_code.md, _inbox/2026-07-05_draft_adr_025_og_atom_ontology.md, _inbox/2026-07-05_draft_og_activation_decision.md]
+related: [_inbox/2026-07-04_convergence-program_STATUS.md, _inbox/2026-07-05_consolidated_todo_and_drift_steer.md, _sessions/2026-07-05_convergence_autonomous_run_claude_code.md, _sessions/2026-07-05_operator_session_t1_icc_workspace_claude_code.md, 80_adrs/adr_025_og_atom_ontology.md, _inbox/2026-07-05_draft_og_activation_decision.md]
 ---
 
 # Session close and handoff (2026-07-05 into 07-06)
