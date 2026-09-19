@@ -1,0 +1,101 @@
+{
+  "lane": "g169-deploy-path-windows",
+  "checkpoint": "CP1 -- what the spawn defect IS on this host, which of the two allowed repairs is chosen and why, and the falsifiers registered before the fix is finished. ORDERING, DECLARED HONESTLY: the reconnaissance, the empirical spawn measurements and the first cut of the fix were all made in this lane's session BEFORE this file was written, so this is not a design filed ahead of the code as the dispatch instructs. What is true is narrower and checkable: the chosen mechanism was reached from the measurements recorded below (all read-only, all on this host, no deploy), the first cut was then REJECTED on its own measurement, and the sections `theTrapAndHowTheArraySurvives` and `theMetacharacterSetAsMeasured` are the two places the fix changed shape because of evidence rather than intent. Nothing in this lane is applied to any store, deployed, or merged.",
+  "planRows": ["G-169"],
+  "seat": "cente-vsc-g169",
+  "repos": ["plan-review", "smart-files"],
+  "fannedSubAgents": 0,
+  "fanDepth": 0,
+
+  "branches": {
+    "plan-review": "lane/g169-deploy-path-windows (worktree P:/plan-review-worktrees/g169-deploy-path-windows)",
+    "smart-files": "lane/g169-deploy-path-windows (worktree P:/smart-files-worktrees/g169-deploy-path-windows)",
+    "doc_repo": "the seat worktree P:/seat-worktrees/g169-deploy-path-windows/doc_repo, claim 'g169-deploy-path-windows' / seat cente-vsc-g169 filed in _catalog/lane_claims.json at 2026-09-19T16:00:21.491Z"
+  },
+  "baseShas": {
+    "plan-review": "4d3da57 (G-160 / #19, the dispatch's declared base); the branch was opened from origin/main at that SHA and was 0 commits ahead / 0 behind origin/main when the fix was applied",
+    "smart-files": "5073f7f (G-160 / #18, the dispatch's declared base); same, 0 ahead / 0 behind origin/main"
+  },
+
+  "driftCheckBeforeWriting": {
+    "question": "The dispatch says the file is the same file in both repos and asks that drift be reported rather than silently resolved.",
+    "method": "`git show HEAD:scripts/deploy.mjs` in each worktree, compared as bytes.",
+    "answer": "NO DRIFT. The two files were byte-identical at both bases, so one fix content serves both repos. After the fix the two files are still byte-identical to each other (sha256 588F2B828C69C0C173BDF99C1BDEF8053328E53764BAE416567E3E7805E4FAAF), which is why the two PRs carry the same diffstat (178 insertions / 3 deletions in deploy.mjs, plus 7 lines of CI step and 2 lines of package.json)."
+  },
+
+  "theDefectAsTheDispatchStatesItAndAsReMeasured": {
+    "asStated": "`issue()` spawned `argv[0]` by bare name; on Windows `gcloud`/`vercel` are `.cmd` shims Node cannot spawn without a shell, and `err.status` is null on a spawn error so the failure rendered as `FAILED (exit ?)`.",
+    "remeasuredOnThisHost": [
+      "execFileSync(\"gcloud\", [\"--version\"])                 -> FAIL code=ENOENT",
+      "execFileSync(\"gcloud.cmd\", [\"--version\"])             -> FAIL code=EINVAL",
+      "execFileSync(\"gcloud\", [\"--version\"], {shell:true})   -> OK, Google Cloud SDK 567.0.0",
+      "resolveOnPath(\"gcloud\") -> C:\\Users\\cente\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.CMD",
+      "resolveOnPath(\"vercel\") -> C:\\Users\\cente\\AppData\\Roaming\\npm\\vercel.CMD",
+      "resolveOnPath(\"npm\")    -> C:\\Program Files\\nodejs\\npm.CMD"
+    ],
+    "theOneWordFixIsADeadEnd": "`{shell: true}` works and is why it is the obvious answer. It is refused here because it concatenates: with a shell the argv is no longer passed as an array, so a commit, a project name or a service name carrying a space, a quote or a semicolon can be re-split into additional flags, and Node itself warns (DEP0190). The header of the file being repaired exists to state that no shell string is ever built. A fix that discards the property the file is proudest of would be a fix that moves the defect."
+  },
+
+  "theChoiceAndWhy": {
+    "chosen": "The FIRST of the two repairs the dispatch allows -- resolve the executable explicitly so the argv stays an array. No shell string is built on any path.",
+    "notChosen": "The second repair -- keep a shell and earn it by asserting each value against its allowed pattern -- is strictly weaker (it survives only because the values are already constrained) and would still concatenate. It was not needed once the first repair was measured to work against the real CLIs.",
+    "theAspotThatIsNotObvious": "The `.cmd` cannot be spawned directly (EINVAL), so it is run through `cmd.exe`. The question is then WHICH string is handed to `cmd.exe` as the program. Measured: it must be the BARE NAME, never the resolved absolute path."
+  },
+
+  "theTrapAndHowTheArraySurvives": {
+    "theMeasurement": "`cmd.exe /d /s /c <argv...>` was driven with this host's own node.exe as the program, both as the resolved absolute path and as a bare name. With the ABSOLUTE PATH it fails: `C:\\Program Files\\nodejs\\node.exe` is re-split at the space into `C:\\Program` and `Files\\nodejs\\node.exe`, because `cmd.exe` parses its own tail. With the BARE NAME it works: `cmd.exe` re-resolves the name through PATH itself and the arguments arrive intact.",
+    "whyThatMattersHere": "This fleet's gcloud shim path itself contains a space (`...\\Cloud SDK\\...`), so the tempting form -- hand `cmd.exe` the resolved path so nothing is ambiguous -- is exactly the form that breaks. The fix therefore resolves the program on PATH for the DECISION (is it there? is it a shim?) and hands `cmd.exe` the bare name for the EXECUTION.",
+    "whatIsPreserved": "Every argument stays a separate element of the array passed to execFileSync from the plan, through runTool, to the spawn. No string is ever joined and re-split. The `--source <worktree path>`, the `SERVED_COMMIT=<sha>` and the `--update-labels commit-sha=<sha>` values are each one argv element end to end, which the verbatim failure output in CP2 shows printed as single tokens."
+  },
+
+  "theMetacharacterSetAsMeasured": {
+    "whyThisExists": "Routing a shim through `cmd.exe` means `cmd.exe` interprets its tail. Something has to stop a value from becoming a different command, and the list must be the MEASURED dangerous set rather than an assumed one -- a wrong list is a control that cannot fire (too narrow) or one that refuses the fleet's own values (too broad).",
+    "method": "`cmd.exe /d /s /c node <probe> <arg>` with a probe that echoes the argv elements it actually received, one character class per run.",
+    "survivedAsOneElement": ["space", "double quote", "semicolon", "parentheses", "!"],
+    "reSplitOrExpanded": ["&", "|", "%", "^", "<", ">"],
+    "shippedRule": "CMD_METACHARACTERS = /[&|%^<>\\r\\n]/ -- the measured dangerous set plus newlines. Any value carrying one is REFUSED with kind 'refused' and nothing is spawned.",
+    "honestLimit": "This set is the set THIS program's arguments need. It is a refusal, not an escaping scheme: an argument the plan ever needs to carry an `&` would be refused and the plan would have to be changed, and the correct response to that would be to review whether the value belongs in an argv array at all. No plan row today carries one."
+  },
+
+  "preRegisteredFalsifiers": [
+    "F1 THE SPAWN PATH RUNS A REAL TOOL, READ-ONLY, END TO END. `gcloud run services describe <service> --project <project> --region us-east1 --format=value(status.url)` and a read-only `vercel` command, driven through the SHIPPED runTool (not a paraphrase), must each print the tool's own output and exit 0. Would falsify the fix if either exited non-zero for a spawn reason, or if either produced no output. Registered BEFORE the run, and the URL is a fact the tool fetches, not a value this lane supplies.",
+    "F2 A TOOL THAT EXISTS RETURNS REAL OUTPUT. The positive self-test leg must spawn a tool that returns a version matching ^\\d+\\.\\d+ on stdout. The leg spawns `npm` deliberately: `npm` is a `.cmd` SHIM on Windows, and the broken code spawned a real executable (`node.exe`) perfectly. A self-test that ran only node.exe would PASS ON THE DEFECT IT EXISTS TO CATCH -- so the not-vacuous case is the point of the leg, not a detail of it.",
+    "F3 A TOOL THAT DOES NOT EXIST FAILS WITH A NAMED REASON. The negative leg asserts a ToolFailure of kind `spawn` whose message CONTAINS the absent tool's name and the words 'could not be spawned'. Merely 'it threw' is not a pass: the old code also threw, and rendered as `(exit ?)`. Would falsify the fix if the absent-tool case passed silently, or if it produced an unnamed failure.",
+    "F4 THE INSTRUMENT CAN FAIL, PROVEN BY VIOLATION. Revert the spawn to the legacy bare-name call, re-run the self-test: F2's leg must FAIL. Restore: it must PASS. Both runs recorded verbatim in CP2. This is the control on the control -- without it, a self-test that passes because it asserts nothing looks identical to one that passes because the code is right.",
+    "F5 THE ERROR MESSAGE NAMES THE KIND. A spawn failure and a non-zero exit must be DISTINGUISHABLE in the output. Exercise the real entry point with the tool unreachable on PATH and assert the message says the tool could not be spawned, names the command being run, and says what to check -- three things `(exit ?)` did not say."
+  ],
+
+  "whatWillBeBuilt": {
+    "scripts/deploy.mjs (BOTH repos, identical bytes)": [
+      "resolveOnPath(name, {env, platform}) -- EXPORTED. Reads PATH/PATHEXT and stats candidates. Read-only: it spawns nothing. Returns null when absent, which is what lets an absent tool be reported by NAME instead of surfacing cmd.exe's generic 'not recognized'.",
+      "runTool(argv, {cwd, stdio, env, platform}) -- EXPORTED, the ONLY place a real tool runs. Refuses a cmd metacharacter (kind 'refused'); resolves the program (kind 'spawn' if absent); routes a .cmd/.bat shim through `cmd.exe /d /s /c <bareName> <args...>`; classifies a thrown error into kind 'exit' when err.status is a number and kind 'spawn' otherwise.",
+      "ToolFailure -- EXPORTED. Carries kind ('refused' | 'spawn' | 'exit') and a detail object.",
+      "issue(argv, label) -- edited to call runTool and to print what could not be spawned, the command, and what to check, replacing `FAILED (exit ?)`.",
+      "selfTest() -- EXPORTED, reachable as `--self-test`. Three legs: F2, F3, F4's metacharacter leg.",
+      "The header gains a G-169 paragraph and the CLI line for --self-test."
+    ],
+    "package.json (BOTH repos)": "`\"deploy:self-test\": \"node scripts/deploy.mjs --self-test\"`, beside the existing `parity:self-test`, which is the shape this repo already uses for served-commit-parity.mjs.",
+    ".github/workflows/test.yml (BOTH repos)": "one step, `node scripts/deploy.mjs --self-test`, after the g160-served-harness step, so the instrument runs in the product's own test command and its own CI rather than only on the seat that wrote it."
+  },
+
+  "whatWillNotBeDone": {
+    "noBypassFlag": "No `--force`, no `--skip-gate`, no `--no-verify`, no `--allow-missing-tool`. A flag that exists is a flag that gets used, and the absence of one is part of this file's contract.",
+    "unchangedOnPurpose": "The clean-tree refusal, the commit resolved from `git rev-parse HEAD` (never a tag, never a branch), `--update-env-vars` rather than the replace form, the console SERVED_COMMIT at runtime, the gate and its bounded poll, and the exit codes 0/1/2.",
+    "served-commit-parity.mjs": "NOT TOUCHED, per the dispatch. It invokes through a bounded shell string, which is why the gate could be green while the other half of the same deliverable had never run. Repairing the gate would have moved the defect rather than removed it.",
+    "noDeploy": "Nothing is deployed, no traffic is shifted, no revision is created, no lease is taken (the dispatch records `_catalog/leases/` as holding only its README and needing no lease for this row). The deploy path's first real green run is the integration seat's, not this lane's.",
+    "noMerge": "Two PRs, one per repo, each from that repo's origin/main. Merging is the integration seat's.",
+    "thePlannersTwoWorktrees": "P:/plan-review-worktrees/planner-g160-deploy and P:/smart-files-worktrees/planner-g160-deploy are G-160's, not this lane's. They are neither reused, written in, nor deleted."
+  },
+
+  "scopeAndLimits": {
+    "sharedFilesNamed": "The file under repair is a shared file only in the sense that two repos carry it; it lives in each repo independently and is edited in each. No other repo is written. doc_repo is written ONLY at the three artifact paths named by the dispatch, in this lane's own seat worktree, uncommitted.",
+    "customerSurface": "Not reachable from this lane and not claimed. Nothing is deployed, so no customer surface moved and a surface-probe artifact would measure nothing; the close declares `probe.notApplicable` with that reason rather than filing an artifact that measured nothing, the same posture filed for the read-only lanes on this thread.",
+    "whatTheCompletionPredicateDoesNotProve": "It does not prove a deploy was made. It proves the mechanism issue() uses runs real tools on this host, that the argv-array property survives, and that a failure names itself. The next real deploy is the true end-to-end proof and it is deliberately not taken here."
+  },
+
+  "openQuestionsForTheIntegrationSeat": [
+    "THE FIRST REAL DEPLOY IS THE OWED END-TO-END PROOF. Both PRs must merge and a real `node scripts/deploy.mjs` must then run against a clean tree. This lane's evidence proves the spawn and the error taxonomy; it does not and cannot prove the deploy path completes, because that would require shifting traffic.",
+    "THE VERCELL CLI ON THIS HOST CANNOT REACH ITS API TODAY, FOR AN ENVIRONMENT REASON UNRELATED TO THIS FIX. `vercel whoami` spawns correctly (it prints its own banner) and then exits 1 with 'unable to verify the first certificate'. `served-commit-parity.mjs`'s console leg shells `vercel ls <project> --format=json`, so it will hit the same wall on this host. Named here so the next reader does not read that as a spawn defect reintroduced. See CP2 `contradicted.three`.",
+    "THE `--self-test` STEP RUNS ON ubuntu-latest IN CI AND ON WINDOWS LOCALLY. Both were run. On Linux the positive leg's tool is a real file rather than a shim, so the CI leg proves the mechanism's non-Windows branch and the local run proves the shim branch. Neither alone is the whole story and the close says so."
+  ]
+}

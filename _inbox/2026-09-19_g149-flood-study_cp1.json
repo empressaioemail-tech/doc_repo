@@ -1,0 +1,89 @@
+{
+  "lane": "g149-flood-study",
+  "checkpoint": "CP1 -- the mechanism read out of the source at the design's PINNED commit, the four moves as they land in code, the divergences the build must keep apart, and an honest statement of what is NOT built.",
+  "publishedAt": "2026-09-19T16:35Z",
+  "filedRelativeToTheChange": "FILED AFTER THE SERVER HALF EXISTS (commit ef4e555 on feat/g149-flood-study) and BEFORE the screen exists. This is therefore a mid-lane checkpoint and is not described as a pre-registration. The falsifiers below were written as tests and RUN, and the suite is green (904 of 904 on the product worktree with node_modules installed); what they do NOT yet show is a screen rendering any of this, because the screen is the half that is not built.",
+  "planRows": ["G-149"],
+  "seat": "cente-vsc-g149",
+  "repos": ["smartcity-dashboards"],
+  "branches": {
+    "smartcity-dashboards": "feat/g149-flood-study (seat worktree P:/smartcity-dashboards-worktrees/g149-flood-study)",
+    "doc_repo": "seat/g149-flood-study (seat worktree P:/seat-worktrees/g149-flood-study/doc_repo)"
+  },
+  "baseShas": {
+    "smartcity-dashboards": "e99e564 -- the dispatch's declared green origin/main SHA, and the SHA this worktree was forked at",
+    "doc_repo": "d613d6be -- origin/main of doc_repo at fork. NOTE: the local checkout at C:/Users/cente/doc_repo was 148 commits BEHIND origin/main and did not contain this dispatch at all; the dispatch was read from origin/main and every design fact below from the fork's worktree, never from the stale checkout.",
+    "designFactsPinnedAt": "P:/hauska-map origin/main 163fde324adf98cfb19fb8c48326bf6c56515ba0"
+  },
+  "fannedSubAgents": 0,
+  "fanDepth": 0,
+
+  "theMechanismReadOutOfTheSource": {
+    "whereTheModeledStudyActuallyComesFrom": "engine-api, route GET|POST /v1/property-nodes/{parcelNodeId}/flood-drainage/{study,refresh}. In Property Explorer that route is reached through apps/property-explorer/api/_lib/pe-flood-drainage-handler.ts, which additionally enforces a paid PROPERTY entitlement (PE session + per-property unlock or Pro) via resolveFloodDrainageAuth. The ENTITLEMENT is a commercial gate on a different product; the TRANSPORT is the same for both callers -- engine-api's gate middleware is global (server.ts app.use('*') bearer + gate-front; v1.use('*') gate-context), and there are NO flood-drainage MCP tools. That is why a direct server-side client here is a transport reuse and not a second data path.",
+    "theTwoEnvironmentVariables": "HAUSKA_ENGINE_BASE and HAUSKA_ENGINE_API_KEY. NO default and NO fallback, which is src/platform-base.mjs's law applied to a second upstream: an unset base is a per-parcel refusal carrying its basis, never a host. The engine key is the same secret the retrieval/PE/BFF paths already hold (scripts/inventory-key-consumers.mjs enumerates the holders in doc_repo); the BASE is the part that does not exist in this product's env today, and whether the deployed app sets it is an OPEN thread in this checkpoint rather than an assumption.",
+    "theParcelIdentityIsTheWholeBridge": "parcelNodeId is {countyFips}:{propId} (PE validates it with isValidParcelNodeId and its own error text is 'parcelNodeId must match {fips}:{propId}, e.g. 48029:105129'). A live Bastrop MyGov permit carries place.parcelNodeId = row.parcelId (src/mygov-permits.mjs:123), which on the real sample row is the bare prop id '33383' -- the FIPS is NOT a field on the row. parcelNodeIdFor() therefore takes the FIPS from the caller and REFUSES, with a basis, when either half is missing, rather than assuming 48021.",
+    "theDepthBound": "rainfallDepthInches is a bare depth in (0, 60]. The engine's own rejection text is 'rainfallDepthInches must be a number in (0, 60].'; mirrored verbatim as DEPTH_BOUND_BASIS. There is NO storm duration in the contract and none was added.",
+    "theReturnPeriodPairing": "The engine pairs return period to depth through study.rainfallCurve (NOAA Atlas 14). Its own design storm renders as '100-yr (NOAA Atlas 14)'; a depth passed in the request renders as 'approximately N-yr equivalent (interpolated)'. rainfallBasisLabel() names WHICH of the two a reader is looking at and returns an unlabelled refusal for an unknown rainfallSource rather than defaulting to NOAA. The interpolation is log-linear over the curve, ported from the client's returnPeriodYearsForDepthInches so the control and the engine's own PDF label cannot disagree.",
+    "theFailureClasses": "engine_timeout and engine_unreachable are the ONLY retryable classes (mirrored from the source's retryableErrorField), each carrying the engine's own copy so a timeout cannot be softened into a result. engine_gate_config and engine_refused are NOT retryable: a 502 that means 'gate misconfigured' and a 502 that means 'the engine was restarting' are different results, and collapsing them is how a config error becomes an infinite Retry button.",
+    "theThreeEmptyStatesThatMustNotCollapse": "study.honestEmpty -> the engine ran and DECLINED, its reason rendered verbatim; a study with a zero ponding share -> NO_PONDING_LINE; a study whose share cannot be read -> 'unmeasured'. Plus queued/running, which are not results at all. studyViewState() is ONE function so the order cannot drift, and honestEmpty is checked BEFORE any ponding arithmetic because an honestEmpty study carries no geometry to measure."
+  },
+
+  "theFalsifiersAsBuilt": [
+    {
+      "id": "F1",
+      "claim": "An engine that did not answer is not a parcel that does not pond (design trap 4).",
+      "asserted": "A transport throw classifies as engine_unreachable and stays retryable end to end; an aborted run classifies as engine_timeout, retryable, ponding 'not-measured', and its basis is asserted NOT to equal NO_PONDING_LINE. A 500 and a 401 are asserted NOT retryable.",
+      "where": "src/flood-study.test.mjs, 'G-149 trap 4'"
+    },
+    {
+      "id": "F2",
+      "claim": "The basis line says WHICH pair a reader sees, and the two DIVERGE (design trap 2).",
+      "asserted": "source noaa-atlas14 renders ENGINE_DESIGN_STORM_LABEL; source parameter renders /^approx N-yr equivalent (interpolated)$/; the two labels are asserted NOT equal (the paired control's divergence test). An unknown source and a parameter depth with no curve both refuse to label rather than defaulting to NOAA.",
+      "where": "src/flood-study.test.mjs, 'G-149 trap 2'"
+    },
+    {
+      "id": "F3",
+      "claim": "honestEmpty, zero ponding and unmeasured are three states, not one (design trap 3).",
+      "asserted": "honestEmpty renders its reason verbatim and has no NO_PONDING_LINE; zero share renders NO_PONDING_LINE; an unreadable share renders 'unmeasured' and is asserted NOT 'none'; honestEmpty with no reason is a named absence rather than an empty string.",
+      "where": "src/flood-study.test.mjs, 'G-149 trap 3'"
+    },
+    {
+      "id": "F4",
+      "claim": "The G-130 ruling is a refused affordance on the ZONE card (design trap 5).",
+      "asserted": "zoneDetermination().citation.allowed === false with the G-130 basis attached; the zone card carries a vintage field and states when it has none; modelDetermination() is badged NOT A DETERMINATION and is asserted to carry NO vintage field; and the two cards are asserted never to share an authority, with citation absent from the model and badge absent from the zone.",
+      "where": "src/flood-study.test.mjs, 'G-149 Move 2'"
+    },
+    {
+      "id": "F5",
+      "claim": "A parcel whose identity cannot be built is a ROW with a basis, never a missing row (Move 1).",
+      "asserted": "A permit with no parcelId and a permit on a pack with no known county FIPS both render state 'unaddressable' with the basis, and still carry their id. The reason the row must exist: a permit that vanishes from a screening list reads as 'screened and clear', which is the opposite of what it is.",
+      "where": "src/flood-study.test.mjs, 'G-149 Move 1'"
+    },
+    {
+      "id": "F6",
+      "claim": "The depth re-ranks the list and the rank carries the argument (Move 3).",
+      "asserted": "A fixed row set ranks exactly [ponds-73, ponds-12, declined, timed-out, clear, gap] -- worst ponding first, then unknowns as work owed ABOVE a clear parcel, then clear, then data gaps last. The header refuses an out-of-bound depth with the engine's own text and refuses to attribute the list to a pack when no cityKey is given.",
+      "where": "src/flood-study.test.mjs, 'G-149 Move 3'"
+    },
+    {
+      "id": "F7",
+      "claim": "The depth is sent on the refresh leg ONLY, and gate-front identifies THIS product.",
+      "asserted": "The refresh POST body carries rainfallDepthInches and the study GET sends no body (a cached study is the depth it was run at); the gate headers use package 'flood-study-screening' and a credential id asserted NOT equal to PE's 'property-explorer-flood-drainage-bff'.",
+      "where": "src/flood-study.test.mjs, 'the engine client is configured, or it refuses'"
+    }
+  ],
+
+  "whatIsNotBuiltAndThisIsTheHonestHalf": [
+    "THE SCREEN. The tab at web/index.html#tab-flood-study is still the placeholder paragraph plus the G-129 'Open on the map' button. Nothing in web/ renders the screening list, the depth control, the two cards or the refusal, so all five artboards (screening, one parcel, depth comparison, running, unavailable) are accounted for in the MODEL and drawn by NOBODY. This is the larger half of the lane.",
+    "THE ROUTE. src/server.mjs has no /api/lenses/development-services/flood-study handler, so nothing serves the model to a browser yet.",
+    "THE PARCEL BRIDGE'S COUNTY FIPS. Nothing in this product supplies the county FIPS that parcelNodeIdFor() requires. bastrop_tx is Bastrop County (48021) and the product already hardcodes Bastrop ArcGIS services, but deriving the FIPS from the pack is a decision with a source, not a constant to type in, so it is left refusing.",
+    "THE PONDING SHARE'S FIELD NAME. pondingSharePercent() reads study.stats.pondingPercent / .pondingSharePercent /.pondingShare, taken from the design's facts, which name stats but NOT the key. It has NOT been confirmed against a live engine payload. Reading only keys that could be verified means the screen will say 'unmeasured' rather than report a confident zero until someone reads a real study -- which is the correct failure direction and is called out here rather than papered over."
+  ],
+
+  "theTwoFactsThatChangedThePlan": [
+    "P:/hauska-map's WORKING TREE is 381 commits behind its own origin/main (HEAD d3510a6 vs origin/main 55613fa). Grepping the checkout for the flood-drainage contract finds NOTHING -- returnPeriodYearsForDepthInches, rainfallCurve and the return-period labels are all absent from it -- which reads exactly like a design citing machinery that does not exist. The machinery is present at the pinned 163fde32 AND at origin/main; the checkout was simply stale. Every fact above was therefore re-read with `git show <sha>:<path>`, never from the working tree.",
+    "The dispatch is NOT in the local C:/Users/cente/doc_repo checkout (it was 148 commits behind). A lane that rooted itself there would have found no dispatch, no design folder and no instrument."
+  ],
+
+  "whatIWillNotDo": "No sub-agent (FAN-DEPTH 0). No deploy, no merge, no PR, no store write, no heavy scan, no lease taken. No edit to src/platform-base.mjs (read and obeyed: it has ONE env var with no default, and the engine client copies that law rather than extending it). No change to SMARTCITY_V1_PLATFORM_BASE or any attempt to reach the masked walrus-app host -- the dispatch names that as planner-owned and as a time sink two lanes already paid for."
+}

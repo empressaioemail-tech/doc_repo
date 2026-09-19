@@ -1,0 +1,153 @@
+{
+  "lane": "g169-deploy-path-windows",
+  "checkpoint": "CP2 -- the fix as built and as MEASURED, with every run that produced a claim recorded verbatim, the two PRs, and the CI conclusion strings. Nothing here is deployed, merged, or run against a serving revision.",
+  "planRows": ["G-169"],
+  "seat": "cente-vsc-g169",
+  "repos": ["plan-review", "smart-files"],
+  "fannedSubAgents": 0,
+  "fanDepth": 0,
+
+  "whatShipped": {
+    "plan-review": {
+      "branch": "lane/g169-deploy-path-windows",
+      "base": "origin/main 4d3da57",
+      "commit": "664e4b3312fedbb05f27d33ee902d6f14b47c453",
+      "diffstat": "scripts/deploy.mjs 178+/3- ; .github/workflows/test.yml 7+ ; package.json 2+/1-",
+      "pr": 20,
+      "prUrl": "https://github.com/empressaioemail-tech/plan-review/pull/20",
+      "state": "OPEN, MERGEABLE, mergeStateStatus CLEAN",
+      "ciConclusionStrings": [{ "check": "test", "status": "COMPLETED", "conclusion": "SUCCESS", "job": "https://github.com/empressaioemail-tech/plan-review/actions/runs/35454753280/job/105927952574" }]
+    },
+    "smart-files": {
+      "branch": "lane/g169-deploy-path-windows",
+      "base": "origin/main 5073f7f",
+      "commit": "f35be5300133b63ffcf7c70e9265d995b1815c74",
+      "diffstat": "identical to plan-review (byte-identical file, same three files touched)",
+      "pr": 19,
+      "prUrl": "https://github.com/empressaioemail-tech/smart-files/pull/19",
+      "state": "OPEN, MERGEABLE, mergeStateStatus CLEAN",
+      "ciConclusionStrings": [
+        { "check": "Unit", "status": "COMPLETED", "conclusion": "SUCCESS", "job": "https://github.com/empressaioemail-tech/smart-files/actions/runs/35454757291/job/105927963031" },
+        { "check": "HTTP round trip", "status": "COMPLETED", "conclusion": "SUCCESS", "job": "https://github.com/empressaioemail-tech/smart-files/actions/runs/35454757291/job/105927962893" }
+      ]
+    },
+    "identicalBytes": "scripts/deploy.mjs sha256 = 588F2B828C69C0C173BDF99C1BDEF8053328E53764BAE416567E3E7805E4FAAF in BOTH repos after the fix. The bases were byte-identical before the fix, so no drift had to be resolved.",
+    "conclusionStringsReadHow": "`gh pr view <n> --json statusCheckRollup` and the `conclusion` FIELD of each check-run, not `gh pr checks` printing 'pass'. AGENT_CONTRACT section 5 names the difference and it is the reason the strings are quoted here."
+  },
+
+  "evidence1_realReadOnlyCLIsThroughTheShippedMechanism": {
+    "whatRunsIt": "a harness that imports `runTool` and `resolveOnPath` FROM THE FIXED scripts/deploy.mjs and calls the same function `issue()` calls. Not a paraphrase, not a re-implementation, and not `--dry-run` (which never reaches issue() at all and is explicitly not offered as evidence by the dispatch).",
+    "readOnly": "Both commands only read: `gcloud run services describe ... --format=value(status.url)` and `vercel --version`. No deploy, no traffic shift, no revision created, no lease needed.",
+    "planReviewVerbatinOutput": [
+      "$ gcloud run services describe plan-review --project plan-review-505715 --region us-east1 --format=value(status.url)",
+      "  resolved -> C:\\Users\\cente\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.CMD",
+      "C:\\Users\\cente\\...\\urllib3\\connectionpool.py:1100: InsecureRequestWarning: Unverified HTTPS request is being made to host 'us-east1-run.googleapis.com'. ...",
+      "  warnings.warn(",
+      "https://plan-review-ozx33wafia-ue.a.run.app",
+      "  exit code: 0   (3713 ms)",
+      "",
+      "$ vercel --version",
+      "  resolved -> C:\\Users\\cente\\AppData\\Roaming\\npm\\vercel.CMD",
+      "Vercel CLI 54.20.1",
+      "54.20.1",
+      "  exit code: 0   (1742 ms)",
+      "",
+      "$ vercel whoami",
+      "  resolved -> C:\\Users\\cente\\AppData\\Roaming\\npm\\vercel.CMD",
+      "Vercel CLI 54.20.1 (Node.js 24.11.1)",
+      "Error: Failed to get package info: Error: Failed to fetch dist-tags from npm",
+      "Error: An unexpected error occurred!",
+      "Error: unable to verify the first certificate; if the root CA is installed locally, try running Node.js with --use-system-ca",
+      "  NON-ZERO     (32004 ms)  kind=exit :: exited with code 1"
+    ],
+    "smartFilesVerbatinOutput": [
+      "$ gcloud run services describe smart-files --project smart-files-505619 --region us-east1 --format=value(status.url)",
+      "  resolved -> C:\\Users\\cente\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.CMD",
+      "C:\\Users\\cente\\...\\urllib3\\connectionpool.py:1100: InsecureRequestWarning: Unverified HTTPS request is being made to host 'us-east1-run.googleapis.com'. ...",
+      "  warnings.warn(",
+      "https://smart-files-padrd77ava-ue.a.run.app",
+      "  exit code: 0   (2680 ms)",
+      "",
+      "$ vercel --version",
+      "  resolved -> C:\\Users\\cente\\AppData\\Roaming\\npm\\vercel.CMD",
+      "Vercel CLI 54.20.1",
+      "54.20.1",
+      "  exit code: 0   (215 ms)"
+    ],
+    "countsWithTheirCountingRule": "F1's predicate is per-command exit status, counting each command once: 4 commands registered, 3 exited 0 with the tool's own output on stdout (both gcloud describes and both vercel --version runs), 1 spawned and exited 1 (vercel whoami, TLS). 0 commands failed with a spawn reason -- which is the claim: the SPAWN succeeded in all four, and the one non-zero is the tool's own exit, reported as kind=exit.",
+    "rawLogs": ["P:/tmp/g169/_g169_realcli.log (plan-review)", "P:/tmp/g169/_g169_realcli_sf.log (smart-files)", "P:/tmp/g169/_g169_realcli.mjs / _g169_realcli_sf.mjs (the harnesses)"]
+  },
+
+  "evidence2_selfTestThreeRunsPerRepo": {
+    "whatRunsIt": "`npm run deploy:self-test` -- the new package.json script, which is a thin wrapper over `node scripts/deploy.mjs --self-test`. The same code runs in CI via the new test.yml step.",
+    "violationProcedure": "a helper (P:/tmp/g169/_g169_violate.mjs) replaces exactly the shipped dispatch block with the legacy `execFileSync(program, args, ...)` call, refusing to write a half-patched file if its anchor is not found; the run is made; the file is restored from a byte copy; the run is made again. The helper is never committed.",
+    "planReviewVerbatin": {
+      "A_pass_exit0": ["  pass  a tool that exists runs and returns real output (npm -> 11.15.0)", "  pass  a tool that does not exist is refused by NAME", "  pass  a value cmd.exe would interpret is REFUSED, not passed", "", "all self-tests pass (real tool, absent tool named, metacharacter refused)"],
+      "B_violation_exit1": ["VIOLATE: spawn reverted to the bare-name call in scripts/deploy.mjs (eol=crlf)", "  FAIL  a tool that exists runs and returns real output  threw kind=spawn could not be spawned (ENOENT)", "  pass  a tool that does not exist is refused by NAME", "  pass  a value cmd.exe would interpret is REFUSED, not passed", "", "1 self-test(s) FAILED"],
+      "C_restored_exit0": ["  pass  a tool that exists runs and returns real output (npm -> 11.15.0)", "  pass  a tool that does not exist is refused by NAME", "  pass  a value cmd.exe would interpret is REFUSED, not passed", "", "all self-tests pass (real tool, absent tool named, metacharacter refused)"]
+    },
+    "smartFilesVerbatin": {
+      "A_pass_exit0": "identical to plan-review A",
+      "B_violation_exit1": "identical to plan-review B (same FAIL line, same kind=spawn ENOENT)",
+      "C_restored_exit0": "identical to plan-review C"
+    },
+    "inCi": {
+      "where": "plan-review PR #20, workflow `test`, step `Run node scripts/deploy.mjs --self-test`, ubuntu-latest, node 22",
+      "verbatimStepOutput": ["  pass  a tool that exists runs and returns real output (npm -> 10.9.8)", "  pass  a tool that does not exist is refused by NAME", "  pass  a value cmd.exe would interpret is REFUSED, not passed", "", "all self-tests pass (real tool, absent tool named, metacharacter refused)"],
+      "whatThatAddsAndWhatItDoesNot": "The step RAN and passed on Linux. On Linux the positive leg's `npm` resolves to a real executable rather than a `.cmd` shim, so the CI run exercises the non-shim branch of the mechanism. The Windows shim branch -- the one the defect was about -- is exercised by the local runs above. Neither run alone is the whole story, and the close says so rather than quoting the green CI tick as if it were the Windows proof."
+    }
+  },
+
+  "evidence3_theErrorMessage": {
+    "howExercised": "the REAL entry point (`node scripts/deploy.mjs`, no flags), run with a PATH that carries node and git but NOT the Cloud SDK directory. The tree was clean, so the clean-tree gate passed; the first tool call could not resolve, so the run failed at the first spawn. Nothing was issued and nothing could have been: gcloud is the first call and it never started.",
+    "exitCode": 1,
+    "planReviewVerbatinOutput": [
+      "[1/3] api      plan-review <- 664e4b3312fedbb05f27d33ee902d6f14b47c453",
+      "  $ gcloud run deploy plan-review --project plan-review-505715 --region us-east1 --source P:\\plan-review-worktrees\\g169-deploy-path-windows --update-env-vars SERVED_COMMIT=664e4b3312fedbb05f27d33ee902d6f14b47c453 --update-labels commit-sha=664e4b3312fedbb05f27d33ee902d6f14b47c453 --quiet",
+      "",
+      "the API deploy FAILED: could not be spawned: 'gcloud' was not found on PATH.",
+      "  command: gcloud run deploy plan-review --project plan-review-505715 --region us-east1 --source P:\\plan-review-worktrees\\g169-deploy-path-windows --update-env-vars SERVED_COMMIT=664e4b3312fedbb05f27d33ee902d6f14b47c453 --update-labels commit-sha=664e4b3312fedbb05f27d33ee902d6f14b47c453 --quiet",
+      "  Check that the tool is installed and on PATH.",
+      "  The deploy is NOT done: the gate never ran."
+    ],
+    "smartFilesVerbatinOutput": [
+      "[1/3] api      smart-files <- f35be5300133b63ffcf7c70e9265d995b1815c74",
+      "  $ gcloud run deploy smart-files --project smart-files-505619 --region us-east1 --source P:\\smart-files-worktrees\\g169-deploy-path-windows --update-env-vars SERVED_COMMIT=f35be5300133b63ffcf7c70e9265d995b1815c74 --update-labels commit-sha=f35be5300133b63ffcf7c70e9265d995b1815c74 --quiet",
+      "",
+      "the API deploy FAILED: could not be spawned: 'gcloud' was not found on PATH.",
+      "  command: gcloud run deploy smart-files --project smart-files-505619 --region us-east1 --source P:\\smart-files-worktrees\\g169-deploy-path-windows --update-env-vars SERVED_COMMIT=f35be5300133b63ffcf7c70e9265d995b1815c74 --update-labels commit-sha=f35be5300133b63ffcf7c70e9265d995b1815c74 --quiet",
+      "  Check that the tool is installed and on PATH.",
+      "  The deploy is NOT done: the gate never ran."
+    ],
+    "beforeForContrast": "the same run on the base commit printed exactly: `the API deploy FAILED (exit ?). The deploy is NOT done: the gate never ran.` -- no kind, no command, no remedy.",
+    "rawLogs": ["P:/tmp/g169/_g169_errmsg.log", "P:/tmp/g169/_g169_errmsg_sf.log"],
+    "theArrayPropertyIsVisibleInThisOutput": "the printed command line shows `--source <path>`, `--update-env-vars SERVED_COMMIT=<40-hex>` and `--update-labels commit-sha=<40-hex>` each arriving as ONE token, which is the property the header claims and the reason the fix refused {shell:true}."
+  },
+
+  "constraintsHonored": [
+    "NO BYPASS FLAG ADDED. `grep` for `--force`, `--skip-gate` and `--no-verify` in the diff returns nothing.",
+    "THE CLEAN-TREE REFUSAL, THE COMMIT RESOLUTION, `--update-env-vars`, THE GATE AND THE EXIT CODES 0/1/2 ARE UNTOUCHED. The diff touches `issue()`, adds the spawn mechanism above it, and adds the self-test; `resolveDeployCommit`, `deployPlan`, `runGate` and the CLI body are unchanged.",
+    "`scripts/served-commit-parity.mjs` IS NOT TOUCHED in either repo, per the dispatch.",
+    "NO API OR CONSOLE DEPLOY, NO TRAFFIC SHIFT, NO REVISION CREATED, NO LEASE TAKEN. The only gcloud invocation in the whole lane is `run services describe`.",
+    "THE PLANNER'S TWO DETACHED WORKTREES (`planner-g160-deploy` in both product repos) WERE NOT REUSED, WRITTEN IN, OR DELETED. This lane made its own worktrees.",
+    "NO SUB-AGENTS. FAN-DEPTH 0, spawned 0, maxDepth 0.",
+    "ONE PR PER REPO, each branched from that repo's `origin/main`, each still 0 commits behind it.",
+    "NO WRITE TO `_catalog/lane_claims.json`, the plan of record, or any `_inbox` close other than this lane's own three artifacts. doc_repo edits are left UNCOMMITTED in this lane's seat worktree, per the contract."
+  ],
+
+  "contradicted": {
+    "one_theDispatchesMechanismSuggestionIsRightForTheWrongReasonAndTheDifferenceMatters": "The dispatch offers, as its first repair, that 'the `.cmd` can be run through `cmd.exe` with the arguments still passed as an array'. Measured, that is true only when the program element handed to `cmd.exe` is the BARE NAME. Handing `cmd.exe` the RESOLVED path breaks the array immediately: `C:\\Program Files\\nodejs\\node.exe` is re-split at the space into `C:\\Program` and `Files\\nodejs\\node.exe`. This fleet's own gcloud shim lives under `...\\Cloud SDK\\...`, so the resolved-path form is exactly the form that would have failed here. The shipped fix therefore resolves on PATH to DECIDE and passes the bare name to EXECUTE.",
+    "two_theFailureKindCountIsNotWhatTheDispatchImpliesForTheBareName": "The dispatch's measurement table pairs `gcloud.cmd` with EINVAL and `gcloud` with ENOENT. Reproduced. Worth adding for the next reader: the legacy bare-name call in the SELF-TEST surfaces as `ENOENT` (the program name `npm` has no extension so Node never reaches the `.cmd`/`.bat` block), while a name WITH the shim extension surfaces as EINVAL. Both are spawn errors and both were previously rendered as `(exit ?)`, which is the point of the kind field.",
+    "three_theVercelCLICannotReachItsAPIOnThisHostAndThatIsNotThisDefect": "`vercel whoami` SPAWNED correctly -- it printed `Vercel CLI 54.20.1 (Node.js 24.11.1)` -- and then exited 1 with `unable to verify the first certificate`. That is this host's TLS interception, not a spawn failure, and the mechanism reported it as `kind=exit` rather than as a spawn error, which is the taxonomy working. It is recorded because `served-commit-parity.mjs`'s console leg shells `vercel ls <project> --format=json` and will hit the same wall here, and because that repo's own suite already contains a test named for exactly this case ('console side REFUSES when the CLI fails, and names the TLS remedy only for a cert failure'). A reader who sees that red must not read it as this defect returning.",
+    "four_theDispatchsEgressNoteIsNotReproduced": "The dispatch's table shows `execFileSync(\"gcloud\", [\"--version\"], {shell:true})` succeeding. It does, and it is the reason `{shell:true}` is the tempting answer -- hence the header's explicit refusal of it. Recorded so the refusal does not read as a claim that the one-word fix does not work; it works, and that is the danger."
+  },
+
+  "leave_behind": [
+    "MERGE AND THE FIRST REAL DEPLOY ARE THE ONLY THINGS LEFT. plan-review #20 and smart-files #19 are OPEN, MERGEABLE and CLEAN with every check-run conclusion SUCCESS. Merging is the integration seat's; the deploy path's first real green run is the end-to-end proof this lane deliberately did not take.",
+    "THE TWO PRs ARE BYTE-IDENTICAL IN scripts/deploy.mjs AND MUST BE KEPT SO. If one is merged and the other is not, the two products' deploy paths diverge on the mechanism this row exists to make correct. The sha256 to compare is recorded above.",
+    "`--self-test` NOW RUNS IN BOTH REPOS' CI. If either PR is merged with the CI step dropped, the instrument becomes dormant -- green in a suite that never invokes it is the exact shape the G-160 header warns about ('a test that runs in no workflow is dormant').",
+    "THE ERROR MESSAGE IS THE HALF THAT IS EASY TO LOSE. `FAILED (exit ?)` was replaced by a message that names the kind, the command and the remedy; a later refactor that reintroduces a bare exit code would silently undo half this row without failing any test. The self-test does NOT assert the rendered message (it asserts the ToolFailure kinds that produce it), so the rendering has no test of its own -- named here rather than left implicit.",
+    "`vercel whoami` AND ANY NETWORK-REACHING VERCELL COMMAND FAIL ON THIS HOST FOR A TLS CERTIFICATE REASON (see contradicted.three). It is an environment condition, it is not fixed here, and it will make served-commit-parity's console leg red on this host until the root CA situation is resolved.",
+    "NO WATCH OR RUNNER WAS LEFT RUNNING. Every command in this lane was exit-bounded; there is no detached process, no lease, and no watch registration to clean up."
+  ]
+}
