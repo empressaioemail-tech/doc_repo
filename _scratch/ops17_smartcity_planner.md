@@ -820,3 +820,34 @@ All five legs returned `ECONNRESET` against the DO hostname. Without the healthy
 - **A-182 records all of the above**; G-168's deps and status cells now carry the correction.
 - **Reachability is EVIDENCED but not directly measured.** `vendor-live.mjs` has two distinct failure branches: `platform fetch failed: <err>` for a transport error and `platform HTTP <code>` for a response. G-152's blocked-board artifact records `platform HTTP 504`, which is only producible from a RESPONSE, so `dolphin-app` demonstrably reached `walrus-app-kzog6.ondigitalocean.app`. Under G-163 that path returns `424` with the handler's body, and the deployed basis precedence ranks `body.message` first. **What remains is the rendered page, not the transport.** The DO log proxy rejected this seat's read (HTTP 400 on the token), so the page render stays UNMEASURED.
 - **The deployed commit is `ea27024`** (read from `/apps/{id}/deployment`, not from a tree on disk), and it carries `platform-base.mjs` with zero GCP hosts.
+
+## 2026-09-19 - the closing path is now a gate (A-183)
+
+### LESSON - asking "is it on disk" and asking "is it in the tree" are different questions, and only one of them catches a close that was never copied in
+
+`cited-untracked.mjs` asks whether a cited path exists on disk but is untracked. **That catches the close that reached `main` and was never committed. It cannot see the close that was never copied into `main` at all**, because from the integration checkout that path exists nowhere - not on disk, not in the index - so there is nothing for the old check to report. Three waves of this defect were filed as notes by the seat that could not measure it. **The question with a failing answer in BOTH cases is "is the cited path in the tree", and it needs two independently derived inputs: the citation parsed out of the content, and the tree read out of git.** One party cannot fabricate both.
+
+### LESSON - a check that admits globs and prose ellipses reports a number nobody can act on, which is the same defect it was written to find
+
+The first census without a classifier reported **316 dangling citations**, and almost all were shapes the repo writes on purpose: `_inbox/*_close.json` in OPS-17, `_inbox/…` in prose, `_inbox/<date>_<lane id>_close.json` in a mission template. With the classifier: **107 real ones out of 15,080 graded citations.** The classifier is the load-bearing part, so it is the part that is self-tested.
+
+### LESSON - my first version of this gate would have refused EVERY dispatch commit in the fleet
+
+A compiled dispatch names the close its lane is to produce: `p323-tag-hygiene_dispatch.md` lines 145-147 name `_p323-tag-hygiene_cp1.json`, `_cp2.json` and `_close.json`. **Those files do not exist yet by construction, so grading them blocks the standard workflow on day one, and a hook that blocks work it was never meant to reach teaches the fleet to use `--no-verify` rather than to obey it.** The exemption is `_dispatches/`, `_catalog/dispatch_missions/` and `.github/enforcement-baseline.json` (which records violation fixtures that were INJECTED and removed). It is asserted in the self-test NOT to cover plans of record, sessions, `_STATE.md`, the tracker or inbox reports - which is where the defect actually occurred. **The pair is the safety: the same citation in a dispatch passes, and in a plan of record it fails.** Caught at 454 measured vs 107 graded, before any of it was committed.
+
+### LESSON - a control that only ever passes has not been shown to work, so the pin was falsified before it was trusted
+
+Injected the exact event the control exists to catch (one more dangling citation, by lowering the pin by one and shortening its target list), observed exit 2 naming the fresh citation by path, restored byte-identical, observed exit 0. Then the same again through the REAL `pre-commit` hook in a temp repo, and again in a LINKED WORKTREE, which is where the defect actually happens. **The first run of the hook test FAILED and that failure was the most useful result of the session**: it proved the gate was still dormant because it had not yet been wired into `gradeStaged`. A self-test that cannot fail on a dormant control is not a self-test.
+
+### GROUND-TRUTH (2026-09-19, HEAD 6c9e40e9, `close-artifact-gate.mjs --census`)
+
+- **15,080 graded concrete `_inbox/` citations; 107 dangling; 2,425 target citations exempted as forward-looking.** Census runs in ~6s via one `git grep` over HEAD; the first version spawned one `git show` per tracked file and took minutes on 8,978 files, which is not a cost a control can carry.
+- **The 107 split three ways by recoverability, and the split is the actionable part: 23 are ON DISK IN MAIN and merely uncommitted** (the same defect one step later, committed in the same change that pinned them), **2 live only in a seat worktree, and 82 exist nowhere** and must be repointed or regenerated.
+- **Three controls now run at every commit in every worktree**: `probe-close-gate` (OPS-23 R-4), `fan-depth-gate`, and `close-artifact-gate`. All three are composed in `gradeStaged` in `scripts/enforcement/git-commit-gates.mjs`.
+- **Five CI-ratchet controls were already REGRESSED on `main` before this change** and are NOT mine: `c-00-vehicle-sync`, `canon-divergence`, `memory-promotion-gate` (untriaged LESSON backlog 124 against a pin of 49), `row-declaration` (OPS-16 A-023 negative case for P-63), and `cursor-gate-adapter`. All five were re-run in a DETACHED WORKTREE AT CLEAN HEAD and fail there too, which is the only way to tell "I broke it" from "it was already broken".
+
+### OPEN
+
+- **The remaining 82 dangling citations are pinned by PATH in `scripts/enforcement/close-artifact-census-baseline.json`, not as prose.** Each needs the citation repointed or the artifact regenerated, and the pin may only move DOWN. The pin is the record; do not card a prose row for it.
+- **The 2 that live only in a seat worktree are not resolved by this change.** `close-artifact-gate --census` prints them under `STRANDED` with the worktree that holds them. The 10 previously reported included in-flight lanes (p368, p371), which is the normal state of a busy fleet and is why that count is DIAGNOSTIC and not a gate condition.
+- **The named bypasses are unchanged and must be stated when this is reported as coverage**: `--no-verify`, a fast-forward merge, a citation written into an unstaged file, `core.hooksPath` changed, and a clone that has not run `--install`. It reads whether the path resolves; it does not read the inner content of a close.

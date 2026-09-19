@@ -1,0 +1,91 @@
+{
+  "lane": "g128-map-dock",
+  "planRows": ["G-128"],
+  "note": "scripts/surface-probe.mjs (referenced in this dispatch's CLOSE SKELETON) is OPS-23's own instrument: hardcoded to a fixed parcel set on smartsite.cloud, a different program's surface. It does not apply to this lane's surface (smartcity-dashboards, OPS-17). This file is this lane's own equivalent -- a live-measured record of the deployed surface -- cited from the close in the same probe.artifact slot.",
+  "measuredAt": "2026-09-14T22:44:00Z",
+  "service": "smartcity-dashboards",
+  "region": "us-east1",
+  "servingRevision": {
+    "field": "status.traffic[].revisionName / status.traffic[].percent",
+    "measuredVia": "gcloud run services describe smartcity-dashboards --region=us-east1 --format=json, read by field name in node, never a positional value() formatter",
+    "revisionName": "smartcity-dashboards-00072-cow",
+    "percent": 100,
+    "tag": "g128b",
+    "matchesLatestReadyRevisionName": true
+  },
+  "deployHistory": [
+    { "revision": "smartcity-dashboards-00070-jun", "tag": "g128", "commit": "07efc80", "note": "first canary, shifted to 100%, then found broken by the live probe below" },
+    { "revision": "smartcity-dashboards-00072-cow", "tag": "g128b", "commit": "621f9e6 / merged as c7174f8 (#61)", "note": "fix for the pill-overlap bug found live; this is the final serving revision" }
+  ],
+  "measurements": [
+    {
+      "id": "sliver-defect-standalone-unfixed-path",
+      "method": "playwright-core headless Chromium, viewport 380x700, live GET https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app/property-map.html?cityKey=bastrop_tx (standalone, window===window.top)",
+      "measured": { "bodyClass": "pm-mode-dock", "pmMapBoundingBox": { "width": 40, "height": 582 }, "pmPanelVisible": true },
+      "verdict": "CONFIRMS the diagnosed defect live: at 380px (--sc-rail) the map collapses to a 40px sliver when #pm-panel is present and unhidden, matching the arithmetic prediction (rail width minus the panel's fixed 340px) almost exactly."
+    },
+    {
+      "id": "sliver-defect-embedded-fixed-path",
+      "method": "playwright-core headless Chromium; hosted the SAME live URL inside a 378x260 iframe on a local test page (reproducing the rail's real embedded context) to trigger window!==window.top",
+      "measured": { "bodyClass": "pm-embedded pm-mode-dock", "pmMapBoundingBox": { "width": 378, "height": 320 }, "pmPanelVisible": false, "pmDockmodeVisible": true },
+      "verdict": "PASS. Embedded, #pm-panel hides and #pm-map fills the full 378px width -- no sliver."
+    },
+    {
+      "id": "dock-expand-full-round-trip-live",
+      "method": "playwright-core headless Chromium against the g128b canary tag (pre-shift) and again against production post-shift, clicking data-dock-mode buttons in sequence: expand, full, dock, expand, full, dock",
+      "measured": { "allTransitionsSucceeded": true, "bodyClassPerStep": ["pm-mode-expand", "pm-mode-full", "pm-mode-dock", "pm-mode-expand", "pm-mode-full", "pm-mode-dock"] },
+      "verdict": "PASS post-fix. Pre-fix (revision 00070-jun), the same sequence failed on the second Full->Dock transition: Playwright's own diagnostic named #pm-layers-toggle inside #pm-layers.pm-layers-open as intercepting the click, because the full-height layers panel and the mode pill occupied the same screen region. Fixed in 00072-cow (PR #61) by offsetting the panel below the pill; re-measured clean, two full cycles."
+    },
+    {
+      "id": "full-mode-layers-sheet-opens",
+      "method": "playwright-core, clicked data-dock-mode=full, read #pm-layers computed state",
+      "measured": { "layersOpen": true, "layersBoxWidth": 280, "layersBoxHeight": 562 },
+      "verdict": "PASS. THE LAYERS RULE: the categorized panel renders open and full-height only in Full mode."
+    },
+    {
+      "id": "dock-expand-layers-stay-compact",
+      "method": "playwright-core, clicked data-dock-mode=expand, read #pm-layers computed state",
+      "measured": { "layersOpen": false, "layersBoxWidth": 130.95, "layersBoxHeight": 28 },
+      "verdict": "PASS. Dock/Expand show the compact button, not the full categorized panel."
+    },
+    {
+      "id": "place-tab-removed-with-boundary-pack",
+      "method": "playwright-core, GET /?lens=development-services&cityKey=bastrop_tx (a pack WITH a real boundary/city-limits record)",
+      "measured": { "placeTabPresentInDom": false, "anchorDsMapBoundingBox": { "width": 378, "height": 183 } },
+      "verdict": "PASS. Place tab absent; the persistent rail anchor is present and sized to the rail width."
+    },
+    {
+      "id": "place-tab-removed-without-boundary-pack",
+      "method": "playwright-core, GET /?lens=development-services (no cityKey -- resolves to the default template-city fixture pack, which does not carry a real boundary record)",
+      "measured": { "placeTabPresentInDom": false, "anchorDsMapBoundingBox": { "width": 378, "height": 230 } },
+      "verdict": "PASS. Same result on the fixture pack: Place tab absent, rail anchor present."
+    },
+    {
+      "id": "property-detail-honest-fallback-live",
+      "method": "playwright-core, full app shell at /?lens=development-services&cityKey=bastrop_tx with no Hauska product key attached (no key available in this build/verification environment for the real, tenant-private bastrop_tx pack -- see openItems)",
+      "measured": {
+        "detailPanelText": "ZONING DISTRICT\n—\nFLOOD ZONE\n—\nBUILDABLE AREA\nRefused\nRefused by ruling R-2: the envelope draws, the figure is withheld until an envelope atom backs it",
+        "recordsEmptyVisible": true,
+        "recordsBasisText": "Basis: Not read: property intel did not read for this pack"
+      },
+      "verdict": "PASS for the honest-fallback path: no fabricated data, a real stated basis, buildable area still renders REFUSED with its basis even though the live fetch itself could not authenticate. Does NOT confirm the populated-data path (see openItems) -- that requires a real bastrop_tx product key, which this environment does not have."
+    },
+    {
+      "id": "gold-parcel-address-independent-confirmation",
+      "method": "mcp__claude_ai_Smart_Site__get_smart_site, parcelNodeId 48021:34137, depth stub and node -- a live read of the SAME underlying Bastrop County parcel data (a different Hauska surface, Smart Site, not gated by the smartcity-dashboards tenant key this lane lacks)",
+      "measured": {
+        "label": "908 PINE , BASTROP, TX 78602",
+        "ownerMailingAddress": "908 PINE ST, BASTROP, TX 78602",
+        "zoning.district": "SF-1",
+        "flood.floodZone": "X",
+        "setbacksEnvelope": { "frontFt": 30, "sideFt": 10, "rearFt": 30, "cornerFt": 20 },
+        "utilityServiceFact.sewer": { "ccnNo": "20466", "utility": "CITY OF BASTROP" },
+        "envelopeOverlay.basis": "modelled-figure-withheld"
+      },
+      "verdict": "The queried address DS_PROPERTY_DOCK_ADDRESS = \"908 Pine St\" (web/app.js) is REAL and matches this parcel's on-record mailing address exactly. Zoning SF-1, flood zone X, and the buildable-envelope 'modelled-figure-withheld' ruling all match the approved mockup and this lane's hardcoded REFUSED row exactly. Setbacks (30/10/30/20) and water/sewer (City of Bastrop, CCN 20466) are REAL data that exists in Hauska's broader system but is NOT exposed through smartcity-dashboards' own composePropertyIntelSummary result shape -- confirmed as a genuine data-path gap, not a fabrication on this lane's part, and left out of the rendered panel rather than invented (see missionPremise in the close)."
+    }
+  ],
+  "openItems": [
+    "Could not directly call GET /api/property-map/summary?cityKey=bastrop_tx&address=908%20Pine%20St with a real Hauska product key for that pack -- returns 401 unauthorized without one, and no such key was available in this build/verification environment (a standing gap: the prior G-116 lane's own close, 2026-09-03, listed 'Real Hauska tenant key for bastrop_tx' as an open item for the same reason). The independent Smart Site confirmation above is strong indirect evidence the address resolves, but the exact string match against smartcity-os's own geocoder is not directly confirmed."
+  ]
+}

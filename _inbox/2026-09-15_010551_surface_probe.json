@@ -1,0 +1,82 @@
+{
+  "_note": "scripts/surface-probe.mjs (OPS-23's fixed-parcel-set completion predicate for smartsite.cloud) does not apply to this mission -- G-135 is a cross-seat credential-distribution and documentation lane, not a graded parcel-surface measurement, and it is a G-row (OPS-17), not a P-151..P-167 row the probe-close-gate hook governs. G-128's and G-133's closes already reported this same non-fit for their own dispatches and substituted a self-authored evidence artifact rather than silently forcing an unrelated instrument or fabricating a pass/fail row not actually measured. This file follows that precedent.",
+  "lane": "g135-tenant-key-distribution",
+  "instrumentSubstituted": true,
+  "substituteInstrument": "manual, source-cited enumeration + real repo/PR actions, exit-bounded (every shell command below ran under an explicit `timeout`), each row MEASURED (a real action actually taken/command actually run, output captured) unless explicitly marked UNMEASURED with a stated reason -- never a fabricated PASS for something not actually run.",
+
+  "rows": [
+    {
+      "id": "R1-lane-claimed",
+      "claim": "The g135-tenant-key-distribution lane was claimed under this session's own seat id before any investigation or write.",
+      "method": "node scripts/lane-claim.mjs claim --lane g135-tenant-key-distribution --seat cente-g135 --plan-row G-135 --dispatch _dispatches/2026-09-15_g135-tenant-key-distribution_dispatch.md, run from P:/doc_repo.",
+      "result": "CLAIMED g135-tenant-key-distribution for cente-g135 (G-135). Proceed. Exit 0.",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "R2-seat-boundary-confirmed-not-substrate",
+      "claim": "This session holds no registered worktree for hauska-mcp-server and is therefore not the substrate seat.",
+      "method": "Read _catalog/seat_register.json's substrate entry directly: the only registered hauska-mcp-server worktree is P:/seat-worktrees/substrate/hauska-mcp-server on branch seat/substrate. Confirmed this session has no such worktree checked out or referenced anywhere in its own state.",
+      "verdict": "PASS (MEASURED) -- correctly did NOT write to hauska-mcp-server as a result"
+    },
+    {
+      "id": "R3-mint-mechanism-read-at-source",
+      "claim": "hauska-mcp-server's admin mint endpoint (POST /admin/keys) is exactly as this lane's mint-request artifact describes it.",
+      "method": "Read P:/hauska-mcp-server/src/admin.ts directly (base repo path, read-only, no write attempted).",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "R4-env-var-name-in-dispatch-was-imprecise-corrected",
+      "claim": "The dispatch's instruction to name env var HAUSKA_TENANT_KEY (singular) in .env.example matches what the deployed code reads.",
+      "method": "git fetch + read origin/main's src/tenancy.mjs in smartcity-dashboards directly.",
+      "result": "FALSE as literally stated: no HAUSKA_TENANT_KEY env var exists anywhere in the code. The real mechanism is a per-request x-hauska-key header validated live against HAUSKA_MCP_URL/auth/whoami; HAUSKA_TENANT_KEYS (plural) is a local/test-only bypass, disabled on Cloud Run.",
+      "verdict": "CORRECTED, NOT SILENTLY FOLLOWED (MEASURED) -- .env.example documents the real mechanism instead of the literal (incorrect) instruction; see CP1"
+    },
+    {
+      "id": "R5-env-example-documented-and-pr-opened",
+      "claim": "smartcity-dashboards' .env.example now documents the Hauska tenant-key mechanism and points to the credential index.",
+      "method": "Edited .env.example on a fresh branch off origin/main@35a4ae2, committed, pushed, opened a PR.",
+      "commands": [
+        "timeout 60 git fetch origin main",
+        "timeout 60 git push -u origin g135-tenant-key-env-doc",
+        "timeout 60 gh pr create ... => https://github.com/empressaioemail-tech/smartcity-dashboards/pull/64"
+      ],
+      "verdict": "PASS (MEASURED) -- PR open; CI: test PASS, a11y PENDING as of this artifact's write time (unrelated job scanning served surfaces; this change touches only a template file with no runtime effect). Will be confirmed and, if green, merged before this lane releases; if not green by close time, reported open rather than claimed merged."
+    },
+    {
+      "id": "R6-credential-index-built",
+      "claim": "_catalog/credential_access_index.json exists, names only (never values), each entry sourced from a cited prior artifact.",
+      "method": "Read/write directly in this lane's own doc_repo root (P:/doc_repo); every entry's sourcedFrom field cites a real prior close/checkpoint or a file this lane read this session.",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "R7-mint-request-filed",
+      "claim": "A concrete, actionable mint request exists for the substrate seat, naming the exact endpoint/body rather than a vague ask.",
+      "method": "_inbox/2026-09-15_g135_substrate_mint_request.md written, citing src/admin.ts's real schema (R3) and this dispatch's own constraints (do not hand out the pilot key; never print raw values).",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "R8-g116-close-annotated",
+      "claim": "G-116's close (2026-09-03) now carries a dated correction of its false 'does not exist yet' claim, without rewriting the original text.",
+      "method": "Added a new top-level correction_2026-09-15_g135 field to _inbox/2026-09-03_g116-bastrop-dashboards-pack_close.json; original fields left byte-for-byte unchanged (additive edit only, verified by reviewing the diff before and after).",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "R9-g128-close-annotated",
+      "claim": "G-128's close (2026-09-14) now carries a dated correction distinguishing what it actually claimed (unavailable in its own environment) from what it inherited by citation (does not exist, false), without rewriting the original text.",
+      "method": "Added a new top-level correction_2026-09-15_g135 field to _inbox/2026-09-14_g128-map-dock_close.json; original fields left byte-for-byte unchanged.",
+      "verdict": "PASS (MEASURED)"
+    },
+    {
+      "id": "R10-acceptance-test-full-shell-probe-mounting-map-iframe",
+      "claim": "A full-shell authenticated probe on bastrop_tx mounts the map iframe, using the new verification-scoped credential.",
+      "method": "Would require presenting the new key's raw value as x-hauska-key against the live deployed smartcity-dashboards service and observing the compose response / iframe src.",
+      "verdict": "UNMEASURED -- REFUSED, not attempted, not fabricated. No raw key value exists: the new credential is requested (R7) but not yet minted (seat boundary, R2), and the operator's existing pilot key's raw value is both off-limits (dispatch instruction) and structurally unobtainable (one-way hash, per admin.ts's own mint-response comment and G-133's prior finding). This is the row this close's status of closed-partial turns on."
+    },
+    {
+      "id": "R11-violation-test-refused-for-another-tenant",
+      "claim": "The new credential is accepted for bastrop_tx and refused for another tenant.",
+      "method": "Would require the same raw key value as R10, presented once with bastrop_tx expectations and once impersonating/requesting a different tenant's pack.",
+      "verdict": "UNMEASURED -- same reason as R10. Cannot be measured without a raw key value this lane does not have and may not obtain by any available means."
+    }
+  ]
+}

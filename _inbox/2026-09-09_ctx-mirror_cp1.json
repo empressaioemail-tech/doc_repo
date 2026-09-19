@@ -1,0 +1,33 @@
+{
+  "lane": "legacy-design-tools-ctx-mirror",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/legacy-design-tools-ctx-mirror",
+    "branch": "fix/ctx-mirror-refused-projection",
+    "baseCommit": "3c3c243d9319ed453ea9f0f581009c705a6a30ce"
+  },
+  "whyRefusedFallsThrough": {
+    "rootCause": "TWO separate defects stack, not one. (1) attachVerdictLayersToFacets (structuralFactToFacetsWire.ts:216) gates its entire parcel_record-wins branch on `parcelRecordZoningFact.state !== \"refused\"`. When the zoningDistrict rail's own cell is kind=refused, zoningFactFromParcelRecord.ts wraps it as ZoningFactRefusal ({state:\"refused\", code:\"parcel-record-engine-refused\", entityId, reason}) -- and that whole shape is EXCLUDED from ever reaching `out.zoning`. Execution falls to the `else if (zoningVerdict...)` branch instead, which sets out.zoning to the city-limits-derived fallback (verdict:\"stamp-missing\"), discarding the rail's real, specific reason entirely. (2) zoningSourceMirror (same file, ~line 102) has three branches (district-with-citation, city-limits-shaped absence, parcel_record ZoningFactAbsent) -- none matches a ZoningFactRefusal shape ({state:\"refused\",...}, no `absence` key, no `verdict` key at all), so even if out.zoning DID carry it, the mirror would return undefined today, not verbatim-copy it.",
+    "whyBothMustFix": "Because of defect (1), out.zoning never becomes the ZoningFactRefusal shape in the first place -- it becomes CITY_LIMITS-style {status:\"absent\",verdict:\"stamp-missing\",...}. zoningSourceMirror's branch 2 (`typeof rec.verdict===\"string\" && rec.status===\"absent\"`) THEN matches that fallback shape and mirrors \"stamp-missing\" verbatim onto provenance.zoningSource. That is the literal path to the observed defect: both facets.zoning.verdict and provenance.zoningSource.verdict end up \"stamp-missing\", which is not in verify-walk.mjs's ABSENCE_STATE_TOKENS (only absent-verified/not-applicable/refused), so classifyRequiredLeaf grades it unrecognised-declared-state, ok:false, on BOTH required leaves (`zoning` and `provenance.zoningSource` are both in REQUIRED_TIER1_FACET_PATHS, confirmed by reading verify-walk.mjs live at P:/tmp/ctx-w2-gate, HEAD 7a53c65, confirmed 0 commits behind origin/main).",
+    "graderRead": "Reproduced classifyRequiredLeaf verbatim from the live P:/tmp/ctx-w2-gate/src/jobs/verify-walk.mjs (confirmed current, not stale, via git fetch + rev-list --count HEAD..origin/main = 0 for this file). Key finding: the ABSENCE_STATE_TOKENS 'refused' branch (line 368) grades {state:\"refused\",ok:true} UNCONDITIONALLY -- it does not check basis/reason/scope the way absent-verified and not-applicable do. So the fix does not need a reason to PASS the grader; it needs one to be honest, per this program's own 'every absence carries its basis' house rule, and the dispatch's explicit instruction to carry it."
+  },
+  "scopeCorrection": {
+    "narrowerThanFirstRead": "My first pass considered projecting ALL ZoningFactRefusal codes (unaccounted, invalid-parcel-node-id, parcel-record-cell-miss, malformed-cell, store-not-configured, engine-refused) honestly. Reading the EXISTING test file (structuralFactToFacetsWire.test.ts) before writing any fix caught that this would be a scope violation: two already-passing tests encode a DELIBERATE standing behavior I must not disturb -- 'a REFUSED ledger fact is never surfaced -- falls through to the baked stamp' and 'a REFUSED ledger fact with no baked stamp falls through to the city-limits verdict, unchanged' (both use code:\"parcel-record-malformed-cell\"), plus the ELGIN test ('an unaccounted rail plus an in-city containment gives stamp-missing on BOTH, and absent-verified on NEITHER') which explicitly asserts unaccounted rails keep falling through to the city-limits fallback rather than surfacing as refused, with its own comment naming this a 'standing ruling'.",
+    "narrowedFix": "The fix targets EXACTLY code===\"parcel-record-engine-refused\" (i.e., parcel_record_cell zoningDistrict kind literally = \"refused\", the Factory engine's own deliberate refusal with a real domain reason) -- the one case this dispatch measures (549 Caldwell parcels) and the one case with no existing test asserting fallback behavior. All other ZoningFactRefusal codes, including unaccounted, are left completely unchanged."
+  },
+  "planForFix": [
+    "attachVerdictLayersToFacets: add a new branch between the main present/absent branch and the zoningVerdict fallback: when parcelRecordZoningFact?.state===\"refused\" && parcelRecordZoningFact.code===\"parcel-record-engine-refused\", set out.zoning = parcelRecordZoningFact (verbatim, same convention as the existing absent branch) and cov.zoning = false.",
+    "zoningSourceMirror: add a new branch matching rec.state===\"refused\" && rec.code===\"parcel-record-engine-refused\", returning {...rec, mirrors:\"zoning\"} verbatim -- same convention as the existing city-limits-absence branch.",
+    "Do not touch any other branch, the factory grader, REQUIRED_TIER1_FACET_PATHS, or any threshold."
+  ],
+  "otherUnhandledKindsFoundSoFar": [
+    "unaccounted (code parcel-record-unaccounted): confirmed still falls through to the city-limits fallback by deliberate existing design (Elgin test). Not fixed by this lane -- named here per dispatch instruction 3, not silently mapped.",
+    "invalid-parcel-node-id, parcel-record-cell-miss, parcel-record-malformed-cell, parcel-record-store-not-configured: adapter/plumbing-level refusals, not a rail-earned state. Left on the existing fallback path, matching two pre-existing passing tests I must not break."
+  ],
+  "verifyPlan": {
+    "unit": "Reproduce classifyRequiredLeafVerbatim (matching CTX-LEAVES's own precedent of importing/reproducing rather than reimplementing from memory) in the test file, cited against the live P:/tmp/ctx-w2-gate/src/jobs/verify-walk.mjs read. Assert the new fixture grades {state:\"refused\",ok:true} on both facets.zoning and provenance.zoningSource post-fix, and assert the PRE-fix shape (the city-limits stamp-missing fallback this defect currently produces) grades ok:false with state unrecognised-declared-state -- proving the check can fail for the right reason.",
+    "endToEnd": "Build, then grade the Caldwell jurisdiction cohort (25 parcels / 9 jurisdictions) against the cortex-api-00753-feg canary, reporting the zoning-failure count before and after."
+  }
+}

@@ -1,0 +1,218 @@
+{
+  "checkpoint": "CP2",
+  "lane": "CTX-B7",
+  "title": "mid-work adversarial checkpoint: the zoning blocker is false, and the join under all four leaves is not sound on one county",
+  "planRows": ["P-124"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-09-10_ctx-b7_dispatch.md",
+  "at": "2026-09-10T15:40:00Z",
+  "seat": "property",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-b7",
+  "branch": "fix/ctx-b7-claim-vs-roll-leaves",
+  "baseCommit": "9ae492466b6874204df6b66fc47ceec72665f190",
+  "snapshotDeclared": "code: legacy-design-tools @ 9ae49246. data: Neon fancy-fire-06136146 / f06-staging-neondb / neondb, read-only, every scan between 2026-09-10T15:07Z and 15:40Z.",
+
+  "falsifiersScored": {
+    "note": "pre-registered in CP1 BEFORE any scan returned. DEV_PROCESS 4.5.",
+    "p1_situsCityRecoverableReproducesB6": {
+      "predicted": "78,428 within ~1%",
+      "measured": 78428,
+      "verdict": "WON, exactly. Travis 78,332 + Caldwell 63 + Hays 33. Two instruments written independently agree to the row."
+    },
+    "p2_travisWouldBeTheDisagreementCounty": {
+      "predicted": "situsCity DISAGREE non-zero and LARGER than the recoverable population on Travis",
+      "measured": "total swap 30,840. TRAVIS SWAP IS ZERO. The swaps are Hays 30,748 and Caldwell 92.",
+      "verdict": "LOST, and losing it is what opened the real finding. My one-payload-two-vintages reasoning predicted the wrong county entirely. Travis's claim and its declared roll never disagree on a city that both carry; Travis's defect is 361,321 absences, because the 2025 StratMap drop carries situs_city on ZERO of its 380,918 rows."
+    },
+    "p3_bastropAcreageRefusedRecoverable": {
+      "predicted": "non-zero on Bastrop",
+      "measured": "1,598 of Bastrop's 15,542 refused acreage cells are recoverable",
+      "verdict": "WON."
+    },
+    "p4_jurisdictionMovementFarSmallerThanCellChanges": {
+      "predicted": "far smaller",
+      "measured": "ZERO, in every county, against 109,269 cell changes",
+      "verdict": "WON, and by more than predicted. The mechanism is structural, not a small residue."
+    },
+    "whatWouldHaveProvedTheCardWrong": "if the declared roll's situs_city were emptier than the claim's, the precedence would be a regression. Measured: change_loss = 0 in every county. No parcel loses a city, because a blank roll cell falls through to the claim by construction."
+  },
+
+  "answer1_theZoningBlockerIsFALSE": {
+    "b6sStatedReason": "situsCity feeds resolveZoningJurisdiction as the jurisdiction fallback, so changing it moves zoning-jurisdiction assignment for ~78k parcels.",
+    "verdict": "FALSE. Zero parcels change zoning jurisdiction. Not few: zero, and for a structural reason.",
+    "provenTwoWays_notOne": {
+      "codeRead": [
+        "resolveZoningJurisdiction (lib/cad-ingest/src/txgio/zoning-layers.ts:571-575) consults situsCity ONLY when txgio_parcel.zoning_jurisdiction is blank; a stamped-but-unknown key still returns before situs is read.",
+        "assembleTier1Payload (artifacts/api-server/src/lib/nodeFacetTier1Assemble.ts:350-384) writes the zoning facet -- the only place jurisdictionKey survives onto a payload -- ONLY when zoning_district is non-blank.",
+        "The single writer of either column, flushBatch in lib/cad-ingest/src/txgio/zoning-stamp-db.ts:139-141, sets zoning_district AND zoning_jurisdiction in ONE UPDATE statement. The only other writer, artifacts/api-server/scripts/backfill-bastrop-tier1-zoning-provenance.mjs:131-137, only ever FILLS a missing jurisdiction WHERE a district exists.",
+        "Therefore a district without a jurisdiction is unwritable, and where a district exists the situs fallback is unreachable."
+      ],
+      "measurement": {
+        "when": "2026-09-10T15:05Z, staging, read-only, full scan",
+        "denominator": "1,568,849 txgio_parcel rows in the six CTX counties",
+        "bothColumns": 621147,
+        "neitherColumn": 947702,
+        "districtWithoutJurisdiction": 0,
+        "jurisdictionWithoutDistrict": 0,
+        "countingRule": "nullif(btrim(coalesce(col,'')),'') IS NOT NULL per column, one row per txgio_parcel row, all six counties, no sampling."
+      },
+      "endToEndConfirmation": {
+        "when": "2026-09-10T15:15-15:17Z",
+        "rule": "applied the actual precedence to all 1,516,110 tier-1 rows and counted how many CHANGED cities land on a parcel that is unstamped AND carries a district",
+        "changed_unstamped_with_district": 0,
+        "perCounty": "48021 0, 48055 0, 48209 0, 48309 0, 48453 0, 48491 0",
+        "baked_district_no_jurisdictionKey": "0 of 671,481 baked districts"
+      },
+      "secondMechanismConsideredAndRejected": "the co-presence could be a coincidence of the current stamp run rather than a property of the writer. Rejected by reading the writer: one UPDATE sets both. A future writer that set only one WOULD reach the fallback, so the code is unreachable-today rather than dead, and that distinction is recorded rather than collapsed."
+    }
+  },
+
+  "answer2_theDirectionBreakdown": {
+    "when": "2026-09-10T15:15:42Z-15:16:57Z",
+    "denominator": "1,516,110 stored node-facets:tier1 rows across the six CTX counties. Full scan.",
+    "countingRule": "claim city = the stored baseFacts.situsCity when it is a STRING (an absence object counts as no city). new city = retired ? claim : coalesce(declared-roll situs_city, claim). changed = new IS DISTINCT FROM claim, case- and whitespace-sensitive.",
+    "totalChanges": 109269,
+    "gainAJurisdiction_hadNoCityNowHasOne": 78428,
+    "loseACity": 0,
+    "moveBetweenTwoCities": 30841,
+    "perCounty": {
+      "48021": { "changes": 0 },
+      "48055": { "gain": 63, "swap": 92, "loss": 0 },
+      "48209": { "gain": 33, "swap": 30749, "loss": 0 },
+      "48309": { "changes": 0 },
+      "48453": { "gain": 78332, "swap": 0, "loss": 0 },
+      "48491": { "changes": 0 }
+    },
+    "ofTheChangers_howManyEvenTouchZoning": {
+      "changed_but_already_stamped": 67355,
+      "changed_and_unstamped": 41914,
+      "changed_unstamped_AND_carrying_a_district": 0
+    },
+    "reconciliationWithScan1": "scan 1 measured city_disagree = 30,840 case-insensitively; scan 2 measured change_swap = 30,841 case-sensitively. The one-row difference is a single Hays parcel differing only in case or whitespace (case_or_space_only_diff = 1, 48209). Reconciled, not rounded off -- DEV_PROCESS 1.4."
+  },
+
+  "answer3_correctionOrRegression_andItIsBOTH": {
+    "instrument": "MEANING-SHAPED, not internal consistency. Input A: txgio_parcel.zoning_jurisdiction, a point-in-polygon determination against the city's own zoning layer -- derived from GEOMETRY. Input B: the situs city, a transcription on a CAD roll row. One party cannot satisfy both sides. Measured for the claim's city and the roll's city over the SAME stamped parcels; whichever agrees with the geometry more often is the better source.",
+    "when": "2026-09-10T15:17:56Z-15:19:34Z",
+    "denominator": "533,391 stamped parcels across the six counties",
+    "sixCountyTotal": { "claimAgreesWithGeometry": 150298, "rollAgreesWithGeometry": 188994, "delta": "+38,696 for the roll" },
+    "andTheHeadlineHidesTheFinding": {
+      "48453": { "claim": 61189, "roll": 112182, "delta": "+50,993", "read": "CORRECTION, large" },
+      "48055": { "claim": 6504, "roll": 6530, "delta": "+26", "read": "correction, marginal" },
+      "48209": { "claim": 34958, "roll": 22635, "delta": "-12,323", "read": "REGRESSION" },
+      "48021_48309_48491": "identical; no parcel changes in these three",
+      "why": "a net +38,696 across six counties conceals a -12,323 on one. DEV_PROCESS 1.1: the headline had to travel with its per-county split or it would have licensed exactly the wrong change."
+    }
+  },
+
+  "theRealFinding_theJoinUnderALLFOURLEAVESIsNotSoundOnHays": {
+    "howItSurfaced": "the Hays swaps are not a vintage correction. They are a near-symmetric all-pairs permutation: SAN MARCOS->KYLE 2,268 beside KYLE->SAN MARCOS 1,641; BUDA->KYLE 1,914 beside KYLE->BUDA 1,722; every ordered pair of the county's cities present in both directions. A genuine annexation-driven correction is overwhelmingly one-directional. A symmetric scramble is a KEY COLLISION.",
+    "theDiscriminator": "the 5-digit situs ZIP, compared between the 2025 and 2026 cad_property rows on the SAME prop_id. Neither vintage formats a ZIP differently, so a ZIP change means a different parcel, not a different transcription. Two independently derived values; one upstream cannot satisfy both sides.",
+    "crossVintagePropIdStability": {
+      "when": "2026-09-10T15:33Z",
+      "countingRule": "cad_property 2025 JOIN cad_property 2026 on (county_fips, prop_id), both rows carrying a non-blank situs_zip; agreement on left(btrim(zip),5).",
+      "48453_Travis": { "pairs": 333937, "zipSame": 333032, "pct": 99.73 },
+      "48055_Caldwell": { "pairs": 24549, "zipSame": 24356, "pct": 99.21 },
+      "48209_Hays": { "pairs": 126808, "zipSame": 68305, "pct": 53.86 }
+    },
+    "threeIndependentFieldsConverge": "Hays cross-vintage agreement measured separately on ZIP (53.86%), on situs city (53.2%), and on the normalised street segment (~52%). Three different fields, three separate queries, one number. That convergence is what makes this a finding rather than an artifact of one predicate.",
+    "andTheClaimAgreesWithItsOWNVintage100Percent": {
+      "48209": "claims whose provenance.parcelVintage is 2025 agree with the 2025 roll's situs_city on 104,937 of 104,937 (100.00%) and with the 2026 roll on 34,966 of 65,714 (53.2%). Claims at 2026 agree with 2026 on 63,806 of 63,806 (100.00%) and with 2025 on 32,466 of 62,867 (51.6%).",
+      "read": "each claim is a perfect copy of its own vintage. The disagreement is entirely cross-vintage. That is renumbering, and it is what recordRetirement's own basis text already names: split, merged, renumbered or removed."
+    },
+    "aConvenientResultIDidNotTrust": "the same test on Travis situs_address returned ZERO exact-string agreement across vintages in BOTH directions, which reads as a catastrophic key failure. It is not. Re-measured on a normalised street key it is 53.9%, and on the ZIP 99.73%. The zero was a FORMATTING difference: the 2025 StratMap drop and the 2026 PACS export write the same address differently. Reporting the exact-string zero would have been a confident wrong claim about merged work. ENFORCEMENT: a convenient result is a reason to distrust the instrument.",
+    "corroborationFromTheCodebaseItself": "48209 and 48491 are the two counties in LANDUSE_JOIN_DISABLED_FIPS_SEED (artifacts/api-server/src/lib/joinNormalize.ts:73-76), gate-blocked because 'a CAD prop_id joined into a divergent TxGIO numbering attaches another parcel's zoning stamp and geometry'. The program already knew Hays prop_ids are unstable ACROSS SOURCES. Nobody applied that to the CAD-to-CAD join ACROSS VINTAGES, which is the same failure with the same key."
+  },
+
+  "whatThisMeansForWorkTHATISALREADYMERGED": {
+    "severity": "this is the highest-value thing in the card and neither half of it is CTX-B7's own change.",
+    "half1_theDollarsAreAlreadyExposed": {
+      "mechanism": "fetchCountyCadPropertyRoll keys marketValue, assessedValue, landValue, improvementValue, livingAreaSqft, yearBuilt, legalDescription and exemptionCodes on prop_id at the DECLARED vintage alone. Where the claim's own vintage differs and the prop_id has been renumbered, those fields come from a different parcel.",
+      "measured": {
+        "when": "2026-09-10T15:36Z",
+        "countingRule": "stored tier-1 rows whose claim ZIP (baseFacts.situsZip, claim-sourced) and declared-roll row situs_zip are BOTH present and DIFFER, restricted to rows that already carry baseFacts.cadRoll.marketValue.",
+        "48209_Hays": 29404,
+        "48055_Caldwell": 92,
+        "48453_Travis": 429,
+        "total": 29925,
+        "baseline": "Travis 0.28% and Caldwell 0.80% are the real ZIP-churn rate. Hays at 45.4% of its comparable population is 160x that baseline."
+      },
+      "status": "SHIPPED AND SERVING TODAY. Not introduced by this card and not fixable inside a leaf card."
+    },
+    "half2_ctxB6sMergedRuleWouldMakeItWorseOnTheNEXTREBAKE": {
+      "mechanism": "resolveConformantSitusAddress as merged states 'the roll wins even over a usable claim'. On a renumbered prop_id that writes ANOTHER PARCEL'S STREET over a correct one.",
+      "measured": {
+        "when": "2026-09-10T15:38Z",
+        "countingRule": "rows where the claim carries a street AND the declared-roll row carries a DIFFERENT street on the normalised street segment; the second column further restricts to rows whose claim ZIP and roll ZIP differ.",
+        "usableClaimStreetWouldBeReplaced": { "48209": 37503, "48453": 14431, "48055": 224, "total": 52158 },
+        "ofThoseOnAZipConflictRow": { "48209": 29395, "48453": 67, "48055": 77, "total": 29539 }
+      },
+      "read": "B6's rule is RIGHT for Travis (99.73% key-stable; its 14,431 swaps are the StratMap-vs-PACS formatting difference on the same parcel, only 67 on a conflicting ZIP) and WRONG for Hays (29,395 of 37,503 swaps land on a row the ZIP says is a different parcel).",
+      "timing": "B6's own close records that the store is unchanged and the fix appears when the integration seat re-bakes. THE DEFECT HAS NOT WRITTEN YET. This card catches it before it does, which is the only cheap moment it was ever going to be caught."
+    }
+  },
+
+  "theDesignThatFOLLOWS_andWhyItNeedsNoThreshold": {
+    "rule": "prefer the declared roll only where the row is CORROBORATED as the same parcel; otherwise keep the claim.",
+    "corroborationIsPerParcelAndFree": "the claim already carries situsZip and the declared row already carries situs_zip, and both are already loaded. No new query, no county-level threshold, no tuned constant.",
+    "fiveStates": {
+      "no-roll-row": "retired (CTX-RETIRE). Keep the claim, ungated. Unchanged.",
+      "same-vintage": "claim taxYear == declared taxYear, so it is literally the same row. Prefer.",
+      "zip-corroborated": "both ZIPs present and equal. Prefer.",
+      "zip-conflict": "both ZIPs present and different. REFUSE the substitution, keep the claim, record it.",
+      "uncorroborated": "one or both ZIPs absent. Nothing was established either way."
+    },
+    "theAsymmetryThatResolvesTheUncorroboratedCase": "a GAIN (the claim carries nothing) converts an absence into data: nothing usable is destroyed and ENFORCEMENT's inverse-A1 rule positively requires it. A SWAP (the claim carries something else) converts data into other data, and on an unverified key that means another parcel's data. The two risks are not symmetric, so the rule is not symmetric: take the roll on a gain unless the ZIP conflicts; take it on a swap only when corroborated.",
+    "whatThatBuysAndCosts": {
+      "gainsRecovered": "78,360 of 78,428 (all but the 68 Travis rows on a conflicting ZIP)",
+      "swapsAccepted": "1,219 -- the Hays 1,127 zip-corroborated city changes and 92 others: real corrections on parcels that ARE the same parcel",
+      "swapsRefused": "29,621 -- Hays 29,380 + Caldwell 92 + Hays-uncorroborated 241 -- every one of which would have written another parcel's city",
+      "andAppliedToSitusAddressTOO": "the same gate blocks the 29,539 zip-conflict street overwrites B6's merged rule would otherwise perform, while leaving all 139,283 of B6's recoveries and all 14,364 of its legitimate Travis formatting corrections intact."
+    },
+    "corroborationSplitMeasured": {
+      "when": "2026-09-10T15:35Z",
+      "48453": { "gain_zip_corroborated": 63979, "gain_uncorroborated": 14285, "gain_zip_conflict": 68, "swap": 0 },
+      "48209": { "gain_uncorroborated": 33, "swap_zip_conflict": 29380, "swap_zip_corroborated": 1127, "swap_uncorroborated": 241 },
+      "48055": { "gain_uncorroborated": 63, "swap_zip_conflict": 92 },
+      "theShape": "95.6% of all swaps (29,472 of 30,840) sit on a zip-conflict row. The swap population and the key-collision population are very nearly the same set. That is not a rule fitted to a number; it is the number telling you what the population IS."
+    }
+  },
+
+  "answer4_acreage_theDispatchsOwnQuestion": {
+    "question": "how many of the 103,913 are currently served as refused versus bare null, per county",
+    "answer": "ALL 103,913 ARE REFUSED. ZERO ARE BARE NULL. In every county.",
+    "when": "2026-09-10T15:07:10Z-15:11:41Z, full scan, 1,516,110 rows",
+    "perCounty": {
+      "48453": { "refused_total": 119389, "refused_and_recoverable": 67915 },
+      "48491": { "refused_total": 91021, "refused_and_recoverable": 16927 },
+      "48209": { "refused_total": 42966, "refused_and_recoverable": 14796 },
+      "48055": { "refused_total": 23660, "refused_and_recoverable": 2677 },
+      "48021": { "refused_total": 15542, "refused_and_recoverable": 1598 },
+      "48309": { "refused_total": 0, "refused_and_recoverable": 0 },
+      "totals": { "refused": 292578, "bare_null": 0, "absent_verified": 0, "refused_and_recoverable": 103913 }
+    },
+    "countingRule": "acreage leaf classified on the STORED payload: verdict='refused' vs a bare JSON null vs a resolved object carrying 'value'. Recoverable = the declared-vintage cad_property row carries land_acres > 0.",
+    "theFinding": "the program serves a DECLARED REFUSAL -- 'geometry was never looked up for this parcel, unmeasured, not verified absent, and the claim carries no landAcres' -- on 103,913 parcels whose declared-vintage roll holds a usable land_acres, in the same row the payload's dollars already come from. CTX-LEAVES2's basis is literally true about the two sources it names and materially false about the parcel, because a third source was never consulted. A refusal over recoverable data is worse than a bare null: a bare null is visibly unfinished, and a refusal reads as a finding.",
+    "andAcreageIsNOTB6sRULE": "acreage has THREE sources and one of them is a MEASUREMENT. The parcel-join ring is a shoelace on this parcel's own geometry; the roll cell and the claim cell are transcriptions. The ring keeps precedence over both. Applying B6's roll-over-claim verbatim would have put a transcribed roll cell above a measured ring, which is a different and worse defect than the one being fixed. The declared roll slots BELOW the ring and ABOVE the claim.",
+    "howMuchOfTheRefusalWouldSurvive": "188,665 of 292,578 refusals stay refused, because their declared roll carries no land_acres either. Those are honest and they keep their state."
+  },
+
+  "answer5_situsZip": {
+    "question": "does anything consume it beyond display",
+    "answer": "NO. Its only reader outside the bake and the assembler is lib/smartSiteStub.ts:179, which passes it as one of four parts to composeSitusLabel. No routing, no gate, no join key, no jurisdiction, no rail.",
+    "method": "grep of artifacts/api-server/src for baseFacts.situsZip and situsZip excluding tests, plus a repo-wide grep outside api-server which returned nothing.",
+    "consequence": "situsZip is the lowest-risk of the three and takes the same corroborated preference. 17,674 recoverable cells.",
+    "oneCaveatWorthNaming": "situsZip is now ALSO the corroborator for the other three leaves. That is not circular: on corroboration the roll ZIP equals the claim ZIP so the write is a no-op or a +4 refinement, on conflict the claim is kept, and on a gain there is no claim ZIP to contradict."
+  },
+
+  "whereIStopped": {
+    "implemented": "situsCity, situsZip and acreage, each with the corroboration gate, and the same gate retrofitted to situsAddress so CTX-B6's merged rule cannot write 29,539 other-parcel streets on the next re-bake.",
+    "STOPPED_AT_THE_BOUNDARY": {
+      "item": "Hays 48209's declared CAD vintage and the 29,404 parcels already serving another parcel's appraisal dollars",
+      "whyItIsARulingAndNotAJudgement": "the fix is not a leaf. It is one of: re-declare 48209's vintage to 2025; re-acquire a 2026 Hays roll together with a prop_id crosswalk; or gate the CAD-to-CAD cross-vintage join the way the CAD-to-TxGIO join is already gated for this exact county. Each has a different cost, a different owner, and a different blast radius across money-facing fields that are live today. Choosing among them is not this card's call.",
+      "whatIWouldDo": "gate it, as the third option, and do it in the same place the existing gate lives so one county has one story. The corroboration gate this card ships is the per-parcel form of exactly that, and it already refuses the unsound substitutions for the four leaves it owns -- but it does NOT touch the dollar fields, which are read straight off the roll row with no corroboration at all. Extending it there is a separate card because it changes what cadRoll reports on 29,404 live rows.",
+      "leftUnimplemented": "yes, deliberately. No dollar-path change is in this PR."
+    }
+  }
+}

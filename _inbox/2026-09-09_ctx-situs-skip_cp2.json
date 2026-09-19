@@ -1,0 +1,64 @@
+{
+  "lane": "ctx-situs-skip",
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-situs-skip",
+  "branch": "fix/ctx-situs-skip-earned-absence",
+
+  "filesChanged": [
+    "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts",
+    "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts",
+    "artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts"
+  ],
+  "diffStat": "3 files changed, 472 insertions(+), 11 deletions(-)",
+
+  "implementationSummary": {
+    "nodeFacetBakeTier1Conformant.ts": [
+      "ConformantBaseFacts.situsAddress retyped string|Tier1LeafAbsence|null (was string|null); the Omit list on BaseFacts extended to include situsAddress.",
+      "ConformantTier1BuildInput gains optional situsAddressPunctuationOnlyRaw: string|null -- set only when the CLI's guard actually refused a value.",
+      "New exported function situsAddressPunctuationOnlyAbsence(...): Tier1LeafAbsence -- verdict absent-verified (the claim is read for every parcel by construction, same rationale claimLeafAbsence already uses), basis quotes the raw offending value verbatim via JSON.stringify, never fabricates a replacement address.",
+      "buildConformantTier1Payload: after assembly, baseFacts.situsAddress = tier1.baseFacts.situsAddress ?? (situsAddressPunctuationOnlyRaw != null ? situsAddressPunctuationOnlyAbsence(...) : null) -- preserves the pre-existing null for a genuinely blank claim, only earns an absence for an actual refusal.",
+      "New exported function assertSitusAddressAbsenceEarned(payload): fails closed (code SITUS_ADDRESS_ABSENCE_UNEARNED) on a malformed object at baseFacts.situsAddress or a basis that does not name the parcel; passes a string or a bare null. Called both inside the builder (fail closed at construction) and in the CLI (fail closed at write), matching the existing double-layering for assertLandUseAbsenceEarned/assertRequiredLeafStatesEarned.",
+      "facets.base.situsAddress is untouched -- still set from input.situsAddress directly, which stays null in the refusal case, so the raw punctuation-only value never reaches the field the serve guard (refusePayloadAtServe) checks."
+    ],
+    "nodeFacetBakeTier1ConformantCli.ts": [
+      "situsForBake now also returns raw (the claim's trimmed-or-null situsAddress, independent of refuse) so the caller can quote it in an absence.",
+      "Per-row loop: on refuseSitus===true, the previous `skippedBadSitus += 1; continue` is replaced with `situsPunctuationOnlyAbsence += 1; situsPunctuationOnlyRaw = raw` and NO continue -- execution falls through to the same write path every other row takes. situs itself stays null in this branch (unchanged from before), so downstream geometry/land-use join logic that already handled a null situs (the pre-existing blank-claim case) is exercised identically, not a new code path.",
+      "buildConformantTier1Payload call site passes situsAddressPunctuationOnlyRaw: situsPunctuationOnlyRaw.",
+      "assertSitusAddressAbsenceEarned(payload) called alongside the existing two fail-closed asserts.",
+      "skippedBadSitus renamed situsPunctuationOnlyAbsence throughout (declaration, JSON summary key). Grepped confirmed no other file in the repo reads this key.",
+      "New console.log line (only when count > 0) surfacing the per-county count directly in the bake's stdout, matching the existing cadPropertyRoll/landUseRoll visibility pattern."
+    ]
+  },
+
+  "testsAdded": {
+    "file": "artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts",
+    "describeBlock": "CTX-SITUS-SKIP: a punctuation-only on-roll situs is WRITTEN with an earned absence, never skipped",
+    "count": 11,
+    "list": [
+      "the refusal writes: baseFacts.situsAddress earns a well-formed, four-state-compliant absence",
+      "facets.base.situsAddress NEVER carries the refused raw value: the serve guard would refuse it again",
+      "situsCity/situsZip are decided INDEPENDENTLY of the situsAddress refusal: a real city/zip still bakes as a value",
+      "situsCity/situsZip earn their OWN independent absence when the claim carries neither (matches the live population)",
+      "the pre-existing, genuinely blank claim (raw null, never guard-refused) stays a bare null: NOT this card's population",
+      "a normal, usable situsAddress bakes IDENTICALLY to today: the 1.5M healthy rows are untouched",
+      "situsAddressPunctuationOnlyAbsence never fabricates: the raw value is quoted verbatim",
+      "BAKE_OWNED_REQUIRED_LEAF_PATHS is deliberately unchanged: situsAddress's absence is narrower than the four owned leaves",
+      "the divergence instrument answers the old bake's null situsAddress leaf with the new earned absence, not a missing leaf",
+      "verify by violating: assertSitusAddressAbsenceEarned REFUSES a malformed object and a basis that does not name the parcel",
+      "verify by violating: the guard itself is untouched and still refuses the exact live defect string"
+    ],
+    "incidentalFix": "The newPayload() test helper used `opts.situsAddress ?? default`, which silently overrode an explicitly-passed null back to the default fixture string (?? cannot distinguish 'omitted' from 'explicitly null'). Existing tests never asserted on baseFacts.situsAddress when passing situsAddress:null so this was latent, not previously exercised. Fixed to `\"situsAddress\" in opts ? ... : default`. Confirmed zero effect on any of the 63 pre-existing tests (all still pass) since none depended on the buggy fallback."
+  },
+
+  "verificationRun": {
+    "command": "DATABASE_URL=<dummy, module-load only, no query issued by any exercised code path> npx vitest run src/nodeFacetBakeTier1Conformant.test.ts",
+    "result": "74 tests passed (63 pre-existing + 11 new), 0 failed, exit code 0",
+    "companionSuites": "src/lib/__tests__/serveGuards.test.ts (8/8 pass) and src/lib/situsCompose.test.ts (11/11 pass) -- the guard module and the display-label module are both untouched by this diff; run to confirm.",
+    "typecheck": "npx tsc --build . (builds the composite project's referenced lib packages) followed by npx tsc --noEmit -p . on artifacts/api-server -- 0 errors, 0 warnings, across the entire package including the three changed files.",
+    "fullSuiteNote": "A full `vitest run` across the whole api-server package was also attempted; ~46 of ~4112 tests fail, all pre-existing DB-integration tests requiring a real local Postgres (password authentication failed for user \"test\" -- the dummy DATABASE_URL used only to satisfy an eager Pool constructor at module-load time, not a real database). None of the failures are in a file this lane touched; would fail identically on an unmodified checkout without a provisioned local test database."
+  },
+
+  "notDoneAtThisCheckpoint": "Commit and PR not yet opened as of this checkpoint's filing; done immediately after (see close)."
+}

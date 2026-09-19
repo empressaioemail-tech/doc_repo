@@ -1,0 +1,45 @@
+{
+  "lane": "ctx-situs-skip",
+  "checkpoint": "CP1 (design/pre-build)",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-situs-skip",
+  "branch": "fix/ctx-situs-skip-earned-absence",
+  "createdFrom": "origin/main via git worktree add (confirmed origin/main == 3885efad before creating the worktree)",
+  "baseCommit": "3885efadb789942a479b475d34d1518807756e0a",
+  "confirmedBeforeAnyEdit": "seat=property, worktree path exists, branch tracks origin/main, HEAD == 3885efad, working tree clean -- verified in that order before any file was touched.",
+
+  "dispatchAndInboxRead": {
+    "dispatch": "_dispatches/2026-09-09_ctx-situs-skip_dispatch.md, read in full",
+    "priorLaneClose": "_inbox/2026-09-09_ctx-prov_close.json, read in full including step3_mechanism and step4_population as instructed",
+    "inherited": "CTX-PROV's mechanism finding (the `continue` in the per-row loop's else branch fires before any write) and its live population count (18,037 across Bastrop/Hays/McLennan). Did not inherit any fix design -- CTX-PROV explicitly scoped that out (step5_fixLocation.whatWasDoneHereInstead names it a proposal for the receiving lane's own diagnosis)."
+  },
+
+  "mechanismConfirmedAtSource": {
+    "file": "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts",
+    "readAt": "3885efad (this worktree's HEAD before any edit)",
+    "confirmed": "Lines 336-347 (pre-fix): rollAbsent=false branch calls situsForBake(body); on refuse===true, skippedBadSitus += 1 then `continue` -- fires before the neondb.query INSERT ... ON CONFLICT UPDATE that would otherwise run near line 442. situsForBake (lines 102-110, pre-fix) calls assertSitusNotPunctuationOnly (serveGuards.ts, PUNCTUATION_ONLY_RE = /^[\\s,.\\-;:'\"`]+$/); a throw maps to {situs:null, refuse:true}.",
+    "guardConfirmedUntouched": "serveGuards.ts's assertSitusNotPunctuationOnly and PUNCTUATION_ONLY_RE read verbatim, unmodified in the diff plan -- the guard is correct per the dispatch and per its own header comment ('this program was serving \", ,\" as an address')."
+  },
+
+  "asymmetryInvestigation": {
+    "instruction": "Dispatch section 'The asymmetry is a required question, not a footnote' -- establish why BEFORE fixing.",
+    "method": "Read-only, staging Neon (STAGING_NEONDB_URL, gcloud Secret Manager, credential files deleted immediately after each script run and again at the end of the session). SET default_transaction_read_only = on on every connection. Queried cad_property directly (the table with the county's declared-vintage CAD claim rows, INCLUDING a source_file/source_vintage column pair) rather than the atoms/hauska_mcp store, since the dispatch's own clue named cad_property's source_file lineage explicitly.",
+    "declaredVintagePerCounty": "Read from lib/cad-ingest/src/vintage.ts DECLARED_CAD_VINTAGES (source of truth the bake itself reads via tryResolveDeclaredCadVintage), not inferred from max(tax_year): Bastrop 48021 tax_year 2025 tier cad-export; McLennan 48309 tax_year 2025 tier stratmap-roll; Hays 48209 tax_year 2026 tier cad-export; Caldwell 48055 tax_year 2026 tier cad-export; Travis 48453 tax_year 2026 tier cad-export; Williamson 48491 tax_year 2026 tier cad-export.",
+    "finding": "100% of punctuation-only situs_address rows, in every affected county, carry source_file matching a StratMap land-parcels drop (stratmap*-landparcels_*_lp.zip). Bastrop's declared-vintage table is a BLEND at the row level despite its own declared tier being cad-export: 62,257 rows source_file=stratmap25-landparcels_48021_lp.zip (16,104 of them punctuation-only, 46,153 not) plus 15,542 rows source_file=DATA-EXPORT-01.14.2026.zip (0 punctuation-only, all 15,542 usable) = 77,799 total, matching the live-served population exactly. McLennan's declared tier IS stratmap-roll (its whole table is StratMap-sourced, 114,255 of 114,255 rows) and still measures only 1,165 (1.02%) punctuation-only -- StratMap sourcing is necessary but not sufficient; most StratMap rows do carry a usable situs_address. Hays/Caldwell/Travis/Williamson carry ZERO StratMap-sourced rows in their declared-vintage tables (confirmed by source_file breakdown, not inferred) and measure exactly 0% punctuation-only each.",
+    "formatRuledOut": "PACS vs Orion CAD software format does not explain it: Bastrop and Travis are both pacs and sit at 20.7% and 0% respectively; the differentiator is StratMap admixture, not format.",
+    "situsCityZipDisposition": "Among the punctuation-only rows sampled directly from cad_property (16,104 Bastrop, 1,165 McLennan; Hays has zero to sample), situs_city and situs_zip are ALSO null for 100% of them (0 with_city, 0 with_zip in both counties). They are NOT independently available for this population -- confirmed empirically, not assumed. The pre-existing claimAbsence mechanism (unrelated to this fix) already earns them their own absence when null; this fix does not touch that mechanism.",
+    "credentialHandling": "gcloud secrets versions access latest for STAGING_HAUSKA_MCP_URL and STAGING_NEONDB_URL, written to local files, read by short-lived node scripts run from inside the api-server package (for module resolution), then deleted -- both the /tmp copies and the scratchpad copies, and the temporary .mjs scripts removed from the worktree. Verified via `git status --short` that no credential file or scratch script was ever staged or left behind.",
+    "verdict": "This IS the finding the dispatch said would outrank the fix if the population correlated with a source_file lineage. It does correlate, cleanly. It does not invalidate the need for the fix (rows with an unusable situs still must not be silently dropped, for whatever reason the situs is unusable) -- it explains WHY these particular rows have punctuation-only situs, which the close reports as required, and names a candidate upstream question (should a StratMap land-parcel row ever populate a CAD claim's situsAddress field at all, or should the Factory ingest prefer a genuine CAD export when both exist for the same prop_id) that is out of this repo's scope to answer or fix."
+  },
+
+  "fixDesign": {
+    "shape": "Mirror situsForRetiredBake's precedent: an on-roll row whose situs the guard refused is WRITTEN, not skipped, with an earned absence on baseFacts.situsAddress naming why. Do not route it through situsForRetiredBake's recordRetirement branch (that would misrepresent an on-roll account as a roll dropout it is not, per the dispatch's own warning).",
+    "newLeafType": "baseFacts.situsAddress becomes string | Tier1LeafAbsence | null (was string | null). The null branch is preserved on purpose for the pre-existing, unrelated case of a genuinely blank claim (raw situsAddress null/empty, never guard-refused) -- that population is NOT part of this dispatch and must bake identically to today.",
+    "notAddedToRequiredLeafPaths": "baseFacts.situsAddress is deliberately NOT added to BAKE_OWNED_REQUIRED_LEAF_PATHS alongside the four CTX-LEAVES leaves. Those four earn an absence for EVERY null input; situsAddress earns one ONLY when the guard actually refused something. Adding it to the required-leaf list would force an absence onto every row with a genuinely blank claim situsAddress too -- a much larger, unrelated population this dispatch does not authorize touching (\"a diff that changes output for the 1.5 million healthy rows is a regression, not a fix\").",
+    "newAssert": "assertSitusAddressAbsenceEarned mirrors assertRequiredLeafStatesEarned's fail-closed discipline, scoped to this one leaf: a string or a bare null both pass (the latter is the legitimate blank-claim case); an object must be a well-formed Tier1LeafAbsence naming the parcel in its basis, or the write refuses.",
+    "counterRename": "skippedBadSitus (a name that will be false the moment this ships -- the row is no longer skipped) becomes situsPunctuationOnlyAbsence, and is also logged directly to the bake's stdout per county (not only the tail JSON line), addressing the dispatch's 'do not silently count and move on' instruction.",
+    "notInScope": "No change to serveGuards.ts, PUNCTUATION_ONLY_RE, or assertSitusNotPunctuationOnly. No change to hauska-factory, hauska-engine, or hauska-map. No change to MAX_MISS_RATE or any gate threshold. No deploy, Cloud Build, or job run planned or executed."
+  }
+}

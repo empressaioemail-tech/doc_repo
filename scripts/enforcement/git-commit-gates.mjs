@@ -11,7 +11,8 @@
  * THE THREE-QUESTION GATE.
  *   1. What executes this?  `.githooks/pre-commit` and `.githooks/pre-merge-commit`, which run
  *      this file. git finds them through `core.hooksPath`, set in the shared git config, so every
- *      linked worktree of doc_repo runs them.
+ *      linked worktree of doc_repo runs them. Three evaluators run here: `probe-close-gate`
+ *      (OPS-23 R-4), `fan-depth-gate`, and `close-artifact-gate` (a citation that would dangle).
  *   2. What triggers it?    Every `git commit` (including the one that concludes a conflicted
  *      merge) and every merge that creates a commit, in any worktree, from any harness.
  *   3. What fails?          The commit or merge exits non-zero with the reasons; each refusal is
@@ -37,6 +38,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { evaluate as evaluateProbe } from "./probe-close-gate.mjs";
 import { evaluateStaged as evaluateFanDepth, findDispatch } from "./fan-depth-gate.mjs";
+import { evaluateStagedGit as evaluateCitations } from "./close-artifact-gate.mjs";
 
 export const HOME_REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..").replace(/\\/g, "/");
 export const HOOKS_DIR = `${HOME_REPO}/.githooks`;
@@ -46,14 +48,16 @@ const git = (args, cwd) =>
 
 const norm = (p) => String(p ?? "").trim().replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
 
-/** Pure: grade a staged set with both gates. `read(rel)` and `dispatchFor(lane)` return text or null. */
-export function gradeStaged(staged, read, dispatchFor) {
+/** Pure: grade a staged set with every gate. `read(rel)` and `dispatchFor(lane)` return text or null. */
+export function gradeStaged(staged, read, dispatchFor, root = HOME_REPO) {
   const probe = evaluateProbe(staged, read);
   const fan = evaluateFanDepth(staged, read, dispatchFor);
+  const citations = evaluateCitations(root);
   const messages = [];
   if (probe.block) messages.push(probe.message);
   if (fan.block) messages.push(fan.message);
-  return { block: probe.block || fan.block, message: messages.join("\n"), debt: probe.block ? "" : probe.message };
+  if (citations.block) messages.push(citations.message);
+  return { block: probe.block || fan.block || citations.block, message: messages.join("\n"), debt: probe.block ? "" : probe.message };
 }
 
 /** Grade what is about to be committed in the worktree at `root` (the hook's working directory). */
@@ -76,7 +80,7 @@ export function gradeWorktree(root) {
     }
     return null;
   };
-  return { staged, ...gradeStaged(staged, read, dispatchFor) };
+  return { staged, ...gradeStaged(staged, read, dispatchFor, root) };
 }
 
 function recordRefusal(root, mode, message) {

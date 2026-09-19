@@ -1,0 +1,67 @@
+{
+  "lane": "g125-rainfall-control",
+  "planRows": ["G-125"],
+  "note": "G-125 is an OPS-17 row on hauska-engine + hauska-map, not an OPS-23 row. scripts/surface-probe.mjs is scoped to OPS-23's specific parcel set and facet-parity predicates against smartsite.cloud/cortex; it has no G-125 predicate and its infrastructure does not carry a paid/authenticated PE session, which the flood-drainage report requires. Rather than force a mismatched fit into that shared script (touching a heavily-used file many concurrent lanes depend on, for a predicate it was never built to express), this is a HAND-WRITTEN probe in the same spirit: every claim below is a live measurement against the actually-deployed production surface, not an inference from a merged PR, a local test, or a store read, exactly per R-4's own standard ('a merged PR ... alone never closes a lane').",
+  "measuredAt": "2026-09-14T22:03:16Z",
+  "servingRevisions": {
+    "hauska-engine-api": {
+      "project": "hauska-prod-497015",
+      "region": "us-central1",
+      "revision": "hauska-engine-api-00224-joq",
+      "trafficPercent": 100,
+      "verifiedBy": "gcloud run services update-traffic ... describe, read by field name post-shift",
+      "sourceSha": "6a128e2c7641aea2b2619b8c8bca8fff1fe31ef5",
+      "sourceShaTag": "deploy/g125-rainfall-control-hauska-engine-api-00224-joq"
+    },
+    "property-explorer": {
+      "vercelProject": "property-explorer",
+      "projectId": "prj_vcZGXbqdffk5C20WzaplEpzFynK3",
+      "deploymentId": "dpl_CFE1tNs6z5CyGen3vhmEtBaJRZXU",
+      "aliasedTo": "https://smartsite.cloud",
+      "sourceSha": "3e88306dc7be2ffa1ab972756e0836ec3d1b50c5",
+      "verifiedBy": "vercel deploy --prod output (readyState READY, target production, Aliased https://smartsite.cloud)"
+    }
+  },
+  "predicates": [
+    {
+      "id": "P1-param-changes-result",
+      "falsifier": "rainfallDepthInches/rainfallSource in the response stay pinned at the default regardless of the parameter, or no downstream stat/text changes at all",
+      "method": "Two live authenticated POST /v1/property-nodes/48021:34049/flood-drainage/refresh calls against the deployed engine-api canary (pre-shift, same image now serving 100%), real Bastrop parcel 48021:34049, real USGS 3DEP DEM fetch, real pysheds computation (computation.library: 'pysheds', not the native fallback)",
+      "runA_default": { "rainfallDepthInches": 9.5, "rainfallSource": "default", "pondedAreaSqFt": 369.92496953125, "pondedAreaModeledRegionSqFt": 79644.40865664059, "wallClockMs": 102768 },
+      "runB_param4in": { "rainfallDepthInches": 4, "rainfallSource": "parameter", "pondedAreaSqFt": 188.4313197265625, "pondedAreaModeledRegionSqFt": 23511.994620898437, "wallClockMs": 12030 },
+      "verdict": "PASS -- materially different result: on-parcel ponding roughly halved, region-wide ponding to about 30 percent, at a real depth change on a real parcel"
+    },
+    {
+      "id": "P2-100yr-label-honesty",
+      "falsifier": "a parameter-sourced run's gradient note or PDF Design-storm line claims '100-yr' without a curve backing that claim",
+      "method": "Read gradient.note verbatim from the live response",
+      "firstLiveRunFound": "Design storm 4 inch, 100-yr 24-hr. -- FAIL, a real bug the first deploy shipped",
+      "afterFixRedeployVerified": "Design storm 4 inch, 24-hr. -- PASS, no fabricated year claim",
+      "verifiedOn": ["canary tag URL (hauska-engine-api-00224-joq via g125-fix tag)", "bare production URL (hauska-engine-api-h7gvu7rgcq-uc.a.run.app, 100% traffic, post-shift)"],
+      "verdict": "PASS after the follow-up fix (PR #447); FAIL on the first deploy (PR #446 alone) -- recorded here rather than smoothed over"
+    },
+    {
+      "id": "P3-default-path-unchanged",
+      "falsifier": "the no-param request produces a different rainfallDepthInches/rainfallSource than the pre-G-125 code would have, for reasons other than the pre-existing NOAA-parser defect",
+      "method": "Live run + code-level diff review",
+      "result": "rainfallSource resolved to 'default' (9.5in), matching pre-G-125 behavior exactly for a live NOAA-fetch failure -- the ONLY new field is the additive, absent-when-unavailable rainfallCurve",
+      "verdict": "PASS"
+    },
+    {
+      "id": "P4-ui-control-live",
+      "falsifier": "the deployed property-explorer JS bundle does not contain the new depth control, honesty disclaimer, or the components mount hidden behind the embed flag",
+      "method": "curl the live smartsite.cloud bundle post-deploy, grep for the new testids/copy verbatim",
+      "result": "flood-depth-control:1 flood-honesty-disclaimer:2 'Screening-level drainage model':1 flood-run-at-depth:1 flood-depth-presets:1 'Run at this depth':1 -- all present in the served bundle",
+      "verdict": "PASS"
+    },
+    {
+      "id": "P5-cache-miss-timeout-risk",
+      "falsifier": "a custom-depth refresh is systematically slower than a default refresh on the same code path, supporting the dispatch's premise that async/polling infra is needed specifically for this control",
+      "method": "Compare wall-clock across 3 live calls on 2 revisions: revision A's FIRST call (default, 102.8s) vs revision A's SECOND call (param 4in, same warm container, 12.0s) vs revision B's FIRST call (param 4in, fresh container, 92.5s)",
+      "result": "The FIRST call to a fresh container was slow REGARDLESS of depth (102.8s default, 92.5s param) while a SECOND call to an already-warm container was fast (12.0s) -- container cold-start (subprocess spawn, native GDAL/pysheds import cost per hydrologyWorkerClient.ts's per-request `spawn(python3, ...)`), not the rainfall depth, is the dominant latency driver. No code-level differential exists: both paths run the identical DEM fetch + pysheds call; the parameter path additionally now awaits the same concurrent NOAA fetch the default path already paid.",
+      "decision": "No new async-refresh/polling infrastructure built for this control (see CP1/CP2 for the full reasoning and the distinction from the unrelated P-155 feasibility-timeout program, which already owns that problem for a different report).",
+      "verdict": "PASS -- falsifier not observed; risk is pre-existing and not depth-differential"
+    }
+  ],
+  "leaveBehindConfirmedLive": "The live NOAA HDSC endpoint (https://hdsc.nws.noaa.gov/cgi-bin/new/cgi_readH5.py) returns a JavaScript array-literal payload (quantiles=[[...]]), not the <tr><td> HTML table packages/adapters/src/hydrology/noaaAtlas14.ts's parsePfdsDepthTable expects (confirmed by a direct curl of the real endpoint AND by every live production run in this probe returning rainfallSource:'default'/rainfallCurve:absent for the no-param path). This is pre-existing, out of G-125's scope, and affects every county, not just Bastrop -- named precisely for the operator, not fixed here."
+}

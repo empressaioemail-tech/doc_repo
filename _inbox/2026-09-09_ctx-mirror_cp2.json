@@ -1,0 +1,34 @@
+{
+  "lane": "legacy-design-tools-ctx-mirror",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "pr": {
+    "number": 646,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/646",
+    "branch": "fix/ctx-mirror-refused-projection",
+    "headSha": "91dcf615ae2ceb0db535b2c05dd6942d15a937c3"
+  },
+  "diffSummary": "Two files changed in artifacts/api-server/src/lib/, plus their tests. (1) structuralFactToFacetsWire.ts: attachVerdictLayersToFacets gains a branch for parcelRecordZoningFact.state===\"refused\" && code===\"parcel-record-engine-refused\", projecting it onto out.zoning the same way the absent branch already does. zoningSourceMirror gains a matching branch mirroring that shape verbatim onto provenance.zoningSource. (2) parcelRecordCellRead.ts: interpretParcelRecordCell's refused case now reads cell_state.reason instead of the never-written cell_state.refusal.",
+  "unitViolationResults": {
+    "method": "classifyRequiredLeafVerbatim reproduced from the live hauska-factory verify-walk.mjs (P:/tmp/ctx-w2-gate, HEAD 7a53c65, confirmed 0 commits behind origin/main for this file) -- same method CTX-LEAVES used, imported-in-spirit rather than reimplemented from memory.",
+    "pass": "fixed shape grades {state:\"refused\", ok:true} on both facets.zoning and provenance.zoningSource, carrying the real reason text",
+    "fail": "the pre-fix shape (the actual city-limits stamp-missing fallback this defect produced) grades {state:\"unrecognised-declared-state\", ok:false} on both leaves -- proves the check fails for the right reason",
+    "secondDefectCovered": "parcelRecordCellRead.test.ts: new test proves a cell_state carrying the OLD, never-written `refusal` key is NOT read (falls to the generic fallback string), and the existing test's fixture was corrected from `refusal:` to `reason:` to match what the engine actually writes -- that fixture previously could not fail for the right reason because both the code and the test used the same wrong key"
+  },
+  "cohortBeforeAfter": {
+    "scope": "Full population, not a 25-parcel sample: ALL 549 real Caldwell (48055) parcel_record_cell rows with rail_key=zoningDistrict and kind=refused, read live and read-only from FACTORY_DATABASE_URL_RO. This is a superset of the dispatch's named 25-parcel/9-jurisdiction cohort (which the dispatch says has 10 refused-caused failures) -- all three of the dispatch's own named parcels (48055:103436, 48055:103539, 48055:103540) are confirmed present in this 549 and individually verified below.",
+    "refusalCodeBreakdown": "549 of 549 are code=parcel-record-engine-refused (0 of any other refusal code) -- this fix's narrowed scope covers 100% of the observed Caldwell defect population.",
+    "before": "549/549 fail on facets.zoning, 549/549 fail on provenance.zoningSource. The BEFORE shape used is the exact one empirically captured live from the pre-fix canary (cortex-api-00753-feg) for 48055:103436 via a real HTTP GET on 2026-09-09 (verdict:\"stamp-missing\", confirmed byte-for-byte against the dispatch's own quoted example) -- not a guess, and confirmed deterministic across the bucket (attachVerdictLayersToFacets's pre-fix else-if branch has no per-parcel variance for this case beyond the zoningVerdict's own fields, which classifyRequiredLeaf does not read for the failure verdict).",
+    "after": "0/549 fail on facets.zoning, 0/549 fail on provenance.zoningSource. Computed by running the REAL, fixed attachVerdictLayersToFacets + zoningSourceMirror (via tsx, importing the actual edited TS source, not a reimplementation) against each of the 549 real rows' real cell_state, through the real interpretParcelRecordCell.",
+    "methodologyCaveat": "This is local-simulation-against-real-data, not a live HTTP re-probe of a deployed revision -- no deploy was made, per the dispatch's explicit instruction that the integration seat holds cortex-api-00753-feg at 0% specifically so there is one change to verify. The BEFORE number for the live canary was independently re-confirmed by an actual live GET (zero production risk, canary tag, established precedent) for 48055:103436; the AFTER number was not (and cannot be, without a deploy) live-probed the same way. State this distinction precisely per this program's precise-empirical-claims discipline.",
+    "verificationScriptDisposition": "The tsx verification script (scripts/_ctx_mirror_verify.mts) was deleted after use -- throwaway, read-only, never committed. Not part of the shipped diff."
+  },
+  "otherUnhandledRailKinds": [
+    "unaccounted (code parcel-record-unaccounted): zero occurrences in Caldwell's zoningDistrict rail today, but confirmed still falls through to the city-limits fallback by deliberate existing design (the Elgin test in structuralFactToFacetsWire.test.ts). Not touched by this fix.",
+    "invalid-parcel-node-id, parcel-record-cell-miss, parcel-record-malformed-cell, parcel-record-store-not-configured: adapter/plumbing-level refusals, zero occurrences observed in the live Caldwell population sampled. Left on the existing fallback path, matching two pre-existing passing tests."
+  ],
+  "leaveBehind": {
+    "forOtherRails": "The parcelRecordCellRead.ts refusal-field-name bug fixed here is SHARED across every *FactFromParcelRecord.ts adapter in this repo (interpretParcelRecordCell is not rail-specialized). Any other rail whose engine writes a refused cell with a real reason was, before this PR, serving the generic fallback text instead -- this fix corrects that for every rail, not just zoning, but this dispatch only re-verified the zoningDistrict rail end to end. Worth a spot-check on other rails' served refusal text after this merges, though out of this dispatch's stated scope to pursue further here."
+  },
+  "status": "PR opened, awaiting CI"
+}
