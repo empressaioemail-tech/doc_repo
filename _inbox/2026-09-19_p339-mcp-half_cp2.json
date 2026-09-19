@@ -1,0 +1,153 @@
+{
+  "artifact": "p339-mcp-half_cp2",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint",
+  "lane": "p339-mcp-half",
+  "planRows": ["P-339"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (PLAN-ROW: P-339) under program OPS-24",
+  "dispatch": "_dispatches/2026-09-19_p339-mcp-half_dispatch.md",
+  "seat": "cente-vsc-p339-mcp",
+  "ts_utc": "2026-09-19T03:10:00Z",
+  "cp1": "_inbox/2026-09-19_p339-mcp-half_cp1.json",
+  "fanDepth": 0,
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "state": {
+    "legacy_design_tools": {
+      "branch": "lane/p339-mcp-half",
+      "base": "origin/main 2e7ca7c456ea8d1ed0fa4b1321ca5467708d27fd at claim (which was also the merge-base). origin/main advanced twice while the lane ran, first to 03bb424acb08e05a13178cbbf351aa2b7d5253ab (#723 P-351) and then to 25bde5a8bafc7a4b0ae11b281988138b9d91ca5b (#724 P-359); the lane was REBASED onto 25bde5a8 and re-verified there (see falsifierResults and the typecheck note). Neither incoming commit touches a file this lane touched: `git diff --name-only 03bb424a..25bde5a8` is entirely lib/cad-ingest, lib/db and two api-server ETJ files.",
+      "commit": "8c69851d6cd00dc70d44a1352f4c22f88883e5b6 (one commit, rebased onto origin/main 25bde5a8)",
+      "pr": "opened from 8c69851d; see the close for the URL",
+      "buildIn": "P:/seat-worktrees/p339-mcp-half/legacy-design-tools (this lane's own registered worktree; nothing was built in another lane's checkout)",
+      "files": [
+        { "path": "artifacts/api-server/src/lib/buildableEnvelope/envelopeDrawOutcome.ts", "status": "added", "role": "P-339: the discriminated outcome (modelled | declined | unreached), the closed step set, and the ONE owner of the served reason (envelopeDrawRefusalReason)" },
+        { "path": "artifacts/api-server/src/lib/buildableEnvelope/parcelDrawEnvelopeModel.ts", "status": "modified", "role": "P-339: tryComposeEnvelopeModelForDraw stops collapsing three different things into null; every former `return null` names its step" },
+        { "path": "artifacts/api-server/src/lib/buildableEnvelope/parcelDrawEnvelopeModel.test.ts", "status": "modified", "role": "P-339: the pinned null-contract tests re-pointed (not deleted) against the discriminated union, plus the pre-registered falsifiers F1-F7 including both directions of the chain test" },
+        { "path": "artifacts/api-server/src/lib/parcelDrawFromReads.ts", "status": "modified", "role": "P-339: the route's own outcome decides the overlay; the bake's stored marker is consulted only when no attempt was made" },
+        { "path": "artifacts/api-server/src/lib/parcelDrawStub.ts", "status": "modified", "role": "P-339: envelopeRefusalReason becomes a required non-null string at the Assembler boundary; the `?? atom_path_pending` default is gone" },
+        { "path": "artifacts/api-server/src/routes/propertyExplorer.ts", "status": "modified", "role": "P-339: the attempt runs for every atom-pending parcel (the `&& bakedZoningCode` gate is dropped) and its OUTCOME, not a model-or-null, reaches the assembler" }
+      ],
+      "diffstat": "5 files changed, 327 insertions(+), 98 deletions(-), plus 1 added file (envelopeDrawOutcome.ts).",
+      "evidence": {
+        "tests": "vitest run over the four affected suites together (src/lib/buildableEnvelope/parcelDrawEnvelopeModel.test.ts, src/lib/__tests__/parcelDrawStub.test.ts, src/lib/__tests__/parcelDrawFromReads.test.ts, src/routes/__tests__/propertyExplorerBriefNodeFacetParity.test.ts) with --testTimeout=180000: **Test Files 4 passed (4), Tests 66 passed (66)**. Run twice: once at base 2e7ca7c4 with the change uncommitted (504.81s, cold cache) and once at the PR commit 8c69851d on the rebased tree (11.33s, warm cache). Both green.",
+        "tests_method_note": "A first run of the same four files at the default 20s per-test timeout reported 65 passed / 1 failed: `parcelDrawStub.test.ts > falsifier: envelopeRingToLocalFeet preserves area > shoelace area ... within 1%` threw `Test timed out in 20000ms`. That is a COLD-TRANSFORM cost, not a semantic failure and not a file this lane touched (envelopeRingToLocalFeet / deriveBuildableEnvelope are untouched by P-339). Re-run alone with a warm cache the whole 41-test file completes in 1.03s (transform 209ms, tests 226ms). Reported rather than quietly re-run, because 'the test went green on the second try' is the shape of a flake and the reader should have both numbers.",
+        "typecheck": "tsc -p artifacts/api-server/tsconfig.json --noEmit, run TWICE with a paired control. (1) PRE-REBASE, on this lane's uncommitted change at base 2e7ca7c4: exit 0, ZERO errors. (2) POST-REBASE, at the PR commit 8c69851d on origin/main 25bde5a8: 13 error lines, ALL of them in artifacts/api-server/src/lib/etjFactRead.ts, src/lib/etjFactRead.test.ts and src/lib/cityLimitsFactServeCutover.test.ts -- files brought in by #724 (P-359, the ETJ lane) -- and all of the shape \"'@workspace/cad-ingest/boundary' has no exported member 'EtjBoundarySourceRow'\" / \"Property 'refusedRings' does not exist\" / \"Property 'servedGeometry' does not exist\". (3) THE PAIRED CONTROL, which is what makes (2) attributable: `git checkout 25bde5a8` (the rebased tree WITHOUT this lane's commit) and the same tsc command produced the IDENTICAL 13 error lines -- Compare-Object over the two outputs is empty. Errors in files this lane touched: 0, in both runs. The 13 are an INSTRUMENT artifact of this worktree's dependency setup, stated plainly: node_modules here is junctioned from the p359-baseline worktree (see node_modules above), whose `@workspace/cad-ingest` and `@workspace/db` dists predate #724's new exports and the new `servedGeometry`/`servedStatus`/`derivation` columns, so api-server's new ETJ files typecheck against stale package builds. They are not a gate on this lane and they are not this lane's to fix; a worktree with a lockfile-faithful install and the workspace libs built would not show them.",
+        "node_modules": "This lane's worktree could not complete a pnpm install: `pnpm install --offline --frozen-lockfile` stalled for over 30 minutes at the final link step (P: is a mechanical/slow volume here) and the partially-created node_modules could not be removed inside the session budget (`Remove-Item -Recurse -Force` and `cmd /c rmdir /s /q` both hung). The workaround was to junction (directory symlink) the populated node_modules trees from the known-good P:/legacy-design-tools-worktrees/p359-baseline worktree into this one, root and per-package. Recorded because it is load-bearing for how the evidence above was obtained and because a reader reproducing this must know the suite ran against p359-baseline's dependency tree, not against an install made from this worktree's lockfile. First attempt pointed at P:/legacy-design-tools-worktrees/p359-etj-rings whose store lacked `undici` (vitest failed with `Cannot find package 'undici' imported from cheerio`); re-pointed at p359-baseline, which has it."
+      }
+    }
+  },
+
+  "falsifierResults": [
+    {
+      "n": "F1a",
+      "class": "the core claim, direction A: chain PRESENT at the setbacks step is NOT atom_path_pending",
+      "verdict": "PASS",
+      "method": "unit test in parcelDrawEnvelopeModel.test.ts, against a parcel whose payload carries a ruled table and whose chain is present but whose setback rule does not resolve",
+      "pre_change": "tryComposeEnvelopeModelForDraw returned null; the caller then took parcelDrawFromReads.ts's envelopeReason(bakeRefusal), so the overlay served reason atom_path_pending and the display layer rendered 'Withheld, setbacks unruled' beside the payload's own ruled 25/5/10/15 table",
+      "post_change": "the outcome is {state:'declined', refusal:{step:'setbacks-unresolved', chain:'present'}} and envelopeDrawRefusalReason(...) is 'setbacks-unresolved' -- asserted to NOT be 'atom_path_pending'",
+      "why_it_matters": "this is the exact sentence the dispatch's three P-254 buckets fail on; the assertion is on the reason value, which is what the display layer reads"
+    },
+    {
+      "n": "F1b",
+      "class": "the core claim, direction B: chain ABSENT at the SAME step IS atom_path_pending",
+      "verdict": "PASS",
+      "method": "the same test shape with fetchPropertyAtomChain returning null",
+      "pre_change": "atom_path_pending was served for both directions, so the token could not distinguish them",
+      "post_change": "{state:'declined', refusal:{step:'setbacks-unresolved', chain:'absent'}} and the reason IS 'atom_path_pending'",
+      "why_it_matters": "the pre-registered falsifier required BOTH directions shown; a fix that removed the token entirely would satisfy direction A and be wrong"
+    },
+    {
+      "n": "F2",
+      "class": "no-district: the attempt costs no I/O and names the missing district",
+      "verdict": "PASS",
+      "method": "tryComposeEnvelopeModelForDraw with zoningCode: null, asserting no fetch of the parcel ring or the chain occurred",
+      "pre_change": "propertyExplorer.ts's `&& bakedZoningCode` gate meant no attempt ran at all, so the bake's atom_path_pending was served and the customer was told the setbacks were unruled when the real gap was a missing district",
+      "post_change": "{state:'unreached', refusal:{step:'no-zoning-code'}} -> envelopeDrawRefusalReason -> 'no-zoning-stamp' (an EXISTING vocabulary row that humanises to 'No zoning stamp', i.e. the truth), never atom_path_pending",
+      "why_it_matters": "this is the sub-case the dispatch did not name but the constraint 'atom_path_pending is reachable only when no chain exists at all' forces: with no district there is no attempt and no chain read, so the token would be a lie"
+    },
+    {
+      "n": "F3",
+      "class": "fail-closed identity: never draw a stranger's envelope",
+      "verdict": "PASS (unchanged behaviour, re-pointed assertion)",
+      "method": "the partner-identity guard's existing test, re-pointed from `null` to unreached('parcel-identity-mismatch')",
+      "post_change": "the guard still declines to draw and now NAMES itself; the reason served is the step name",
+      "not_covered": "no live parcel was found that actually trips this guard, so the falsifier is a unit construction (as it was before P-339); it is asserted, not measured on a real parcel"
+    },
+    {
+      "n": "F4",
+      "class": "P60b not flattened: the route's own wireStatus travels verbatim",
+      "verdict": "PASS",
+      "method": "envelopeDrawRefusalReason on {step:'derivation-not-drawn', declinedBy:X} for X in 'no-buildable-area', 'geometry-validation-failed', and null",
+      "post_change": "the two wire statuses stay distinct on the wire and a null declinedBy lands on 'geometry-validation-failed', never on a withhold token",
+      "why_it_matters": "the pre-change code flattened all three to null, i.e. to the same refused overlay, so a consumed lot and a gate decline were indistinguishable to the customer"
+    },
+    {
+      "n": "F5",
+      "class": "the stub cannot invent a reason",
+      "verdict": "PASS by construction",
+      "method": "type-level: AssembleParcelDrawInput.envelopeRefusalReason is now `string`, not `string | null`, and envelopeOverlay's own parameter is the same; the `??` is deleted",
+      "post_change": "there is no remaining `?? \"atom_path_pending\"` anywhere on the draw path (grepped the file: the only occurrences of the literal in parcelDrawStub.ts are in doc comments)",
+      "residual": "a future edit could still reintroduce one; the type only forces a caller to HAVE a reason, it cannot force the reason to be true. Stated so the guard is not oversold."
+    },
+    {
+      "n": "F6",
+      "class": "the drawn case is unchanged",
+      "verdict": "PASS",
+      "method": "the P-153 positive control test, re-pointed to take result.model from the modelled arm; and parcelDrawStub.test.ts's own 'present + real geom when envelopeModelled resolves' block (41 tests) unchanged and green",
+      "post_change": "a modelled outcome still draws state 'present' with basis 'modelled-figure-withheld' and NO reason; the P-153 behaviour is not re-litigated by this lane"
+    },
+    {
+      "n": "F7",
+      "class": "honest reporting of a throw",
+      "verdict": "PASS",
+      "method": "fetchPropertyAtomChain made to throw; asserted",
+      "post_change": "{state:'unreached', refusal:{step:'derivation-threw', chain:'unreached'}}. The pre-change code mapped EVERY throw to null, i.e. to 'Withheld, setbacks unruled'.",
+      "adversarial_note": "'derivation-threw' is a step this lane ADDED, not one the dispatch's candidate list names (the dispatch lists only 'the first parcel ring, the partner-identity guard, resolveAuthoritativeSetbacks, labelEdges, or wireStatus !== ok'). It is added because mapping a throw to any NAMED step would be a false step claim of exactly the kind this lane removes, and because a mutable stageAtThrow reports a throw at a named stage where one exists (the ring fetch, the edge labeller) and only falls back to 'derivation-threw' where it does not."
+    },
+    {
+      "n": "F8",
+      "class": "the customer contradiction class, offline",
+      "verdict": "NOT RUN -- and cannot be run offline by this lane",
+      "detail": "The class is SAYS-RULES-UNRULED-BESIDE-RULED-TABLE in scripts/surface-probe.mjs (RULE_REFUSAL_PHRASES at line 1926 matches 'unruled'; the MCP's reasonDisplayText 'Withheld, setbacks unruled' therefore trips it beside a payload whose own setbacks row prints Present). After this change the reason served is a raw step name ('setbacks-unresolved') or an existing vocabulary token, neither of which contains 'unruled' -- so the phrase class should stop matching on the MCP text row. That is a PREDICTION about a deployed surface, not a measurement, and the MCP leg needs the operator's sign-in (dispatch: 'the seat grades it after deploy'). The falsifier that IS runnable offline (F1a) asserts the reason VALUE, which is the input to that sentence."
+    }
+  ],
+
+  "theDispatchPathLabelResolved": "The dispatch cites the third site as 'smartsite-mcp `src/propertyExplorer.ts` (~355-362)'. No file named propertyExplorer.ts exists under artifacts/smartsite-mcp/src (the MCP package holds mcp-app.ts, tool-honesty.ts and friends, and re-derives no envelope: grep for tryComposeEnvelopeModelForDraw / envelopeOverlay / envelopeRefusalReason across artifacts/smartsite-mcp/src finds only two doc-comment mentions in tool-honesty.ts and two display-text mappings in mcp-app.ts). The cited LINE NUMBERS pin the real site: `git show 2e7ca7c4:artifacts/api-server/src/routes/propertyExplorer.ts` lines 355-362 are exactly the `envelopeModelled = atomPathPending(...) && bakedZoningCode ? await tryComposeEnvelopeModelForDraw(...) : null` gate the dispatch describes, and that is the file this lane changed. Recording this so a reader does not go looking for a smartsite-mcp edit that was never needed.",
+
+  "residualsForTheSeat": [
+    {
+      "id": "R-1",
+      "row": "P-339",
+      "repo": "legacy-design-tools",
+      "detail": "The six named parcels will (on this change) most likely read a step name or the route's own decline token rather than a drawn polygon, because reaching the setbacks step means resolveAuthoritativeSetbacks returned nothing and making those parcels DRAW is P-340's resolver gap, not this lane's. The dispatch accepts 'the route's own decline reason' as a pass for this half; it is stated here so the post-deploy probe result is not read as a partial failure of P-339."
+    },
+    {
+      "id": "R-2",
+      "row": "P-339",
+      "detail": "A residual inconsistency this lane does NOT fix, named in CP1 and repeated here: composeSmartSiteStub (depth 'stub') derives its envelope RAIL from the bake via envelopeDisposition(root.envelope, envelopeBriefRefusal), independently of the draw-block outcome. It carries a rail state and never a reason sentence, so it cannot produce the reported false wording -- but the stub rail can still read 'refused' while the draw block draws. That is the P-249/P-261 family, not this row."
+    },
+    {
+      "id": "R-3",
+      "row": "P-339",
+      "detail": "nodeFacetBakeTier1.ts / nodeFacetBakeTier2.ts still stamp declineReason 'atom_path_pending' in the bake. That is the anti-zombie marker's home and is correct there (the bake genuinely stops authoring product envelope confidence), but the token is also in the probe's GEOMETRY_REFUSAL_PHRASES list, so any FUTURE surface that reads the bake's stored declineReason and humanises it through envelopeHuman would fire the geometry class. Grepped: no serving path does that today. Named, not fixed -- rewording a stored marker nobody measured firing wrongly would be churn."
+    },
+    {
+      "id": "R-4",
+      "row": "P-339",
+      "detail": "The 'no new vocabulary token' constraint and the 'atom_path_pending only when no chain exists' constraint cannot both be met verbatim for a chain-PRESENT slope where the resolver returns nothing. @empressaio/atom-contract/display carries exactly TWO humanised envelope-refusal rows (atom_path_pending, no-zoning-stamp -- verified by reading the installed dist/display/wire.js: envelopeHuman maps only those two and returns every other reason unchanged; the VOCABULARY array holds 36 `token:` rows). This lane chose the raw step name 'setbacks-unresolved' over reusing the token (which is the defect) and over minting a row (which is the prohibition). If the seat prefers a vocabulary row, that is a package change and a different lane."
+    }
+  ],
+
+  "fleetMemory": {
+    "LESSON": "A function that returns `null` for 'modelled', 'declined' and 'unreached' at once does not merely lose detail -- it forces every caller to guess, and the guess becomes a customer-facing sentence. Here the caller guessed from the bake's stored anti-zombie marker and the stub guessed with `?? \"atom_path_pending\"`, so two independent guesses produced the SAME false claim, which is why the defect looked like one bug and was three (dispatch sites 2, 3 and 4).",
+    "LESSON": "Do not leave the reason's default at the LAST composer in the chain. parcelDrawStub.ts's `?? \"atom_path_pending\"` was the leak: it meant 'if I was told nothing, I assert the setbacks are unruled'. Making the input a required non-null `string` is what converts 'a surface can invent this' into 'a surface must be handed this', and the type is the enforcement, not a comment.",
+    "DEAD-END": "`pnpm install --offline --frozen-lockfile` in a P:-volume worktree. It ran past 30 minutes at the link step without completing, and the half-built node_modules then could not be deleted (both Remove-Item -Recurse -Force and cmd /c rmdir /s /q hung). Junctioning a known-good worktree's node_modules is minutes and produces a runnable suite; if you do, VERIFY the store's contents first (p359-etj-rings lacked `undici`, which surfaced as a confusing `Cannot find package 'undici' imported from cheerio` from inside vitest).",
+    "DEAD-END": "Running these four suites together at vitest's default 20s per-test timeout under a cold transform on this volume. It produces a spurious timeout in parcelDrawStub.test.ts's shoelace-area test (65 passed / 1 failed) that has nothing to do with the change; --testTimeout=180000 gives 66/66, and the test alone completes in 1.03s warm. Do not record the cold number as a pass and do not record it as a failure.",
+    "GROUND-TRUTH": "2026-09-19 03:14Z: LDT worktree P:/seat-worktrees/p339-mcp-half/legacy-design-tools, branch lane/p339-mcp-half, base 2e7ca7c4 (= merge-base with origin/main; origin/main has since moved to 03bb424 by #723 P-351). Four affected suites 66/66 green. P-340 has NOT landed (grepped origin/main's last 25 commits and --all --grep=P-340: no P-340 commit), so the dispatch's 'rebase if P-340 lands first' condition did not fire.",
+    "OPEN": "R-1 through R-4 above. The live thread for the next context is R-1: the post-deploy probe grade on the six named parcels, which is a seat action (MCP sign-in) and not an agent action."
+  },
+
+  "close_path": "_inbox/2026-09-19_p339-mcp-half_close.json",
+  "close_status_expected": "closed-partial",
+  "close_status_reason": "Everything this lane was asked to build is built, verified at unit level (66/66) and about to be offered as one PR -- but the customer predicate is the probe's P-254 MCP text rows on the DEPLOYED surface, the dispatch forbids a deploy from this lane ('No merges, no deploys'), and the MCP leg needs the operator's sign-in. So no post-change live artifact can exist from inside this lane, and per the dispatch's close rules the status is closed-partial with the artifact of record (which measured the rows FAILing pre-change) cited."
+}
