@@ -1,0 +1,33 @@
+{
+  "planRow": "G-172",
+  "plan": "OPS-17",
+  "title": "The Fleet lens serves zero records while Samsara answers with 75, because the record-shape guard enforces the very taxonomy the module it lives in says it refuses to impose",
+  "verdict": "closed",
+  "gradedBy": "planner",
+  "gradedAt": "2026-09-19",
+  "whatThisRowActuallyNeeded": "Not a build. The fix was already merged as PR #77 (03e11b0b). The remaining act was the manual redeploy of dolphin-app, because deploy_on_push is unset and a merge ships nothing. That is the act performed here.",
+  "deployed": {
+    "app": "dolphin-app (95691c40-27ca-4afb-b9b4-a37e079c5e69)",
+    "from": "ea27024f55223a51f6ab43d88bc26504ba53c7f9 (PR #76)",
+    "to": "0848dd7286db61e74a07ffe7ac4e9a1d30a4b547 (main, the merge of PR #80)",
+    "shipping": ["PR #77 (this row's fix)", "PR #78", "PR #79"],
+    "deploymentId": "eacce477-6ba9-414c-a6ed-ac23f8f8d167",
+    "readBack": "services[0].source_commit_hash === 0848dd7286db61e74a07ffe7ac4e9a1d30a4b547, compared byte for byte against git ls-remote of the branch"
+  },
+  "acceptance": {
+    "clause": "the fleet-vehicle region renders at least one real Samsara record with a `status` that came from the vendor rather than from this product's taxonomy, OR the guard is corrected to the vendor's actual shape and the region's `recordCount` is greater than zero with the basis still naming what was refused; and the fix does not force-map raw telemetry onto VEHICLE_STATUS_VALUES",
+    "result": "MET, on the second branch of the OR",
+    "evidence": {
+      "route": "GET https://app.smartcityos.io/api/domains/fleet-vehicles?cityKey=bastrop_tx with the G-135 lane-verification identity",
+      "before": { "status": "refused", "recordCount": 0, "basis": "samsara answered and every one of the 75 fleet-vehicle records it returned was refused by the record-shape guard: status must be one of out-of-service, inspection-due, in-shop, in-service; fleet-vehicle requires operatorRef; fleet-vehicle requires odometerBand" },
+      "after": { "status": "ok", "recordCount": 72, "source": "live", "countingRule": "72 real fleet-vehicle records read live from smartcity-os for bastrop_tx" },
+      "refusalsStillNamed": { "extras.refusalCount": 3, "extras.refusalFaults": ["fleet-vehicle requires odometerBand"], "extras.refusals": "three recordIds, each with its fault; the odometerless records are refused BY NAME on purpose" },
+      "noForceMapping": { "everyServedRecordStatus": null, "extras.statusNotReported": 72, "extras.realStatusCounts": [], "perRecordExplanation": "each record carries its own statusBasis, that the read reports no engine state for that vehicle; so raw telemetry was not mapped onto VEHICLE_STATUS_VALUES" }
+    },
+    "predictionConfirmed": "The row's own post-deploy expectation, written before the deploy, was 'most of the 75 paint, and the 3 with no odometer stay REFUSED BY NAME on purpose'. Observed: 72 painted, 3 refused by name. The prediction is the falsifier and it held."
+  },
+  "closeSchema": {
+    "leave_behind": "none"
+  },
+  "amendment": "A-189"
+}

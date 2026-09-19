@@ -27,7 +27,14 @@ import { execFileSync } from "node:child_process";
 const PROD = "https://app.smartcityos.io";
 const V1 = "https://smartcityos.io";
 const GCP = "https://smartcity-api-7dyaiy7wha-uc.a.run.app"; // the host production read before the ship
-const TARGET_BASE = "https://walrus-app-kzog6.ondigitalocean.app";
+/* G-171 (2026-09-19): the base is now the v1 platform's OWN PRIMARY DOMAIN, not the App Platform
+   auto-generated hostname it was. `https://walrus-app-kzog6.ondigitalocean.app` is masked by DO to
+   every EXTERNAL client -- this seat and any other gets ECONNRESET, while `smartcityos.io`, which
+   serves the same app, answers normally -- so a verification instrument could not read the host it
+   was verifying. The negative guard is kept and retargeted: the base must not be the GCP host being
+   retired, and must not be the masked auto-generated name that started this. */
+const TARGET_BASE = "https://smartcityos.io";
+const RETIRED_BASE = "https://walrus-app-kzog6.ondigitalocean.app";
 const PROD_APP = "95691c40-27ca-4afb-b9b4-a37e079c5e69";
 
 const failures = [];
@@ -55,7 +62,9 @@ console.log(`   source_commit_hash=${served}`);
 console.log(`   dashboards origin/main=${head}`);
 console.log(`   SMARTCITY_V1_PLATFORM_BASE=${baseVar?.value}`);
 check(served === head, "the running commit IS dashboards origin/main, byte for byte");
-check(baseVar?.value === TARGET_BASE, "the platform base is the v1 platform, not a host being retired");
+check(baseVar?.value === TARGET_BASE, `the platform base is the v1 platform's own primary domain (${TARGET_BASE})`);
+check(baseVar?.value !== RETIRED_BASE, "the platform base is NOT the DO auto-generated hostname, which is masked to every external client");
+check(!String(baseVar?.value || "").includes("a.run.app"), "the platform base is not a host being retired (the GCP original)");
 check((app.spec.domains || []).some((d) => d.domain === "app.smartcityos.io" && d.type === "PRIMARY"), "app.smartcityos.io is still the PRIMARY domain");
 
 /* ---------- 2. the finance clause ---------- */

@@ -1,0 +1,83 @@
+{
+  "planRow": "G-171",
+  "plan": "OPS-17",
+  "title": "Point SMARTCITY_V1_PLATFORM_BASE at the app's own primary domain instead of the auto-generated DigitalOcean hostname",
+  "verdict": "closed",
+  "gradedBy": "planner",
+  "gradedAt": "2026-09-19",
+  "act": "state-changing, production: PUT /v2/apps/95691c40-27ca-4afb-b9b4-a37e079c5e69 spec, exactly one leaf changed",
+  "snapshot": {
+    "docRepo": "main",
+    "smartcityDashboardsMain": "0848dd7286db61e74a07ffe7ac4e9a1d30a4b547",
+    "app": "dolphin-app (95691c40-27ca-4afb-b9b4-a37e079c5e69), app.smartcityos.io PRIMARY"
+  },
+  "triggerHonoured": "The row said DO NOT DISPATCH UNTIL G-166 IS GREEN. G-166 landed, and smartcity-dashboards main was verified green (a11y success, test success) on 0848dd72 before the change was made. The trigger is satisfied, not assumed.",
+  "theChange": {
+    "key": "SMARTCITY_V1_PLATFORM_BASE",
+    "before": "https://walrus-app-kzog6.ondigitalocean.app",
+    "after": "https://smartcityos.io",
+    "enumeratedLeafDiff": "spec.services[0].envs[10].value",
+    "leavesChangedOutside": 0,
+    "secretEntriesRoundTrippedByteForByte": 10,
+    "deployment": "b541be4e-0482-489c-ae86-e3e22a82bfe4",
+    "cause": "app spec updated",
+    "phase": "ACTIVE",
+    "readBack": {
+      "sourceCommitHash": "0848dd7286db61e74a07ffe7ac4e9a1d30a4b547",
+      "equalsGitHubMain": true,
+      "envOnTheAppsOwnSpec": "https://smartcityos.io",
+      "verifiedBy": "fetching the app spec again after the deployment and reading the entry by field"
+    }
+  },
+  "acceptance": {
+    "clause1": "the four A-187 feeds render the same `status` and `basis` after the change as before it, read from the deployed surface's own composition rather than from the app spec",
+    "clause1Result": "MET",
+    "clause1Evidence": {
+      "readFrom": "GET https://app.smartcityos.io/api/domains/<domain>?cityKey=bastrop_tx with the G-135 lane-verification identity in x-hauska-key",
+      "before": {
+        "fire-apparatus": { "status": "unavailable", "recordCount": 0, "basis": "Apparatus data exists in FirstDue but current API credentials do not have access (contact dashboards@firstarriving.com to request apparatus/assets API scope)." },
+        "call-analytics": { "status": "unavailable", "recordCount": 0, "basis": "goto_not_authorized" },
+        "cip-projects": { "status": "ok", "recordCount": 14, "basis": "getCIPProjectData() (services/powerbi.ts)" },
+        "fleet-vehicles": { "status": "ok", "recordCount": 72, "basis": "cachedFetch('vehicles', '/fleet/vehicles') + stats batch (engineStates,obdOdometerMeters,obdEngineSeconds,fuelPercents), 60s TTL, + fetchDvirs()/fetchSafetyEvents() (30-day/7-day windows, 5-min TTL)" }
+      },
+      "after": "identical for all four, status and basis strings unchanged",
+      "note": "fleet-vehicles reads 72 in BOTH readings because the G-172 fix was already deployed earlier in the same session; the base change did not move it."
+    },
+    "clause2": "a request from the integration seat can open a connection to the configured base, which it cannot do today",
+    "clause2Result": "MET",
+    "clause2Evidence": {
+      "route": "/api/platform/powerbi/cip-projects with the canonical platform-internal bearer",
+      "retiredBase": { "host": "https://walrus-app-kzog6.ondigitalocean.app", "result": "curl exit 28, no connection, from this seat" },
+      "newBase": { "host": "https://smartcityos.io", "result": "HTTP 200" },
+      "control": { "host": "https://www.smartcityos.io", "result": "HTTP 200" }
+    }
+  },
+  "instrumentRepairedInTheSameAct": {
+    "file": "scripts/govtech/dolphin-ship-acceptance.mjs",
+    "problem": "it pinned TARGET_BASE to the masked auto-generated hostname, so this change would have made it report a false FAIL on the next run",
+    "fix": "TARGET_BASE is now https://smartcityos.io, with a retained negative guard against the masked name and a new one against any a.run.app host",
+    "reRunAfterChange": "ACCEPTED, every clause clean"
+  },
+  "newInstrument": {
+    "file": "scripts/govtech/do-deploy.mjs",
+    "purpose": "the generic forced redeploy + guarded single-env write that program.md rule 12 and OPS-17 A-170/A-149 name but no file provided; dolphin-ship.mjs could not be used because its one allowed diff is an env entry that is already written",
+    "guards": [
+      "refuses if the app already serves the target commit (no --set-env)",
+      "finds the created deployment by SET DIFFERENCE; a 2xx that creates none is a failure",
+      "reads services[0].source_commit_hash BACK BY FIELD and compares it byte for byte against GitHub's branch head, so two independent sources must agree",
+      "for --set-env: refuses to add a key, refuses to rewrite a SECRET, and enumerates every leaf difference in the spec tree so nothing outside the one named entry can be written"
+    ],
+    "selfTest": "7 cases, both directions, run before any network or credential access: identical, stale by one commit, same prefix, null, undefined, empty, and an empty target. 7/7 PASS."
+  },
+  "leaveBehind": [
+    {
+      "item": "d12-main-uat still carries SMARTCITY_V1_PLATFORM_BASE = https://walrus-app-kzog6.ondigitalocean.app",
+      "why": "this row scopes the change to the dolphin-app spec env only, so the UAT twin was deliberately not touched",
+      "consequence": "the UAT app still reads the masked host server-side (which works), but no external lane can read that host to verify it",
+      "owner": "govtech planner",
+      "planRow": "not carded - named here so it is a decision rather than an omission"
+    }
+  ],
+  "rowsFiredByThisSession": ["G-171", "G-172", "G-151 (DO-app reach)", "G-152 (DO-app clause discharged)", "G-153 (parcel 2 live)"],
+  "amendment": "A-189"
+}

@@ -968,11 +968,34 @@ Filing four `_inbox/` artifacts pulled in seven further citations, because those
 - **A DEPLOYED SURFACE IS EVIDENCE ABOUT A DEPLOY, NOT ABOUT `main`.** `G-172` was carded as a build (guard-vs-stance contradiction) off a stable 4/4 deployed read showing 0 of 75. The fix was already MERGED as PR #77 and simply NOT DEPLOYED. **Every defect carded from a deployed read must carry a `git merge-base`/diff against `main` before its REMEDY is named**, because the same read supports three different next acts (write a mapping / widen a guard / ship) and only the diff tells them apart.
 - **The reverse error is one commit away.** A green `main` and a red deploy look identical in a CI list, which is the shape G-152, G-153 and G-160 were all in. "Merged" is not a grade.
 
+### LESSON - A DEPLOY NEEDS AN INSTRUMENT THAT CAN SAY NO, AND `force_build` IS THE RULE-12 REMEDY THAT NO FILE PROVIDED
+
+`program.md` rule 12 and A-170 name `POST /v2/apps/{id}/deployments {force_build:true}` as the DigitalOcean remedy, but no file implemented it: `dolphin-ship.mjs` does it only as a side effect of writing an env entry, and its own final read-back FAILS when that entry is already present, so it cannot ship a plain code change. Built `scripts/govtech/do-deploy.mjs`. It refuses to treat a 2xx as evidence: it finds the deployment it created by SET DIFFERENCE against the pre-write list, then reads `services[0].source_commit_hash` BACK BY FIELD and compares it byte for byte against GitHub's branch head, so DigitalOcean and GitHub must independently agree before the run passes. `--set-env` was added because a spec PUT replaces the WHOLE spec, so the guard is dolphin-ship's enumerated tree walk: exactly one leaf may differ and all 10 SECRET `EV[1:...]` entries must round-trip byte for byte. **The write's own response names the PREVIOUS deployment**, not the new one (A-149's trap); set difference is what makes that un-misreadable.
+
+### LESSON - A CHANGE THAT INVALIDATES AN INSTRUMENT MUST REPAIR IT IN THE SAME ACT
+
+`dolphin-ship-acceptance.mjs` pinned `TARGET_BASE` to the very hostname G-171 was retiring. Shipping the change alone would have turned a passing control into a permanent false FAIL on its next run, and the next reader would have read that as a regression rather than as a stale pin. Two instruments were touched this session and both were repaired in the act that touched them.
+
+### LESSON - THE TRACKER READS A ROW'S STATUS FROM ITS LEADING TOKEN, SO A PREPENDED NOTE SILENCES THE ROW
+
+Adding "DO-APP CLAUSE DISCHARGED ..." to the front of G-152's status cell made `smartcity-tracker.mjs` **refuse a verdict** ("status word is not in the vocabulary"). The gate worked. A note belongs AFTER the status token, never before it.
+
+### GROUND-TRUTH (2026-09-19)
+
+- `dolphin-app` serves `0848dd7286db61e74a07ffe7ac4e9a1d30a4b547` (deployment `eacce477`), `SMARTCITY_V1_PLATFORM_BASE=https://smartcityos.io`, `app.smartcityos.io` PRIMARY, `deploy_on_push` unset so a merge ships nothing. The G-171 spec write was `b541be4e`.
+- `smartcity-dashboards` `main` is `0848dd72` with CI `a11y` success and `test` success.
+- **WorkOS issuer VERIFIED by measurement, not assumed.** `https://api.workos.com/user_management/client_01M2X7GNPZ297887ZMZ8TVAFRX` returns an OIDC discovery document whose `issuer` is exactly that string and whose `jwks_uri` is `https://api.workos.com/sso/jwks/client_01M2X7GNPZ297887ZMZ8TVAFRX`, which serves **1 RSA key with `alg=RS256`**. `src/staff-identity.mjs` compares `token.iss` to `SHELL_IDENTITY_PROVIDER` exactly (trailing slash normalised) and HARDCODES RS256, so that issuer value is right for this client and the algorithm matches.
+
+### OPEN (staff identity)
+
+- **`WORKOS_API_KEY` must reach Secret Manager and NO AGENT HAS THE VALUE.** The WorkOS pass reported it was not copied and exists only in the dashboard's API-keys tab. Until that value lands somewhere a process can read, nothing can mint a test user, assign a role, or call the Admin API. This is the single blocking item on the staff sign-in path.
+- **A real token has never been decoded**, so two things remain UNCONFIRMED rather than settled: that `role` arrives as a single string (WorkOS "Multiple roles" is off, which should produce a string, but no token has been seen) and that `city_key` resolves to `bastrop_tx`. The issuer no longer needs confirming.
+
 ### OPEN
 
-- **The redeploy** (planner-owned): `dolphin-app` from green `main`. Fires G-152 + G-153 + G-172.
-- **PR #80 merge, then MANUAL deploy**, then re-probe with `scripts/probe-parks-lens.mjs` expecting 404 -> 200 with the three markers.
-- **G-171 UNBLOCKED** — its declared trigger (G-166 green) has fired. Planner-owned: point `SMARTCITY_V1_PLATFORM_BASE` at `https://smartcityos.io`.
+- **DONE 2026-09-19: the redeploy.** `dolphin-app` now serves `0848dd72`. It fired G-152's DO-app clause (all four branch routes 404 -> 200) and G-172 (`fleet-vehicles` `refused`/0 -> `ok`/72 live, 3 odometerless still refused by name).
+- **DONE 2026-09-19: PR #80 merged, then deployed, then the probe re-run.** `/lens/parks?cityKey=template-city` 404 -> 200 (16853B) with all three post-change markers true and both pre-change markers false; controls held (400 no city, 401 private pack, 404 unknown city). Artifact `_inbox/2026-09-19_planner_parks-lens_deployed_probe.json`. **Its `deployedSurfaceIsThePreChangeBuild` check now FAILS, correctly** - that check asserts the deployed app does NOT yet carry the lane's markers, which was true only until the deploy.
+- **G-171 DONE 2026-09-19.** — its declared trigger (G-166 green) has fired. Planner-owned and executed: the base is now `https://smartcityos.io`. Both acceptance clauses met, measured. The four A-187 feeds render the same `status` and `basis` before and after (read from the deployed surface's own composition, not the app spec), and this seat can now open a connection to the configured base, where the retired `walrus-app-kzog6` host gave curl exit 28 and `smartcityos.io` gives 200. `dolphin-ship-acceptance.mjs` was keyed to the old value and was retargeted in the same act.
 - **G-149 dispatch ready to hand-carry:** `_dispatches/2026-09-19_g149-flood-study_dispatch.md`.
 - **G-169 dispatch ready to hand-carry:** `_dispatches/2026-09-19_g169-deploy-path-windows_dispatch.md`.
 - **The pin stands at 21** after the 24 -> 21 disposition; residual is heterogeneous and named on G-170.
