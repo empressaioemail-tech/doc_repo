@@ -1,0 +1,142 @@
+{
+  "checkpoint": "CP1",
+  "kind": "the design for P-300/P-338's writer half, written from the write path and the corpus BEFORE any build, plus an honest statement of what this session did and did not reach",
+  "lane": "p300-p338-setback-residual-writer",
+  "planRows": ["P-300", "P-338"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (rows P-300, P-338)",
+  "dispatch": "_dispatches/2026-09-18_p300-p338-setback-residual-writer_dispatch.md",
+  "mission": "_catalog/dispatch_missions/mission_p300_p338_setback_residual_writer.md",
+  "seat": "cente-vsc-p300",
+  "fanDepth": 0,
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "whereIAmRootedAndWhereArtifactsGo": {
+    "docRepoWorktree": "P:/seat-worktrees/p300-p338-setback-residual-writer/doc_repo (branch seat/p300-p338-setback-residual-writer, branched from origin/main 948c7588). Every artifact of this lane is written under THIS worktree's _inbox/.",
+    "whyANewWorktree": "The session the dispatch was handed to is rooted at C:/Users/cente, whose doc_repo checkout (C:/Users/cente/doc_repo) is on branch main and 110 commits BEHIND origin/main, so the dispatch file itself does not exist in it and none of the 2026-09-18 rulings resolve there. Building in it would have been the exact 'wrote into the wrong tree' failure the dispatch's own close section names twice. This lane therefore created and used its own worktree from origin/main, and did NOT read or write P:/doc_repo (the integration seat's checkout).",
+    "productRepos": [
+      {
+        "name": "hauska-setback-corpus",
+        "worktree": "P:/seat-worktrees/p300-p338-setback-residual-writer/hauska-setback-corpus",
+        "branchPoint": "origin/main f43cf4b (Merge PR #10, fix/p299-height-flag-and-state) -- corpus package version 1.4.0, the version P-326's measurement and the six-county cells both name"
+      },
+      {
+        "name": "hauska-factory",
+        "worktree": "P:/seat-worktrees/p300-p338-setback-residual-writer/hauska-factory",
+        "branch": "lane/p300-p338-setback-residual-writer",
+        "branchPoint": "origin/main 94fd6d5 (P-352, #181). NOTE: the dispatch names the recompile-time main as 07a1215b; origin/main has moved past it (07a1215 = P-331, then P-330/P-333/P-352 landed). The dispatch's own instruction is 'each from current origin/main with the SHA declared', so this lane's base is 94fd6d5 and that delta is disclosed rather than silently reconciled."
+      }
+    ],
+    "laneClaim": "node scripts/lane-claim.mjs claim --lane p300-p338-setback-residual-writer --seat cente-vsc-p300 --plan-row P-300 --dispatch _dispatches/2026-09-18_p300-p338-setback-residual-writer_dispatch.md, run from this worktree as the first action, exit 0 (CLAIMED). The dispatch's exit-3 stand-down did not fire; origin/main's _catalog/lane_claims.json carries no prior claim on this lane.",
+    "worktreeRegistration": "NOT registered in _catalog/seat_register.json by this lane: the register's own entries are written by the integration seat ahead of dispatch or by the lane that creates a checkout, and this lane did not want to edit the control plane it was not asked to own. The path is declared here instead, and this is recorded as an open item in the close."
+  },
+
+  "whatTheWritePathSaysToday": {
+    "readInFullFromTheLaneWorktree": [
+      "hauska-factory src/jobs/parcel-setback-cells.mjs (49,352 bytes)",
+      "hauska-factory src/lib/setback-writer/setback-table-router.mjs (imported names only so far: resolveSetbackForParcel, hasRuledTable, CORPUS_PACKAGE, CORPUS_VERSION)",
+      "hauska-setback-corpus src/setbacks/table-types.ts, schema.json, index.ts, gate.ts, riesel-tx.json"
+    ],
+    "theTwoBranchesThatProduceThe48_829": [
+      {
+        "class": "no-ruled-table",
+        "code": "processCityPage's `if (!city.ruled)` short-circuit -> buildNoRuledTableCells (~line 533)",
+        "today": "writes kind='unaccounted' with reason 'no ruled setback table is on file for <key> (this city's setback table is the acquisition need)' and basis.method='getSetbackTable(jurisdictionKey) probe'",
+        "payload": "48,829 of the 49,855 no-ruled-table parcels are P-300's population (the other 1,026 are Woodcreek's district-on-file parcels)"
+      },
+      {
+        "class": "district-miss",
+        "code": "buildResolvedCells -> classifyRouterMiss's final return (~line 520)",
+        "today": "writes kind='unaccounted' with reason 'the setback table router found no district row for \"<code>\" in <table>, so its setbacks are not on file'",
+        "payload": "8,484 parcels, plus Woodcreek's 1,026 -> the dispatch's 9,510"
+      }
+    ],
+    "theShortCircuitThatConstrainsTheDesign": "processCityPage tests `city.ruled` BEFORE it reads the zoningDistrict cell. P-326 measured the consequence and left it as a named defect: for a no-table city the district is never consulted, so a district-less parcel and a districted parcel are written the SAME unaccounted cell. P-300's design therefore cannot be a change to buildNoRuledTableCells alone -- the branch has to read the zoning rail, or read a classification table that already encodes the answer. Both halves of this lane (the classification table and the router) exist because of that short-circuit.",
+    "theP256Guard": "assertNoFalseAbsence refuses the whole batch if any cell is kind='absent-verified'. Class (c) is `absent-verified` BY RULING, so this guard must learn the difference between an unearned absence (this job guessing) and an earned one (a class (c) row whose basis names the ordinance that was read). The dispatch states this explicitly: 'a class (c) absence carries what was checked, or it does not ship.'",
+    "theWriteGate": "setbackCellMayBeMoved releases kind='unaccounted' plus this job's own false absences. Every cell this lane writes that is not `unaccounted` (refused, absent-verified, value) is therefore STICKY: a later correction cannot move it. That makes the classification's correctness load-bearing in a way a normal write is not, and is the strongest argument for refusing to guess a class."
+  },
+
+  "theDesign": {
+    "item1_classificationTable": {
+      "shape": "One committed JSON row per city: { jurisdictionKey, cityName, countyFips[], class: 'a'|'b'|'c'|null, parcels, ordinanceSection, citationUrl, readAt, evidenceQuote, defaults: {front_ft, rear_ft, side_ft, side_corner_ft} | null, platDisclosure }",
+      "whereItLives": "hauska-factory, beside the router (src/lib/setback-writer/), so the writer reads ONE table and keeps no second list -- the dispatch's explicit requirement.",
+      "rule": "class null means unclassified-at-source and the writer leaves the parcel `unaccounted`, named and reported. It is never guessed into a class (dispatch: 'A city you cannot classify at source stays unaccounted, named, and is reported. It is never guessed into a class.').",
+      "whyNotInTheCorpus": "the class is a fact about the CITY's ordinance and its acquired layers, not about a setback value; (a) and (c) produce no values at all, so the corpus (which is a value corpus) is the wrong home for them. Only (b)'s default row belongs in the corpus."
+    },
+    "item2_corpusDefaultRows": {
+      "shape": "A new row kind on SetbackDistrict, marked (proposed field: row_kind: 'jurisdiction-default' | 'district'), with the plat disclosure carried in the row's provenance note and in the corpus table's note. It is NOT a district_name the router could match, so a district code can never resolve to it.",
+      "schemaWork": "schema.json and table-types.ts both need the new field; schema.json's district has additionalProperties:false so an unmarked field would fail validation. G7 (max_height_ft sentinel) needs no change: a default row still carries max_height_ft and the same sentinel rule applies to it. G4 (district coverage) must be told that the default row is not a district, or a jurisdiction with a default and no expectedDistricts would read as a coverage miss.",
+      "versionBump": "minor bump 1.4.0 -> 1.5.0 (new row kind, no existing value changes). The bump is declared here and NOT executed: publishing the corpus is the seat's, per the dispatch."
+    },
+    "item3_router": {
+      "rule": "resolveSetbackForParcel(jurisdictionKey, districtCode) keeps its meaning for a parcel WITH a district on file: a code that misses the table stays a miss and never falls through to the default (that is ruling 6's case). A new, separately named entry point resolves the DEFAULT for a jurisdiction, and the writer calls it ONLY on the no-district-on-file path.",
+      "whyTwoFunctionsAndNotOneFallback": "a single function that falls back to the default on a miss would silently convert every district-miss into a default value -- the precise failure A-224 exists to prevent. Two names make the two cases distinguishable in a diff and testable apart, which the dispatch asks for ('Show the two cases apart')."
+    },
+    "item4_cells": {
+      "district-miss": "kind='refused', reason names the district code AND the city and says to verify with the city; basis keeps codeClass='district-miss' and the router finding. Coupled to P-346 by the ledger policy.",
+      "class-a": "kind='refused', reason names the city and says the zoning district was not acquired and to verify with the city; basis carries the classification row's citationUrl/section/readAt so the refusal names what was actually read. Coupled to P-364.",
+      "class-b": "kind='value' on the four rails from the jurisdiction-default row, with the plat disclosure in the cell's reason/basis and the corpus default row as the source; the companion row carries the disclosure and the default's section.",
+      "class-c": "kind='absent-verified', basis names the ordinance read and that it sets no city-wide line. This is the ONLY branch in this job that can legitimately produce absent-verified, and assertNoFalseAbsence must be narrowed to allow it while still refusing any other absent-verified cell.",
+      "unclassified": "kind='unaccounted', reason names the city and says it is unclassified at source; reported, never guessed."
+    },
+    "item5_ledgerPolicy": {
+      "file": "doc_repo scripts/six-county-completeness.mjs",
+      "change": "accept exactly two refusal signatures on the five setback rails: ruling 6's district miss and A-224's zoning-not-acquired. Each matched by its exact reason signature, not by 'refused'. Self-test gains a case per accepted signature and a case proving a differently worded refusal is still rejected.",
+      "handedBack": "the diff is handed back to the seat in the close, not committed by this lane."
+    }
+  },
+
+  "whatThisSessionActuallyReached": {
+    "done": [
+      "located the dispatch (it is NOT in the rooted checkout; it is on origin/main, which is 110 commits ahead of C:/Users/cente/doc_repo) and read it in full, plus its mission file and the two rulings it rests on",
+      "claimed the lane (exit 0) from a purpose-built worktree at origin/main 948c7588",
+      "created the two product worktrees from current origin/main (factory 94fd6d5, corpus f43cf4b)",
+      "read the write path (parcel-setback-cells.mjs), the corpus shape (table-types/schema/index/gate/an example table), and P-326's measurement and CP1/close, which together fix the population, the two classes, the guard, the write gate and the artifact schema",
+      "wrote this CP1"
+    ],
+    "NOTReached": [
+      "The 40-city classification. This is the lane's long pole and it is a source-research task over 40 separate Texas city ordinance sets, each needing the ordinance read (section + URL + read date + quote) to class (a)/(b)/(c). It is NOT done, and it is deliberately NOT guessed: the write gate makes every class this lane writes sticky (setbackCellMayBeMoved releases only `unaccounted`), so a wrongly-classed (b) would freeze a fabricated default onto a zoned city's parcels and no later correction could move it. That is the specific harm A-224 was written to prevent.",
+      "Corpus default rows, the router change, the writer change, the ledger diff, the falsifier fixtures, per-county dry runs, and the CP2/close of a BUILD. None started.",
+      "The per-county read-only dry run needs FACTORY_DATABASE_URL_RO / PRODUCTION_NEONDB_URL and a heavy-scan lease; whether those are reachable from this session was not tested, so it is recorded as untested rather than as blocked."
+    ],
+    "statusOfTheLane": "INCOMPLETE. This CP1 is a design checkpoint and a warm handoff, not a deliverable. Everything CPU/offline (the classification table's shape, the corpus row kind, the router split, the cell shapes, the guard narrowing, the ledger diff) is designed above and needs only the classification's source reads to become buildable."
+  },
+
+  "preRegisteredExpectedBands": {
+    "B1_class_shape": "EXPECT class (a) to dominate by parcel count. Two of the three largest cities are already measured zoned (Lago Vista 12,745 and Manor 8,081 = 20,826 of 48,829 = 42.7 percent), and small Texas cities with a zoning ordinance are the norm rather than the exception. EXPECT class (b) to be small (Gholson 840 is the ruling's own named first case).",
+    "B2_gholson": "EXPECT gholson-tx to stay 840 and to be class (b) with 25 front / 15 rear / 10 side / 25 corner street side (OT-10, Sec. 3.01.002), read again at source before it is coded.",
+    "B3_unclassified_floor": "EXPECT at least some of the 40 to resist classification from the channels available to a session (no JS-only page, no bot wall, no ordinance published online). Those stay unaccounted and are counted, not forced.",
+    "B4_dryRunCounts": "EXPECT, if the build lands: district-miss refusals 9,510; classes a+b+c+unaccounted = 48,829; (b) exactly the class (b) cities' parcel counts. Any difference is a finding to explain before the close."
+  },
+
+  "falsifiersPreRegistered": [
+    "1. A district-miss parcel writes the ruling 6 refusal naming its district code and its city, and never a default value.",
+    "2. A Manor-shaped parcel (class a) writes the class (a) refusal and never a default value.",
+    "3. A Gholson parcel (class b) writes 25/10/15/25 with the plat disclosure on the cell and the companion row.",
+    "4. A parcel WITH a district in a class (b) city does NOT take the default (the two router entry points are asserted apart).",
+    "5. A class (c) parcel writes an absent-verified cell whose basis names the ordinance read.",
+    "6. An unclassified city stays unaccounted and is named.",
+    "7. assertNoFalseAbsence still refuses any absent-verified cell that is not a class (c) row with a basis.",
+    "Each must be shown FAILING on the pre-change code, not merely passing after. NONE of these has been run: they are pre-registered here and unanswered, which is stated so a successor does not read this file as a verification."
+  ],
+
+  "filesPlannedToBeTouched": [
+    "hauska-factory src/lib/setback-writer/city-zoning-classification.json (NEW, the 40-city table)",
+    "hauska-factory src/lib/setback-writer/setback-table-router.mjs (default-row entry point)",
+    "hauska-factory src/jobs/parcel-setback-cells.mjs (read the zoning rail on the no-table branch; four new cell shapes; narrow assertNoFalseAbsence)",
+    "hauska-factory test/... (the falsifier fixtures above)",
+    "hauska-setback-corpus src/setbacks/<class-b-city>.json (NEW, jurisdiction-default rows), schema.json, table-types.ts, index.ts, CHANGELOG.md, package.json version",
+    "doc_repo scripts/six-county-completeness.mjs (the ledger policy diff, handed back)",
+    "doc_repo _inbox/2026-09-18_p300-p338-setback-residual-writer_{cp1,cp2,close}.json"
+  ],
+  "filesTouchedSoFar": [
+    "doc_repo _catalog/lane_claims.json (the lane claim, one entry added by scripts/lane-claim.mjs)",
+    "doc_repo _inbox/2026-09-18_p300-p338-setback-residual-writer_cp1.json (this file)"
+  ],
+  "notTouched": [
+    "every store row in every store (no session was opened)",
+    "hauska-factory and hauska-setback-corpus source files (worktrees created, nothing edited)",
+    "P:/doc_repo (the integration seat's checkout)",
+    "C:/Users/cente/doc_repo (the stale rooted checkout)",
+    "the corpus was NOT published and no version was bumped"
+  ]
+}
