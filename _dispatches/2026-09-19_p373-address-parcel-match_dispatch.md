@@ -28,22 +28,22 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
-PLAN-ROW: P-369 (90_operations/OPS-16_texas_market_plan_of_record.md)
-repo: hauska-map, legacy-design-tools
+PLAN-ROW: P-373 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: legacy-design-tools
 FAN-DEPTH: 0
 This lane launches no sub-agents (stated at the top; the commit gate refuses a close that declares any fan, A-181).
 
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 
-  node scripts/lane-claim.mjs claim --lane p369-check-script-copies --seat <your-seat-id> --plan-row P-369 --dispatch _dispatches/2026-09-19_p369-check-script-copies_dispatch.md
+  node scripts/lane-claim.mjs claim --lane p373-address-parcel-match --seat <your-seat-id> --plan-row P-373 --dispatch _dispatches/2026-09-19_p373-address-parcel-match_dispatch.md
 
 Exit 0 means proceed. **Exit 3 means another seat is already executing this lane:
 STAND DOWN, do not execute, and report which seat holds it.** Exit 4 means the claim
 is stale — confirm the holder is gone before re-running with --force. Release when
 your close is filed:
 
-  node scripts/lane-claim.mjs release --lane p369-check-script-copies --seat <your-seat-id>
+  node scripts/lane-claim.mjs release --lane p373-address-parcel-match --seat <your-seat-id>
 
 On 2026-09-14 this exact dispatch shape was handed to two sessions at once. One found
 out mid-execution from a merged commit appearing in its own fetch.
@@ -193,60 +193,59 @@ OPS-21's unfinished writers (stage 6), OPS-23's serving seams (stages 10 and 11)
 Each absorbed row keeps its number and its close history; OPS-24 rows name what they absorb.
 
 
-## Mission — P-369: the P-331 drift check's owed rows, landed as one follow-up pair
+## Mission — P-373: the drawing route matches the right parcel from an address or a point
 
-You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-map` and `legacy-design-tools`, one PR
-each from current `origin/main` with the SHA declared. You do not merge.
+You launch no sub-agents (FAN-DEPTH 0). You build in `legacy-design-tools` and open one PR from current
+`origin/main` with the SHA declared. **Start only once LDT main contains P-366's PR #726** (the seat
+merges it): `git log origin/main --oneline | grep -c "P-366"` must not print 0. You do not merge, deploy
+or write any store.
 
-**Precondition, checked first, in one command per repo.** Every row below reads the SIBLING'S MAIN,
-so a row whose declaration is not yet on both mains refuses (exit 2) on every PR. The seat merges
-P-270's pair (map #426, LDT #727) and P-340's pair (map #427, LDT #729) before this fires. Confirm
-each declaration is on both mains before adding its row; a row whose precondition fails is left out
-and named, never forced.
+### What is wrong (P-366's close, `_inbox/2026-09-19_p366-codified-draw-declines_close.json`)
 
-### The rows (three sources, all already proven by the lanes that owe them)
+`POST /api/brokerage/v1/place/buildable-envelope` is keyed by a composed address or a record point.
+Three parcels do not reach their own parcel:
 
-1. **The two copies of the check compared with each other** (P-331's close,
-   `_inbox/2026-09-18_p331-cross-repo-literal-drift_close.json`, leave_behind 1). Both repos carry
-   `scripts/check-cross-repo-literal-drift.mjs`, byte-identical at merge. The row, in hauska-map's copy:
+| Parcel | Card | Route |
+|---|---|---|
+| `48055:40428` | Caldwell, the San Marcos part | `no-parcel`: the composed address never matched a parcel, so zoning never ran |
+| `48055:27929` | Caldwell, Martindale | `no-parcel`, the same way |
+| `48453:352594` | Travis, the Buda part | answered from the record point for the WRONG parcel, `48209:10757` (a different county) |
 
-       { id: "check-script-copies", kind: "file", map: { file: "scripts/check-cross-repo-literal-drift.mjs" }, ldt: { file: "scripts/check-cross-repo-literal-drift.mjs" } }
+P-366's lane believes these share one cause. Test that; do not assume it.
 
-   plus `scripts/check-cross-repo-literal-drift.mjs` added to the sibling sparse-checkout list in BOTH
-   `.github/workflows/cross-repo-literal-drift.yml`.
-2. **P-270's three situs rows** (`_inbox/2026-09-19_p270-city-half_close.json`, leave_behind "THE PIN'S
-   FOLLOW-UP COMMIT"): paste the rows in `_inbox/2026-09-19_p270-city-half_pin-rows.mjs` (ids
-   `situs-city-basis-vocabulary`, `declared-absence-verdict`, `city-limits-incorporated-status`;
-   file-table entries `MAP_FILES.situsAddress`, `LDT_FILES.situsCompose`). Precondition:
-   `export type SitusCityBasis` on both mains. The lane proved them on a trial copy
-   (`_inbox/2026-09-19_p270-city-half_pin-trial-check.mjs`): 23 of 23 both directions, four falsifiers.
-3. **P-340's setback-source-conflict literal** (`_inbox/2026-09-19_p340-card-route-table_close.json`,
-   leave_behind 2, the exact row in its CP2): `MAP_FILES.setbackSourceConflict`
-   (`apps/property-explorer/api/_lib/setback-source-conflict.ts`), `LDT_FILES.setbackSourceConflict`
-   (`artifacts/api-server/src/lib/buildableEnvelope/setbackSourceConflict.ts`) and the two `const` rows
-   (`SETBACK_SOURCE_CONFLICT_TOKEN`, `SETBACK_SOURCE_CONFLICT_NOTE`); the value's sha256 is
-   `1ef599c6702e5d59c921f7512eca8d555e5096783a453f8ff7a9f8f940f8c051`.
+### What to build
 
-Keep the two copies of the check byte-identical after all edits (the row from item 1 then enforces
-that for good).
+1. **Per parcel, the match path.** What the card sends (address string, point), what the route does
+   with it (geocode, situs index, point-in-polygon, a county filter), and why it misses or lands
+   elsewhere. A table before any code.
+2. **Fix the match at its cause.** A request for a parcel the caller already identified should resolve
+   that parcel by its identity where the identity is known, and a point match that lands in another
+   county than the parcel's own is refused, never answered. Where the route genuinely cannot match, it
+   declines with a named, true reason.
+3. **The class.** Read-only, under a heavy-scan lease: how many P-254-style subjects (or a declared
+   sample, with its method) hit `no-parcel` or a cross-county answer today. Area sweep, not parcel
+   sample, where you can.
 
 ### Verify by violation
 
-For each row: a one-sided edit fails naming that row; the same edit on both sides passes; a renamed
-declaration refuses (exit 2), never skips. `--selftest` still runs first and is seen failing on a
-corrupted fixture. Watch the first scheduled run after both PRs merge (07:17Z / 07:23Z) and record
-that it ran.
+Pre-register: the three parcels resolve to themselves (or decline with a true reason); a point
+deliberately placed in a neighbouring county is refused, not answered; a parcel with no address still
+declines honestly. Grade after deploy with `scripts/surface-probe.mjs --rows P-254`.
+
+### The three-question gate
+
+What executes the match, what triggers it, what fails when it lands on the wrong parcel, and what
+bypasses it (a surface resolving its own parcel first).
 
 ### Close
 
-Declare: the start commits and PRs, which rows landed and which were left out on a failed
-precondition, the merge order, the falsifiers with both directions shown, the first scheduled run
-observed, and `leave_behind`.
+Declare: the start commit and PR, the per-parcel match table, the fix, the class count, the falsifiers
+with both directions shown, the three-question gate answers, and `leave_behind`.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-09-19_p369-check-script-copies_cp1.json
-  CP2: _inbox/2026-09-19_p369-check-script-copies_cp2.json
-  CLOSE: _inbox/2026-09-19_p369-check-script-copies_close.json
+  CP1: _inbox/2026-09-19_p373-address-parcel-match_cp1.json
+  CP2: _inbox/2026-09-19_p373-address-parcel-match_cp2.json
+  CLOSE: _inbox/2026-09-19_p373-address-parcel-match_close.json
   These paths are relative to the doc_repo worktree the session RUNNING YOU is rooted in: for a
   lane spawned by the dispatch planner that is the planner's worktree; for the dispatch planner
   itself it is its own seat worktree (never P:/doc_repo, the integration seat's checkout). This
@@ -258,8 +257,8 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
 CLOSE SKELETON (the fields the enforcement gate reads; spell them exactly, or the gate refuses
 the commit rather than guessing what you meant):
   {
-    "lane": "p369-check-script-copies",
-    "planRows": ["P-369"],
+    "lane": "p373-address-parcel-match",
+    "planRows": ["P-373"],
     "status": "closed | closed-partial | blocked",
     "probe": { "artifact": "_inbox/<date>_<HHMMSS>_surface_probe.json" },
     "falsifier": "...", "contradicted": "...", "leave_behind": [...],

@@ -1,0 +1,95 @@
+{
+  "kind": "p367-envelope-stale-citations/preregistration-2",
+  "writtenAt": "2026-09-19T03:36:00Z",
+  "writtenBefore": "the per-county dry runs (no county has been run yet; the heavy-scan lease has been held by integration-p350 throughout)",
+  "pin": "@empressaio/setback-corpus@1.4.0",
+  "rails": ["maxHeightFt", "maxLotCoveragePct", "maxFootprintSqFt"],
+  "why_a_second_preregistration": [
+    "P367_PREDICTION.json (02:22Z) computed the release plan over the parcels that CARRY a stale candidate cell -- the population its own read could see. It was right about the release, and it could not see the left-alone arms, because a parcel already at the pin carries no stale cell to discover it by.",
+    "The job calls the plan for EVERY parcel of an in-scope city, so the dry run also reports cells it deliberately leaves alone. This file pre-registers the release numbers in the exact terms the dry run prints, and names which left-alone arms are expected non-zero -- so a nonzero left-alone count cannot be read afterwards as a surprise, and a zero one cannot be read as silence."
+  ],
+  "candidate_population_from_the_live_store": {
+    "method": "the shipped SQL gate (envelopeCellGateSql) evaluated by Postgres over parcel_record_cell, grouped by county and cited version; independently reproduced by an inspection of the same rows grouped by source string",
+    "total_value_cells_on_the_three_rails": 762009,
+    "at_the_pin_1_4_0": 52064,
+    "older_than_the_pin_1_1_0": 709945,
+    "newer_than_the_pin": 0,
+    "value_cells_with_no_readable_corpus_version": 0,
+    "byCounty_older": {
+      "48021": 6421,
+      "48055": 10446,
+      "48209": 26318,
+      "48309": 37513,
+      "48453": 470096,
+      "48491": 159151
+    },
+    "note": "709945 equals the count the dispatch declares for this population. Every value cell on the three rails, in all six counties, carries a readable @empressaio/setback-corpus source: no other producer is present on these rails today (the identity falsifiers assert this structurally)."
+  },
+  "pre_registered_release": {
+    "prediction": "EVERY candidate is released as a RE-STAMP (citation and date fields only; every value unchanged). No cell's value changes. No new refusal is written. No candidate is blocked by an unreadable input.",
+    "byCounty_restamped": {
+      "48021": 6421,
+      "48055": 10446,
+      "48209": 26318,
+      "48309": 37513,
+      "48453": 470096,
+      "48491": 159151
+    },
+    "restamped_total": 709945,
+    "valueChanged": 0,
+    "newRefusal": 0,
+    "blocked": 0,
+    "parcels_with_released_cells": {
+      "48021": 6421,
+      "48055": 5485,
+      "48209": 17680,
+      "48309": 37513,
+      "48453": 169758,
+      "48491": 111185
+    },
+    "byRail_restamped": {
+      "maxHeightFt": 308359,
+      "maxLotCoveragePct": 200793,
+      "maxFootprintSqFt": 200793
+    },
+    "why_zero_value_changes": [
+      "The release re-resolves the corpus row the pin names. For the two scalar rails the target IS the row's value, so a re-stamp cannot move a number unless the pin's own row differs from the row the cell was written from -- which is what the dry run is measuring.",
+      "For maxFootprintSqFt, the naive re-derivation (parcelAreaSqFt x maxLotCoveragePct / 100, rounded to 2dp) is computed from the ROUNDED area the cell recorded, not from the geometry the original write measured, and on 21437 cells that difference is exactly +/-0.01 sq ft. That is a floating-point artifact of the recorded input, not a change in the law, so the release CARRIES the stored footprint whenever the coverage input it was derived from has not moved (see releasedFootprintTarget). This is the one deliberate divergence from a literal re-derivation, and P367_PREDICTION_nocarry.json is the same prediction WITHOUT it (21437 value changes, all maxFootprintSqFt, all +/-0.01)."
+    ]
+  },
+  "pre_registered_left_alone": {
+    "newerThanPin": {
+      "expected": 0,
+      "basis": "no version newer than 1.4.0 exists on the three rails in these six counties at 03:36Z. A nonzero count means a producer wrote a newer version between this reading and the run, and would be a finding about that producer, not about this release."
+    },
+    "notThisJobsCorpus": {
+      "expected": 0,
+      "basis": "every value cell on the three rails carries a readable @empressaio/setback-corpus source string; the missing-version and other-package arms are therefore empty in this store. Leg 1 of p367-envelope-gate-live.test.mjs covers those shapes synthetically, because this store cannot."
+    },
+    "atPin": {
+      "expected_by_county": {
+        "48021": 0,
+        "48055": 0,
+        "48209": 52064,
+        "48309": 0,
+        "48453": 0,
+        "48491": 0
+      },
+      "basis": "48209 holds 52064 value cells on the three rails already at 1.4.0, on 17673 parcels that carry no stale cell at all -- kyle-tx (15144 height / 14677 coverage / 14677 footprint), dripping-springs-tx (2520 each) and 6 height cells in san-marcos-tx. The job processes every parcel of an in-scope city, so it reads those cells, finds them at the pin, and names them rather than moving them. This is the ONE number the first pre-registration could not state, and the reason for this file."
+    }
+  },
+  "falsifiers": [
+    "A per-county restamped count that is not exactly the candidate count above: the release moved a different population than the gate selects.",
+    "Any valueChanged: the release changed what a customer sees, and the carry rule did not hold.",
+    "A newRefusal or a blocked entry: the pin refuses a cell the old corpus answered, or an input the release needs to re-derive is unreadable.",
+    "A cell moved whose cited version was already the pin, or whose source is not this job's corpus, or whose cited version is newer than the pin: a cell outside the release population was written.",
+    "staleCorpusAtPin in any county other than 48209, or a 48209 at-pin count above 52064: a cell at the pin was left alone where the store says there is none, or a newer version appeared.",
+    "cellsRecorded > 0 on a run with no --apply: the dry run wrote a durable release record.",
+    "Any parcel_record_cell row changed by these runs: the dry run wrote a cell."
+  ],
+  "evidence": {
+    "live_gate_test": "test/p367-envelope-gate-live.test.mjs -- 5/5 pass against the store of record, 2800 cells sampled across all six counties, 0 divergences (see evidence/gate-live.txt)",
+    "population_probe": "evidence/pin-population.txt -- the same rows grouped by source string, and the per-parcel overlap check that shows the pin and stale populations in 48209 are DISJOINT (both=0, oldOnly=17680, pinOnly=17673)",
+    "first_preregistration": "P367_PREDICTION.json (with the carry rule), P367_PREDICTION_nocarry.json (without it), P367_VC_BREAKDOWN.json (the 21437 +/-0.01 breakdown)"
+  }
+}

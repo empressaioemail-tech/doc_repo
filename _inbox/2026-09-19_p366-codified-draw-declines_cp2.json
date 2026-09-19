@@ -1,0 +1,69 @@
+{
+  "lane": "p366-codified-draw-declines",
+  "planRows": ["P-366"],
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work checkpoint",
+  "filedAt": "2026-09-19T01:50:00Z",
+  "seat": "cente-cursor-p366",
+  "fan": { "spawned": 0, "maxDepth": 0 },
+
+  "workState": {
+    "branch": "p366-codified-draw-declines",
+    "baseSha": "03bb424a",
+    "commit": "773879ec",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/726",
+    "prNumber": 726,
+    "merged": false,
+    "deployed": false,
+    "diffstat": "3 files changed, 235 insertions(+), 15 deletions(-)",
+    "files": [
+      "artifacts/api-server/src/lib/buildableEnvelope/spineZoningDistrict.ts",
+      "artifacts/api-server/src/lib/buildableEnvelope/fetchPropertyAtomChain.ts",
+      "artifacts/api-server/src/lib/buildableEnvelope/spineZoningDistrict.test.ts"
+    ],
+    "worktree": "P:/seat-worktrees/p366-codified-draw-declines/legacy-design-tools"
+  },
+
+  "designDeltaSinceCP1": {
+    "change": "The fix was narrowed to live entirely inside the buildable-envelope zoning resolution, with ZERO edits to routes/brokeragePlaceBuildableEnvelope.ts. resolveSpineZoningWhenGisAbsent is already called by the route and its district already flows into effectiveZoningCode, so adding the record source there reaches the route without touching the 97KB route file.",
+    "reason": "P-340 (card and route setback tables) is a parallel lane on 03bb424a in LDT and the dispatch warned it may touch the same route. Editing only the two lib modules removes the collision surface entirely.",
+    "cp1DesignSuperseded": "CP1 listed a third change against the route file's own credential read. On reading the route at 03bb424a, its inline credential read no longer exists - it was refactored into lib/buildableEnvelope/fetchPropertyAtomChain.ts, which is the second file changed here. The design reduced to two modules."
+  },
+
+  "falsifierStatus": [
+    { "id": "F1", "claim": "The five no-zoning-stamp parcels draw after the change and declined before.", "status": "PRE-REGISTERED / NOT YET MEASURABLE", "preChangeDirection": "SHOWN - all five measured declining no-zoning-stamp on the cited artifact.", "postChangeDirection": "UNMEASURED - requires a deploy, which this lane is forbidden to perform. The integration seat must measure it with `node --use-system-ca scripts/surface-probe.mjs --rows P-254`." },
+    { "id": "F2", "claim": "A parcel with no district in the record, the bake or the atom chain still declines no-zoning-stamp.", "status": "PASS at unit level", "evidence": "spineZoningDistrict.test.ts 'returns null when GIS blank, record silent and bake lacks a district' and the refused-cell test." },
+    { "id": "F3", "claim": "Kyle and San Marcos-in-Caldwell each either draw or carry a named, true reason.", "status": "NAMED, NOT FIXED", "evidence": "Kyle named as a parcel-minus-strips boolean-clip throw after a district and a full 25/10/15/10 table resolved; Caldwell named as an address->parcel 404 (two buckets). Neither is a zoning-source defect, so neither is touched by this change. Recorded in leave_behind." },
+    { "id": "F4", "claim": "A refused/absent record cell never becomes a drawn envelope or new decline vocabulary.", "status": "PASS at unit level", "evidence": "two dedicated tests over the absent and refused ZoningFactRead states." },
+    { "id": "F5", "claim": "The production credential name (BRIEF_RETRIEVAL_API_KEY) makes the atom-chain read live; no credential name means no attempt.", "status": "PASS at unit level, BOTH DIRECTIONS", "evidence": "spineZoningDistrict.test.ts asserts the fetch URL and the `Bearer brief-key` header when only BRIEF_RETRIEVAL_API_KEY is set, and asserts fetch is NOT called when no name is set." }
+  ],
+
+  "adversarialReview": {
+    "question": "Does consulting the record BEFORE the bake risk changing answers on parcels that are not failing?",
+    "answer": "No for unslated pairs, which is a strict no-op: loadZoningFactForServe returns null when the (countyFips, propId) x zoningDistrict pair is not in PARCEL_RECORD_SLATE, and null falls through to the previous bake-then-atom-chain order. For slated pairs the route now follows the record, which is exactly what the card already does - that is the parity this lane is for, not a side effect.",
+    "residualRisk": "A slated parcel where the record holds a district and the bake held a DIFFERENT one now follows the record on the route as well as the card. That is a deliberate parity change and is asserted by the 'record wins over the bake' test.",
+    "secondRisk": "Enabling the atom-chain credential fallback in fetchPropertyAtomChain.ts turns on a read path that was dead in production. It is the module's declared purpose and matches two sibling modules, but it may surface atoms on parcels that previously declined atom_path_pending. Named here so the integration seat grades it rather than discovering it."
+  },
+
+  "environmentLimitation": {
+    "what": "The route-level suite (src/__tests__/brokeragePlaceBuildableEnvelope.test.ts) could not be executed from this lane's worktree.",
+    "why": "@empressaio/setback-corpus/resolve is not installed anywhere in this machine's node_modules - the checkout at P:/legacy-design-tools is 524 commits behind origin/main and predates the dependency - so 12 suites fail to LOAD with 'Cannot find package', unrelated to this diff.",
+    "installAttempt": "pnpm install --prefer-offline --ignore-scripts was run in the lane worktree and did not converge (node_modules created with 1 entry, no packages linked); it was killed after ~13 minutes. The machine is saturated with ~75 concurrent node processes from other lanes.",
+    "mitigation": "The changed module's own suite was executed and passes 12/12 against the real source via a temporarily junctioned node_modules, which was REMOVED before any install was attempted so the main checkout was never mutated (verified: main node_modules intact).",
+    "consequence": "Route-level regression evidence must come from CI on PR #726. Declared rather than glossed."
+  },
+
+  "constraintsHonored": [
+    "No merges, no deploys, no store writes.",
+    "FAN-DEPTH 0: no sub-agents launched.",
+    "Built in this lane's own worktree; never edited another lane's checkout.",
+    "The temporary node_modules junctions into P:/legacy-design-tools were removed before the install attempt; the main checkout was verified untouched.",
+    "P-340 / P-339 untouched; the route file was deliberately not edited."
+  ],
+
+  "openThreads": [
+    "PR #726 needs CI (the route suite is the real regression gate) and a review.",
+    "The integration seat must deploy and re-run `surface-probe --rows P-254` to convert F1 from PRE-REGISTERED to measured.",
+    "If origin/main advances, rebase the branch and re-declare the base SHA."
+  ]
+}

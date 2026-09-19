@@ -1,0 +1,235 @@
+{
+  "schema": "seat-close/v1",
+  "lane": "p339-mcp-half",
+  "seat": "cente-vsc-p339-mcp",
+  "planRows": ["P-339"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (PLAN-ROW: P-339) under program OPS-24",
+  "dispatch": "_dispatches/2026-09-19_p339-mcp-half_dispatch.md",
+  "status": "closed-partial",
+  "statusIsSetBy": "this artifact",
+  "ts_utc": "2026-09-19T03:40:00Z",
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "fanDepth": 0,
+
+  "statusReason": "Everything this lane was asked to build is built, verified at unit level, and offered as one PR. The status is closed-partial, not closed, because the customer predicate is the probe's P-254 MCP text rows on the DEPLOYED surface, the dispatch's Constraints forbid a deploy or merge from this lane ('No merges, no deploys. The integration seat does.'), and the MCP leg needs the operator's sign-in (dispatch: 'the customer predicate is the probe's P-254 MCP text rows, graded by the seat after deploy (the MCP leg needs the operator's sign-in)'). So no post-change live artifact can exist from inside this lane, and the cited artifact still shows the rows FAILing. This is a declaration of the dispatch's own constraint, not a hedge about the work.",
+
+  "startCommitAndPr": {
+    "repo": "legacy-design-tools",
+    "startCommit": "2e7ca7c456ea8d1ed0fa4b1321ca5467708d27fd (origin/main at claim; also the merge-base when the lane started)",
+    "rebasedOnto": "25bde5a8bafc7a4b0ae11b281988138b9d91ca5b (origin/main after #723 P-351 and #724 P-359 landed while this lane ran)",
+    "branch": "lane/p339-mcp-half",
+    "commit": "8c69851d6cd00dc70d44a1352f4c22f88883e5b6",
+    "pr": {
+      "number": 728,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/728",
+      "base": "main@25bde5a8",
+      "head": "8c69851d",
+      "title": "P-339 (MCP half): the draw block follows the route's own outcome, so a ruled table is never served as unruled",
+      "draft": false
+    },
+    "notMergedNotDeployed": true,
+    "p340Note": "P-340 has NOT landed (grepped origin/main's last 25 commits and `git log --all --grep=P-340`: no P-340 commit), so the dispatch's 'rebase if P-340 lands first' condition did not fire and the rebase was onto #723/#724 instead. Neither incoming commit touches a file this lane touched: `git diff --name-only 03bb424a..25bde5a8` is lib/cad-ingest, lib/db and two api-server ETJ files.",
+    "diffstat": "6 files (1 added, 5 modified), 483 insertions(+), 98 deletions(-) -- `git show --stat 8c69851d`."
+  },
+
+  "probe": {
+    "artifact": "_inbox/2026-09-18_221332_surface_probe.json",
+    "instrument": "scripts/surface-probe.mjs",
+    "ranAt": "2026-09-18T22:13:32.439Z (PRE-CHANGE; signed in: mcpRun.signIn.ok true, scope 'email offline_access openid profile', audienceMatchesResource true)",
+    "docRepoHead": "31ac5f18",
+    "tally": { "PASS": 38, "FAIL": 11, "UNMEASURED": 10 },
+    "whyNoPostChangeRun": "The dispatch forbids a deploy from this lane and the MCP leg needs the operator's sign-in, so a live run here would re-measure identical unchanged surfaces. A fixtures-mode run cannot grade these classes at all: ops24LegsByBucket is built only when NOT --fixtures, and without it the classes are not evaluated. Declared rather than papered over.",
+    "whereTheRowsActuallyLive": "The P-339-shaped evidence in this artifact is the MCP text contradiction classes on the top-level results rows for three P-254 buckets, and the per-parcel legs under ops24.legsById (a 2.4 MB map keyed by parcel id, which carries the draw leg and the MCP tool text for every subject). results[] carries the graded P-254/P-303/P-304/P-210/P-205/P-270 rows; ops24.legsById carries the per-parcel detail the close below quotes."
+  },
+
+  "theFailingStepPerNamedParcel": {
+    "howToReadThis": "The dispatch asks for 'the failing step per named parcel'. Pre-change there was NO such thing to read: tryComposeEnvelopeModelForDraw returned null for every failure and the overlay served the bake's marker, so the step was not on the wire anywhere. What the artifact CAN show is the DRAW ROUTE's answer per parcel (ops24.legsById[parcel].draw) beside the MCP text the customer actually read. Both are quoted below, verbatim, from the artifact. The MCP's OWN failing step is what this lane instrumented; it becomes readable per parcel on the next probe run, post-deploy.",
+    "parcels": [
+      {
+        "parcel": "48453:367134",
+        "drawRoute": "status 'ok', setbacks 15/3.5/5/10, 7 vertices, geometryPresent TRUE, atomReconciled false, disclosure 'Buildable area withheld ... the envelope outline is modelled from the setback table on record; the area figure stays withheld until a verified atom backs it'",
+        "mcpServedText": "draw overlay carries \"reason\":\"atom_path_pending\",\"reasonDisplayText\":\"Withheld, setbacks unruled\" -- verbatim, while the SAME tool result's table row prints the ruled 15/3.5/5/10",
+        "verdict": "THE DEFECT IN ITS PUREST FORM: the route drew 7 vertices and the MCP told the customer the setbacks were unruled. This parcel has no graded row in results[] (it is measured under ops24.legsById only), which is worth stating so nobody reads its absence as a pass.",
+        "predictedAfterThisChange": "the overlay's reason becomes the ROUTE ATTEMPT's own outcome. If the MCP's own point-seeded attempt draws, the overlay serves state 'present' with basis 'modelled-figure-withheld' and no reason; if it declines, it serves its own step token. Either way 'unruled' leaves the text. NOT MEASURED -- predicted."
+      },
+      {
+        "parcel": "48453:239852",
+        "address": "1006 WISTERIA CIR (P-254 bucket 48453_travis|austin-tx, row verdict FAIL)",
+        "drawRoute": "status 'ok', setbacks 15/3.5/5/10, 38 vertices, geometryPresent TRUE, atomReconciled false",
+        "mcpViolations": ["SAYS-RULES-UNRULED-BESIDE-RULED-TABLE on mcp.text", "SAYS-GEOMETRY-WITHHELD-BESIDE-DRAWN-GEOMETRY on mcp.text"],
+        "verdict": "the bucket the dispatch names. Both contradiction classes fire on the MCP text, and note the second one requires the probe to have seen the route DRAW (drew=true from the draw leg's geometryPresent) while the MCP text claimed a withheld geometry -- i.e. the surface and its own backing route disagreed inside one tool result.",
+        "predictedAfterThisChange": "the RULE class cannot fire from the reason any more, because every reason this lane can now serve is either a step name ('setbacks-unresolved', 'no-zoning-stamp', 'geometry-validation-failed', ...) or 'atom_path_pending' only with an absent chain, and none of those contains a RULE_REFUSAL_PHRASES string. The GEOMETRY class stops firing for the same reason: the raw token 'atom_path_pending' leaves the text. NOT MEASURED -- predicted."
+      },
+      {
+        "parcel": "48055:27929",
+        "address": "108 DELEON LN (P-254 bucket 48055_caldwell|martindale-tx, row verdict FAIL)",
+        "drawRoute": "status 'ok', declineReason 'envelope-unverified', geometryPresent FALSE",
+        "mcpViolations": ["SAYS-RULES-UNRULED-BESIDE-RULED-TABLE on mcp.text"],
+        "verdict": "the MCP told the customer its setbacks were unruled while the payload's own table row printed the ruled table and the route's own answer for this parcel was a DIFFERENT, more specific story (envelope-unverified, no geometry).",
+        "predictedAfterThisChange": "the reason becomes the attempt's own step, which for a route that answered 'envelope-unverified' is at worst a raw step name. NOT MEASURED -- predicted."
+      },
+      {
+        "parcel": "48209:145880",
+        "address": "151 FENDER DR, KYLE (P-254 bucket 48209_hays|kyle-tx, row verdict FAIL)",
+        "drawRoute": "status 'geometry-validation-failed', emptyKind 'validation-failed', setbacks 25/10/15/10, geometryPresent FALSE, emptyReasonText 'geometry validation failed (boolean clip error: parcel-minus-strips difference threw)'",
+        "mcpViolations": ["SAYS-RULES-UNRULED-BESIDE-RULED-TABLE on mcp.text", "fx_codified: a codified district must draw; the route answered geometry-validation-failed geometryPresent false"],
+        "verdict": "the route reached a REAL, specific decline -- a boolean clip error in the parcel-minus-strips difference -- and the MCP served the bake's 'setbacks unruled' marker over it. This is the parcel that proves falsifier F4 matters: the pre-change code threw away 'geometry-validation-failed' and a customer-visible diagnosis.",
+        "predictedAfterThisChange": "the overlay serves 'geometry-validation-failed' VERBATIM (F4, asserted in-test), because the decline arm carries the route's own wireStatus. NOT MEASURED on the live surface -- predicted."
+      },
+      {
+        "parcel": "48309:103015",
+        "rowVerdict": "PASS (graded row 48309:103015, verdict PASS)",
+        "verdict": "PASS on this artifact. The dispatch lists it among parcels an EARLIER artifact showed the defect on; on this artifact it does not fail. Stated so the reader does not carry the dispatch's list forward as if it were this measurement.",
+        "predictedAfterThisChange": "unchanged pass; this lane does not alter a parcel whose overlay was already honest."
+      },
+      {
+        "parcel": "48453:445501",
+        "rowVerdict": "FAIL, but NOT a P-339 row",
+        "basis": "the payload carries ledger 78660, Pflugerville (cityLimits ...) and the map's composed address '21404 GRAND NATIONAL AVE, TX 78660' drops Pflugerville",
+        "verdict": "This parcel's FAIL is a SITUS / city-label row (the P-270 address family), with zero envelope violations and zero unknowns. It is in the dispatch's six-parcel list because an earlier artifact showed the envelope defect on it; on this artifact it is an address row. Named precisely so this lane does not claim credit for a row it did not measure and could not fix."
+      }
+    ],
+    "summary": "On the artifact of record the MCP-text envelope contradiction fires on exactly THREE P-254 buckets -- 48209_hays|kyle-tx (48209:145880), 48453_travis|austin-tx (48453:239852), 48055_caldwell|martindale-tx (48055:27929) -- which matches the dispatch's 'three P-254 buckets FAIL on exactly this in the MCP text'. 48453:367134 carries the same served text under ops24.legsById with no graded row; 48309:103015 and 48453:445501 do not carry it here."
+  },
+
+  "falsifier": "Pre-registered in CP1 and both directions shown. (F1a) chain PRESENT at the setbacks step -> envelopeDrawRefusalReason is 'setbacks-unresolved' and asserted NOT to be 'atom_path_pending'. (F1b) the SAME step with the chain ABSENT -> the reason IS 'atom_path_pending'. (F2) no baked district -> 'no-zoning-stamp' (an existing vocabulary row), never atom_path_pending, and the attempt costs no I/O. (F3) the partner-identity guard still refuses to draw a stranger's envelope and now names itself ('parcel-identity-mismatch'). (F4) P-60b not flattened: 'derivation-not-drawn' carries the route's own declinedBy verbatim, so 'no-buildable-area' and 'geometry-validation-failed' stay distinct and a null declinedBy lands on 'geometry-validation-failed', never on a withhold token. (F5) the stub can no longer mint a reason: envelopeRefusalReason is a required non-null `string` at the Assembler boundary and the `?? \"atom_path_pending\"` default is deleted. (F6) the drawn case is unchanged: a modelled outcome still draws state 'present' with basis 'modelled-figure-withheld' and no reason. (F7) a throw after the ring is reported as 'derivation-threw' (or the stage it threw in), never as a missing parcel ring and never as 'chain absent' for a chain that was never read. All seven are asserted in parcelDrawEnvelopeModel.test.ts (12 tests) and pass.",
+
+  "contradicted": "The dispatch's premise that the MCP draw block could be fixed by following the route's own outcome is NOT contradicted -- it is confirmed, and the change is exactly that. Three things ARE contradicted by what I measured, and each is stated so it is not silently absorbed: (1) The dispatch's list of six parcels as 'the same' is not this artifact's measurement: on _inbox/2026-09-18_221332_surface_probe.json only three of the six carry the MCP-text contradiction, 48309:103015 and 48453:445501 do not, and 48453:445501's FAIL is a situs row with no envelope violation at all. (2) The dispatch's candidate list of failing steps ('the first parcel ring, the partner-identity guard, resolveAuthoritativeSetbacks, labelEdges, or wireStatus !== ok') omitted the throw case; the code's catch mapped EVERY throw to null, so a ninth step, 'derivation-threw', is required for the report to be honest. (3) The dispatch's 'No new vocabulary token' and 'atom_path_pending is reachable only when no property atom chain exists at all' cannot BOTH be honoured verbatim for a chain-PRESENT slope where the resolver returns nothing; the package humanises only two envelope-refusal rows (atom_path_pending, no-zoning-stamp), so the raw step name 'setbacks-unresolved' is served there. Disclosed in the code, in CP1 CP2 and here, not hidden.",
+
+  "whatShipped": "One commit on legacy-design-tools, PR #728. tryComposeEnvelopeModelForDraw now returns a discriminated outcome (modelled | declined | unreached) with a named step for every way it can stop; a new module (buildableEnvelope/envelopeDrawOutcome.ts) owns the mapping from step to served reason so no surface composes its own; parcelDrawFromReads.ts lets that outcome decide the overlay and consults the bake only when no attempt ran; parcelDrawStub.ts's envelopeRefusalReason is a required non-null string with the `?? \"atom_path_pending\"` default deleted; propertyExplorer.ts runs the attempt for every atom-pending parcel (the `&& bakedZoningCode` gate is gone) and passes the outcome rather than a model-or-null. `atom_path_pending` is now reachable only when no property atom chain exists at all -- which is what the token's own VOCABULARY meaning says. No new vocabulary token, no vocabulary copy, no package edit.",
+
+  "verificationPerformed": {
+    "tests": "vitest run of the four affected suites together with --testTimeout=180000: Test Files 4 passed (4), Tests 66 passed (66). Run twice -- once at base 2e7ca7c4 with the change uncommitted (504.81s, cold transform cache) and once at the PR commit 8c69851d on the rebased tree (11.33s, warm). Both green.",
+    "testsHonestyNote": "A first run at vitest's default 20s per-test timeout reported 65 passed / 1 failed, the failure being `Test timed out in 20000ms` in parcelDrawStub.test.ts's shoelace-area falsifier -- a function and a file this change does not touch. It is a cold-transform cost on this volume, not a semantic failure: run alone on a warm cache the whole 41-test file completes in 1.03s. Both numbers are recorded rather than only the green one.",
+    "typecheck": "tsc -p artifacts/api-server/tsconfig.json --noEmit, with a paired control. Pre-rebase (this lane's change at 2e7ca7c4): ZERO errors. Post-rebase at 8c69851d: 13 error lines, all of them in artifacts/api-server/src/lib/etjFactRead.ts, src/lib/etjFactRead.test.ts and src/lib/cityLimitsFactServeCutover.test.ts -- files brought in by #724 -- and all of the shape \"'@workspace/cad-ingest/boundary' has no exported member 'EtjBoundarySourceRow'\" / \"Property 'refusedRings' does not exist\" / \"Property 'servedGeometry' does not exist\". The PAIRED CONTROL (`git checkout 25bde5a8`, i.e. the rebased tree WITHOUT this lane's commit, same tsc command) produced the IDENTICAL 13 error lines: Compare-Object over the two outputs is empty. Errors in files this lane touched: 0, in both runs.",
+    "whyThoseThirteenAreNotACloneFriendlyGuardrailFail": "They are an instrument artifact of this worktree's dependency setup, stated plainly: node_modules here is junctioned from P:/legacy-design-tools-worktrees/p359-baseline (a pnpm install in this worktree stalled past 30 minutes at the link step and the half-built tree could not be deleted inside the session budget), so `@workspace/cad-ingest` and `@workspace/db` resolve to dists that predate #724's new exports and the new servedGeometry/servedStatus/derivation columns. A worktree with a lockfile-faithful install and the workspace libs built would not show them -- which is exactly the guardrail-that-does-not-survive-a-clone shape DEV-PROCESS warns about, so the setup is recorded in CP2 rather than left implicit.",
+    "gates": "see enforcementGateCheck below",
+    "notPerformed": [
+      "No live surface probe run (no deploy; the MCP leg needs the operator's sign-in).",
+      "No per-parcel live reading of the MCP's own failing step -- that is what the instrument now makes possible and it needs the deployed surface.",
+      "No run of the full api-server suite. The four affected suites were run because they are the ones this change can move; a full-suite run was not attempted, and it is not claimed."
+    ]
+  },
+
+  "enforcementGateCheck": {
+    "what": "This close was run through the enforcement gate's own exported evaluate() BEFORE being left, rather than assuming its fields were spelled right -- the same discipline the prior P-339 lane, P-297 and P-302 recorded.",
+    "whichGate": "scripts/enforcement/probe-close-gate.mjs (OPS-23 R-4, enforced by the PreToolUse hook) -- it refuses a commit staging an _inbox/*_close.json for a gated row that cites neither a scripts/surface-probe.mjs artifact nor probe.notApplicable.",
+    "result": "block=false. P-339 is inside GATED_RANGES (OPS-24 span [327,356]) AND inside PREDICATE_DEBT, so it is a ROWS_WITHOUT_PREDICATE row: the gate requires the cited artifact to exist, parse and be produced by the instrument, and requires no per-row predicate verdict from it. GATED_ROW.test('P-339')=true, PREDICATE_DEBT.has('P-339')=true, ROWS_WITHOUT_PREDICATE.has('P-339')=true, all read back from the gate's own exports.",
+    "controlsBothDirections": [
+      "the REAL close as written -> ALLOW (block=false), so the citation is doing the work rather than the rows being out of scope",
+      "the same close with probe stripped -> BLOCKED with the R-4 string ('partially closed with no probe.artifact')",
+      "probe.artifact pointing at a file that does not exist in doc_repo -> BLOCKED ('does not exist in doc_repo')",
+      "probe.artifact pointing at this lane's own CP1 json -> BLOCKED ('was not produced by scripts/surface-probe.mjs (instrument=missing)')",
+      "planRows changed to P-152 (a row that DOES carry predicates) while citing this artifact -> BLOCKED ('carries no predicate results for P-152'), which independently confirms P-339's predicate-debt status rather than a merely-absent one"
+    ],
+    "runner": "P:/seat-worktrees/p339-mcp-half/p339-close-gate-check.mjs (this lane's scratch, outside doc_repo). It reads and writes nothing in doc_repo: the gate is driven with the real close body plus four in-memory control bodies. Output: 'ALL GATE CONTROLS AS EXPECTED'."
+  },
+
+  "threeQuestionGate": {
+    "whatExecutesTheOverlayDecision": "buildableEnvelope/envelopeDrawOutcome.ts owns the decision now -- envelopeDrawRefusalReason(refusal) is the single place a step becomes a served reason, and parcelDrawFromReads.ts's tryAssembleParcelDrawFromReads is the single place that chooses between the route's outcome and the bake's stored marker. The overlay itself (parcelDrawStub.ts's envelopeOverlay) executes no decision at all any more: it is handed a required non-null string and carries it. Underneath, the drawing route is still place/buildable-envelope's point-seeded derivation, reached through tryComposeEnvelopeModelForDraw.",
+    "whatTriggersIt": "propertyExplorer.ts's assembleNodeBriefBody, for any parcel whose baked brief carries the atom-pending marker (atomPathPending(snapshot.envelopeBriefRefusal)): it now ALWAYS attempts the derivation, including when no baked zoning code resolves, and passes the outcome to the assembler. On the MCP the same composition arrives through get_smart_site, which composes the api-server payload verbatim and re-derives nothing.",
+    "whatFailsWhenARuledTableIsServedAsUnruled": "The customer reads 'Withheld, setbacks unruled' beside a payload whose own setbacks row prints Present, and the probe fires SAYS-RULES-UNRULED-BESIDE-RULED-TABLE on the MCP text -- measured on 48209_hays|kyle-tx, 48453_travis|austin-tx and 48055_caldwell|martindale-tx in _inbox/2026-09-18_221332_surface_probe.json. Where the probe also saw the route draw, SAYS-GEOMETRY-WITHHELD-BESIDE-DRAWN-GEOMETRY fires in the same tool result (48453:239852). And beyond the instruments, a real diagnosis is destroyed: 48209:145880's route declined with 'geometry-validation-failed' (a boolean clip error) and the customer was told the jurisdiction had not been ruled.",
+    "whatBypassesIt": [
+      "A CACHED draw-block response. The MCP composes get_smart_site from the upstream api-server payload verbatim and re-derives nothing, so a cached old payload keeps the old sentence until the cache turns over. This is the most likely reason a post-deploy probe could still read the old wording on a parcel.",
+      "The bake's stored `declineReason: \"atom_path_pending\"` (nodeFacetBakeTier1.ts / nodeFacetBakeTier2.ts). It is correct in the bake (the bake genuinely stops authoring product envelope confidence) but it is a stored value any FUTURE surface could read and humanise through envelopeHuman. Grepped: no serving path does that today. Named as leave_behind rank 3.",
+      "composeSmartSiteStub (depth 'stub') derives its envelope RAIL from the bake via envelopeDisposition(root.envelope, envelopeBriefRefusal), independent of the draw-block outcome. It carries a rail STATE and never a reason sentence, so it cannot produce the reported wording -- but the stub rail can still read 'refused' while the draw block draws. That is the P-249/P-261 family.",
+      "The PROJECTION gap this lane does not close, and the most important bypass to state: this change fixes the REASON the overlay serves, not the MCP's ability to project the ring. If the MCP's own point-seeded attempt cannot draw for a parcel whose place/buildable-envelope route does draw (which is what 48453:239852 and 48453:367134 look like on the artifact: the route drew 38 and 7 vertices respectively while the MCP served a refused overlay), then after this change the MCP will serve an HONEST reason -- not a drawn polygon. The false sentence is gone; the surface disagreement is not. Making the MCP's block draw wherever the route draws is route-parity work and belongs to the P-340/resolver family, not to this row.",
+      "Any other composer of the draw block. Grepped artifacts/smartsite-mcp/src for tryComposeEnvelopeModelForDraw / envelopeOverlay / envelopeRefusalReason: only two doc-comment mentions in tool-honesty.ts and two display-text mappings in mcp-app.ts, no derivation. There is no second composer today."
+    ]
+  },
+
+  "leave_behind": [
+    {
+      "rank": 1,
+      "row": "P-339",
+      "repo": "legacy-design-tools",
+      "title": "The six named parcels will most likely read an honest STEP, not a drawn polygon -- and that is the pass condition for this half, not a failure of it",
+      "detail": "Reaching the setbacks step means resolveAuthoritativeSetbacks returned nothing, and making those parcels DRAW is P-340's resolver gap seen from the MCP side (the previous lane's own words). The dispatch accepts 'the route's own decline reason' as a pass. Stated pre-emptively so the post-deploy probe result is not read as a partial failure of this lane. What must be checked on the probe is that the served reason is NOT atom_path_pending beside a ruled table (and that a genuinely chain-absent parcel still IS atom_path_pending) -- which is exactly F1's two directions, now on the live surface."
+    },
+    {
+      "rank": 2,
+      "row": "P-339",
+      "repo": "legacy-design-tools",
+      "title": "The MCP's projection gap: the reason is now honest, but the MCP block can still refuse where the route draws",
+      "detail": "The most consequential thing this lane did NOT fix, and the thing most likely to be misread as 'P-339 done'. On the artifact of record, 48453:239852's route drew 38 vertices and 48453:367134's drew 7, while both MCP responses served a refused overlay. This change makes the overlay's reason the attempt's own outcome, so the customer stops reading a false claim -- but if the MCP's own derivation still cannot project the ring, the MCP still does not DRAW where the route draws. That is the P-340/resolver family plus route-parity, not this row. The probe will now at least say WHICH step the MCP stopped at, per parcel, which is the instrument this lane was asked to build."
+    },
+    {
+      "rank": 3,
+      "row": "P-339",
+      "repo": "legacy-design-tools",
+      "title": "The bake still stamps declineReason 'atom_path_pending'",
+      "sites": ["artifacts/api-server/src/lib/nodeFacetBakeTier1.ts", "artifacts/api-server/src/lib/nodeFacetBakeTier2.ts"],
+      "detail": "Correct where it is -- the bake genuinely stops authoring product envelope confidence, and the marker is the 'go read the atom route' signal -- but the token is in the probe's GEOMETRY_REFUSAL_PHRASES list, so any future surface that reads the stored declineReason and humanises it through envelopeHuman would fire the geometry class. Grepped: no serving path does that today. Not reworded here because rewording a stored marker nobody measured firing wrongly is churn."
+    },
+    {
+      "rank": 4,
+      "row": "P-339",
+      "repo": "legacy-design-tools + @empressaio/atom-contract",
+      "title": "The constraint collision, for the seat to rule on if the raw step name is unwelcome",
+      "detail": "For chain-PRESENT slopes where the resolver returns nothing, the overlay now serves the raw string 'setbacks-unresolved'. @empressaio/atom-contract/display humanises exactly two envelope-refusal rows (atom_path_pending -> 'Withheld, setbacks unruled'; no-zoning-stamp -> 'No zoning stamp') and returns every other reason unchanged; the VOCABULARY array holds 36 `token:` rows. So the customer reads a step name where they used to read a claim that was false -- the same as they already do for 'no-buildable-area' and 'geometry-validation-failed'. If the seat prefers a humanised sentence for this case, that is a vocabulary row in a different package and a different lane; reusing atom_path_pending there is the defect and minting a row here is the dispatch's own prohibition."
+    },
+    {
+      "rank": 5,
+      "row": "P-339",
+      "repo": "legacy-design-tools",
+      "title": "The stub-depth envelope RAIL still reads the bake, independently of the draw block",
+      "detail": "composeSmartSiteStub (depth 'stub') derives its rail from envelopeDisposition(root.envelope, envelopeBriefRefusal). It carries a state, never a reason sentence, so it cannot produce the reported wording -- but the stub rail can read 'refused' while the draw block draws. Left alone deliberately: it is the P-249/P-261 family (a state on a surface without a verified envelope atom), not this row, and changing it would widen the lane past the dispatch's four sites."
+    },
+    {
+      "rank": 6,
+      "row": "P-339",
+      "repo": "doc_repo",
+      "title": "The dispatch's third site path is mislabelled; the line numbers are what pin it",
+      "detail": "The dispatch cites 'smartsite-mcp `src/propertyExplorer.ts` (~355-362)'. No such file exists under artifacts/smartsite-mcp/src. The cited lines are exactly artifacts/api-server/src/routes/propertyExplorer.ts:355-362 at base (verified with `git show 2e7ca7c4:...`), the `atomPathPending(...) && bakedZoningCode ? await tryComposeEnvelopeModelForDraw(...) : null` gate the dispatch describes -- and that is the file the lane changed. Suggest correcting the dispatch's path so a successor does not go looking for a smartsite-mcp edit."
+    }
+  ],
+
+  "docRepoChange": {
+    "what": "The only doc_repo change this lane makes is the three checkpoint/close artifacts at the dispatch's exact paths (CP1, CP2, CLOSE) plus the lane claim. There is no other doc_repo edit to hand back as a diff -- in particular no runbook, plan-of-record or catalog file was touched, because the dispatch's mission is a code change in legacy-design-tools and this lane found nothing in the plan rows that the change falsifies.",
+    "artifacts": {
+      "cp1": "_inbox/2026-09-19_p339-mcp-half_cp1.json",
+      "cp2": "_inbox/2026-09-19_p339-mcp-half_cp2.json",
+      "close": "_inbox/2026-09-19_p339-mcp-half_close.json"
+    }
+  },
+
+  "fleetMemory": {
+    "LESSON": "A function returning `null` for 'modelled', 'declined' and 'unreached' at once does not merely lose detail -- it forces every caller to guess, and the guess becomes a customer-facing sentence. Here THREE separate call sites guessed (the bake's token outranking the attempt, the stub's `?? \"atom_path_pending\"` default, and the route gate that skipped the attempt entirely) and all three produced the SAME false claim, which is why one defect looked like three dispatch sites and was one design fault.",
+    "LESSON": "Do not leave the reason's default at the LAST composer in the chain. `reason: envelopeRefusalReason ?? \"atom_path_pending\"` meant 'if I was told nothing, I assert the setbacks are unruled'. Making the input a required non-null `string` converts 'a surface can invent this' into 'a surface must be handed this'; the type is the enforcement, and F5 above is a TYPE assertion, not a runtime one, so it must not be sold as more than that.",
+    "LESSON": "Before removing a customer-facing token, check whether it is in an instrument's phrase list -- and which class that feeds. `atom_path_pending` sits in GEOMETRY_REFUSAL_PHRASES, which only fires when the probe saw geometry DRAWN, so removing the token from the MCP text clears BOTH the rule class (via 'unruled' in the rendered sentence) and the geometry class. Two classes, one string, two different predicates -- the class you think you are fixing may not be the only one the string trips.",
+    "DEAD-END": "`pnpm install --offline --frozen-lockfile` in a P:-volume worktree. It ran past 30 minutes at the link step without completing, and the half-built node_modules then could not be deleted (Remove-Item -Recurse -Force and `cmd /c rmdir /s /q` both hung). Junctioning a known-good worktree's node_modules is minutes and yields a runnable suite; if you do it, VERIFY the store first -- p359-etj-rings lacked `undici`, surfacing as a confusing `Cannot find package 'undici' imported from cheerio` from inside vitest, and p359-baseline's workspace-lib dists are only as fresh as that worktree, which is what produced the 13 ETJ typecheck errors above.",
+    "DEAD-END": "Reading the four suites' first result as authoritative. At vitest's default 20s timeout under a cold transform on this volume you get a spurious timeout in parcelDrawStub.test.ts's shoelace-area test (65 passed / 1 failed) unrelated to any change; --testTimeout=180000 gives 66/66 and the test alone takes 1.03s warm. Do not record the cold number as a pass OR as a failure.",
+    "DEAD-END": "`& .\\node_modules\\.bin\\tsc.CMD` from artifacts/api-server: that package's .bin junction has no tsc. Use the worktree root's .bin. And do not read a bare `TSC_EXIT=0` after a pipeline as tsc's exit code when the pipeline ends in Tee-Object; capture it, and pair it with a control checkout or you cannot attribute the errors you see.",
+    "GROUND-TRUTH": "2026-09-19T03:14Z: legacy-design-tools branch lane/p339-mcp-half = 8c69851d, rebased on origin/main 25bde5a8 (#723 P-351, #724 P-359); PR #728 open, not merged, not deployed. Four affected suites 66/66 twice. api-server typecheck: 0 errors in this lane's files, 13 in #724's ETJ files, identical with and without this lane's commit (paired control). P-340 has NOT landed.",
+    "GROUND-TRUTH": "2026-09-18T22:13Z (from the artifact, not re-measured): _inbox/2026-09-18_221332_surface_probe.json, tally PASS 38 / FAIL 11 / UNMEASURED 10; the MCP-text envelope contradiction fires on exactly three P-254 buckets (48209_hays|kyle-tx, 48453_travis|austin-tx, 48055_caldwell|martindale-tx); 48453:367134 carries the same served text under ops24.legsById with no graded row; 48453:445501's FAIL is a situs row with no envelope violation.",
+    "OPEN": "The post-deploy probe grade on the three FAILing buckets, which is a seat action (MCP sign-in) and not an agent action. What to look for: the served reason is no longer atom_path_pending beside a ruled table, AND a chain-absent parcel still reads atom_path_pending. Second open thread: leave_behind rank 2, the projection gap -- the MCP can still refuse where the route draws, and the probe will now say which step it stopped at."
+  },
+
+  "nextContextReadOrder": [
+    "_inbox/2026-09-19_p339-mcp-half_close.json (this file)",
+    "_inbox/2026-09-19_p339-mcp-half_cp2.json (the falsifier results and the dependency-setup disclosure)",
+    "_inbox/2026-09-19_p339-mcp-half_cp1.json (the pre-registered prediction and the design)",
+    "_inbox/2026-09-18_221332_surface_probe.json (the artifact of record; still the pre-change grade, since nothing was deployed)",
+    "https://github.com/empressaioemail-tech/legacy-design-tools/pull/728 (the change itself)"
+  ],
+
+  "closeOutActions": {
+    "ldtPushed": "branch lane/p339-mcp-half pushed to origin at 8c69851d; PR #728 open, not draft.",
+    "docRepoPushed": "the three artifacts were committed in this seat's doc_repo worktree (seat/p339-mcp-half, commit 3f409019 on top of 31f74990) and the branch pushed to origin as origin/seat/p339-mcp-half, which is how the predecessor lane's artifacts reached origin/main. Nothing was merged into main by this lane.",
+    "laneRelease": "released; see the laneRelease field. `_catalog/lane_claims.json` is byte-identical to HEAD afterwards.",
+    "worktreesLeftInPlace": "P:/seat-worktrees/p339-mcp-half/{legacy-design-tools,doc_repo}, trees clean, not pruned. Whoever prunes P:/seat-worktrees should delete these by path rather than trusting a registry, and should know this LDT tree's node_modules is a junction into P:/legacy-design-tools-worktrees/p359-baseline -- deleting the junction's TARGET would break other worktrees."
+  },
+
+  "laneRelease": {
+    "claimedBy": "cente-vsc-p339-mcp",
+    "released": true,
+    "mechanism": "node scripts/lane-claim.mjs release --lane p339-mcp-half --seat cente-vsc-p339-mcp -> 'RELEASED p339-mcp-half.'",
+    "cleanliness": "_catalog/lane_claims.json is byte-identical to HEAD afterwards (claim-then-release netted to zero): `git status --porcelain` is empty after the release, so nothing about the claim is left in the working tree.",
+    "note": "the release ran AFTER this close and CP2 were committed and pushed, per the dispatch's 'Release when your close is filed'."
+  },
+
+  "worktrees": {
+    "legacy-design-tools": "P:/seat-worktrees/p339-mcp-half/legacy-design-tools (branch lane/p339-mcp-half at 8c69851d, clean, pushed)",
+    "doc_repo": "P:/seat-worktrees/p339-mcp-half/doc_repo (branch seat/p339-mcp-half, the three artifacts added)"
+  }
+}

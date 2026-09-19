@@ -28,22 +28,22 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
-PLAN-ROW: P-369 (90_operations/OPS-16_texas_market_plan_of_record.md)
-repo: hauska-map, legacy-design-tools
+PLAN-ROW: P-375 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: legacy-design-tools
 FAN-DEPTH: 0
 This lane launches no sub-agents (stated at the top; the commit gate refuses a close that declares any fan, A-181).
 
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 
-  node scripts/lane-claim.mjs claim --lane p369-check-script-copies --seat <your-seat-id> --plan-row P-369 --dispatch _dispatches/2026-09-19_p369-check-script-copies_dispatch.md
+  node scripts/lane-claim.mjs claim --lane p375-ldt-ci-postgres-limit --seat <your-seat-id> --plan-row P-375 --dispatch _dispatches/2026-09-19_p375-ldt-ci-postgres-limit_dispatch.md
 
 Exit 0 means proceed. **Exit 3 means another seat is already executing this lane:
 STAND DOWN, do not execute, and report which seat holds it.** Exit 4 means the claim
 is stale — confirm the holder is gone before re-running with --force. Release when
 your close is filed:
 
-  node scripts/lane-claim.mjs release --lane p369-check-script-copies --seat <your-seat-id>
+  node scripts/lane-claim.mjs release --lane p375-ldt-ci-postgres-limit --seat <your-seat-id>
 
 On 2026-09-14 this exact dispatch shape was handed to two sessions at once. One found
 out mid-execution from a merged commit appearing in its own fetch.
@@ -193,60 +193,49 @@ OPS-21's unfinished writers (stage 6), OPS-23's serving seams (stages 10 and 11)
 Each absorbed row keeps its number and its close history; OPS-24 rows name what they absorb.
 
 
-## Mission — P-369: the P-331 drift check's owed rows, landed as one follow-up pair
+## Mission — P-375: LDT's CI Postgres runs out of locks, and a red Test stops meaning anything
 
-You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-map` and `legacy-design-tools`, one PR
-each from current `origin/main` with the SHA declared. You do not merge.
+You launch no sub-agents (FAN-DEPTH 0). You build in `legacy-design-tools` (`.github/workflows/` and
+the test harness only) and open one PR from current `origin/main` with the SHA declared. You do not
+merge.
 
-**Precondition, checked first, in one command per repo.** Every row below reads the SIBLING'S MAIN,
-so a row whose declaration is not yet on both mains refuses (exit 2) on every PR. The seat merges
-P-270's pair (map #426, LDT #727) and P-340's pair (map #427, LDT #729) before this fires. Confirm
-each declaration is on both mains before adding its row; a row whose precondition fails is left out
-and named, never forced.
+### What is wrong (P-270's close, `_inbox/2026-09-19_p270-city-half_close.json`)
 
-### The rows (three sources, all already proven by the lanes that owe them)
+The `Test` job in `pr-checks.yml` fails intermittently on tests the PR under review does not touch:
+`lib/codes` `src/queue.test.ts` ("rows whose next_attempt_at is in the future are not picked up") and
+`src/__tests__/reasoningAtoms.test.ts`, the second inside `lib/db`'s `dropTestSchema` with Postgres
+error **53200 "out of shared memory"**, "You might need to increase max_locks_per_transaction". It
+has now hit #722, #727 and P-362's PR. The fleet's answer has been "re-run once"
+(`_queue/cards/ldt-576-retry/card.json`), which is a habit, not a control: a real regression in those
+suites would be re-run away the same way.
 
-1. **The two copies of the check compared with each other** (P-331's close,
-   `_inbox/2026-09-18_p331-cross-repo-literal-drift_close.json`, leave_behind 1). Both repos carry
-   `scripts/check-cross-repo-literal-drift.mjs`, byte-identical at merge. The row, in hauska-map's copy:
+### What to build
 
-       { id: "check-script-copies", kind: "file", map: { file: "scripts/check-cross-repo-literal-drift.mjs" }, ldt: { file: "scripts/check-cross-repo-literal-drift.mjs" } }
-
-   plus `scripts/check-cross-repo-literal-drift.mjs` added to the sibling sparse-checkout list in BOTH
-   `.github/workflows/cross-repo-literal-drift.yml`.
-2. **P-270's three situs rows** (`_inbox/2026-09-19_p270-city-half_close.json`, leave_behind "THE PIN'S
-   FOLLOW-UP COMMIT"): paste the rows in `_inbox/2026-09-19_p270-city-half_pin-rows.mjs` (ids
-   `situs-city-basis-vocabulary`, `declared-absence-verdict`, `city-limits-incorporated-status`;
-   file-table entries `MAP_FILES.situsAddress`, `LDT_FILES.situsCompose`). Precondition:
-   `export type SitusCityBasis` on both mains. The lane proved them on a trial copy
-   (`_inbox/2026-09-19_p270-city-half_pin-trial-check.mjs`): 23 of 23 both directions, four falsifiers.
-3. **P-340's setback-source-conflict literal** (`_inbox/2026-09-19_p340-card-route-table_close.json`,
-   leave_behind 2, the exact row in its CP2): `MAP_FILES.setbackSourceConflict`
-   (`apps/property-explorer/api/_lib/setback-source-conflict.ts`), `LDT_FILES.setbackSourceConflict`
-   (`artifacts/api-server/src/lib/buildableEnvelope/setbackSourceConflict.ts`) and the two `const` rows
-   (`SETBACK_SOURCE_CONFLICT_TOKEN`, `SETBACK_SOURCE_CONFLICT_NOTE`); the value's sha256 is
-   `1ef599c6702e5d59c921f7512eca8d555e5096783a453f8ff7a9f8f940f8c051`.
-
-Keep the two copies of the check byte-identical after all edits (the row from item 1 then enforces
-that for good).
+1. **Reproduce and measure.** Run the api-server and lib suites against a Postgres container
+   configured like CI's service container, and find the limit: how many schemas and objects
+   `dropTestSchema` drops at once, and the lock count it needs against `max_locks_per_transaction`
+   (default 64) and `--shm-size`.
+2. **Fix the cause, not the retry.** Either the service container carries a `max_locks_per_transaction`
+   and `shm-size` sized to the measured need (with the measurement in the workflow comment), or the
+   harness drops in bounded batches. Say which and why.
+3. **Retire the habit.** Once the cause is fixed, a red `Test` is a real signal again: say what
+   replaces "re-run once" (nothing, or a named, counted flake list).
 
 ### Verify by violation
 
-For each row: a one-sided edit fails naming that row; the same edit on both sides passes; a renamed
-declaration refuses (exit 2), never skips. `--selftest` still runs first and is seen failing on a
-corrupted fixture. Watch the first scheduled run after both PRs merge (07:17Z / 07:23Z) and record
-that it ran.
+With the old configuration the failure reproduces (or you show the lock count exceeding the limit);
+with the fix it does not, across several runs; a deliberately broken test in `lib/codes` still fails
+the job.
 
 ### Close
 
-Declare: the start commits and PRs, which rows landed and which were left out on a failed
-precondition, the merge order, the falsifiers with both directions shown, the first scheduled run
-observed, and `leave_behind`.
+Declare: the start commit and PR, the measured need, the fix, the falsifiers with both directions
+shown, and `leave_behind`.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-09-19_p369-check-script-copies_cp1.json
-  CP2: _inbox/2026-09-19_p369-check-script-copies_cp2.json
-  CLOSE: _inbox/2026-09-19_p369-check-script-copies_close.json
+  CP1: _inbox/2026-09-19_p375-ldt-ci-postgres-limit_cp1.json
+  CP2: _inbox/2026-09-19_p375-ldt-ci-postgres-limit_cp2.json
+  CLOSE: _inbox/2026-09-19_p375-ldt-ci-postgres-limit_close.json
   These paths are relative to the doc_repo worktree the session RUNNING YOU is rooted in: for a
   lane spawned by the dispatch planner that is the planner's worktree; for the dispatch planner
   itself it is its own seat worktree (never P:/doc_repo, the integration seat's checkout). This
@@ -258,8 +247,8 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
 CLOSE SKELETON (the fields the enforcement gate reads; spell them exactly, or the gate refuses
 the commit rather than guessing what you meant):
   {
-    "lane": "p369-check-script-copies",
-    "planRows": ["P-369"],
+    "lane": "p375-ldt-ci-postgres-limit",
+    "planRows": ["P-375"],
     "status": "closed | closed-partial | blocked",
     "probe": { "artifact": "_inbox/<date>_<HHMMSS>_surface_probe.json" },
     "falsifier": "...", "contradicted": "...", "leave_behind": [...],

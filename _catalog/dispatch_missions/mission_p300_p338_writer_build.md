@@ -2,11 +2,19 @@
 
 You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-setback-corpus` (default rows) and
 `hauska-factory` (the setback writer and router), one PR per repo from current `origin/main` with the
-SHA declared (factory `415d3212`, corpus `f43cf4b7` at compile). You hand back the doc_repo ledger-policy
-diff in your close. You do not merge, publish the corpus, deploy, apply or write any store.
+SHA declared (factory `e6ca09de`, corpus `f43cf4b7` at recompile, 2026-09-19). You hand back the doc_repo
+ledger-policy diff in your close. You do not merge, publish the corpus, deploy, apply or write any store.
 
-**Fire this only after the P-300 city-classification lane has closed.** Its table is this lane's only
-input for the 19 cities the first writer lane could not classify.
+**The P-300 city-classification lane has closed (2026-09-19, closed-partial).** Its table is
+`_inbox/2026-09-19_p300-city-classification_table.json` (close
+`_inbox/2026-09-19_p300-city-classification_close.json`). Across all 40 cities it reconciles exactly:
+class (a) 45,138 parcels, (b) 1,327, (c) 195, **unclassified 3,195 (8 cities)**, sum 49,855; P-300's own
+population is 48,829, the 1,026 gap being Woodcreek's district-on-file parcels (the close's
+`parcelTotalsReconciledToBothDenominators` carries the second-order check). The 8 unclassified cities
+(mart, crawford, hallsburg, leroy, webberville and three more, each with what would settle it) stay
+`unaccounted`, named and counted, never defaulted. Granger is (a) without an enumerated district list,
+Valley Mills needs its incorporated ordinance, and Thrall's (b) line has more than one amendment
+(MOST-CURRENT SOURCE WINS): read those three rows' caveats before writing a cell for them.
 
 ### Where this starts
 
@@ -17,7 +25,7 @@ The first writer lane closed INCOMPLETE on purpose and recommended this split. R
 2. `_inbox/2026-09-18_p300-p338-setback-residual-writer_cp1.json`: **the design. Build against it;
    it needs no re-design.**
 3. `_inbox/2026-09-18_p300-p338-setback-residual-writer_city-classification.json` (21 cities) plus the
-   classification lane's table (19 cities). Together, the 40.
+   classification lane's table `_inbox/2026-09-19_p300-city-classification_table.json` (19 cities). Together, the 40.
 4. `_catalog/dispatch_missions/mission_p300_p338_setback_residual_writer.md`: the full original
    specification (rulings 5, 6 and OT-10; the population of 58,339; the four cell shapes; the ledger
    policy; the seven falsifiers). Everything there still applies except what this mission changes.
@@ -37,7 +45,10 @@ The first writer lane closed INCOMPLETE on purpose and recommended this split. R
 ### What changed on main since the first lane
 
 P-363 merged (`415d3212`): the write gate now also releases a value this job wrote under an older corpus.
-Keep that release and yours distinct, and say how they coexist. P-354's factory half (#179, open) serves
+Keep that release and yours distinct, and say how they coexist. Since then: P-351's publish pin
+(#188), P-331's drift check (#189), and **P-367 (#190, open)**, which gives the ENVELOPE writer the
+same stale-corpus release and reuses P-363's helpers: if you touch those helpers, rebase on whichever
+lands first and say so. P-354's factory half (#179, open) serves
 a future-dated rule row by ruling and writes adopted/effective dates into cells; read it at its head. P-336
 (#180) merges after you.
 
@@ -47,7 +58,9 @@ As in the original mission file (items 1 to 5, the falsifiers, the per-county dr
 heavy-scan lease with counts beside the predictions, the three-question gate, and the close), with the
 40-city table as the classification input and the short-circuit fixed. The dry-run prediction is
 restated from the two tables: district-miss refusals 9,510; for the 48,829, class (a) + (b) + (c) +
-still-unclassified must equal 48,829, with (b) exactly the class (b) cities' parcel counts.
+still-unclassified must equal 48,829, with (b) exactly the class (b) cities' parcel counts. The 40-city roll-up
+is (a) 45,138, (b) 1,327, (c) 195, unclassified 3,195 (sum 49,855); within P-300's 48,829 the classification lane
+reconstructed 45,634 classified at source (share 0.9346). Predict per county from those rows before you run.
 
 ### Constraints
 

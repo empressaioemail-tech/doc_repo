@@ -28,22 +28,22 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
-PLAN-ROW: P-369 (90_operations/OPS-16_texas_market_plan_of_record.md)
-repo: hauska-map, legacy-design-tools
+PLAN-ROW: P-374 (90_operations/OPS-16_texas_market_plan_of_record.md)
+repo: legacy-design-tools
 FAN-DEPTH: 0
 This lane launches no sub-agents (stated at the top; the commit gate refuses a close that declares any fan, A-181).
 
 CLAIM YOUR LANE BEFORE YOU DO ANYTHING ELSE. This dispatch may have been handed to
 more than one session. Run this FIRST, from the doc_repo worktree you are rooted in:
 
-  node scripts/lane-claim.mjs claim --lane p369-check-script-copies --seat <your-seat-id> --plan-row P-369 --dispatch _dispatches/2026-09-19_p369-check-script-copies_dispatch.md
+  node scripts/lane-claim.mjs claim --lane p374-mcp-route-parity --seat <your-seat-id> --plan-row P-374 --dispatch _dispatches/2026-09-19_p374-mcp-route-parity_dispatch.md
 
 Exit 0 means proceed. **Exit 3 means another seat is already executing this lane:
 STAND DOWN, do not execute, and report which seat holds it.** Exit 4 means the claim
 is stale — confirm the holder is gone before re-running with --force. Release when
 your close is filed:
 
-  node scripts/lane-claim.mjs release --lane p369-check-script-copies --seat <your-seat-id>
+  node scripts/lane-claim.mjs release --lane p374-mcp-route-parity --seat <your-seat-id>
 
 On 2026-09-14 this exact dispatch shape was handed to two sessions at once. One found
 out mid-execution from a merged commit appearing in its own fetch.
@@ -193,60 +193,61 @@ OPS-21's unfinished writers (stage 6), OPS-23's serving seams (stages 10 and 11)
 Each absorbed row keeps its number and its close history; OPS-24 rows name what they absorb.
 
 
-## Mission — P-369: the P-331 drift check's owed rows, landed as one follow-up pair
+## Mission — P-374: the MCP draw block draws where the route draws, and its prose agrees with the draw
 
-You launch no sub-agents (FAN-DEPTH 0). You build in `hauska-map` and `legacy-design-tools`, one PR
-each from current `origin/main` with the SHA declared. You do not merge.
+You launch no sub-agents (FAN-DEPTH 0). You build in `legacy-design-tools` and open one PR from current
+`origin/main` with the SHA declared. **Start only once LDT main contains P-339's PR #728 and P-366's
+PR #726** (the seat merges them): both `grep -c` checks against `git log origin/main --oneline` must be
+non-zero. You do not merge, deploy or write any store.
 
-**Precondition, checked first, in one command per repo.** Every row below reads the SIBLING'S MAIN,
-so a row whose declaration is not yet on both mains refuses (exit 2) on every PR. The seat merges
-P-270's pair (map #426, LDT #727) and P-340's pair (map #427, LDT #729) before this fires. Confirm
-each declaration is on both mains before adding its row; a row whose precondition fails is left out
-and named, never forced.
+### What is wrong
 
-### The rows (three sources, all already proven by the lanes that owe them)
+- **The projection gap** (P-339's close, `_inbox/2026-09-19_p339-mcp-half_close.json`, leave_behind 2).
+  After P-339 the MCP overlay's REASON is the attempt's own outcome, but the MCP still runs its own
+  derivation. On the artifact of record, `48453:239852`'s route drew 38 vertices and `48453:367134`'s
+  drew 7, while both MCP responses served a refused overlay.
+- **Prose against the draw** (P-366's close, leave_behind 3). On `48309:187374`, `48453:239852` and
+  `48055:27929` the MCP text says the rules are unruled beside a ruled table, or that geometry is
+  withheld beside drawn geometry. The draw is right; the prose is wrong.
 
-1. **The two copies of the check compared with each other** (P-331's close,
-   `_inbox/2026-09-18_p331-cross-repo-literal-drift_close.json`, leave_behind 1). Both repos carry
-   `scripts/check-cross-repo-literal-drift.mjs`, byte-identical at merge. The row, in hauska-map's copy:
+Both are one defect seen twice: two derivations for one answer. The standing rule
+(`_decisions/2026-09-13_share_the_most_current_setback_resolver.md`; ENVELOPE DRAWN, FIGURE REFUSED)
+is one resolution, served by every surface.
 
-       { id: "check-script-copies", kind: "file", map: { file: "scripts/check-cross-repo-literal-drift.mjs" }, ldt: { file: "scripts/check-cross-repo-literal-drift.mjs" } }
+### What to build
 
-   plus `scripts/check-cross-repo-literal-drift.mjs` added to the sibling sparse-checkout list in BOTH
-   `.github/workflows/cross-repo-literal-drift.yml`.
-2. **P-270's three situs rows** (`_inbox/2026-09-19_p270-city-half_close.json`, leave_behind "THE PIN'S
-   FOLLOW-UP COMMIT"): paste the rows in `_inbox/2026-09-19_p270-city-half_pin-rows.mjs` (ids
-   `situs-city-basis-vocabulary`, `declared-absence-verdict`, `city-limits-incorporated-status`;
-   file-table entries `MAP_FILES.situsAddress`, `LDT_FILES.situsCompose`). Precondition:
-   `export type SitusCityBasis` on both mains. The lane proved them on a trial copy
-   (`_inbox/2026-09-19_p270-city-half_pin-trial-check.mjs`): 23 of 23 both directions, four falsifiers.
-3. **P-340's setback-source-conflict literal** (`_inbox/2026-09-19_p340-card-route-table_close.json`,
-   leave_behind 2, the exact row in its CP2): `MAP_FILES.setbackSourceConflict`
-   (`apps/property-explorer/api/_lib/setback-source-conflict.ts`), `LDT_FILES.setbackSourceConflict`
-   (`artifacts/api-server/src/lib/buildableEnvelope/setbackSourceConflict.ts`) and the two `const` rows
-   (`SETBACK_SOURCE_CONFLICT_TOKEN`, `SETBACK_SOURCE_CONFLICT_NOTE`); the value's sha256 is
-   `1ef599c6702e5d59c921f7512eca8d555e5096783a453f8ff7a9f8f940f8c051`.
-
-Keep the two copies of the check byte-identical after all edits (the row from item 1 then enforces
-that for good).
+1. **Per parcel, the two paths.** For the five parcels above: what the route computes, what the MCP
+   computes, and where they diverge (ring, resolver, labelling, a gate the MCP applies and the route
+   does not). A table before any code.
+2. **One derivation.** The MCP draw block serves the route's own outcome (the drawn polygon with its
+   disclosure, or the route's named decline), rather than re-deriving it. If the MCP must stay
+   in-process, it calls the same function with the same inputs, and a divergence test fails when the
+   two disagree on any fixture.
+3. **The prose is generated from the outcome.** The text the MCP returns is derived from the same
+   outcome object that drew (or declined), so it cannot say "withheld" beside a drawn polygon or
+   "unruled" beside a ruled table. P-339's constraint stands: no new vocabulary token.
 
 ### Verify by violation
 
-For each row: a one-sided edit fails naming that row; the same edit on both sides passes; a renamed
-declaration refuses (exit 2), never skips. `--selftest` still runs first and is seen failing on a
-corrupted fixture. Watch the first scheduled run after both PRs merge (07:17Z / 07:23Z) and record
-that it ran.
+Pre-register: the five parcels' MCP answers equal the route's (draw for draw, decline for decline,
+same reason); a fixture where the two paths are made to differ fails the divergence test; a genuinely
+chain-absent parcel still reads `atom_path_pending`. Grade after deploy with
+`node --use-system-ca scripts/surface-probe.mjs --rows P-254 --mcp-sign-in` (the operator signs in).
+
+### The three-question gate
+
+What executes the MCP's draw, what triggers it, what fails when the MCP and the route disagree, and
+what bypasses it (the stub-depth envelope rail P-339 named, a surface drawing from its own source).
 
 ### Close
 
-Declare: the start commits and PRs, which rows landed and which were left out on a failed
-precondition, the merge order, the falsifiers with both directions shown, the first scheduled run
-observed, and `leave_behind`.
+Declare: the start commit and PR, the per-parcel two-path table, the fix, the divergence test, the
+falsifiers with both directions shown, the three-question gate answers, and `leave_behind`.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-09-19_p369-check-script-copies_cp1.json
-  CP2: _inbox/2026-09-19_p369-check-script-copies_cp2.json
-  CLOSE: _inbox/2026-09-19_p369-check-script-copies_close.json
+  CP1: _inbox/2026-09-19_p374-mcp-route-parity_cp1.json
+  CP2: _inbox/2026-09-19_p374-mcp-route-parity_cp2.json
+  CLOSE: _inbox/2026-09-19_p374-mcp-route-parity_close.json
   These paths are relative to the doc_repo worktree the session RUNNING YOU is rooted in: for a
   lane spawned by the dispatch planner that is the planner's worktree; for the dispatch planner
   itself it is its own seat worktree (never P:/doc_repo, the integration seat's checkout). This
@@ -258,8 +259,8 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
 CLOSE SKELETON (the fields the enforcement gate reads; spell them exactly, or the gate refuses
 the commit rather than guessing what you meant):
   {
-    "lane": "p369-check-script-copies",
-    "planRows": ["P-369"],
+    "lane": "p374-mcp-route-parity",
+    "planRows": ["P-374"],
     "status": "closed | closed-partial | blocked",
     "probe": { "artifact": "_inbox/<date>_<HHMMSS>_surface_probe.json" },
     "falsifier": "...", "contradicted": "...", "leave_behind": [...],

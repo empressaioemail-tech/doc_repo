@@ -2,7 +2,7 @@
 id: 2026-09-18_phase0_closeout_REGISTER
 title: Phase 0 close-out register (living)
 date: 2026-09-18
-last_updated: 2026-09-19 (04:55Z, A-229: the seat's list executed; Williamson's staging publish refused by P-351's guard; earlier A-227, A-228)
+last_updated: 2026-09-19 (05:40Z, A-230: six lanes landed; next wave compiled; earlier A-227 to A-229)
 status: living. The integration seat updates a row whenever its state changes and records the change in the log at the bottom. This is the durable list; the roadmap carries the live queue and points here.
 kind: register
 owner: nick
@@ -190,6 +190,7 @@ P-333, then P-334/P-329/P-330, then P-300/P-338's writer half, then P-336's writ
 
 | When (UTC) | Change |
 |---|---|
+| 2026-09-19 05:40 | A-230. **Six lanes landed, awaiting the seat:** P-367 (factory #190, closed; apply is the seat's: 709,945 cells re-stamped, 0 value changes predicted), P-339 MCP half (LDT #728), P-366 (LDT #726; re-enables a dead atom-chain read path, to be graded), P-340 (map #427, LDT #729; needs the card re-baked after deploy), P-270 city half (map #426, LDT #727), P-300 city classification (table filed; 8 cities unclassified). **Next wave compiled:** the P-300/P-338 writer build (recompiled against the table), P-368, P-369 (now all owed drift-check rows; after the seat's merges), P-370, P-371, P-372, P-373, P-374 (these three after the seat merges #726/#728), P-375. |
 | 2026-09-19 04:55 | A-228, A-229. **Dispatches compiled** for P-339 MCP half, P-340, P-270 city half, P-366, the P-300 split, P-367 (A-228), then P-368 to P-371 (A-229). **Merged** P-365, P-351 (both repos, pin re-pointed), P-359, P-331 (three repos). **Deployed** the record-fill image (graded 390 of 390), the publish image, the P-263 apply image and the phantom-retirement job. **Applied** P-263 Williamson (all six counties done), Williamson's fill (20 value-to-absent cells, named) and the phantom retirement. **Williamson's staging publish refused** by P-351's writer-(b) guard; P-350 waits on P-370. Cortex-api deploys now gated on 0104 plus the ETJ re-ingest (P-359). |
 | 2026-09-18 23:40 | A-227. **The rest of the factory order merged:** P-352 (#181 `94fd6d53`, after the seat merged main into it), P-361 (factory #182 `5a3877f9` then engine #474 `7c42e1c8`, after the seat reconciled it with P-352), P-363 (#187 `415d3212`). P-361 and P-363 closes recovered from `C:\Users\cente` (the lanes' standalone windows rooted there). P-331 and the P-300/P-338 writer half recompiled and fired by the operator: P-331 reported done (close not yet read by the seat), the writer half in flight. Nothing deployed: the record-fill image (P-333, P-335, P-352), the setback writer (P-363) and the publish rebuild (P-334, P-361's factory half, after P-351) are the seat's next deploys. |
 | 2026-09-18 22:25 | Signed-in probe after the Wave 2 deploys (`_inbox/2026-09-18_221332_surface_probe.json`): 38 PASS, 11 FAIL, 10 UNMEASURED over 59. **Coverage leg holds** (P-205 4 of 4 on map and MCP; P-210 3 of 3). Customer buckets 25/10/10 (was 23/15/7); X2-address opens on 11 of 40 subjects (the situs rails serve `legacy-transitional`, so the city-limits fallback never fires). P-333 and P-352 closed; P-333's merge waits on the operator's threshold ruling. |
