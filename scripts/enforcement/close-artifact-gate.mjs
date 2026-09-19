@@ -264,10 +264,16 @@ export const RECORD_OF_ABSENCE_MARKER = [
   /\bdoes not exist\b|\bdid not exist\b|\bno close artifact\b|\bnever existed\b/i,
   /\bunreachable\b|\bis absent\b|\bare absent\b|\babsent from\b/i,
   /\bsuperseded\b|\bBROKEN EVIDENCE CHAIN\b/i,
-  // No trailing \b on `contradict`/`inconsistenc`/`disagree`: the field names that carry this
-  // meaning are camelCase (`contradictionFoundInDispatch`, `dispatchInternalInconsistencyNamed`),
-  // so a word boundary after the stem never matches. Caught by the self-test, not by review.
-  /contradict|inconsistenc|disagree/i,
+  // These are matched as camelCase FIELD NAMES (stem + closing quote + colon), not as bare prose
+  // words. `disagree` on its own was the first attempt and it suppressed a plan-of-record row that
+  // merely contained the word, which the reject case caught: the marker has to key on the field
+  // that carries the meaning, not on vocabulary that might appear anywhere.
+  //
+  // `closePathNote`/`closePathResolution` are named explicitly rather than left to a synonym:
+  // b76's note happened to contain `disagree` and cleared, while b77's identical-shaped note did
+  // not, so the same input graded two ways depending on incidental wording.
+  /(?:contradict|inconsistenc)\w*["']\s*:/i,
+  /["']closePath(?:Note|Resolution)["']\s*:/i,
   /\bheld off main\b|\bnot on main\b/i,
   /\bclose owed\b|\bowed after\b|\bcloseOwed\b/i,
   /\bartifactAsCited\b|\bpathAsCited\b/i,
@@ -796,6 +802,12 @@ function selfTest() {
   check("ACCEPT: a camelCase inconsistency field is caught", isNonAssertingCitationLine('"dispatchInternalInconsistencyNamed": "names the path _inbox/2026-09-14_g122_v1_regression_close.json"') === true);
   check("ACCEPT: a camelCase RemovedNotFiled field is caught", isNonAssertingCitationLine('"strayProbeRunRemovedNotFiled": "that run wrote _inbox/2026-09-18_155737_surface_probe.json"') === true);
   check("ACCEPT: a violationVerified fixture is caught", isNonAssertingCitationLine('"violationVerified": "2026-08-21: Write _inbox/foo.md exit 0"') === true);
+  // The pair. These two notes record the SAME disagreement in near-identical words, and the first
+  // version cleared one and not the other because only one happened to contain the word `disagree`.
+  check("ACCEPT: a closePathNote naming the disagreed path is caught (b76)", isNonAssertingCitationLine('"closePathNote": "The compiled dispatch names `_inbox/2026-08-18_b76_close.json`; the hand-carried card named `_inbox/2026-08-18_b_g76_close.json`. The two disagree."') === true);
+  check("ACCEPT: a closePathNote naming it without the word `disagree` is ALSO caught (b77)", isNonAssertingCitationLine('"closePathNote": "The dispatch names the close _inbox/2026-08-18_b77_close.json and the hand-carried card names _inbox/2026-08-18_b_g77_close.json. Both paths are written with identical content rather than guessing which the planner reads. Flagged, not resolved by the lane."') === true);
+  check("ACCEPT: a closePathResolution naming it is caught", isNonAssertingCitationLine('"closePathResolution": "Collapsed to `_inbox/2026-08-18_b77_close.json`; the second path was never committed."') === true);
+  check("REJECT: the same words in a plan of record are NOT exempt", isNonAssertingCitationLine("| G-9 | `_inbox/2026-09-18_g9_close.json` | the two disagree on the served revision |") === false);
   check("ACCEPT: a close owed is not a close delivered", isNonAssertingCitationLine("- Close owed `_inbox/2026-08-14_l24_close.json` after metros.") === true);
   check("ACCEPT: a no-close-artifact-yet note names the future path", isNonAssertingCitationLine("No close artifact yet. When the sweep finishes, write `_inbox/2026-08-09_PARCEL_NODE_sweep_CLOSE.json`") === true);
   // The reject cases. If any of these suppressed, the control would have stopped grading the exact
