@@ -789,3 +789,32 @@ A self-test showing `registryPath()` returns the shared path from the PRIMARY ch
 - **`g169-deploy-path-windows` and `g166-red-main` await the operator's hand-carry**; `g151-parks-lens` holds the dashboards lens slot.
 - **The lease gate still does not cover scripted deploys** (prose-plus-a-hook-that-misses-the-path it exists for).
 - **A-083 carries 8 cells** in the OPS-17 amendment table, the lone remaining shape anomaly. Not touched: not this seat's row.
+
+---
+
+## 2026-09-19 (UTC) ~13:0xZ-13:4xZ - G-168's premise was gone before it was dispatched, and the near-miss that proved it
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- **The edge mechanism G-168 was carded for is ALREADY FIXED.** G-163 closed it 2026-09-18 with `server/edge-status.ts` in `smartcity-os`, which re-issues an application 502/503/504 as **424** with the body untouched. Read live 2026-09-19 on `https://smartcityos.io`: `firstdue/apparatus` -> `424 application/json` carrying `permission_required` and the FirstDue scope sentence; `goto/call-summary` -> `424` carrying `goto_not_authorized`; both `x-orig-status: 503`. Paired controls in the same run: mutated bearer -> `401 platform_internal_required` on both, healthy sibling -> `200` with 294 records. `P:/tmp/g168-probe.mjs`.
+- **The consumption side was already correct.** `vendor-live.mjs` builds its basis as `body.message` then `body.error` then the status code, so a vendor's own sentence outranks an HTTP number by construction. `dolphin-app` deploys from `main` with NO commit pin; `main` carries `src/platform-base.mjs` (ONE env var, NO default, NO fallback, NO GCP host).
+- **`dolphin-app`'s spec sets `SMARTCITY_V1_PLATFORM_BASE=https://walrus-app-kzog6.ondigitalocean.app`** - the raw DO hostname, NOT `smartcityos.io` and NOT GCP. From this seat EVERY leg against that host returns `ECONNRESET`, including the healthy sibling control, so the limit is the network path and not any route.
+- **`app.smartcityos.io` could not answer it either**: lens routes 404 with a 21-byte JSON (wrong route guesses) or 401, and the root is a 160KB client-rendered shell carrying none of the markers. The blocked region is UNMEASURED from both directions and is reported as such.
+
+### LESSON - an orphan finding inherits the MOMENT of the measurement that carded it, so re-read its premise before dispatching
+
+G-168 was carded 2026-09-19 out of D-13's measurement, but G-163 had already closed the underlying mechanism the day before. **Checking the premise first is what saved a lane from being sent to fix something already fixed.** A row is not dispatchable because it is unblocked; it is dispatchable because its premise is still true.
+
+### LESSON - I nearly reported a STALE CHECKOUT as a live defect, and it was the exact open question I was carrying
+
+Reading `P:/smartcity-dashboards` on branch `d9-pin-96efa35` @ `178e968` showed **five hardcoded GCP Cloud Run URLs** in `src/vendor-live.mjs`, which would have answered the long-standing "unidentified caller still reaching `smartcity-api` after the D-13 ship". The deployed commit is `7487d7c0` (PR #74), it IS an ancestor of `main`, and it carries `platform-base.mjs` with **ZERO** occurrences of that host. **The defect was in the instrument's snapshot, not in the product.** The check that separated them was one question - which commit is actually deployed - asked before the claim was written, not after.
+
+### LESSON - a paired control turns "everything failed" into a placeable finding
+
+All five legs returned `ECONNRESET` against the DO hostname. Without the healthy-sibling leg that reads as "the vendor feeds are broken"; with it, it reads as "this network path cannot reach that host", which is a limit of the instrument. **Include a leg you expect to SUCCEED, or a total failure looks like a finding.**
+
+### OPEN
+
+- **Does `dolphin-app` reach `walrus-app-kzog6.ondigitalocean.app`?** If it does not, every vendor feed on the deployed product is dead with a `platform fetch failed: ECONNRESET` basis. Unanswerable from the integration seat; needs a probe from inside the DO network, or pointing the base at `https://smartcityos.io`.
+- **G-168 is NARROWED and NOT dispatchable as a build lane.** Do not compile a dispatch for it until the above is answered.
+- **A-182 records all of the above**; G-168's deps and status cells now carry the correction.
