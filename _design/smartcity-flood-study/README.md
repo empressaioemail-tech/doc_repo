@@ -57,10 +57,14 @@ An earlier draft asserted several things the engine has no concept of, and put t
 the wrong place. Recorded because each is a shape that will recur.
 
 **Invented parameters.** "Design storm, rainfall depth over 24 hours" and presets labelled
-2-year / 10-year / 100-year. The contract carries a bare depth. There is no duration in it and
-no depth-to-return-period table anywhere in the source, so both were fabricated. Now the
-control is depth only, and the basis line says naming them by return period needs a local
-rainfall atlas nobody has cited.
+2-year / 10-year / 100-year *on the surface*. There is no duration in it, and the contract
+carries a bare depth, so the 24-hour framing was fabricated and the control offers depth only.
+The recurrence interval was a different mistake, and the first correction over-shot it: the
+engine does pair return period to depth, in `rainfallCurve` from NOAA Atlas 14, and it renders
+its own design storm as `100-yr (NOAA Atlas 14)` and a depth passed in the request as
+`≈N-yr equivalent (interpolated)`. The basis line now says which of those two a reader is
+looking at. Corrected 2026-09-19 (G-164), once the G-165 parser actually produced the curve the
+label was citing.
 
 **Invented outputs.** "Structure footprint reached" and "Zone concentration under the
 footprint". There is no building-footprint layer in the study, and the zone grade is an

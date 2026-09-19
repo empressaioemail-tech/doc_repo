@@ -11,8 +11,12 @@ const KIT = fs.readFileSync(new URL('./_kit.css', import.meta.url), 'utf8');
 
    WHAT THE SOURCE SUPPORTS, and therefore what is asserted here:
      - rainfallDepthInches, a bare DEPTH in (0, 60]. No storm duration exists in the
-       contract and no depth-to-return-period mapping exists anywhere in the source,
-       so neither is named on any artboard.
+       contract, so no artboard names one. The RETURN PERIOD is named, though, and the
+       basis line says so: `rainfallCurve` pairs return period to depth from NOAA
+       Atlas 14, and FloodTool renders the engine's own design storm as
+       "100-yr (NOAA Atlas 14)" while a depth passed in the request renders as
+       "≈N-yr equivalent (interpolated)". Corrected 2026-09-19 (G-164); the earlier
+       copy denied the pairing, which was true only while the parser matched nothing.
      - study returns parcelRing, catchment(+bbox), drainage zones, ponding, flow lines,
        flow exits, a gradient note, a briefing, and an optional artifact.
      - zone "grade" is ORDINAL position in the served feature list, not a measured
@@ -97,8 +101,10 @@ const DS_TABS = (active) => {
     }).join('\n') + '\n        </div>';
 };
 
-/* ---------- THE DEPTH CONTROL. Depth only: the contract has no duration and no
-     return period, so neither is named. Multi-select on the compare artboard. ---------- */
+/* ---------- THE DEPTH CONTROL. Depth is the input: the contract has no storm
+     duration. The return period is named on the READ (NOAA Atlas 14, or an
+     interpolation of its curve), never offered as a second input. Multi-select on
+     the compare artboard. ---------- */
 const depthControl = (o) =>
 '        <section style="border:1px solid var(--sc-line); border-radius:var(--sc-r); background:var(--sc-surface); box-shadow:var(--sc-e1); padding:var(--sc-3) var(--sc-4); display:flex; align-items:center; gap:var(--sc-5);">\n' +
 '          <div style="flex:none; display:flex; flex-direction:column; gap:1px;">\n' +
@@ -277,7 +283,7 @@ const main = shell({
   body:
     depthControl({
       presets: DEPTHS([4]),
-      basis: 'Engine accepts any depth in (0, 60]. Presets are shortcuts. A depth is a depth: the model takes no storm duration, and naming these by return period would need a local rainfall atlas nobody has cited yet.',
+      basis: 'Engine accepts any depth in (0, 60]. Presets are shortcuts. A depth is a depth: the model takes no storm duration. The engine still names one: rainfallCurve pairs return period to depth from NOAA Atlas 14, so its own design storm reads "100-yr (NOAA Atlas 14)" and a depth you pass in reads "≈N-yr equivalent (interpolated)".',
       right: '          <span style="flex:none; display:inline-flex; align-items:center; height:30px; padding:0 var(--sc-4); border-radius:var(--sc-r-control); background:var(--sc-accent); color:var(--sc-on-accent); font:500 13px/18px var(--sc-font-ui);">Re-run 7 parcels</span>',
     }) + '\n' +
     '        <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--sc-3);">\n' +
@@ -493,7 +499,7 @@ fs.writeFileSync(new URL('./canvas.json', import.meta.url), JSON.stringify({
     { id: 'move1', x: 700, y: -330, w: 700, text: 'STRUCTURAL MOVE 1: the tab becomes a SCREEN, not a viewer.\nToday it is a paragraph and a dead button that studies one parcel. It lives beside Pipeline, Inspections and Work orders, so the question it should answer is "which of the 304 permits in flight sit on parcels that pond" — not "show me this parcel".\nA parcel that models nothing stays in the list. It is a result.' },
     { id: 'move2', x: 1720, y: -330, w: 700, text: 'STRUCTURAL MOVE 2: two determinations, never blended.\nSeparate cards, separate authority, separate vintage. The model is badged NOT A DETERMINATION and says on its own face that G-130 does not govern it.\nThe FEMA layer is drawn on the SAME picture as muted reference, which is what the engine already does — separating the two answers is not the same as hiding one of them.' },
     { id: 'cite', x: 2460, y: -330, w: 660, text: 'THE RULING IS A CONTROL, NOT A SENTENCE.\nG-130 makes the rail authoritative for SERVING and provisional for CITATION until a ground-truth sample runs against its own output, and bars relying on it to skip an engineer.\nSo "Cite in review letter" is a REFUSED affordance on the regulatory card, carrying that reason — not a footnote under the drainage study, which the ruling does not govern at all. An earlier draft put it in exactly that wrong place.' },
-    { id: 'depthn', x: 3440, y: -330, w: 660, text: 'MOVE 3: depth is a control, and it governs the LENS.\nrainfallDepthInches is a bare DEPTH in (0,60]. There is no storm duration in the contract and no depth-to-return-period table anywhere in the source, so no artboard names a duration or a recurrence interval — an earlier draft invented both.\nChanging the depth re-ranks the whole screening list, which is what turns a per-parcel tool into an instrument.' },
+    { id: 'depthn', x: 3440, y: -330, w: 660, text: 'MOVE 3: depth is a control, and it governs the LENS.\nrainfallDepthInches is a bare DEPTH in (0,60]. There is no storm duration in the contract, so no artboard names one. The return period IS named, and the board says which one it is reading: rainfallCurve pairs return period to depth from NOAA Atlas 14, the engine renders its own design storm as "100-yr (NOAA Atlas 14)" and a depth passed in the request as "≈N-yr equivalent (interpolated)".\nAn earlier draft invented a 24-hour duration; the pass that removed it over-corrected into denying the pairing, and G-164 corrected that on 2026-09-19 once the parser produced the curve the label cited.\nChanging the depth re-ranks the whole screening list, which is what turns a per-parcel tool into an instrument.' },
     { id: 'runn', x: 0, y: 1190, w: 660, text: 'EVERY FAILURE CLASS IS A NAMED STATE.\nThe engine returns two retryable classes — timeout and unreachable — plus a gate-config failure, a sign-in, a locked property and an honest 422 refusal. They are different events and the list never collapses them.\nA parcel that did not answer is never written down as a parcel that does not pond.' },
     { id: 'emptyn', x: 1720, y: 1190, w: 680, text: 'THREE EMPTIES, ONE ARTBOARD, ON PURPOSE.\n1. No parcel geometry — a capability gap. The regulatory zone is NOT blocked by it: outside the parcel-record counties the atom store still serves an answer.\n2. honestEmpty — the engine ran and declined, and its reason renders VERBATIM. The engine knows why; the UI does not.\n3. No ponding — a result, with zones and flow paths still drawn, and the ponding key dropped from the legend.\nDark here only to show both themes hold.' },
     { id: 'owed', x: 2460, y: 1190, w: 700, text: 'WHAT THIS DESIGN NEEDS BUILT — it is ahead of the code, deliberately.\n• rainfallDepthInches is an optional BFF field with NO UI: the shipped tool never sends it, and nothing caches on it. The depth control is the first thing to wire.\n• There is no job, queue, cancel or cross-navigation persistence. Today a run is one component-local fetch on a 55s client budget. The Running artboard proposes that machinery.\n• Entitlement (401 sign-in, 402 locked property) is the dominant gate on this report in Property Explorer and is NOT drawn on any artboard here. Pinned, needs its own pass.' },

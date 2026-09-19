@@ -714,3 +714,39 @@ The wave census I wrote last time scanned 17 hardcoded program lanes. Generalisi
 - `g151-parks-lens` is compiled and holds the dashboards lens slot. **`g166-red-main` is test-only in `src/`, disjoint from the lens render files (`web/app.js`, `web/index.html`), so the two can run in parallel** - but that is a judgement about file overlap, not a licence: if either lane touches the other's files, the slot law was violated.
 - **The closing path is STILL unfixed** (third consecutive wave). The claim registry resolves per-worktree; the tracker cannot see a row graded more strictly than its close. Both are still prose, not guards.
 - **`_catalog/lane_claims.json` may still hold released-stale entries**; the `g153-vendor-mapping` claim was released by hand and the `g164-flood-basis` / `g164-design-repairs` lanes released their own. Worth a sweep.
+
+---
+
+## 2026-09-19 (UTC), the G-160 deploy - executed, and it exposed that the deploy path cannot run on this machine
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- 2026-09-19T12:23Z-12:30Z. **G-160's owed deploy was executed and the row is CLOSED.** `served-commit-parity.mjs --served` exits **0** for both products: plan-review **AGREE** at `4d3da57999c2208a48f32c22fa82a2c55cd7df4e`, smart-files **AGREE** at `5073f7ff6468dcf10ef23ee7defdcb2e0ca2d202`. Evidence: `_inbox/2026-09-19_planner_g160_deploy_EVIDENCE.md`.
+- **Serving revisions, read by field:** plan-review -> `plan-review-00018-tfv`; smart-files -> `smart-files-00013-7pm`. Both carry `commit-sha` label AND `SERVED_COMMIT` env. Live API `/version` returned `resolvedFrom: "SERVED_COMMIT"`.
+- **The before state was the starvation the row was carded for, on BOTH products:** `plan-review-00029-gom` and `smart-files-00015-lod`, each at 100 percent with NO `commit-sha` label and NO `SERVED_COMMIT`. That is why the row's own instrument returned REFUSED exit 2.
+- **P-170 leases taken and released for both services.** `_catalog/leases/` holds only `README.md`. Lease files named the REVISION (not the commit) - the field means revision.
+- Tracker after: **M5 6/8** (G-169 enrolled), **PASS every tracked row agrees with its own close.**
+
+### LESSON - `scripts/deploy.mjs` CANNOT SPAWN `gcloud` OR `vercel` ON WINDOWS, AND THE ERROR HID ITS OWN CAUSE
+
+`issue()` calls `execFileSync(argv[0], argv.slice(1), ...)` with `argv[0] = "gcloud"`. On Windows that name resolves to a `.cmd`/`.ps1` shim, and Node cannot spawn either without a shell. Measured: bare `gcloud` -> **ENOENT**; `gcloud.cmd` -> **EINVAL** (Node's .cmd spawn block); `{shell:true}` -> **OK** (SDK 567.0.0; vercel 54.20.1). It reports `FAILED (exit ?)` because `err.status` is `null` on a spawn error. **The gate never had this problem** because `served-commit-parity.mjs` invokes through a bounded shell string - which is precisely how a row passes self-tests and CI while the deploy half has never once executed. Carded G-169.
+
+### LESSON - a control the hook cannot see is not a control you are excused from
+
+The traffic-lease gate is a PreToolUse hook on the agent's own Bash calls. A `gcloud` invoked as a child of `node scripts/deploy.mjs` is **invisible to it**, so a scripted deploy shifts traffic with no lease and nothing reports it. I held the lease anyway. **When you find the gate does not fire on your path, that is not a licence - it is a named bypass, and the honest move is to satisfy the control by hand and say that you did.** Corollary for the fleet: the lease law is enforced against *this agent's shell*, not against the deploy path, so it does not actually sequence scripted deploys.
+
+### LESSON - Cloud Run revision numbers here are NOT monotonic
+
+`plan-review-00018-tfv` was created 2026-09-19 while `plan-review-00029-gom` already existed; `smart-files-00013-7pm` is newer than `smart-files-00015-lod`. Both services carry two revisions sharing a number with different suffixes. **"The highest number is newest" is wrong** and a sorted list will hand you the wrong revision. Read by `creationTimestamp`, or read the `status.traffic` field - never by the number.
+
+### LESSON - the Windows shell flattening trap, third instance
+
+PowerShell flattens object arrays into parallel field lists, so `$_.metadata.name` printed as one blob of names then one blob of timestamps - misaligned and unreadable. PowerShell `>` redirection then wrote UTF-16 with a BOM, so `JSON.parse` threw on `��[`. **Have Node run the CLI itself and parse the JSON, instead of passing structured output through the shell.** This is the same family as the `--format="value(a,b,c)"` misread that produced two wrong reports to the operator.
+
+### OPEN
+
+- **G-169**: `scripts/deploy.mjs` is un-runnable on Windows. Until fixed, the next deploy passes by hand or not at all. Both product repos carry it; one owning seat each.
+- **The lease gate does not actually cover scripted deploys** (see the lesson above). The law is prose-plus-a-hook-that-misses-the-path it exists for.
+- Two detached deploy worktrees left on disk: `P:/plan-review-worktrees/planner-g160-deploy`, `P:/smart-files-worktrees/planner-g160-deploy`.
+- **`main` is red (G-166)** and `g166-red-main` is in flight; `g151-parks-lens` holds the dashboards lens slot.
+- **The closing path is STILL unfixed** (third consecutive wave). Still prose, not a guard.

@@ -3,15 +3,18 @@
  *
  *   node violate.mjs
  *
- * WHY THIS FILE OPENS WITH A REPAIR. The G-150 model requires the unmodified
- * boards to pass before a violation can be attributed to a planted one. These boards do
- * not pass, and they should not: the depth control's basis line asserts that naming a
- * depth by return period "would need a local rainfall atlas nobody has cited yet", and
- * the engine names it already from NOAA Atlas 14. So the first direction here is the
- * shipped boards FAILING for that reason, and the clean baseline is established the only
- * honest way left: the three clauses that carry the stale claim are corrected IN THE
- * SCRATCH COPY and the check is required to pass with a matched-input count. Nothing
- * edits a design; the dispatch says report the defect, do not redraw the board.
+ * WHY THIS FILE NO LONGER OPENS WITH A REPAIR (G-164, 2026-09-19). The G-150 model requires
+ * the unmodified boards to pass before a violation can be attributed to a planted one, and
+ * until this lane they did not: the depth control's basis line asserted that naming a depth
+ * by return period "would need a local rainfall atlas nobody has cited yet", while the
+ * engine names it already from NOAA Atlas 14. This file therefore patched the three clauses
+ * carrying that stale claim IN THE SCRATCH COPY to obtain a baseline. G-164 repaired the
+ * design itself, in gen.mjs, so the shipped boards now ARE the clean baseline and the patch
+ * is deleted rather than kept: a scratch repair whose anchors no longer exist cannot apply,
+ * and one that still applied would make this instrument's baseline a copy of a board the
+ * folder no longer ships. No predicate moved and no plant was removed -- the stale claim is
+ * still planted below, as is a board that states NEITHER position, so either one coming back
+ * fails this instrument rather than hiding inside its own baseline step.
  *
  * WHAT A PASSING VIOLATION MEANS. Exit codes are not trusted alone. Every case names the
  * substring the failure must carry, so a check that fails for the wrong reason -- a
@@ -74,21 +77,12 @@ const patchFacts = (fn) => {
   write('source-facts.json', JSON.stringify(s, null, 2) + '\n');
 };
 
-/** The three clauses that carry the stale return-period claim, corrected in the scratch copy.
-    Each anchor is required to be present, so this cannot silently become a repair of a board
-    that has already been fixed. */
-const repair = () => {
-  copyIn();
-  swap('Main.dc.html', ' the model takes no storm duration, and naming these by return period would need a local rainfall atlas nobody has cited yet.',
-    ' the model takes no storm duration.');
-  swap('README.md', 'no depth-to-return-period table anywhere in the source', 'no duration-to-depth table anywhere in the source');
-  swap('README.md', 'naming them by return period needs a local', 'naming them by return period needs a source');
-  swap('README.md', 'rainfall atlas nobody has cited', 'the boards cannot reach');
-  swap('canvas.json', 'no depth-to-return-period table anywhere in', 'no duration-to-depth table anywhere in');
-};
+/** The clean baseline every case plants on: the folder as it ships, copied. Until G-164 this
+    patched the three clauses carrying the stale return-period claim out of the scratch copy
+    instead; that repair is gone because the boards no longer carry the claim. */
 const strip = () => {
   for (const f of fs.readdirSync(scratch)) fs.rmSync(path.join(scratch, f), { recursive: true, force: true });
-  repair();
+  copyIn();
 };
 
 /* ----------------------------------------------------------- the cases */
@@ -129,6 +123,19 @@ const cases = [
     board: 'Main.dc.html',
     plant: () => swap('Main.dc.html', ' the model takes no storm duration.', ' the model takes no storm duration, and naming these by return period would need a local rainfall atlas nobody has cited yet.'),
     expect: 'the engine names it already',
+  },
+  {
+    /* The other direction of the same rule, on a real design rather than in a self-test: a design
+       that states NEITHER position is refused, which is why deleting the sentence is not a repair.
+       All three surfaces that assert a position are cleared, because the rule reads the union. */
+    name: 'a design that states neither position is refused, so deleting the sentence is not a repair',
+    board: 'Main.dc.html + README.md + canvas.json',
+    plant: () => {
+      swap('Main.dc.html', ' A depth is a depth: the model takes no storm duration.', ' A depth is a depth.');
+      swap('README.md', 'There is no duration in it, and the contract', 'The contract carries a bare depth, and the contract');
+      swap('canvas.json', 'There is no storm duration in the contract, so no artboard names one.', 'Depth is the only input the contract takes.');
+    },
+    expect: 'states no position on how a depth can be named',
   },
   {
     name: 'the no-duration claim goes stale against the engine, and the instrument refuses rather than passing it',
@@ -292,34 +299,37 @@ const cases = [
 let failures = 0;
 let planted = 0;
 
-/* Direction 1, on the boards as they stand. This is the real defect, not a planted one. */
+/* Direction 1, on the boards as they stand: the baseline every plant below is attributed to.
+   G-164 repaired the stale return-period claim on the boards themselves, in gen.mjs, so this is
+   a PASS rather than the catch it used to be -- and this instrument now fails if the claim comes
+   back, which the plant named "the claim that no naming by return period exists is put back on
+   the board" proves it can, on a real artboard rather than in a self-test. */
 copyIn();
 const asShipped = run();
-const shippedLine = 'the engine names it already';
-const shippedCaught = asShipped.code === 1 && asShipped.out.includes(shippedLine);
-if (!shippedCaught) {
+if (asShipped.code !== 0) {
   failures += 1;
-  console.error('THE SHIPPED BOARDS WERE NOT CAUGHT. The return-period claim is the defect this lane');
-  console.error('found on a real artboard, and the check must fail on it. Got exit ' + asShipped.code + '.');
+  console.error('THE SHIPPED BOARDS DO NOT PASS. Both directions below are unreadable until they do:');
+  console.error('a violation planted on a board that is already failing cannot be attributed to the plant.');
+  console.error('Got exit ' + asShipped.code + '.');
   console.error(asShipped.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('SELF-TEST') || l.startsWith('REFUSING')).slice(0, 6).join('\n'));
 } else {
-  console.log('direction 1  the boards as they ship                   exit ' + asShipped.code + '  caught: ' + shippedLine);
-  console.log('             ' + (asShipped.out.match(/matched inputs: (.*)/) || [, ''])[1]);
+  console.log('direction 1  the boards as they ship    exit ' + asShipped.code + '  PASS, clean baseline');
+  console.log('             ' + ((asShipped.out.match(/matched inputs: (.*)/) || [, ''])[1] || ''));
   console.log('             ' + asShipped.out.split('\n').filter((l) => l.startsWith('FAIL')).length + ' finding(s) on the shipped boards');
 }
 console.log('');
 
-/* Direction 2, the clean baseline: the three stale claim clauses corrected in the scratch
-   copy and nothing else touched. Without this, nothing below is attributable to a plant. */
+/* Direction 2 is the baseline itself, used again by every case. It is kept as its own named
+   run so the counts printed above and the ones below come from the same copy. */
 strip();
 const base = run();
 if (base.code !== 0) {
-  console.error('AFTER CORRECTING ONLY THE STALE CLAIM IN A SCRATCH COPY THE BOARDS STILL DO NOT PASS, so');
-  console.error('nothing below can be attributed to a planted violation. Got exit ' + base.code + '.');
+  console.error('THE COPIED BASELINE DOES NOT PASS, so nothing below can be attributed to a planted');
+  console.error('violation. Got exit ' + base.code + '.');
   console.error(base.out.split('\n').filter((l) => l.startsWith('FAIL') || l.startsWith('REFUSING') || l.startsWith('NOTE')).slice(0, 10).join('\n'));
   process.exit(1);
 }
-console.log('direction 2  the same boards with the stale claim corrected in a scratch copy, nothing else');
+console.log('direction 2  the same boards copied with nothing changed');
 console.log('             exit 0  PASS');
 console.log('             ' + (base.out.match(/matched inputs: (.*)/) || [, ''])[1]);
 console.log('             ' + (base.out.match(/self-tests: (\d+\/\d+)/) || [, '?'])[1] + ' self-tests inside check.mjs');
@@ -383,5 +393,5 @@ if (failures) {
   console.error(failures + ' case(s) wrong. ' + planted + '/' + cases.length + ' planted violations were caught.');
   process.exit(1);
 }
-console.log(planted + '/' + cases.length + ' planted violations caught, the shipped boards fail on the defect they');
-console.log('actually carry, and a copy with that one claim corrected passes with a matched-input count.');
+console.log(planted + '/' + cases.length + ' planted violations caught on a real artboard, and the shipped');
+console.log('boards pass the check until one of them is planted.');

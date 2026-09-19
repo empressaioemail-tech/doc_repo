@@ -9,7 +9,7 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `5ec25176`: 122 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `1f7ceddd`: 123 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
 **Coverage:** 143 of 1008 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
@@ -21,7 +21,7 @@ programs: [OPS-17, OPS-25]
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
 | M3 Lens builds on Bastrop live data | 11 | 8 | 3 |
 | M4 DigitalOcean migration complete | 7 | 7 | 0 |
-| M5 Design complete, and the controls that keep it honest | 7 | 6 | 1 |
+| M5 Design complete, and the controls that keep it honest | 8 | 6 | 2 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -82,6 +82,7 @@ programs: [OPS-17, OPS-25]
 | G-142 | Citizen lens design. | closed | closed |
 | G-147 | the three designed-nowhere surfaces that had no row at all. | closed, partly | closed-partial |
 | G-148 | five designs are past DRAFT and carry no adversarial read, and two of them are already dispatche | closed | closed |
-| G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed, partly | closed-partial, closed-partial |
+| G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed | closed-partial, closed-partial |
 | G-164 | REPAIR THE 11 FINDINGS G-148 DISCLOSED, WHICH NO ROW OWNED. | closed | closed-partial, closed |
 | G-166 | smartcity-dashboards main IS RED, AND THE CAUSE IS AN INSTRUMENT WHOSE FIXTURE IS ANCHORED TO TH | open | — |
+| G-169 | scripts/deploy.mjs CANNOT RUN ON THE FLEET'S OWN WINDOWS MACHINE, SO THE DEPLOY PATH IS NOT EXER | open | — |
