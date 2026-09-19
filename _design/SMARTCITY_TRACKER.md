@@ -9,9 +9,9 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `e4a6c1a0`: 130 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `cf7e13bb`: 130 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 1021 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 1027 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
