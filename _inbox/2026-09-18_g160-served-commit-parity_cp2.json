@@ -1,0 +1,100 @@
+{
+  "_what": "CP2 for G-160: the pilot and the adversarial review of this lane's own work, run against the CP1 pre-registration. Every entry is an observation with its evidence, and the failures of this lane's OWN drafts are listed alongside the product's.",
+  "lane": "g160-served-commit-parity",
+  "planRows": ["G-160"],
+  "checkpoint": "CP2 -- pilot / mid-work",
+  "seat": "cente-vsc-g160",
+  "filedAt": "2026-09-18T17:26:00Z",
+
+  "pilot": {
+    "whatWasFlown": "Both copies of the check were run five ways each: the passing direction, the recorded 2026-09-17 state, a planted violation, the measured/refused state, and LIVE against production. All raw output is filed as _inbox/2026-09-18_g160-plan-review_evidence.txt and _inbox/2026-09-18_g160-smart-files_evidence.txt.",
+    "liveFirstRun_plan-review": { "verdict": "REFUSED", "exit": 2, "why": "the serving revision plan-review-00029-gom records no commit" },
+    "liveFirstRun_smart-files": { "verdict": "REFUSED", "exit": 2, "why": "the serving revision smart-files-00015-lod records no commit" },
+    "theUncomfortablePartOfThePilot": "Both products REFUSE on their live state, so the check has NOT been observed passing against production anywhere. It has been observed passing against agreeing records (fixture-driven, both products) and it would pass live the moment a deploy records SERVED_COMMIT. This is stated plainly because 'the check works' would be an over-claim: what is proven is that it refuses for the right reason on real production records, and that it passes and fails correctly on real-shaped records.",
+    "surfaceFlownLiveToo": "The /version surface was run on a real server in both products, both directions: 200 with the commit when SERVED_COMMIT is set, 503 with commit:null and not the empty string when it is not. Also observed: the DEPLOYED smart-files revision answers 404 on /version (it predates this lane) while GET / answers 200, which is the measured reason the check must fall back to platform records rather than assume the surface exists."
+  },
+
+  "preRegistrationCheckedAgainstObservation": [
+    { "id": "F1", "preRegistered": "recorded 2026-09-17 state -> exit 1", "observed": "exit 1, DISAGREE, detail 'API serves 99c156ba (plan-review-00029-gom) but the console serves 1af5ac59'", "held": true },
+    { "id": "F2", "preRegistered": "planted violation -> exit 1", "observed": "exit 1 in both products", "held": true },
+    { "id": "F3", "preRegistered": "agreement -> exit 0", "observed": "exit 0 in both products", "held": true },
+    { "id": "F4", "preRegistered": "every unreadable path -> exit 2, never 0", "observed": "13 refusal cases asserted in both suites, all exit 2", "held": true },
+    { "id": "F5", "preRegistered": "two null commits -> exit 2, never 0", "observed": "exit 2", "held": true },
+    { "id": "F6", "preRegistered": "no stand-in for a commit, live", "observed": "9 candidate stand-ins rejected in unit tests; 503 with commit null and not '' on a running server, both products", "held": true },
+    { "id": "F7", "preRegistered": "the Smart Files split question answered as a measurement with a timestamp, as two claims", "observed": "answered at 2026-09-18T17:20:15.151Z: UNMEASURED by record, NOT split by content; both recorded with their evidence", "held": true }
+  ],
+
+  "contradicted": [
+    {
+      "what": "The dispatch's own figures for the recorded violation: 'fifteen days behind' and 'invisible for 2h27m'.",
+      "status": "CONTRADICTED IN THE SECOND FIGURE, and the first only rounds",
+      "detail": "Measured from the platform timestamps the check itself uses: the API revision became ready 2026-09-17T22:43:51.130Z and the console promotion landed 2026-09-18T01:11:51.368Z -- 8,880.238 seconds, i.e. 2h28m0s and not 2h27m. The console's newest production deployment at the API's advance was created 2026-09-03T03:11:22.887Z, which is 14d 19h 32m 29s before the API advanced and rounds to 15 days. Both figures are now carried in the fixture with their exact intervals beside them, so the difference is visible rather than smoothed."
+    },
+    {
+      "what": "This lane's OWN first draft of a test comment: 'three of its ten production deployments carry no meta.gitCommitSha', used to justify a refusal test.",
+      "status": "CONTRADICTED BY THE MEASUREMENT -- corrected before it reached a commit",
+      "detail": "Read from `vercel ls smart-files-app --format=json` on 2026-09-18: of 10 production deployments, 8 record meta.gitCommitSha, 2 record ONLY the github* family (both from 2026-08-20), and 0 record NEITHER. So 'no git commit' was 0 of 10, not 3 of 10 -- and the 2 github-only deployments are exactly the case a single-field reader would have wrongly refused. The reader now accepts both field names and refuses when the two contradict, and the comment carries the measured counts."
+    },
+    {
+      "what": "The working assumption behind the console leg: that a deployment's recorded git commit SHA is what the console serves.",
+      "status": "CONTRADICTED IN PART, and now declared on every run",
+      "detail": "Vercel records meta.gitDirty=1 when the tree it built from had uncommitted changes. Measured on smart-files 2026-09-18: 8 of its 10 production deployments carry it, including the one serving today (ref g155-tag-verify, sha 1caeb981). So the recorded commit is an UPPER BOUND on what the console serves, not an identity. plan-review's serving deployment is clean at deploy (no gitDirty), so the two products differ here. The check prints this on every run and never silently drops it; it is deliberately not a refusal, because refusing on it would refuse a product for its normal deploy and the row's rule is to read the recorded commit."
+    },
+    {
+      "what": "This lane's assumption that 'console serves a different commit than the API' and 'a user is served different content' are the same statement.",
+      "status": "CONTRADICTED, and the check was left strict on purpose",
+      "detail": "smart-files main is 6d71bf3, the merge of 1caeb98, and `git diff --stat 1caeb98 6d71bf3` is EMPTY -- identical tree 0cadcf24. So a strict commit-identity comparison reports DISAGREE for a pair whose served bytes are identical. That is a fail-LOUD, not a fail-silent: the remedy the row already prescribes (redeploy the console from HEAD) is one redeploy. Widening the check to accept a tree match would be inventing a weaker rule than 'the same commit', and the entire defect this row was carded from is a check that passed when it should have refused. Fixtured as `treeIdenticalPair` so it is documented rather than discovered in production."
+    },
+    {
+      "what": "This lane's own first framing of the reconstruction output.",
+      "status": "CONTRADICTED BY READING THE OUTPUT, not by a test",
+      "detail": "Running `--reconstruct-2026-09-17` from the smart-files copy printed 'served-commit parity -- smart-files' while listing plan-review's revision, digest, service and console project. A lane reading that could believe the recorded split was in smart-files. Caught by reading the artifact rather than trusting it. Fixed by carrying the recorded state's own product identity in the fixture and using it to frame the reconstruction, so the smart-files copy now prints plan-review's real coordinates when it reconstructs plan-review's violation. No test would have caught this; the output had to be read."
+    },
+    {
+      "what": "`vercel ls <project> --format=json` as a source of deployment ids and a stable array.",
+      "status": "PARTLY CONTRADICTED",
+      "detail": "The response is an object with a `deployments` array, not an array (this lane's first reader called .filter on the object and failed). The deployment id under `uid` did not resolve for a deployment another lane recorded by its dpl_ id, so ids were NOT used to match across lanes; matching was done on the recorded commit and ref instead. Recorded because a future lane will otherwise try the same join."
+    }
+  ],
+
+  "adversarialReviewOfThisLanesOwnWork": [
+    {
+      "challenge": "Is the check really the same instrument in both repos, or two implementations that will drift?",
+      "answer": "Verified by line-diff, not asserted: the only divergent lines between the two copies are the header comment and the PRODUCT block; the reader, decision, renderer, self-test and CLI are byte-identical, and every change made after the copy was applied to both copies and re-diffed. The self-test additionally asserts PRODUCT.repo equals the running repo's package.json name."
+    },
+    {
+      "challenge": "Can the check pass vacuously, for instance if both platforms are unreadable?",
+      "answer": "No. A side that reports ok with no commit is treated as unreadable, so two nulls cannot agree. Asserted directly ('a null commit never agrees with another null commit') and covered by the both-unreadable case."
+    },
+    {
+      "challenge": "Does the check read a proxy anywhere it claims to read a record?",
+      "answer": "Two places were caught and are declared rather than hidden. (1) The Smart Files 'not split' conclusion rests on a forensic blob-fingerprint of the build-source archive, which is NOT a platform record; the fixture names it as a reconstruction and the check itself does not use it. (2) The API's commit is read from the revision's label/env, which on this fleet is absent -- so the check REFUSES instead of substituting the revision tag, the image tag, the deploy message or the creation time."
+    },
+    {
+      "challenge": "Is the failing direction proven on the exit code rather than on narration?",
+      "answer": "Yes -- every falsifier asserts `result.exit` (1 and 2), and the process itself exits with it. The evidence files are raw stdout of the real CLI including its exit codes."
+    },
+    {
+      "challenge": "Does the surface report a value it actually resolved, or can it report a defaulted one?",
+      "answer": "It reports null and 503 when it cannot resolve, and the empty string is explicitly asserted absent. Nine stand-in candidates ('', 'unknown', 'main', 'HEAD', a semver, prose, undefined, null and whitespace) are rejected in tests, and the live 503 was read on a running server in both products."
+    },
+    {
+      "challenge": "Is the check wired to anything, or is it theatre?",
+      "answer": "It is not wired: no deploy hook, no schedule. It is DORMANT. That is stated in the script header, in CP1, and in the close, and it is the row's bypass. If this lane implied a live control existed, that would be the defect."
+    },
+    {
+      "challenge": "Did this lane stay inside its boundaries?",
+      "answer": "Wrote only in plan-review and smart-files; read smartcity-dashboards' mounts constant from the dispatch's citation rather than editing that repo (no write). Did not deploy, merge or publish: both branches are committed locally and unpushed, and the integration seat owns the push and the PRs. doc_repo edits are filed uncommitted. No sub-agents (FAN-DEPTH 0). Nothing was written to Cloud Run or Vercel."
+    }
+  ],
+
+  "risksCarriedIntoTheClose": [
+    "Neither product records its commit yet, so the check refuses on both live surfaces. Until a deploy passes SERVED_COMMIT (or sets the commit-sha label), the row's predicate cannot be enforced in production, only measured as UNMEASURED.",
+    "The check is dormant: no trigger exists. A deploy that never runs it is the bypass.",
+    "The console leg now accepts meta.githubCommitSha as well as meta.gitCommitSha; two smart-files deployments record only the former, so a single-field reader would have refused real deployments.",
+    "meta.gitDirty means the console's recorded commit is an upper bound, not an identity. The stronger instrument is the API recording what it resolved at deploy time, which is what the /version surface is for.",
+    "A tree-identical merge will read as a DISAGREE. Left strict deliberately; documented as a fixture."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

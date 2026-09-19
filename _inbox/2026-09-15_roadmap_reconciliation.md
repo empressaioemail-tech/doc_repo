@@ -219,6 +219,32 @@ department model is a factual question about `smartcity-os` that A-145 already a
 
 ## In flight
 
+**THE FIVE-LANE WAVE HAS FULLY LANDED, and the reconciliation of it is OPS-17 `A-177`.** Read at source
+by the planner at 2026-09-19T01:0xZ: `g160-served-commit-parity`, `g161-never-default-a-city`,
+`g162-v1-finance-honesty`, `g154-dev-services-live` and `d14-d13-v1-reach`. Two rows moved grade:
+**G-161 is CLOSED** (close filed, PR #73 merged at `da3d611`, and the planner re-measured the deployed
+refusal on `d12-main-uat` at 01:38Z rather than reading it: three keyless routes 400
+`city_key_required`, an unknown pack 404, a named pack still 200), and **D-14 is CLOSED**. `G-160`
+stayed `CLOSED-PARTIAL` because its production predicate needs a deploy, and the integration work it
+named is now done: **both branches pushed and both PRs open** (plan-review #19 with `test` green,
+smart-files #18).
+
+**Three of the five left their close sitting in their own worktree, where nothing reads it, and this is
+now measured rather than found by accident.** A census over all seventeen program lane worktrees
+(`P:\tmp\wave-census.mjs`; branch, head, dirty count, commits ahead of `origin/main`, and every `_inbox`
+artifact present in the worktree but absent from `main`) found **nine lanes holding work that had not
+reached main and twenty-three stranded artifacts, three of them closes** (`g160`, `g161`, `d14`). A close
+is the only thing the tracker reads, so a close in a worktree is a row that does not move however
+complete the work is. All twenty-three were filed into `main`, byte-verified on read-back, refusing on
+any collision, and none was edited or renamed. Two smaller things the same sweep caught: a garbled prose
+fragment in G-161's status cell whose pipes were **correctly escaped**, so the table always parsed and no
+instrument could ever have seen it, and `g153-vendor-mapping` still holding a **live claim hours after
+its PR #77 merged**, because releasing a claim is the lane's act and the lane was gone. That claim is now
+released, so the dashboards slot is genuinely free.
+
+**`g158-access-log-write-path` is the live lane and the only writer in `smartcity-dashboards`.** It holds
+the one dashboards slot, and the slot it was queued behind is discharged by the release above.
+
 **`g152-public-works-fire-ems` LANDED AND MERGED 2026-09-18** (PR #76 to `smartcity-dashboards` `main`
 `ea27024`, `test` pass, `a11y` pass). **It released the dashboards slot to `g153-vendor-mapping`**,
 which was queued behind it.
@@ -241,9 +267,10 @@ this lane runs must add by explicit pathspec and never `-A`**, because `-A` from
 lane's half-finished design work into a planner commit.
 
 **The throughput limit is unchanged and it is the program's real constraint.** Every lens renders into
-`web/app.js` and `web/index.html`, so one dashboards lane at a time (A-144). `g153-vendor-mapping` holds
-that slot now; **G-151 (Parks) and G-149 (flood study) queue behind it, in that order**, which is why
-G-151 is not the next thing to fire even though `g152` has landed.
+`web/app.js` and `web/index.html`, so one dashboards lane at a time (A-144). `g158-access-log-write-path`
+holds that slot now and it is genuinely free rather than nominally free, because the stale claim that
+would have read as a collision is released. **G-151 (Parks) and G-149 (flood study) queue behind it, in
+that order**, which is why G-151 is not the next thing to fire even though `g152` has landed.
 
 ## The wave that landed, and the wave that is next
 

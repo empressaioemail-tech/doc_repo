@@ -1,0 +1,186 @@
+{
+  "lane": "g160-served-commit-parity",
+  "planRows": ["G-160"],
+  "status": "closed-partial",
+  "seat": "cente-vsc-g160",
+  "closedAt": "2026-09-18T17:26:00Z",
+
+  "statusReason": "closed-partial, not closed, because the row's production parcel is UNMEASURED and one supporting parcel is FAIL. The instrument is built for both products and proven in both directions on real exit codes, and the Smart Files split question is answered with a timestamp -- but neither product's API records the commit it serves, so the live parity verdict on both is REFUSED/UNMEASURED rather than PASS, and no trigger exists (the check is dormant). A close that says 'closed' must be PASS for every parcel; this one is not, and saying so is the point.",
+  "parcels": [
+    { "parcel": "check built for plan-review", "verdict": "PASS", "evidence": "scripts/served-commit-parity.mjs at b4b44b9; 173 unit tests pass; self-test 14/14" },
+    { "parcel": "check built for smart-files", "verdict": "PASS", "evidence": "scripts/served-commit-parity.mjs at a238072. Every executable line is identical to plan-review's copy: `git diff --no-index` is 27 added / 12 removed, all of them comments or entries in the PRODUCT object, and with comments and the PRODUCT block stripped the two files are 314 tokens and IDENTICAL. 110 unit tests pass; self-test 14/14" },
+    { "parcel": "fails when the console serves an older commit, proven by violation", "verdict": "PASS", "evidence": "recorded 2026-09-17 state -> exit 1; planted violation -> exit 1 in both products; raw output in the evidence files" },
+    { "parcel": "passes when the two sides agree", "verdict": "PASS", "evidence": "exit 0 in both products, asserted in tests and shown in the evidence files" },
+    { "parcel": "fails closed on every unreadable input", "verdict": "PASS", "evidence": "13 refusal cases, all exit 2, asserted in both suites; no case returns 0" },
+    { "parcel": "the served-commit surface reports a value it actually resolved", "verdict": "PASS", "evidence": "live 200 with the commit and live 503 with commit:null (never '') on a running server in both products; 9 stand-in candidates rejected in tests" },
+    { "parcel": "first run records whether Smart Files is split today", "verdict": "PASS", "evidence": "measured 2026-09-18T17:20:15.151Z: UNMEASURED by record, NOT split by content; fixture scripts/fixtures/g160-measured-2026-09-18.json in smart-files" },
+    { "parcel": "live parity verdict on production, plan-review", "verdict": "UNMEASURED", "evidence": "REFUSED/2 -- serving revision plan-review-00029-gom records no commit" },
+    { "parcel": "live parity verdict on production, smart-files", "verdict": "UNMEASURED", "evidence": "REFUSED/2 -- serving revision smart-files-00015-lod records no commit" },
+    { "parcel": "a trigger or schedule exists", "verdict": "FAIL", "evidence": "none exists; the check is DORMANT and runs only when a human runs it" },
+    { "parcel": "PRs opened, CI green on the merged commit", "verdict": "NOT RUN", "evidence": "this lane does not publish; both branches are committed locally and unpushed, and the integration seat owns the push and the PRs" }
+  ],
+
+  "probe": {
+    "artifact": "_inbox/2026-09-18_g160-served-commit-parity_probe.json",
+    "evidence": [
+      "_inbox/2026-09-18_g160-plan-review_evidence.txt",
+      "_inbox/2026-09-18_g160-smart-files_evidence.txt"
+    ],
+    "producedBy": "node scripts/served-commit-parity.mjs (live, both products), --reconstruct-2026-09-17, --api-fixture/--console-fixture with the recorded, planted, agreeing and measured states, --self-test, and a live run of GET /version on a local server in both products with SERVED_COMMIT set and unset. Every section of both evidence files is raw command output including exit codes.",
+    "whyNotSurfaceProbe": "scripts/surface-probe.mjs carries rows P-151..P-205 (the OPS-23 hauska/property surfaces) and a grep of the whole file for smart-files, plan-review, G-160, G-155 or govtech returns zero matches. It cannot measure this predicate, and citing its artifact would be 'a claim measured somewhere other than the app' -- the defect that script's own header was written against. Same precedent as G-155 and G-135, which cite lane probes for rows it does not carry. surface-probe.mjs was NOT run and is NOT cited.",
+    "verdict": "The instrument's own predicate: PASS on both products (fires in the failing direction, passes in the agreeing direction, refuses on unreadable input). The live production state: UNMEASURED on both products, which is the finding."
+  },
+
+  "falsifier": "The recorded 2026-09-17 violation, reconstructed from platform records: plan-review's API serving revision plan-review-00029-gom (ready 2026-09-17T22:43:51.130Z) at commit 99c156babe10d83d0840a81a3ccc7c6f5ff94fff while the console's newest READY production deployment served 1af5ac596d28d5040c56af2545fbe4782f2dac3d (created 2026-09-03T03:11:22.887Z). The check FAILS against it with exit 1, asserted in both products' test suites and reachable from the CLI as --reconstruct-2026-09-17. A planted violation is carried in each product beside it, so the negative case is re-run on every pull request rather than trusted.",
+
+  "contradicted": [
+    {
+      "what": "The dispatch's quoted split window ('invisible for 2h27m').",
+      "status": "CONTRADICTED IN THE SECOND FIGURE",
+      "detail": "Measured from the platform timestamps the check uses: 8,880.238 seconds = 2h28m0s, not 2h27m. The 'fifteen days behind' figure rounds from 14d 19h 32m 29s, so it stands as a rounded figure. Both are carried in the fixture with their exact intervals beside them."
+    },
+    {
+      "what": "This lane's own draft claim that three of smart-files' ten production deployments record no commit.",
+      "status": "CONTRADICTED BY MEASUREMENT -- corrected before commit",
+      "detail": "8 of 10 record meta.gitCommitSha, 2 record only the github* family, and 0 record neither. The 2 github-only deployments are precisely the case a single-field reader wrongly refuses, so the reader now accepts both names and refuses when the two disagree."
+    },
+    {
+      "what": "The assumption that a Vercel deployment's recorded commit SHA is what the console serves.",
+      "status": "CONTRADICTED IN PART -- now declared on every run",
+      "detail": "meta.gitDirty=1 means the tree built from had uncommitted changes, so the commit is an upper bound, not an identity. 8 of smart-files' 10 production deployments carry it (including the one serving today); plan-review's serving deployment is clean. Printed on every run and deliberately not a refusal."
+    },
+    {
+      "what": "The assumption that 'different commit' implies 'different content served'.",
+      "status": "CONTRADICTED -- the check was left strict on purpose",
+      "detail": "smart-files 6d71bf3 is the merge of 1caeb98 and `git diff --stat` between them is empty, so they are different commits with identical trees. A strict comparison reports DISAGREE where content is identical: a fail-LOUD. Left strict because accepting a tree match would be a weaker rule than the row states."
+    },
+    {
+      "what": "This lane's first framing of `--reconstruct-2026-09-17` from the smart-files copy.",
+      "status": "CONTRADICTED BY READING THE OUTPUT",
+      "detail": "It printed a smart-files header over plan-review's revision, digest, service and console project. A reader could have believed the recorded split was in smart-files. Fixed by carrying the recorded product's own identity in the fixture; no test would have caught it."
+    },
+    {
+      "what": "The dispatch's suspicion that G-155 deployed Smart Files by canary 'without its close saying the console moved'.",
+      "status": "RESOLVED -- the console did move, and the gap is in the reporting",
+      "detail": "The API revision became ready 2026-09-18T01:28:06.825Z and the console production deployment was created 2026-09-18T01:29:51.722Z, 104.897s later, from the same content. The G-155 close did not say the console moved, so a reader of that close could not tell that it had."
+    }
+  ],
+
+  "theThreeQuestions": {
+    "1_whatExecutesIt": "scripts/served-commit-parity.mjs, one copy per product, `node scripts/served-commit-parity.mjs`. It is ALSO wired into each product's `npm test` as `--self-test`, which needs no credentials, so its ability to fail is re-proven on every pull request.",
+    "2_whatTriggersIt": "INTENDED: the end of every deploy of either side, plus a schedule, because a deploy that never runs it is its bypass. HONEST STATE: NEITHER EXISTS. The check is DORMANT -- it runs when a human runs it. A deploy-time hook needs credentials in the deploy path and the deploy path is planner-owned; a scheduled run needs a runner that does not exist in these repos' CI. This is stated rather than implied, and it is the row's live bypass.",
+    "3_whatFails": "A non-zero exit that blocks calling the deploy done. Exit 1 when the two sides serve different commits, exit 2 when a side could not be read at all. Both are FAILURES for the purpose of calling a deploy done; a check that cannot run is never a pass.",
+    "4_whatBypassesIt": "Two things, named. (a) A deploy that never runs the check -- and with no trigger wired, that is every deploy today. (b) A deploy that passes SERVED_COMMIT from somewhere other than the commit it built; this is caught as far as it can be, because the check requires the live /version surface of the SERVING revision to agree with the platform record and with the revision the platform says is serving, so a stale or borrowed commit cannot be reported by a revision that is not serving it."
+  },
+
+  "prs": [],
+  "prsNote": "No PRs were opened. The dispatch's boundaries are explicit -- 'You do not deploy, merge, or publish. The integration seat does that.' -- so both branches are committed locally and left unpushed for the integration seat, and there is therefore no PR number, no merge SHA and no CI conclusion string to cite. The branches are: plan-review g160-served-commit-parity at b4b44b978fe5f07ded627b1d8038f8b0d9b25476 off origin/main 99c156babe10d83d0840a81a3ccc7c6f5ff94fff (7 files, +959/-1); smart-files g160-served-commit-parity at a238072dbb822d0cfbf52dc89030671f600c33de off origin/main 6d71bf38fe0cc67fafd4fe8b55fb55b7f07c863d (8 files, +1156/-1). Both repos declare their base SHA in the dispatch's sense -- branched from the current origin/main at read time, verified with git merge-base.",
+  "ciNote": "CI was NOT run and no conclusion string exists. The tests this lane added are wired into the same `npm test` the repos' CI already runs (plan-review: web/api/*.test.mjs glob; smart-files: the explicit test script), so they will run on the first push. Until then the only execution evidence is local, and it is filed.",
+
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-18_g160-served-commit-parity_cp1.json",
+    "cp2": "_inbox/2026-09-18_g160-served-commit-parity_cp2.json",
+    "evidence": [
+      "_inbox/2026-09-18_g160-served-commit-parity_probe.json",
+      "_inbox/2026-09-18_g160-plan-review_evidence.txt",
+      "_inbox/2026-09-18_g160-smart-files_evidence.txt"
+    ],
+    "filedAtNote": "CP1 was filed after the plan-review build and before the smart-files build; CP2 and this close were filed at the end. CP1's own `disclosure` field says so rather than backdating itself. FAN-DEPTH is 0 and no sub-agents were launched, so the contract's sub-agent supervision duty is vacuous for this lane; verification was in-process and every claim is an exit code or a file read.",
+    "adversarialCheckpointsConducted": "Two, in-process, as required: CP1 (design and pre-registered falsifiers, checked against observation in CP2) and CP2 (the pilot, the falsifier results, and a review of this lane's own work including four of its own drafts that the measurement contradicted)."
+  },
+
+  "countsWithCountingRules": {
+    "unitTests_plan-review": "173 pass / 0 fail across 5 suites, `npm test`. Counting rule: node --test over web/api/*.test.mjs and src/*.test.mjs; 33 of the 173 are this lane's served-commit-parity.test.mjs.",
+    "unitTests_smart-files": "110 pass / 0 fail across 5 suites, `npm test`. Counting rule: node --test over the six files named in package.json's test script; 36 of the 110 are this lane's served-commit-parity.test.mjs.",
+    "selfTest": "14 of 14 pass in both products, `node scripts/served-commit-parity.mjs --self-test`. Counting rule: every assertion the script prints, each one a comparison of a value or an exit code to an expected value, no credentials needed.",
+    "refusalCases": "13 pre-registered unreadable-input cases, all exit 2. Counting rule: each is a distinct way a side can be unreadable (listed in CP2 F4); a case counts only if it is asserted on the exit code, never on a message.",
+    "smartFilesProductionDeploymentsRead": "10, of which 8 record meta.gitCommitSha, 2 record only meta.githubCommitSha, 0 record neither, and 8 carry meta.gitDirty=1. Counting rule: `vercel ls smart-files-app --format=json`, filtered to target=production, read 2026-09-18T17:2xZ.",
+    "smartFilesCloudRunRevisions": "12 revisions listed, 4 traffic entries, exactly 1 at percent=100 (smart-files-00015-lod). Counting rule: `gcloud run revisions list --service smart-files` and `status.traffic` from `gcloud run services describe`.",
+    "buildSourceArchiveFingerprint": "47 of 47 files matched the tree of 1caeb98 / 6d71bf3, 0 differed, 0 absent. Counting rule: every regular file in the extracted archive hashed as a git blob (sha1 of 'blob <len>\\0' + content) with CRLF normalised to LF, against `git ls-tree -r <commit>`. Three candidate commits were excluded with their counts (3079f80 and 9b845d5 contain no scripts/g155_tag_verify.mjs, so the archive is later than both; 61c84f6 28/47; 5486889 25/47).",
+    "bodyParityBetweenProducts": "27 added / 12 removed lines, all comments or PRODUCT entries; 0 executable lines differ. Counting rule: `git diff --no-index --numstat` between the two scripts gives the change count; then every line starting with `*`, `/*`, `*/`, `//`, `#!/`, or blank is dropped, and everything from `export const PRODUCT = {` to its closing `};` is dropped, leaving 314 lines in each that compare equal. Stated this way because the earlier phrasing 'body byte-identical' was loose: the FILES are not byte-identical (504 vs 519 lines) and only the code is.",
+    "recordedViolationInterval": "8,880.238 seconds exact, reported as 2h28m0s (rounded to the second) against the dispatch's 2h27m; and 14d 19h 32m 29s exact, reported as 15 days (rounded). Counting rule: difference between the two ISO timestamps named beside each figure, computed from the platform's own values."
+  },
+
+  "constraintsHonored": {
+    "fanDepth": "0 -- no sub-agents launched or resumed. A-181 satisfied.",
+    "writeBoundaries": "Wrote only in P:/plan-review-worktrees/g160-served-commit-parity and P:/smart-files-worktrees/g160-served-commit-parity. smartcity-dashboards was NOT written (its mounts constant was read from the dispatch's own citation). P:/doc_repo was not written; every artifact is filed in the seat worktree P:/seat-worktrees/g160-served-commit-parity/doc_repo, which is where this session is rooted.",
+    "noDeployMergePublish": "Nothing was deployed, merged or published. Both branches are committed locally and unpushed. No traffic was shifted, no revision created, no Vercel deployment made, no platform record written.",
+    "noPrivilegedData": "The only credentials touched are the workstation's existing gcloud and Vercel CLI read auth (both read-only list/describe calls). No service tokens, no DATABASE_URL, no tenant key was read into this process. Nothing was printed that was not already public.",
+    "docRepoUncommitted": "All doc_repo artifacts are left uncommitted for the planner, as the dispatch requires; documentedEdits lists them.",
+    "readOnlyOnPlatforms": "gcloud calls were describe/list only; vercel calls were ls only. The gs:// archive was read with `gcloud storage cp` (a read)."
+  },
+
+  "documentedEdits": [
+    "plan-review branch g160-served-commit-parity (b4b44b9, base 99c156ba, unpushed): src/served-commit.mjs (new, 69 lines), src/server.mjs (+16: the /version route and its import), scripts/served-commit-parity.mjs (new, 503 lines), scripts/fixtures/g160-recorded-2026-09-17.json (new, 49 lines), scripts/fixtures/g160-planted-split.json (new, 16 lines), web/api/served-commit-parity.test.mjs (new, 303 lines), package.json (+3/-1: the parity and parity:self-test scripts).",
+    "smart-files branch g160-served-commit-parity (a238072, base 6d71bf3, unpushed): src/served-commit.mjs (new, 69 lines), src/server.mjs (+13: the /version route and its import), scripts/served-commit-parity.mjs (new, 518 lines), scripts/fixtures/g160-recorded-2026-09-17.json (new, 49 lines; byte-identical to plan-review's copy), scripts/fixtures/g160-planted-split.json (new, 29 lines), scripts/fixtures/g160-measured-2026-09-18.json (new, 84 lines), src/served-commit-parity.test.mjs (new, 391 lines), package.json (+3/-1).",
+    "doc_repo, UNCOMMITTED, filed under P:/seat-worktrees/g160-served-commit-parity/doc_repo/_inbox/: this close, CP1, CP2, the probe artifact, and the two raw evidence files. All six are new and untracked; `git status --short` in the seat worktree shows exactly those six `??` entries (plus the released claim's file, if any -- see next).",
+    "The lane claim was CLAIMED at 2026-09-18T17:11:50.829Z (seat cente-vsc-g160, planRow G-160) and RELEASED at the end of this close with `node scripts/lane-claim.mjs release --lane g160-served-commit-parity --seat cente-vsc-g160`, which printed `RELEASED` and left `check` reporting `FREE`. So _catalog/lane_claims.json is back to exactly its committed content: there is NO claim diff in the hand-back, and nothing about this lane remains held against the registry.",
+    "NOT edited, and worth saying: scripts/surface-probe.mjs was left alone even though G-160's rows are not in it. Adding rows to a shared program instrument is a planner's call, not a lane's, and this lane has no basis to choose what a G-160 row should measure beyond its own dispatch."
+  ],
+
+  "openThreads": [
+    "NOTHING RECORDS THE SERVED COMMIT TODAY, on either product. This is the row's central finding and the next action is a deploy change, not a code change: the Cloud Run deploy must pass SERVED_COMMIT=$(git rev-parse HEAD) (or set the commit-sha revision label) and the Vercel console deploy must be made from a clean tree so meta.gitCommitSha is an identity. Until then the check refuses on both live surfaces and the row's predicate cannot be enforced, only measured as UNMEASURED.",
+    "The check is DORMANT: no deploy hook and no schedule. Wiring it is the single highest-value follow-up and it requires credentials in the deploy path, which is planner-owned territory.",
+    "meta.gitDirty: 8 of 10 smart-files production deployments, including the one serving today, were built from a dirty tree, so the console's recorded commit is an upper bound. The remedy is deploying the console from a clean checkout; until then a console-side 'dirty' should be read as a caveat on every parity verdict, which is why the check prints it on every run.",
+    "A tree-identical merge (main merging a branch that changes no file) reads as DISAGREE. Left strict on purpose; if the planner wants content-equality to count as agreement, the surface would need to report the tree hash as well, and that is a new rule rather than a bug fix.",
+    "Two smart-files production deployments record their commit only under meta.githubCommitSha; the reader accepts both, but any other tool reading only meta.gitCommitSha would refuse them.",
+    "The legacy deployments with no recorded commit cannot be backfilled: a deployment made without git context has no commit to recover. The three smart-files deployments that carry a SHA all have one; the two github-only ones do too.",
+    "The /version surface is unauthenticated, like GET /. It reports a commit SHA, which is public-repo information, and no data. If the planner wants it gated, that is a one-line change, but a gated version surface cannot be probed by a deploy-time hook without a credential in the deploy path."
+  ],
+
+  "m0Scratch": {
+    "LESSON": [
+      "A deploy can be perfectly healthy and still be the defect. On 2026-09-17 plan-review's API answered every probe and the console answered every probe; what was missing was any surface on either side that could say WHICH COMMIT IT WAS SERVING. Every health check in the fleet passed. When a fact is not recorded anywhere, no probe can notice it -- so the instrument has to add the record, not just read harder.",
+      "A recorded commit is not necessarily the content served. Vercel records meta.gitDirty=1 when the tree had uncommitted changes: measured on smart-files 2026-09-18, 8 of 10 production deployments carry it, including the one serving. So meta.gitCommitSha is an upper bound, not an identity, and a parity check built on it is only as strong as the cleanliness of the deploy. Print the flag on every run; never let a reader assume the SHA is what shipped.",
+      "Two deploy paths record the same fact under two different field names: the Vercel CLI writes meta.gitCommitSha and a GitHub-integration deploy writes meta.githubCommitSha. A reader that knows one name will refuse a deployment that did record its commit -- 2 of smart-files' 10 production deployments are exactly that case. Read both; refuse when they disagree.",
+      "A merge commit and its branch tip can have the SAME TREE (smart-files 6d71bf3 over 1caeb98, `git diff --stat` empty). Commit-identity and content-identity are different predicates, and a strict check will report a disagreement where no user sees any difference. That is fail-loud, which is the right direction, but it has to be documented or the next reader will read it as a bug.",
+      "A git blob id is sha1('blob <len>\\0' + content), so a Cloud Run source archive can be attributed to an exact commit without checking anything out -- IF line endings are normalised. A Windows archive compared raw against git's LF storage reads as 100% mismatch on a correct commit. Normalise to LF before hashing, or every candidate looks wrong.",
+      "`vercel ls --format=json` returns an OBJECT with a deployments array, not an array. And the dpl_ id another lane records does not appear as a usable join key in the CLI's JSON, so cross-lane matching must use the recorded commit and ref instead of the deployment id.",
+      "A lane must read its own instrument's output, not just its exit code. A reconstruction run printed a smart-files header over plan-review's revision and service while exiting correctly; no test would have caught it, and a reader could have concluded the recorded split was in the wrong product.",
+      "This wave's lane claims live in the SEAT worktree's doc_repo (P:/seat-worktrees/<seat>/doc_repo/_catalog/lane_claims.json), not in P:/doc_repo. The integration checkout's registry did not contain this lane while this lane was running it."
+    ],
+    "DEAD_END": [
+      "Building the parity check on /healthz. GFE intercepts that exact path on *.run.app, so the probe measures the edge, not the process (both READMEs record this). /version was chosen for exactly this reason, and the live check confirmed the shape: the deployed smart-files revision answers 404 on /version while GET / answers 200.",
+      "Deriving the API's commit from the image tag, the revision tag, the deploy message or the revision creation time. On this fleet the tags name a LANE, not a commit (g155-search-reason, g150-reasoner), so every one of those is a proxy. The record does not exist today; the honest answer is to refuse and say the deploy must record it.",
+      "Assuming a Cloud Run revision records its own git revision. It does not: the revision carries no commit label, and the image is built from an uploaded source archive with .git excluded by .dockerignore, so the image cannot derive its commit either. Nothing about the source is recoverable except by fingerprinting the archive.",
+      "Trying to make the check accept a tree match so a no-op merge would pass. It weakens the row's own rule ('the same commit') to fix a nuisance, and the failure mode this row was carded from is a check that passed when it should have refused.",
+      "Looking for the Vercel deployment id as a cross-check key. The CLI's JSON did not expose the dpl_ id another lane recorded, so the join was abandoned in favour of the recorded commit + git ref, which is the actual subject."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-18T17:15:25.763Z -- plan-review LIVE parity run: REFUSED/2. API serving revision plan-review-00029-gom (tag g150-reasoner, percent 100, digest sha256:3fdfd30f1fd62b9ef433f454c020bcad6cc57b872449abcfce8108e3c4e68f5f) records NO commit. Console newest READY production deployment serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff, ref HEAD, clean at deploy, created 2026-09-18T01:11:51.368Z.",
+      "2026-09-18T17:20:15.151Z -- smart-files LIVE parity run: REFUSED/2. API serving revision smart-files-00015-lod (tag g155-search-reason, percent 100, digest sha256:4d7d39b974aac23e441813844c9f42a5c9473bfdc2857a439a08c3215a12c2ea, created 2026-09-18T01:28:06.825020Z) records NO commit. 4 traffic entries, 3 of them alias tags at 0 percent. Console newest READY production deployment serves 1caeb981bf7eccdfafa7e6a4ec7078de16722314, ref g155-tag-verify, gitDirty=1, created 2026-09-18T01:29:51.722Z.",
+      "2026-09-18T17:20:15Z -- SMART FILES IS NOT CONTENT-SPLIT AND IS UNMEASURED BY RECORD. The API revision's build-source archive (gs://run-sources-smart-files-505619-us-east1/services/smart-files/1789694863.301442-d67a4ca12172413bba95b96da64e9da8.zip, cut 2026-09-18T01:27:43.301Z) matches the tree of 1caeb98/6d71bf3 at 47/47 blobs, and that tree (0cadcf24) is origin/main's. The console serves 1caeb98. Neither side RECORDS its commit, so the check refuses.",
+      "2026-09-18 -- smart-files console deploy inventory: 10 production deployments, 8 under meta.gitCommitSha, 2 under meta.githubCommitSha only, 0 under neither, 8 with meta.gitDirty=1. plan-review's serving deployment is clean at deploy.",
+      "2026-09-18T17:11:50.829Z -- lane claimed: g160-served-commit-parity, seat cente-vsc-g160, in the seat worktree's registry.",
+      "2026-09-18 -- branch heads committed locally, unpushed: plan-review b4b44b978fe5f07ded627b1d8038f8b0d9b25476 (base 99c156ba), smart-files a238072dbb822d0cfbf52dc89030671f600c33de (base 6d71bf3).",
+      "2026-09-18 -- the SERVING revision of smart-files does NOT have the /version surface (404) while GET / answers 200, and plan-review's serving revision does not have it either. The surface ships with the next deploy of each product."
+    ],
+    "OPEN": [
+      "Nothing records the served commit on either product -- the blocking fact for enforcement. Needs a deploy change (SERVED_COMMIT or the commit-sha label).",
+      "No trigger exists for the check; it is dormant.",
+      "The integration seat must push both branches and open the PRs; no PR number, merge SHA or CI conclusion exists yet, and CI has not run.",
+      "A tree-identical merge reads as DISAGREE; the decision to keep that strict is deliberate and belongs to the planner.",
+      "If the planner wants /version authenticated, it becomes unprobeable by a deploy-time hook without a credential in the deploy path."
+    ]
+  },
+
+  "missionPremise": "Quoted from the dispatch: 'A deploy is not done until the console and the API serve the same commit.' The recorded defect: on 2026-09-17 plan-review was served by two independent deploy paths with nothing comparing them -- the API by Cloud Run, the console by Vercel -- the API advanced to the reasoner while the console sat fifteen days behind, a shipped feature was invisible to every user for ~2h28m, and every API-side probe said the deploy was fine; the planner's own G-150 verification checked only the Cloud Run side and missed it. The dispatch asks whether the same split is in smart-files, which the Dashboards shell embeds through a Vercel origin, and observes that G-155 deployed Smart Files by Cloud Run canary without its close saying the console moved. Source: _dispatches/2026-09-18_g160-served-commit-parity_dispatch.md.",
+
+  "completionPredicate": "Done means: (1) one check per product, reading the commit each side ACTUALLY serves from the authoritative record of each platform and never a proxy -- the Cloud Run SERVING revision by field name and its image DIGEST, and the console's newest READY production deployment's recorded git commit; (2) every unreadable side, timeout or missing field is a FAILURE and never a pass; (3) the check FAILS against the recorded 2026-09-17 state, proven by violation on the real exit code, and PASSES when the two sides agree; (4) it runs for both plan-review and smart-files; (5) its first run records whether Smart Files is split today as an observable fact with a timestamp; (6) where a served-commit surface had to be added, that surface reports a value it actually resolved and never a defaulted or empty string; (7) the three-question gate is answered in writing with any 'a human remembers' named as such; and (8) the output declares its own snapshot of repository, ref and read time.",
+
+  "scopeBasis": "In scope and delivered: the served-commit parity check and the /version surface for plan-review and smart-files, the recorded and planted falsifiers, the measured Smart Files split answer, and the checkpoint/close artifacts. Out of scope and untouched: deploying, merging or publishing either branch (the integration seat owns that); smartcity-dashboards (read at the dispatch's named ref, written nowhere); any change to scripts/surface-probe.mjs or to the OPS-23 rows; Cloud Run traffic, revisions and leases; the products' data stores; and the addition of a deploy hook or schedule, which does not exist and is declared dormant.",
+
+  "leave_behind": [
+    "One check per product at scripts/served-commit-parity.mjs, with a byte-identical body, a PRODUCT block the self-test pins to the repo, and three exits that mean one thing each: 0 agree, 1 disagree, 2 refused. A deploy is not done until it exits 0.",
+    "GET /version on both products, backed by src/served-commit.mjs. It reports the commit the process actually resolved, or 503 with commit:null. It exists so the parity check can read what a revision serves rather than infer it, and so a stale or borrowed SERVED_COMMIT cannot be reported by a revision that is not serving it.",
+    "The deploy contract this row implies and nothing yet satisfies: the Cloud Run deploy must pass SERVED_COMMIT=$(git rev-parse HEAD) (or set the commit-sha label), and the console must be deployed from a clean tree so meta.gitCommitSha is an identity rather than an upper bound.",
+    "The recorded 2026-09-17 violation as a runnable fixture in both repos (`--reconstruct-2026-09-17`), so the row's own falsifier is re-run rather than remembered, and a planted violation beside it in each product so the negative case cannot rot into a story.",
+    "The measured 2026-09-18 Smart Files answer with its timestamp and its forensic, in smart-files scripts/fixtures/g160-measured-2026-09-18.json: UNMEASURED by record, NOT split by content.",
+    "Four refusal behaviours that are now cheap to reuse: two-nulls-never-agree, a commit that must match /^[0-9a-f]{7,40}$/ or resolve to null, a serving revision read by percent=100 rather than by tag or latestReady, and a digest that must be a digest rather than a tag.",
+    "A lane claim for g160-served-commit-parity, taken at 17:11:50.829Z and RELEASED at the end of this close: `lane-claim.mjs check` reports FREE and `_catalog/lane_claims.json` is back to its committed content, so the row is available to the next lane and nothing in this hand-back holds it."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+
+  "referencedMemory": "none passed to this lane; the dispatch carried no scratch context, and none was read from a prior session."
+}

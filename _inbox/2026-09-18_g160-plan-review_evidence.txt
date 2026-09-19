@@ -1,0 +1,83 @@
+﻿# G-160 served-commit parity -- plan-review -- evidence, captured 2026-09-18
+
+===== CASE 1: PASSING (both sides serve the same commit — exit 0) =====
+
+served-commit parity -- plan-review
+  snapshot      plan-review@99c156babe10d83d0840a81a3ccc7c6f5ff94fff read 2026-09-18T17:25:33.598Z
+  API           plan-review (plan-review-505715/us-east1)
+    serving rev plan-review-00029-gom
+    digest      us-east1-docker.pkg.dev/plan-review-505715/cloud-run-source-deploy/plan-review@sha256:3fdfd30f1fd62b9ef433f454c020bcad6cc57b872449abcfce8108e3c4e68f5f
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [fixture:agree]
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    deployment  plan-review-k5wml23xb-empressaioemail-techs-projects.vercel.app
+    created     2026-09-18T01:11:51.368Z
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [fixture:agree]
+    tree        clean at deploy
+  VERDICT       AGREE -- both sides serve 99c156babe10d83d0840a81a3ccc7c6f5ff94fff
+
+===== CASE 2: FAILING against the RECORDED 2026-09-17 state (exit 1) =====
+
+served-commit parity -- plan-review
+  snapshot      plan-review (recorded 2026-09-17 state, reconstructed)@(no git ref) read 2026-09-18T17:25:33.731Z
+  API           plan-review (plan-review-505715/us-east1)
+    serving rev plan-review-00029-gom
+    digest      us-east1-docker.pkg.dev/plan-review-505715/cloud-run-source-deploy/plan-review@sha256:3fdfd30f1fd62b9ef433f454c020bcad6cc57b872449abcfce8108e3c4e68f5f
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [fixture]
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    deployment  a production deployment of plan-review-app created 2026-09-03T03:11:22.887Z
+    created     2026-09-03T03:11:22.887Z
+    commit      1af5ac596d28d5040c56af2545fbe4782f2dac3d
+    tree        clean at deploy
+  VERDICT       DISAGREE -- API serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff (plan-review-00029-gom) but the console serves 1af5ac596d28d5040c56af2545fbe4782f2dac3d
+
+  recorded split window: 8880s (2h28m0s (2026-09-17T22:43:51.130Z, the API revision becoming ready, to 2026-09-18T01:11:51.368Z, the console promotion))
+
+===== CASE 3: PLANTED VIOLATION (console one commit behind — exit 1) =====
+
+served-commit parity -- plan-review
+  snapshot      plan-review@99c156babe10d83d0840a81a3ccc7c6f5ff94fff read 2026-09-18T17:25:33.950Z
+  API           plan-review (plan-review-505715/us-east1)
+    serving rev plan-review-00029-gom
+    digest      us-east1-docker.pkg.dev/plan-review-505715/cloud-run-source-deploy/plan-review@sha256:3fdfd30f1fd62b9ef433f454c020bcad6cc57b872449abcfce8108e3c4e68f5f
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [fixture:planted]
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    deployment  undefined
+    created     2026-09-03T03:11:22.887Z
+    commit      9149595  [fixture:planted]
+    tree        clean at deploy
+  VERDICT       DISAGREE -- API serves 99c156babe10d83d0840a81a3ccc7c6f5ff94fff (plan-review-00029-gom) but the console serves 9149595
+
+===== CASE 4: LIVE, AGAINST PRODUCTION (exit 2) =====
+
+served-commit parity -- plan-review
+  snapshot      plan-review@99c156babe10d83d0840a81a3ccc7c6f5ff94fff read 2026-09-18T17:25:38.880Z
+  API           plan-review (plan-review-505715/us-east1)
+    REFUSED     revision plan-review-00029-gom records no commit: neither the label commit-sha nor the SERVED_COMMIT env var is set. Cloud Run records no git revision of its own and the image is built from an uploaded archive with .git excluded, so the deploy has to record it. REFUSED rather than defaulted.
+  console       plan-review-app (https://plan-review-app-ten.vercel.app)
+    deployment  plan-review-k5wml23xb-empressaioemail-techs-projects.vercel.app
+    created     2026-09-18T01:11:51.368Z
+    commit      99c156babe10d83d0840a81a3ccc7c6f5ff94fff  [meta.gitCommitSha]
+    git ref     HEAD
+    tree        clean at deploy
+    message     G-150: the ratified reasoner path -- registry-derived badges, honest absence, the provenance ladder 
+  VERDICT       REFUSED -- a side could not be read; fail closed
+    - API side: revision plan-review-00029-gom records no commit: neither the label commit-sha nor the SERVED_COMMIT env var is set. Cloud Run records no git revision of its own and the image is built from an uploaded archive with .git excluded, so the deploy has to record it. REFUSED rather than defaulted.
+
+===== CASE 5: SELF-TEST (both directions, fail-closed, non-vacuous) =====
+
+  pass  PRODUCT.repo matches the repo this file is in
+  pass  agreement -> AGREE/0
+  pass  console behind API -> DISAGREE/1
+  pass  split does not read as agree
+  pass  same commits but different strings disagree
+  pass  unreadable API -> REFUSED/2
+  pass  unreadable console -> REFUSED/2
+  pass  both unreadable -> REFUSED/2
+  pass  a null commit never agrees with another null commit
+  pass  the recorded 2026-09-17 shape has the console FIFTEEN DAYS behind at the API advance
+  pass  the recorded 2026-09-17 shape splits for 2h28m
+  pass  the check FAILS against the recorded 2026-09-17 state
+  pass  ...and passes once the console catches up
+  pass  the planted violation FAILS on the exit code, not on narration
+
+all self-tests pass (both directions, fail-closed, non-vacuous)

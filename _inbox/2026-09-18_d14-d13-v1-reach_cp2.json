@@ -1,0 +1,115 @@
+{
+  "lane": "d14-d13-v1-reach",
+  "checkpoint": "CP2",
+  "planRows": ["D-14", "D-13"],
+  "filedAt": "2026-09-18T16:14:00Z",
+  "seat": "cente-vsc-d14d13",
+
+  "whatThisCheckpointIsFor": "OPS-25 D-14's dispatch: 'CP2: D-14 done, with its hash read back.' D-14 is the only row this checkpoint grades. D-13's parcels are graded in the close.",
+
+  "verdict": "D-14 PASS on all five of the row's steps",
+
+  "step1_landTheHealthcheckFixOnMain": {
+    "verdict": "PASS",
+    "pr": 59,
+    "prUrl": "https://github.com/empressaioemail-tech/smartcity-os/pull/59",
+    "mergeCommit": "1f0262f15f8d1898a6c32826ec2e45407518e29e",
+    "mergedAt": "2026-09-18T14:53:06Z",
+    "baseAtMerge": "a400f7beb9b1e875584af9e1d99d1a373840d938",
+    "ciConclusionsReadPerJobAsTheDispatchRequires": [
+      { "job": "Gitleaks — detect secrets in code and history", "conclusion": "pass", "elapsed": "13s", "url": "https://github.com/empressaioemail-tech/smartcity-os/actions/runs/35358815607/job/105644691964" },
+      { "job": "Semgrep — static analysis", "conclusion": "pass", "elapsed": "1m12s", "url": "https://github.com/empressaioemail-tech/smartcity-os/actions/runs/35358815695/job/105644692103" },
+      { "job": "Trivy — dependency vulnerability scan", "conclusion": "pass", "elapsed": "28s", "url": "https://github.com/empressaioemail-tech/smartcity-os/actions/runs/35358815794/job/105644692706" }
+    ],
+    "noteOnWhyPerJobMatters": "read per job against the current base rather than as one roll-up string, per the dispatch; all three jobs are scanner checks, so the fix was gated by supply-chain and secret scanning and by nothing that would have caught a wrong healthcheck",
+    "whatTheFixIs": "Dockerfile.api's HEALTHCHECK called `curl`, which node:22-slim does not ship, so the probe failed on every attempt and DigitalOcean reported a correctly-working service as unhealthy. The fix replaces it with node's global fetch and raises start-period 40s -> 120s.",
+    "contradictionChecked": "the dispatcher's own premise that the fix was 'on the pin branch and not on main' was re-measured at CP1 rather than taken on report: origin/main lacked exactly one file against the pin, Dockerfile.api."
+  },
+
+  "step2_proveMainOnANonProductionApp": {
+    "verdict": "PASS",
+    "app": "d14-main-proof",
+    "appId": "865840f0-b1ce-410f-80b4-5ce92a5d5cf3",
+    "url": "https://d14-main-proof-cznkb.ondigitalocean.app",
+    "repo": "empressaioemail-tech/smartcity-os",
+    "branch": "main",
+    "dockerfilePath": "/Dockerfile.api",
+    "envCount": 39,
+    "runningCommitReadBack": "1f0262f15f8d1898a6c32826ec2e45407518e29e",
+    "equalsMainTip": true,
+    "whatTheProofEstablished": [
+      "main BUILDS: the app reached ACTIVE having built the API image from main's own Dockerfile.api",
+      "main STARTS: /api/health answers 200 with db:connected, so the process comes up against a real database",
+      "main SERVES: the platform routes answer, and all nine comparable feeds return the same records it returns in production (measured in the close's per-feed matrix)"
+    ],
+    "whatTheProofWasShapedLikeAndWhy": {
+      "envsWereBuiltFromGcpSecretManager": "P:/seat-worktrees/d14-d13-v1-reach/_build-proof-spec.mjs read the smartcity-os-prod secret values and composed the spec, so the proof app's environment matches production's rather than a convenient subset. A first attempt with a placeholder environment failed on VFD_JWT_SECRET, which is the failure mode this avoids.",
+      "whyThatMatters": "a proof app with a thin environment would have 'proved' a build while proving nothing about the startup path, and the row's step 2 exists specifically because main also carries the D-10 scraper commit, which touches only scraper files, so whether the API image is unaffected is a question to establish and not to assume"
+    },
+    "removalCarried": "the app was removed by this lane after its commit was read back; the removal and its timestamp are recorded in the close. The spec is reproducible from _build-proof-spec.mjs, so the removal costs re-verifiability nothing but a script run."
+  },
+
+  "step3_repointWalrusAppAtMain": {
+    "verdict": "PASS — read back byte for byte",
+    "app": "walrus-app",
+    "appId": "2a2a3a1a-b441-4296-8628-a82b20ded1b2",
+    "serves": ["smartcityos.io", "www.smartcityos.io"],
+    "branchBefore": "d9-api-8bea7fa",
+    "branchAfter": "main",
+    "commitBefore": "e783f3510d8f582894c4317e511650af327ea0a1",
+    "commitAfter": "1f0262f15f8d1898a6c32826ec2e45407518e29e",
+    "mainTipAtReadBack": "1f0262f15f8d1898a6c32826ec2e45407518e29e",
+    "byteForByteComparison": "equal",
+    "readFromWhere": "the ACTIVE deployment object's services[0].source_commit_hash, read through the DigitalOcean API (apps/{id}/deployments, phase ACTIVE), not from the spec's declared branch",
+    "whyThatDistinctionIsThePoint": "the spec's branch is an intention; source_commit_hash is what the container is running. Rule 13 exists because these two disagreed once and the deploy still reported SUCCESS.",
+    "intermediateDeploymentsObserved": "e243db0a-b5ed-4f4c-bb8c-74261ab97b2d (ACTIVE, 1f0262f1); before it e32caf51 (SUPERSEDED, e783f351) — so the read-back names a real transition from the pin to main and not a steady state that happened to match"
+  },
+
+  "step4_externalPayloadComparison": {
+    "verdict": "PASS — 0 unexplained changes on both public hostnames",
+    "vantage": "GCP Cloud Build, project smartcity-os-prod (OPS-25 rule 10); credential sent: none. Rule 11 applies: payload compared by normalized SHA-256, framing ignored.",
+    "preRepoint": { "artifact": "_probe/pre-repoint-probe.txt", "ranAt": "2026-09-18T15:35:31.267Z", "walrusAppWasOn": "the pin branch" },
+    "postRepoint": { "artifact": "_probe/post-repoint-probe.txt", "ranAt": "2026-09-18T15:42:29.073Z", "walrusAppWasOn": "main" },
+    "publicApex_smartcityos_io": { "identical": 16, "changedByDesign": 4, "unexplained": 0, "of": 20 },
+    "publicWww_www_smartcityos_io": { "identical": 16, "changedByDesign": 4, "unexplained": 0, "of": 20 },
+    "theFourChangedByDesign": {
+      "paths": ["opengov/budgets", "opengov/chart-of-accounts", "opengov/budgets/1/amounts-summary", "finance/permit-revenue/summary"],
+      "movement": "3562B 200-SPA-shell route-absent (before) -> 38B 401-JSON route-exists (after)",
+      "whyThisIsTheRepointWorkingAndNotARegression": "these are G-159's four platform finance routes. On the pin they did not exist, so the request fell through to the SPA shell. On main they exist and refuse a keyless caller. A change from 'no such route' to 'route exists, refuses you' is exactly what the repoint was for."
+    },
+    "theIdenticalSixteenInclude": "the health endpoint, the SPA shell, an unknown /api/platform/* path as a negative control, all five MyGov routes, Samsara, Spireon, FirstDue, Power BI, GoTo and both property-intel routes — each unchanged in status, body kind and byte count",
+    "unexplainedChangeRule": "any path whose payload moved for a reason not on the G-159 list would have been printed as UNEXPLAINED and would have stopped this checkpoint; the count is 0"
+  },
+
+  "g159RoutesPresentFromOutsideWithoutAKey": {
+    "verdict": "PASS — the recorded tell reproduces exactly",
+    "tell": "a route that exists answers 401 JSON; an unknown /api/platform/* path answers the SPA shell with 200",
+    "routesThatExist_answerAt401Json": {
+      "opengov/budgets": { "http": 401, "clientError": "platform_internal_required", "bytes": 38, "contentType": "application/json" },
+      "opengov/chart-of-accounts": { "http": 401, "clientError": "platform_internal_required", "bytes": 38, "contentType": "application/json" },
+      "opengov/budgets/1/amounts-summary": { "http": 401, "clientError": "platform_internal_required", "bytes": 38, "contentType": "application/json" },
+      "finance/permit-revenue/summary": { "http": 401, "clientError": "platform_internal_required", "bytes": 38, "contentType": "application/json" }
+    },
+    "unknownPathControl": { "path": "/api/platform/no-such-route-control", "http": 200, "bodyKind": "html", "bytes": 3562, "reading": "the SPA shell, i.e. the route does not exist — which is what makes the four 401s mean 'exists and refuses' rather than 'everything 401s'" },
+    "measuredOn": ["https://smartcityos.io", "https://www.smartcityos.io"],
+    "artifact": "_inbox/20260918_160953_d14_d13_surface_probe.json"
+  },
+
+  "step5_controlsHeld": {
+    "deployOnPushDisabled": {
+      "verdict": "PASS",
+      "measured": "services[0].github.deploy_on_push is absent (null) on walrus-app, d14-main-proof, d12-main-uat and dolphin-app",
+      "consequence": "a merge to main ships nothing; every ship in this lane is a deliberate act with source_commit_hash read back"
+    },
+    "gcpSmartcityApiUntouched": {
+      "verdict": "PASS",
+      "howItIsEstablished": "by the absence of any write: no mutation was issued to any GCP resource by this lane, and the host's only role here was as the comparison target in the per-feed probe. It still answers its own named 503 refusals and still serves G-159's routes as absent, which is the pre-repoint state it is kept for (rule 3).",
+      "whyTheAbsenceOfAWriteIsTheRightInstrument": "rule 3 asks that the rollback copy not be modified, so the measurement that matters is that it was not, and no positive state of a never-written resource can show that better than the absence of the write"
+    }
+  },
+
+  "leaveBehind": [
+    "None. The one thing this lane created, the d14-main-proof DigitalOcean app, was removed after its commit was read back, so nothing is left running. The three apps this lane mutated (walrus-app, d12-main-uat) are the row's own subjects, not residue."
+  ],
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

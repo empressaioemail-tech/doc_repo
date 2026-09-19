@@ -1,0 +1,56 @@
+{
+  "lane": "d14-d13-v1-reach",
+  "checkpoint": "CP1",
+  "planRows": ["D-14", "D-13"],
+  "filedAt": "2026-09-18T16:12:00Z",
+  "seat": "cente-vsc-d14d13",
+
+  "whatThisCheckpointIsFor": "OPS-25 D-14's dispatch: 'CP1: the D-14 drift between main and the pin, measured before any change.' This is a before-state, not a result. Its job is to make the drift a number rather than a claim, and to state the rollback before production is touched at all.",
+
+  "drift_main_versus_pin": {
+    "measuredFrom": "smartcity-os worktree P:/smartcity-os-worktrees/d14-d13-v1-reach, reading the REMOTE refs (origin/main, origin/d9-api-8bea7fa) rather than the local branch, so a stale checkout cannot produce a flattering number",
+    "productionSourceBranch": "d9-api-8bea7fa",
+    "whatProductionActuallyRan": {
+      "app": "walrus-app",
+      "serves": ["smartcityos.io", "www.smartcityos.io"],
+      "branch": "d9-api-8bea7fa",
+      "commit": "e783f3510d8f582894c4317e511650af327ea0a1"
+    },
+    "mainBeforeAnyChange": {
+      "commit": "8bea7fa591134fc24154630fa869081f4ddf003d",
+      "subject": "fix(platform): resolve property-intel/summary tenant via getBastropTenantId, not a bare literal (G-131) (#56)"
+    },
+    "commitCounts_mainAhead_pinAhead": [0, 1],
+    "readingOfThoseCounts": "main is ZERO commits ahead of the pin and ONE behind it. So the pin is the strictly newer branch for the tree that gets built, and every commit merged to main after this measurement reaches no production surface at all.",
+    "theSingleCommitMainLacked": {
+      "commit": "e783f3510d8f582894c4317e511650af327ea0a1",
+      "subject": "the D-9 HEALTHCHECK fix: node:22-slim ships no curl, so the old probe failed on every attempt and reported a correctly-working service as unhealthy",
+      "filesChangedMainVsPin": ["M\tDockerfile.api"],
+      "whyOnlyOneFile": "re-measured at CP2: `git diff --name-status origin/main origin/d9-api-8bea7fa` is exactly one line, so the entire drift between the two branches is the Dockerfile.api healthcheck"
+    },
+    "whatMainCarriedThatProductionCouldNotReach": {
+      "measuredBy": "`git diff --stat origin/d9-api-8bea7fa origin/main` at CP2",
+      "files": [
+        "Dockerfile.scraper", "server/routes.ts", "server/routes/mygov.ts",
+        "server/routes/platform-finance.ts", "server/scraper-worker.ts",
+        "server/services/opengov-bnp.ts", "tests/api/platform-finance.test.ts"
+      ],
+      "totals": "7 files changed, 796 insertions(+), 5 deletions(-)",
+      "namedConsequence": "this is where G-159's four platform finance routes live (server/routes/platform-finance.ts, merged to main as a400f7be). They were live on main and reachable by nothing, because walrus-app built from the pin. That is the whole reason D-14 exists, and it is why G-159's last step waits on this lane."
+    },
+    "instrumentAndItsLimits": {
+      "instrument": "git plumbing on remote refs: rev-parse, rev-list --left-right --count, diff --name-status, diff --stat",
+      "limitationStated": "this measures the branches, not the running containers. The running container's own commit is read back from the DigitalOcean deployment object instead, at CP2, because a branch measurement cannot see an app pinned to a commit that no branch points at any more."
+    }
+  },
+
+  "rollbackStatedBeforeTouchingProduction": {
+    "requiredBy": "dispatch, 'Before step 3, state the rollback'",
+    "statement": "repoint walrus-app's services[0].github.branch back to `d9-api-8bea7fa`, redeploy, and read services[0].source_commit_hash back from the ACTIVE deployment object and compare it byte for byte to e783f3510d8f582894c4317e511650af327ea0a1",
+    "whyReadBackAndNotJustRedeploy": "OPS-25 rule 13 exists because a DigitalOcean deploy once reported SUCCESS while running a commit from before the change; on these apps a merge deploys nothing at all because deploy-on-push is disabled. A redeploy that is not read back is not a rollback",
+    "measuredAtRollbackTime": "walrus-app's prior ACTIVE deployment e32caf51-bbb3-4456-8b44-c0159bc1ec5b ran e783f3510d8f582894c4317e511650af327ea0a1, read from the deployments list; so the rollback target is the commit production was genuinely on, not a branch tip assumed to mean the same thing"
+  },
+
+  "leaveBehind": ["None from CP1. CP1 changes nothing; it is a measurement."],
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}
