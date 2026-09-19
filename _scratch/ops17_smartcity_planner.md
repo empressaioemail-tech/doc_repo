@@ -912,3 +912,36 @@ Filing four `_inbox/` artifacts pulled in seven further citations, because those
 
 - **The residual 24: 1 held by `probe-close-gate` as the P-153 R-4 defect, 1 an unchecked checklist line whose `_research/` copy is also untracked, 22 with no copy in 105 worktrees.**
 - **Three classifier gaps named on G-170 and NOT widened**: `completionPredicate` (forward-looking by construction), `DELETED at close` (a recorded absence), and an UNCHECKED `[ ]` line recording a drop never performed. Each needs a written reject case before it is trusted.
+
+---
+
+## 2026-09-19 - G-168 ruled by reading the deployed region (A-187), commit 29a2629d
+
+### GROUND-TRUTH (2026-09-19, HEAD 29a2629d)
+
+- **The closing-path pin is at 21**, at pin commit `29a2629d`, over 15,881 graded concrete citations, 3,097 exempted as forward-looking, 501 named-without-asserting, 10 resident in a seat worktree (diagnostic). Read by `node scripts/enforcement/close-artifact-gate.mjs --census`. The earlier 24 in this file is superseded: `completionPredicate` and `DELETED at close` were graded non-asserting in `dce2fd88`, 24 -> 21.
+- **`SMARTCITY_V1_PLATFORM_BASE` on `dolphin-app` is `https://walrus-app-kzog6.ondigitalocean.app` and it WORKS.** Four feeds reached the platform through it in the deployed app's own composition. `dolphin-app` active deployment `ba9acf62-6662-408b-8c78-5615415b06d7`, commit `ea27024`, ACTIVE since 2026-09-18T22:37:49Z.
+- **The DO default hostname is unreachable from THIS SEAT ONLY.** `walrus-app-kzog6.ondigitalocean.app` -> `ECONNRESET` 5/5 (Node) and 3/3 (curl, incl. browser UA); `www.smartcityos.io`, which CNAMEs TO that hostname, -> `200` 3/3; `smartcityos.io` -> `200` 5/5; `example.com` -> `200`. DO masks the auto-generated ingress for external clients.
+- **The deployed blocked region, read 4x at `2026-09-19T15:1xZ`:** `fire-apparatus` = `unavailable` + the FirstDue scope sentence; `call-analytics` = `unavailable` + `goto_not_authorized`; `cip-projects` = `ok` n=14; `fleet-vehicles` = `refused` n=0 of 75 Samsara records. Identical on all 4 passes.
+- **The platform routes read directly (`smartcityos.io` + the platform-internal bearer):** `firstdue/apparatus` -> `424` `x-orig-status: 503`; `goto/call-summary` -> `424` `x-orig-status: 503`; `powerbi/cip-projects` -> `200` 231ms. G-163's edge re-issue confirmed from outside.
+- **`fleet-vehicles` refuses 100% of real Samsara records.** Carded as G-172. The guard requires the product's invented `VEHICLE_STATUS_VALUES` while `vendor-live.mjs`'s own header says real vendor status is kept as-is and NOT force-mapped. Known to G-153 defect 1, never carded as a fix.
+- **`dolphin-app` keeps NO request-time log.** Its RUN log holds two startup banners from 2026-09-18T22:37 and nothing else, so a server-composed region has no server-side record. This, not the base, is why G-168 sat open.
+
+### LESSON
+
+- **A seat's own reachability is not a property of the product.** `ECONNRESET` on the default hostname was recorded accurately and attributed one level too high. An external mask on an ingress the app uses internally is indistinguishable from a broken base from the only vantage the fleet had.
+- **Read the deployed app's own composition instead of probing the network it composes over.** The region is server-composed and readable with any tenant identity; `GET https://app.smartcityos.io/api/domains/<domain>?cityKey=bastrop_tx` with the G-135 lane-verification key returns its own `status` and `basis`. Cheaper than a network probe and answers a strictly better question.
+- **A single reading of a timeout is not a defect.** `cip-projects` timed out once (dashboards' own 15s `AbortSignal`) and returned `ok` n=14 on 4/4 later passes, 38 minutes after a `walrus-app` update. Repeat before believing, and record a transient WITH its timestamp rather than carding it.
+- **`assets-list`/`apps-get-info` `domains` lists CUSTOM domains only.** Concluding from its absence that the default ingress is unbound is wrong; a CNAME target that is not in that array proves nothing.
+- **`curl --resolve` is confounded behind Cloudflare.** Pinning an IP while the SNI names a host the cert does not cover makes Cloudflare reset every leg, including a control that works normally. It returned a plausible-looking result that meant nothing.
+
+### DEAD-END
+
+- **The DO live-log URL is a single-use token and the stream carries no request lines anyway.** First fetch returns the startup banners; every later fetch returns `400 token expired`. This reproduces the `HTTP 400` A-179 recorded. Read the region, not the log.
+
+### OPEN
+
+- **The residual 21** (pin at `29a2629d`): 1 held by `probe-close-gate` as the P-153 R-4 defect, 1 an unchecked `[ ]` checklist line whose `_research/` copy is untracked, an M2 pointer in another seat's `_state/property/STATE.md`, and the rest with no copy anywhere in the estate.
+- **One unchecked-`[ ]` classifier gap remains named on G-170**, not widened.
+- **G-171 (base repoint) is CONDITIONAL on G-166**, because changing a `dolphin-app` env var redeploys from `main` and `main` is red.
+- **PRE-EXISTING TABLE DEFECT, not mine, not fixed:** `OPS-17` A-083 (line ~377) has 6 cells against a 5-cell header because an unescaped `|` sits inside a code span in the prose (`"|"` quoted as content). Detected by `P:/tmp/table-cells.mjs`; it is the only genuine mismatch in 313 rows. Left alone because rewriting another author's amendment row to satisfy a counter is not this seat's act; the fix is escaping that one pipe.
