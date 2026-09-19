@@ -631,3 +631,26 @@ The milestone table's column is "Done" and its set includes `closed-partial`. A 
 - G-153's last clause is a planner-owned deploy of a build carrying `ee9c5d5` to `dolphin-app`, deliberately deferred until `g158` lands because `g158` will move `main` again.
 - The gate's ONE remaining R3, `smartcity-flood-study`, is now repairable honestly because G-165 merged. That repair is what closes G-146 and G-148 together.
 - G-158's clause 3 (the MCP leg) is HELD and still needs its own card, or it quietly becomes nothing.
+
+---
+
+## 2026-09-19 (UTC) - the tracker confirmed the regrades, the M5 counter contradicts its own gate, and how a hook fails open
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- 2026-09-19T03:1xZ, doc_repo main `deab3b87`: `node scripts/govtech/smartcity-tracker.mjs` -> 119 OPS-17 rows, 35 OPS-25 rows, closes for **379** rows (was 376 before the three stranded closes were filed), tracking 35 rows at `deab3b87`. **PASS every tracked row agrees with its own close.** M1 2/6, M2 4/6, M3 7/10, M4 7/7, M5 6/6. The G-161 -> CLOSED, D-14 -> CLOSED and D-13 -> CLOSED-PARTIAL regrades hold.
+- 2026-09-19T03:13:32Z: `plan-review` PR #19 MERGED, main now `4d3da579` (was `4d3da57`.. read back by `git ls-remote`). 03:13:35Z: `smart-files` PR #18 MERGED, main now `5073f7ff`. Both were CLEAN/MERGEABLE with green checks before the merge. **Both product mains moved, so any open lane branch on either repo now needs a rebase.**
+- 2026-09-19T02:34Z: `design-completion-gate.mjs` exits **1**, one R3, `smartcity-flood-study`, RATIFIED with `check.mjs` exiting 1 on the boards as shipped. 15 nav surfaces (13 designed, 2 excluded, 0 uncovered), 20 design folders, 18 instrumented, 17 passing.
+- The R3's single failing predicate, read at source: `_design/smartcity-flood-study/check.mjs:270` refuses the board's basis line at `Main.dc.html:116` ("naming these by return period would need a local rainfall atlas nobody has cited yet") because the engine carries `rainfallSource` `noaa-atlas14/parameter/default` and cites NOAA Atlas 14 seven times. The claim is STALE, not the instrument. G-165's merged parser is what makes repairing it honest; G-164's close held it open for exactly that reason. Four write sites, one of which regenerates the others: `gen.mjs:280` emits `Main.dc.html:116`; plus `README.md:59-63` and `canvas.json`.
+
+### LESSON - a hook that reads real stdin fails OPEN when you test it wrong, and it looks like a pass
+
+I verified the new G-164 dispatch by feeding it to `.claude/hooks/dispatch-template-gate.ps1`. My first harness piped the payload inside a PowerShell `-Command` script (`$raw | & '<hook>'`). That routes the string to `$input` and leaves `[Console]::In` empty, the hook hits its `IsNullOrWhiteSpace($raw)` guard and exits 0, and **all four cases passed, including three planted violations I had written specifically to be blocked.** I nearly reported the gate as working. The fix is to spawn the hook as a child process and write the payload to its own stdin (`execFileSync("powershell", ["-NoProfile","-File", HOOK], { input: payload })`). With that, the real dispatch passes and all three controls BLOCK with exit 2. **The tell was that the negative controls passed.** A check whose violation fixtures also pass has not been observed working; this is `ENFORCEMENT.md`'s "a convenient result is a reason to distrust the instrument" caught in the act rather than in retrospect.
+
+### OPEN
+
+- **G-160's deploy is owed and is the only thing that closes it.** Both PRs are merged; a merge moves nothing because its predicate is `SERVED_COMMIT` on a live surface. `scripts/deploy.mjs` exists in both repos (G-160 parcel 2): it refuses a DIRTY tree, resolves `COMMIT` from `git rev-parse HEAD`, deploys the API to Cloud Run with `SERVED_COMMIT` as both env var and commit-sha label, deploys the console to Vercel from the same tree, then runs the parity gate on a bounded poll. **No `--skip-gate`, no `--force`, by design.** Needs a clean `main` checkout of each repo; not run tonight because both checkouts are other seats' and I did not verify cleanliness, and starting a two-product production deploy with no context left to read the result back is the failure shape.
+- **M5 reads 6/6 "Design complete, and the controls that keep it honest" while the control named in that milestone exits 1.** The tracker's own rows show why: M5 counts G-146 and G-164 as `closed, partly`, and `DONE = {closed, closed-partial}`. G-149 stays `open`. The milestone's name is contradicted by its own control, with numbers. G-164's flood-basis dispatch is what makes them agree rather than a rename hiding it.
+- `_dispatches/2026-09-19_g164-flood-basis_dispatch.md` is COMPILED and gate-verified, ready to hand-carry. Row G-164, lane `g164-flood-basis`, FAN-DEPTH 0, holds no dashboards slot so it fires alongside `g158` instead of queuing behind it.
+- Wave ordering after `g158`: G-151 Parks lens, the `EDGE-REPLACES-5XX` remedy, and the `ee9c5d5` dolphin-app ship all queue behind the single dashboards slot.
+- D-13's end-to-end `bastrop_tx` leg is still blocked on the minted verification key (g135-mint, substrate seat) and the GCP bake window.
