@@ -851,3 +851,35 @@ Injected the exact event the control exists to catch (one more dangling citation
 - **The remaining 82 dangling citations are pinned by PATH in `scripts/enforcement/close-artifact-census-baseline.json`, not as prose.** Each needs the citation repointed or the artifact regenerated, and the pin may only move DOWN. The pin is the record; do not card a prose row for it.
 - **The 2 that live only in a seat worktree are not resolved by this change.** `close-artifact-gate --census` prints them under `STRANDED` with the worktree that holds them. The 10 previously reported included in-flight lanes (p368, p371), which is the normal state of a busy fleet and is why that count is DIAGNOSTIC and not a gate condition.
 - **The named bypasses are unchanged and must be stated when this is reported as coverage**: `--no-verify`, a fast-forward merge, a citation written into an unstaged file, `core.hooksPath` changed, and a clone that has not run `--install`. It reads whether the path resolves; it does not read the inner content of a close.
+
+### LESSON - a control's own bookkeeping is an instance of the thing it counts, and a pin that cannot name a defect cannot record debt
+
+The gate REFUSED ITS OWN FIRST COMMIT, and that refusal was worth more than the passing test. Two causes, both structural rather than accidental. **(1)** The pin file lists the 84 pinned dangling targets by path, so the gate read the pin as 84 fresh violations. **(2)** The gate's own self-test carries synthetic fixture paths under `_inbox/`, so it read its own fixtures as citations. **Neither is a hedge to be removed: a pin that may not name a broken path can never record debt, and a self-test whose fixtures must exist cannot be run before the code it tests.** Fixed with an explicit second exemption class, `RECORD_OF_DEFECT_CITER`, covering the pin, `.github/enforcement-baseline.json` and the gate's own source, with a self-test asserting the exemption does NOT leak to the rest of `scripts/`. **Generalisation: when a control records the defect it detects, the record is indistinguishable from an instance, and the exclusion must be explicit and named.** The same refusal also produced eight REAL violations, closes being committed without their `cp1`/`cp2` siblings.
+
+### LESSON - a first run that refuses something is the discovery mechanism; do not treat a green first run as the goal
+
+107 dangling citations became 84 in commit `aadab5e3` because the gate's first use forced the question of what the commit actually brought with it. **23 of the 84 were artifacts sitting on disk in `main` and merely uncommitted**, which is the same defect one step later than the report had claimed for three waves, and 6 more came in as the transitive closure of what those cited. Staging was done as a fixpoint over the closure rather than by transcribing a list, because a transcription is a copy of the thing it is supposed to check.
+
+### LESSON - I cited a `P:/tmp` script from tracked canon, which is the exact rule I had just enforced
+
+`.github/enforcement-baseline.json` carried `violationVerified` text citing `P:/tmp/falsify-census-pin.mjs`. **The rule that anything cited by tracked canon must itself be tracked applied to my own evidence**, so the falsifier moved in-tree as `close-artifact-gate.mjs --falsify-pin`, with the injection restored in a `finally` so a crash cannot corrupt the pin. **Check your own citations against the rule you are enforcing before you report the rule as enforced.**
+
+### LESSON - PowerShell `Set-Content -Encoding utf8` writes a BOM, and a BOM before a shebang breaks the script
+
+Rewriting a source file by regex through PowerShell inserted `EF BB BF` ahead of `#!/usr/bin/env node`. Caught by reading the first four bytes, not by the script failing locally, because Node tolerates the BOM. **Edit source with real edit tools; if you must rewrite a file through a shell, verify the leading bytes afterwards.**
+
+### LESSON - my own verification script carried stale hardcoded expectations, and it failed in the honest direction
+
+The falsifier asserted the literal counts `107` and `106 -> 107`. After the pin tightened to 84 it reported FAIL, which was the SCRIPT being stale and not the control being broken. **Read the failure before acting on it: a verification harness that hardcodes the value it is verifying will eventually report a regression that is its own.** Both are now derived from the pin at runtime.
+
+### GROUND-TRUTH (2026-09-19, HEAD 7eb4656d)
+
+- **The closing-path gate is ARMED at two points and PASSES the CI ratchet as `close-artifact-census`, tier BLOCKING, baselineExit 0.** The git hook arm covers `pre-commit` and `pre-merge-commit` in every linked worktree through `core.hooksPath`.
+- **Census at `aadab5e3`: 15,113 graded concrete citations, 84 dangling, 2,425 target citations exempted as non-asserting.** Down from 107 by recovering 29 artifacts; the pin was tightened 107 to 84 in the commit after the one that moved it, because the census reads HEAD and the post-commit count is not knowable before the commit exists.
+- **The five CI regressions are unchanged and remain NOT mine**: `c-00-vehicle-sync`, `canon-divergence`, `memory-promotion-gate` (untriaged LESSON backlog 124 against a pin of 49), `row-declaration` (OPS-16 A-023 negative case for P-63), `cursor-gate-adapter`. All five verified failing in a detached worktree at clean HEAD, which is the only way to separate "I broke it" from "it was already broken".
+
+### OPEN
+
+- **The remaining 84 dangling citations need the citation repointed or the artifact regenerated**, and they are enumerated by path in the pin rather than as prose. The pin may only move down.
+- **The 5 pre-existing CI regressions are somebody's debt and are now visibly somebody's debt.** They are not SmartCity rows and this seat did not card them; they will keep the ratchet red until whoever owns each one either fixes it or pins it with a justified `knownScopeLimit`.
+- **This gate does not read the inner content of a close**, only whether the path resolves. A close that exists but is wrong is a different control's problem.
