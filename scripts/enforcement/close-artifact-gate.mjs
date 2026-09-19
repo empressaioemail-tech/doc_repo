@@ -52,7 +52,7 @@
  * Proved by violation: --self-test stages a citation to a missing artifact and asserts the real
  * pre-commit hook refuses the commit, then stages the artifact alongside and asserts it passes.
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { join, resolve, dirname, isAbsolute } from "node:path";
 import { tmpdir } from "node:os";
@@ -474,6 +474,52 @@ function check() {
   console.log(`OK: dangling citations ${actual}, at the pinned ${pin.dangling} (${pin.snapshot ?? "unstated"}).`);
 }
 
+/**
+ * Prove the pin can FAIL, in-tree, so the claim in `.github/enforcement-baseline.json` is reproducible
+ * by anyone with a clone rather than resting on a script that lived in `P:/tmp` and is gone.
+ *
+ * Injects the exact event the control exists to catch: one more dangling citation, expressed by
+ * lowering the pin by one and shortening its target list. Restores in a `finally`, so a crash cannot
+ * leave the pin corrupted.
+ */
+function falsifyPin() {
+  const original = readFileSync(PIN_PATH, "utf8");
+  const pin = JSON.parse(original);
+  if (typeof pin.dangling !== "number" || !Array.isArray(pin.targets) || pin.targets.length !== pin.dangling) {
+    throw new Error(`REFUSING: the pin declares dangling=${pin.dangling} but ${pin.targets?.length} targets; it cannot be falsified as written.`);
+  }
+  const runSelf = () => spawnSync(process.execPath, [fileURLToPath(import.meta.url), "--check"], { cwd: HOME_REPO, encoding: "utf8" });
+
+  let failures = 0;
+  const check = (name, ok, detail = "") => { console.log(`  ${ok ? "ok  " : "FAIL"} ${name}${detail ? `  ${detail}` : ""}`); if (!ok) failures++; };
+
+  const before = runSelf();
+  check("BASELINE: the control passes at its own pin", before.status === 0, `exit=${before.status}`);
+  check("  and it states the count, not just OK", new RegExp(String(pin.dangling)).test(before.stdout ?? ""));
+
+  const dropped = pin.targets[pin.targets.length - 1];
+  let during;
+  try {
+    writeFileSync(PIN_PATH, JSON.stringify({ ...pin, dangling: pin.dangling - 1, targets: pin.targets.slice(0, -1), snapshot: `${pin.snapshot} [FALSIFICATION INJECTION - restored byte-identical]` }, null, 2) + "\n", "utf8");
+    during = runSelf();
+  } finally {
+    writeFileSync(PIN_PATH, original, "utf8");
+  }
+
+  check("VIOLATION: the control FAILS when tracked canon gains one dangling citation", during.status === 2, `exit=${during.status}`);
+  check("  the failure names it a regression with both counts", new RegExp(`${pin.dangling - 1} -> ${pin.dangling}`).test(during.stderr ?? ""));
+  check("  the failure names the fresh citation, not just a number", (during.stderr ?? "").includes(dropped));
+  check("  the failure says not to raise the pin", /Do not raise the pin/.test(during.stderr ?? ""));
+
+  const after = runSelf();
+  check("RESTORE: byte-identical restore returns the control to passing", after.status === 0, `exit=${after.status}`);
+  check("  the pin is byte-identical to the original", readFileSync(PIN_PATH, "utf8") === original);
+
+  console.log(failures ? `\nPIN FALSIFICATION FAILED (${failures})` : "\nPIN FALSIFICATION OK: the pin fires on a new dangling citation and passes again after a byte-identical restore");
+  if (!failures) console.log(`injected violation was: ${dropped}`);
+  process.exit(failures ? 1 : 0);
+}
+
 function selfTest() {
   let failures = 0;
   const check = (name, ok, detail = "") => { console.log(`  ${ok ? "ok  " : "FAIL"} ${name}${detail ? `  ${detail}` : ""}`); if (!ok) failures++; };
@@ -612,10 +658,11 @@ function selfTest() {
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   const arg = process.argv[2];
   if (arg === "--self-test") selfTest();
+  else if (arg === "--falsify-pin") falsifyPin();
   else if (arg === "--census") { const p = census(false); process.exit(p.dangling.length ? 2 : 0); }
   else if (arg === "--json") census(true);
   // No argument is the CI contract: `ci-baseline.mjs` spawns each control with no arguments and
   // grades its exit code, so the default must be the ratchet check, not a usage error.
   else if (arg === undefined || arg === "" || arg === "--check") check();
-  else { console.error("usage: close-artifact-gate.mjs [--check] | --self-test | --census | --json"); process.exit(2); }
+  else { console.error("usage: close-artifact-gate.mjs [--check] | --self-test | --falsify-pin | --census | --json"); process.exit(2); }
 }
