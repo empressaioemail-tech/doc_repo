@@ -945,3 +945,35 @@ Filing four `_inbox/` artifacts pulled in seven further citations, because those
 - **One unchecked-`[ ]` classifier gap remains named on G-170**, not widened.
 - **G-171 (base repoint) is CONDITIONAL on G-166**, because changing a `dolphin-app` env var redeploys from `main` and `main` is red.
 - **PRE-EXISTING TABLE DEFECT, not mine, not fixed:** `OPS-17` A-083 (line ~377) has 6 cells against a 5-cell header because an unescaped `|` sits inside a code span in the prose (`"|"` quoted as content). Detected by `P:/tmp/table-cells.mjs`; it is the only genuine mismatch in 313 rows. Left alone because rewriting another author's amendment row to satisfy a counter is not this seat's act; the fix is escaping that one pipe.
+
+---
+
+## 2026-09-19 ~15:50Z — the regroup pass at doc_repo `938246c1`
+
+### GROUND-TRUTH (all read at source in this pass)
+
+- **doc_repo HEAD `938246c1`**, pushed. Tracker regenerated: **39 tracked rows, 31 graded**, M1 3/7, M2 4/6, M3 10/11, M4 7/7, M5 7/8, PASS (every row agrees with its own close).
+- **G-166 CLOSED.** `smartcity-dashboards` `origin/main` `e99e564` = PR #79, carrying `7225df0`. CI **success** 2026-09-19T12:30:06Z (8m50s) after three consecutive failures. The FIXTURE was not moved; the CLOCK was pinned.
+- **G-151 CLOSED-PARTIAL, close STRANDED and filed.** Nine artifacts + `_inbox/2026-09-19_125225_surface_probe.json` in `P:/seat-worktrees/g151-parks-lens/doc_repo/_inbox`, no lane claim in the registry. Filed with sha256 verified on read-back. PR #80 UNMERGED ON PURPOSE; `/lens/parks` 404 on both apps (both serve `ea27024f` / `7487d7c`, `deploy_on_push` absent from `services[0].github` on both).
+- **G-160 CLOSED on a LIVE DEPLOY**, not on a close: `served-commit-parity.mjs --served` exits 0 for both products.
+- **DESIGN GATE GREEN: `FINISHED`, 18/18, exit 0** at 2026-09-19T15:42:45Z against nav `e99e5646`.
+- **THE REDEPLOY IS THE HIGHEST-VALUE ACT:** one manual redeploy of `dolphin-app` from green `main` carries PR #77/#78/#79 and fires **G-152, G-153 and G-172**. `git merge-base --is-ancestor 03e11b0b ea27024` = NO, so the deployed commit predates PR #77; `main` carries +234 lines in `src/adapters.mjs` and +122 in `src/vendor-live.mjs`.
+- **g149-flood-study compiled and gated.** Design + instrument DELIVERED (`_design/smartcity-flood-study/`, `check.mjs` exit 0, 45 self-tests, 10 non-zero counters; `violate.mjs` 30 plants).
+
+### LESSON
+
+- **`dispatch-template-gate.ps1` reads a JSON hook payload from STDIN and FAILS OPEN on empty input.** Invoking it as `-FilePath <f>` does NOT exercise the gate: it exits 0 on every input including a marker-less dispatch inside `_dispatches/`. **I nearly reported g149 as gate-verified on a reading where the gate never ran.** The payload shape is `{"tool_name":"Write","tool_input":{"file_path":"...","contents":"..."}}`. Verify by driving it with that payload, and assert BOTH directions: real allows, markers stripped blocks (exit 2), short text allows. Instrument: `P:/tmp/gate-probe.mjs`.
+- **Generalized: a control invoked with a flag it does not read reports success for everything.** Any gate whose "pass" I have not seen fail is an unverified instrument. Same shape as the empty-`stdin` fail-open.
+- **The tracker derives a row's status from its LEADING TOKEN.** `G-168`'s cell opened `OPEN - carded ...` and later recorded `CLOSED`; the tracker read `open`. This is silent: no complaint, no disagreement, because a row with no close has nothing to disagree with. **Fix the convention, not the reader:** a status cell must LEAD with its current status. M3 moved 9/11 -> 10/11 with no row changing state.
+- **A DEPLOYED SURFACE IS EVIDENCE ABOUT A DEPLOY, NOT ABOUT `main`.** `G-172` was carded as a build (guard-vs-stance contradiction) off a stable 4/4 deployed read showing 0 of 75. The fix was already MERGED as PR #77 and simply NOT DEPLOYED. **Every defect carded from a deployed read must carry a `git merge-base`/diff against `main` before its REMEDY is named**, because the same read supports three different next acts (write a mapping / widen a guard / ship) and only the diff tells them apart.
+- **The reverse error is one commit away.** A green `main` and a red deploy look identical in a CI list, which is the shape G-152, G-153 and G-160 were all in. "Merged" is not a grade.
+
+### OPEN
+
+- **The redeploy** (planner-owned): `dolphin-app` from green `main`. Fires G-152 + G-153 + G-172.
+- **PR #80 merge, then MANUAL deploy**, then re-probe with `scripts/probe-parks-lens.mjs` expecting 404 -> 200 with the three markers.
+- **G-171 UNBLOCKED** — its declared trigger (G-166 green) has fired. Planner-owned: point `SMARTCITY_V1_PLATFORM_BASE` at `https://smartcityos.io`.
+- **G-149 dispatch ready to hand-carry:** `_dispatches/2026-09-19_g149-flood-study_dispatch.md`.
+- **G-169 dispatch ready to hand-carry:** `_dispatches/2026-09-19_g169-deploy-path-windows_dispatch.md`.
+- **The pin stands at 21** after the 24 -> 21 disposition; residual is heterogeneous and named on G-170.
+- **A-083 pre-existing table defect still unfixed** (6 cells against a 5-cell header, unescaped `|` in a code span). Not this seat's row.
