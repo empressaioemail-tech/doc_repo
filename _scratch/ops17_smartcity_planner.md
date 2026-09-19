@@ -755,3 +755,37 @@ PowerShell flattens object arrays into parallel field lists, so `$_.metadata.nam
 ### LESSON - the compiled dispatch NEVER PASSES THROUGH THE WRITE HOOK, so "it compiled" is not "it would be accepted"
 
 `dispatch-template-gate.ps1` is a `PreToolUse` hook on `Write`: it reads `tool_input.file_path` and `tool_input.contents`. `scripts/dispatch.mjs` writes the file with `fs.writeFileSync` inside node, so the hook never sees it. **The gate therefore only ever fires when a dispatch is written by hand or by an agent through the Write tool** - a compiled dispatch gets no check at all, and the compiler's own success message is not evidence the four clauses are present. Verify a compiled dispatch by driving the real hook against its content (`P:/tmp/verify-g169-gate.mjs`), and plant violations while doing it, or the pass is indistinguishable from a gate that exited open. Combined with the earlier relative-path lesson, this hook has three ways to look like it passed while doing nothing: relative path, `-Command` instead of `-File`, and never being called at all.
+
+---
+
+## 2026-09-19 (UTC) ~12:20Z-12:50Z - A-174 EXECUTED: the claim registry resolves through the git common directory, and the M5 label is repaired
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- **The claim registry is now ONE file, shared by every worktree.** `scripts/lane-claim.mjs` resolves `_catalog/lane_claims.json` through `git rev-parse --git-common-dir`. Proven on the REAL execution path rather than by reading the path: a throwaway worktree was created, the FIXED script placed inside it, and a sentinel claim taken from inside it. Shared registry `3dd4ad45bbc3 -> 821bd8b36bd1` (moved); the worktree's own copy `842add7b3f1c -> 842add7b3f1c` (HELD, which is the old behaviour observed rather than argued); the primary checkout then saw a claim it could never have seen before; a second seat was HELD at exit 3; release returned all 8 other claims intact with the file back to `3dd4ad45bbc3`, byte-identical. `P:/tmp/verify-lane-claim-registry.mjs`.
+- **The self-test is verified by violation, not by reading.** It enumerates the repo's worktrees (`git worktree list --porcelain`) and fails unless every one of them resolves to the same registry. 11/11 pass, including "5 sibling worktree(s) resolve to the ONE shared registry".
+- **The starvation precondition is real and was measured:** the worktree copy and the shared copy are distinct files with different bytes. ~99 worktrees, each carrying its own tracked copy.
+- **A-178, A-179 and A-180 were malformed**: 5 cells against the table's 177-row convention of 7, missing the rule and owner columns entirely. Repaired in the same commit; `cells=7: 181 rows` now, plus one pre-existing 8-cell anomaly (A-083) deliberately left alone.
+- **The tracker's milestone column is renamed.** `Done` -> `Graded`, `Open or blocked` -> `Not graded`, plus a legend, and the constant `DONE` -> `GRADED`. A-176's own stated honest minimum; it moves no figure. 26/26 self-tests still pass and the run is still clean.
+- **The two detached deploy worktrees are GONE**, but only after being removed from their OWNING repos (`P:/plan-review`, `P:/smart-files`).
+
+### LESSON - `git worktree remove` FROM THE WRONG REPO LIES ABOUT HAVING SUCCEEDED
+
+Run from `P:/doc_repo` it exits 128 with `fatal: '...' is not a working tree`, which reads as "already gone". It is not: the directory and its 54 files were still on disk, because the worktree belongs to `plan-review`, not to `doc_repo`. **A worktree is removed by its owning repo, and the only trustworthy check is the directory's existence, not the command's message or its exit code.**
+
+### LESSON - a claim written into a registry nobody reads is indistinguishable from not claiming
+
+A-174 called this starvation-by-construction and closed with "Recommendation, not action". The fix is one resolution, and the reason it sat undone is that the failure produced **no complaint from any party**: the lane claimed correctly, the file was well-formed, and the only instrument that could have shown the gap was reading a DIFFERENT file than the one being written. Controls that fail silently are found by reading the write path, never by watching for a symptom.
+
+### LESSON - verify a repair on the path it will actually run on
+
+A self-test showing `registryPath()` returns the shared path from the PRIMARY checkout proves nothing about a lane, because a lane runs its OWN checkout's copy of the script. The fix was therefore proven by placing the fixed script inside a worktree and claiming from there. **A fix to a path-resolution bug must be tested from the location whose resolution was wrong.**
+
+### OPEN
+
+- **The closing path for CLOSES and ARTIFACTS is still unfixed** (A-173, A-177, A-178; third consecutive wave). Only the CLAIMS half is repaired. A close stranded in a seat worktree still does not move its row.
+- **`_catalog/lane_claims.json` is now permanently dirty in the integration checkout by design.** doc_repo commits must stay by explicit pathspec, never `-A`.
+- **The registry stays TRACKED rather than moving inside `.git/`**, because a guardrail that does not survive a clone is not a guardrail. Consequence to remember: a fresh clone gets a stale registry until someone commits it.
+- **`g169-deploy-path-windows` and `g166-red-main` await the operator's hand-carry**; `g151-parks-lens` holds the dashboards lens slot.
+- **The lease gate still does not cover scripted deploys** (prose-plus-a-hook-that-misses-the-path it exists for).
+- **A-083 carries 8 cells** in the OPS-17 amendment table, the lone remaining shape anomaly. Not touched: not this seat's row.

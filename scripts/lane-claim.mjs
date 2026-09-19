@@ -38,11 +38,45 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
-const CLAIMS = path.join(REPO, "_catalog", "lane_claims.json");
+
+/**
+ * WHERE THE REGISTRY LIVES — and why it is NOT the checkout this command ran in.
+ *
+ * THE DEFECT THIS CLOSES (OPS-17 A-174, measured 2026-09-19). This repo carries ~99 seat
+ * worktrees, each a `git worktree` of P:/doc_repo sharing ONE `.git`. `_catalog/lane_claims.json`
+ * is TRACKED, so every worktree carries its OWN working copy of it. A claim written from a seat
+ * worktree was therefore real, well-formed, and readable by nobody: not by main, not by another
+ * seat, not by this checkout. And lanes are instructed to leave doc_repo edits UNCOMMITTED,
+ * because doc_repo commits are planner-owned, so the commit that would have published it never
+ * came. The guard fired correctly and communicated nothing, three waves running — `g158` claimed
+ * at 23:59:18Z and its entry was invisible.
+ *
+ * Every worktree's `--git-common-dir` is the SAME `.git`, so resolving through it lands every
+ * claim in ONE file, in the primary worktree, visible to every seat. The registry stays a TRACKED
+ * file rather than moving inside `.git/`, because a guardrail that does not survive a clone is
+ * not a guardrail, and a `.git/`-local registry would not.
+ *
+ * COST, stated rather than hidden: the integration checkout's copy is now the live registry, so
+ * it will usually be dirty. That is already true today; the difference is that the dirt is now
+ * ONE registry instead of 99 invisible ones. Commit doc_repo by explicit pathspec, never `-A`.
+ *
+ * FAILS CLOSED. If git cannot answer, this throws rather than falling back to the local copy,
+ * because the local copy IS the defect.
+ */
+export function registryPath(repo = REPO) {
+  const common = execFileSync("git", ["rev-parse", "--git-common-dir"], {
+    cwd: repo,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
+  if (!common) throw new Error(`git rev-parse --git-common-dir returned nothing for ${repo}`);
+  return path.join(path.dirname(path.resolve(repo, common)), "_catalog", "lane_claims.json");
+}
 
 /** A claim older than this reports stale and stops blocking. A dead session must
  *  not hold a lane forever, and a long lane must not be silently stolen either —
@@ -62,7 +96,7 @@ export function emptyRegistry() {
   };
 }
 
-export function load(file = CLAIMS) {
+export function load(file = registryPath()) {
   if (!fs.existsSync(file)) return emptyRegistry();
   const raw = fs.readFileSync(file, "utf8").trim();
   if (!raw) return emptyRegistry();
@@ -73,7 +107,7 @@ export function load(file = CLAIMS) {
   return parsed;
 }
 
-function save(reg, file = CLAIMS) {
+function save(reg, file = registryPath()) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(reg, null, 2) + "\n", "utf8");
 }
@@ -170,6 +204,9 @@ function cmdCheck(args) {
 function cmdStatus() {
   const reg = load();
   const rows = Object.values(reg.claims ?? {});
+  // Declare the snapshot: a reader must be able to tell WHICH registry answered, because the
+  // whole defect this file carried was a claim written into a registry nobody could read.
+  console.log(`registry: ${registryPath()}`);
   if (!rows.length) { console.log("No open lane claims."); return EXIT.OK; }
   console.log(`${rows.length} open lane claim(s):`);
   for (const c of rows.sort((a, b) => a.startedAt.localeCompare(b.startedAt))) {
@@ -209,7 +246,29 @@ function cmdSelftest() {
   // Empty registry.
   t("empty registry is FREE", evaluate(emptyRegistry(), "anything", "s", now).state, "free");
 
-  console.log(failed ? `\n${failed} self-test(s) FAILED` : "\nall self-tests pass (both directions, boundary, and not-vacuous)");
+  /* ---- REGISTRY RESOLUTION (A-174). The defect was that the path VARIES BY CHECKOUT, so the
+     assertion that matters is cross-worktree equality, not the shape of one path. ---- */
+  const norm = (p) => p.replace(/\\/g, "/").toLowerCase();
+  const rp = registryPath();
+  t("registryPath is absolute and names _catalog/lane_claims.json", path.isAbsolute(rp) && rp.endsWith(path.join("_catalog", "lane_claims.json")), true);
+  t("registryPath from this checkout is the shared registry, not a worktree copy", norm(rp), norm(path.join(REPO, "_catalog", "lane_claims.json")));
+  try {
+    const list = execFileSync("git", ["worktree", "list", "--porcelain"], { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+      .split(/\r?\n/)
+      .filter((l) => l.startsWith("worktree "))
+      .map((l) => l.slice("worktree ".length).trim());
+    const others = list.filter((w) => norm(path.resolve(w)) !== norm(path.resolve(REPO))).slice(0, 5);
+    if (others.length) {
+      const distinct = new Set([rp, ...others.map((w) => registryPath(w))].map(norm));
+      t(`${others.length} sibling worktree(s) resolve to the ONE shared registry`, distinct.size, 1);
+    } else {
+      console.log("  note  this checkout is the only worktree, so cross-worktree equality was NOT exercised");
+    }
+  } catch (e) {
+    console.log(`  note  could not enumerate worktrees, so cross-worktree equality was NOT exercised: ${e?.message ?? e}`);
+  }
+
+  console.log(failed ? `\n${failed} self-test(s) FAILED` : "\nall self-tests pass (both directions, boundary, registry resolution, and not-vacuous)");
   return failed ? 1 : EXIT.OK;
 }
 

@@ -49,12 +49,21 @@ export function classify(cell) {
   for (const [word, cls] of CLASSES) if (lead.startsWith(word)) return cls;
   return 'unknown';
 }
-/** What counts as done. `landed` is deliberately NOT in it. This program uses "landed" for the state
-    verified today on D-14, D-13 and G-161: the change is present at its target and read back at source,
-    while the row's own instrument still has ungraded clauses and no lane close is filed. Folding that
-    into `done` would count a row complete on a partial read, which is the "code-done is not
-    customer-done" defect pointing the other way. Only CLOSED and CLOSED-PARTIAL mean graded. */
-const DONE = new Set(['closed', 'closed-partial']);
+/** What counts as GRADED, and the LABEL matters as much as the set (A-176).
+ *
+ * `landed` is deliberately NOT in it. This program uses "landed" for the state verified on D-14, D-13
+ * and G-161: the change is present at its target and read back at source, while the row's own
+ * instrument still has ungraded clauses and no lane close is filed. Folding that in would count a row
+ * complete on a partial read, which is the "code-done is not customer-done" defect pointing the other
+ * way. Only CLOSED and CLOSED-PARTIAL mean graded.
+ *
+ * A-176 measured the defect this set was MISLABELLED by: the milestone block printed a column headed
+ * "Done" under a milestone named "Design complete", and every number in it was a GRADING count. M5
+ * printed 6/6 "done" with four of its six rows PARTIAL and the design gate exiting 1. The SET is
+ * correct and is unchanged; the header was renamed to "Graded" and a legend added, which is A-176's
+ * stated honest minimum because it moves no figure. Renamed from DONE so the internal name cannot
+ * quietly drift back into meaning completion. */
+const GRADED = new Set(['closed', 'closed-partial']);
 const normClose = (s) => { const v = String(s || '').trim().toLowerCase(); return v === 'closed-partial' || v === 'closed' ? v : null; };
 
 /* ---------- parse the plans ---------- */
@@ -110,7 +119,7 @@ export function disagreements(rows, closes, ids) {
   for (const id of ids) {
     const r = rows[id]; if (!r) continue;
     const done = (closes[id] || []).filter((c) => c.status);
-    if (done.length && !DONE.has(r.cls) && r.cls !== 'designed') {
+    if (done.length && !GRADED.has(r.cls) && r.cls !== 'designed') {
       out.push({ id, row: r.cls, close: done.map((c) => `${c.status} (${c.file})`).join('; ') });
     }
   }
@@ -184,8 +193,9 @@ md += `**Coverage:** ${unlinked.length} of ${unlinked.length + Object.values(clo
 md += dis.length
   ? `**${dis.length} row(s) disagree with their own close.** A lane closed the work and the plan of record still says it is not done. Re-grade each row below from its close.\n\n`
   : '**Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.\n\n';
-md += '| Milestone | Rows | Done | Open or blocked |\n|---|---|---|---|\n';
-for (const m of MILESTONES) md += `| ${m.id} ${m.name} | ${m.rows.length} | ${count(m.rows, (c) => DONE.has(c))} | ${count(m.rows, (c) => !DONE.has(c))} |\n`;
+md += '| Milestone | Rows | Graded | Not graded |\n|---|---|---|---|\n';
+md += '\n*Graded counts the rows the tracker can GRADE, which is CLOSED and CLOSED-PARTIAL. It is not a completion count, and the two diverge in the direction that flatters: a milestone reads fully graded with every one of its rows partial. Rows still LANDED, DESIGNED, OPEN or HELD fall in Not graded. Renamed from "Done" under A-176, which moved no figure.*\n';
+for (const m of MILESTONES) md += `| ${m.id} ${m.name} | ${m.rows.length} | ${count(m.rows, (c) => GRADED.has(c))} | ${count(m.rows, (c) => !GRADED.has(c))} |\n`;
 for (const m of MILESTONES) {
   md += `\n## ${m.id}. ${m.name}\n\n| Row | What | Status | Close on file |\n|---|---|---|---|\n`;
   for (const id of m.rows) {
@@ -199,7 +209,7 @@ if (unknown.length) md += `\n**Unreadable status cells:** ${unknown.join(', ')}.
 if (!process.argv.includes('--check')) { writeFileSync(join(ROOT, '_design/SMARTCITY_TRACKER.md'), md); console.log('wrote _design/SMARTCITY_TRACKER.md'); }
 console.log(`read ${Object.keys(ops17).length} OPS-17 rows, ${Object.keys(ops25).length} OPS-25 rows, closes for ${Object.keys(closes).length} rows; tracking ${tracked.length} rows at ${commit}`);
 console.log(`  coverage: ${unlinked.length} close file(s) name no plan row and are not linked to any row`);
-for (const m of MILESTONES) console.log(`  ${m.id} ${String(count(m.rows, (c) => DONE.has(c))).padStart(2)}/${m.rows.length} done   ${m.name}`);
+for (const m of MILESTONES) console.log(`  ${m.id} ${String(count(m.rows, (c) => GRADED.has(c))).padStart(2)}/${m.rows.length} graded  ${m.name}`);
 if (unknown.length) console.log('  unreadable: ' + unknown.join(', '));
 if (dis.length) { for (const d of dis) console.error(`DISAGREE  ${d.id}  row=${d.row}  close=${d.close}`); console.error(`\n${dis.length} row(s) disagree with their own close.`); process.exit(1); }
 console.log('\nPASS every tracked row agrees with its own close.');
