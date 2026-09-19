@@ -883,3 +883,22 @@ The falsifier asserted the literal counts `107` and `106 -> 107`. After the pin 
 - **The remaining 84 dangling citations need the citation repointed or the artifact regenerated**, and they are enumerated by path in the pin rather than as prose. The pin may only move down.
 - **The 5 pre-existing CI regressions are somebody's debt and are now visibly somebody's debt.** They are not SmartCity rows and this seat did not card them; they will keep the ratchet red until whoever owns each one either fixes it or pins it with a justified `knownScopeLimit`.
 - **This gate does not read the inner content of a close**, only whether the path resolves. A close that exists but is wrong is a different control's problem.
+
+### LESSON - a measurement's predicate must be the CONTROL's predicate, or the number is about a different tree (2026-09-19)
+
+Checked whether regenerating the stale `_catalog/doc_census.json` would clear dangling citations or add them, and asked `existsSync` whether each of the 819 newly-cited `_inbox/` paths existed. It said yes to all 819, so the regeneration looked like a clean decrement by one. **It was not.** The gate grades HEAD; the census walks the DISK. Four of those 819 paths were on disk in this worktree and untracked, so the commit would have RAISED the pin 26 to 29. Re-measured against `git ls-files`, the correct predicate, and the four were filed into main in the same commit, which is what made the regeneration a decrement at all. **Two trees are in play in any staged-content control - the working tree, the index, and HEAD - and a measurement that reads the wrong one returns a confident number about the wrong tree.** The same slip is what made the first `_catalog/doc_census.json` stale: it was generated at `8b68e432` against a corpus that has since been quarantined.
+
+### LESSON - the guard's own refusal message is the closure driver (2026-09-19)
+
+Filing four `_inbox/` artifacts pulled in seven further citations, because those artifacts cite other artifacts. Rather than hand-hunt the set, `P:/tmp/stage-inbox-closure.mjs` runs the GATE ITSELF through `evaluateStagedGit`, parses the `git add "<path>"` lines out of its refusal message, stages them, and repeats to fixpoint (clean in 2 rounds). **Never re-implement the classifier you are trying to satisfy; the re-implementation drifts from the thing being satisfied.** Where a named path exists in no worktree the driver stops and says so rather than guessing.
+
+### GROUND-TRUTH (2026-09-19, HEAD b1549e93)
+
+- **The closing-path pin is at 25**, down from 26, measured by `close-artifact-gate.mjs --check` at `b1549e93` and matching the pin exactly. `--self-test` passes in both directions.
+- **`_catalog/doc_census.json` is regenerated at HEAD** and now enumerates 4,899 files; it no longer names any `_inbox/` path that HEAD does not contain (819 added `_inbox/` references, all tracked).
+- **Eleven artifacts were filed into main by this seat in one commit** (4 named by the regeneration as untracked, 7 pulled in by closure), all byte-verified on read-back.
+
+### OPEN
+
+- **The residual 25 are classified by `P:/tmp/burn26-report.mjs` (self-testing): 2 REPOINT, 1 refused by the probe-close gate as an R-4 defect, 22 with no copy anywhere in the estate.** The 22 need a per-target disposition - produced, or annotated in the citing record as never produced - and annotation means editing citing records that include ANOTHER SEAT'S `_state/property/STATE.md`, which this seat does not write.
+- **Two classifier gaps are visible in the residual and were NOT closed, because widening an exemption is how the pin falls dishonestly:** a `completionPredicate` field names a deliverable that does not exist yet by construction (forward-looking), and a close that records `DELETED at close` is recording an absence. Both currently count. Each needs a decision, then a both-direction self-test.
