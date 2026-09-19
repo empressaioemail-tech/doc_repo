@@ -686,3 +686,31 @@ The wave census I wrote last time scanned 17 hardcoded program lanes. Generalisi
 - **The tracker cannot see a row graded more strictly than its close.** G-158 is the live instance; the second predicate is unwritten.
 - The closing path is STILL not fixed: this is the third consecutive wave with stranded closes. A-177's guard is still owed.
 - The four OPS-17 dispatches unchanged from earlier in this file still stand: `g164-flood-basis` compiled and gate-verified; G-151, the `EDGE-REPLACES-5XX` remedy and the `ee9c5d5` ship now unblocked because the dashboards slot is free.
+
+---
+
+## 2026-09-19 (UTC), latest - the design gate goes GREEN, and the hook that fails open on a relative path
+
+### GROUND-TRUTH (measured, with timestamps)
+
+- 2026-09-19T12:00:32Z, doc_repo `5ec25176`: `node scripts/govtech/design-completion-gate.mjs` exits **0** FOR THE FIRST TIME. 15 nav surfaces (13 designed, 2 excluded by ruling, 0 uncovered); design folders 20, instrumented 18, **passing 18 of 18** (was 17). Both G-164 lanes are done and the planner verified the instrument rather than the close: `_design/smartcity-flood-study/check.mjs` exits 0 with TEN non-zero matched-input counters and zero findings; `violate.mjs` catches **31 of 31** planted violations while the shipped boards pass until one is planted.
+- Regraded: **G-164 -> CLOSED**, **G-146 -> CLOSED** (A-179). Both were held by the same single R3 finding, which neither row owned.
+- **G-168 carded** (A-179): `EDGE-REPLACES-5XX` had been named in OPS-25 D-13 and A-12 and given NO ROW of its own. Enrolled in M3, so M3 reads 8/11.
+- `smartcity-dashboards` `main` IS STILL RED at `cbdfaeb6`, three consecutive failures, last green `ea27024`. No open PRs. Carded G-166, dispatched as `g166-red-main`.
+- Two dispatches compiled and gate-verified this session: `_dispatches/2026-09-19_g166-red-main_dispatch.md` and `_dispatches/2026-09-19_g151-parks-lens_dispatch.md`.
+
+### LESSON - the dispatch-template gate fails OPEN on a relative path, and the tell is identical to the stdin bug
+
+`dispatch-template-gate.ps1:106` scopes itself with `$filePath -match '[/\\]_dispatches[/\\]'`. It requires a separator BEFORE `_dispatches`. I invoked my verification harness with the argument `"_dispatches/2026-09-19_g166-red-main_dispatch.md"` - a relative path with no leading slash - so the hook took `Exit-Open` and **all four cases passed, including the three planted violations.** This is the exact same tell as the stdin bug earlier: a control whose violation fixtures also pass has not been observed working. **Run every harness hook with an ABSOLUTE path**, or the scope guard silently disables the check you think you just ran. Two failures, same shape, one session: the instrument's TEST HARNESS is the part that fails, not the instrument.
+
+### LESSON - a green instrument can be green about the wrong surface
+
+`_design/smartcity-parks-lens/check.mjs` exits 0 **today, before any work**, because it checks the DESIGN boards. G-151's acceptance says it must pass "on the built surface". A lane reading only the exit code would see 0 and conclude the row was nearly done. **When an acceptance item names a surface, state which surface the instrument was pointed at, and whether that surface exists yet.** Same family as "does this file exist" passing on absence.
+
+### OPEN
+
+- **G-160's deploy is STILL owed** - both PRs merged, and only `scripts/deploy.mjs` turns the row closed. It is the oldest unexecuted planner act on the board.
+- **`main` is red (G-166).** Every lane that merges into `smartcity-dashboards` lands onto a red signal until `g166-red-main` lands.
+- `g151-parks-lens` is compiled and holds the dashboards lens slot. **`g166-red-main` is test-only in `src/`, disjoint from the lens render files (`web/app.js`, `web/index.html`), so the two can run in parallel** - but that is a judgement about file overlap, not a licence: if either lane touches the other's files, the slot law was violated.
+- **The closing path is STILL unfixed** (third consecutive wave). The claim registry resolves per-worktree; the tracker cannot see a row graded more strictly than its close. Both are still prose, not guards.
+- **`_catalog/lane_claims.json` may still hold released-stale entries**; the `g153-vendor-mapping` claim was released by hand and the `g164-flood-basis` / `g164-design-repairs` lanes released their own. Worth a sweep.
