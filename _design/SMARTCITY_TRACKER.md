@@ -9,9 +9,9 @@ programs: [OPS-17, OPS-25]
 
 # SmartCity tracker
 
-**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `cf9a42a7`: 127 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
+**Generated, do not edit.** Regenerate with `node scripts/govtech/smartcity-tracker.mjs`. Read from doc_repo `f091f826`: 128 OPS-17 rows, 35 OPS-25 rows, and every `_inbox/*_close.json`. The milestones are the roadmap's, in `_inbox/2026-09-15_roadmap_reconciliation.md`.
 
-**Coverage:** 143 of 1019 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
+**Coverage:** 143 of 1021 close records name no plan row, so no row can be checked against them. They are counted, not guessed.
 
 **Every tracked row agrees with its own close.** A close that lands without re-grading its row fails this run.
 
@@ -21,9 +21,9 @@ programs: [OPS-17, OPS-25]
 *Graded counts the rows the tracker can GRADE, which is CLOSED and CLOSED-PARTIAL. It is not a completion count, and the two diverge in the direction that flatters: a milestone reads fully graded with every one of its rows partial. Rows still LANDED, DESIGNED, OPEN or HELD fall in Not graded. Renamed from "Done" under A-176, which moved no figure.*
 | M1 Staff on v2: the soft launch | 7 | 3 | 4 |
 | M2 The next deliverable: Finance, hotel occupancy tax, RBAC, city management board | 6 | 4 | 2 |
-| M3 Lens builds on Bastrop live data | 11 | 10 | 1 |
+| M3 Lens builds on Bastrop live data | 11 | 11 | 0 |
 | M4 DigitalOcean migration complete | 7 | 7 | 0 |
-| M5 Design complete, and the controls that keep it honest | 8 | 7 | 1 |
+| M5 Design complete, and the controls that keep it honest | 8 | 8 | 0 |
 
 ## M1. Staff on v2: the soft launch
 
@@ -55,7 +55,7 @@ programs: [OPS-17, OPS-25]
 | G-135 | distribute the bastrop_tx tenant key — it exists, it works, and no lane can reach it. | closed, partly | closed-partial, closed-partial |
 | G-161 | NEVER DEFAULT A CITY, EVERYWHERE, NOT ONLY ON THE FINANCE ROUTE. | closed | closed |
 | G-154 | BUILD THE DEVELOPMENT SERVICES LENS EXTENSION, which is the delta the design grew AFTER its buil | closed, partly | The four corrections are implemented, merged and proven on the live bastrop_tx surface on d12-main-uat - three of the four by direct measurement, and the fourth NAMED AS UNMEASURED because the live feed draws no workload ranking for it to be measured on. Getting there exposed four defects, three of them in the proving tools rather than the product; all three are fixed and each fix is proven in both directions. |
-| G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | open | — |
+| G-149 | BUILD THE RATIFIED FLOOD STUDY DESIGN into the Development services tab. | closed, partly | closed-partial |
 | G-153 | BUILD THE FLEET AND POLICE LENSES, and fix the three live-mapper defects they both run on. | closed, partly | closed, closed-partial |
 | G-152 | BUILD THE PUBLIC WORKS AND FIRE AND EMS LENSES. | closed, partly | closed-partial |
 | G-151 | BUILD THE PARKS LENS, the one lens that does not exist, drawn as not existing. | closed, partly | closed-partial |
@@ -87,4 +87,4 @@ programs: [OPS-17, OPS-25]
 | G-160 | A DEPLOY IS NOT DONE UNTIL THE CONSOLE AND THE API SERVE THE SAME COMMIT. | closed | closed-partial, closed-partial |
 | G-164 | REPAIR THE 11 FINDINGS G-148 DISCLOSED, WHICH NO ROW OWNED. | closed | closed-partial, closed |
 | G-166 | smartcity-dashboards main IS RED, AND THE CAUSE IS AN INSTRUMENT WHOSE FIXTURE IS ANCHORED TO TH | closed | — |
-| G-169 | scripts/deploy.mjs CANNOT RUN ON THE FLEET'S OWN WINDOWS MACHINE, SO THE DEPLOY PATH IS NOT EXER | open | — |
+| G-169 | scripts/deploy.mjs CANNOT RUN ON THE FLEET'S OWN WINDOWS MACHINE, SO THE DEPLOY PATH IS NOT EXER | closed, partly | closed |
