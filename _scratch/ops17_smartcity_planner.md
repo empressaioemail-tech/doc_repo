@@ -902,3 +902,13 @@ Filing four `_inbox/` artifacts pulled in seven further citations, because those
 
 - **The residual 25 are classified by `P:/tmp/burn26-report.mjs` (self-testing): 2 REPOINT, 1 refused by the probe-close gate as an R-4 defect, 22 with no copy anywhere in the estate.** The 22 need a per-target disposition - produced, or annotated in the citing record as never produced - and annotation means editing citing records that include ANOTHER SEAT'S `_state/property/STATE.md`, which this seat does not write.
 - **Two classifier gaps are visible in the residual and were NOT closed, because widening an exemption is how the pin falls dishonestly:** a `completionPredicate` field names a deliverable that does not exist yet by construction (forward-looking), and a close that records `DELETED at close` is recording an absence. Both currently count. Each needs a decision, then a both-direction self-test.
+
+### GROUND-TRUTH (2026-09-19, HEAD d7153386)
+
+- **The closing-path pin is at 24**, down from 26 in two dispositioned steps: 26 -> 25 by regenerating the stale `_catalog/doc_census.json` (which was the sole citer of `_inbox/2026-08-08_L2_WAVE3_report_a2.md`), and 25 -> 24 by repointing the last two citers of the ADR-025 draft to `80_adrs/adr_025_og_atom_ontology.md`, its live superset. `--check` reads 24 at a pin of 24; `--self-test` passes both directions.
+- **The ADR-025 draft is a SUPERSEDED STORE, not a lost artifact.** `_quarantine/2026-07-05_draft_adr_025_og_atom_ontology.md` is 24,415 bytes with the same id and title as `80_adrs/adr_025_og_atom_ontology.md`, which is 30,928 bytes and carries `status: proposed`. Repointing a consumer to the quarantined copy when a live successor exists would be repointing to the wrong place.
+
+### OPEN
+
+- **The residual 24: 1 held by `probe-close-gate` as the P-153 R-4 defect, 1 an unchecked checklist line whose `_research/` copy is also untracked, 22 with no copy in 105 worktrees.**
+- **Three classifier gaps named on G-170 and NOT widened**: `completionPredicate` (forward-looking by construction), `DELETED at close` (a recorded absence), and an UNCHECKED `[ ]` line recording a drop never performed. Each needs a written reject case before it is trusted.
