@@ -1,0 +1,103 @@
+{
+  "lane": "p368-instantiation-guard-multipart",
+  "planRows": ["P-368"],
+  "checkpoint": "CP1 -- design and pre-build. Written AFTER the source read the mission demands first ('Read the 82 at source before any code'), so the design below rests on measurement rather than on the dispatch's framing of the 82.",
+  "seat": "cente-vsc-p368",
+  "fanDepth": 0,
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "dispatch": "_dispatches/2026-09-19_p368-instantiation-guard-multipart_dispatch.md",
+  "worktrees": {
+    "product": "P:/hauska-factory-worktrees/p368-instantiation-guard-multipart (branch p368-instantiation-guard-multipart, from origin/main e6ca09de5ecaed301758d7b88ff58b1264664bbf -- the SHA the dispatch declares)",
+    "docRepo": "P:/seat-worktrees/p368-instantiation-guard-multipart/doc_repo (branch lane/p368-instantiation-guard-multipart, from doc_repo origin/main 1f7ceddd216fd382130daeb6d0eec599ebbb5ffb)"
+  },
+  "storeDiscipline": {
+    "reads": "PRODUCTION_NEONDB_URL / neondb (ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech), read-only; every statement read-only, the session never given the factory write handle.",
+    "heavyScanLease": "taken through scripts/heavy-scan-lease.mjs under the factory-control API (URL discoverable from `gcloud run services list`, bearer from FACTORY_CONTROL_API_KEY, NODE_OPTIONS=--use-system-ca to get past the TLS chain). Lease id 14f47abe-e6aa-4dda-82d2-eadff22f519a, holder p368-instantiation-guard, phase p368-instantiation-guard-multipart, county 48491, taken 2026-09-19T12:16:19Z. No live lease preceded it (`list` returned an empty `live` set).",
+    "writes": "NONE. No store write, no apply, no deploy, no merge by this lane."
+  },
+
+  "theSourceRead": {
+    "what": "The 82 refused keys reproduced through the SHIPPED functions (loadLandingAndCad -> classifyInstantiationKeys) at factory e6ca09de, then every TxGIO row behind each refused key read from txgio_parcel, plus the county's declared roll and both published WCAD extracts.",
+    "reproductionControl": "landing=282569 pages=283 (page size 1000 against the run's 200; the answer is page-independent by construction -- loadPublishedWcadPair and loadWilliamsonSitusFallback are county-wide and memoized, and the pair's ambiguity guard is partitioned over the whole extract, never the page) refused=82. **The run's own dry run dc2pj reported instantiationRefused=82 and cadPresent=282219; both reproduce exactly, so the set below IS the run's set and not a lookalike.**",
+    "the82": "72 keys carry 2 TxGIO rows, 10 carry 4; 184 rows in all. Sampling: 48491:R006142 (2 rows), R010298 (4 rows), R674569/70/71 (2 rows each).",
+    "finding1_the82_are_not_multipart": "MEASURED: every one of the 82 has EXACTLY ONE distinct geometry. `count(DISTINCT md5(ST_AsBinary(geom))) = 1` on 82 of 82. The several rows are THE SAME POLYGON stored once per tile it straddles: txgio_parcel's primary key is (county_fips, tile_key, feature_index) and the tile grid is 0.02 degrees (`g0.02:...`, 779 tiles in 48491), so a parcel whose bbox crosses a tile edge is written IN FULL under each tile with the same feature_index. R006142's bbox (-97.38233,-97.37841) straddles tiles -97.40000 and -97.38000: two rows, one geometry. R010298 straddles four.",
+    "finding2_that_is_the_defect": "`classifyInstantiationKeys`'s first leg is `count(*) = 1`, i.e. it measures THE NUMBER OF TILES THE PARCEL TOUCHES, not the number of parts. A single-parcel key that straddles a tile edge reads as 'not a parcel'. Of the county's 18,491 tile-straddling keys, 18,399 were rescued by the CAD leg; the 82 with no reachable pair bind were refused.",
+    "finding3_the_label_key_is_the_same_shape": "`PRIVATE ROAD` (the phantom P-348/P-352 retired on 2026-09-19) is ALSO one geometry on two tiles: md5 2b9b20ab85aa8e625de01169f87ce785 on both rows, bbox identical, 6,928.2 m2, feature_index 81212 on both. **The count leg cannot separate it from R006142, and it never could: the phantom was refused by luck (it happened to straddle a tile edge), not by the rule.** A label key carrying exactly one tile copy passes the count leg today -- that is P-352's named gap, and it is wider than P-352's close says.",
+    "finding4_the_whole_county_classes": {
+      "countingRule": "one row per distinct txgio_parcel.prop_id in county 48491, classified by `count(DISTINCT md5(ST_AsBinary(geom)))` over that key's rows with geom IS NOT NULL",
+      "distinct_geometries_1": 282283,
+      "distinct_geometries_2": 285,
+      "distinct_geometries_4": 1,
+      "row_count_breakdown_for_comparison": { "1 row": 263793, "2 rows": 17419, "3 rows": 9, "4 rows": 1317, "6 rows": 20, "8 rows": 1, "9 rows": 5, "10 rows": 2, "12 rows": 1, "15 rows": 1, "16 rows": 1 },
+      "whatItSays": "18,778 keys have more than one ROW; only 286 have more than one GEOMETRY. So 'several rows' is 98.5 percent tile duplication, and the genuinely-multipart class is 286 keys -- of which 286 have a pair bind, so today's guard refuses NONE of them for want of a count."
+    },
+    "finding5_no_published_identifier_reaches_the_82": {
+      "pair_extracts": "`tx_wcad_owner` and `tx_wcad_ag_valuation` publish ZERO rows whose prop_id is any of the 82 (0 pair rows over 82 keys). This is P-351's 424 unreachable R keys, of which the 82 are a part.",
+      "situs_fallback": "not reached either -- the accept side of the run reported geometryOnly=268 and cadOnly=18694, and none of the 82 is in either.",
+      "the_county_roll_DOES_name_them": "cad_property for 48491 carries a row keyed by the node's OWN R key for all 82 of 82, with owner_name, situs_address and (271,164 of the county's 282,569) market_value. R006142 = 'IMARKETAMERICA INC', '6000 FM 619, THRALL, TX 76578', market 18,440, tax_year 2025, source stratmap25-landparcels_48491_lp.zip. **The fill's CAD leg cannot see these because for 48491 the bind is deliberately the published WCAD pair only (P-335's two-namespace rule) and the pair omits them.**"
+    },
+    "finding6_the_county_has_one_published_key_vocabulary": {
+      "countingRule": "distinct prop_id in landing_parcel_jurisdiction where county_fips = <fips>, classified by the fleet's SHARED classifier `keyspaceSql(prop_id)` from src/lib/publish-coverage-floor.mjs (P-306; imported by P-327's retirement gate and P-333's join-miss guard)",
+      "48021": { "numeric": 62256, "other": 0, "r-prefixed": 0 },
+      "48055": { "numeric": 24988, "other": 0, "r-prefixed": 0 },
+      "48209": { "numeric": 116420, "other": 0, "r-prefixed": 0 },
+      "48309": { "numeric": 114254, "other": 0, "r-prefixed": 0 },
+      "48453": { "numeric": 380917, "other": 0, "r-prefixed": 0 },
+      "48491": { "numeric": 0, "other": 0, "r-prefixed": 282569 },
+      "whatItSays": "Every program county's published parcel index sits in ONE of the two real keyspaces, unmixed, and NO program county publishes a single id the classifier calls `other`. The vocabulary is therefore MEASURABLE per county, and `PRIVATE ROAD` is outside 48491's measured vocabulary while all 82 refusal keys are inside it."
+    },
+    "finding7_the_phantom_has_no_roll_row": "cad_property holds NO row for `PRIVATE ROAD` under any key (the same query that returns 82 of 82 for the refused keys returns 0 for it). So 'the county's roll names this key as an account' also separates the classes -- but it requires a second store read and a membership test, where the keyspace classifier is free, already shared, and already trusted by two gates.",
+    "finding8_the_three_dissenters": "48491:R674569, R674570 and R674571 are the only 3 of the 82 whose TxGIO rows carry a null owner_name AND a null situs_address. They are tile duplicates of one geometry each (md5 equal across their two rows), R-shaped, and each has a cad_property row under its own key. The situs-agreement derivation would have refused them; the keyspace derivation accepts them, which is correct."
+  },
+
+  "theDispatchIsContradictedOnItsOwnFraming": {
+    "theDispatchSays": "'They look like multipart parcels with a CAD miss, not label keys' (P-350's RECORD section 3, carried into this dispatch), and mission item 2 asks to separate 'a label key and a multipart parcel, both of which carry several geometries and no account'.",
+    "measured": "The 82 are NOT multipart. Each is exactly one parcel geometry, duplicated across the tile boundaries its bbox crosses. The genuinely-multipart class in this county is 286 keys and today's guard refuses none of them (286 of 286 carry a pair bind). The label key `PRIVATE ROAD` is also one geometry duplicated across tiles -- so it and the 82 have the SAME geometry shape and are separated by the KEY alone, not by any geometry measurement.",
+    "consequenceForTheDesign": "Item 2's second derivation therefore cannot be a geometry measurement at all. It is the key's membership in the county's own published key vocabulary. Reported rather than smoothed, per DEV_PROCESS 3.2."
+  },
+
+  "theDesign": {
+    "thePredicate": "Refuse a key only when NO ONE of three independently derived legs positively determines that it names a parcel.",
+    "leg1_theAccountLeg": "`cadByProp.has(propId)` -- unchanged from P-352. The county's declared binders (the published WCAD pair for 48491, the account crosswalk for a SEED_BLOCKED county, CAD_ROWS_SQL elsewhere; the situs fallback folded in). A positive determination.",
+    "leg2_theKeyVocabularyLeg_NEW": "The key lies in the keyspace THIS COUNTY publishes parcel ids in, and the county's parcel layer carries at least one shape under it. The county's vocabulary is measured ONCE PER RUN from its own published index (`SELECT keyspaceSql(prop_id) AS keyspace, count(*) FROM landing_parcel_jurisdiction WHERE county_fips = $1 GROUP BY 1`) -- county-wide, never page-scoped, the same discipline P-325 and P-335 use for their county-wide reads. The classifier is IMPORTED (`keyspaceSql`, P-306), never re-implemented: a JS twin beside the SQL one would be DEV_PROCESS 2.4's CTRL-1 shape, which is exactly why P-333 reads the label the database assigned rather than classifying ids in JS.",
+    "leg3_theGeometryLeg_CORRECTED": "`count(DISTINCT md5(ST_AsBinary(geom))) = 1` -- one distinct parcel geometry, where P-352 wrote `count(*) = 1`. The correction is the whole of finding 1+2: the row count measures tiles, the geometry count measures parts. Consulted only when the vocabulary cannot speak (see the abstention rule), so it stays exactly today's fallback for a county we cannot classify.",
+    "theAbstentionRule": "The vocabulary leg answers `measured` only when the county's published index sits in exactly ONE real keyspace (numeric or r-prefixed) with at least one key; a county whose ids are all `other`-shaped, or a mixture of keyspaces, answers `undecided` and the leg abstains. **An abstention is never a refusal.** When it abstains, the geometry leg is consulted, which is today's behaviour with the corrected measure. This is what keeps the change from refusing every key in a county whose ids the fleet's two-keyspace vocabulary cannot describe (measured today: none of the six program counties, but the rule must hold for the ones we have not seen).",
+    "whyTheSecondDerivationIsIndependent": "The account leg reads the county's BINDERS (a join through published extracts and crosswalks). The vocabulary leg reads the KEY STRING through the classifier two other gates already trust, against the county's own published index -- a different table from the parcel layer, a different column from the geometry, a different rule from both. The geometry leg reads the GEOMETRY BYTES. No two of the three share an input or a rule. The independence that matters operationally is shown by the falsifiers: each leg is the sole reason for a different outcome.",
+    "whatFailsClosed": "A key with no geometry row in a county whose vocabulary is measured, and no account, is REFUSED (the county publishes no such parcel id, or the layer has no shape for it). A key with no geometry row and no account in a county whose vocabulary abstains is REFUSED (today's 'unmeasured is not healthy'). A county we cannot classify is never refused wholesale."
+  },
+
+  "preRegisteredFalsifiers": [
+    "F1 (the phantom, both directions). `48491:PRIVATE ROAD` is REFUSED, and it is refused for the NEW reason (`refusalBasis: outside-published-keyspace`), NOT because of a geometry count -- under the corrected measure its distinct-geometry count is 1 and the count leg PASSES. Direction 1: with the vocabulary leg removed (a one-line revert in the fixture) `PRIVATE ROAD` is ACCEPTED -- proving the new leg is what refuses it and the test is not vacuous. Direction 2: with the leg in place it is refused with the basis named.",
+    "F2 (the 82). A fixture shaped exactly like `48491:R006142` -- one distinct geometry, 2 rows on 2 tiles, r-prefixed key, no account -- is ACCEPTED. Direction 1: under the PRE-change predicate the same fixture is REFUSED (pinned as a separate assertion on the same input shape), so the test measures the change and not the fixture.",
+    "F3 (the tile duplication, in the store's own terms). The census SQL counts DISTINCT geometries, proven by a store-level check on the live rows: for `48491:R006142` the row count is 2 and the distinct-geometry count is 1, and for the 286 genuinely-multipart keys the distinct-geometry count equals `count(DISTINCT feature_index)`. The two derivations of 'how many parts' (geometry bytes vs source feature index) agree on every landing key of 48491 -- a divergence test, because a second derivation that quietly disagreed would be the finding, not the fix.",
+    "F4 (the single-geometry label key -- P-352's named gap). A fixture key that is `other`-shaped, carries exactly ONE geometry, and has no account is REFUSED. Under the PRE-change predicate it is ACCEPTED, so the gap is closed by this lane and the assertion shows the pre-change direction rather than claiming it.",
+    "F5 (the abstention). A county whose published index is all `other`-shaped (e.g. Anderson 48001's dotted ids) or mixed is NOT refused wholesale: a fixture with vocabulary `undecided`, one geometry and no account is ACCEPTED, and one with zero geometries and no account is REFUSED. Both directions, because 'abstain must never be a refusal' is a claim that can only be tested by showing the fallback still refuses where the fallback says it should.",
+    "F6 (the run record). The refused population is NAMED per county on the run: the returned record carries the full key list with its count and basis (not only the 20 samples P-352 kept), and on `--apply` a `run_events` row of kind `instantiation-refused` carries the same list. Proven by violation: a fixture run whose guard refuses 3 keys shows all 3 in the record, and the samples array is no longer the only copy."
+  ],
+
+  "theThreeQuestionGateAsDesigned": {
+    "whatExecutesIt": "`classifyInstantiationKeys` (pure) called from `instantiateAndIngest`, which is called at the four sites that instantiate a record: fillCountyWide's page pass and its drift-replay pass2, and the sample path's pass1 and pass2.",
+    "whatTriggersIt": "Every instantiation, on every run and every dry run, for every county -- the guard is wired at all four sites (pinned by the existing wiring test).",
+    "whatFailsWhenARealParcelIsRefused": "The key's parcel_record is never instantiated, or never refreshed. In this county today the records exist from 2026-09-02, so the refusal means they stop being refreshed; `situsState` and `landUseVintage` then refuse on exactly those keys in the gate (P-350's measured 82). In a NEW county there is no record at all and a missing record is INVISIBLE -- the full-shape ruling. That asymmetry is why the corrected measure and the abstention rule both err toward accepting a published parcel key.",
+    "whatBypassesIt": [
+      "An unwired caller: `geometryCountByProp === undefined` reports `instantiationGuard: null` rather than silently passing. Stated and pinned; the four production call sites all wire it.",
+      "The exported single-row UPSERT_RECORD_SQL has no caller (pinned by P-352's test); a raw SQL insert against parcel_record is outside this module entirely.",
+      "A county whose published index is mixed or all-`other` abstains on the vocabulary leg and falls back to the corrected geometry leg -- a NAMED limitation of the new leg, not a silent one.",
+      "`retire-phantom-record` is a separate writer with its own census SQL (PHANTOM_GEOMETRY_COUNT_SQL); it is NOT changed by this lane and its own phantom evidence is a row count, which this lane's finding says is the wrong measure. Named as a leave-behind, not repaired here (out of scope, and the phantom is already retired)."
+    ]
+  },
+
+  "outOfScope": [
+    "The 136 txgio_parcel rows in 48491 whose prop_id is NULL and the ONE txgio key per program county that has a row in the parcel layer and no row in the landing index (the phantom was 48491's). Both are named here as measured facts; neither is this lane's to fix, and the guard never sees them (it iterates the landing index).",
+    "The fill's CAD bind for 48491 stays the published WCAD pair only. This lane does NOT add cad_property.prop_id as a binder, even though it names all 82 -- that is P-335's ruled two-namespace decision and a different row. Only the SHAPE of the key is read, never a value through it.",
+    "P-352's own residual questions, P-267's deferred not-applicable sweep, and every store write, deploy, apply or merge."
+  ],
+
+  "whatWouldFalsifyThisLane": [
+    "Any of the 82 keys still refused by the shipped predicate on the real store (the reproduction must go to 0 refusals in 48491, and the per-county dry run must match the prediction exactly).",
+    "`PRIVATE ROAD` accepted anywhere in the suite or in the per-county dry run.",
+    "A genuinely-multipart key of 48491 refused.",
+    "Any county in the program refusing a larger population than the prediction, or a county with an undecided vocabulary refusing at all.",
+    "The full refused list failing to appear on the run record."
+  ]
+}
