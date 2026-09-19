@@ -1,0 +1,84 @@
+{
+  "falsifier": "F1",
+  "readAt": "2026-09-19T01:09:59.031Z",
+  "worktree": "P:\\smartcity-dashboards-worktrees\\g158-access-log-write-path",
+  "route": "/api/domains/business-licenses?cityKey=template-city",
+  "steps": [
+    {
+      "step": "0. counts on a clean store, before any read",
+      "rowsByTenant": {
+        "bastrop_tx": 0,
+        "template-city": 0,
+        "some-other-city": 0
+      }
+    },
+    {
+      "step": "1. ANONYMOUS read of the same route",
+      "response": {
+        "status": 200,
+        "servedRecords": 17,
+        "error": null,
+        "refused": null
+      },
+      "rowsByTenantAfter": {
+        "bastrop_tx": 0,
+        "template-city": 0,
+        "some-other-city": 0
+      },
+      "reading": "0 rows everywhere: the anonymous caller is not a person looking at a record, so it is neither recorded nor refused. A row it wrote would have to be filed under some tenant, and every tenant in play was counted."
+    },
+    {
+      "step": "2a. an EXPIRED staff bearer on the public-free pack the probe reads",
+      "response": {
+        "status": 200,
+        "servedRecords": 17,
+        "error": null,
+        "refused": null
+      },
+      "rowsByTenantAfter": {
+        "bastrop_tx": 0,
+        "template-city": 0,
+        "some-other-city": 0
+      },
+      "reading": "HTTP 200 and 17 records, zero rows. The bearer did not establish a staff identity, so this is an ANONYMOUS read of a public-free pack, not a staff read: served, unrecorded, and refused by nothing. The zero is correct because no person was established -- but it is not evidence of a refusal, and this step does not claim one."
+    },
+    {
+      "step": "2b. the same EXPIRED bearer against a tenant-private pack (bastrop_tx)",
+      "response": {
+        "status": 401,
+        "error": "expired_token"
+      },
+      "rowsByTenantAfter": {
+        "bastrop_tx": 0,
+        "template-city": 0,
+        "some-other-city": 0
+      },
+      "reading": "refused before the content gate, so there is nothing to record. Zero rows here is the correct answer and not a hole: no read happened."
+    },
+    {
+      "step": "3. the SAME route as a named fixture staff identity (the control)",
+      "response": {
+        "status": 200,
+        "servedRecords": 17,
+        "error": null,
+        "refused": null
+      },
+      "rowsByTenantAfter": {
+        "bastrop_tx": 1,
+        "template-city": 0,
+        "some-other-city": 0
+      },
+      "rowCount": 1,
+      "rowSubs": [
+        "fixture-staff-01"
+      ],
+      "reading": "exactly one row appears, and it is the staff identity's. The route writes nothing for a non-staff caller and one row for a staff caller IN THE SAME PROCESS, so the zeroes above are attributable to the caller and not to a route that cannot write."
+    }
+  ],
+  "commit": "3b5697385510f6f2199267cd4cf478327a80060c",
+  "verdict": {
+    "rule": "an anonymous/refused caller on the same route writes ZERO rows, asserted by count before and after",
+    "result": "PASS",
+    "basis": "counts across every tenant in play, plus the identity list read back from the reader's own tenant"
+  }
+}

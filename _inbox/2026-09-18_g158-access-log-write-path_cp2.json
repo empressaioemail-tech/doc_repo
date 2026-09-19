@@ -1,0 +1,82 @@
+{
+  "lane": "g158-access-log-write-path",
+  "planRows": ["G-158"],
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint: what was attacked, what fired, what lost, and what was NOT found",
+  "seat": "cente-vsc-g158",
+  "filedAt": "2026-09-19T01:38:00Z",
+
+  "snapshot": {
+    "productRepo": { "worktree": "P:\\smartcity-dashboards-worktrees\\g158-access-log-write-path", "branch": "g158-access-log-write-path", "head": "3b5697385510f6f2199267cd4cf478327a80060c", "prefixRef": "ee9c5d5dbd8ab2796042dbea245d72178688bcc4", "workingTree": "clean" },
+    "docRepo": { "worktree": "P:\\seat-worktrees\\g158-access-log-write-path\\doc_repo", "branch": "lane/g158-access-log-write-path", "head": "00db93c96870a14a5301fa44a56c75e20ed0ce2d" }
+  },
+
+  "theFindingThatMattersMost": {
+    "headline": "THE NO-BYPASS GUARD WAS PROVEN ABLE TO FIRE, BY BREAKING IT ON PURPOSE.",
+    "whatWasDone": "One route's readability check was restored to the pre-lane shape -- the raw `packContentReadStatus` block, inlined, with no log write -- and the suite re-run.",
+    "whatFired": "Two structural tests in src/access-log-route.test.mjs failed: 'leaves no packContentReadStatus call site outside the two gate helpers' (3 call sites observed against 2 expected) and 'gives every readability check a log write, and counts the evidence' (10 seams observed against 11).",
+    "whatWasThenDone": "The mutation was reverted and both tests pass on the restored tree. The guard is therefore observed failing on a violation and passing on the correct tree, which is the only way ENFORCEMENT.md accepts a check as working.",
+    "whyItIsHere": "P7 of CP1 named the bypass risk as the one this row cannot afford. A structural count over source text is a weak instrument in general; here it is the instrument that can see a route nobody remembered to gate, and it was shown to see one."
+  },
+
+  "aPreRegisteredExpectationLost, and theArtifactWasChangedToMatchTheObservation": {
+    "where": "The F1 falsifier (non-staff callers write nothing), step 2 of its first draft.",
+    "whatWasExpected": "That a JWT-shaped staff bearer the product refuses (an expired token) would be refused by staff verification BEFORE the content gate, so the step would show a refusal with zero rows written.",
+    "whatWasObserved": "HTTP 200 with 17 records and zero rows. The expired bearer did not establish a staff identity, so the request resolved as an ANONYMOUS read of a public-free pack -- served, unrecorded, and refused by nothing. The claimed refusal did not happen.",
+    "whatWasChanged": "The step's READING was corrected to state what happened, and the refusal direction was moved somewhere it is observable: the same expired bearer against the tenant-private pack bastrop_tx answers 401 expired_token with zero rows. The first draft's claim was deleted rather than reworded, and the corrected run is in _inbox/2026-09-18_g158-access-log-write-path_f1-non-staff-readers.json.",
+    "whyItIsRecorded": "The convenient reading was the wrong one and it was caught by running the instrument rather than by re-reading the conclusion. A falsifier whose prose claims a refusal that its own response body contradicts is the defect class this program keeps finding in its instruments."
+  },
+
+  "theStatusMappingWasCorrectedTowardThePreRegistration": {
+    "whatHappened": "The first implementation returned 403 for every refusal reason, including a deployment with no durable store.",
+    "whyThatWasWrong": "403 says the CALLER may not have this. A deployment that cannot keep its own audit trail is not the caller's fault; it is a failing dependency, and the read is retryable. Collapsing the two makes a storage outage read as a permissions problem.",
+    "whatChanged": "REFUSAL_STATUS in src/access-log.mjs now maps no_durable_store and store_error to 503, no_tenant_claim and no_subject to 403, and no_city/no_route to 500 (this product called itself wrong), and the route test asserts 503 for the plant.",
+    "theDirectionMatters": "A pre-registered expectation changed the code and the test moved with it -- this is worth naming because the same sentence would describe the forbidden move (weakening an assertion until it passes). The distinction is that 503 is the semantically correct code for an absent store, CP1 pre-registered it, and the assertion was made STRICTER (>= 500 with no records served), not looser."
+  },
+
+  "oneReadabilityCheckWithTwoRecordWrites": {
+    "route": "/api/domains/:id",
+    "whatItIs": "server.mjs:679 does the readability check once; the route then serves either live records (:700) or fixture records (:711), and each serving path writes its own row because each is a read that returned records.",
+    "howTheStructuralTestHandlesIt": "The expected count is `checks.length + 1` record writes (12 for 11), with this route named as the reason in the test itself.",
+    "whyItIsNotAWidenedCheck": "The count is not relaxed; it is derived from two paths that genuinely serve content under one check. A route added later without a write still fails the assertion, which is what the reverted mutation above demonstrated."
+  },
+
+  "instrumentDefectsFoundInThisLane, all in the proving tools": [
+    {
+      "defect": "The probe's own source scan rooted itself one directory too high (`walk(srcDir, '')`), so it tried to open `a11y-gate.mjs` at the product root and died with ENOENT.",
+      "whyItMattered": "The pre-fix absence claim is a claim about a DENOMINATOR -- 'n files under src/ searched, 0 matches'. A scan that cannot walk the tree is not evidence of absence.",
+      "fix": "The walk now emits paths prefixed `src/`, matching the denominator dump-source-state.mjs uses (`git ls-tree -r REF src/`, files whose names contain '.test.' excluded). Result: 53 files at ee9c5d5 with 0 matches; 54 at 3b56973 with 2 (src/access-log.mjs, src/server.mjs).",
+      "noteOnDenominators": "The dispatch's design reference read counted 45 source files at 3d3ec62a. That is a different ref with fewer files, not a disagreement with these counts, and the artifact says which ref each count belongs to."
+    },
+    {
+      "defect": "`process.exit()` in the Node probe aborts on Windows with `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 76`, because the libuv async handle is still closing when exit runs.",
+      "whyItMattered": "It crashes the instrument AFTER the measurements are taken, which would read as instrument failure rather than as a completed run.",
+      "fix": "`process.exitCode = N` and let the loop drain. Recorded as a Windows-local environment fact, not a product fact."
+    },
+    {
+      "defect": "`npm ci` was required in the fresh product worktree before any test could run (ERR_MODULE_NOT_FOUND: 'pg').",
+      "whyItMattered": "It reads as a broken repo; it is an uninstalled one."
+    }
+  ],
+
+  "theFlakeThatIsNotThisLanesAndIsNamedRatherThanBorrowed": {
+    "test": "src/server.test.mjs:1105 'an admin reads the roster scoped to a requested cityKey; a city-manager reads only their OWN tenant regardless of the query param' -- `TypeError: fetch failed` / `read ECONNRESET` on a 127.0.0.1 request.",
+    "whyItCannotBeThisLanes": "The route the test calls is /api/people-and-access. That route is nowhere in this lane's diff (`git diff ee9c5d5..HEAD -- src/server.mjs` matches 'people-and-access' zero times) and it does not call the gate: the 12 record-writing call sites are on /api/lenses/*/compose, /api/property-map/summary, /api/property-map/layers, /api/lenses/development-services/pipeline, /api/city-domains (3), /api/city-identity, /api/shell, and the finance surface/page routes. The request never reaches this lane's code.",
+    "itReproducesAtThePreLaneRef": "In the base worktree (detached at ee9c5d5, this lane's diff absent, node_modules junctioned), `node --test src/server.test.mjs`: run 1 fail 1 at :1105, run 2 PASS 27/27 fail 0, run 3 fail 1 at :1105. An earlier base run failed the same file at :1070 -- a DIFFERENT test -- so the reset moves between loopback tests.",
+    "sampleSizesStated": "Base (ee9c5d5): 2 of 3 runs failed this test, 1 of 3 failed a different test in the same file, 1 of 3 passed the file entirely. Head (3b56973): 3 of 3 single-file runs failed this test. The close reports these numbers as they came out rather than as a cleaner story, because a small sample that runs the wrong way is still the sample.",
+    "honestConclusion": "Interleaved loopback resets in a 27-test server file on Windows, present at the pre-lane ref and not on this lane's code path. If it hardens on head over more runs, that is a finding for whoever owns the Windows-local suite and not a defect this lane introduced; it is NOT named as a G-158 pass on anything."
+  },
+
+  "whatCP2DidNotFind": [
+    "No bypass in the final tree: `packContentReadStatus` is called exactly twice, both inside the gate helpers (server.mjs:214, :234), and all 11 readability checks are followed by a record write.",
+    "No write for a non-staff caller: measures by count, in the same process, on the same route (F1).",
+    "No row without a tenant: a verified person whose token carries no tenant is refused (403, no_tenant_claim) rather than filed nowhere.",
+    "No served read on a failed write: the plant refuses with 503, servedRecords null, zero record content in the body, and an unchanged row count -- and the same read is served again once the plant is removed (rows 1 -> 2)."
+  ],
+
+  "whatWasDeliberatelyNotDoneToMakeThingsLookBetter": [
+    "CI was not made green. The test job fails on an inherited assertion at this lane's base ref, and that is reported rather than silenced.",
+    "The design board was not redrawn; gen.mjs and check.mjs were left refusing.",
+    "The failure path was not widened so a failed log write still serves."
+  ]
+}

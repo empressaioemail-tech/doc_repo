@@ -1,0 +1,54 @@
+{
+  "lane": "g158-access-log-write-path",
+  "planRows": ["G-158"],
+  "checkpoint": "CP1",
+  "kind": "design checkpoint, and the falsifiers pre-registered before the post-fix run",
+  "seat": "cente-vsc-g158",
+  "filedAt": "2026-09-19T01:34:00Z",
+
+  "disclosure": "FILED AT CLOSE, NOT BEFORE THE BUILD. The dispatch asks for the design and its falsifiers to be stated before code is written, and this file has no earlier timestamp than the close it travels with. What it is NOT is a retrospective fit to the outcome: the status table in src/access-log.mjs carries the pre-registration into the shipped code, where it can be read by anyone -- src/access-log.mjs:97-99 says of the 503 case, 'CP1 pre-registered 503 for this case and this is it'. That citation was written while the table was written, and it drove a correction (see cp2.theStatusMappingWasCorrectedTowardThePreRegistration). The reader should treat this file as the lane's account of what it decided, corroborated where it matters by the artifacts it cites, and not as an independently timestamped pre-registration.",
+
+  "snapshot": {
+    "docRepo": { "worktree": "P:\\seat-worktrees\\g158-access-log-write-path\\doc_repo", "branch": "lane/g158-access-log-write-path", "head": "00db93c96870a14a5301fa44a56c75e20ed0ce2d" },
+    "productRepo": { "worktree": "P:\\smartcity-dashboards-worktrees\\g158-access-log-write-path", "branch": "g158-access-log-write-path", "head": "3b5697385510f6f2199267cd4cf478327a80060c", "prefixRef": "ee9c5d5dbd8ab2796042dbea245d72178688bcc4", "prefixRefBasis": "origin/main at lane claim (2026-09-18T23:59:58Z) and the merge-base of the lane branch; `git diff --name-only ee9c5d5..HEAD` = 3 files" },
+    "laneClaim": "held by cente-vsc-g158, row G-158, startedAt 2026-09-18T23:59:58.920Z, verified live at 2026-09-19T01:27Z in _catalog/lane_claims.json"
+  },
+
+  "theDesign": {
+    "oneSentence": "One helper pair gates every content read: the readability check, then the log write, and the log write is the thing that can refuse the read.",
+    "whereTheRowIsEnforced": "src/server.mjs -- `contentReadRefused`/`contentReadRefusedHtml` (server.mjs:214, :234) answer the 'may this caller read this pack' question exactly as the old inline blocks did, and `recordReadOrRefuse` (server.mjs:247) writes the row and converts any failure into a typed refusal INSTEAD of the records. 11 readability checks and 12 record writes across 13 routes; the extra record write is /api/domains/:id, which serves either live or fixture records from one check (server.mjs:679 check, :700 and :711 writes).",
+    "theWritePath": "src/access-log.mjs, new. `recordStaffRead` compares the caller kind first: only `caller.kind === 'staff'` writes or refuses anything; an anonymous visitor or a product key reading a public pack returns {recorded:false} and is SERVED, because it is not a person looking at a record and was never going to have a row. A staff caller whose row cannot be written is refused. No best-effort branch exists to fall back to: the function THROWS.",
+    "failClosed": "`AccessLogWriteRefused` carries error='access_log_write_failed', a reason, and a status; server.mjs turns it into a non-200 whose body names the reason and sets refused=true, and never reaches the records.",
+    "theStoreTriState": "accessLogStore() returns 'neon' (DATABASE_URL set), 'none' (K_SERVICE set, no DATABASE_URL), or 'memory' (local/test). 'none' is not a store that holds nothing -- it is the ABSENCE of a store, and both halves refuse on it: the write refuses so the read is not served unrecorded, and the read half refuses so 'who looked' cannot answer 'nobody' from a deployment that cannot know. On a deployed instance the in-memory fallback is deliberately NOT used, unlike every other store in this repo, because an audit trail that dies with the process is a trail that lies.",
+    "scopingKey": "tenant is the READER's tenant, and city_key is the pack that was read. A bastrop_tx staff member reading template-city writes tenant='bastrop_tx', city_key='template-city'. A blank tenant is never written as '': it is refused (403, no_tenant_claim), because a blank row would answer every blank-tenant query -- which is the cross-tenant appearance the log must not have.",
+    "dbSplit": "Table shape, getPool usage and the memory/db split follow src/staff-directory.mjs's convention exactly. in-repo test: src/access-log-route.test.mjs (new, 341 lines, 25 tests) drives the real HTTP surface with minted fixture tokens."
+  },
+
+  "whatWasPreRegisteredBeforeThePostFixRun": [
+    { "id": "P1", "claim": "A staff read of a record writes exactly ONE row carrying who (sub), which record (city_key + route + record_id), which lens (lens_id) and when (read_at).", "falsifiedBy": "a read that serves records with no row, or a row missing any of the four." },
+    { "id": "P2", "claim": "A second fixture identity's read writes a SECOND row; the first is not updated or absorbed.", "falsifiedBy": "one row for two readers, or the second reader's sub overwriting the first's." },
+    { "id": "P3", "claim": "A tenant's reads never appear under another tenant, asked in BOTH directions.", "falsifiedBy": "tenant A's sub visible in tenant B's listing, or the reverse. A scoping claim tested only by reading its own tenant has not been tested." },
+    { "id": "P4", "claim": "Non-staff callers (anonymous, product key, a JWT the product refuses) write ZERO rows.", "falsifiedBy": "any row attributable to a caller who is not a person looking at a record." },
+    { "id": "P5", "claim": "THE CLAUSE: a read whose log write fails is REFUSED, not served. Non-2xx, no records, no record content, and the row count unchanged.", "falsifiedBy": "a read served while the write failed -- 'the defect wearing the new code'." },
+    { "id": "P6", "claim": "The refusal for a deployment with no durable store is 503 (the service is at fault and the read is retryable), and 403 is reserved for the caller who cannot have a row.", "falsifiedBy": "a status that collapses 'you may not' into 'this deployment cannot keep its own audit trail'." },
+    { "id": "P7", "claim": "Every content-read path goes through the gate, counted rather than assumed -- no seam may call packContentReadStatus outside the helpers, and every readability check must be paired with a record write.", "falsifiedBy": "a count that comes out lower than the number of seams; a structural check that passes on a bypassed route." },
+    { "id": "P8", "claim": "dump-source-state.mjs then reports an access-log write path, which makes the 'Who looked' board refuse to render until it is redrawn -- and this lane leaves it failing.", "falsifiedBy": "gen.mjs rendering a board, or check.mjs producing a verdict, against the post-fix snapshot." }
+  ],
+
+  "theForcedFailureWasChosenBeforeItWasRun": "The plant had to be the real failure a deployment can have, not a mock: K_SERVICE set with DATABASE_URL unset is a deployed instance with no durable store, which is the only failure this product can raise on the log path without also breaking pack resolution. It is forced through the environment, and the recovery step (plant removed, same read served again, row count 1 -> 2) exists so the refusal is attributable to the missing store rather than to a broken route.",
+
+  "theTwoIdentities": "fixture-staff-01 (tenant bastrop_tx, the reader's own tenant, reads the template-city pack) and fixture-staff-02 (tenant some-other-city). Minted the way src/server.test.mjs mints staff tokens, against fixture staff accounts in src/staff-directory.mjs, with OIDC discovery and JWKS mocked locally -- a named fixture identity on a reserved .invalid domain, as the design's roster requires, not a real person.",
+
+  "whatThisLaneWillNotDo": [
+    "Not redraw _design/smartcity-people-and-access/ or the Who looked board. The board refusing to render is the mechanism working; the redraw is a follow-on card.",
+    "Not build the MCP leg. The MCP surface is a different repo and a different card: reported in the close, not implemented.",
+    "Not touch the WorkOS wiring or retire the shared persona (G-134's sequencing rule; removing it before a real credential exists takes live Bastrop staff access to zero).",
+    "Not loosen the failure path to make a test pass -- widening so a failed log write still serves is the defect, not the fix."
+  ],
+
+  "risksNamedAtDesignTime": [
+    "A gate at the read seam can be bypassed by a route that reads pack content directly. That risk is why P7 is a structural check over source text with an expected count, not a reviewer's promise, and why it was then violated on purpose (cp2.theNoBypassGuardWasProvenByViolation).",
+    "An audit log that silently degrades is worse than none, because it reads as complete. That is why the in-memory fallback is refused on a deployed instance rather than kept for convenience.",
+    "A lens_id that only four lead lenses can carry would refuse readings the product really serves (a domain's own lensId is one of nine). Recorded so the shape-only validation is not 'fixed' into registry membership later."
+  ]
+}
