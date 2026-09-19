@@ -1,0 +1,86 @@
+{
+  "lane": "p371-bake-refusal-reason",
+  "planRows": ["P-371"],
+  "checkpoint": "CP2 -- mid-work, filed after the change and its falsifiers ran in both directions and before the close. The adversarial pass over this lane's OWN work is the `defectsCP2CaughtInThisLanesOwnWork` section; the limits that survive are in `honestLimits`, stated rather than smoothed.",
+  "seat": "cente-vsc-p371",
+  "filedAt": "2026-09-19T12:52Z",
+  "repos": ["hauska-factory"],
+  "status": "mid-work",
+
+  "whatChangedSinceCP1": {
+    "hauskaFactory": {
+      "branch": "lane/p371-bake-refusal-reason",
+      "base": "e6ca09de5ecaed301758d7b88ff58b1264664bbf (the dispatch's compile SHA)",
+      "head": "d1b6ea0740a372399c6b08d44090c3d523596120",
+      "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/191 (OPEN, base main, mergeable against ab7618cb)",
+      "files": [
+        "src/lib/subprocess-refusal.mjs (NEW, ~290 lines -- the naming rule, the bound, the record, the log form)",
+        "src/jobs/bastrop-publish.mjs (EDIT: runShell throws subprocessFailure with the step label; the bake stages are labelled; the catch records before terminating; the top-level catch prints the tail)",
+        "src/jobs/dollar-fields-patch.mjs (EDIT: invokeDollarBake and its outer catch and its top-level catch -- the same shape)",
+        "src/cli.mjs (EDIT: the deployed edge prints the tail instead of the code alone)",
+        "test/p371-bake-refusal-reason.test.mjs (NEW, 8 tests -- real child processes through the real call sites)",
+        "test/publish.test.mjs (EDIT, +1 test appended: the whole runBastropPublish path with a real bake subprocess refusing)"
+      ],
+      "suite": "local `npm test`: 2064 tests, 2020 pass, 2 fail, 2 todo, 1 skipped. The 2 failures are PRE-EXISTING AND ENVIRONMENTAL, and that was MEASURED rather than assumed: with this diff stashed (`git stash push -- src test`) the same two files fail identically -- check-walk-decline-body-drift and ctx-b3-store-census both assert against the LOCAL P:/legacy-design-tools checkout, which CI replaces with a fresh LDT main, and p3-absence's two 'EXPECTED (non-vacuity)' tests carry the OPS-21 S3 finding in their own names ('not fixed by this lane (out of scope)').",
+      "noStoreTouched": "no connection to any store was opened by this lane: every test is an in-process fake plus a fake bake CLI in a temp dir."
+    },
+    "docRepo": "No doc_repo edits are made by this lane. CP1, CP2 and the close are its only artifacts, at the dispatch's exact paths, filed from the seat's own worktree."
+  },
+
+  "defectsCP2CaughtInThisLanesOwnWork": [
+    {
+      "defect": "THE EDGE WAS NOT WHERE THE DISPATCH SAID THE EDGE WAS, and shipping the obvious fix would have changed nothing that was MEASURED.",
+      "howItShowedUp": "The dispatch cites `src/jobs/bastrop-publish.mjs` and says 'the caller that reaches the job's top level prints only the code'. That is true of the file's own `if (process.argv[1]?.endsWith('bastrop-publish.mjs'))` block -- and that block NEVER RUNS in the deployed job. Dockerfile.publish's `ENTRYPOINT [\"node\", \"src/cli.mjs\"]` plus cloudbuild.publish.yaml's `--command=node,src/cli.mjs --args=bastrop-publish,...` mean the 11-entry log came from src/cli.mjs's `main().catch`. The job's block is only reached when the file is invoked directly, which nothing on Cloud Run does.",
+      "theFix": "src/cli.mjs's catch prints the bounded form. The job's own block was fixed too (it is the right shape for a direct invocation and costs one line), but the deployed edge is the one that matters.",
+      "whyItIsRecorded": "A lane that had fixed only the job would have opened a PR, passed tests, and left the measured symptom (`BAKE_FAILED` as the only log line) exactly as it was -- a control that cannot fire. The reading that caught it was the deployment wiring, not the job source, which is the general lesson: 'the caller that prints it' must be read from the entrypoint, never from the file the dispatch points at."
+    },
+    {
+      "defect": "AN UNBOUNDED NAME, arriving from the other side of the same fix.",
+      "howItShowedUp": "The naming rule's bare form requires the WHOLE line to be SCREAMING_SNAKE, so a 5MB line of `A_B_C_...` matched and was returned as the refusal name. That name lands in `runs.refuse_code` (a `text` column, no length limit) and in every log line -- the same unbounded-at-rest defect the row exists to close, reintroduced through the name instead of the tail. The MB test would not have caught it: its last stdout line is lowercase `x`s, so the failure mode needed a deliberately hostile input to see.",
+      "theFix": "`MAX_REFUSAL_NAME_CHARS = 96`. A token longer than that is a payload, not a name; its tail still carries it verbatim and the failure is named BAKE_FAILED, which is the honest answer. Asserted in both directions (200-char token -> null; 96-char token -> the name)."
+    },
+    {
+      "defect": "TWO DEFECTS THE COMPILER AND THE RUNNER CAUGHT THAT REVIEW DID NOT: a duplicate `refusalNameOnLine` left behind by the cap edit (SyntaxError: 'Identifier has already been declared', caught only by running the suite), and a multi-byte bound test that proved nothing.",
+      "howItShowedUp": "The duplicate surfaced the moment `node --test` loaded the module. The bound test was worse because it PASSED for the wrong reason first: I asserted a 10-byte cut of `'a'*9000 + '€'` lands on a code-point boundary -- but that cut lands inside the ASCII run, so no trimming is exercised at all and the assertion was evidence of nothing. The honest case is `'€€€'` with `maxBytes: 4`, where the 4-byte tail starts mid-character (a 0x80 continuation byte) and the trim is what produces the 3-byte result.",
+      "theFix": "Duplicate removed (the capped definition is the only one). The bound test replaced with the €€€ case, asserting `bytes === 3`, `text === '€'` and no U+FFFD."
+    },
+    {
+      "defect": "THE RUN ROW'S STATUS IS NOT 'failed' BY THE TIME THE RECORD IS READ, and the first version of the full-path assertion said it was.",
+      "howItShowedUp": "The full-path test failed with `actual: 'failure', expected: 'failed'` -- control/termination.mjs:76 writes `UPDATE runs SET status = $2` with the termination record's OWN `exit_kind`, which is 'failure' for a non-dry-run refusal. Two writers, one field, and the later one wins.",
+      "theFix": "The assertion now says 'failure' AND states why (the comment names the second writer), so a reader is not left thinking the status is the refusal's. The field this row is actually about -- `refuse_code` -- is asserted separately and unchanged."
+    },
+    {
+      "defect": "A FALSE NEGATIVE RATE worth naming: the `legacyRunShellWrap` helper in the tests is the REMOVED code reproduced by hand. If the reproduction were subtly wrong, the 'before' direction would be evidence about a straw man.",
+      "howItShowedUp": "Checked by construction rather than by faith: the reproduction is the same six lines that were deleted (the `[err.stderr, err.stdout, err.message]` join with `.slice(-4000)`, and `typeof err.code === 'string' ? err.code : 'BAKE_FAILED'`), and it is fed the SAME `err` object the new wrapper receives (the real child error, read off `thrown.cause`) rather than a synthetic error.",
+      "theFix": "No fix needed; recorded because the strength of the falsifier depends entirely on this and a reader should be able to check it against the removed lines in the diff."
+    }
+  ],
+
+  "whatIsAlreadyMeasured": {
+    "theRealChild": "Every falsifier spawns a real `node` child through the real `invokeLdtBake` / `invokeDollarBake` (`BAKE_CLI_ROOT` pointed at a temp dir holding a fake bake CLI). Nothing about the failure path is stubbed: `execFile` -> the numeric exit code -> `subprocessFailure` -> the tails.",
+    "theFullPath": "The publish-path falsifier drives `runBastropPublish` with the real `runChunkedConformantBakes` and the real `invokeLdtBake`, a fake Factory store in process, and a fake bake CLI on disk. It asserts the run row's `refuse_code`, the one `subprocess-refusal` row (step/exitCode/tails/bound), the termination event's reason, and that no publish_runs row records success.",
+    "theBoundOnAPathologicalChild": "~5MB of stdout and ~5,000 lines: `originalBytes > 4e6`, `bytes <= 8192`, both bound flags true, the name still extracted, and `formatSubprocessFailureForLog` under 20KB.",
+    "theCI": "pending at CP2; the close carries the conclusion read from `gh pr view --json` rather than inferred from the word 'pass'."
+  },
+
+  "theReadsStillOutstanding": {
+    "store": "NONE. This row's subject is a code path, and every claim it makes is provable offline against a fake child. No heavy-scan window was taken, held or released by this lane, and nothing in it is blocked on a store.",
+    "theOneClaimThatNeedsADeployedSurface": "That a FUTURE bake refusal is answerable in Cloud Logging and in `run_events` on a real run. That cannot be shown without deploying and publishing, both forbidden here, so it is stated as what it is: the code path is proven, and the first real refusal after the integration seat merges and deploys is the observation that closes it. The lane does NOT claim otherwise."
+  },
+
+  "honestLimits": [
+    "The record carries a TAIL. 8192 bytes and 40 lines of each stream, the end of it. A refusal whose words appear EARLIER than the last 40 lines of a very chatty child is not in the record. The name is read from the RAW stream before bounding, so the name survives a chatty child; the measurement text around it may not.",
+    "The name is read ONLY from the last non-empty line. The bake CLIs put their refusal there (they print it and exit), so this is the strongest available signal and not a placeholder -- but a child that prints its code and then another log line afterwards is NOT named, and the tail is then the whole of the record. Stated in the module header as a contract rather than left as an accident.",
+    "A single-word code (no underscore) is NOT named, deliberately: `ERROR` and `WARNING` would otherwise become refusal names, and a wrong name is worse than none. The cost is refused precision on `refuse_code`, never the words.",
+    "The bound protects the RECORD and the LOG line. It does not bound what `execFile` buffers in memory before the failure (the call sites allow 20MB); a child that prints more than that fails with ERR_CHILD_PROCESS_STDIO_MAXBUFFER, which this module keeps as the errno (failing to RUN is a different fact from refusing) and records with whatever partial output the error carries.",
+    "The `run_events` row is one row per failure. A publish that retries and fails twice writes two rows -- there is no de-duplication and none was added, because each failure is its own event.",
+    "publish-gate-sched.mjs's gate-CLI path and cloudrun-jobs.mjs's gcloud calls are NAMED as out of scope in CP1, not fixed. A gate refusals' words still live only in the process; that is a different surface's row."
+  ],
+
+  "whatWouldFalsifyThisLane": [
+    "If a real bake refusal after this lands still leaves `refuse_code = BAKE_FAILED` on the run row when the child printed a named refusal, the naming rule is wrong about what the child prints and must be re-derived from the child's source rather than adjusted by taste.",
+    "If Cloud Logging after a real failure shows the log line WITHOUT the tails, then the deployed entrypoint is not src/cli.mjs for that job (it is for factory-bastrop-publish and factory-dollar-fields-patch per cloudbuild.publish.yaml, read at d1b6ea07) and the edge assumption is wrong for it.",
+    "If a run_events row of kind `subprocess-refusal` cannot be written for any legitimate reason and the run's failure path then behaves differently from before, the catch that reports-loudly-rather-than-throws is the wrong trade and must be re-decided with the store's error in hand.",
+    "If a nameless failure stops being recorded (a regression to the old shape), F2 fails; if a REFUSAL loses its tail because the child's output exceeded 20MB, the partial-output arm is the one to read."
+  ]
+}

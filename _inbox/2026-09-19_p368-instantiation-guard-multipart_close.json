@@ -1,0 +1,1282 @@
+{
+  "lane": "p368-instantiation-guard-multipart",
+  "planRows": [
+    "P-368"
+  ],
+  "status": "closed",
+  "filedAt": "2026-09-19T13:10:00Z",
+  "seat": "cente-vsc-p368",
+  "fanDepth": 0,
+  "subAgents": {
+    "spawned": 0,
+    "maxDepth": 0
+  },
+  "dispatch": "_dispatches/2026-09-19_p368-instantiation-guard-multipart_dispatch.md",
+  "artifacts": {
+    "cp1": "_inbox/2026-09-19_p368-instantiation-guard-multipart_cp1.json",
+    "cp2": "_inbox/2026-09-19_p368-instantiation-guard-multipart_cp2.json",
+    "sourceRead": "_inbox/2026-09-19_p368_refused82_source_read.json",
+    "close": "_inbox/2026-09-19_p368-instantiation-guard-multipart_close.json",
+    "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/193",
+    "docRepoPr": "https://github.com/empressaioemail-tech/doc_repo/pull/4 (lane/p368-instantiation-guard-multipart -> main, head 9f8df7df)"
+  },
+  "startCommit": "e6ca09de5ecaed301758d7b88ff58b1264664bbf (hauska-factory origin/main at dispatch time)",
+  "endCommit": "2cb95c6",
+  "prNumbers_mergeShas_ciConclusions": "hauska-factory PR #193 (https://github.com/empressaioemail-tech/hauska-factory/pull/193), head 2cb95c6d5faacabbefbd5d4e324c999612aa9e04 on base main, state OPEN, mergeable MERGEABLE, mergeStateStatus CLEAN, reviewDecision empty: no review yet, and the merge is the seat's call, NOT claimed here. All four checks PASS on both recorded runs (35444287641, 35444299301): test 1m45s / 1m42s, engine-declaration-pin 17s / 18s, ldt-sha-comment-presence 13s / 14s, gate8 7s / 12s. Store of record: PRODUCTION_NEONDB_URL/neondb, read-only.",
+  "storeWrites": "NONE. No apply, no deploy, no merge, no bake, no publish. Every read of the store of record was read-only, under two heavy-scan leases: 14f47abe-e6aa-4dda-82d2-eadff22f519a (holder p368-instantiation-guard, county 48491, taken 12:16:19Z, expired 13:01:19Z -- it expired rather than being released, and the next take swept it) and 0fa9cef2-9a04-4fb0-b6cc-e13771588695 (holder cente-vsc-p368, county 48491, phase p368-live-guard-probe, taken 13:01:43Z, RELEASED 13:05:30.706Z, release_kind `released`). The release is recorded here because a lease handed back by hand is a fact and one left to time out is a different fact.",
+  "probe": {
+    "notApplicable": "An OPS-24 BUILD lane whose completion predicate is a guard rule plus its read-only whole-county verification, not a change a customer can read. The dispatch forbids applies, merges, deploys, bakes and store writes in this lane, so nothing it changed reaches a serving surface yet: a surface probe today would grade the 2026-09-02 records and the bake, not this work. The answer to 'does anything this lane touches reach a serving surface directly' is NO -- the guard decides whether a parcel_record is instantiated or refreshed, and the records it would refresh already exist from before this lane, on a store no surface reads until an apply the dispatch denies. OPS-24 Law 1 predicate debt: no surface-probe.mjs ROWS entry exists for P-368.",
+    "measuredBy": [
+      "hauska-factory test/parcel-record-fill.test.mjs -- 147 tests, 147 pass at 2cb95c6; the guard block carries F1, F2, F4 and F5 in both directions, the multipart case, the CAD join miss, the unmeasured case, the abstention, the wiring test (census AND vocabulary at all four call sites), the census-SQL shape, and the run-level F6 refusal record with a fake cortex and a fake factory",
+      "hauska-factory test/parcel-key-vocabulary.test.mjs -- 10 tests, 10 pass, new: every program county's measured census decision, the four abstention reasons, the unreadable-count refusal, the absent-label contract, and a source-level check that no second copy of the key regex exists",
+      "the read-only whole-county dry run of the RUNNING job against the store of record: county 48491, landing 282,569, pages 283, cadPresent 282,219, instantiationRefused 0 (was 82), keyVocabulary r-prefixed:measured on the run's own manifest",
+      "the read-only whole-county dry run of the other five program counties: 48021/48055/48209/48309/48453, 698,835 keys, instantiationRefused 0 in each, numeric:measured in each",
+      "the two-key live probe through the shipped loaders: 48491:PRIVATE ROAD REFUSED (outside-county-account-keyspace, 1 part, 2 rows, keyspace other) and 48491:R006142 ACCEPTED (1 part, 2 rows, keyspace r-prefixed), neither reached by the CAD bind, PRIVATE ROAD in the published index 0 times and R006142 once"
+    ],
+    "whatAPassWouldLookLike": "No surface can show this change before an apply; when one is authorized, the observable is the 82 keys' parcel_record and cell rows being refreshed on a county-wide apply, and the run_events row of kind `instantiation-refused` carrying an EMPTY key list for 48491."
+  },
+  "enforcementGateCheck": {
+    "what": "This close was run through scripts/enforcement/probe-close-gate.mjs's own exported evaluate() BEFORE being committed, rather than assuming its fields were spelled right.",
+    "result": "block=false after the probe block was added. P-368 is inside GATED_RANGES (OPS-24 span [358,375]) AND inside PREDICATE_DEBT, so it is a ROWS_WITHOUT_PREDICATE row: the gate requires the cited artifact to exist, parse and come from the instrument, and requires no per-row verdict.",
+    "firstAttemptFailed": "the FIRST staged commit was REFUSED by the real pre-commit hook with 'OPS-23 rows P-368 closed with no probe.artifact' -- the finding was taken as it was meant (the close was filed without the probe block) and the close was corrected rather than the hook bypassed."
+  },
+  "missionItem1_the82ReadAtSource": {
+    "whatTheyAre": "NOT multipart parcels and NOT labels. Every one is a SINGLE parcel geometry (the same md5 of ST_AsBinary on every row, the same feature_index, the same bbox) written once per 0.02-degree tile its bbox straddles. 72 carry 2 rows, 10 carry 4.",
+    "whyTheGuardRefusedThem": "GEOMETRY_COUNT_SQL counted `count(*)` -- ROWS, i.e. tiles -- so a single-parcel key straddling a tile edge read as 'not a parcel'. 18,399 of the county's other 18,409 tile-straddling keys were rescued by the CAD leg; the 82 with no reachable published bind were refused.",
+    "andTheLabelKeyIsTheSameShape": "`48491:PRIVATE ROAD` is also ONE geometry on TWO tiles, so no geometry measurement separates it from the 82 and P-352's refusal of it was luck. Its rows: 2, distinct geometries 1, md5 2b9b20ab85aa8e625de01169f87ce785 on both, and `cad_property` holds NO row under it.",
+    "countingRules": {
+      "geometryRows": "rows in txgio_parcel for the key, geom IS NOT NULL",
+      "distinctGeometries": "count(DISTINCT (west_lng,south_lat,east_lng,north_lat)) over those rows -- the STORED bbox, so it is independent of the geometry-byte hash the shipped census now uses; the two agree on all 82",
+      "publishedIndex": "landing_parcel_jurisdiction.prop_id for 48491",
+      "countyRoll": "cad_property.prop_id for 48491 (the node's OWN key, a different column from the STARMap-derived quick_ref_id)",
+      "publishedPair": "tx_wcad_owner.prop_id / tx_wcad_ag_valuation.prop_id, the two extracts the 48491 bind joins through (P-335)"
+    },
+    "whatTheTableShows": "rows vs parts on all 82; every one in the county's published index; every one named by the county's declared roll under the node's own R key; NONE reachable through the published WCAD pair, which is why the account leg was silent on exactly these keys.",
+    "reproduced": "82 refusals through the shipped functions at the start commit (283 pages, page size 1000) AND the run's own dry run dc2pj's instantiationRefused=82 / cadPresent=282219 at the shipped page size 200.",
+    "the82KeyTableWhere": "top-level field \the82KeyTable (82 rows) in this close, and the full read in _inbox/2026-09-19_p368_refused82_source_read.json"
+  },
+  "the82KeyTable": [
+    {
+      "key": "R006142",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        185424
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "IMARKETAMERICA INC",
+      "situs": "6000 FM 619, THRALL, TX 76578"
+    },
+    {
+      "key": "R008416",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        41844
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WESELY NATHAN TRUSTEE OF1999 JOINER FAMILY TRUST",
+      "situs": "13650 W FM 1105, JARRELL, TX 76537"
+    },
+    {
+      "key": "R009569",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        174972
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "ALVAREZ, WILLIAMS PAZ & ELIZABETH FIGUEREDO GOMEZ",
+      "situs": "CR 221, FLORENCE, TX 76527"
+    },
+    {
+      "key": "R010065",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        245922
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WILSON, PATRICIA R",
+      "situs": "250 440 SPUR, FLORENCE, TX 76527"
+    },
+    {
+      "key": "R010298",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        76811
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "NORTHVISTA RANCH LLC",
+      "situs": "2696 CR 255, GEORGETOWN, TX 78633"
+    },
+    {
+      "key": "R011232",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        30172
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WBW SINGLE DEVELOPMENT GROUP LLC - SERIES 148",
+      "situs": "1898 E FM 487, JARRELL, TX 76537"
+    },
+    {
+      "key": "R011919",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        48108
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "AGUADO, PEDRO E",
+      "situs": "1801 FM 972, JARRELL, TX 76537"
+    },
+    {
+      "key": "R012327",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        221497
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TRIPLE S PARTNERS",
+      "situs": "13675 N IH 35, JARRELL, TX 76537"
+    },
+    {
+      "key": "R012409",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        196525
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "SCHUBERT, MARY Z",
+      "situs": "200 CR 311, JARRELL, TX 76537"
+    },
+    {
+      "key": "R018654",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        26503
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "3811 MAIN STREET LP",
+      "situs": "3811 N MAIN ST, TAYLOR, TX 76574"
+    },
+    {
+      "key": "R022928",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        189216
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JACKSON, MELINDA A & RICHARD D MASSEY",
+      "situs": "250 COLE DR, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R023437",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        29208
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "CASCIO, JOHN A",
+      "situs": "OAK BEND DR, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R031297",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        105896
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JNK PROPERTIES 1, LTD",
+      "situs": "3549 HERO WAY, LEANDER, TX 78641"
+    },
+    {
+      "key": "R031404",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        2947
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LANSFORD FAMILY LIMITED PARTNERSHIP",
+      "situs": "190 BARNARD LN, LEANDER, TX 78641"
+    },
+    {
+      "key": "R031432",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        268042
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LANSFORD FAMILY LTD PTNRS",
+      "situs": "2000 E NEW HOPE DR, LEANDER, TX 78641"
+    },
+    {
+      "key": "R032262",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        137957
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HIGHWAY 29 COMMERCIAL LLC",
+      "situs": "HWY 29, LEANDER, TX 78641"
+    },
+    {
+      "key": "R037777",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        66945
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "1996 TWISTED R ROBERTSON LLC",
+      "situs": "1101 CR 270, LEANDER, TX 78641"
+    },
+    {
+      "key": "R037939",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        185489
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HOWARD, MARK E II & IRMA F",
+      "situs": "7245 ACACIA DR, LEANDER, TX 78641"
+    },
+    {
+      "key": "R037974",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        238581
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HOWARD, MARK E II & IRMA F",
+      "situs": "7240 ACACIA DR, LEANDER, TX 78641"
+    },
+    {
+      "key": "R038770",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        262140
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "CITY OF GEORGETOWN",
+      "situs": "500 TERMINAL DR, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R040909",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        132968
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "MARTINEZ, ALICIA",
+      "situs": "6402 FM 1105, GEORGETOWN, TX 78626"
+    },
+    {
+      "key": "R314801",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        1341
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "NORTHVISTA RANCH LLC",
+      "situs": "2696 CR 255, GEORGETOWN, TX 78633"
+    },
+    {
+      "key": "R318773",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        127596
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "IMARKETAMERICA INC",
+      "situs": "FM 112 / CARLOS PARKER BLVD SE THRALL TX 76578"
+    },
+    {
+      "key": "R327906",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        176303
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "PHAU-ELDORADO 333 LLC",
+      "situs": "CR 260, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R332409",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        202376
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "BM21 LLC",
+      "situs": "14751 RONALD W REAGAN BLVD, LEANDER, TX 78641"
+    },
+    {
+      "key": "R336893",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        54857
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JACKSON, MELINDA A & RICHARD D MASSEY",
+      "situs": "COLE DR, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R430385",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        223599
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WILSON, PATRICIA R",
+      "situs": "440 SPUR, FLORENCE, TX 76527"
+    },
+    {
+      "key": "R454711",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        23162
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "OPTIMIST CLUB OF TOWN & COUNTRY ROUND ROCK",
+      "situs": "MORRIS RD, AUSTIN, TX 78729"
+    },
+    {
+      "key": "R474959",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        11928
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "NORTH PALOMA LAKE DEVELOPMENT INC",
+      "situs": "CR 117, ROUND ROCK, TX 78665"
+    },
+    {
+      "key": "R484994",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        160079
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "K29 1941 INVESTMENTS LP",
+      "situs": "HWY 29, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R493660",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        17413
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "NORTH PALOMA LAKE DEVELOPMENT INC",
+      "situs": "CR 112, ROUND ROCK, TX 78665"
+    },
+    {
+      "key": "R497354",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        110315
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "PHAU-ELDORADO 333 LLC",
+      "situs": "450 CR 260, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R500156",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        72992
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LAMY 2243 LTD",
+      "situs": "FM 2243, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R509704",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        58150
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WBW SINGLE DEVELOPMENT GROUP LLC - SERIES 148",
+      "situs": "PR 924 PR, JARRELL, TX 76537"
+    },
+    {
+      "key": "R512193",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        249866
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "PINA, ALFONSO E SR (LE) & DELIA (LE)",
+      "situs": "4605 CR 467, ELGIN, TX 78621"
+    },
+    {
+      "key": "R525407",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        80187
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TBB DEVELOPMENT LAKEWOOD LLC",
+      "situs": "S LAKELINE BLVD, CEDAR PARK, TX 78613"
+    },
+    {
+      "key": "R539717",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        36958
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LSMA GEORGETOWN LLC",
+      "situs": "SHELL RD, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R544597",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        27484
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "CONTINENTAL HOMES OF TEXAS LP",
+      "situs": "COUNTY ROAD 267, LEANDER, TX 78641"
+    },
+    {
+      "key": "R544656",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        154851
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "IDIL SUNRISE COMMERCIAL CENTER LP",
+      "situs": "3700 SUNRISE RD, ROUND ROCK, TX 78665"
+    },
+    {
+      "key": "R544742",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        27983
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HOMETOWN MULTI-REF",
+      "situs": "401 21ST ST, GEORGETOWN, TX 78626"
+    },
+    {
+      "key": "R545633",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        178465
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TURNSTYLE HOMES LLC",
+      "situs": "99 MAGER LN, HUTTO, TX 78634"
+    },
+    {
+      "key": "R549022",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        154449
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LSMA GEORGETOWN LLC",
+      "situs": "SHELL RD, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R555835",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        122940
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "NEEDLER, JOHN & ANGELINA",
+      "situs": "757 CR 468, ELGIN, TX 78621"
+    },
+    {
+      "key": "R556900",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        128616
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LSMA GEORGETOWN LLC",
+      "situs": "SHELL RD, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R566525",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        260857
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WETZEL, SEAN",
+      "situs": "FM 3405, GEORGETOWN, TX 78633"
+    },
+    {
+      "key": "R569867",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        213183
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JR PROSPERITY REALITY LLC",
+      "situs": "140 NW CARLOS G PARKER BLVD, TAYLOR, TX 76574"
+    },
+    {
+      "key": "R594019",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        205069
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TSIN, LEWIS & WEI-ANN LIN",
+      "situs": "3987 COUNTY ROAD 463, ELGIN, TX 78621"
+    },
+    {
+      "key": "R598394",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        121695
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "WBW SINGLE DEVELOPMENT GROUP LLC SERIES 128",
+      "situs": "CR 313, JARRELL, TX 76537"
+    },
+    {
+      "key": "R606488",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        18016
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TSIN, LEWIS & WEI-ANN LIN",
+      "situs": "COUNTY ROAD 463, ELGIN, TX 78621"
+    },
+    {
+      "key": "R611296",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        192046
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HUTTO CROSSING LLC",
+      "situs": "SH 130, HUTTO, TX 78634"
+    },
+    {
+      "key": "R616492",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        246294
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "BRIGHTLAND HOMES LTD",
+      "situs": "1093 N BAGDAD RD, LEANDER, TX 78641"
+    },
+    {
+      "key": "R620064",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        167306
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "IMARKETAMERICA INC",
+      "situs": "6000 FM 619, THRALL, TX 76578"
+    },
+    {
+      "key": "R623667",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        165227
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TIBIDABO INVESTMENTS LLC",
+      "situs": "10861 183A TOLL FR RD, LEANDER, TX 78641"
+    },
+    {
+      "key": "R623718",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        107769
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HFIC SP INVESTMENTS LP",
+      "situs": "CR 258, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R624123",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        70096
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TRI POINTE HOMES TEXAS INC",
+      "situs": "LAWHON LN, GEORGETOWN, TX 78626"
+    },
+    {
+      "key": "R624522",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        262330
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "IMARKETAMERICA INC",
+      "situs": "FM 619, THRALL, TX 76578"
+    },
+    {
+      "key": "R634254",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        124362
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "BACKER, SUSAN",
+      "situs": "121 DEER TRL, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R634413",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        190668
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HEIGHTS AT SAN GABRIEL LLC",
+      "situs": "5700 WHISPER CREEK DR, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R634546",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        147774
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "KL LHB3 AIV LLC",
+      "situs": "CR 238, GEORGETOWN, TX 78633"
+    },
+    {
+      "key": "R635711",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        44298
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "FORESTAR USA REAL ESTATE INC",
+      "situs": "CR 112, ROUND ROCK, TX 78665"
+    },
+    {
+      "key": "R637527",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        177781
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "PDC TP 01 LOT B LLC",
+      "situs": "781 FM 3349, TAYLOR, TX 76574"
+    },
+    {
+      "key": "R649871",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        18855
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JACKSON, MELINDA A & RICHARD D MASSEY",
+      "situs": "COLE DR, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R650320",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        264583
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "VPDF SAULS RANCH LLC",
+      "situs": "2335 BANDA BND, ROUND ROCK, TX 78681"
+    },
+    {
+      "key": "R653589",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        131857
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "LENOX HILL OWNER LLC",
+      "situs": "RONALD W REAGAN BLVD, LEANDER, TX 78641"
+    },
+    {
+      "key": "R654691",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        94080
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "SANTA RITA KC LLC",
+      "situs": "CROSS CREEK RD, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R655896",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        222845
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "SANTA RITA KC LLC",
+      "situs": "MONTECILO DR, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R655897",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        240527
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "SANTA RITA KC LLC",
+      "situs": "MONTECILO DR, LIBERTY HILL, TX 78642"
+    },
+    {
+      "key": "R659623",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        259470
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HUTTO DATA CENTER CAMPUS LLC",
+      "situs": "COUNTY ROAD 132, HUTTO, TX 78634"
+    },
+    {
+      "key": "R660685",
+      "rows": 4,
+      "parts": 1,
+      "featureIndexes": [
+        35826
+      ],
+      "tiles": 4,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HRT PROPERTIES OF TEXAS LTD",
+      "situs": "425 UNIVERSITY BLVD, ROUND ROCK, TX 78665"
+    },
+    {
+      "key": "R660686",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        128243
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HATTERAS ROUND ROCK LLC",
+      "situs": "38 CYPRESS BLVD, ROUND ROCK, TX 78665"
+    },
+    {
+      "key": "R661230",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        266314
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "ALPIA NEW BRAUNFELS SQUARE LTD",
+      "situs": "2209 IH 35, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R661231",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        58500
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "ALPIA NEW BRAUNFELS SQUARE LTD",
+      "situs": "2309 IH 35, GEORGETOWN, TX 78628"
+    },
+    {
+      "key": "R661687",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        197466
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "HUTTO DATA CENTER 3 LLC",
+      "situs": "COUNTY ROAD 132, HUTTO, TX 78634"
+    },
+    {
+      "key": "R662652",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        278820
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "GUY, BENNIE M & CAROLYN A",
+      "situs": "SEDRO TRL, GEORGETOWN, TX 78633"
+    },
+    {
+      "key": "R662857",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        88692
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "TRI POINTE HOMES TEXAS INC",
+      "situs": "LAWHON LN, GEORGETOWN, TX 78626"
+    },
+    {
+      "key": "R664424",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        107390
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JNK PROPERTIES 1, LTD",
+      "situs": "HERO WAY, LEANDER, TX 78641"
+    },
+    {
+      "key": "R664659",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        242282
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "NICHOLS, BRITTANY",
+      "situs": "RUNDBERG DR, JARRELL, TX 76537"
+    },
+    {
+      "key": "R668252",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        45697
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "JUSTIN JAMES JACOBS OF JUSTIN JAMES JACOBS 2020 TRUST",
+      "situs": "W LAKE DR, TAYLOR, TX 76574"
+    },
+    {
+      "key": "R674132",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        103830
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": "ROGER BEASLEY IMPORTS INC",
+      "situs": "COUNTY ROAD 269, LEANDER, TX 78641"
+    },
+    {
+      "key": "R674569",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        243984
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": null,
+      "situs": null
+    },
+    {
+      "key": "R674570",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        271785
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": null,
+      "situs": null
+    },
+    {
+      "key": "R674571",
+      "rows": 2,
+      "parts": 1,
+      "featureIndexes": [
+        70177
+      ],
+      "tiles": 2,
+      "inPublishedIndex": true,
+      "inCountyRoll": true,
+      "reachedByPair": false,
+      "owner": null,
+      "situs": null
+    }
+  ],
+  "missionItem2_secondDerivation": {
+    "thePredicate": "Refuse a key only when NO ONE of three independently derived legs positively determines that it names a parcel: (account) the county's own resolved bind map, UNCHANGED; (vocabulary) the key is in the keyspace the county's own declared roll files its account ids in, and the county's parcel layer carries >= 1 shape under it; (geometry, corrected) exactly ONE distinct parcel geometry, where P-352 required one row.",
+    "whyIndependent": {
+      "account": "input = the county's binders (published extracts / crosswalks). rule = membership.",
+      "vocabulary": "input = the key STRING, classified in SQL by the same keyspaceSql two other gates trust, against the two id censuses the county itself publishes (its index and its declared roll). rule = vocabulary membership.",
+      "geometry": "input = the geometry BYTES under the key. rule = one distinct shape after collapsing tile duplication.",
+      "noSharedInputOrRule": "No two legs share an input or a rule, and each is the SOLE reason for a different outcome in F1, F2, F4 and F5."
+    },
+    "theAbstentionRule": "The vocabulary leg answers `measured` only when the county's published index names exactly ONE real keyspace (keys the shared classifier calls `other` are ignored for that determination, since they are the thing being tested) AND the county's roll confirms it (>=1 key in that keyspace, and NO `other`-shaped key). Otherwise it ABSTAINS (`decided:false` with its reason) and the geometry leg carries the decision. An abstention is NEVER a refusal, and it is recorded on the manifest and the run's summary line.",
+    "whyItIsNotTautological": "The index census sets the keyspace; the per-key test is the ROLL's. A leg that refused every key whose keyspace differed from the index's own would be vacuous, because every key the guard ever sees came out of that index. The roll is a different table, and it does not carry the label key (measured: `cad_property` holds no row for PRIVATE ROAD).",
+    "refuses48491PRIVATEROAD": "yes, live, on the new basis; and it is the leg that refuses it, since its corrected part count is 1.",
+    "measuredFactsTheLegRestsOn": {
+      "programCounties": "index keyspaces: 48021 numeric 62256, 48055 numeric 24988, 48209 numeric 116420, 48309 numeric 114254, 48453 numeric 380917, 48491 r-prefixed 282569 -- every one unmixed, and every roll confirms it.",
+      "abstentionCases": "48029 Bexar files negative ids, 48113 Dallas files alphanumeric ids, 48001 Anderson files dotted ids -- all REAL ids there, which is why the abstention rule is load-bearing and not decoration."
+    }
+  },
+  "verifyByViolation": {
+    "PRIVATE_ROAD_stillRefused": "REFUSED. Live probe through the shipped loaders: basis `outside-county-account-keyspace`, distinctGeometries 1, geometryRows 2, keyKeyspace `other`, 0 rows in the published index, no CAD bind. Direction 2: with the vocabulary leg abstaining the SAME input is ACCEPTED, so the refusal is this leg's work.",
+    "multipartFixtureAccepted": "an `R006142`-shaped key (1 part, 2 tiles, R-prefixed, no account) is ACCEPTED, live and on fixture, and REFUSED by P-352's own rule restated inside the test.",
+    "singleGeometryLabelKey": "a label key with ONE row and ONE geometry is REFUSED -- P-352's named OPEN gap, both directions.",
+    "readOnlyDryRun": "county 48491, whole county, page size 1000 (the shipped default is 200; the decision cannot move with the page because the vocabulary is county-wide and read once per run and the census is key-local): landing 282569, pages 283, cadPresent 282219, **instantiationRefused 0** (was 82), keyVocabulary `r-prefixed:measured`. ALL SIX program counties: 981,404 keys, **0 refused**, every vocabulary decided as predicted.",
+    "registry": {
+      "F1": "PRIVATE ROAD refused on the new basis / accepted when the leg abstains",
+      "F2": "R006142 accepted / refused by the old rule",
+      "F3": "the two derivations of 'how many parts' agree on all 286 genuinely-multipart keys of 48491 (live)",
+      "F4": "single-geometry label key refused / accepted by every prior derivation",
+      "F5": "abstaining county: real dotted key accepted / shapeless key still refused",
+      "F6": "a run refusing 2 of 4 keys names both with bases, records the vocabulary, writes run_events, and still instantiates the 2 real parcels"
+    },
+    "suite": "test/parcel-record-fill.test.mjs 147/147; test/parcel-key-vocabulary.test.mjs 10/10 new; whole suite 2030 pass / 3 fail / 40 skipped, the 3 (two LDT-checkout reads, one lease-heartbeat timing test) reproduced unchanged in a clean worktree of the start commit."
+  },
+  "threeQuestionGate": {
+    "whatExecutesIt": "`classifyInstantiationKeys` (pure) inside `instantiateAndIngest`, at the four sites that instantiate a record: fillCountyWide's page pass, its drift-replay pass2, the sample path's pass1 and pass2. All four now pass the county's measured vocabulary as well as the census (pinned at source by a test, so a future call site cannot silently drop the second derivation).",
+    "whatTriggersIt": "Every instantiation, every run and every dry run, every county. The vocabulary is measured once per county per run before any page is built.",
+    "whatFailsWhenARealParcelIsRefused": "The key's parcel_record is never created or never refreshed. In this county the records exist from 2026-09-02, so the refusal stranded exactly the cells P-350 measured (82 keys: 80 with situsState, 79 with landUseVintage). In a NEW county there is no record and a missing record is invisible -- the full-shape ruling, and why the correction and the abstention both err toward accepting a published parcel key.",
+    "whatBypassesIt": [
+      "an unwired caller (`geometryCensusByProp === undefined`) reports instantiationGuard null rather than silently passing -- stated and pinned; all four production call sites wire it",
+      "the exported single-row UPSERT_RECORD_SQL has no caller (pinned); a raw SQL insert against parcel_record is outside this module",
+      "`retire-phantom-record` is a separate writer with its own row-count phantom census (see leave_behind)",
+      "a county whose vocabulary abstains falls back to the corrected geometry leg -- a NAMED limitation, measured live today only outside the program (48001, 48029, 48113)"
+    ]
+  },
+  "falsifier": "Pre-registered in CP1 BEFORE any code, then answered by measurement in both directions: F1 the retired phantom `48491:PRIVATE ROAD` is refused on the NEW basis (its corrected part count is 1, so no count refused it) and, with the vocabulary leg abstaining, the same input is ACCEPTED -- so the refusal is the new leg's work and the test is not vacuous; F2 an `R006142`-shaped key (1 part, 2 tiles, no account) is ACCEPTED while the test's own restatement of P-352's rule refuses it; F3 the census's part count and the source's count(DISTINCT feature_index) AGREE on all 286 genuinely-multipart keys of 48491, live; F4 a label key with ONE row and ONE geometry is refused where every prior derivation accepted it; F5 an abstaining county accepts a real `other`-shaped key AND still refuses the key the layer carries no shape under; F6 a run refusing 2 of 4 keys names both with their bases, records the vocabulary on the manifest, writes the list to run_events, and still instantiates the 2 real parcels. Live: 48491 goes 82 -> 0 refusals, all six program counties 0, PRIVATE ROAD still refused.",
+  "contradicted": "The dispatch's premise about the 82 is contradicted by the read it demanded first, and that is this lane's central finding. The dispatch (carrying P-350's RECORD) says the 82 'look like multipart parcels with a CAD miss, not label keys' and asks item 2 to separate 'a label key and a multipart parcel, both of which carry several geometries and no account'. MEASURED: neither exists in that population. Every one of the 82 carries exactly ONE distinct geometry -- the same md5 of ST_AsBinary, the same feature_index and the same bbox on every row -- because txgio_parcel is keyed (county_fips, tile_key, feature_index) over a 0.02-degree grid and a parcel whose bbox crosses a tile edge is written in full under each tile. 18,399 of the county's 18,409 tile-straddling keys were carried by the CAD leg; the 82 were the ones with no published bind. The genuinely-multipart class is 286 keys and today's guard refuses NONE of them. And the phantom the 82 were measured against has the SAME shape as the 82, so no geometry measurement could ever have separated them: P-352's refusal of it was luck. The second derivation was therefore built on the KEY's membership in the county's own published vocabulary rather than on any geometry measurement, and the corrected count leg is what carries the 82.",
+  "leaveBehind": [
+    "retire-phantom-record.mjs: PHANTOM_GEOMETRY_COUNT_SQL is `count(*)` over the same tile-duplicated table with `count === 1` meaning PHANTOM_IS_A_PARCEL -- this lane's exact defect in the other direction. One line (count DISTINCT md5(ST_AsBinary(geom))), a different authorized row, its only target already retired.",
+    "The 48491 CAD bind stays the published WCAD pair only. `cad_property.prop_id` names all 82 (measured); this lane reads the KEY's shape and never routes a value through that column.",
+    "A bare-digit literal in a numeric county is still undetectable by the vocabulary leg, and passes the geometry leg when it carries one part. The situs/owner-agreement derivation is the next candidate; the 82's own three null-owner keys (R674569/70/71) show it would have refused three real parcels.",
+    "136 txgio_parcel rows in 48491 carry a NULL prop_id and are invisible to every population the fill reports.",
+    "The six program counties' vocabularies are now decided and recorded per run; `_catalog` has no vocabulary declaration for a county whose roll files literal keys, so such a county arrives on the geometry leg by construction rather than by declaration."
+  ],
+  "openThreads": [
+    "The guard's vocabulary leg is only as good as the county's declared roll. A county whose roll is EMPTY or unmeasured abstains (ROLL_SILENT), so a label key there is refused only by the corrected geometry leg. Named, not hidden.",
+    "P-352's dispatch required the instantiation refusal to be visible on the run; this lane made the population NAMEABLE. Neither P-350's `--twice` drift replay nor the sample path writes the refused list to run_events (the sample path returns it on the run object instead); an applying county-wide run does. Stated as shipped.",
+    {
+      "thread": "heavy-scan-lease `release`/`renew` want the holderToken, NOT the lease id `list` prints, and losing the take output is unrecoverable through the API",
+      "foundBy": "this seat, releasing P-368's lease at 13:05Z",
+      "detail": "`list` prints the lease `id` (0fa9cef2-...). `release --token <that id>` is answered 409 with a body of {\"ok\":false,\"lease\":null} and no `error` field, which outcomeFor() maps to LEASE_LOST -- a code that reads as 'your lease expired' when the true cause is 'that is the id, not the holderToken'. The holderToken (18d9c839-...) appears ONLY in the 201 body of the take itself, and the recovery route a seat would reach for, `check --token <holderToken>`, answers 404 ENDPOINT_NOT_DEPLOYED in this environment. So a seat that loses its take output holds a live lease it cannot release, and waits out the TTL. Not this lane's row: reported, not repaired (the fix is either for `list` to stop printing an id the other verbs cannot use, or for LEASE_LOST to carry the server's own `error` name).",
+      "consequenceForThisLane": "none: the token was recovered from P:/tmp/p368/lease2.json (the take's own output) and the lease was released 3m47s after it was taken."
+    }
+  ],
+  "whatWouldFalsifyThisLane": [
+    "any of the 82 still refused on a re-run -- observed 0",
+    "PRIVATE ROAD accepted anywhere -- observed refused live and on fixture, both directions",
+    "a genuinely-multipart key refused -- the census finds 286 such keys in 48491 and all 286 carry a pair bind, and the two part-count derivations agree on all 286",
+    "any program county refusing more than the prediction -- observed 0 in all six",
+    "the full refused list failing to reach the run record -- pinned by the F6 run-level test"
+  ],
+  "predictionVsObserved": {
+    "predictionWrittenIn": "_inbox/2026-09-19_p368-instantiation-guard-multipart_cp1.json (CP1, before any code)",
+    "predicted": "48491 goes 82 -> 0 refusals carried by the corrected part count plus the measured vocabulary; no program county refuses anything it should not; PRIVATE ROAD stays refused.",
+    "observed": "exactly that, in all six counties."
+  },
+  "docRepoPr": "doc_repo PR #4 (https://github.com/empressaioemail-tech/doc_repo/pull/4): this lane's four artifacts, on branch lane/p368-instantiation-guard-multipart."
+}

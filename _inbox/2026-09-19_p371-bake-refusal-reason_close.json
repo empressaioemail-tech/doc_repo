@@ -1,0 +1,141 @@
+{
+  "lane": "p371-bake-refusal-reason",
+  "planRows": ["P-371"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (row P-371, OPS-24 lane)",
+  "dispatch": "_dispatches/2026-09-19_p371-bake-refusal-reason_dispatch.md",
+  "status": "closed",
+  "statusReason": "The row's build predicate is met in-repo and enforced by the repo's own suite and CI: on ANY bake subprocess failure (the conformant tier-1/tier-2 bake, the parcels-pmtiles bake, the dollar-fields bake) the child's own printed refusal name reaches `runs.refuse_code` instead of BAKE_FAILED, and a bounded tail of BOTH streams (8192 bytes and 40 lines per stream, the END kept, trimmed at a code-point boundary) is written to a `run_events` row of kind `subprocess-refusal` BEFORE the job exits and is printed on the job log through the edge the DEPLOYED job actually fails through (src/cli.mjs -- Dockerfile.publish's ENTRYPOINT, not the job file's own bottom block). Verified by violation, both directions, against real child processes: 8/8 in test/p371-bake-refusal-reason.test.mjs and 135/135 in test/publish.test.mjs at head; the removed wrapper, reproduced verbatim and EXECUTED against the same child error, yields BAKE_FAILED and writes zero rows. CI at head ae8a9e64f9163287bda1b69251f4c1b161787269: 2064 tests, 2055 pass, 0 fail, 7 skipped, 2 todo, and all four checks (test x2, gate8, engine-declaration-pin, ldt-sha-comment-presence) green; mergeStateStatus CLEAN. Nothing is merged, deployed or applied here: the integration seat merges. One claim is deliberately NOT made and is named in whatRemainsOpen: that a FUTURE real bake refusal is answerable in Cloud Logging and in run_events, which needs a deploy and a real refusal and therefore cannot be shown from this lane.",
+  "seat": "cente-vsc-p371",
+  "filedAt": "2026-09-19T12:36Z",
+
+  "falsifier": "A fake bake CLI on disk that prints a named refusal (`ACCOUNT_KEYED_BLAST_RADIUS: ...`) on its last stderr line and exits 1, driven through the REAL call sites (`invokeLdtBake` -> `execFile` -> `subprocessFailure`) and, in the full-path case, through the real `runBastropPublish` with a fake Factory client: if `runs.refuse_code` is BAKE_FAILED, or no `subprocess-refusal` run_events row exists, or the tail is missing from the record or from the job-log line, or the bound does not hold on a child that prints megabytes, or a failure with NO name fails to record BAKE_FAILED plus its tail, then this row is not done. The opposite direction is executed rather than argued: the same child error is fed to the REMOVED wrapper (reproduced from origin/main e6ca09de and run, not described), which returns BAKE_FAILED and produces no recordable refusal, and to the nameless child, which must NOT mint a name out of `kaboom:`, `ERROR:`, `WARNING:`, a dashed ledger id, or an env-var list.",
+  "contradicted": "TWO things, and the first one is the reason this row is bigger than its dispatch. (1) THE EDGE WAS NOT WHERE THE DISPATCH SAID IT WAS. The dispatch points at src/jobs/bastrop-publish.mjs and says the caller that reaches the job's top level prints only the code. That is true of that file's own `if (process.argv[1]?.endsWith('bastrop-publish.mjs'))` block -- and that block NEVER RUNS in the deployed job: Dockerfile.publish sets `ENTRYPOINT [\"node\", \"src/cli.mjs\"]` and cloudbuild.publish.yaml deploys the publish jobs with `--command=node,src/cli.mjs --args=bastrop-publish,...`. The 11-entry log the incident measured came from src/cli.mjs's `main().catch`. A lane that fixed only the file the dispatch named would have opened a green PR and left the measured symptom (`BAKE_FAILED` as the only line) exactly as it was. (2) THE BOUND TEST PASSED LOCALLY AND FAILED ON CI, on the platform rather than on the bound. The megabyte child asserted against its own output and CI measured 183,296 bytes of the intended 5,120,000, so `originalBytes > 4e6` was false. Cause: `process.stdout.write` to a PIPE is ASYNCHRONOUS on POSIX, so a child that calls `process.exit` right after a large write loses whatever is still queued in userspace; on Windows (where the local run passed) a pipe write is synchronous, which is why the same child delivered all of it. Fixed by making every fake bake write through `fs.writeSync` on the raw fd (commit ae8a9e6), which cannot lose bytes on either platform. Recorded because the general form is worth carrying: a test whose subject is a bound must not be decidable by the runtime's write buffering.",
+  "probe": {
+    "notApplicable": "P-371 IS A GATED ROW and this close uses OPS-24 Law 1's predicate-debt exception, not a scope exemption. The gate's literal ranges are [[151,174],[186,198],[200,250],[252,320],[327,356],[358,375]] and 371 sits inside [358,375]; `export const ROWS` in scripts/surface-probe.mjs (keyed by row id) has no \"P-371\" key -- `rg 'P-371' scripts/surface-probe.mjs` returns 0 matches -- so there is no surface predicate to run for this row and no verdict was measured. Checked against the gate itself rather than asserted: importing scripts/enforcement/probe-close-gate.mjs and calling evaluate(['_inbox/2026-09-19_p371-bake-refusal-reason_close.json'], read) returns block=false with exactly one debt note (\"rows P-371 closed on probe.notApplicable: OPS-24 Law 1 debt, no surface predicate exists yet for these rows\"), so the debt is printed rather than hidden. Independent of the debt, the probe would be the wrong instrument here even with a predicate: it grades CUSTOMER surfaces (PE_BASE smartsite.cloud, ENGINE_BASE, MCP_BASE, RETRIEVAL_BASE) and this row changes what a FAILED bake LEAVES BEHIND in `run_events` and the Cloud Run job log; a predicate over a serving surface cannot distinguish 'the refusal reason was recorded' from 'the bake succeeded'. No deployed surface carries the change either -- this lane may not deploy or write a store.",
+    "measuredBy": [
+      "hauska-factory test/p371-bake-refusal-reason.test.mjs -- 8 tests, 8/8 pass at head; every one spawns a REAL node child through the real invokeLdtBake/invokeDollarBake, and the MB/bound case is the platform-independent writeSync child",
+      "hauska-factory test/publish.test.mjs -- 136 tests, 135 pass / 1 pre-existing skip; the appended P-371 (violation, full path) test drives runBastropPublish end to end with a fake bake CLI on disk and asserts the run row's refuse_code, the one subprocess-refusal record (step/exit/tails/bound), the termination event's reason, and that no publish_runs row records success",
+      "CI run 35443135025 (ci workflow, head ae8a9e64): 2064 tests, 2055 pass, 0 fail, 7 skipped, 2 todo; and the second run for the same head 35443137209 passed as well",
+      "the CI failure that PRECEDED this head, 35442967837: exactly one test failed, the MB bound test, with `the child really did print megabytes (183296B)` -- the platform defect, read from the runner's own log rather than inferred",
+      "local `npm test` at the pre-writeSync head: 2064 tests, 2020 pass, 2 fail, 2 todo, 1 skip, where the 2 failures were MEASURED as pre-existing by stashing the diff (`git stash push -- src test`) and reproducing them identically"
+    ]
+  },
+  "probeNotRun": "The one observation that would close this row on a LIVE surface is the first real bake refusal after the integration seat merges and deploys: a Cloud Logging line carrying the tail and a run_events row of kind subprocess-refusal on a real run, with the run's refuse_code carrying the child's name. That requires a deploy and a store-writing publish, both forbidden in this lane, so it is left as an observation for the seat rather than claimed here.",
+
+  "startCommit": "e6ca09de5ecaed301758d7b88ff58b1264664bbf (origin/main at fork AND the dispatch's declared compile SHA; main has since advanced to ab7618cbe4c44b6ea322947c4a97ae20593f25dd and the PR reads MERGEABLE/CLEAN against it)",
+  "head": "ae8a9e64f9163287bda1b69251f4c1b161787269",
+  "branch": "lane/p371-bake-refusal-reason",
+  "prs": ["https://github.com/empressaioemail-tech/hauska-factory/pull/191 (OPEN, base main, mergeStateStatus CLEAN, all checks green)"],
+  "checkpointArtifacts": [
+    "_inbox/2026-09-19_p371-bake-refusal-reason_cp1.json",
+    "_inbox/2026-09-19_p371-bake-refusal-reason_cp2.json"
+  ],
+  "filesChanged": [
+    "src/lib/subprocess-refusal.mjs (NEW): the naming rule, the bound, the record write, the log form",
+    "src/jobs/bastrop-publish.mjs: runShell throws subprocessFailure with the stage label; the bake stages are labelled; the catch records before terminating; the top-level catch prints the tail",
+    "src/jobs/dollar-fields-patch.mjs: invokeDollarBake, its outer catch and its top-level catch -- the same shape, the same fix",
+    "src/cli.mjs: the DEPLOYED edge prints the bounded tail instead of the code alone",
+    "test/p371-bake-refusal-reason.test.mjs (NEW, 8 tests)",
+    "test/publish.test.mjs (+1 full-path test)"
+  ],
+
+  "missionPremise": "A bake that refused left nothing behind that could answer WHY. The 2026-09-19 Williamson run's 11 Cloud Logging entries said nothing but BAKE_FAILED, and `run_events` held `termination {\"reason\":\"BAKE_FAILED\"}`; both strings were produced from `err.code` alone, while the child's own words existed in memory for the life of the process and nowhere else. The cause had to be inferred from a store read (P-351's per-keyspace blast-radius guard), and the second mechanism could not be closed.",
+  "completionPredicate": "On a subprocess failure from a bake call site, a bounded tail (bytes and lines, stated) of stderr AND stdout is written to the run's durable record and to the job log before the job exits; a child that names its refusal keeps that name in `runs.refuse_code`, with BAKE_FAILED reserved for a failure with no name; every runShell caller is enumerated and either fixed or named; and the behaviour is shown by a fake bake that violates it in both directions.",
+  "scopeBasis": "The dispatch's own scope: hauska-factory only, no store writes, no deploys, no merges; the subject is the bake subprocess failure path in the publish and dollar-fields jobs. Every other runShell/spawn caller is NAMED rather than absorbed, and nothing in LDT, engine, map or MCP is touched.",
+
+  "theFalsifiers": [
+    "F1 (a named refusal keeps its name): a fake tier1-conformant bake printing `ACCOUNT_KEYED_BLAST_RADIUS: 48209 numeric=319480 r=143184` and exiting 1 -> `err.code === 'ACCOUNT_KEYED_BLAST_RADIUS'`, `refuseNameSource === 'stderr'`, `step === 'node-facet-bake-tier1-conformant'`, `exitCode === 1`, both tails carry the child's lines. BEFORE, on the SAME child error: the removed wrapper yields `code === 'BAKE_FAILED'` and `refusalRecordFor` returns null, so recordSubprocessRefusal writes ZERO rows. Both directions executed.",
+    "F2 (a failure with NO name still records BAKE_FAILED plus its tail): a child printing `kaboom: could not open the parcel store` -> `code === BAKE_FAILED`, `named === false`, and ONE run_events row whose stderr tail carries the line. The negative direction is the naming rule itself: `ERROR:`, `WARNING:`, `BP-LEDGER-01` and `HAUSKA_MCP_DATABASE_URL and DATABASE_URL required` all resolve to null -- no line is minted into a name it does not own.",
+    "F3 (the bound holds and cannot hide the name): ~5MB of stdout in 1KB lines then the refusal on the last stderr line -> `originalBytes > 4e6`, `bytes <= 8192`, both bound flags true, the name STILL read (it is taken from the raw stream; the tail is bounded after), and the formatted log line under 20KB. Unit cases both directions: 100 lines -> last 40; a 5MB single line -> last 8192 bytes; a multi-byte code point straddling the cut survives whole (3-byte `€`, no U+FFFD); empty and null inputs give the empty record instead of throwing.",
+    "F4 (the name reaches the RUN ROW, not only the record): through the whole runBastropPublish with a real bake subprocess -> `runs.refuse_code === 'ACCOUNT_KEYED_BLAST_RADIUS'`, one run_events row of kind subprocess-refusal naming the step, the exit status and both tails; the TERMINATION event's reason is the child's name (`assert.notEqual(..., BAKE_FAILED)`), where the incident recorded BAKE_FAILED; and `publish_runs.length === 0`, so a refused bake records no success.",
+    "F5 (the cli.mjs edge is safe for the ~50 jobs that share that catch): a tailed subprocess failure prints code + step/exit/childName + both bounded tails; an error with no tails (`STAGING_TARGET_MISSING`, or a plain `new Error('boom')`) prints exactly `err.code || err.message`, character for character what the line printed before; null prints 'unknown failure'.",
+    "F6 (a spawn failure is not a refusal, and vice versa): `{code: 'ENOENT'}` (a string, so the child never ran) keeps ENOENT and reports `exitCode: null`; `{code: 1, stderr: 'ERROR: x'}` (a number, no name in the words) yields BAKE_FAILED with `exitCode: 1`. The resolution order is asserted rather than implied.",
+    "F7 (the dollar-fields wrapper, same shape, same fix): a real fake `dollar-fields.mjs` refusing -> `code` is the child's name and `step === 'dollar-fields'`; the removed wrapper on the same child error gives BAKE_FAILED and nothing recordable."
+  ],
+
+  "recordShape": {
+    "table": "run_events",
+    "kind": "subprocess-refusal",
+    "insert": "INSERT INTO run_events (run_id, kind, body) VALUES ($1,$2,$3::jsonb) -- the statement shape five other writers in this repo already use: no migration, no new column.",
+    "body": {
+      "step": "the bake stage that refused (node-facet-bake-tier1-conformant / node-facet-bake-tier2-conformant / parcels-pmtiles-bake / dollar-fields), so a record names WHICH child refused rather than 'a subprocess'",
+      "command": "the first 8 argv words, so a reader can re-run the child by hand",
+      "refuseCode": "the run's own refuse_code value: the child's name when it has one, else BAKE_FAILED, else a spawn errno",
+      "childRefuseName": "the child's own printed name, or null, with `named` saying which of the two this is",
+      "nameSource": "stderr | stdout | null",
+      "exitCode": "the numeric exit status, or null when the child never ran",
+      "signal": "the signal, or null",
+      "bound": "{bytes, lines} applied, travelling WITH the text so a reader never guesses whether they are looking at all of it",
+      "stderr": "{text, bytes, lines, originalBytes, originalLines, truncated, truncatedBy}",
+      "stdout": "the same shape -- stdout is not decoration: P-351's per-keyspace measurement is printed THERE",
+      "at": "ISO instant"
+    },
+    "bound": "8192 BYTES and 40 LINES, applied to each stream separately, line bound first then byte bound, the END of the stream kept, trimmed at a UTF-8 code-point boundary. Bytes are load-bearing because ONE line can be megabytes. Every record carries the pre-bound size and which bound fired.",
+    "writtenWhereAndWhen": "in runBastropPublish's catch, AFTER `UPDATE runs SET status='failed', refuse_code=...` (so the NAME is durable even if the event write fails) and BEFORE terminateOrRecordConflict (so the termination record the incident measured is still written). A failed record write is reported on stderr LOUDLY and never thrown: throwing would replace the refusal with the record-write error and lose the termination record too.",
+    "whyNotJustTheMessage": "Keeping the words in the Error's message (what the removed code did) is not a record: the message dies with the process, and the deployed edge printed only the code."
+  },
+
+  "callerEnumeration": {
+    "method": "`rg 'execFile|execSync|spawnSync|spawn\\(|exec\\(|child_process' src/` over the whole product tree, then each hit read at its DEFINITION rather than at its import.",
+    "fixed": [
+      "src/jobs/bastrop-publish.mjs `runShell` (invokeLdtBake + invokePmtilesBake) -- the conformant bake subprocess, the one the incident failed in",
+      "src/jobs/dollar-fields-patch.mjs `invokeDollarBake` -- the same wrapper shape, the same fix, step 'dollar-fields'"
+    ],
+    "namedNotFixed": [
+      "src/jobs/publish-gate-sched.mjs `runGateCli` -- the gate rail CLI, not a bake. It keeps a stable named code (`GATE_CLI_FAILED`) and attaches the child's verbatim stdout/stderr as FIELDS on the thrown error (P-195/P-201 read those), but the termination record it leaves holds `err.code` alone, so a gate refusal's words still live only in the process. Changing that error shape changes the gate's own contract; it is the next surface, not silently absorbed.",
+      "src/control/cloudrun-jobs.mjs `accessToken` (execFile gcloud) and `spawnGcloud` (spawn gcloud) -- control-plane calls to a CLI, not bakes. Every failure there becomes JOB_EXECUTE_FAILED with gcloud's own words in the message and no bake refusal passes through them."
+    ],
+    "notCallersAndSaidSo": "verify-walk.mjs, republish-on-change.mjs and the ~40 other job files have `console.error(err.code || err.message)` top-level catches but spawn NO subprocess: their refusals are raised in-process with named codes and their own details on the error. They are out of scope and untouched, so their behaviour is unchanged by the cli.mjs edit (which prints `err.code || err.message` byte-identically for an error carrying no tails)."
+  },
+
+  "threeQuestionGate": {
+    "whatWritesTheReason": "`recordSubprocessRefusal` in src/lib/subprocess-refusal.mjs, called from runBastropPublish's catch (bastrop-publish.mjs) and runDollarFieldsPatch's catch (dollar-fields-patch.mjs): one run_events row of kind `subprocess-refusal`, plus the run row's `refuse_code` carrying the child's name. The job LOG is written by the same module's `formatSubprocessFailureForLog`, printed by the jobs' top-level catches and by src/cli.mjs's catch, which is the deployed edge.",
+    "whatTriggersIt": "ANY subprocess failure from those two bake call sites -- the conformant tier-1/tier-2 bake, the parcels-pmtiles bake and the dollar-fields bake -- on any target, in any environment, whether the child refused with a name, refused without one, or failed to spawn. There is no flag and nothing to remember.",
+    "whatFailsWhenTheReasonIsMissing": "The refusal becomes UNANSWERABLE: the run row says BAKE_FAILED, the log says BAKE_FAILED, and the measurement that identifies the cause existed only inside a process that has exited -- which is what happened on 2026-09-19, where the cause had to be inferred from a store read and the second mechanism could not be closed. BAKE_FAILED is indistinguishable from every other nameless bake failure.",
+    "whatBypassesIt": [
+      "A HARD KILL that skips the handler (SIGKILL, OOM, the platform's task kill). The catch never runs, so no `subprocess-refusal` row exists. How the record reads then, named precisely: the run row is still in-flight, the reaper later terminates it with the EXECUTION's exit kind (crashed/killed/timeout, exit_kindFromExecution) and the reaper as recorder, and `refuse_code` stays whatever it was -- null. The child's output is LOST, not merely unrecorded: runShell PIPES the child's stdio, so the child's words never reach Cloud Logging either.",
+      "A SIGTERM / Cloud Run CANCEL is a different handler and a different record: control/runs.mjs's sigterm guard writes exit_kind 'killed', recorder sigterm-guard, reason 'external SIGTERM'. Also no subprocess-refusal row and no captured tail.",
+      "A BAKE INVOKED OUTSIDE THESE TWO CALL SITES: a hand-run of the bundled CLI (`node /app/bakes/tier1-conformant.mjs ...`) prints its own refusal to its own stderr and leaves nothing in the factory store; the child's own `console.error(err.code || err.message)` is the only record, and it is whatever the operator kept.",
+      "The exit STATUS a bake refusal reports is unchanged (1): the child's names are not in src/lib/scope-refusal-exits.mjs's declaration table (COUNTY_NO_SOURCE_PENDING, COUNTY_NOT_IN_SCOPE), so nothing a bake prints can be read as a parent-continuable declaration. Named as a boundary rather than left implicit, because the name now flows into exitCodeForRefusal."
+    ]
+  },
+
+  "countsWithTheirCountingRules": {
+    "testsAdded": "9 with their rules: 8 in test/p371-bake-refusal-reason.test.mjs (one per falsifier plus 2 sub-cases of the naming rule) and 1 appended to test/publish.test.mjs (the full runBastropPublish path). Every falsifier spawns a real child process; none stubs the failure path.",
+    "bound": "8192 bytes and 40 lines PER STREAM, applied line-first then byte-ward, keeping the END, code-point-trimmed; originalBytes/originalLines and truncatedBy travel with the text.",
+    "nameCap": "MAX_REFUSAL_NAME_CHARS = 96: a longer SCREAMING_SNAKE token is a payload, not a name, so the failure is recorded as BAKE_FAILED with the token in its tail. Counted by characters, not bytes.",
+    "ci": "head ae8a9e64: 2064 tests, 2055 pass, 0 fail, 7 skipped, 2 todo. The skip count is the repo's own live-store gate legs; the 2 todos are p3-absence's EXPECTED non-vacuity tests, which carry the OPS-21 S3 finding in their own names.",
+    "localFullSuite": "at the pre-writeSync head: 2064 tests, 2020 pass, 2 fail, 2 todo, 1 skip; the 2 failures (check-walk-decline-body-drift, ctx-b3-store-census) are pre-existing and environmental -- both assert against the LOCAL P:/legacy-design-tools checkout, which CI replaces with a fresh LDT main -- and were MEASURED as pre-existing by stashing this diff and reproducing them identically."
+  },
+
+  "constraintsHonored": [
+    "No store write of any kind: no connection to any store was opened by this lane. Every test is an in-process fake client plus a fake bake CLI written to a temp dir.",
+    "No bake, no publish, no deploy, no merge, no apply: the PR is OPEN and the integration seat merges.",
+    "hauska-factory only: no LDT, engine, map or MCP file is touched and no pin is moved.",
+    "FAN-DEPTH 0: no sub-agents were launched at any depth.",
+    "The lane claim was taken through scripts/lane-claim.mjs before any work and is released at close; this lane's artifacts are filed from the seat's own doc_repo worktree (P:/seat-worktrees/p371-bake-refusal-reason/doc_repo), never into P:/doc_repo, the integration seat's checkout.",
+    "src/jobs/publish-gate-sched.mjs and src/control/cloudrun-jobs.mjs are NAMED as out of scope rather than edited, so no other job's error contract changed."
+  ],
+
+  "leave_behind": [
+    "src/lib/subprocess-refusal.mjs is importable by ANY job in this repo and is not bake-specific: a job that spawns anything and wants the child's words on the record imports `subprocessFailure` + `recordSubprocessRefusal` + `formatSubprocessFailureForLog` and passes a `step`. The bound and the naming rule are the module's, not the caller's, so two jobs cannot disagree about what a name is.",
+    "THE DEPLOYED EDGE FOR EVERY FACTORY JOB IS src/cli.mjs, NOT THE JOB FILE. Dockerfile.publish's ENTRYPOINT is `node src/cli.mjs` and cloudbuild.publish.yaml passes the subcommand as an arg, so a job file's own `if (process.argv[1]?.endsWith('<job>.mjs'))` block never runs on Cloud Run. Any future change to 'what the log says when a job fails' must land in cli.mjs or it lands nowhere -- read the entrypoint, never the file the dispatch points at. This is the single most transferable fact this lane produced.",
+    "The bake CLIs report a refusal ONLY through their words: they end `main().catch((err) => { console.error(err.code || err.message); process.exit(1); })`, so there is no exit payload, no last-line JSON and no exit-code map -- every refusal exits 1. A name can therefore be read ONLY from the child's last non-empty line, and the tail is the only carrier of the measurement. If a future bake is given a structured refusal contract, the naming rule's `namedRefusalFromOutput` is the one place to change.",
+    "The naming rule is deliberately conservative: SCREAMING_SNAKE (at least one underscore), alone on the line or followed by a colon, <= 96 chars. Single words like ERROR/WARNING are NOT names, because a wrong name in `refuse_code` is worse than none -- refused precision, never the words.",
+    "Write fakes with fs.writeSync, not process.stdout.write. On POSIX a pipe write is asynchronous and a child that exits immediately loses queued bytes (measured: 183,296 of 5,120,000 on CI). Any test that measures a bound over a real child must not be decidable by the platform's write buffering.",
+    "`runs.status` on a refused publish is written TWICE and the second writer wins: the job's catch sets 'failed', then control/termination.mjs sets the TERMINATION record's own exit_kind, which is 'failure' for a non-dry-run refusal. Assertions about that column must name which writer they mean; `refuse_code` is the refusal's own field and is not overwritten.",
+    "The next surface for this row's question is src/jobs/publish-gate-sched.mjs (the gate rail: its refusals' words still live only in the process, while its code is stable and its stdout/stderr fields are already read by P-195/P-201), then src/control/cloudrun-jobs.mjs (JOB_EXECUTE_FAILED with gcloud's words in the message).",
+    "The bound protects the RECORD and the LOG LINE; it does not bound what execFile buffers (the call sites allow 20MB). A child that prints more fails with ERR_CHILD_PROCESS_STDIO_MAXBUFFER, which the module keeps as the errno (failing to RUN is a different fact from refusing) and records with whatever partial output the error carries."
+  ],
+
+  "fleetMemory": "Three things other lanes should take rather than rediscover: (1) the deployed entrypoint is the edge -- read Dockerfile/cloudbuild, not the job file; (2) a new shared module under src/lib is the cheap way to make one behaviour true for every caller, and the tests for it can be real-child tests with no store at all; (3) a test that passes on Windows and fails on Linux is usually a runtime-semantics difference (here: async pipe writes), so when CI contradicts a local pass, the platform is a hypothesis to test before the code is.",
+
+  "whatRemainsOpen": [
+    "THE LIVE OBSERVATION: the first real bake refusal after the seat merges and deploys. Until a real run refuses, the claim that a future refusal is answerable in Cloud Logging and in run_events is a claim about a code path, not about a record. This lane does not claim otherwise.",
+    "publish-gate-sched.mjs's gate-CLI refusals still leave their words only in the process (named above, not fixed).",
+    "cloudrun-jobs.mjs's gcloud failures still become JOB_EXECUTE_FAILED with the words in the message (named above, not fixed).",
+    "A HARD KILL still loses the child's output entirely, and the record then reads as the reaper's exit kind. That is a property of the handler being skipped rather than a defect this row can close."
+  ],
+
+  "subAgents": { "spawned": 0, "maxDepth": 0 }
+}

@@ -2,6 +2,7 @@
   "lane": "p366-codified-draw-declines",
   "planRows": ["P-366"],
   "status": "closed-partial",
+  "revision": "2 — re-closed after CI. Supersedes the first close, whose pr.ciConclusion read 'not yet available'. The verdict is UNCHANGED (F1 still requires a deploy this lane may not perform). What changed is that CI has now reported, and both of its red jobs have been adjudicated with evidence rather than assertion.",
 
   "probe": {
     "artifact": "_inbox/2026-09-18_221332_surface_probe.json",
@@ -21,12 +22,55 @@
     "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/726",
     "repo": "empressaioemail-tech/legacy-design-tools",
     "branch": "p366-codified-draw-declines",
-    "baseSha": "03bb424a",
+    "baseSha": "ad99acaa",
+    "baseShaHistory": [
+      "03bb424a — opened against this base",
+      "824bd21e — the review's named rebase target (P-270 and P-340 had merged)",
+      "ad99acaa — FINAL. P-339 landed beside this lane while CI ran, and main carries `strict` required status checks (require-branches-up-to-date: true), so the PR is not mergeable while BEHIND. Neither P-340 nor P-339 touches a file this lane edits."
+    ],
     "compileShaDeclared": "2e7ca7c4",
-    "headCommit": "773879ec",
+    "headCommit": "ecaf5bfc",
+    "commits": {
+      "91b8b0b0": "P-366: the drawing route reads the zoning stamp the ledger serves (the substantive change)",
+      "ecaf5bfc": "P-366: fix the F5 test's fetch-stub typing (TS2352) and rebase onto current main"
+    },
+    "diffstat": "3 files changed, 240 insertions(+), 15 deletions(-) against ad99acaa",
     "mergeSha": "not applicable: not merged (this lane does not merge)",
-    "ciConclusion": "not yet available: PR opened minutes before this close; CI had not reported. No CI string is asserted."
+    "ciConclusion": "SUCCESS — all 14 checks green on ecaf5bfc. Run conclusion is the STRING 'success' (run 35443851646), not merely `gh pr checks` printing 'pass': Typecheck pass (2m15s), Test pass (13m8s), plus the 12 guardrail jobs (SS-W18/sf-30/sf-24-25/sf-26/silent-fallback/L17/P-279 x2/SS-W16/PR base is main/cortex daily limit bake/cross-repo literal drift).",
+    "mergeState": "MERGEABLE / CLEAN at head ecaf5bfc against main ad99acaa"
   },
+
+  "ciInvestigation": {
+    "questionAsked": "Do the two 20 s timeouts (txgioAddressResolve.integration.test.ts 'returns null for a genuinely nonexistent address'; txgioParcelStore.integration.test.ts 'issues exactly ONE extra statement per response for the join (no N+1)') come from re-enabling the atom-chain credential fallback in fetchPropertyAtomChain.ts, which could add a network call on those paths? Asked explicitly before these may be called CI noise.",
+    "answer": "NO — established five ways, one of which is a controlled experiment on the identical commit.",
+    "evidence": [
+      {
+        "method": "Import-graph walk from disk (_scratch/p366-importgraph.mjs, no bundler).",
+        "result": "lib/txgioAddressResolve.ts has a 16-file import closure and lib/txgioParcelStore.ts a 5-file closure; NEITHER closure contains any lib/buildableEnvelope/* file. The two timing-out files cannot reach the changed code by import at all — so no code path of theirs was altered. (canva-route.test.ts DOES reach it, but only through the routes barrel: canva-route.test.ts -> __tests__/setup.ts -> routes/index.ts -> routes/brokerageBrief.ts -> routes/brokeragePlaceBuildableEnvelope.ts. That is a module-level import which never calls resolveSpineZoningWhenGisAbsent, and the parcel-record read this lane adds is a dynamic import() INSIDE that function.)"
+      },
+      {
+        "method": "Can the re-enabled fallback fetch at all in CI?",
+        "result": ".github/workflows/pr-checks.yml contains ZERO `secrets.` references. RETRIEVAL_API_KEY, HAUSKA_RETRIEVAL_API_KEY and BRIEF_RETRIEVAL_API_KEY appear ONLY in cloud-run-deploy.yml (production). src/__tests__/setup.ts sets no retrieval name. With no key mounted, fetchPropertyAtomChain and districtFromAtomChain both hit `if (!key) return null` BEFORE any fetch — the fallback is inert in every test job, so it cannot add a network call there regardless of which test runs."
+      },
+      {
+        "method": "CONTROLLED EXPERIMENT — re-run the identical commit (the decisive one).",
+        "result": "Commit 773879ec was re-run as run 35413841352 attempt 2. ATTEMPT 1: Test FAILED with canva-route + txgioAddressResolve + txgioParcelStore. ATTEMPT 2: Test PASSED. Same commit, same tests, opposite outcome. The only job still red on attempt 2 is Typecheck, and only because 773879ec still carries the TS2352 this lane then fixed in ecaf5bfc. A failure that disappears when unchanged code is re-run is not caused by that code."
+      },
+      {
+        "method": "Mechanism.",
+        "result": "vitest.config.ts runs fileParallelism: true with singleFork: false (its own comment: 'Each file gets its own worker so per-file PG schemas + test-context state never leak across files') — every one of ~408 test files is a parallel forked worker hitting ONE Postgres service container — with testTimeout: 20_000, exactly the number both failures report. Both failing cases are the heaviest in their files (withTestSchema + situs resolution; the N+1 statement-count case) in files where every case already takes 2-8 s. This is connection contention, not a code path."
+      },
+      {
+        "method": "Fleet rate and failure-set overlap.",
+        "result": "Across the last 25 PR Checks runs the Test job failed 2 times (8%). The two failure sets are DISJOINT: this lane failed canva-route / txgioAddressResolve / txgioParcelStore; the sibling p340 lane failed queue.test.ts and reasoningAtoms.test.ts. Failures that migrate between runs and share no tests are load-sensitive, not a deterministic regression."
+      }
+    ],
+    "verdict": "Pre-existing, load-sensitive flakiness in the api-server Test job. NOT caused by this lane's change, and NOT specifically by the credential fallback. This is not called 'CI noise' on assertion: the identical commit went green on re-run, and the two timing-out files cannot import the changed module.",
+    "whatWouldFalsifyThis": "If the same tests failed again on repeated re-runs of an unchanged tree, or if those files' import closures grew to include lib/buildableEnvelope/*, the verdict would be wrong. Neither happened.",
+    "whatThisLaneDidNotDo": "It did not raise testTimeout or serialise the DB-heavy files. That would mask a fleet-wide gate defect inside a lane whose dispatch is a zoning read, and it would edit a gate this lane does not own. Named in leave_behind with a concrete remedy instead."
+  },
+
+  "falsifierStatusRevised": "Unchanged from CP2: F1 pre-registered/not yet measurable, F2/F4/F5 PASS at unit level (F5 both directions), F3 named not fixed. The F5 test is the one that carried the TS2352; it now typechecks and the file runs 12/12 green.",
 
   "checkpoints": {
     "cp1": "_inbox/2026-09-19_p366-codified-draw-declines_cp1.json",
@@ -41,7 +85,10 @@
     "reconcilingTheDifference": "The dispatch's 7 are the parcels whose DRAW route answers wrong (5 no-zoning-stamp + Kyle geometry-validation-failed + Caldwell no-parcel). The other 3 P-254 FAILs (48309:187374, 48453:239852, 48055:27929) fail a different predicate - MCP prose contradicting the route's own drawn answer - and are named rather than subtracted.",
     "parcelsFixedByThisChange": 5,
     "parcelsDiagnosedNotFixed": 2,
-    "newFindingsBeyondTheDispatch": 2
+    "newFindingsBeyondTheDispatch": 2,
+    "ciChecksGreen": 14,
+    "ciChecksRequired": 5,
+    "testJobFlakeRateLast25Runs": "2/25 = 8%"
   },
 
   "theThreeQuestionGate": {
@@ -60,18 +107,22 @@
     "No deploys.",
     "No store writes.",
     "FAN-DEPTH 0 and subAgents 0: no sub-agents launched at any depth.",
-    "Built in this lane's own worktree (P:/seat-worktrees/p366-codified-draw-declines/legacy-design-tools); no other lane's checkout was edited. Temporary node_modules junctions into P:/legacy-design-tools were removed before any install was attempted and the main checkout was verified intact.",
+    "Built in this lane's own worktree (P:/seat-worktrees/p366-codified-draw-declines/legacy-design-tools); no other lane's checkout was edited.",
+    "The two temporary node_modules junctions into P:/legacy-design-tools created by this lane were removed at the end of the session (both the root junction and the artifacts/api-server junction), and the main checkout was verified intact afterwards: P:/legacy-design-tools/node_modules and P:/legacy-design-tools/artifacts/api-server/node_modules both present, entry count unchanged at 8.",
+    "One piece of residue is named rather than silently claimed: the worktree's own legacy-design-tools/node_modules is a REAL directory holding only .pnpm, left by the earlier failed `pnpm install` documented in CP2 — not a junction this lane created. It is gitignored (.gitignore:17) and the worktree's git status is clean. A recursive delete hung on a locked .pnpm under machine load and was stopped rather than left spinning.",
+    "Only this lane's own branch was force-pushed, twice, and each time with --force-with-lease pinned to the exact commit this lane had pushed (773879ec, then d18d2cbd). No other branch was rewritten.",
     "Doc_repo edits left uncommitted per contract section 6 (planner-owned commits)."
   ],
 
   "leave_behind": [
+    "THE FLEET GATE DEFECT (new, and the most valuable thing this lane found): the api-server Test job flakes at ~8% (2 of the last 25 PR Checks runs) because vitest.config.ts runs fileParallelism: true with singleFork: false — ~408 parallel forked workers against ONE Postgres service container — under testTimeout: 20_000. The failing tests MIGRATE between runs and share nothing (this lane: canva-route/txgioAddressResolve/txgioParcelStore; p340: queue/reasoningAtoms). Concrete remedy for whoever owns that gate: raise testTimeout for the DB-heavy integration files, or bound concurrency for files that create their own schemas. Deliberately NOT applied here — bumping a timeout inside a zoning-read PR would mask a fleet issue and edit a gate this lane does not own.",
+    "The CI evidence for PR #726 could NOT be produced locally and must be read from CI: the checkout at P:/legacy-design-tools is 524 commits behind origin/main and its node_modules predates @empressaio/setback-corpus, so 12 api-server suites fail to LOAD there ('Cannot find package @empressaio/setback-corpus/resolve'). The local Postgres on 5432 also lacks the vector and postgis extensions the DB integration tests require, so even the two timing-out files could not be reproduced faithfully on this machine. Both limitations are named rather than worked around.",
     "Kyle 48209:145880 - geometry-validation-failed is a BOOLEAN CLIP defect, not a stamp gap: the district resolved and a full 25/10/15/10 table was emitted before the parcel-minus-strips difference threw. Needs its own lane.",
     "Caldwell no-parcel covers TWO buckets, not one: 48055:40428 (San Marcos part) AND 48055:27929 (Martindale). The composed address never matched a parcel, so zoning never ran. Likely shared with 48453:352594's record-point answer for the WRONG parcel (48209:10757).",
     "Prose-vs-route divergence on 48309:187374, 48453:239852 and 48055:27929: the MCP text says rules are unruled beside a ruled table, or geometry withheld beside drawn geometry. The draw is right; the prose is wrong.",
-    "Enabling the atom-chain credential fallback in fetchPropertyAtomChain.ts turns a read path that was dead in production back on. It may surface atoms on parcels that previously declined atom_path_pending; the integration seat should grade that rather than discover it.",
-    "The stale-tree hazard this lane hit: P:/legacy-design-tools is 524 commits behind origin/main and its node_modules predates @empressaio/setback-corpus, so 12 api-server suites fail to LOAD there. Any lane that runs tests in that checkout is reading a false picture.",
-    "The route-level regression evidence for PR #726 must come from CI; it could not be produced locally (named in CP2).",
-    "The dispatch's hypothesis - a stamp keyed or scoped by the city's home county - was tested and REFUTED. The failure was a missing SOURCE read (the record rail), not a county scope. Recorded so it is not re-derived."
+    "Enabling the atom-chain credential fallback in fetchPropertyAtomChain.ts turns a read path that was dead in production back on. It may surface atoms on parcels that previously declined atom_path_pending; the integration seat should grade that rather than discover it. Note this path is provably inert in CI (no retrieval credential is mounted there per the ciInvestigation above), so CI cannot grade it — only a deploy can.",
+    "The dispatch's hypothesis - a stamp keyed or scoped by the city's home county - was tested and REFUTED. The failure was a missing SOURCE read (the record rail), not a county scope. Recorded so it is not re-derived.",
+    "main advanced twice past the review's named base while this lane ran (824bd21e -> ad99acaa). main carries strict required checks, so any lane whose PR sits open during a merge must expect to rebase again before it is mergeable; the rebase itself was conflict-free because neither P-340 nor P-339 touches this lane's files."
   ],
 
   "subAgents": { "spawned": 0, "maxDepth": 0 }

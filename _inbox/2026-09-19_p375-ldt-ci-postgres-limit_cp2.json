@@ -1,0 +1,81 @@
+{
+  "lane": "p375-ldt-ci-postgres-limit",
+  "planRows": ["P-375"],
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-19T13:25:00Z",
+  "seat": "cente-vsc-p375",
+  "dispatch": "_dispatches/2026-09-19_p375-ldt-ci-postgres-limit_dispatch.md",
+  "whatThisRowIs": "The required `Test` check fails intermittently on suites the PR does not touch, inside lib/db's `dropTestSchema`, with Postgres 53200 `out of shared memory`. The fleet re-runs it. P-375 measures the limit, fixes the cause, and makes a red `Test` mean something again.",
+  "headStateAtCP2": {
+    "legacyDesignTools": {
+      "path": "P:/legacy-design-tools-worktrees/p375-ldt-ci-postgres-limit",
+      "branch": "lane/p375-ldt-ci-postgres-limit",
+      "base": "ad99acaa9f181cfb0633efc1e4fa6dcc1bd35c45 (origin/main at the time of the fast-forward; read back from the PR's baseRefOid, not assumed)",
+      "head": "a59147611d9ef052163d391e1c96f4d50b1eba78",
+      "commits": ["a5914761 ci(P-375): size the postgres lock table so a red Test means something"],
+      "diffStatVsBase": "1 file changed, 81 insertions(+), 0 deletions(-) - .github/workflows/pr-checks.yml only",
+      "pr": {
+        "number": 731,
+        "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/731",
+        "base": "main",
+        "headSha": "a5914761",
+        "mergeable": "MERGEABLE",
+        "mergeStateStatus": "BLOCKED",
+        "mergeSha": "null - NOT MERGED: the dispatch forbids merging from this lane"
+      }
+    },
+    "controlPr": {
+      "number": 732,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/732",
+      "branch": "lane/p375-control-broken-test",
+      "headSha": "baaf4836227d2f8d8e82acf0dcb0845d2f84e5c7",
+      "contents": "the fix plus one deliberately false assertion in lib/codes/src/queue.test.ts",
+      "role": "CONTROL, to be closed once its Test conclusion is read; the expected conclusion is `failure`, and a `success` there would mean the fix masks real failures and #731 must not merge"
+    }
+  },
+  "whatChanged": {
+    "theOneStep": "A new step in the `test` job of .github/workflows/pr-checks.yml: `Size the postgres lock table for the test suite`. It reads the single pgvector/pgvector:pg14 service container, fails closed unless there is exactly one, runs `ALTER SYSTEM SET max_locks_per_transaction = 1024`, restarts the container with `--time 60`, waits for a real `SELECT 1`, reads the setting back, prints the effective value on every run, and fails the job if it is not 1024.",
+    "nothingElseChanged": "No test, no harness function, no other workflow, no `services.options`. In particular --shm-size is untouched: it was measured not to move the ceiling (F4/F5).",
+    "whyOneStepIsTheWholeFix": "The lock table is a shared cluster-wide resource and the operation that overruns it (one `DROP SCHEMA ... CASCADE`, and one 616-statement `CREATE` in a single implicit transaction) is legitimate and stays as it is. Sizing the resource fixes every concurrent DB suite at once, including local runs against any container started the same way, and imposes no cap on test parallelism."
+  },
+  "defectsFoundByRunningTheStep": {
+    "whyThisSectionExists": "The step is shell inside YAML, and a control that silently fails to apply is the failure mode this programme gates against (DEV_PROCESS: gating indicators must be proven able to fire). So the step's `run:` block was EXTRACTED FROM THE WORKFLOW FILE byte-for-byte and executed, rather than retyped or reasoned about. It found two real defects before the PR existed.",
+    "howTheBytesWereExecuted": "`extract-step.mjs` slices the named step out of pr-checks.yml and validates the indentation while it does; `bind-step.mjs` rebinds exactly ONE line - the container selector - because this host has several pgvector/pgvector:pg14 containers belonging to OTHER lanes while CI has exactly one. The bind step prints the single line that differs (`--filter \"ancestor=pgvector/pgvector:pg14\"` -> `--filter \"name=^p375-ci-verify$\"`) so the fidelity of the run is auditable rather than asserted.",
+    "defect1_readiness": "The first version waited with `pg_isready`. On a restart after an unclean stop the server is in crash recovery, where it answers the socket - `pg_isready` prints 'rejecting connections' and exits 1 - long before it can execute anything, so the loop's 60s budget expired and the read-back then failed with a message about max_locks_per_transaction that was not the real cause. FIXED: poll a real `SELECT 1` and fail closed with its own explicit message if 120s of queries never succeed.",
+    "defect2_sigkill": "`docker restart` defaults to a 10s SIGTERM budget. A busy postgres that has not finished its fast shutdown in 10s is SIGKILLed, and an unclean stop forces WAL replay on the NEXT start. Measured on this host: one restart replayed 20.5s of redo and the server then stayed unavailable far beyond that - a 2-second restart turning into minutes, which in CI would read as a hung `Test` job rather than as a restart. FIXED: `docker restart --time 60`, with the reason in the comment.",
+    "defect3_ambiguousSelectorIsSilent": "The selector `docker ps --filter ancestor=...` is correct in CI (exactly one service container) but would hand a NEWLINE-SEPARATED list of ids to `docker exec` on any host with more than one, producing a confusing docker error rather than a clear refusal. Found on this very host, where five containers share the image. FIXED: a count check that refuses anything other than exactly one, with a message that says why guessing wrong is worse than failing. This is the F6 falsifier and it was observed firing: exit 1, 'expected exactly one ... found 5'.",
+    "postFixSelfTest": "With the selector bound, the step exits 0 and prints `effective max_locks_per_transaction=1024 (wanted 1024)`; re-run on a settled container it is idempotent and takes ~3.0s wall clock; the postgres log across the restart shows `database system is shut down` / `database system was shut down at ...` / `ready to accept connections` - a CLEAN stop with no recovery, which is the property `--time 60` exists to protect."
+  },
+  "whatTheHarnessActuallyDoes": {
+    "createTestSchema": "lib/db/src/testing/index.ts:113. It runs `CREATE SCHEMA \"<name>\"` and then sends the WHOLE fixture as ONE multi-statement `pool.query(ddl)` (line 124). Over the simple query protocol that is one implicit TRANSACTION, so a single test file's setup acquires locks for all 616 objects in one transaction - not 616 small ones.",
+    "dropTestSchema": "lib/db/src/testing/index.ts:163. One `DROP SCHEMA IF EXISTS \"<name>\" CASCADE` in one transaction, on a pool of its own.",
+    "whyThatMakesThousands": "Because both halves are single transactions, the per-test-file lock demand is 'one lock per object touched', summed over the whole 616-object fixture, twice (setup and teardown). Measured: ~2,400 locks for the DROP.",
+    "theReaper": "createTestSchema also calls `reapStaleTestSchemas` (line 85), which drops stale `test_<ts>_*` schemas SEQUENTIALLY, capped per pass. It is a mitigation for leftover schemas, not for concurrency, and it does not reduce the peak - and it is itself a place leftover schemas from a crashed suite accumulate.",
+    "theConsequence": "The peak lock demand is `concurrent test files x ~2,400`, which is why the default table of ~12,800 holds out for about five or six files and then fails on whichever suites happen to be running. That is exactly the 'red on an untouched suite' signature."
+  },
+  "countsWithCountingRules": {
+    "fixtureObjects": { "value": "616 statements / 370 relations", "countingRule": "`grep -c` over lib/db/src/__tests__/__fixtures__/schema.sql.template: 142 CREATE TABLE, 228 CREATE [UNIQUE] INDEX, 246 ADD CONSTRAINT; 5182 lines" },
+    "locksPerDrop": { "value": "~2,300-2,400", "countingRule": "step search on the increase in held locks across a single `DROP SCHEMA ... CASCADE` transaction on a schema built from the fixture" },
+    "lockTableAtDefault": { "value": "~12,800 locks", "countingRule": "largest N such that one transaction can hold N pg_advisory_xact_lock() before Postgres raises 53200 (binary search, rolled back). The same lock table." },
+    "lockTableAt1024": { "value": "~190,100 locks", "countingRule": "same probe on a container with max_locks_per_transaction=1024" },
+    "shmCost": { "value": "6.5MB -> 50MB of anonymous shared memory", "countingRule": "`SELECT pg_size_pretty(size) FROM pg_shmem_allocations ORDER BY size DESC` before and after; shared_buffers stays 128MB in both" },
+    "concurrencyProbe": { "value": "24-way: 3/3 runs failed at the default (18, 27, 34 OOM lines) and 3/3 runs clean at 1024 (0 OOM, 0 errors, 0 schemas left behind), on ONE fresh CI-faithful container, before vs after running the step", "countingRule": "conc.sh: N concurrent psql sessions each running DROP SCHEMA IF EXISTS / CREATE SCHEMA / 616-statement DDL replay / DROP SCHEMA CASCADE; outcome = count of `out of shared memory` lines across all session logs, plus `SELECT count(*) FROM pg_namespace` for leftovers" },
+    "matrix": { "value": "shm64+mlpt64 FAIL (13/0/3/15 OOM at 12 conns; 22/24/20 at 24) | shm64+mlpt1024 PASS | shm2g+mlpt64 FAIL (7 OOM at 12) | shm2g+mlpt1024 PASS", "countingRule": "the same probe; the shm2g+mlpt64 cell is the falsification of --shm-size" },
+    "workflowDiff": { "value": "1 file, +81/-0", "countingRule": "`git diff --stat ad99acaa..a5914761`" },
+    "yamlStructure": { "value": "13 jobs parse; the `test` job has 16 steps and the new step is index 8, before all five DB steps", "countingRule": "validate-workflow.mjs, which parses the committed workflow with the repo's own pinned yaml module and asserts the ordering rather than eyeballing it" }
+  },
+  "environmentFindings": {
+    "pnpmPreinstallNeedsAPosixShellOnWindows": "`pnpm install --frozen-lockfile` fails on this host at the root `preinstall` (`sh -c ...`) because pnpm runs scripts through cmd.exe by default. Setting npm_config_script_shell to Git Bash fixes it, and the install then completes from the store in seconds. Recorded because the next lane on this host will hit it and it looks like a repo defect.",
+    "theAncestorSelectorIsAmbiguousOnThisHost": "Five running containers share `pgvector/pgvector:pg14` (other lanes' test DBs). This is a LOCAL property; CI's runner has exactly one. It is why the step's guard exists, and why the local execution of the step rebinds one line.",
+    "uncleanStopIsContagious": "A container SIGKILLed mid-startup can come back into a multi-minute recovery: 20.5s of redo plus a stall, with every connection refused as 'the database system is starting up'. Observed while chasing defect 2 and the reason `--time 60` was added. It is a local consequence of stressing one container ~40 times; CI's container is freshly initialised and does a clean fast shutdown.",
+    "mcpAndProbe": "Not used by this lane. surface-probe.mjs grades a live customer surface; this row is CI configuration in legacy-design-tools with no serving surface to grade, and the close declares probe.notApplicable with the reason rather than citing an artifact that measures something else (see the close)."
+  },
+  "subAgents": { "spawned": 0, "maxDepth": 0 },
+  "constraintsHonored": [
+    "no merges, no deploys, nothing pushed to main (the control PR exists only to be read, then closed)",
+    "FAN-DEPTH 0: no sub-agents launched",
+    "the build touches .github/workflows/ and the test harness only, and in the end only .github/workflows/pr-checks.yml",
+    "no other lane's container, database or worktree was written; the five same-image containers on this host were read only, and that read is what produced the fail-closed guard",
+    "doc_repo edits left UNCOMMITTED with the CP/CLOSE artifacts untracked in _inbox/, per AGENT-CONTRACT section 6"
+  ]
+}

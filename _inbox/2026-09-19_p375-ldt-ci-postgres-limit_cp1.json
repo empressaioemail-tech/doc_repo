@@ -1,0 +1,91 @@
+{
+  "lane": "p375-ldt-ci-postgres-limit",
+  "planRows": ["P-375"],
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-19T13:10:00Z",
+  "seat": "cente-vsc-p375",
+  "dispatch": "_dispatches/2026-09-19_p375-ldt-ci-postgres-limit_dispatch.md",
+  "filedNote": "Filed as one artifact at the end of the lane's measurement phase and before the workflow commit, from the design that the measurement was built to test. The falsifiers below were fixed before the first concurrency probe ran and before any file in legacy-design-tools was edited; F1-F3 are the dispatch's own 'Verify by violation' directions, and F4-F7 were added by this lane because the dispatch's own hypothesis ('max_locks_per_transaction and shm-size') pairs two settings that were measured to have very different standing. Stated plainly rather than presented as an on-time checkpoint: this lane runs as one continuous execution (claim and worktree cut before any measurement), so CP1 is written from the state READ at the start commit.",
+  "docRepoWorktree": {
+    "path": "C:/Users/cente/doc_repo",
+    "branch": "main",
+    "head": "41e37310",
+    "why": "The dispatch's CP/CLOSE paths are relative to the doc_repo worktree the session RUNNING the lane is rooted in, and it names P:/doc_repo as the INTEGRATION seat's checkout which must not receive them. This lane's claim lives in C:/Users/cente/doc_repo/_catalog/lane_claims.json (p375-ldt-ci-postgres-limit, seat cente-vsc-p375, planRow P-375, startedAt 2026-09-19T12:11Z), which is how the root was identified by reading the claim back rather than assumed. Doc_repo commits are planner-owned (AGENT-CONTRACT section 6), so every doc_repo edit is left uncommitted and is listed in the close.",
+    "uncommittedEdits": ["_catalog/lane_claims.json (the claim; released at close, so it nets back to its committed bytes)"]
+  },
+  "productRepoWorktree": {
+    "repo": "legacy-design-tools",
+    "path": "P:/legacy-design-tools-worktrees/p375-ldt-ci-postgres-limit",
+    "branch": "lane/p375-ldt-ci-postgres-limit",
+    "startCommit": "ad99acaa9f181cfb0633efc1e4fa6dcc1bd35c45",
+    "verified": "The branch was cut at ea66ef6d and was 2 commits behind; `git fetch origin` then `git merge --ff-only origin/main` fast-forwarded it to ad99acaa, and `gh pr view 731 --json baseRefOid` reads back ad99acaa. So the PR's base is the SHA this lane actually built and measured on, read from the API rather than trusted from the dispatch.",
+    "worktreeIsolation": "This lane executes in its own registered worktree under P:/legacy-design-tools-worktrees/; no other lane's checkout was written, and P:/doc_repo was never written."
+  },
+  "missionPremise": "The `Test` job in pr-checks.yml fails intermittently on tests the PR under review does not touch. P-270's close recorded the shape twice on its own PR: `lib/codes` `src/queue.test.ts` ('drainQueue: nextAttemptAt gating') and `src/__tests__/reasoningAtoms.test.ts`, the second failing INSIDE `lib/db`'s `dropTestSchema` with Postgres error 53200 `out of shared memory`, 'You might need to increase max_locks_per_transaction'. It has hit #722, #727 and P-362's PR. The fleet's answer has been 're-run once', authorised by `_queue/cards/ldt-576-retry/card.json` ('ONE retry is authorised. If Test fails a second time it is not a flake'), which is a habit rather than a control: a real regression in those suites would be re-run away the same way. P-270's close routed the condition as repo-wide and explicitly not any lane's diff: 'a repo-wide pr-checks.yml postgres-container limit, not any lane's diff'.",
+  "whatExistedAtStart": {
+    "theServiceContainer": "pr-checks.yml `test` job: image pgvector/pgvector:pg14, env POSTGRES_USER/PASSWORD/DB=test_db, ports 5432:5432, and `options:` carrying ONLY --health-cmd/--health-interval/--health-timeout/--health-retries. No --shm-size, no command override, no lock-table setting anywhere in the workflow. The image default is max_locks_per_transaction=64 and shared_buffers=128MB, confirmed by reading them out of a container built to that config.",
+    "theWorkload": "`Run tests` is `pnpm test`, which is `pnpm -r --if-present run test` - the whole workspace, with pnpm's own workspace concurrency running several packages at once and vitest running several files per package. Every DB suite calls lib/db's `createTestSchema`/`dropTestSchema`.",
+    "theOperation": "lib/db/src/testing/index.ts `dropTestSchema` runs `DROP SCHEMA ... CASCADE`. The schema it drops is the checked-in fixture lib/db/src/__tests__/__fixtures__/schema.sql.template (142 tables, 228 indexes, 246 ADD CONSTRAINT = 616 objects, 5182 lines). One DROP of that is a single transaction holding one lock per object it touches.",
+    "theExistingPattern": "The same job ALREADY docker-execs into its own service container: the 'Install postgis into the postgres service container' step does `docker ps --filter \"ancestor=pgvector/pgvector:pg14\"` and `docker exec -u root`. So a step that configures that container is the established shape in this file, not a new mechanism.",
+    "theHabit": "_queue/cards/ldt-576-retry/card.json authorises ONE re-run and states that a second failure is not a flake. The card's own premise is that a red Test from this condition carries no information.",
+    "nothingMeasuredTheLockTable": "No step, test or gate in the repo read max_locks_per_transaction, so the condition could only ever be diagnosed after the fact from a suite's error text."
+  },
+  "theFixDecision": {
+    "options": [
+      "A: size the container's lock table to the measured need, in the workflow, with the measurement in the comment (the dispatch's first option).",
+      "B: make the harness drop in bounded batches so the peak never reaches the limit (the dispatch's second option)."
+    ],
+    "chosen": "A, with a self-verifying step: ALTER SYSTEM SET max_locks_per_transaction = 1024, restart, wait for query readiness, read the value back, fail the job if it did not take, and print the effective value on every run.",
+    "why": "The constraint is a SHARED, cluster-wide resource, and the workload is parallel by design and by intent. B would impose a permanent cap on test parallelism in order to work around a resource that is trivially enlarged, and it would fix only the call sites it reached: every other concurrent schema lifecycle (a different package, a local run, a future suite) would stay exposed. A sizes the resource, is one step, touches no test, and changes no test's behaviour. The measured cost is ~44MB of anonymous shared memory (the lock table entry in pg_shmem_allocations goes 6.5MB -> 50MB) against a 16GB runner.",
+    "whyNotDeclarative": "A GitHub Actions service container cannot be given the GUC declaratively. `services.<id>.options` is passed to `docker create`, and the `services` schema has no `command`/`entrypoint` override (unlike a step-level `docker run`). The GUC is PGC_POSTMASTER, so it cannot be set per session either - `PGOPTIONS` and `ALTER DATABASE/ROLE` cannot reach it. A restart is therefore unavoidable, and the step does it and then PROVES it took.",
+    "theShmSizeHalfIsRefused": "The dispatch names 'a max_locks_per_transaction and shm-size sized to the measured need'. Only the GUC was measured to matter, so --shm-size is deliberately left untouched and the falsification is recorded in the workflow comment. Setting a value that cannot move the number it is believed to move is the dead-control class this programme keeps finding."
+  },
+  "preRegisteredFalsifiers": [
+    {
+      "id": "F1-old-config-reproduces",
+      "statement": "With the CI configuration as it stands, concurrent schema lifecycles exhaust the lock table and produce Postgres 53200 `out of shared memory` with the 'increase max_locks_per_transaction' hint - the SAME error, from the SAME operation the harness performs.",
+      "howProved": "concurrent psql sessions each running the real lifecycle (DROP SCHEMA IF EXISTS / CREATE SCHEMA / replay of the 616-statement fixture / DROP SCHEMA CASCADE) against a container built to the CI config with max_locks_per_transaction=64. PASS/FAIL is the count of `out of shared memory` lines across the session logs, and the count of schemas left behind.",
+      "expectedBand": "at 24 concurrent, at least one OOM line in every run; at 12 concurrent, intermittent (the dispatch says intermittent, so a clean 12-way run is DATA, not a refutation)"
+    },
+    {
+      "id": "F2-fixed-config-is-clean",
+      "statement": "With max_locks_per_transaction=1024 the same load produces zero OOM lines and leaves zero schemas behind.",
+      "howProved": "identical probe, identical connection count, on a container differing ONLY in the GUC."
+    },
+    {
+      "id": "F3-a-broken-test-still-fails-the-job",
+      "statement": "After the fix, a deliberately broken assertion in a `lib/codes` DB suite still fails the `Test` job, so the fix removed an infrastructure error without masking real failures.",
+      "howProved": "a control pull request carrying the fix plus one deliberately false assertion in lib/codes/src/queue.test.ts (one of the two suites the dispatch names, and one that drives dropTestSchema). The check-run conclusion on that head is the measurement: it must be `failure`."
+    },
+    {
+      "id": "F4-the-limit-is-the-lock-table-not-shm",
+      "statement": "--shm-size alone does not raise the ceiling: lock capacity is unchanged at 64MB and at 2GB of /dev/shm, and an equal concurrent load still fails on a 2GB /dev/shm container with the default GUC.",
+      "howProved": "measure the largest number of pg_advisory_xact_lock() one transaction can hold on each configuration (same lock table), and run the same N-way lifecycle probe on a 2GB container whose GUC is still 64."
+    },
+    {
+      "id": "F5-the-fix-works-on-the-stock-shm",
+      "statement": "max_locks_per_transaction=1024 starts and passes on the CI container's stock 64MB /dev/shm, so no --shm-size change is needed for the fix.",
+      "howProved": "a container with --shm-size=64m and the GUC at 1024: it must start, and the N-way probe on it must be clean."
+    },
+    {
+      "id": "F6-the-step-fails-closed",
+      "statement": "The new workflow step fails the job, loudly and with its own message, if the setting does not take or if the container it would act on cannot be identified uniquely - it must never pass while leaving the lock table unsized.",
+      "howProved": "run the step's own `run:` bytes, extracted from the workflow file, in both directions: with the setting already correct (exit 0 and the effective value printed) and with the selector made ambiguous (exit non-zero with the FAIL message). Plus a read-back assertion in the step itself."
+    },
+    {
+      "id": "F7-the-step-is-idempotent-and-cheap",
+      "statement": "Re-running the step is harmless and its steady-state cost is a few seconds, so it cannot be the thing that makes `Test` time out.",
+      "howProved": "run it twice against a settled container and time both, plus read the postgres log across the restart to confirm a CLEAN shutdown (no crash recovery, no WAL replay)."
+    }
+  ],
+  "howTheFalsifierCountIsBeingKeptHonest": "F1 and F2 are the dispatch's own directions, restated as a measurable pair on ONE container so the before/after is not confounded by two different containers. F4/F5 exist because the dispatch's hypothesis pairs the GUC with --shm-size, and a pair where one half does nothing must be shown to do nothing rather than quietly carried. F6/F7 exist because the fix is delivered as shell inside a YAML step, and a step that silently fails to apply is exactly the 'control that looks like a control' failure this programme gates against.",
+  "constraintsAcknowledged": [
+    "FAN-DEPTH 0: this lane launches no sub-agents (the dispatch's first line; the commit gate refuses a close that declares any fan, A-181).",
+    "ONE PR from current origin/main with the SHA declared; do not merge.",
+    "Build is confined to legacy-design-tools .github/workflows/ and the test harness.",
+    "doc_repo commits are planner-owned: artifacts and the claim are left uncommitted.",
+    "The lane claim was taken before any work and is released at close.",
+    "Verification steps are exit-bounded: every probe, restart and poll has a timeout and exits.",
+    "No other lane's container, worktree or database was written; the pre-existing containers on this Docker daemon belong to other lanes and were read only (this is also why the step's container selector is proven to fail closed when it is not unique)."
+  ]
+}
