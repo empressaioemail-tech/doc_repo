@@ -83,6 +83,26 @@ would fail closed. Both conditions are satisfied.
 Neither is a design problem; both are the kind of thing that looks fine on paper and 401s in
 production. Decoding one real token settles both at once, along with the issuer.
 
+## What is NOT yet wired on the app (measured 2026-09-19)
+
+The WorkOS side is configured. The application side is **not started**. Read from `dolphin-app`'s own
+spec, its 11 env entries are:
+
+`HAUSKA_RETRIEVAL_URL`, `SMARTSITE_EMBED_ORIGIN`, `SMART_FILES_BACKEND_URL`, `HAUSKA_MCP_URL`,
+`PLAN_REVIEW_EMBED_ORIGIN`, `DATABASE_URL`, `DASHBOARDS_API_KEY`, `HAUSKA_RETRIEVAL_API_KEY`,
+`SMART_FILES_API_KEY`, `PLATFORM_INTERNAL_API_KEY`, `SMARTCITY_V1_PLATFORM_BASE`.
+
+Every one of the seven variables above is **ABSENT**, including `SHELL_IDENTITY_PROVIDER`. So sign-in
+cannot work on the deployed app today, and the reason is not WorkOS. With
+`SHELL_IDENTITY_PROVIDER` unset, `src/staff-identity.mjs` refuses every staff bearer by design ("a staff
+bearer cannot be verified against no issuer"), so the failure is a clean refusal rather than an
+open door.
+
+**These are seven ADDITIONS, not changes**, which matters mechanically: the guard used for G-171
+changes exactly one existing entry and refuses to add one. Adding env entries is a different write and
+needs the same enumerated-diff guard against a different expectation. Do it in ONE act, not two,
+because each spec write triggers a redeploy.
+
 ## What is owed, and by whom
 
 **Owed to the operator, and blocking. `WORKOS_API_KEY` must be placed in Secret Manager.** No agent
