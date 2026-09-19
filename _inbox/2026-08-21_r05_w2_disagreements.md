@@ -67,7 +67,7 @@ Two bodies, diverged (the 51-incident class):
 | --- | --- | --- |
 | `adr_025_og_atom_ontology` | `80_adrs/…` (30826 B, last_updated 2026-07-06, rulings applied) vs `_inbox/2026-07-05_draft_…` (24349 B, 2026-07-05 draft, PROMOTED banner) | Different dates, different body. Inbox says read the promoted file. Still a live second `id`. |
 | `2026-08-08_L2_WAVE3_report` | `_inbox/…_report.md` (62353 B) vs `_inbox/…_report_a2.md` (18994 B) | Both `status: halted`. Different lengths. |
-| `canon_divergence` | `_catalog/canon_divergence.md` (`status: clear`, 2026-08-21) vs `_inbox/2026-08-08_M2_historical_replay.md` (`status: ALARM`, 2026-08-09) | Same id on a live report and a historical replay. |
+| `canon_divergence` | `_catalog/canon_divergence.md` (`status: clear`, 2026-08-21) vs `_quarantine/2026-08-08_M2_historical_replay.md` (`status: ALARM`, 2026-08-09) | Same id on a live report and a historical replay. |
 | `smartcity_masters_readme` | `_smartcity_masters/00_README.md` (8436 B) vs `_scratch/removed_…/00_README.md` (6790 B) | Shadow vs live. |
 | `31_smartcity_dashboards` | masters 18383 B, last_updated 2026-08-10 vs shadow 18180 B, 2026-08-01 | Diverged. |
 | `32_smartcity_asset_management` | 20250 vs 19955 | Diverged. |

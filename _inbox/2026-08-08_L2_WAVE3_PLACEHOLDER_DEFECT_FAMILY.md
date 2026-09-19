@@ -4,7 +4,7 @@ title: W3-PLACEHOLDER-FAMILY — null-placeholder features with junk coordinates
 date: 2026-08-08
 status: open
 owner: wave3-resume-planner
-related: [_inbox/2026-08-08_L2_WAVE3_WOOD_48499_RULING, _inbox/2026-08-08_L2_WAVE3_RESUME_REPORT, _inbox/2026-08-08_L2_WAVE3_placeholder_defect_probe.json, _inbox/2026-08-08_L2_WAVE3_report_a2.md]
+related: [_inbox/2026-08-08_L2_WAVE3_WOOD_48499_RULING, _inbox/2026-08-08_L2_WAVE3_RESUME_REPORT, _inbox/2026-08-08_L2_WAVE3_placeholder_defect_probe.json, _quarantine/2026-08-08_L2_WAVE3_report_a2.md]
 evidence: _inbox/2026-08-08_L2_WAVE3_placeholder_defect_probe.json
 ---
 

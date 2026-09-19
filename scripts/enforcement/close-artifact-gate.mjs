@@ -80,6 +80,11 @@ export function isConcreteInboxArtifact(s) {
   for (const c of SHAPE_CHARS) if (s.includes(c)) return false;
   if (s.startsWith("_inbox/_tmp_")) return false; // lane scratch, never meant to be tracked
   if (s.includes("..")) return false;
+  // A segment beginning with a dot is not an artifact segment. Prose that writes
+  // "`_inbox/2026-08-31_p85_block_job_audit.md`/`.json`" is naming two extensions of one artifact,
+  // and a greedy scan reads the join as a single path ending in `.json`. Rejecting the segment is
+  // what stops prose about a path from being graded as a citation of one.
+  if (s.split("/").some((seg) => seg.startsWith("."))) return false;
   const base = s.split("/").pop();
   return ARTIFACT_EXT.test(base);
 }
@@ -144,7 +149,53 @@ export function extractCitations(text) {
 export const FORWARD_LOOKING_CITER = [
   /^_dispatches\//,
   /^_catalog\/dispatch_missions\//,
+  /^_queue\/cards\//, // an intake card names the close it expects
+  /^_scratch\//, // Tier-2 notes, explicitly provisional and never a record of fact
 ];
+
+/**
+ * A plan-kind document, wherever it lives.
+ *
+ * The original class was keyed on the DIRECTORY (`^_dispatches/`), which is the wrong key: a
+ * mission template's job is to name the artifact its lane will produce, and whether that template
+ * sits in `_dispatches/`, `_catalog/dispatch_missions/` or `_inbox/` is filing, not meaning. The
+ * measured consequence of keying on the directory was 19 of the 84 pinned citations being counted
+ * as debt when they are the same document kind that is already exempt by name one directory over.
+ *
+ * The exemption is still narrow: it matches the document KIND by basename, and a close, a session,
+ * a plan of record, a decision, `_STATE.md` and the tracker match none of these.
+ */
+export const PLAN_KIND_BASENAME = /(?:^|[_-])(?:mission|wdll|kickoff|handoff|dispatch|runbook|blueprint|steward|controls_map|prompt|resume_report|interim_status|agent)(?:[_.-]|$)/i;
+
+/**
+ * Surfaces where a dangling citation IS the defect, which no exemption may ever reach.
+ *
+ * Asserted BEFORE the plan-kind test, not after. The first version of this marker list contained
+ * `plan`, which matched `OPS-17_govtech_stack_plan_of_record.md` and exempted the single surface the
+ * whole control exists to grade. The self-test caught it on the same run that measured a 38-target
+ * drop, so the drop was partly the leak rather than real progress. A backstop that is checked first
+ * cannot be swallowed by a later widening of the marker list.
+ */
+export const NEVER_EXEMPT = [
+  /^90_operations\//, // plans of record: a row regraded CLOSED while citing an absent close
+  /^_sessions\//, // session records
+  /^_STATE\.md$/,
+  /^_state\//, // seat state, including the generated combined file
+  /^_decisions\//,
+  /^_design\//,
+  /^_catalog\/(?!dispatch_missions\/)/, // every catalog report and index except a mission template
+];
+
+export function isNeverExempt(rel) {
+  const p = String(rel ?? "").replace(/\\/g, "/").replace(/^\.\//, "");
+  return NEVER_EXEMPT.some((re) => re.test(p));
+}
+
+export function isPlanKindDocument(rel) {
+  const p = String(rel ?? "").replace(/\\/g, "/").replace(/^\.\//, "");
+  if (isNeverExempt(p)) return false;
+  return PLAN_KIND_BASENAME.test(p.split("/").pop() ?? "");
+}
 
 export const RECORD_OF_DEFECT_CITER = [
   /^\.github\/enforcement-baseline\.json$/,
@@ -154,13 +205,100 @@ export const RECORD_OF_DEFECT_CITER = [
 
 export function isForwardLookingCiter(rel) {
   const p = String(rel ?? "").replace(/\\/g, "/").replace(/^\.\//, "");
-  return FORWARD_LOOKING_CITER.some((re) => re.test(p));
+  if (isNeverExempt(p)) return false;
+  return FORWARD_LOOKING_CITER.some((re) => re.test(p)) || isPlanKindDocument(p);
+}
+
+/**
+ * Citations that name a path WITHOUT asserting that it is available, judged on the LINE.
+ *
+ * File-level classification is not enough, because the same file both asserts and records. A probe
+ * report that says "Full file: `_inbox/x.md`" is pointing a reader at an artifact, so the path must
+ * resolve. Three lines above it, the same report shows the invocation `--out _inbox/x.md` that
+ * created the file; that is a log, and repointing it would falsify the record of what was run.
+ * The same holds for a move record, which must keep naming the path as it was.
+ *
+ * Each pattern is anchored on a marker ADJACENT to the citation, not merely present on the line, so
+ * a line that both records a move and points at a live artifact still has its live pointer graded.
+ */
+export const NON_ASSERTING_LINE = [
+  // CREATION. The path is the output of a write. A record of the write is not a claim it exists now.
+  /(?:^|[^=<>])>(?!=)\s*[^\n]*_inbox\//, // shell redirect into the path
+  /--out[= ]\s*\S*_inbox\//, // a CLI whose output path is the artifact
+  // RELOCATION. `"from"`/`"to"` pairs and prose move records name the path as it was.
+  /["'](?:from|to)["']\s*:\s*["']?_inbox\//,
+  /\b(?:Filed from|moved to|quarantined as|repointed to|relocated to|superseded by)\b[^\n]*_inbox\//i,
+  // COMMAND. A shell invocation naming the path as an argument executes; it does not assert.
+  /^\s*(?:git|rm|cp|mv|touch|printf|echo|cat|ls|test|node|bash|sh|pwsh|powershell)\b[^\n]*_inbox\//,
+  /\bgit\s+(?:add|reset|rm|restore|checkout)\b[^\n]*_inbox\//,
+  // EXAMPLE. Explicitly illustrative, and a template placeholder is by definition not a real path.
+  // No trailing \b: the boundary after `Example:` is `:` then a space, which is two non-word
+  // characters, so \b cannot match there. Caught by the reject case in the self-test.
+  /(?:\bfor example\b|\be\.g\.|\bExample:)[^\n]*_inbox\//i,
+];
+
+/** True when this LINE names an `_inbox/` path without asserting the artifact is available. */
+export function isNonAssertingCitationLine(line) {
+  const s = String(line ?? "");
+  return NON_ASSERTING_LINE.some((re) => re.test(s)) || isRecordOfAbsenceLine(s);
+}
+
+/**
+ * A line that RECORDS the artifact's absence, or records an injected test violation.
+ *
+ * This is the same reasoning that exempts the pin, moved to the line. A document that reports
+ * "`_inbox/x.json` MISSING", "never written", "not filed separately", "unreachable from any job
+ * image", "superseded by", "held off main", or "Violation: ... produced exit 2" MUST name the path
+ * that did not resolve; that is what reporting the defect consists of. Grading it would refuse the
+ * report for reporting, which is the circularity the pin exemption already exists to prevent.
+ *
+ * This is deliberately NOT a general "the line mentions a problem" escape. Each marker asserts
+ * non-existence or records a test event, so a line that asserts an artifact IS available cannot
+ * match one: "| G-142 | `_inbox/x.json` | CLOSED |" contains no absence marker and stays graded.
+ */
+export const RECORD_OF_ABSENCE_MARKER = [
+  /\bMISSING\b|\bmissingFile\b|\bmissing file\b/i, // a MISSING report
+  // `not filed` must also match the camelCase field names that carry it
+  // (`strayProbeRunRemovedNotFiled`), which a leading \b cannot do inside a compound word.
+  /\bnot filed\b|not[\s_-]?filed|\bnever (?:written|filed|produced|committed|landed)\b/i,
+  /\bdoes not exist\b|\bdid not exist\b|\bno close artifact\b|\bnever existed\b/i,
+  /\bunreachable\b|\bis absent\b|\bare absent\b|\babsent from\b/i,
+  /\bsuperseded\b|\bBROKEN EVIDENCE CHAIN\b/i,
+  // No trailing \b on `contradict`/`inconsistenc`/`disagree`: the field names that carry this
+  // meaning are camelCase (`contradictionFoundInDispatch`, `dispatchInternalInconsistencyNamed`),
+  // so a word boundary after the stem never matches. Caught by the self-test, not by review.
+  /contradict|inconsistenc|disagree/i,
+  /\bheld off main\b|\bnot on main\b/i,
+  /\bclose owed\b|\bowed after\b|\bcloseOwed\b/i,
+  /\bartifactAsCited\b|\bpathAsCited\b/i,
+  // A control verified by violation generates events indistinguishable from the ones counted, and
+  // the rule is to exclude them explicitly rather than let them inflate the count.
+  /\bViolation:/i,
+  /\bviolationProof\b|\bviolationVerified\b/i,
+  /\bExpect\b[^\n]*_inbox\//i,
+  /["'](?:citer|target)["']\s*:/i, // a test expectation naming the pair it expects
+  /\binject(?:ed|s|ing)?\b[^\n]*_inbox\//i,
+];
+
+export function isRecordOfAbsenceLine(line) {
+  const s = String(line ?? "");
+  return RECORD_OF_ABSENCE_MARKER.some((re) => re.test(s));
+}
+
+/** The citations in a block of added lines, dropping the lines that record rather than assert. */
+export function extractAssertingCitations(text) {
+  const out = new Set();
+  for (const line of String(text ?? "").split(/\r?\n/)) {
+    if (isNonAssertingCitationLine(line)) continue;
+    for (const c of extractCitations(line)) out.add(c);
+  }
+  return out;
 }
 
 /** True when the citer mentions `_inbox/` paths without asserting they are available. */
 export function isNonAssertingCiter(rel) {
   const p = String(rel ?? "").replace(/\\/g, "/").replace(/^\.\//, "");
-  return FORWARD_LOOKING_CITER.some((re) => re.test(p)) || RECORD_OF_DEFECT_CITER.some((re) => re.test(p));
+  return isForwardLookingCiter(p) || RECORD_OF_DEFECT_CITER.some((re) => re.test(p));
 }
 
 /**
@@ -186,9 +324,9 @@ export function evaluate(staged, deps) {
     if (status === "D") { removed.push(rel); continue; }
     if (status === "R") continue; // a rename is reported as its own pair by git; graded via the target
     if (isNonAssertingCiter(rel)) continue; // a dispatch names a future output; a pin or a fixture records the defect
-    let lines = "";
-    try { lines = deps.addedLines(rel) ?? ""; } catch { lines = ""; }
-    for (const target of extractCitations(lines)) added.push({ citer: rel, target });
+          let lines = "";
+          try { lines = deps.addedLines(rel) ?? ""; } catch { lines = ""; }
+          for (const target of extractAssertingCitations(lines)) added.push({ citer: rel, target });
   }
 
   const problems = [];
@@ -375,28 +513,41 @@ function census(asJson, quiet = false) {
 
   // One indexed search over HEAD rather than a `git show` per tracked file. The per-file version of
   // this took minutes on 8,978 files, which is not a cost a control can carry.
+  //
+  // The LINE is captured, not just the match, because whether a citation asserts existence is a
+  // property of the line it sits in. `--out _inbox/x.md` records the write that made the file;
+  // "Full file: `_inbox/x.md`" points a reader at it. Grading both identically is what made the
+  // census read higher than the real debt.
   let grepOut = "";
   try {
-    grepOut = git(["grep", "-I", "-o", "-E", "_inbox/[A-Za-z0-9._/-]+", "HEAD", "--", "*.md", "*.json", "*.mdc", "*.txt"]);
+    grepOut = git(["grep", "-I", "-n", "-E", "_inbox/[A-Za-z0-9._/-]+", "HEAD", "--", "*.md", "*.json", "*.mdc", "*.txt"]);
   } catch {
     grepOut = ""; // git grep exits 1 when there is no match
   }
   const absent = new Map();
   let cited = 0;
   let exempted = new Set();
+  let recorded = new Set();
   for (const line of grepOut.split(/\r?\n/)) {
     if (!line) continue;
-    // `HEAD:path:match`; the path may not contain a colon, the match never does.
-    const m = /^HEAD:(.+?):(_inbox\/[A-Za-z0-9._/-]+)$/.exec(line);
+    // `HEAD:path:lineno:content`; the path may not contain a colon, the lineno is digits.
+    const m = /^HEAD:(.+?):(\d+):(.*)$/.exec(line);
     if (!m) continue;
     const citer = m[1].replace(/\\/g, "/");
-    const target = normalizeCitation(m[2]);
-    if (!target || !isConcreteInboxArtifact(target)) continue;
-    if (isNonAssertingCiter(citer)) { exempted.add(target); continue; }
-    cited++;
-    if (!headSet.has(target)) {
-      if (!absent.has(target)) absent.set(target, new Set());
-      absent.get(target).add(citer);
+    const text = m[3];
+    const targets = extractAssertingCitations(text);
+    if (!targets.size) {
+      // Every citation on this line is a record of a write, a move, a command or an example.
+      for (const c of extractCitations(text)) recorded.add(c);
+      continue;
+    }
+    if (isNonAssertingCiter(citer)) { for (const t of targets) exempted.add(t); continue; }
+    for (const target of targets) {
+      cited++;
+      if (!headSet.has(target)) {
+        if (!absent.has(target)) absent.set(target, new Set());
+        absent.get(target).add(citer);
+      }
     }
   }
 
@@ -419,11 +570,12 @@ function census(asJson, quiet = false) {
     head: git(["rev-parse", "--short", "HEAD"]).trim(),
     citedConcrete: cited,
     exemptForwardLookingTargets: [...exempted].sort(),
+    recordedNotAsserted: [...recorded].sort(),
     dangling: [...absent.entries()].map(([target, citers]) => ({ target, citers: [...citers] })).sort((a, b) => a.target.localeCompare(b.target)),
     strandedInWorktrees: [...stranded.entries()].map(([target, worktrees]) => ({ target, worktrees: [...worktrees] })).sort((a, b) => a.target.localeCompare(b.target)),
   };
   if (asJson) { if (!quiet) console.log(JSON.stringify(payload, null, 2)); return payload; }
-  console.log(`HEAD ${payload.head} | graded concrete citations ${cited} | dangling ${payload.dangling.length} | exempted as forward-looking ${payload.exemptForwardLookingTargets.length} | resident in a seat worktree ${payload.strandedInWorktrees.length} (diagnostic, not a failure)`);
+  console.log(`HEAD ${payload.head} | graded concrete citations ${cited} | dangling ${payload.dangling.length} | exempted as forward-looking ${payload.exemptForwardLookingTargets.length} | named without asserting ${payload.recordedNotAsserted.length} (write/move/command/example) | resident in a seat worktree ${payload.strandedInWorktrees.length} (diagnostic, not a failure)`);
   for (const d of payload.dangling) console.log(`  DANGLING ${d.target}\n      cited by ${d.citers.slice(0, 4).join(", ")}${d.citers.length > 4 ? `, +${d.citers.length - 4}` : ""}`);
   for (const s of payload.strandedInWorktrees) console.log(`  STRANDED ${s.target}\n      lives only in ${s.worktrees.slice(0, 3).join(", ")}${s.worktrees.length > 3 ? `, +${s.worktrees.length - 3}` : ""}`);
   return payload;
@@ -595,11 +747,88 @@ function selfTest() {
   check("an inbox report is NOT exempt", isNonAssertingCiter("_inbox/2026-09-18_g142-citizen-lens_close.json") === false);
   check("another enforcement script is NOT exempt", isNonAssertingCiter("scripts/enforcement/cited-untracked.mjs") === false);
   check("the pin exemption does not leak to the whole scripts/ tree", isNonAssertingCiter("scripts/enforcement/close-artifact-gate-notes.md") === false);
+  // The directory was the wrong key. A WDLL's job is to name the artifact its lane will produce,
+  // and a WDLL filed under _inbox/ is the same document kind as one filed under _dispatches/.
+  check("a WDLL in _inbox is exempt (document KIND, not directory)", isNonAssertingCiter("_inbox/2026-08-15_a_wdll_cc_done_l15.md") === true);
+  check("a mission in _inbox is exempt (same kind)", isNonAssertingCiter("_inbox/2026-08-17_g67_mission.md") === true);
+  check("a handoff in _inbox is exempt (same kind)", isNonAssertingCiter("_inbox/2026-08-25_wave_canvas_steward_handoff.md") === true);
+  check("a CLOSE in _inbox is NOT exempt (it records what happened)", isNonAssertingCiter("_inbox/2026-09-18_g142-citizen-lens_close.json") === false);
+  check("a cp1 in _inbox is NOT exempt", isNonAssertingCiter("_inbox/2026-08-17_g67_cp1.json") === false);
+  check("a surface probe in _inbox is NOT exempt", isNonAssertingCiter("_inbox/2026-09-17_224109_surface_probe.json") === false);
+  check("a _catalog report is NOT exempt", isNonAssertingCiter("_catalog/doc_census.json") === false);
+  // The backstop. `plan` was in the marker list and exempted the plan of record, so these assert
+  // that a marker-shaped name on a never-exempt surface still loses.
+  check("BACKSTOP: a plan of record whose name contains `plan` is STILL not exempt", isNonAssertingCiter("90_operations/OPS-17_govtech_stack_plan_of_record.md") === false);
+  check("BACKSTOP: an OPS-25 record whose name contains `plan` is STILL not exempt", isNonAssertingCiter("90_operations/OPS-25_cloud_infrastructure_and_cost_program.md") === false);
+  check("BACKSTOP: a _decisions record named `..._ruled.md` is STILL not exempt", isNonAssertingCiter("_decisions/2026-08-19_enforcement_open_questions_ruled.md") === false);
+  check("BACKSTOP: a session whose name contains `dispatch` is STILL not exempt", isNonAssertingCiter("_sessions/2026-09-07_r-01_dispatch_close.md") === false);
+  check("BACKSTOP: a design declaration is STILL not exempt", isNonAssertingCiter("_design/SMARTCITY_TRACKER.md") === false);
+  check("BACKSTOP: a mission template in _catalog IS still exempt", isNonAssertingCiter("_catalog/dispatch_missions/mission_p80_travis_join.md") === true);
+
+  console.log(" G. a citation that RECORDS a write is not a citation that ASSERTS existence");
+  // Each pattern is stated with its reject case, because a suppressor verified only by suppressing
+  // is a suppressor that may be eating the very defects it exists to catch.
+  check("ACCEPT: a shell redirect into the path is a record of the write", isNonAssertingCitationLine("printf 'untracked target\\n' > _inbox/_r05_cu_target.txt") === true);
+  check("ACCEPT: a CLI whose --out is the artifact is a record of the write", isNonAssertingCitationLine("node scripts/canon-divergence.mjs --since 2026-07-04 --no-fetch --out _inbox/2026-08-08_M2_historical_replay.md") === true);
+  check("ACCEPT: an absolute --out is still the same write", isNonAssertingCitationLine("node x.mjs --out P:/doc_repo/_inbox/a.md") === true);
+  check("ACCEPT: a git command naming the path executes, it does not assert", isNonAssertingCitationLine("git add -- _inbox/_r05_cu_citer.md") === true);
+  check("ACCEPT: an rm of the path is a record it was removed", isNonAssertingCitationLine("rm -f _inbox/_r05_cu_citer.md _inbox/_r05_cu_target.txt") === true);
+  check("REJECT: a pointer a reader would follow IS graded", isNonAssertingCitationLine("Full file: `_inbox/2026-08-08_M2_historical_replay.md`.") === false);
+  check("REJECT: a related: frontmatter list IS graded", isNonAssertingCitationLine("related: [_inbox/a.md, _inbox/b.md]") === false);
+  check("REJECT: a plan-row close citation IS graded", isNonAssertingCitationLine("| G-142 | `_inbox/2026-09-18_g142_close.json` | CLOSED |") === false);
+  check("REJECT: a bare markdown link IS graded", isNonAssertingCitationLine("- [`_inbox/a.md`](_inbox/a.md) validation dispatch") === false);
+  check("ACCEPT: a move record keeps naming the path as it was", isNonAssertingCitationLine('    "from": "_inbox/2026-07-05_draft_adr_025_og_atom_ontology.md",') === true);
+  check("REJECT: a JSON field that merely CONTAINS the path IS graded", isNonAssertingCitationLine('    "artifact": "_inbox/2026-07-05_draft_adr_025_og_atom_ontology.md",') === false);
+  check("ACCEPT: an explicit example is illustrative", isNonAssertingCitationLine("Example: `_inbox/2026-08-11_F15_TX_48079_parcel_dry.json`") === true);
+
+  console.log(" H. a line that RECORDS the absence cannot be graded on whether it resolved");
+  check("ACCEPT: a MISSING report names the path that did not resolve", isNonAssertingCitationLine('"rawOutput": "_inbox/2026-08-13_l16_close.json MISSING\\nciting files: ..."') === true);
+  check("ACCEPT: a never-written finding names it", isNonAssertingCitationLine('"finding": "BROKEN EVIDENCE CHAIN - four leg-closes cite _inbox/2026-08-13_l16_close.json, which was never written"') === true);
+  check("ACCEPT: a not-filed-separately note names it", isNonAssertingCitationLine('"checkpointArtifacts": ["_inbox/2026-09-12_ops23-wave2_cp1.json (not filed separately; see per-row CP1s)"]') === true);
+  check("ACCEPT: an unreachable finding names it", isNonAssertingCitationLine("The refusal half does not exist. `_inbox/2026-08-30_ctx_w3_collect_close.json` is unreachable from any job image.") === true);
+  check("ACCEPT: a superseded pointer names it", isNonAssertingCitationLine("_inbox/2026-09-11_MIDSESSION_ops23_checkpoint_1.md (found as 2026-09-11_MIDSESSION_ops23_capture.md) -- superseded the plan") === true);
+  check("ACCEPT: a violation proof names the injected pair", isNonAssertingCitationLine("Violation: tracked `_inbox/_r05_cu_citer.md` citing untracked `_inbox/_r05_cu_target.txt` produced exit 2") === true);
+  check("ACCEPT: a test expectation names the pair it expects", isNonAssertingCitationLine('Expect exit 2 and a hit `{ citer: "_inbox/_r05_cu_citer.md", target: "_inbox/_r05_cu_target.txt" }`.') === true);
+  check("ACCEPT: a close-path disagreement must name the disagreed path", isNonAssertingCitationLine('"contradictOutcome": "This dispatch names _inbox/2026-09-14_g120_overview_lens_close.json (underscored) and the lane filed the hyphenated path."') === true);
+  // camelCase field names are the common case here, and a trailing \b after the stem does not match
+  // them. These two are the exact shapes the first version of the marker missed.
+  check("ACCEPT: a camelCase contradiction field is caught", isNonAssertingCitationLine('"contradictionFoundInDispatch": "The dispatch names _inbox/2026-09-14_g120_overview_lens_close.json"') === true);
+  check("ACCEPT: a camelCase inconsistency field is caught", isNonAssertingCitationLine('"dispatchInternalInconsistencyNamed": "names the path _inbox/2026-09-14_g122_v1_regression_close.json"') === true);
+  check("ACCEPT: a camelCase RemovedNotFiled field is caught", isNonAssertingCitationLine('"strayProbeRunRemovedNotFiled": "that run wrote _inbox/2026-09-18_155737_surface_probe.json"') === true);
+  check("ACCEPT: a violationVerified fixture is caught", isNonAssertingCitationLine('"violationVerified": "2026-08-21: Write _inbox/foo.md exit 0"') === true);
+  check("ACCEPT: a close owed is not a close delivered", isNonAssertingCitationLine("- Close owed `_inbox/2026-08-14_l24_close.json` after metros.") === true);
+  check("ACCEPT: a no-close-artifact-yet note names the future path", isNonAssertingCitationLine("No close artifact yet. When the sweep finishes, write `_inbox/2026-08-09_PARCEL_NODE_sweep_CLOSE.json`") === true);
+  // The reject cases. If any of these suppressed, the control would have stopped grading the exact
+  // surfaces where the three-wave defect happened.
+  check("REJECT: a plan row regrading a row CLOSED is NOT an absence record", isNonAssertingCitationLine("| G-142 | `_inbox/2026-09-18_g142-citizen-lens_close.json` | CLOSED | closed on the served surface |") === false);
+  check("REJECT: a close asserting a master close IS graded", isNonAssertingCitationLine('"nextSteps": ["Master close _inbox/2026-08-13_l16_close.json + lease release"]') === false);
+  check("REJECT: a session pointer IS graded", isNonAssertingCitationLine("**Canonical inbox:** [`_inbox/2026-05-25_x_session_close.md`](../_inbox/2026-05-25_x_session_close.md)") === false);
+  check("REJECT: a design handoff pointer IS graded", isNonAssertingCitationLine("- Executor: probe harness (design: `_inbox/2026-08-19_systems_c00b_runtime_probe_design.md`)") === false);
+  check("REJECT: the word `absent` in a real row does not launder a live pointer", isNonAssertingCitationLine("| G-9 | `_inbox/2026-09-18_g9_close.json` | the absent column is a different finding |") === false);
+
+  console.log(" I. prose about a path is not a citation of one");
+  check("REJECT: `_inbox/x.md`/`.json` joined by prose is not a path", isConcreteInboxArtifact("_inbox/2026-08-31_p85_block_job_audit.md/.json") === false);
+  check("a real path after the join still is", isConcreteInboxArtifact("_inbox/2026-08-31_p85_block_job_audit.json") === true);
+
+  // The pair that matters: ONE file, both kinds of line. If the suppressor were file-level it would
+  // have to either refuse this report or whitewash its live pointer. It must do neither.
+  const mixed = extractAssertingCitations(
+    ["node scripts/x.mjs --out _inbox/absent_a.md", "Full file: `_inbox/absent_b.md`.", '  "from": "_inbox/absent_c.md",'].join("\n"),
+  );
+  check("the mixed file still grades its live pointer", mixed.has("_inbox/absent_b.md") === true);
+  check("the mixed file does NOT grade its --out line", mixed.has("_inbox/absent_a.md") === false);
+  check("the mixed file does NOT grade its move record", mixed.has("_inbox/absent_c.md") === false);
+
+  // End to end, through evaluate, on the two document kinds that live side by side in _inbox/.
+  const wdllCiter = evaluate([{ path: "_inbox/2026-09-19_zz_wdll.md", status: "A" }], base);
+  check("PASSES: a WDLL in _inbox naming its lane's future close", wdllCiter.block === false);
+  const closeSibling = evaluate([{ path: "_inbox/2026-09-19_zz_close.json", status: "A" }], base);
+  check("FIRES: a CLOSE in _inbox citing an absent sibling", closeSibling.block === true);
 
   const dispatchCiter = evaluate([{ path: "_dispatches/2026-09-19_zz_dispatch.md", status: "A" }], base);
   check("PASSES: a dispatch naming its lane's future close is not a violation", dispatchCiter.block === false);
   const pinCiter = evaluate([{ path: "scripts/enforcement/close-artifact-census-baseline.json", status: "M" }], base);
-  check("PASSES: the pin listing 107 dangling targets is not 107 violations", pinCiter.block === false);
+  check("PASSES: the pin listing the pinned dangling targets is not that many violations", pinCiter.block === false);
   const sameInRow = evaluate([{ path: "90_operations/OPS-17_govtech_stack_plan_of_record.md", status: "M" }], base);
   check("FIRES: the SAME citation written into a plan of record is a violation", sameInRow.block === true);
   check("  (this pair is the whole reason the exemption is safe to grant)", dispatchCiter.block === false && sameInRow.block === true);

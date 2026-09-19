@@ -158,7 +158,7 @@ To acknowledge without changing posture: set `acknowledged_until: YYYY-MM-DD` on
 | Clock 1 freeze | correctly quiet | 0 commits, OK |
 | Active spine repos | correctly quiet | engine 315 / map 225 / contract 28 → OK |
 
-Full file: `_inbox/2026-08-08_M2_historical_replay.md`.
+Full file: `_quarantine/2026-08-08_M2_historical_replay.md`.
 
 Live run (post factory ruling): `_catalog/canon_divergence.md` status `clear`, 0 divergent, 10 portfolio repos listed unmonitored (visibility, not alarm). Runtime **661 ms** script / **814 ms** wall.
 
